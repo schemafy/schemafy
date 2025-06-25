@@ -1,0 +1,10 @@
+{
+  "name": "schemafy",
+  "version": "0.0.1",
+  "description": "Design ERDs with AI assistance and collaboration features",
+  "scripts": {
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
