@@ -1,0 +1,9 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "lint": {
+      "dependsOn": ["^lint"]
+    }
+  }
+}
