@@ -4,11 +4,5 @@
       "mode": "auto"
     }
   ],
-  "java.project.sourcePaths": ["apps/server/src/main/java", "apps/server/src/test/java"],
-  "java.configuration.runtimes": [
-    {
-      "name": "JavaSE-21",
-      "path": "/Users/cjm/.sdkman/candidates/java/current"
-    }
-  ]
+  "java.project.sourcePaths": ["apps/server/src/main/java", "apps/server/src/test/java"]
 }
