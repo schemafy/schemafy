@@ -2,11 +2,11 @@
   "name": "my-turborepo",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "build": "turbo run build --filter=frontend",
+    "build:backend": "cd apps/backend && ./gradlew build",
+    "dev": "turbo run dev --filter=frontend",
+    "dev:backend": "cd apps/backend && ./gradlew bootRun",
+    "lint": "turbo run lint"
   },
   "devDependencies": {
     "prettier": "^3.6.2",
