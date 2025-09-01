@@ -1,9 +1,9 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
-  "pipeline": {
+  "tasks": {
     "build": {
-      "outputs": ["dist/**", "target/**", "build/libs/**"]
+      "dependsOn": ["^build"]
     },
     "dev": {
       "cache": false,
