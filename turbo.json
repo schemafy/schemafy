@@ -3,8 +3,7 @@
   "ui": "tui",
   "pipeline": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["target/**", "build/libs/**", ".next/**"]
+      "outputs": ["dist/**", "target/**", "build/libs/**"]
     },
     "dev": {
       "cache": false,
