@@ -3,10 +3,10 @@
   "private": true,
   "scripts": {
     "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "turbo run build --filter=frontend",
+    "build:frontend": "cd apps/frontend && npm run build",
     "build:backend": "cd apps/backend && ./gradlew build",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "turbo run dev --filter=frontend",
+    "dev:frontend": "cd apps/frontend && npm run dev",
     "dev:backend": "cd apps/backend && ./gradlew bootRun",
     "lint": "turbo run lint"
   },
