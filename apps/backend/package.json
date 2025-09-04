@@ -1,0 +1,11 @@
+{
+  "name": "backend",
+  "private": true,
+  "scripts": {
+    "dev": "cd core && ./gradlew bootRun",
+    "build": "cd core && ./gradlew build",
+    "dev:infra": "podman compose up -d",
+    "infra:up": "podman compose up -d",
+    "infra:down": "podman compose down"
+  }
+}
