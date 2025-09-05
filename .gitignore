@@ -7,8 +7,6 @@ logs/
 **/.DS_Store
 **/._.DS_Store
 
-.vscode/
-
 HELP.md
 .gradle
 build/
