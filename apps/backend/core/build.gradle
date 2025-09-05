@@ -7,7 +7,7 @@ plugins {
 
 group = 'com.schemafy'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
+description = 'Core module of the backend application'
 
 java {
 	toolchain {
