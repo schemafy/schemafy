@@ -1,0 +1,10 @@
+{
+  "name": "@schemafy/validation",
+  "private": true,
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

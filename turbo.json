@@ -10,6 +10,13 @@
       "persistent": true,
       "dependsOn": []
     },
-    "lint": {}
+    "lint": {},
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "validation": {
+      "cache": false,
+      "dependsOn": []
+    }
   }
 }
