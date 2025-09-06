@@ -49,4 +49,3 @@ out/
 
 # Build outputs (TypeScript, bundlers, etc.)
 **/dist/
-**/*.tsbuildinfo
