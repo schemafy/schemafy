@@ -2,7 +2,7 @@
   "name": "@schemafy/validation",
   "private": true,
   "scripts": {
-    "build": "tsc"
+    "build": "tsc -b"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
