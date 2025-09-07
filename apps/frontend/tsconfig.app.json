@@ -26,7 +26,8 @@
     /* shadcn/ui */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@schemafy/validator": ["../../packages/validator/src"]
     }
   },
   "include": ["src"]

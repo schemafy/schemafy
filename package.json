@@ -14,7 +14,6 @@
     "lint": "turbo run lint"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
     "turbo": "^2.5.6"
   },
   "engines": {
