@@ -1,0 +1,498 @@
+name: Issue automation from branch names
+
+on:
+  create:
+    # 'create' can't filter by branch pattern in YAML; we'll guard in job condition
+  push:
+    branches:
+      - 'feat/*'
+      - 'fix/*'
+      - 'chore/*'
+      - 'docs/*'
+      - 'refactor/*'
+      - 'test/*'
+      - 'style/*'
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+  repository-projects: write
+
+env:
+  PROJECT_NUMBER: ${{ secrets.PROJECT_NUMBER }}
+  PROJECT_OWNER: ${{ vars.PROJECT_OWNER || github.repository_owner }}
+  PROJECT_STATUS_FIELD_NAME: ${{ vars.PROJECT_STATUS_FIELD_NAME }}
+  STATUS_OPTION_TODO: ${{ vars.STATUS_OPTION_TODO }}
+  STATUS_OPTION_IN_PROGRESS: ${{ vars.STATUS_OPTION_IN_PROGRESS }}
+  STATUS_OPTION_IN_REVIEW: ${{ vars.STATUS_OPTION_IN_REVIEW }}
+  STATUS_OPTION_DONE: ${{ vars.STATUS_OPTION_DONE }}
+
+jobs:
+  in_progress_from_branch:
+    if: (github.event_name == 'create') || (github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/heads/feat/') || startsWith(github.ref, 'refs/heads/fix/') || startsWith(github.ref, 'refs/heads/chore/') || startsWith(github.ref, 'refs/heads/refactor/') || startsWith(github.ref, 'refs/heads/test/') || startsWith(github.ref, 'refs/heads/style/')))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ env.PROJECT_OWNER || github.repository_owner }}
+      - name: Move linked issue to In Progress in GitHub Projects
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const isCreate = context.eventName === 'create';
+            const refFromCreate = isCreate && context.payload.ref_type === 'branch' ? `refs/heads/${context.payload.ref}` : '';
+            const ref = refFromCreate || context.ref || '';
+            const branch = ref.replace('refs/heads/', '');
+            const allowedPrefixes = ['feat/', 'fix/', 'chore/', 'refactor/', 'test/', 'style/'];
+            if (!allowedPrefixes.some(p => branch.startsWith(p))) {
+              core.info(`Branch '${branch}' not in allowed prefixes. Skipping.`);
+              return;
+            }
+            const match = branch.match(/#(\d+)/);
+            if (!match) {
+              core.info(`Branch '${branch}' does not contain issue notation like #123. Skipping.`);
+              return;
+            }
+            const issue_number = Number(match[1]);
+            const { owner, repo } = context.repo;
+
+            const projectNumber = process.env.PROJECT_NUMBER;
+            if (!projectNumber) {
+              core.setFailed('PROJECT_NUMBER secret is not set. Define it in repository secrets.');
+              return;
+            }
+            const statusFieldName = process.env.PROJECT_STATUS_FIELD_NAME || 'Status';
+            const optionInProgress = process.env.STATUS_OPTION_IN_PROGRESS || 'In Progress';
+
+            const ownerLogin = process.env.PROJECT_OWNER || owner;
+            const graph = github.graphql;
+
+            async function getIssueNodeId() {
+              const data = await graph(
+                `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner, name:$repo){ issue(number:$number){ id } } }`,
+                { owner: ownerLogin, repo, number: issue_number }
+              );
+              const id = data?.repository?.issue?.id;
+              if (!id) throw new Error('Issue not found');
+              return id;
+            }
+
+            async function getProject() {
+              const number = Number(projectNumber);
+              // Try organization
+              let data = await graph(
+                `query($login:String!, $number:Int!){ organization(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                { login: ownerLogin, number }
+              ).catch(() => null);
+              let project = data?.organization?.projectV2 || null;
+              if (!project) {
+                // Try user-owned project
+                data = await graph(
+                  `query($login:String!, $number:Int!){ user(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                  { login: ownerLogin, number }
+                ).catch(() => null);
+                project = data?.user?.projectV2 || null;
+              }
+              if (!project) throw new Error(`ProjectV2 #${projectNumber} not found under ${ownerLogin}`);
+              return project;
+            }
+
+            async function addToProject(projectId, contentId) {
+              const add = await graph(
+                `mutation($projectId:ID!,$contentId:ID!){ addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){ item { id } } }`,
+                { projectId, contentId }
+              );
+              return add?.addProjectV2ItemById?.item?.id;
+            }
+
+            async function updateStatus(project, itemId, statusFieldName, optionName) {
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              if (!statusField) throw new Error(`Status field '${statusFieldName}' not found in Project`);
+              const options = (statusField.options || []);
+              const option = options.find(o => o.name === optionName);
+              if (!option) throw new Error(`Option '${optionName}' not found in field '${statusFieldName}'`);
+              await graph(
+                `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){ updateProjectV2ItemFieldValue(input:{ projectId:$projectId, itemId:$itemId, fieldId:$fieldId, value:{ singleSelectOptionId:$optionId }}) { projectV2Item { id } } }`,
+                { projectId: project.id, itemId, fieldId: statusField.id, optionId: option.id }
+              );
+            }
+
+            async function findExistingItemId(projectId, contentId) {
+              // Scan first 100 items for the contentId
+              const data = await graph(
+                `query($projectId:ID!){ node(id:$projectId){ ... on ProjectV2 { id items(first:100){ nodes { id content { __typename ... on Issue { id } ... on PullRequest { id } } } } } } }`,
+                { projectId }
+              );
+              const items = data?.node?.items?.nodes || [];
+              const found = items.find(n => n?.content?.id === contentId);
+              return found?.id || null;
+            }
+
+            async function findOrCreateItemId(project, contentId) {
+              try {
+                const itemId = await addToProject(project.id, contentId);
+                if (itemId) return itemId;
+              } catch (e) {
+                // Fallback if already exists
+                const existingId = await findExistingItemId(project.id, contentId);
+                if (existingId) return existingId;
+                throw e;
+              }
+              const existingId = await findExistingItemId(project.id, contentId);
+              return existingId;
+            }
+
+            const issueNodeId = await getIssueNodeId();
+            const project = await getProject();
+            const itemId = await findOrCreateItemId(project, issueNodeId);
+            await updateStatus(project, itemId, statusFieldName, optionInProgress);
+
+            try {
+              await github.rest.issues.addAssignees({ owner, repo, issue_number, assignees: [context.actor] });
+            } catch (e) {
+              core.info('Could not assign actor: ' + e.message);
+            }
+
+            await github.rest.issues.createComment({ owner, repo, issue_number, body: `브랜치 \`${branch}\` 에 따라 GitHub Projects 상태를 '${optionInProgress}'로 변경했습니다.` });
+
+  in_review_on_pr_open:
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'ready_for_review')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ env.PROJECT_OWNER || github.repository_owner }}
+      - name: Move linked issue to In Review in GitHub Projects and update PR body
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const pr = context.payload.pull_request;
+            const branch = pr.head.ref;
+            const allowedPrefixes = ['feat/', 'fix/', 'chore/', 'refactor/', 'test/', 'style/'];
+            if (!allowedPrefixes.some(p => branch.startsWith(p))) {
+              core.info('PR branch does not match allowed prefixes. Skipping.');
+              return;
+            }
+            const match = branch.match(/#(\d+)/);
+            if (!match) {
+              core.info('PR branch does not contain #<issue>. Skipping.');
+              return;
+            }
+            const issue_number = Number(match[1]);
+            const { owner, repo } = context.repo;
+            const projectNumber = process.env.PROJECT_NUMBER;
+            if (!projectNumber) {
+              core.setFailed('PROJECT_NUMBER secret is not set. Define it in repository secrets.');
+              return;
+            }
+            const statusFieldName = process.env.PROJECT_STATUS_FIELD_NAME || 'Status';
+            const optionInReview = process.env.STATUS_OPTION_IN_REVIEW || 'In Review';
+            const ownerLogin = process.env.PROJECT_OWNER || owner;
+            const graph = github.graphql;
+
+            async function getIssueNodeId() {
+              const data = await graph(
+                `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner, name:$repo){ issue(number:$number){ id } } }`,
+                { owner: ownerLogin, repo, number: issue_number }
+              );
+              const id = data?.repository?.issue?.id;
+              if (!id) throw new Error('Issue not found');
+              return id;
+            }
+
+            async function getProject() {
+              const number = Number(projectNumber);
+              // Try organization
+              let data = await graph(
+                `query($login:String!, $number:Int!){ organization(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                { login: ownerLogin, number }
+              ).catch(() => null);
+              let project = data?.organization?.projectV2 || null;
+              if (!project) {
+                // Try user-owned project
+                data = await graph(
+                  `query($login:String!, $number:Int!){ user(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                  { login: ownerLogin, number }
+                ).catch(() => null);
+                project = data?.user?.projectV2 || null;
+              }
+              if (!project) throw new Error(`ProjectV2 #${projectNumber} not found under ${ownerLogin}`);
+              return project;
+            }
+
+            async function addToProject(projectId, contentId) {
+              const add = await graph(
+                `mutation($projectId:ID!,$contentId:ID!){ addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){ item { id } } }`,
+                { projectId, contentId }
+              );
+              return add?.addProjectV2ItemById?.item?.id;
+            }
+
+            async function updateStatus(project, itemId, statusFieldName, optionName) {
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              if (!statusField) throw new Error(`Status field '${statusFieldName}' not found in Project`);
+              const options = (statusField.options || []);
+              const option = options.find(o => o.name === optionName);
+              if (!option) throw new Error(`Option '${optionName}' not found in field '${statusFieldName}'`);
+              await graph(
+                `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){ updateProjectV2ItemFieldValue(input:{ projectId:$projectId, itemId:$itemId, fieldId:$fieldId, value:{ singleSelectOptionId:$optionId }}) { projectV2Item { id } } }`,
+                { projectId: project.id, itemId, fieldId: statusField.id, optionId: option.id }
+              );
+            }
+
+            const issueNodeId = await getIssueNodeId();
+            const project = await getProject();
+            const itemId = await findOrCreateItemId(project, issueNodeId);
+            await updateStatus(project, itemId, statusFieldName, optionInReview);
+
+            const closesString = `Closes #${issue_number}`;
+            const body = pr.body || '';
+            const hasClosing = /\b(closes|fixes|resolves)\s+#\d+/i.test(body);
+            if (!hasClosing) {
+              const newBody = body.length ? `${body}\n\n${closesString}` : closesString;
+              await github.rest.pulls.update({ owner, repo, pull_number: pr.number, body: newBody });
+            }
+
+  done_on_pr_merged:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ env.PROJECT_OWNER || github.repository_owner }}
+      - name: Move linked issue to Done in GitHub Projects and close it
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr.merged) {
+              core.info('PR not merged. Skipping.');
+              return;
+            }
+            const branch = pr.head.ref;
+            const allowedPrefixes = ['feat/', 'fix/', 'chore/', 'refactor/', 'test/', 'style/'];
+            if (!allowedPrefixes.some(p => branch.startsWith(p))) {
+              core.info('PR branch does not match allowed prefixes. Skipping.');
+              return;
+            }
+            const match = branch.match(/#(\d+)/);
+            if (!match) {
+              core.info('PR branch does not contain #<issue>. Skipping.');
+              return;
+            }
+            const issue_number = Number(match[1]);
+            const { owner, repo } = context.repo;
+            const projectNumber = process.env.PROJECT_NUMBER;
+            if (!projectNumber) {
+              core.setFailed('PROJECT_NUMBER secret is not set. Define it in repository secrets.');
+              return;
+            }
+            const statusFieldName = process.env.PROJECT_STATUS_FIELD_NAME || 'Status';
+            const optionDone = process.env.STATUS_OPTION_DONE || 'Done';
+            const ownerLogin = process.env.PROJECT_OWNER || owner;
+            const graph = github.graphql;
+
+            async function getIssueNodeId() {
+              const data = await graph(
+                `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner, name:$repo){ issue(number:$number){ id } } }`,
+                { owner: ownerLogin, repo, number: issue_number }
+              );
+              const id = data?.repository?.issue?.id;
+              if (!id) throw new Error('Issue not found');
+              return id;
+            }
+
+            async function getProject() {
+              const number = Number(projectNumber);
+              // Try organization
+              let data = await graph(
+                `query($login:String!, $number:Int!){ organization(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                { login: ownerLogin, number }
+              ).catch(() => null);
+              let project = data?.organization?.projectV2 || null;
+              if (!project) {
+                // Try user-owned project
+                data = await graph(
+                  `query($login:String!, $number:Int!){ user(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                  { login: ownerLogin, number }
+                ).catch(() => null);
+                project = data?.user?.projectV2 || null;
+              }
+              if (!project) throw new Error(`ProjectV2 #${projectNumber} not found under ${ownerLogin}`);
+              return project;
+            }
+
+            async function addToProject(projectId, contentId) {
+              const add = await graph(
+                `mutation($projectId:ID!,$contentId:ID!){ addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){ item { id } } }`,
+                { projectId, contentId }
+              );
+              return add?.addProjectV2ItemById?.item?.id;
+            }
+
+            async function updateStatus(project, itemId, statusFieldName, optionName) {
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              if (!statusField) throw new Error(`Status field '${statusFieldName}' not found in Project`);
+              const options = (statusField.options || []);
+              const option = options.find(o => o.name === optionName);
+              if (!option) throw new Error(`Option '${optionName}' not found in field '${statusFieldName}'`);
+              await graph(
+                `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){ updateProjectV2ItemFieldValue(input:{ projectId:$projectId, itemId:$itemId, fieldId:$fieldId, value:{ singleSelectOptionId:$optionId }}) { projectV2Item { id } } }`,
+                { projectId: project.id, itemId, fieldId: statusField.id, optionId: option.id }
+              );
+            }
+
+            const issueNodeId = await getIssueNodeId();
+            const project = await getProject();
+            const itemId = await findOrCreateItemId(project, issueNodeId);
+            await updateStatus(project, itemId, statusFieldName, optionDone);
+
+            // Close issue explicitly in case auto-closing didn't happen
+            await github.rest.issues.update({ owner, repo, issue_number, state: 'closed' });
+            await github.rest.issues.createComment({ owner, repo, issue_number, body: `PR #${pr.number}이 머지되어 Projects 상태를 '${optionDone}'로 변경하고 이슈를 닫았습니다.` });
+
+  todo_on_pr_closed_unmerged:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged != true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ env.PROJECT_OWNER || github.repository_owner }}
+      - name: Move linked issue to Todo in GitHub Projects
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const pr = context.payload.pull_request;
+            if (pr.merged) {
+              core.info('PR merged. Skipping.');
+              return;
+            }
+            const branch = pr.head.ref;
+            const allowedPrefixes = ['feat/', 'fix/', 'chore/', 'refactor/', 'test/', 'style/'];
+            if (!allowedPrefixes.some(p => branch.startsWith(p))) {
+              core.info('PR branch does not match allowed prefixes. Skipping.');
+              return;
+            }
+            const match = branch.match(/#(\d+)/);
+            if (!match) {
+              core.info('PR branch does not contain #<issue>. Skipping.');
+              return;
+            }
+            const issue_number = Number(match[1]);
+            const { owner, repo } = context.repo;
+            const projectNumber = process.env.PROJECT_NUMBER;
+            if (!projectNumber) {
+              core.setFailed('PROJECT_NUMBER secret is not set. Define it in repository secrets.');
+              return;
+            }
+            const statusFieldName = process.env.PROJECT_STATUS_FIELD_NAME || 'Status';
+            const optionTodo = process.env.STATUS_OPTION_TODO || 'Todo';
+            const ownerLogin = process.env.PROJECT_OWNER || owner;
+            const graph = github.graphql;
+
+            async function getIssueNodeId() {
+              const data = await graph(
+                `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner, name:$repo){ issue(number:$number){ id } } }`,
+                { owner: ownerLogin, repo, number: issue_number }
+              );
+              const id = data?.repository?.issue?.id;
+              if (!id) throw new Error('Issue not found');
+              return id;
+            }
+
+            async function getProject() {
+              const number = Number(projectNumber);
+              // Try organization
+              let data = await graph(
+                `query($login:String!, $number:Int!){ organization(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                { login: ownerLogin, number }
+              ).catch(() => null);
+              let project = data?.organization?.projectV2 || null;
+              if (!project) {
+                // Try user-owned project
+                data = await graph(
+                  `query($login:String!, $number:Int!){ user(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                  { login: ownerLogin, number }
+                ).catch(() => null);
+                project = data?.user?.projectV2 || null;
+              }
+              if (!project) throw new Error(`ProjectV2 #${projectNumber} not found under ${ownerLogin}`);
+              return project;
+            }
+
+            async function addToProject(projectId, contentId) {
+              const add = await graph(
+                `mutation($projectId:ID!,$contentId:ID!){ addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){ item { id } } }`,
+                { projectId, contentId }
+              );
+              return add?.addProjectV2ItemById?.item?.id;
+            }
+
+            async function findExistingItemId(projectId, contentId) {
+              const data = await graph(
+                `query($projectId:ID!){ node(id:$projectId){ ... on ProjectV2 { id items(first:100){ nodes { id content { __typename ... on Issue { id } ... on PullRequest { id } } } } } } }`,
+                { projectId }
+              );
+              const items = data?.node?.items?.nodes || [];
+              const found = items.find(n => n?.content?.id === contentId);
+              return found?.id || null;
+            }
+
+            async function findOrCreateItemId(project, contentId) {
+              try {
+                const itemId = await addToProject(project.id, contentId);
+                if (itemId) return itemId;
+              } catch (e) {
+                const existingId = await findExistingItemId(project.id, contentId);
+                if (existingId) return existingId;
+                throw e;
+              }
+              const existingId = await findExistingItemId(project.id, contentId);
+              return existingId;
+            }
+
+            async function updateStatus(project, itemId, statusFieldName, optionName) {
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              if (!statusField) throw new Error(`Status field '${statusFieldName}' not found in Project`);
+              const options = (statusField.options || []);
+              const option = options.find(o => o.name === optionName);
+              if (!option) throw new Error(`Option '${optionName}' not found in field '${statusFieldName}'`);
+              await graph(
+                `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){ updateProjectV2ItemFieldValue(input:{ projectId:$projectId, itemId:$itemId, fieldId:$fieldId, value:{ singleSelectOptionId:$optionId }}) { projectV2Item { id } } }`,
+                { projectId: project.id, itemId, fieldId: statusField.id, optionId: option.id }
+              );
+            }
+
+            const issueNodeId = await getIssueNodeId();
+            const project = await getProject();
+            const itemId = await findOrCreateItemId(project, issueNodeId);
+            await updateStatus(project, itemId, statusFieldName, optionTodo);
+
+            await github.rest.issues.createComment({ owner, repo, issue_number, body: `PR #${pr.number}이 머지되지 않고 닫혀 Projects 상태를 '${optionTodo}'로 변경했습니다.` });
