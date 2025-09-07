@@ -180,9 +180,14 @@ jobs:
               core.info('Could not assign actor: ' + e.message);
             }
 
+            core.info(`Current status: '${currentStatus}', Target status: '${optionInProgress}'`);
+
             if (currentStatus !== optionInProgress) {
               await updateStatus(project, itemId, statusFieldName, optionInProgress);
               await github.rest.issues.createComment({ owner, repo, issue_number, body: `브랜치 \`${branch}\` 에 따라 GitHub Projects 상태를 '${optionInProgress}'로 변경했습니다.` });
+              core.info(`Updated status from '${currentStatus}' to '${optionInProgress}'`);
+            } else {
+              core.info(`Issue #${issue_number} is already '${optionInProgress}', skipping status update`);
             }
 
       - name: Dispatch parent sync for linked issue
@@ -536,6 +541,20 @@ jobs:
               return existingId;
             }
 
+            async function getItemStatusName(project, itemId, statusFieldName) {
+              const data = await graph(
+                `query($itemId:ID!){ node(id:$itemId){ ... on ProjectV2Item { id fieldValues(first:20){ nodes { __typename ... on ProjectV2ItemFieldSingleSelectValue { field { ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } optionId } } } } } }`,
+                { itemId }
+              );
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              const values = data?.node?.fieldValues?.nodes || [];
+              const sel = values.find(v => v?.field?.name === statusFieldName);
+              if (!sel) return null;
+              const option = (statusField.options || []).find(o => o.id === sel.optionId);
+              return option?.name || null;
+            }
+
             async function updateStatus(project, itemId, statusFieldName, optionName) {
               const fields = project.fields.nodes || [];
               const statusField = fields.find(f => f.name === statusFieldName);
@@ -552,9 +571,12 @@ jobs:
             const issueNodeId = await getIssueNodeId();
             const project = await getProject();
             const itemId = await findOrCreateItemId(project, issueNodeId);
-            await updateStatus(project, itemId, statusFieldName, optionTodo);
+            const currentStatus = await getItemStatusName(project, itemId, statusFieldName);
 
-            await github.rest.issues.createComment({ owner, repo, issue_number, body: `PR #${pr.number}이 머지되지 않고 닫혀 Projects 상태를 '${optionTodo}'로 변경했습니다.` });
+            if (currentStatus !== optionTodo) {
+              await updateStatus(project, itemId, statusFieldName, optionTodo);
+              await github.rest.issues.createComment({ owner, repo, issue_number, body: `PR #${pr.number}이 머지되지 않고 닫혀 Projects 상태를 '${optionTodo}'로 변경했습니다.` });
+            }
 
       - name: Dispatch parent sync for linked issue
         if: always()
@@ -765,6 +787,12 @@ jobs:
                 core.info(`Could not resolve project item for parent #${parent.number}.`);
                 continue;
               }
-              await updateStatus(project, parentItemId, statusFieldName, target);
-              core.info(`Updated parent #${parent.number} status → ${target}`);
+              
+              const currentParentStatus = await getItemStatusName(project, parentItemId, statusFieldName);
+              if (currentParentStatus !== target) {
+                await updateStatus(project, parentItemId, statusFieldName, target);
+                core.info(`Updated parent #${parent.number} status: ${currentParentStatus} → ${target}`);
+              } else {
+                core.info(`Parent #${parent.number} status already is ${target}, skipping update`);
+              }
             }
