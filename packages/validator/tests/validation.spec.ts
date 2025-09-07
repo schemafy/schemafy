@@ -91,8 +91,8 @@ describe('ERD validation', () => {
     test('컬럼이 PK인 경우, NULL을 허용하지 않는다.', () => {
       throw new Error('TODO: column with primary key cannot allow NULL test not implemented');
     });
-    test('컬럼의 이름은 3글자 이상 20글자 이하만 허용된다.', () => {
-      throw new Error('TODO: column name must be between 3 and 20 characters test not implemented');
+    test('컬럼의 이름은 3글자 이상 40글자 이하만 허용된다.', () => {
+      throw new Error('TODO: column name must be between 3 and 40 characters test not implemented');
     });
   });
 
