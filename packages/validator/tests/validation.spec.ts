@@ -102,6 +102,15 @@ describe('ERD validation', () => {
     });
   });
 
+  describe('인덱스 설정', () => {
+    test('인덱스의 타입은 btree, hash, fulltext, spatial 등 유효한 값이어야 한다', () => {
+      throw new Error('TODO: index type must be valid for the DB vendor test not implemented');
+    });
+    test('하나의 인덱스에 동일한 컬럼이 중복으로 들어갈 수 없다.', () => {
+      throw new Error('TODO: index cannot have duplicate columns test not implemented');
+    });
+  });
+
   describe('순환 참조가 있는 경우', () => {
     test('직접적인 순환 참조는 에러를 발생시킨다.', () => {
       throw new Error('TODO: direct cyclic reference test not implemented');
