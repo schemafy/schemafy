@@ -94,6 +94,12 @@ describe('ERD validation', () => {
     test('컬럼의 이름은 3글자 이상 40글자 이하만 허용된다.', () => {
       throw new Error('TODO: column name must be between 3 and 40 characters test not implemented');
     });
+    test('컬럼의 이름은 영문자, 숫자, 언더바(_)만 허용된다.', () => {
+      throw new Error('TODO: column name must be only alphanumeric and underscore test not implemented');
+    });
+    test('컬럼의 이름은 숫자로 시작할 수 없다.', () => {
+      throw new Error('TODO: column name cannot start with a number test not implemented');
+    });
   });
 
   describe('순환 참조가 있는 경우', () => {
