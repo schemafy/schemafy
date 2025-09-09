@@ -27,7 +27,7 @@ export default defineConfig(({ command }) => {
       ? {
           fs: {
             allow: [
-              path.resolve(__dirname, './'),
+              path.resolve(__dirname),
               path.resolve(__dirname, '../../packages/validator/src'),
             ],
           },
