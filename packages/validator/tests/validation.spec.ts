@@ -111,6 +111,18 @@ describe('ERD validation', () => {
     });
   });
 
+  describe('인덱스 컬럼 설정', () => {
+    test('인덱스 컬럼 순서는 1부터 시작하는 연속된 값이어야 한다.', () => {
+      throw new Error('TODO: index column sequence must be consecutive starting from 1 test not implemented');
+    });
+    test('인덱스 컬럼의 정렬 방향은 asc 또는 desc만 허용된다.', () => {
+      throw new Error('TODO: index column sort direction must be asc or desc test not implemented');
+    });
+    test('인덱스 컬럼의 nulls 설정은 first, last, default 중 하나여야 한다.', () => {
+      throw new Error('TODO: index column nulls setting must be valid test not implemented');
+    });
+  });
+
   describe('순환 참조가 있는 경우', () => {
     test('직접적인 순환 참조는 에러를 발생시킨다.', () => {
       throw new Error('TODO: direct cyclic reference test not implemented');
