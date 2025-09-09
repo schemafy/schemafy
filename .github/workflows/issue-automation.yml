@@ -169,6 +169,18 @@ jobs:
               return existingId;
             }
 
+            const prsResponse = await github.rest.pulls.list({
+              owner,
+              repo,
+              head: `${owner}:${branch}`,
+              state: 'open'
+            });
+
+            if (prsResponse.data.length > 0) {
+              core.info(`Open PR exists for branch '${branch}'. Skipping status update to avoid reverting In Review status.`);
+              return;
+            }
+
             const issueNodeId = await getIssueNodeId();
             const project = await getProject();
             const itemId = await findOrCreateItemId(project, issueNodeId);
