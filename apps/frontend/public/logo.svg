@@ -1,0 +1,25 @@
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .logo-shape { 
+      fill: #141414;
+    }
+    @media (prefers-color-scheme: dark) {
+      .logo-shape { 
+        fill: #ffffff;
+      }
+    }
+  </style>
+  <g clip-path="url(#clip0_2059_525)">
+    <path 
+      class="logo-shape"
+      fill-rule="evenodd" 
+      clip-rule="evenodd" 
+      d="M14.6667 1.33333H10.2222V5.7778H5.7778V10.2222H1.33333V14.6667H14.6667V1.33333Z"
+    />
+  </g>
+  <defs>
+    <clipPath id="clip0_2059_525">
+      <rect width="16" height="16" fill="white"/>
+    </clipPath>
+  </defs>
+</svg>
