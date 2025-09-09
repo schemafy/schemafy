@@ -109,6 +109,9 @@ describe('ERD validation', () => {
     test('하나의 인덱스에 동일한 컬럼이 중복으로 들어갈 수 없다.', () => {
       throw new Error('TODO: index cannot have duplicate columns test not implemented');
     });
+    test('PK 인덱스는 반드시 유니크해야 한다.', () => {
+      throw new Error('TODO: primary key index must be unique test not implemented');
+    });
   });
 
   describe('인덱스 컬럼 설정', () => {
