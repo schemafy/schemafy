@@ -297,6 +297,45 @@ jobs:
               );
             }
 
+            async function getItemStatusName(project, itemId, statusFieldName) {
+              const data = await graph(
+                `query($itemId:ID!){ node(id:$itemId){ ... on ProjectV2Item { id fieldValues(first:20){ nodes { __typename ... on ProjectV2ItemFieldSingleSelectValue { field { ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } optionId } } } } } }`,
+                { itemId }
+              );
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              const values = data?.node?.fieldValues?.nodes || [];
+              const sel = values.find(v => v?.field?.name === statusFieldName);
+              if (!sel) return null;
+              const option = (statusField.options || []).find(o => o.id === sel.optionId);
+              return option?.name || null;
+            }
+
+            async function findExistingItemId(projectId, contentId) {
+              // Scan first 100 items for the contentId
+              const data = await graph(
+                `query($projectId:ID!){ node(id:$projectId){ ... on ProjectV2 { id items(first:100){ nodes { id content { __typename ... on Issue { id } ... on PullRequest { id } } } } } } }`,
+                { projectId }
+              );
+              const items = data?.node?.items?.nodes || [];
+              const found = items.find(n => n?.content?.id === contentId);
+              return found?.id || null;
+            }
+
+            async function findOrCreateItemId(project, contentId) {
+              try {
+                const itemId = await addToProject(project.id, contentId);
+                if (itemId) return itemId;
+              } catch (e) {
+                // Fallback if already exists
+                const existingId = await findExistingItemId(project.id, contentId);
+                if (existingId) return existingId;
+                throw e;
+              }
+              const existingId = await findExistingItemId(project.id, contentId);
+              return existingId;
+            }
+
             const issueNodeId = await getIssueNodeId();
             const project = await getProject();
             const itemId = await findOrCreateItemId(project, issueNodeId);
@@ -405,6 +444,45 @@ jobs:
                 `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){ updateProjectV2ItemFieldValue(input:{ projectId:$projectId, itemId:$itemId, fieldId:$fieldId, value:{ singleSelectOptionId:$optionId }}) { projectV2Item { id } } }`,
                 { projectId: project.id, itemId, fieldId: statusField.id, optionId: option.id }
               );
+            }
+
+            async function getItemStatusName(project, itemId, statusFieldName) {
+              const data = await graph(
+                `query($itemId:ID!){ node(id:$itemId){ ... on ProjectV2Item { id fieldValues(first:20){ nodes { __typename ... on ProjectV2ItemFieldSingleSelectValue { field { ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } optionId } } } } } }`,
+                { itemId }
+              );
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              const values = data?.node?.fieldValues?.nodes || [];
+              const sel = values.find(v => v?.field?.name === statusFieldName);
+              if (!sel) return null;
+              const option = (statusField.options || []).find(o => o.id === sel.optionId);
+              return option?.name || null;
+            }
+
+            async function findExistingItemId(projectId, contentId) {
+              // Scan first 100 items for the contentId
+              const data = await graph(
+                `query($projectId:ID!){ node(id:$projectId){ ... on ProjectV2 { id items(first:100){ nodes { id content { __typename ... on Issue { id } ... on PullRequest { id } } } } } } }`,
+                { projectId }
+              );
+              const items = data?.node?.items?.nodes || [];
+              const found = items.find(n => n?.content?.id === contentId);
+              return found?.id || null;
+            }
+
+            async function findOrCreateItemId(project, contentId) {
+              try {
+                const itemId = await addToProject(project.id, contentId);
+                if (itemId) return itemId;
+              } catch (e) {
+                // Fallback if already exists
+                const existingId = await findExistingItemId(project.id, contentId);
+                if (existingId) return existingId;
+                throw e;
+              }
+              const existingId = await findExistingItemId(project.id, contentId);
+              return existingId;
             }
 
             const issueNodeId = await getIssueNodeId();
