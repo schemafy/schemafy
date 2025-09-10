@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, sans-serif;
+  font-family: var(--font-inter);
   color-scheme: light dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
