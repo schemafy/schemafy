@@ -70,12 +70,6 @@ describe('ERD validation', () => {
     test('같은 스키마 내 중복된 테이블 이름은 금지된다.', () => {
       throw new Error('TODO: duplicate table name test not implemented');
     });
-    test('테이블에 PK가 존재하지 않을 수 없다.', () => {
-      throw new Error('TODO: table must have primary key test not implemented');
-    });
-    test('테이블에 PK가 1개 이상 존재할 수 있다.', () => {
-      throw new Error('TODO: table can have multiple primary keys test not implemented');
-    });
   });
 
   describe('컬럼 설정', () => {
@@ -123,6 +117,98 @@ describe('ERD validation', () => {
     });
     test('인덱스 컬럼의 nulls 설정은 first, last, default 중 하나여야 한다.', () => {
       throw new Error('TODO: index column nulls setting must be valid test not implemented');
+    });
+  });
+
+  describe('제약 조건 설정', () => {
+    test('제약 조건의 이름은 스키마 내에서 고유해야 한다.', () => {
+      throw new Error('TODO: constraint name must be unique within the schema test not implemented');
+    });
+
+    test('제약 조건은 반드시 하나 이상의 컬럼을 가져야 한다.', () => {
+      throw new Error('TODO: constraint must have at least one column test not implemented');
+    });
+
+    test('제약 조건에 포함된 컬럼은 해당 제약 조건이 속한 테이블의 컬럼이어야 한다.', () => {
+      throw new Error('TODO: constraint columns must belong to the same table test not implemented');
+    });
+
+    test('하나의 제약 조건 내에 동일한 컬럼이 중복으로 포함될 수 없다.', () => {
+      throw new Error('TODO: constraint cannot contain duplicate columns test not implemented');
+    });
+
+    test('테이블에는 반드시 하나의 Primary Key가 존재해야 한다.', () => {
+      // ERD 도구의 규칙 상, 모든 테이블은 식별자를 가져야 하므로 PK를 필수로 강제한다.
+      throw new Error('TODO: table must have one primary key test not implemented');
+    });
+
+    test('하나의 테이블은 여러 컬럼으로 구성된 Primary Key(복합키)를 가질 수 있다.', () => {
+      throw new Error('TODO: table can have a composite primary key test not implemented');
+    });
+
+    test('Unique 제약 조건은 Primary Key와 완전히 동일한 컬럼 조합을 가질 수 없다.', () => {
+      throw new Error('TODO: unique constraint cannot be same as primary key test not implemented');
+    });
+
+    test('서로 다른 Unique 제약 조건이 완전히 동일한 컬럼 조합을 가질 수 없다.', () => {
+      throw new Error('TODO: unique constraints cannot have the same column combination test not implemented');
+    });
+
+    test('Check 제약 조건은 반드시 check 표현식(check_expr)을 가져야 한다.', () => {
+      throw new Error('TODO: check constraint must have an expression test not implemented');
+    });
+
+    test('Default 제약 조건은 단 하나의 컬럼에만 적용될 수 있다.', () => {
+      throw new Error('TODO: default constraint can only apply to a single column test not implemented');
+    });
+
+    test('Default 제약 조건은 반드시 기본값 표현식(default_expr)을 가져야 한다.', () => {
+      throw new Error('TODO: default constraint must have an expression test not implemented');
+    });
+  });
+
+  describe('관계(FK) 설정', () => {
+    test('관계는 반드시 하나 이상의 컬럼 쌍을 가져야 한다.', () => {
+      throw new Error('TODO: relationship must have at least one column pair test not implemented');
+    });
+
+    test('테이블이 자기 자신을 참조하는 관계를 맺을 수 있다.', () => {
+      throw new Error('TODO: self-referencing relationship test not implemented');
+    });
+
+    test('관계를 맺는 컬럼들은 서로 데이터 타입이 호환되어야 한다.', () => {
+      throw new Error('TODO: related columns must have compatible data types test not implemented');
+    });
+
+    test('참조 대상(Target) 컬럼들은 해당 테이블의 Primary Key 또는 Unique 제약 조건이어야 한다.', () => {
+      // Foreign Key의 대상이 되는 컬럼(들)은 데이터의 고유성을 보장해야만 참조 무결성을 지킬 수 있다.
+      // 따라서, 참조받는 테이블의 PK나 UK 제약이 걸린 컬럼(들)만 FK의 대상이 될 수 있다.
+      throw new Error('TODO: foreign key target must be a primary or unique key test not implemented');
+    });
+
+    test('식별 관계(Identifying Relationship)의 자식 테이블 컬럼(FK)은 자식 테이블 Primary Key의 일부여야 한다.', () => {
+      // 식별 관계는 부모 테이블의 PK가 자식 테이블의 PK이자 FK가 되는 관계이다.
+      // 이 테스트는 자식 테이블의 FK로 지정된 컬럼이, 실제로 자식 테이블의 PK 제약 조건에도 포함되어 있는지 검증한다.
+      /*
+         검증 로직
+           1. DB_RELATIONSHIPS에서 kind가 'identifying'인 관계를 찾는다.
+           2. 해당 관계의 src_table_id를 기준으로 DB_CONSTRAINTS에서 kind가 'primary_key'인 제약 조건을 찾는다.
+           3. DB_CONSTRAINT_COLUMNS에서 해당 PK에 속한 컬럼 ID 목록을 가져온다. (A)
+           4. DB_RELATIONSHIP_COLUMNS에서 해당 관계의 src_column_id 목록을 가져온다. (B)
+           5. B 목록의 모든 컬럼이 A 목록에 포함되어 있는지 확인한다.
+         */
+      throw new Error('TODO: identifying relationship FK must be part of child PK test not implemented');
+    });
+
+    test('식별 관계의 컬럼은 PK 제약 조건과 FK 관계 정의에 모두 존재해야 한다.', () => {
+      // 식별 관계의 컬럼은 PK이자 FK이므로, 이 두 가지 역할을 나타내는 데이터가 모두 존재해야 한다.
+      // 이 테스트는 특정 컬럼이 DB_CONSTRAINT_COLUMNS (PK 역할)와 DB_RELATIONSHIP_COLUMNS (FK 역할) 양쪽에
+      // 모두 올바르게 등록되어 있는지 교차 검증한다.
+      throw new Error('TODO: identifying relationship column must be in PK and FK definitions test not implemented');
+    });
+
+    test('관계의 ON DELETE 옵션이 "SET NULL"인 경우, 해당 외래 키 컬럼은 NULL을 허용해야 한다.', () => {
+      throw new Error('TODO: ON DELETE SET NULL requires nullable column test not implemented');
     });
   });
 
