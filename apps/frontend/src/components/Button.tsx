@@ -12,10 +12,12 @@ const buttonVariants = cva(
         secondary: 'bg-schemafy-secondary text-schemafy-text',
         destructive: 'bg-schemafy-destructive text-white',
         outline: 'border border-schemafy-text text-schemafy-text',
+        none: 'text-schemafy-text font-overline-sm',
       },
       size: {
-        dropdown: 'py-1 font-overline-xs',
-        default: 'px-2 h-5',
+        dropdown: 'py-2 font-overline-xs',
+        default: 'px-4 h-10',
+        none: '',
       },
       fullWidth: {
         true: 'w-full',

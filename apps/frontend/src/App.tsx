@@ -1,11 +1,15 @@
 import { ThemeProvider } from '@/lib';
+import { Layout } from './components';
+import { BrowserRouter as Router, Routes } from 'react-router-dom';
 
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
-      <div>
-        <h1>Hello World!</h1>
-      </div>
+      <Router>
+        <Layout>
+          <Routes></Routes>
+        </Layout>
+      </Router>
     </ThemeProvider>
   );
 }
