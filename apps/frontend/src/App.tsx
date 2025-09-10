@@ -1,8 +1,12 @@
+import { ThemeProvider } from '@/lib';
+
 function App() {
   return (
-    <div>
-      <h1>Hello World</h1>
-    </div>
+    <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
+      <div>
+        <h1>Hello World!</h1>
+      </div>
+    </ThemeProvider>
   );
 }
 

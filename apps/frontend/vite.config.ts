@@ -26,7 +26,10 @@ export default defineConfig(({ command }) => {
     server: isDev
       ? {
           fs: {
-            allow: [path.resolve(__dirname, '../../packages/validator/src')],
+            allow: [
+              path.resolve(__dirname),
+              path.resolve(__dirname, '../../packages/validator/src'),
+            ],
           },
         }
       : undefined,
