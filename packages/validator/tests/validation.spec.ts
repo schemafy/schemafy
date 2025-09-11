@@ -121,6 +121,10 @@ describe('ERD validation', () => {
     test('하나의 인덱스에 동일한 컬럼이 중복으로 들어갈 수 없다.', () => {
       throw new Error('TODO: index cannot have duplicate columns test not implemented');
     });
+    test('컬럼 구성과 순서, 종류가 동일한 중복 인덱스를 생성할 수 없다.', () => {
+      // 동일한 인덱스는 조회 성능에 이점 없이 쓰기 성능 저하와 공간 낭비만 유발하므로 금지해야 한다.
+      throw new Error('TODO: duplicate index definition test not implemented');
+    });
   });
 
   describe('인덱스 컬럼 설정', () => {
