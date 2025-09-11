@@ -109,8 +109,7 @@ jobs:
                         number 
                         title
                         state
-                        trackedIssues(first:100){ 
-                          totalCount
+                        subIssues(first:100){ 
                           nodes { 
                             id 
                             number 
@@ -121,7 +120,7 @@ jobs:
                               owner{ login } 
                             } 
                           } 
-                        } 
+                        }
                       } 
                     } 
                   }`,
@@ -136,25 +135,19 @@ jobs:
                 
                 core.info(`Found issue #${number}: "${issue.title}" (${issue.state})`);
                 
-                const trackedIssues = issue.trackedIssues;
-                if (!trackedIssues) {
-                  core.info(`Issue #${number} has no trackedIssues field in response`);
-                  return [];
-                }
+                const subIssues = issue.subIssues;
+                const subIssuesNodes = subIssues?.nodes || [];
                 
-                const totalCount = trackedIssues.totalCount || 0;
-                const nodes = trackedIssues.nodes || [];
+                core.info(`Issue #${number} has ${subIssuesNodes.length} sub-issues`);
                 
-                core.info(`Issue #${number} has ${totalCount} tracked issues (${nodes.length} returned)`);
-                
-                if (nodes.length > 0) {
+                if (subIssuesNodes.length > 0) {
                   core.info(`Sub-issues for #${number}:`);
-                  nodes.forEach(node => {
+                  subIssuesNodes.forEach(node => {
                     core.info(`  - #${node.number}: "${node.title}" (${node.state})`);
                   });
                 }
                 
-                return nodes.map(n => ({ 
+                return subIssuesNodes.map(n => ({ 
                   id: n.id, 
                   number: n.number, 
                   state: n.state, 
