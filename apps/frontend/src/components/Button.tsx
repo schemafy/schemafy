@@ -1,4 +1,9 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import {
+  type ButtonHTMLAttributes,
+  type ComponentType,
+  type ForwardedRef,
+  type ReactNode,
+} from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib';
 import { Link } from 'react-router-dom';
@@ -41,49 +46,47 @@ interface ButtonProps
   to?: string;
 }
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className,
-      variant = 'default',
-      size = 'default',
-      children,
-      disabled = false,
-      fullWidth = false,
-      round = false,
-      to,
-      ...props
-    },
-    ref,
-  ) => {
-    if (to) {
-      return (
-        <Link to={to}>
-          <button
-            className={cn(
-              buttonVariants({ variant, size, fullWidth, round, className }),
-            )}
-            disabled={disabled}
-            ref={ref}
-            {...props}
-          >
-            {children}
-          </button>
-        </Link>
-      );
-    }
-
+export const Button = ((
+  {
+    className,
+    variant = 'default',
+    size = 'default',
+    children,
+    disabled = false,
+    fullWidth = false,
+    round = false,
+    to,
+    ...props
+  }: ButtonProps,
+  ref: ForwardedRef<HTMLButtonElement>,
+) => {
+  if (to) {
     return (
-      <button
-        className={cn(
-          buttonVariants({ variant, size, fullWidth, round, className }),
-        )}
-        disabled={disabled}
-        ref={ref}
-        {...props}
-      >
-        {children}
-      </button>
+      <Link to={to}>
+        <button
+          className={cn(
+            buttonVariants({ variant, size, fullWidth, round, className }),
+          )}
+          disabled={disabled}
+          ref={ref}
+          {...props}
+        >
+          {children}
+        </button>
+      </Link>
     );
-  },
-);
+  }
+
+  return (
+    <button
+      className={cn(
+        buttonVariants({ variant, size, fullWidth, round, className }),
+      )}
+      disabled={disabled}
+      ref={ref}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}) as ComponentType<ButtonProps>;

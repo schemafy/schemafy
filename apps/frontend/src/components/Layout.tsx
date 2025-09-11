@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib';
-import { Header, CanvasContents, DefaultContents } from './Header';
+import { Header } from './Header';
 import { Footer } from './Footer';
 
 export const Layout = ({ children }: PropsWithChildren) => {
@@ -10,14 +10,9 @@ export const Layout = ({ children }: PropsWithChildren) => {
 
   return (
     <div className="flex flex-col min-h-screen bg-schemafy-bg w-screen items-center">
-      <Header isCanvasPage={isCanvasPage}>
-        {isCanvasPage ? <CanvasContents /> : <DefaultContents />}
-      </Header>
+      <Header isCanvasPage={isCanvasPage} />
       <main
-        className={cn(
-          'flex-grow w-full',
-          isCanvasPage ? 'w-full' : 'max-w-[960px]',
-        )}
+        className={cn('flex-grow w-full', !isCanvasPage && 'max-w-[960px]')}
       >
         {children}
       </main>

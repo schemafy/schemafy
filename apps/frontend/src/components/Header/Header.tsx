@@ -1,15 +1,9 @@
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib';
 import { logoImg } from '@/assets';
-import { Link } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { DefaultContents, CanvasContents } from './Contents';
 
-export const Header = ({
-  children,
-  isCanvasPage,
-}: {
-  children: ReactNode;
-  isCanvasPage: boolean;
-}) => {
+export const Header = ({ isCanvasPage }: { isCanvasPage: boolean }) => {
   return (
     <header className="w-full border-b border-schemafy-light-gray flex justify-center sticky">
       <div
@@ -24,7 +18,7 @@ export const Header = ({
             <h1 className="font-heading-md">Schemafy</h1>
           </div>
         </Link>
-        {children}
+        {isCanvasPage ? <CanvasContents /> : <DefaultContents />}
       </div>
     </header>
   );
