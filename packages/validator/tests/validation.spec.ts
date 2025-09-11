@@ -106,6 +106,9 @@ describe('ERD validation', () => {
     test('Auto Increment 컬럼은 숫자 타입의 Primary Key여야 한다.', () => {
       throw new Error('TODO: auto increment column must be a numeric primary key test not implemented');
     });
+    test('컬럼에 기본값(Default)이 설정된 경우, 해당 값은 컬럼의 데이터 타입과 호환되어야 한다.', () => {
+      throw new Error('TODO: default value must be compatible with column data type test not implemented');
+    });
   });
 
   describe('인덱스 설정', () => {
