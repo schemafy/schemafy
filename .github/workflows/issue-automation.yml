@@ -837,34 +837,30 @@ jobs:
                 continue; // no effect when no children
               }
 
-              let anyInProgress = false;
-              let allClosed = true;
-              let allTodo = true;
-
+              const childStatuses = [];
               for (const child of children) {
+                let status = optionTodo;
                 if (child.state === 'CLOSED') {
-                  // closed → contributes to allClosed; and cannot be Todo/In Progress
-                  allTodo = false; // 닫힌 이슈가 하나라도 있으면 '모두 Todo'는 성립하지 않음
+                  status = optionDone;
                 } else {
-                  allClosed = false;
-                  // read Project status
                   const childItemId = await findExistingItemId(project.id, child.id);
-                  if (!childItemId) {
-                    // If not on project, treat as Todo by default
-                    core.info(`Child #${child.number} not on project; treating as Todo.`);
-                  } else {
+                  if (childItemId) {
                     const statusName = await getItemStatusName(project, childItemId, statusFieldName);
-                    if (statusName === optionInProgress) anyInProgress = true;
-                    if (statusName !== optionTodo) allTodo = false;
+                    status = statusName || optionTodo;
                   }
                 }
+                childStatuses.push(status);
               }
 
               // Determine target status
               let target = null;
-              if (allClosed) target = optionDone;
-              else if (anyInProgress) target = optionInProgress;
-              else if (allTodo) target = optionTodo;
+              if (childStatuses.every(s => s === optionDone)) {
+                target = optionDone;
+              } else if (childStatuses.every(s => s === optionTodo)) {
+                target = optionTodo;
+              } else {
+                target = optionInProgress;
+              }
 
               if (!target) {
                 core.info(`No matching target for parent #${parent.number}. Skipping.`);
