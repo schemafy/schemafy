@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   issues: write
@@ -46,22 +47,6 @@ jobs:
             const optionDone = process.env.STATUS_OPTION_DONE || 'Done';
             const ownerLogin = process.env.PROJECT_OWNER || owner;
             const graph = github.graphql;
-
-            const commits = context.payload.commits || [];
-            const issueNumbers = new Set();
-            const issueRegex = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#(\d+)/ig;
-
-            for (const commit of commits) {
-              const matches = commit.message.matchAll(issueRegex);
-              for (const match of matches) {
-                issueNumbers.add(parseInt(match[2], 10));
-              }
-            }
-
-            if (issueNumbers.size === 0) {
-              core.info('No linked issue numbers found in commit messages. Skipping.');
-              return;
-            }
 
             async function getProject() {
               const number = Number(projectNumber);
@@ -112,23 +97,6 @@ jobs:
               return existingId;
             }
 
-            async function getIssueNode(ownerLogin, repo, number) {
-              const data = await graph(
-                `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner, name:$repo){ issue(number:$number){ id number state } } }`,
-                { owner: ownerLogin, repo, number }
-              );
-              return data?.repository?.issue || null;
-            }
-
-            async function getParentsOfIssue(ownerLogin, repo, number) {
-              const data = await graph(
-                `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner, name:$repo){ issue(number:$number){ id number trackedInIssues(first:10){ nodes { id number repository{ name owner{ login } } } } } } }`,
-                { owner: ownerLogin, repo, number }
-              ).catch(() => null);
-              const nodes = data?.repository?.issue?.trackedInIssues?.nodes || [];
-              return nodes.map(n => ({ id: n.id, number: n.number, repo: n.repository.name, owner: n.repository.owner.login }));
-            }
-
             async function getChildrenOfIssue(ownerLogin, repo, number) {
               const data = await graph(
                 `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner, name:$repo){ issue(number:$number){ id number trackedIssues(first:100){ nodes { id number state repository{ name owner{ login } } } } } } }`,
@@ -164,70 +132,67 @@ jobs:
               );
             }
 
+            core.info(`Fetching all open issues for ${owner}/${repo}...`);
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+            });
+            core.info(`Found ${issues.length} open issues.`);
+
             const project = await getProject();
 
-            for (const issueNumber of issueNumbers) {
-              core.info(`Processing issue #${issueNumber}`);
-              let parents = await getParentsOfIssue(ownerLogin, repo, issueNumber);
-              if (!parents || parents.length === 0) {
-                const self = await getIssueNode(ownerLogin, repo, issueNumber);
-                if (self) parents = [{ id: self.id, number: self.number, repo, owner: ownerLogin }];
-              }
-              
-              if (!parents || parents.length === 0) {
-                core.info(`Could not find issue #${issueNumber} or its parents. Skipping.`);
+            for (const issue of issues) {
+              const parent = { id: issue.node_id, number: issue.number, repo, owner: ownerLogin };
+              const children = await getChildrenOfIssue(parent.owner, parent.repo, parent.number);
+
+              if (!children || children.length === 0) {
                 continue;
               }
 
-              for (const parent of parents) {
-                const children = await getChildrenOfIssue(parent.owner, parent.repo, parent.number);
-                if (!children || children.length === 0) {
-                  core.info(`Parent #${parent.number} has no sub-issues. Skipping changes.`);
-                  continue; // no effect when no children
-                }
+              core.info(`Issue #${parent.number} has ${children.length} sub-issues. Calculating status...`);
 
-                const childStatuses = [];
-                for (const child of children) {
-                  let status = optionTodo;
-                  if (child.state === 'CLOSED') {
-                    status = optionDone;
-                  } else {
-                    const childItemId = await findExistingItemId(project.id, child.id);
-                    if (childItemId) {
-                      const statusName = await getItemStatusName(project, childItemId, statusFieldName);
-                      status = statusName || optionTodo;
-                    }
+              const childStatuses = [];
+              for (const child of children) {
+                let status = optionTodo;
+                if (child.state === 'CLOSED') {
+                  status = optionDone;
+                } else {
+                  const childNodeId = child.id;
+                  const childItemId = await findExistingItemId(project.id, childNodeId);
+                  if (childItemId) {
+                    const statusName = await getItemStatusName(project, childItemId, statusFieldName);
+                    status = statusName || optionTodo;
                   }
-                  childStatuses.push(status);
                 }
+                childStatuses.push(status);
+              }
 
-                let target = null;
-                if (childStatuses.every(s => s === optionDone)) {
-                  target = optionDone;
-                } else if (childStatuses.every(s => s === optionTodo)) {
-                  target = optionTodo;
-                } else {
-                  target = optionInProgress;
-                }
+              let target = null;
+              if (childStatuses.every(s => s === optionDone)) {
+                target = optionDone;
+              } else if (childStatuses.every(s => s === optionTodo)) {
+                target = optionTodo;
+              } else {
+                target = optionInProgress;
+              }
 
-                if (!target) {
-                  core.info(`No matching target for parent #${parent.number}. Skipping.`);
-                  continue;
-                }
+              if (!target) {
+                core.info(`No matching target for parent #${parent.number}. Skipping.`);
+                continue;
+              }
 
-                const parentIssue = await getIssueNode(parent.owner, parent.repo, parent.number);
-                const parentItemId = await findOrCreateItemId(project, parentIssue.id);
-                if (!parentItemId) {
-                  core.info(`Could not resolve project item for parent #${parent.number}.`);
-                  continue;
-                }
-                
-                const currentParentStatus = await getItemStatusName(project, parentItemId, statusFieldName);
-                if (currentParentStatus !== target) {
-                  await updateStatus(project, parentItemId, statusFieldName, target);
-                  core.info(`Updated parent #${parent.number} status: ${currentParentStatus} → ${target}`);
-                } else {
-                  core.info(`Parent #${parent.number} status already is ${target}, skipping update`);
-                }
+              const parentItemId = await findOrCreateItemId(project, issue.node_id);
+              if (!parentItemId) {
+                core.info(`Could not resolve project item for parent #${parent.number}.`);
+                continue;
+              }
+
+              const currentParentStatus = await getItemStatusName(project, parentItemId, statusFieldName);
+              if (currentParentStatus !== target) {
+                await updateStatus(project, parentItemId, statusFieldName, target);
+                core.info(`Updated parent #${parent.number} status: ${currentParentStatus} → ${target}`);
+              } else {
+                core.info(`Parent #${parent.number} status already is ${target}, skipping update`);
               }
             }
