@@ -1,5 +1,5 @@
 import { cn } from '@/lib';
-import logoImg from '@/assets/logo.svg';
+import { logoImg } from '@/assets';
 import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
@@ -14,7 +14,7 @@ export const Header = ({
     <header className="w-full border-b border-schemafy-light-gray flex justify-center sticky">
       <div
         className={cn(
-          !isCanvasPage && 'max-w-[1024px]',
+          !isCanvasPage && 'max-w-[1280px]',
           'w-full transition-all duration-200 z-50 flex items-center px-10 py-3 justify-between',
         )}
       >

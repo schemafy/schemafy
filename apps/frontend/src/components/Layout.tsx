@@ -16,7 +16,7 @@ export const Layout = ({ children }: PropsWithChildren) => {
       <main
         className={cn(
           'flex-grow w-full',
-          isCanvasPage ? 'w-full' : 'max-w-screen-lg',
+          isCanvasPage ? 'w-full' : 'max-w-[960px]',
         )}
       >
         {children}
