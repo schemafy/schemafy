@@ -79,11 +79,14 @@ describe('ERD validation', () => {
     test('컬럼의 데이터 타입은 반드시 존재해야 한다.', () => {
       throw new Error('TODO: column must have data type test not implemented');
     });
-    test('컬럼의 데이터 타입은 데이터베이스 벤더의 유효한 값이어야 한다.', () => {
+    test('컬럼의 데이터 타입은 데이터베이스 벤더에서 유효한 값이어야 한다.', () => {
       throw new Error('TODO: column data type must be valid for the DB vendor test not implemented');
     });
-    test('컬럼이 PK인 경우, NULL을 허용하지 않는다.', () => {
-      throw new Error('TODO: column with primary key cannot allow NULL test not implemented');
+    test('VARCHAR, CHAR 타입은 반드시 길이를 지정해야 한다.', () => {
+      throw new Error('TODO: VARCHAR/CHAR must have a length test not implemented');
+    });
+    test('DECIMAL, NUMERIC 타입은 반드시 정밀도와 스케일을 지정해야 한다.', () => {
+      throw new Error('TODO: DECIMAL/NUMERIC must have precision and scale test not implemented');
     });
     test('컬럼의 이름은 3글자 이상 40글자 이하만 허용된다.', () => {
       throw new Error('TODO: column name must be between 3 and 40 characters test not implemented');
@@ -94,17 +97,26 @@ describe('ERD validation', () => {
     test('컬럼의 이름은 숫자로 시작할 수 없다.', () => {
       throw new Error('TODO: column name cannot start with a number test not implemented');
     });
+    test('컬럼명으로 해당 데이터베이스 벤더의 예약어를 사용할 수 없다.', () => {
+      throw new Error('TODO: column name cannot be a DB vendor reserved keyword test not implemented');
+    });
+    test('Auto Increment 컬럼은 테이블 당 하나만 존재할 수 있다.', () => {
+      throw new Error('TODO: only one auto increment column per table test not implemented');
+    });
+    test('Auto Increment 컬럼은 숫자 타입의 Primary Key여야 한다.', () => {
+      throw new Error('TODO: auto increment column must be a numeric primary key test not implemented');
+    });
   });
 
   describe('인덱스 설정', () => {
-    test('인덱스의 타입은 btree, hash, fulltext, spatial 등 유효한 값이어야 한다', () => {
+    test('인덱스 이름은 테이블 내에서 중복될 수 없다.', () => {
+      throw new Error('TODO: index name must be unique within the table test not implemented');
+    });
+    test('인덱스의 타입은 해당 데이터베이스 벤더에서 지원하는 유효한 값이어야 한다.', () => {
       throw new Error('TODO: index type must be valid for the DB vendor test not implemented');
     });
     test('하나의 인덱스에 동일한 컬럼이 중복으로 들어갈 수 없다.', () => {
       throw new Error('TODO: index cannot have duplicate columns test not implemented');
-    });
-    test('PK 인덱스는 반드시 유니크해야 한다.', () => {
-      throw new Error('TODO: primary key index must be unique test not implemented');
     });
   });
 
@@ -114,9 +126,6 @@ describe('ERD validation', () => {
     });
     test('인덱스 컬럼의 정렬 방향은 asc 또는 desc만 허용된다.', () => {
       throw new Error('TODO: index column sort direction must be asc or desc test not implemented');
-    });
-    test('인덱스 컬럼의 nulls 설정은 first, last, default 중 하나여야 한다.', () => {
-      throw new Error('TODO: index column nulls setting must be valid test not implemented');
     });
   });
 
@@ -144,6 +153,10 @@ describe('ERD validation', () => {
 
     test('하나의 테이블은 여러 컬럼으로 구성된 Primary Key(복합키)를 가질 수 있다.', () => {
       throw new Error('TODO: table can have a composite primary key test not implemented');
+    });
+
+    test('Primary Key를 구성하는 모든 컬럼은 NOT NULL 제약 조건이 있어야 한다.', () => {
+      throw new Error('TODO: primary key columns must have a NOT NULL constraint test not implemented');
     });
 
     test('Unique 제약 조건은 Primary Key와 완전히 동일한 컬럼 조합을 가질 수 없다.', () => {
