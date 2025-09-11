@@ -97,13 +97,24 @@ jobs:
               return existingId;
             }
 
-            async function getChildrenOfIssue(ownerLogin, repo, number) {
-              const data = await graph(
-                `query($owner:String!,$repo:String!,$number:Int!){ repository(owner:$owner, name:$repo){ issue(number:$number){ id number trackedIssues(first:100){ nodes { id number state repository{ name owner{ login } } } } } } }`,
-                { owner: ownerLogin, repo, number }
-              ).catch(() => null);
-              const nodes = data?.repository?.issue?.trackedIssues?.nodes || [];
-              return nodes.map(n => ({ id: n.id, number: n.number, state: n.state, repo: n.repository.name, owner: n.repository.owner.login }));
+            async function getChildrenOfIssue(owner, repo, issue_number) {
+              try {
+                const response = await github.rest.issues.listSubIssues({
+                  owner,
+                  repo,
+                  issue_number,
+                });
+                return response.data.map(subIssue => ({
+                  id: subIssue.node_id,
+                  number: subIssue.number,
+                  state: subIssue.state.toUpperCase(),
+                  repo: repo,
+                  owner: owner
+                }));
+              } catch (error) {
+                core.info(`Error fetching sub-issues for #${issue_number}: ${error.message}`);
+                return [];
+              }
             }
 
             async function getItemStatusName(project, itemId, statusFieldName) {
@@ -144,9 +155,10 @@ jobs:
 
             for (const issue of issues) {
               const parent = { id: issue.node_id, number: issue.number, repo, owner: ownerLogin };
-              const children = await getChildrenOfIssue(parent.owner, parent.repo, parent.number);
+              const children = await getChildrenOfIssue(owner, repo, issue.number);
 
               if (!children || children.length === 0) {
+                core.info(`Issue #${parent.number} has no sub-issues. Skipping.`);
                 continue;
               }
 
@@ -196,3 +208,5 @@ jobs:
                 core.info(`Parent #${parent.number} status already is ${target}, skipping update`);
               }
             }
+
+            core.info('Parent issue status synchronization completed.');
