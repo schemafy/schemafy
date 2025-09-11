@@ -251,6 +251,24 @@ jobs:
               if (currentParentStatus !== target) {
                 await updateStatus(project, parentItemId, statusFieldName, target);
                 core.info(`Updated parent #${parent.number} status: ${currentParentStatus} → ${target}`);
+                
+                // Close the issue if status is Done
+                if (target === optionDone) {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: parent.number,
+                    body: `모든 하위 이슈가 완료되어 자동으로 완료 처리합니다.\n\n완료된 하위 이슈들\n${children.map(child => `- #${child.number}`).join('\n')}`
+                  });
+                  
+                  await github.rest.issues.update({
+                    owner,
+                    repo,
+                    issue_number: parent.number,
+                    state: 'closed'
+                  });
+                  core.info(`Closed issue #${parent.number} as all sub-issues are completed`);
+                }
               } else {
                 core.info(`Parent #${parent.number} status already is ${target}, skipping update`);
               }
