@@ -354,9 +354,9 @@ jobs:
             const currentStatus = await getItemStatusName(project, itemId, statusFieldName);
             if (currentStatus !== optionInReview) {
               await updateStatus(project, itemId, statusFieldName, optionInReview);
-              const closesString = `Closes #${issue_number}`;
+              const closesString = `- close #${issue_number}`;
               const body = pr.body || '';
-              const hasClosing = /\b(closes|fixes|resolves)\s+#\d+/i.test(body);
+              const hasClosing = /\b(close|fixe|resolve|close|fix|resolve)\s+#\d+/i.test(body);
               if (!hasClosing) {
                 const newBody = body.length ? `${body}\n\n${closesString}` : closesString;
                 await github.rest.pulls.update({ owner, repo, pull_number: pr.number, body: newBody });
