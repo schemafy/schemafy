@@ -1,33 +1,24 @@
 import { Button } from '../Button';
-import { Link } from 'react-router-dom';
 
 export const DefaultContents = () => {
   return (
     <div className="flex items-center gap-9">
-      <Link to="/product">
-        <Button variant={'none'} size={'none'}>
-          Product
-        </Button>
-      </Link>
-      <Link to="/pricing">
-        <Button variant={'none'} size={'none'}>
-          Pricing
-        </Button>
-      </Link>
-      <Link to="/resources">
-        <Button variant={'none'} size={'none'}>
-          Resources
-        </Button>
-      </Link>
+      <Button variant={'none'} size={'none'} to="/product">
+        Product
+      </Button>
+      <Button variant={'none'} size={'none'} to="/pricing">
+        Pricing
+      </Button>
+      <Button variant={'none'} size={'none'} to="/resources">
+        Resources
+      </Button>
       <div className="flex gap-2">
-        <Link to="/start">
-          <Button round>Get Started</Button>
-        </Link>
-        <Link to="/signin">
-          <Button variant={'secondary'} round>
-            Sign In
-          </Button>
-        </Link>
+        <Button round to="/start">
+          Get Started
+        </Button>
+        <Button variant={'secondary'} round to="/signin">
+          Sign In
+        </Button>
       </div>
     </div>
   );

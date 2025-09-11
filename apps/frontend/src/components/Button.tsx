@@ -1,6 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib';
+import { Link } from 'react-router-dom';
 
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg transition-all duration-200 
@@ -37,6 +38,7 @@ interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   children?: ReactNode;
+  to?: string;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -49,10 +51,28 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled = false,
       fullWidth = false,
       round = false,
+      to,
       ...props
     },
     ref,
   ) => {
+    if (to) {
+      return (
+        <Link to={to}>
+          <button
+            className={cn(
+              buttonVariants({ variant, size, fullWidth, round, className }),
+            )}
+            disabled={disabled}
+            ref={ref}
+            {...props}
+          >
+            {children}
+          </button>
+        </Link>
+      );
+    }
+
     return (
       <button
         className={cn(
