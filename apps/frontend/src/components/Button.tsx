@@ -1,8 +1,8 @@
 import {
   type ButtonHTMLAttributes,
   type ComponentType,
-  type ForwardedRef,
   type ReactNode,
+  type Ref,
 } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib';
@@ -58,7 +58,7 @@ export const Button = ((
     to,
     ...props
   }: ButtonProps,
-  ref: ForwardedRef<HTMLButtonElement>,
+  ref: Ref<HTMLButtonElement>,
 ) => {
   if (to) {
     return (
