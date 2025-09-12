@@ -1,7 +1,7 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { ThemeProvider } from '@/lib';
 import { Layout } from '@/components';
-import { LandingPage, SignUpPage } from '@/pages';
+import { LandingPage, SignInPage, SignUpPage } from '@/pages';
 
 function App() {
   return (
@@ -11,6 +11,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/signin" element={<SignInPage />} />
           </Routes>
         </Layout>
       </Router>

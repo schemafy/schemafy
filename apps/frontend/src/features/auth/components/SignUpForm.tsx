@@ -43,7 +43,11 @@ export const SignUpForm = () => {
   const { pending } = useFormStatus();
 
   return (
-    <form noValidate action={formAction} className="flex flex-col w-full">
+    <form
+      noValidate
+      action={formAction}
+      className="flex flex-col w-full max-w-[480px]"
+    >
       {formFields.map((field) => (
         <InputField
           key={field.name}

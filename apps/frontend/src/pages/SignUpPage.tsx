@@ -11,7 +11,7 @@ export const SignUpPage = () => {
         </p>
       </section>
       <SignUpForm />
-      <div className="flex gap-2 pt-1 pb-3">
+      <div className="flex gap-2 pt-1 pb-3 items-center justify-center">
         <p className="font-body-sm text-schemafy-dark-gray">
           Already have an account?
         </p>
@@ -19,6 +19,7 @@ export const SignUpPage = () => {
           variant={'none'}
           size={'none'}
           className="text-schemafy-dark-gray"
+          to="/signin"
         >
           Sign In
         </Button>
