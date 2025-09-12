@@ -1,6 +1,18 @@
 import { cn } from '@/lib';
-import type { CommonInputFieldProps } from '@/store/types';
 import { memo, useId } from 'react';
+
+interface InputFieldProps {
+  label: string;
+  name: string;
+  value: string | number;
+  type?: 'text' | 'email' | 'password' | 'number';
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+}
 
 export const InputField = memo(
   ({
@@ -14,7 +26,7 @@ export const InputField = memo(
     error,
     onChange,
     onBlur,
-  }: CommonInputFieldProps) => {
+  }: InputFieldProps) => {
     const inputId = useId();
 
     return (

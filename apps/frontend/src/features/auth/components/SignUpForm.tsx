@@ -1,7 +1,7 @@
 import { Button, InputField } from '@/components';
-import { useAuthAction, useFormState } from '../hooks';
+import { useFormState } from '../hooks';
 import { useFormStatus } from 'react-dom';
-import type { SignUpFormValues } from '@/store/types';
+import type { ValidationRules, SignUpFormValues } from '../types';
 
 const formFields = [
   {
@@ -37,17 +37,38 @@ const initialForm: SignUpFormValues = {
   confirmPassword: '',
 };
 
+const validationRules: ValidationRules<SignUpFormValues> = {
+  name: (value: string) => {
+    if (!value.trim()) return 'Name is required.';
+    return '';
+  },
+  email: (value: string) => {
+    if (!value.trim()) return 'Email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return 'Please enter a valid email address.';
+    }
+    return '';
+  },
+  password: (value: string) => {
+    if (!value.trim()) return 'Password is required.';
+    return '';
+  },
+  confirmPassword: (value: string, form?: SignUpFormValues) => {
+    if (!value.trim()) return 'Please confirm your password.';
+    if (form && value !== form.password) return 'Password does not match.';
+    return '';
+  },
+};
+
 export const SignUpForm = () => {
-  const { form, errors, handleChange, handleBlur } = useFormState(initialForm);
-  const { formAction } = useAuthAction();
+  const { form, errors, handleChange, handleBlur } = useFormState(
+    initialForm,
+    validationRules,
+  );
   const { pending } = useFormStatus();
 
   return (
-    <form
-      noValidate
-      action={formAction}
-      className="flex flex-col w-full max-w-[480px]"
-    >
+    <form noValidate className="flex flex-col w-full max-w-[480px]">
       {formFields.map((field) => (
         <InputField
           key={field.name}

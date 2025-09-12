@@ -1,5 +1,7 @@
 import { Button, InputField } from '@/components';
 import { useFormStatus } from 'react-dom';
+import type { SignInFormValues, ValidationRules } from '../types';
+import { useFormState } from '../hooks';
 
 const formFields = [
   {
@@ -16,7 +18,30 @@ const formFields = [
   },
 ];
 
+const initialForm: SignInFormValues = {
+  email: '',
+  password: '',
+};
+
+const validationRules: ValidationRules<SignInFormValues> = {
+  email: (value: string) => {
+    if (!value.trim()) return 'Email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return 'Please enter a valid email address.';
+    }
+    return '';
+  },
+  password: (value: string) => {
+    if (!value.trim()) return 'Password is required.';
+    return '';
+  },
+};
+
 export const SignInForm = () => {
+  const { form, errors, handleChange, handleBlur } = useFormState(
+    initialForm,
+    validationRules,
+  );
   const { pending } = useFormStatus();
 
   return (
@@ -29,9 +54,10 @@ export const SignInForm = () => {
           name={field.name}
           placeholder={field.label}
           required={field.required}
-          value={''}
-          onChange={() => {}}
-          error={''}
+          value={form[field.name]}
+          error={errors[field.name]}
+          onChange={handleChange}
+          onBlur={handleBlur}
         />
       ))}
       <Button
