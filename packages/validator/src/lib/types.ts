@@ -31,7 +31,7 @@ export const DATABASE = z.object({
 export const TABLE = z.object({
   id: ULID,
   schemaId: ULID,
-  name: z.string(),
+  name: z.string().min(3).max(20),
   comment: z.string().nullable().optional(),
   tableOptions: z.string(),
   createdAt: z.date(),
@@ -42,7 +42,7 @@ export const TABLE = z.object({
 export const COLUMN = z.object({
   id: ULID,
   tableId: ULID,
-  name: z.string(),
+  name: z.string().min(3).max(40),
   ordinalPosition: z.number().positive(),
   dataType: z.string(),
   lengthScale: z.string(),
@@ -71,14 +71,24 @@ export const INDEX_COLUMN = z.object({
   sortDir: SORT_DIR,
 });
 
-export const CONSTRAINT = z.object({
-  id: ULID,
-  tableId: ULID,
-  name: z.string(),
-  kind: CONSTRAINT_KIND,
-  checkExpr: z.string().nullable().optional(),
-  defaultExpr: z.string().nullable().optional(),
-});
+export const CONSTRAINT = z
+  .object({
+    id: ULID,
+    tableId: ULID,
+    name: z.string(),
+    kind: CONSTRAINT_KIND,
+    checkExpr: z.string().nullable().optional(),
+    defaultExpr: z.string().nullable().optional(),
+  })
+  .refine((data) => {
+    if (data.kind == 'CHECK') {
+      return typeof data.checkExpr === 'string';
+    } else if (data.kind == 'DEFAULT') {
+      return typeof data.defaultExpr === 'string';
+    }
+
+    return true;
+  });
 
 export const CONSTRAINT_COLUMN = z.object({
   id: ULID,
@@ -96,7 +106,7 @@ export const RELATIONSHIP = z.object({
   cardinality: RELATIONSHIP_CARDINALITY,
   onDelete: REALTIONSHIP_ON_DELETE,
   onUpdate: REALTIONSHIP_ON_UPDATE,
-  fkEnforced: z.boolean(),
+  fkEnforced: z.literal(false),
 });
 
 export const RELATIONSHIP_COLUMN = z.object({
