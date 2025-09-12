@@ -3,7 +3,7 @@ import { z } from 'zod';
 const ULID = z.string().ulid();
 const DB_VENDOR = z.enum(['mysql']);
 const INDEX_TYPE = z.enum(['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER']);
-const SORT_DIR = z.enum(['ASC', 'DESC']);
+const INDEX_SORT_DIR = z.enum(['ASC', 'DESC']);
 const CONSTRAINT_KIND = z.enum(['PRIMARYKEY', 'UNIQUE', 'CHECK', 'DEFAULT', 'NOT_NULL']);
 const RELATIONSHIP_KIND = z.enum(['IDENTIFYING', 'NONIDENTIFYING']);
 const RELATIONSHIP_CARDINALITY = z.enum(['1:1', '1:N']);
@@ -68,7 +68,7 @@ export const INDEX_COLUMN = z.object({
   indexId: ULID,
   columnId: ULID,
   seqNo: z.number().positive(),
-  sortDir: SORT_DIR,
+  sortDir: INDEX_SORT_DIR,
 });
 
 export const CONSTRAINT = z
