@@ -1,0 +1,277 @@
+name: Sync Parent Issue Status
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+  repository-projects: write
+
+env:
+  PROJECT_NUMBER: ${{ secrets.PROJECT_NUMBER }}
+  PROJECT_OWNER: ${{ vars.PROJECT_OWNER || github.repository_owner }}
+  PROJECT_STATUS_FIELD_NAME: ${{ vars.PROJECT_STATUS_FIELD_NAME }}
+  STATUS_OPTION_TODO: ${{ vars.STATUS_OPTION_TODO }}
+  STATUS_OPTION_IN_PROGRESS: ${{ vars.STATUS_OPTION_IN_PROGRESS }}
+  STATUS_OPTION_DONE: ${{ vars.STATUS_OPTION_DONE }}
+
+jobs:
+  sync_parent_status_from_subissues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ env.PROJECT_OWNER || github.repository_owner }}
+      - name: Sync parent issue Project status from sub-issues
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const projectNumber = process.env.PROJECT_NUMBER;
+            if (!projectNumber) {
+              core.setFailed('PROJECT_NUMBER secret is not set. Define it in repository secrets.');
+              return;
+            }
+            const statusFieldName = process.env.PROJECT_STATUS_FIELD_NAME || 'Status';
+            const optionTodo = process.env.STATUS_OPTION_TODO || 'Todo';
+            const optionInProgress = process.env.STATUS_OPTION_IN_PROGRESS || 'In Progress';
+            const optionDone = process.env.STATUS_OPTION_DONE || 'Done';
+            const ownerLogin = process.env.PROJECT_OWNER || owner;
+            const graph = github.graphql;
+
+            async function getProject() {
+              const number = Number(projectNumber);
+              let data = await graph(
+                `query($login:String!, $number:Int!){ organization(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                { login: ownerLogin, number }
+              ).catch(() => null);
+              let project = data?.organization?.projectV2 || null;
+              if (!project) {
+                data = await graph(
+                  `query($login:String!, $number:Int!){ user(login:$login){ projectV2(number:$number){ id title fields(first:100){ nodes { __typename ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }`,
+                  { login: ownerLogin, number }
+                ).catch(() => null);
+                project = data?.user?.projectV2 || null;
+              }
+              if (!project) throw new Error(`ProjectV2 #${projectNumber} not found under ${ownerLogin}`);
+              return project;
+            }
+
+            async function addToProject(projectId, contentId) {
+              const add = await graph(
+                `mutation($projectId:ID!,$contentId:ID!){ addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){ item { id } } }`,
+                { projectId, contentId }
+              );
+              return add?.addProjectV2ItemById?.item?.id;
+            }
+
+            async function findExistingItemId(projectId, contentId) {
+              const data = await graph(
+                `query($projectId:ID!){ node(id:$projectId){ ... on ProjectV2 { id items(first:100){ nodes { id content { __typename ... on Issue { id } ... on PullRequest { id } } } } } } }`,
+                { projectId }
+              );
+              const items = data?.node?.items?.nodes || [];
+              const found = items.find(n => n?.content?.id === contentId);
+              return found?.id || null;
+            }
+
+            async function findOrCreateItemId(project, contentId) {
+              try {
+                const itemId = await addToProject(project.id, contentId);
+                if (itemId) return itemId;
+              } catch (e) {
+                const existingId = await findExistingItemId(project.id, contentId);
+                if (existingId) return existingId;
+                throw e;
+              }
+              const existingId = await findExistingItemId(project.id, contentId);
+              return existingId;
+            }
+
+            async function getChildrenOfIssue(ownerLogin, repo, number) {
+              try {
+                core.info(`Querying sub-issues for #${number} in ${ownerLogin}/${repo}...`);
+                
+                const data = await graph(
+                  `query($owner:String!,$repo:String!,$number:Int!){ 
+                    repository(owner:$owner, name:$repo){ 
+                      issue(number:$number){ 
+                        id 
+                        number 
+                        title
+                        state
+                        subIssues(first:100){ 
+                          nodes { 
+                            id 
+                            number 
+                            title
+                            state 
+                            repository{ 
+                              name 
+                              owner{ login } 
+                            } 
+                          } 
+                        }
+                      } 
+                    } 
+                  }`,
+                  { owner: ownerLogin, repo, number }
+                );
+                
+                const issue = data?.repository?.issue;
+                if (!issue) {
+                  core.info(`Issue #${number} not found in repository ${ownerLogin}/${repo}`);
+                  return [];
+                }
+                
+                core.info(`Found issue #${number}: "${issue.title}" (${issue.state})`);
+                
+                const subIssues = issue.subIssues;
+                const subIssuesNodes = subIssues?.nodes || [];
+                
+                core.info(`Issue #${number} has ${subIssuesNodes.length} sub-issues`);
+                
+                if (subIssuesNodes.length > 0) {
+                  core.info(`Sub-issues for #${number}:`);
+                  subIssuesNodes.forEach(node => {
+                    core.info(`  - #${node.number}: "${node.title}" (${node.state})`);
+                  });
+                }
+                
+                return subIssuesNodes.map(n => ({ 
+                  id: n.id, 
+                  number: n.number, 
+                  state: n.state, 
+                  repo: n.repository.name, 
+                  owner: n.repository.owner.login 
+                }));
+                
+              } catch (error) {
+                core.error(`Error fetching sub-issues for #${number}: ${error.message}`);
+                if (error.response && error.response.errors) {
+                  core.error(`GraphQL errors: ${JSON.stringify(error.response.errors, null, 2)}`);
+                }
+                return [];
+              }
+            }
+
+            async function getItemStatusName(project, itemId, statusFieldName) {
+              const data = await graph(
+                `query($itemId:ID!){ node(id:$itemId){ ... on ProjectV2Item { id fieldValues(first:20){ nodes { __typename ... on ProjectV2ItemFieldSingleSelectValue { field { ... on ProjectV2FieldCommon { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } optionId } } } } } }`,
+                { itemId }
+              );
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              const values = data?.node?.fieldValues?.nodes || [];
+              const sel = values.find(v => v?.field?.name === statusFieldName);
+              if (!sel) return null;
+              const option = (statusField.options || []).find(o => o.id === sel.optionId);
+              return option?.name || null;
+            }
+
+            async function updateStatus(project, itemId, statusFieldName, optionName) {
+              const fields = project.fields.nodes || [];
+              const statusField = fields.find(f => f.name === statusFieldName);
+              if (!statusField) throw new Error(`Status field '${statusFieldName}' not found in Project`);
+              const option = (statusField.options || []).find(o => o.name === optionName);
+              if (!option) throw new Error(`Option '${optionName}' not found in field '${statusFieldName}'`);
+              await graph(
+                `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){ updateProjectV2ItemFieldValue(input:{ projectId:$projectId, itemId:$itemId, fieldId:$fieldId, value:{ singleSelectOptionId:$optionId }}) { projectV2Item { id } } }`,
+                { projectId: project.id, itemId, fieldId: statusField.id, optionId: option.id }
+              );
+            }
+
+            core.info(`Fetching all open issues for ${owner}/${repo}...`);
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+            });
+            core.info(`Found ${issues.length} open issues.`);
+
+            const project = await getProject();
+
+            for (const issue of issues) {
+              const parent = { id: issue.node_id, number: issue.number, repo, owner: ownerLogin };
+              const children = await getChildrenOfIssue(ownerLogin, repo, issue.number);
+
+              if (!children || children.length === 0) {
+                core.info(`Issue #${parent.number} has no sub-issues. Skipping.`);
+                continue;
+              }
+
+              core.info(`Issue #${parent.number} has ${children.length} sub-issues. Calculating status...`);
+
+              const childStatuses = [];
+              for (const child of children) {
+                let status = optionTodo;
+                if (child.state === 'CLOSED') {
+                  status = optionDone;
+                } else {
+                  const childNodeId = child.id;
+                  const childItemId = await findExistingItemId(project.id, childNodeId);
+                  if (childItemId) {
+                    const statusName = await getItemStatusName(project, childItemId, statusFieldName);
+                    status = statusName || optionTodo;
+                  }
+                }
+                childStatuses.push(status);
+              }
+
+              let target = null;
+              if (childStatuses.every(s => s === optionDone)) {
+                target = optionDone;
+              } else if (childStatuses.every(s => s === optionTodo)) {
+                target = optionTodo;
+              } else {
+                target = optionInProgress;
+              }
+
+              if (!target) {
+                core.info(`No matching target for parent #${parent.number}. Skipping.`);
+                continue;
+              }
+
+              const parentItemId = await findOrCreateItemId(project, issue.node_id);
+              if (!parentItemId) {
+                core.info(`Could not resolve project item for parent #${parent.number}.`);
+                continue;
+              }
+
+              const currentParentStatus = await getItemStatusName(project, parentItemId, statusFieldName);
+              if (currentParentStatus !== target) {
+                await updateStatus(project, parentItemId, statusFieldName, target);
+                core.info(`Updated parent #${parent.number} status: ${currentParentStatus} → ${target}`);
+                
+                // Close the issue if status is Done
+                if (target === optionDone) {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: parent.number,
+                    body: `모든 하위 이슈가 완료되어 자동으로 완료 처리합니다.\n\n완료된 하위 이슈들\n${children.map(child => `- #${child.number}`).join('\n')}`
+                  });
+                  
+                  await github.rest.issues.update({
+                    owner,
+                    repo,
+                    issue_number: parent.number,
+                    state: 'closed'
+                  });
+                  core.info(`Closed issue #${parent.number} as all sub-issues are completed`);
+                }
+              } else {
+                core.info(`Parent #${parent.number} status already is ${target}, skipping update`);
+              }
+            }
+
+            core.info('Parent issue status synchronization completed.');
