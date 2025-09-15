@@ -10,35 +10,6 @@ const RELATIONSHIP_CARDINALITY = z.enum(['1:1', '1:N']);
 const REALTIONSHIP_ON_DELETE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
 const REALTIONSHIP_ON_UPDATE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
 
-export const SCHEMA = z.object({
-  id: ULID,
-  projectId: ULID,
-  dbVendorId: DB_VENDOR,
-  name: z.string().min(3).max(20),
-  charset: z.string(),
-  collation: z.string(),
-  vendorOption: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
-});
-
-export const DATABASE = z.object({
-  id: ULID,
-  projects: z.array(SCHEMA),
-});
-
-export const TABLE = z.object({
-  id: ULID,
-  schemaId: ULID,
-  name: z.string().min(3).max(20),
-  comment: z.string().nullable().optional(),
-  tableOptions: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
-});
-
 export const COLUMN = z.object({
   id: ULID,
   tableId: ULID,
@@ -55,20 +26,28 @@ export const COLUMN = z.object({
   deletedAt: z.date().nullable().optional(),
 });
 
-export const INDEX = z.object({
-  id: ULID,
-  tableId: ULID,
-  name: z.string(),
-  type: INDEX_TYPE,
-  comment: z.string().nullable().optional(),
-});
-
 export const INDEX_COLUMN = z.object({
   id: ULID,
   indexId: ULID,
   columnId: ULID,
   seqNo: z.number().positive(),
   sortDir: INDEX_SORT_DIR,
+});
+
+export const INDEX = z.object({
+  id: ULID,
+  tableId: ULID,
+  name: z.string(),
+  type: INDEX_TYPE,
+  comment: z.string().nullable().optional(),
+  columns: z.array(INDEX_COLUMN),
+});
+
+export const CONSTRAINT_COLUMN = z.object({
+  id: ULID,
+  constraintId: ULID,
+  columnId: ULID,
+  seqNo: z.number().positive(),
 });
 
 export const CONSTRAINT = z
@@ -79,6 +58,7 @@ export const CONSTRAINT = z
     kind: CONSTRAINT_KIND,
     checkExpr: z.string().nullable().optional(),
     defaultExpr: z.string().nullable().optional(),
+    columns: z.array(CONSTRAINT_COLUMN),
   })
   .refine((data) => {
     if (data.kind == 'CHECK') {
@@ -90,10 +70,11 @@ export const CONSTRAINT = z
     return true;
   });
 
-export const CONSTRAINT_COLUMN = z.object({
+export const RELATIONSHIP_COLUMN = z.object({
   id: ULID,
-  constraintId: ULID,
-  columnId: ULID,
+  relationshipId: ULID,
+  srcColumnId: ULID,
+  tgtColumnId: ULID,
   seqNo: z.number().positive(),
 });
 
@@ -107,14 +88,41 @@ export const RELATIONSHIP = z.object({
   onDelete: REALTIONSHIP_ON_DELETE,
   onUpdate: REALTIONSHIP_ON_UPDATE,
   fkEnforced: z.literal(false),
+  columns: z.array(RELATIONSHIP_COLUMN),
 });
 
-export const RELATIONSHIP_COLUMN = z.object({
+export const TABLE = z.object({
   id: ULID,
-  relationshipId: ULID,
-  srcColumnId: ULID,
-  tgtColumnId: ULID,
-  seqNo: z.number().positive(),
+  schemaId: ULID,
+  name: z.string().min(3).max(20),
+  comment: z.string().nullable().optional(),
+  tableOptions: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  deletedAt: z.date().nullable().optional(),
+  columns: z.array(COLUMN),
+  indexes: z.array(INDEX),
+  constraints: z.array(CONSTRAINT),
+  relationships: z.array(RELATIONSHIP),
+});
+
+export const SCHEMA = z.object({
+  id: ULID,
+  projectId: ULID,
+  dbVendorId: DB_VENDOR,
+  name: z.string().min(3).max(20),
+  charset: z.string(),
+  collation: z.string(),
+  vendorOption: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  deletedAt: z.date().nullable().optional(),
+  tables: z.array(TABLE),
+});
+
+export const DATABASE = z.object({
+  id: ULID,
+  projects: z.array(SCHEMA),
 });
 
 export type Schema = z.infer<typeof SCHEMA>;
