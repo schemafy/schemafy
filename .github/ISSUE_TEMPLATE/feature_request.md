@@ -1,7 +1,7 @@
-## Description
+## 개요
 
-## Tasks
+## 할 일
 
 - [ ]
 
-## Additional Context
+## 추가 컨텍스트

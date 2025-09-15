@@ -1,5 +1,5 @@
-## Summary
+## 개요
 
-## Screenshots (if applicable)
+## 스크린샷
 
-## Related Issue
+## 관련 이슈

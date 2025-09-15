@@ -1,8 +1,8 @@
-## Description
+## 개요
 
-## Steps To Reproduce
+## 재현 방법
 
 1.
 2.
 
-## Expected Solution
+## 예상되는 해결법
