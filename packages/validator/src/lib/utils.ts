@@ -25,7 +25,6 @@ interface ERDValidator {
   ) => Database;
   deleteTable: (database: Database, schemaId: Schema['id'], tableId: Table['id']) => Database;
   changeTableName: (database: Database, tableId: Table['id'], newName: Table['name']) => Database;
-  moveTableToSchema: (database: Database, tableId: Table['id'], newSchemaId: Schema['id']) => Database;
 
   createColumn: (
     database: Database,
@@ -194,9 +193,6 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
     },
     changeTableName: (database, tableId, newName) => {
       throw new Error('changeTableName: Not implemented yet');
-    },
-    moveTableToSchema: (database, tableId, newSchemaId) => {
-      throw new Error('moveTableToSchema: Not implemented yet');
     },
 
     createColumn: (database, schemaId, tableId, column) => {
