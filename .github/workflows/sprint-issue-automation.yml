@@ -1,0 +1,252 @@
+name: Move Unfinished Sprint Issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      previous_sprint_name:
+        description: '이전 스프린트의 이름'
+        required: true
+      current_sprint_name:
+        description: '현재 스프린트의 이름'
+        required: true
+
+permissions:
+  issues: write
+  contents: read
+  repository-projects: write
+
+env:
+  PROJECT_NUMBER: ${{ secrets.PROJECT_NUMBER }}
+  PROJECT_OWNER: ${{ vars.PROJECT_OWNER || github.repository_owner }}
+  PROJECT_STATUS_FIELD_NAME: ${{ vars.PROJECT_STATUS_FIELD_NAME || 'Status' }}
+  PROJECT_SPRINT_FIELD_NAME: ${{ vars.PROJECT_SPRINT_FIELD_NAME || 'Sprint' }}
+  STATUS_OPTION_DONE: ${{ vars.STATUS_OPTION_DONE || 'Done' }}
+
+jobs:
+  move_issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ env.PROJECT_OWNER || github.repository_owner }}
+
+      - name: Move unfinished issues to current sprint
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const { previous_sprint_name, current_sprint_name } = context.payload.inputs;
+
+            // 환경 변수 및 입력 값 확인
+            const projectNumber = process.env.PROJECT_NUMBER;
+            if (!projectNumber) {
+              core.setFailed('PROJECT_NUMBER secret이 설정되지 않았습니다. 리포지토리 secret에 추가해주세요.');
+              return;
+            }
+            const ownerLogin = process.env.PROJECT_OWNER || owner;
+            const statusFieldName = process.env.PROJECT_STATUS_FIELD_NAME;
+            const sprintFieldName = process.env.PROJECT_SPRINT_FIELD_NAME;
+            const optionDone = process.env.STATUS_OPTION_DONE;
+            const graph = github.graphql;
+
+            core.info(`이전 스프린트: '${previous_sprint_name}'`);
+            core.info(`현재 스프린트: '${current_sprint_name}'`);
+
+            async function getProject() {
+              const number = Number(projectNumber);
+              let project = null;
+
+              try {
+                // Organization-owned project
+                const orgData = await graph(`
+                  query($login:String!, $number:Int!){
+                    organization(login:$login){
+                      projectV2(number:$number){
+                        id title
+                        fields(first:100){
+                          nodes {
+                            __typename
+                            ... on ProjectV2FieldCommon { id name }
+                            ... on ProjectV2SingleSelectField { options { id name } }
+                            ... on ProjectV2IterationField { configuration { iterations { id title } completedIterations { id title } } }
+                          }
+                        }
+                      }
+                    }
+                  }`, { login: ownerLogin, number });
+                project = orgData?.organization?.projectV2;
+              } catch (e) {
+                core.info('Organization project를 찾을 수 없습니다. User project를 검색합니다.');
+              }
+
+              if (!project) {
+                try {
+                  // User-owned project
+                  const userData = await graph(`
+                    query($login:String!, $number:Int!){
+                      user(login:$login){
+                        projectV2(number:$number){
+                          id title
+                          fields(first:100){
+                            nodes {
+                              __typename
+                              ... on ProjectV2FieldCommon { id name }
+                              ... on ProjectV2SingleSelectField { options { id name } }
+                              ... on ProjectV2IterationField { configuration { iterations { id title } completedIterations { id title } } }
+                            }
+                          }
+                        }
+                      }
+                    }`, { login: ownerLogin, number });
+                  project = userData?.user?.projectV2;
+                } catch (e) {
+                  core.error(e);
+                  throw new Error(`User-owned ProjectV2 #${projectNumber}를 ${ownerLogin}에서 찾을 수 없습니다.`);
+                }
+              }
+
+              if (!project) throw new Error(`ProjectV2 #${projectNumber}를 ${ownerLogin}에서 찾을 수 없습니다.`);
+              return project;
+            }
+
+            async function getAllProjectItems(projectId) {
+              let allItems = [];
+              let cursor = null;
+              let hasNextPage = true;
+
+              while (hasNextPage) {
+                const data = await graph(`
+                  query($projectId:ID!, $cursor:String){
+                    node(id:$projectId){
+                      ... on ProjectV2 {
+                        items(first:100, after:$cursor) {
+                          pageInfo { endCursor hasNextPage }
+                          nodes {
+                            id
+                            content {
+                              __typename
+                              ... on Issue { id number title repository { name owner { login } } }
+                            }
+                            fieldValues(first:20) {
+                              nodes {
+                                __typename
+                                ... on ProjectV2ItemFieldIterationValue {
+                                  field { ... on ProjectV2IterationField { id } }
+                                  iterationId
+                                  title
+                                }
+                                ... on ProjectV2ItemFieldSingleSelectValue {
+                                  field { ... on ProjectV2SingleSelectField { id } }
+                                  optionId
+                                  name
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }`, { projectId, cursor });
+
+                const project = data.node;
+                allItems = allItems.concat(project.items.nodes);
+                hasNextPage = project.items.pageInfo.hasNextPage;
+                cursor = project.items.pageInfo.endCursor;
+              }
+              return allItems;
+            }
+
+            async function updateItemIteration(projectId, itemId, fieldId, iterationId) {
+              await graph(`
+                mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $iterationId:String!){
+                  updateProjectV2ItemFieldValue(input:{
+                    projectId:$projectId,
+                    itemId:$itemId,
+                    fieldId:$fieldId,
+                    value:{ iterationId:$iterationId }
+                  }) { projectV2Item { id } }
+                }`, { projectId, itemId, fieldId, iterationId });
+            }
+
+
+            try {
+              // 1. 프로젝트 정보 가져오기
+              const project = await getProject();
+              core.info(`'${project.title}' 프로젝트를 찾았습니다.`);
+
+              // 2. 스프린트와 상태 필드 정보 찾기
+              const sprintField = project.fields.nodes.find(f => f.name === sprintFieldName && f.__typename === 'ProjectV2IterationField');
+              if (!sprintField) throw new Error(`'${sprintFieldName}' 스프린트 필드를 찾을 수 없습니다.`);
+
+              const statusField = project.fields.nodes.find(f => f.name === statusFieldName && f.__typename === 'ProjectV2SingleSelectField');
+              if (!statusField) throw new Error(`'${statusFieldName}' 상태 필드를 찾을 수 없습니다.`);
+
+              const allIterations = [...sprintField.configuration.iterations, ...sprintField.configuration.completedIterations];
+              const previousSprint = allIterations.find(i => i.title === previous_sprint_name);
+              const currentSprint = allIterations.find(i => i.title === current_sprint_name);
+
+              if (!previousSprint) throw new Error(`'${previous_sprint_name}' 스프린트를 찾을 수 없습니다.`);
+              if (!currentSprint) throw new Error(`'${current_sprint_name}' 스프린트를 찾을 수 없습니다.`);
+              
+              const doneStatusOption = statusField.options.find(o => o.name === optionDone);
+              if (!doneStatusOption) throw new Error(`'${optionDone}' 상태 옵션을 찾을 수 없습니다.`);
+
+              core.info('스프린트 및 상태 필드 정보를 성공적으로 로드했습니다.');
+
+              // 3. 프로젝트의 모든 아이템 가져오기
+              const allItems = await getAllProjectItems(project.id);
+              core.info(`프로젝트에서 총 ${allItems.length}개의 아이템을 찾았습니다.`);
+
+              // 4. 이동할 이슈 필터링
+              const issuesToMove = [];
+              for (const item of allItems) {
+                if (item.content?.__typename !== 'Issue') continue;
+
+                const iterationValue = item.fieldValues.nodes.find(fv => fv.__typename === 'ProjectV2ItemFieldIterationValue' && fv.field.id === sprintField.id);
+                const statusValue = item.fieldValues.nodes.find(fv => fv.__typename === 'ProjectV2ItemFieldSingleSelectValue' && fv.field.id === statusField.id);
+                
+                const isInPreviousSprint = iterationValue?.iterationId === previousSprint.id;
+                const isNotDone = statusValue?.optionId !== doneStatusOption.id;
+
+                if (isInPreviousSprint && isNotDone) {
+                  issuesToMove.push({
+                    itemId: item.id,
+                    issueNumber: item.content.number,
+                    issueTitle: item.content.title,
+                    repo: item.content.repository,
+                  });
+                }
+              }
+
+              if (issuesToMove.length === 0) {
+                core.info(`'${previous_sprint_name}' 스프린트에서 '${current_sprint_name}' 스프린트로 이동할 이슈가 없습니다.`);
+                return;
+              }
+
+              core.info(`총 ${issuesToMove.length}개의 이슈를 '${current_sprint_name}' 스프린트로 이동합니다.`);
+
+              // 5. 이슈 이동 및 코멘트 추가
+              for (const issue of issuesToMove) {
+                core.info(`이슈 #${issue.issueNumber} ('${issue.issueTitle}')를 이동합니다...`);
+                await updateItemIteration(project.id, issue.itemId, sprintField.id, currentSprint.id);
+
+                const commentBody = `이전 스프린트 '${previous_sprint_name}'에서 완료되지 않아 현재 스프린트 '${current_sprint_name}'(으)로 이동되었습니다.`;
+                await github.rest.issues.createComment({
+                  owner: issue.repo.owner.login,
+                  repo: issue.repo.name,
+                  issue_number: issue.issueNumber,
+                  body: commentBody,
+                });
+                core.info(`이슈 #${issue.issueNumber} 이동 및 코멘트 추가 완료.`);
+              }
+
+              core.info('모든 미완료 이슈를 성공적으로 이동했습니다.');
+
+            } catch (error) {
+              core.setFailed(`워크플로우 실행 중 오류가 발생했습니다: ${error.message}`);
+            }
