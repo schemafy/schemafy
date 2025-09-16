@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { FormValues, ValidationRules } from '../types';
 
 export const useFormState = <T extends FormValues>(
@@ -7,24 +7,29 @@ export const useFormState = <T extends FormValues>(
 ) => {
   const [form, setForm] = useState<T>(initialForm);
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
-  const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
+  const touchedRef = useRef<Partial<Record<keyof T, boolean>>>({});
 
   const validateField = useCallback(
-    (name: keyof T, value: T[keyof T]) => {
+    (name: keyof T, value: T[keyof T], currentForm: T) => {
       const validator = validationRules[name];
       if (validator) {
-        const error = validator(value, form);
+        const error = validator(value, currentForm);
         setErrors((prev) => ({ ...prev, [name]: error }));
       }
     },
-    [validationRules, form],
+    [validationRules],
   );
 
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
-      setTouched((prev) => ({ ...prev, [name as keyof T]: true }));
-      validateField(name as keyof T, value as T[keyof T]);
+      touchedRef.current = { ...touchedRef.current, [name as keyof T]: true };
+
+      setForm((prev) => {
+        const currentForm = prev;
+        validateField(name as keyof T, value as T[keyof T], currentForm);
+        return prev;
+      });
     },
     [validateField],
   );
@@ -32,15 +37,21 @@ export const useFormState = <T extends FormValues>(
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
-      setForm((prev) => ({ ...prev, [name]: value as T[keyof T] }));
+      setForm((prev) => {
+        const updatedForm = { ...prev, [name]: value as T[keyof T] };
 
-      if (touched[name as keyof T]) {
-        validateField(name as keyof T, value as T[keyof T]);
-      } else {
-        setErrors((prev) => ({ ...prev, [name as keyof T]: undefined }));
-      }
+        if (touchedRef.current[name as keyof T]) {
+          validateField(name as keyof T, value as T[keyof T], updatedForm);
+        } else {
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            [name as keyof T]: undefined,
+          }));
+        }
+        return updatedForm;
+      });
     },
-    [touched, validateField],
+    [validateField],
   );
 
   const resetForm = useCallback(() => {
