@@ -33,6 +33,7 @@ const validationRules: ValidationRules<SignInFormValues> = {
   },
   password: (value: string) => {
     if (!value.trim()) return 'Password is required.';
+    if (value.length < 8) return 'Password must be at least 8 characters.';
     return '';
   },
 };

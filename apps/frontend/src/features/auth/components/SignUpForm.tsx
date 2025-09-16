@@ -40,6 +40,8 @@ const initialForm: SignUpFormValues = {
 const validationRules: ValidationRules<SignUpFormValues> = {
   name: (value: string) => {
     if (!value.trim()) return 'Name is required.';
+    if (value.trim().length > 200)
+      return 'Name must be 200 characters or less.';
     return '';
   },
   email: (value: string) => {
@@ -51,6 +53,7 @@ const validationRules: ValidationRules<SignUpFormValues> = {
   },
   password: (value: string) => {
     if (!value.trim()) return 'Password is required.';
+    if (value.length < 8) return 'Password must be at least 8 characters.';
     return '';
   },
   confirmPassword: (value: string, form?: SignUpFormValues) => {
