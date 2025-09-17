@@ -1,49 +1,21 @@
 import { SchemaNameInvalidError, SchemaNameNotUniqueError, SchemaNotExistError } from '../src/lib/errors';
 import { Database } from '../src/lib/types';
 import { ERD_VALIDATOR } from '../src/lib/utils';
-
-const makeTestDatabaseData = (): Database => {
-  return {
-    id: '01H8Z7Y5ZKX6G6F4X5Z7Y5ZKX4',
-    projects: [
-      {
-        id: '01H8Z7Y5ZKX6G6F4X5Z7Y5ZKX5',
-        projectId: '01H8Z7Y5ZKX6G6F4X5Z7Y5ZKX4',
-        dbVendorId: 'mysql',
-        name: 'TestSchema1',
-        charset: 'utf8mb4',
-        collation: 'utf8mb4_general_ci',
-        vendorOption: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      },
-      {
-        id: '01H8Z7Y5ZKX6G6F4X5Z7Y5ZKX6',
-        projectId: '01H8Z7Y5ZKX6G6F4X5Z7Y5ZKX4',
-        dbVendorId: 'mysql',
-        name: 'TestSchema2',
-        charset: 'utf8mb4',
-        collation: 'utf8mb4_general_ci',
-        vendorOption: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-      },
-    ],
-  };
-};
+import { createTestDatabase } from '../src/lib/builder';
 
 describe('ERD validation', () => {
   describe('스키마 설정', () => {
     let database: Database;
 
     beforeEach(() => {
-      database = makeTestDatabaseData();
+      database = createTestDatabase()
+        .withSchema((schema) => schema.withName('TestSchema1').withId('schema-1'))
+        .withSchema((schema) => schema.withName('TestSchema2').withId('schema-2'))
+        .build();
     });
 
     test('다른 스키마의 이름은 허용된다.', () => {
-      const db = ERD_VALIDATOR.changeSchemaName(database, database.projects[1].id, 'TestSchema3');
+      const db = ERD_VALIDATOR.changeSchemaName(database, 'schema-2', 'TestSchema3');
       expect(db.projects[1].name).toBe('TestSchema3');
     });
 
@@ -55,13 +27,13 @@ describe('ERD validation', () => {
 
     test('스키마 이름은 3글자 이상 20글자 이하만 허용된다.', () => {
       expect(() => {
-        ERD_VALIDATOR.changeSchemaName(database, database.projects[1].id, 'Te');
+        ERD_VALIDATOR.changeSchemaName(database, 'schema-2', 'Te');
       }).toThrow(SchemaNameInvalidError);
     });
 
     test('같은 데이터베이스(프로젝트) 내 중복된 스키마 이름은 금지된다.', () => {
       expect(() => {
-        ERD_VALIDATOR.changeSchemaName(database, database.projects[1].id, 'TestSchema1');
+        ERD_VALIDATOR.changeSchemaName(database, 'schema-2', 'TestSchema1');
       }).toThrow(SchemaNameNotUniqueError);
     });
   });
