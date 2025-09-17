@@ -5,6 +5,8 @@ import {
   applyEdgeChanges,
   addEdge,
   ConnectionLineType,
+  MiniMap,
+  Controls,
 } from '@xyflow/react';
 import type {
   Node,
@@ -119,8 +121,8 @@ export function ERDDiagramTool() {
   return (
     <>
       <RelationshipMarker />
-      <div className="w-full h-screen flex flex-col">
-        <div className="flex items-center gap-4 p-4 border-b border-schemafy-light-gray">
+      <div className="flex flex-1">
+        <div className="flex items-center gap-4 p-4 border-b border-schemafy-light-gray absolute bottom-0 z-100">
           <Button onClick={addTable}>Add Table</Button>
           <div className="flex items-center gap-2">
             <RelationshipSelector
@@ -141,8 +143,31 @@ export function ERDDiagramTool() {
             nodeTypes={nodeTypes}
             connectionLineType={ConnectionLineType.SmoothStep}
             fitView
-          />
-
+          >
+            <MiniMap
+              position="bottom-right"
+              nodeColor={() => {
+                return '#141414';
+              }}
+              maskColor="rgba(255, 255, 255, 0.2)"
+              style={{
+                backgroundColor: '#f8f9fa',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              }}
+              zoomable
+              pannable
+            />
+            <Controls
+              position="top-left"
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+              }}
+            />
+          </ReactFlow>
           {selectedEdge && (
             <div className="absolute top-4 right-4 z-10">
               <RelationshipSelector
