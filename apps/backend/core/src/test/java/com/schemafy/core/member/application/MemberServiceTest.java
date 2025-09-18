@@ -4,6 +4,7 @@ import com.github.f4b6a3.ulid.UlidCreator;
 import com.schemafy.core.common.TestFixture;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.member.application.dto.LoginCommand;
 import com.schemafy.core.member.application.service.MemberService;
 import com.schemafy.core.member.domain.entity.Member;
 import com.schemafy.core.member.domain.repository.MemberRepository;
@@ -108,6 +109,66 @@ class MemberServiceTest {
                 .expectErrorMatches(throwable ->
                         throwable instanceof BusinessException &&
                                 ((BusinessException) throwable).getErrorCode() == ErrorCode.MEMBER_NOT_FOUND
+                )
+                .verify();
+    }
+
+    @Test
+    @DisplayName("로그인에 성공한다")
+    void login_success() {
+        // given
+        String rawPassword = "password";
+        TestFixture.createTestMember("test@example.com", "Test User", rawPassword)
+                .flatMap(memberRepository::save)
+                .block();
+
+        LoginCommand command = new LoginCommand("test@example.com", rawPassword);
+
+        // when
+        Mono<MemberInfoResponse> result = memberService.login(command);
+
+        // then
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.email().equals("test@example.com"))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("로그인 시 존재하지 않는 이메일이면 실패한다")
+    void login_fail_email_not_found() {
+        // given
+        LoginCommand command = new LoginCommand("nonexistent@example.com", "password");
+
+        // when
+        Mono<MemberInfoResponse> result = memberService.login(command);
+
+        // then
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof BusinessException &&
+                                ((BusinessException) throwable).getErrorCode() == ErrorCode.MEMBER_NOT_FOUND
+                )
+                .verify();
+    }
+
+    @Test
+    @DisplayName("로그인 시 비밀번호가 틀리면 실패한다")
+    void login_fail_password_mismatch() {
+        // given
+        TestFixture.createTestMember("test@example.com", "Test User", "password")
+                .flatMap(memberRepository::save)
+                .block();
+
+        LoginCommand command = new LoginCommand("test@example.com", "wrong_password");
+
+        // when
+        Mono<MemberInfoResponse> result = memberService.login(command);
+
+        // then
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof BusinessException &&
+                                ((BusinessException) throwable).getErrorCode() == ErrorCode.LOGIN_FAILED
                 )
                 .verify();
     }
