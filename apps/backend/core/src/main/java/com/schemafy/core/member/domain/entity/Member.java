@@ -45,4 +45,9 @@ public class Member extends BaseEntity {
             return newMember;
         }).subscribeOn(Schedulers.boundedElastic());
     }
+
+    public Mono<Boolean> matchesPassword(String rawPassword, PasswordEncoder passwordEncoder) {
+        return Mono.fromCallable(() -> passwordEncoder.matches(rawPassword, this.password))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
 }

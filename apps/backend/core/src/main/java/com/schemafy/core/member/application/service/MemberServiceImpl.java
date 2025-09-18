@@ -2,6 +2,7 @@ package com.schemafy.core.member.application.service;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.member.application.dto.LoginCommand;
 import com.schemafy.core.member.application.dto.SignUpCommand;
 import com.schemafy.core.member.domain.entity.Member;
 import com.schemafy.core.member.domain.repository.MemberRepository;
@@ -42,5 +43,24 @@ public class MemberServiceImpl implements MemberService {
         return memberRepository.findById(memberId)
                 .map(MemberInfoResponse::from)
                 .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.MEMBER_NOT_FOUND)));
+    }
+
+    @Override
+    public Mono<MemberInfoResponse> login(LoginCommand command) {
+        return findMemberByEmail(command.email())
+                .flatMap(member -> validatePassword(member, command.password()))
+                .map(MemberInfoResponse::from);
+    }
+
+    private Mono<Member> findMemberByEmail(String email) {
+        return memberRepository.findByEmail(email)
+                .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.MEMBER_NOT_FOUND)));
+    }
+
+    private Mono<Member> validatePassword(Member member, String password) {
+        return member.matchesPassword(password, passwordEncoder)
+                .filter(Boolean::booleanValue)
+                .map(matches -> member)
+                .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.LOGIN_FAILED)));
     }
 }
