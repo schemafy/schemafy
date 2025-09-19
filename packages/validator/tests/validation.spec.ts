@@ -17,6 +17,7 @@ const makeTestDatabaseData = (): Database => {
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
+        tables: [],
       },
       {
         id: '01H8Z7Y5ZKX6G6F4X5Z7Y5ZKX6',
@@ -29,6 +30,7 @@ const makeTestDatabaseData = (): Database => {
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
+        tables: [],
       },
     ],
   };
