@@ -3,6 +3,7 @@ export const ERROR_CODES = {
   SCHEMA_NOT_EXIST: 'SCHEMA_NOT_EXIST',
   SCHEMA_NAME_INVALID: 'SCHEMA_NAME_INVALID',
   SCHEMA_NAME_NOT_UNIQUE: 'SCHEMA_NAME_NOT_UNIQUE',
+  SCHEMA_ALREADY_DELETED: 'SCHEMA_ALREADY_DELETED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -49,7 +50,15 @@ export class SchemaNameNotUniqueError extends ERDValidationError {
   }
 }
 
+export class SchemaAlreadyDeletedError extends ERDValidationError {
+  constructor(schemaId: string) {
+    super(ERROR_CODES.SCHEMA_ALREADY_DELETED, `Schema with ID '${schemaId}' has already been deleted`, { schemaId });
+    this.name = 'SchemaAlreadyDeletedError';
+  }
+}
+
 // Legacy constants for backward compatibility
 export const SCHEMA_NOT_EXIST = 'Schema does not exist';
 export const SCHEMA_NAME_INVALID = 'Schema name must be between 3 and 20 characters';
 export const SCHEMA_NAME_NOT_UNIQUE = 'Schema name must be unique';
+export const SCHEMA_ALREADY_DELETED = 'Schema has already been deleted';

@@ -1,4 +1,10 @@
-import { SchemaNotExistError, SchemaNameInvalidError, SchemaNameNotUniqueError } from './errors';
+import { ulid } from 'ulid';
+import {
+  SchemaNotExistError,
+  SchemaNameInvalidError,
+  SchemaNameNotUniqueError,
+  SchemaAlreadyDeletedError,
+} from './errors';
 import {
   Database,
   SCHEMA,
@@ -179,10 +185,27 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
       };
     },
     createSchema: (database, schema) => {
-      throw new Error('createSchema: Not implemented yet');
+      const result = SCHEMA.safeParse(schema);
+      if (!result.success) throw new SchemaNameInvalidError(schema.name);
+
+      const existingSchema = database.projects.find((s) => s.name === schema.name);
+      if (existingSchema) throw new SchemaNameNotUniqueError(schema.name, existingSchema.id);
+
+      return {
+        ...database,
+        projects: [...database.projects, { ...schema, id: ulid(), createdAt: new Date(), updatedAt: new Date() }],
+      };
     },
     deleteSchema: (database, schemaId) => {
-      throw new Error('deleteSchema: Not implemented yet');
+      const schema = database.projects.find((s) => s.id === schemaId);
+      if (!schema) throw new SchemaNotExistError(schemaId);
+
+      if (schema.deletedAt) throw new SchemaAlreadyDeletedError(schemaId);
+
+      return {
+        ...database,
+        projects: database.projects.map((s) => (s.id === schemaId ? { ...s, deletedAt: new Date() } : s)),
+      };
     },
 
     createTable: (database, schemaId, table) => {
