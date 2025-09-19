@@ -21,6 +21,8 @@ export const TableNode = ({
   const [isFieldEditMode, setIsFieldEditMode] = useState(false);
   const [editingTableName, setEditingTableName] = useState(data.tableName);
   const [fields, setFields] = useState(data.fields || []);
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<string | null>(null);
 
   const saveTableName = () => {
     if (data.updateNode) {
@@ -66,6 +68,55 @@ export const TableNode = ({
     if (data.updateNode) {
       data.updateNode(id, { fields: newFields });
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent, fieldId: string) => {
+    console.log('drag:', fieldId);
+    e.stopPropagation();
+    setDraggedItem(fieldId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', fieldId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, fieldId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverItem(fieldId);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverItem(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropTargetId: string) => {
+    e.preventDefault();
+
+    if (!draggedItem || draggedItem === dropTargetId) {
+      setDraggedItem(null);
+      setDragOverItem(null);
+      return;
+    }
+
+    const draggedIndex = fields.findIndex((field) => field.id === draggedItem);
+    const targetIndex = fields.findIndex((field) => field.id === dropTargetId);
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      const newFields = [...fields];
+      const [draggedField] = newFields.splice(draggedIndex, 1);
+      newFields.splice(targetIndex, 0, draggedField);
+
+      setFields(newFields);
+      updateFields(newFields);
+    }
+
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverItem(null);
   };
 
   return (
@@ -153,14 +204,32 @@ export const TableNode = ({
         {fields.map((field) => (
           <div
             key={field.id}
-            className={`border-b border-schemafy-light-gray last:border-b-0 ${
+            className={`border-b border-schemafy-light-gray last:border-b-0 transition-colors duration-200 ${
               isFieldEditMode ? 'hover:bg-schemafy-secondary' : ''
+            } ${draggedItem === field.id ? 'opacity-50' : ''} ${
+              dragOverItem === field.id ? 'bg-blue-50 border-blue-200' : ''
             }`}
+            onDragOver={(e) => handleDragOver(e, field.id)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, field.id)}
           >
             {isFieldEditMode ? (
               <div className="p-2 space-y-2">
                 <div className="flex items-center gap-2">
-                  <GripVertical size={12} className="text-schemafy-dark-gray" />
+                  <span
+                    draggable={true}
+                    onDragStart={(e) => handleDragStart(e, field.id)}
+                    onDragEnd={handleDragEnd}
+                    className="cursor-move p-1 hover:bg-schemafy-light-gray rounded transition-colors nodrag"
+                    title="Drag to reorder"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <GripVertical
+                      size={12}
+                      className="text-schemafy-dark-gray"
+                    />
+                  </span>
+
                   <input
                     type="text"
                     value={field.name}
