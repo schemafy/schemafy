@@ -4,11 +4,14 @@ import {
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,
   SchemaAlreadyDeletedError,
+  TableNameInvalidError,
+  TableNotExistError,
 } from './errors';
 import {
   Database,
   SCHEMA,
   Schema,
+  TABLE,
   Table,
   Column,
   Index,
@@ -30,7 +33,12 @@ interface ERDValidator {
     table: Omit<Table, 'id' | 'schemaId' | 'createdAt' | 'updatedAt'>
   ) => Database;
   deleteTable: (database: Database, schemaId: Schema['id'], tableId: Table['id']) => Database;
-  changeTableName: (database: Database, tableId: Table['id'], newName: Table['name']) => Database;
+  changeTableName: (
+    database: Database,
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    newName: Table['name']
+  ) => Database;
 
   createColumn: (
     database: Database,
@@ -169,6 +177,7 @@ interface ERDValidator {
 
 export const ERD_VALIDATOR: ERDValidator = (() => {
   return {
+    // schema related functions
     changeSchemaName: (database, schemaId, newName) => {
       const schema = database.projects.find((s) => s.id === schemaId);
       if (!schema) throw new SchemaNotExistError(schemaId);
@@ -208,16 +217,58 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
       };
     },
 
+    // table related functions
     createTable: (database, schemaId, table) => {
-      throw new Error('createTable: Not implemented yet');
+      const schema = database.projects.find((s) => s.id === schemaId);
+      if (!schema) throw new SchemaNotExistError(schemaId);
+
+      const result = TABLE.safeParse(table);
+      if (!result.success) throw new TableNameInvalidError(table.name);
+
+      return {
+        ...database,
+        projects: database.projects.map((s) =>
+          s.id === schemaId
+            ? {
+                ...s,
+                tables: [...s.tables, { ...table, id: ulid(), createdAt: new Date(), updatedAt: new Date(), schemaId }],
+              }
+            : s
+        ),
+      };
     },
     deleteTable: (database, schemaId, tableId) => {
-      throw new Error('deleteTable: Not implemented yet');
+      const schema = database.projects.find((s) => s.id === schemaId);
+      if (!schema) throw new SchemaNotExistError(schemaId);
+
+      const table = schema.tables.find((t) => t.id === tableId);
+      if (!table) throw new TableNotExistError(tableId);
+
+      return {
+        ...database,
+        projects: database.projects.map((s) =>
+          s.id === schemaId ? { ...s, tables: s.tables.filter((t) => t.id !== tableId) } : s
+        ),
+      };
     },
-    changeTableName: (database, tableId, newName) => {
-      throw new Error('changeTableName: Not implemented yet');
+    changeTableName: (database, schemaId, tableId, newName) => {
+      const schema = database.projects.find((s) => s.id === schemaId);
+      if (!schema) throw new SchemaNotExistError(schemaId);
+
+      const table = schema.tables.find((t) => t.id === tableId);
+      if (!table) throw new TableNotExistError(tableId);
+
+      return {
+        ...database,
+        projects: database.projects.map((s) =>
+          s.id === schemaId
+            ? { ...s, tables: s.tables.map((t) => (t.id === tableId ? { ...t, name: newName } : t)) }
+            : s
+        ),
+      };
     },
 
+    // column related functions
     createColumn: (database, schemaId, tableId, column) => {
       throw new Error('createColumn: Not implemented yet');
     },
