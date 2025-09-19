@@ -3,7 +3,6 @@ import {
   SchemaNotExistError,
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,
-  SchemaAlreadyDeletedError,
   TableNameInvalidError,
   TableNotExistError,
 } from './errors';
@@ -209,9 +208,9 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
     },
     deleteSchema: (database, schemaId) => {
       const schema = database.projects.find((s) => s.id === schemaId);
-      if (!schema) throw new SchemaNotExistError(schemaId);
 
-      if (schema.deletedAt) throw new SchemaAlreadyDeletedError(schemaId);
+      if (!schema) throw new SchemaNotExistError(schemaId);
+      if (schema.deletedAt) throw new SchemaNotExistError(schemaId);
 
       return {
         ...database,
@@ -247,6 +246,7 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
 
       const table = schema.tables.find((t) => t.id === tableId);
       if (!table) throw new TableNotExistError(tableId);
+      if (table.deletedAt) throw new TableNotExistError(tableId);
 
       return {
         ...database,
@@ -269,6 +269,7 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
 
       const table = schema.tables.find((t) => t.id === tableId);
       if (!table) throw new TableNotExistError(tableId);
+      if (table.deletedAt) throw new TableNotExistError(tableId);
 
       return {
         ...database,

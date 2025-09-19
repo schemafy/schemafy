@@ -3,7 +3,6 @@ export const ERROR_CODES = {
   SCHEMA_NOT_EXIST: 'SCHEMA_NOT_EXIST',
   SCHEMA_NAME_INVALID: 'SCHEMA_NAME_INVALID',
   SCHEMA_NAME_NOT_UNIQUE: 'SCHEMA_NAME_NOT_UNIQUE',
-  SCHEMA_ALREADY_DELETED: 'SCHEMA_ALREADY_DELETED',
   SCHEMA_INVALID_STRUCTURE: 'SCHEMA_INVALID_STRUCTURE',
   TABLE_NOT_EXIST: 'TABLE_NOT_EXIST',
   TABLE_NAME_INVALID: 'TABLE_NAME_INVALID',
@@ -61,13 +60,6 @@ export class SchemaInvalidStructureError extends ERDValidationError {
   }
 }
 
-export class SchemaAlreadyDeletedError extends ERDValidationError {
-  constructor(schemaId: string) {
-    super(ERROR_CODES.SCHEMA_ALREADY_DELETED, `Schema with ID '${schemaId}' has already been deleted`, { schemaId });
-    this.name = 'SchemaAlreadyDeletedError';
-  }
-}
-
 //table errors
 export class TableNotExistError extends ERDValidationError {
   constructor(tableId: string) {
@@ -96,7 +88,6 @@ export class TableNotExistsError extends ERDValidationError {
 export const SCHEMA_NOT_EXIST = 'Schema does not exist';
 export const SCHEMA_NAME_INVALID = 'Schema name must be between 3 and 20 characters';
 export const SCHEMA_NAME_NOT_UNIQUE = 'Schema name must be unique';
-export const SCHEMA_ALREADY_DELETED = 'Schema has already been deleted';
 export const SCHEMA_INVALID_STRUCTURE = 'Schema has invalid structure';
 export const TABLE_NOT_EXIST = 'Table does not exist';
 export const TABLE_NAME_INVALID = 'Table name must be between 3 and 20 characters';
