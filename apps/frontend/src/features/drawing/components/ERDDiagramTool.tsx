@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ReactFlow,
   applyNodeChanges,
@@ -19,7 +19,11 @@ import '@xyflow/react/dist/style.css';
 import { TableNode } from './TableNode';
 import { RelationshipMarker } from './RelationshipMarker';
 import { RelationshipSelector } from './RelationshipSelector';
-import { RELATIONSHIP_TYPES, type RelationshipType } from '../types';
+import {
+  RELATIONSHIP_TYPES,
+  type RelationshipType,
+  type TableNodeData,
+} from '../types';
 import { Button } from '@/components';
 
 const nodeTypes = {
@@ -47,6 +51,25 @@ export function ERDDiagramTool() {
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const [currentRelationshipType, setCurrentRelationshipType] =
     useState<RelationshipType>('one-to-many');
+
+  const updateNode = (nodeId: string, newData: Partial<TableNodeData>) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...newData } }
+          : node,
+      ),
+    );
+  };
+
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: { ...node.data, updateNode },
+      })),
+    );
+  }, []);
 
   const onNodesChange = (changes: NodeChange[]) =>
     setNodes((nds) => applyNodeChanges(changes, nds) as Node[]);
@@ -108,12 +131,28 @@ export function ERDDiagramTool() {
     setSelectedEdge(null);
   };
 
-  const addTable = () => {
+  const addTable = (
+    x: number = Math.random() * 400 + 100,
+    y: number = Math.random() * 300 + 100,
+  ) => {
     const newNode: Node = {
       id: `table_${Date.now()}`,
       type: 'table',
-      position: { x: Math.random() * 400, y: Math.random() * 300 },
-      data: { tableName: `Table_${nodes.length + 1}` },
+      position: { x: x, y: y },
+      data: {
+        tableName: `Table_${nodes.length + 1}`,
+        fields: [
+          {
+            id: `field_${Date.now()}`,
+            name: 'id',
+            type: 'INT',
+            isPrimaryKey: true,
+            isNotNull: true,
+            isUnique: false,
+          },
+        ],
+        updateNode,
+      },
     };
     setNodes([...nodes, newNode]);
   };
@@ -123,7 +162,13 @@ export function ERDDiagramTool() {
       <RelationshipMarker />
       <div className="flex flex-1">
         <div className="flex items-center gap-4 p-4 border-b border-schemafy-light-gray absolute bottom-0 z-100">
-          <Button onClick={addTable}>Add Table</Button>
+          <Button
+            onClick={() => {
+              addTable();
+            }}
+          >
+            Add Table
+          </Button>
           <div className="flex items-center gap-2">
             <RelationshipSelector
               onSelect={setCurrentRelationshipType}
@@ -141,7 +186,7 @@ export function ERDDiagramTool() {
             onConnect={onConnect}
             onEdgeClick={onEdgeClick}
             nodeTypes={nodeTypes}
-            connectionLineType={ConnectionLineType.SmoothStep}
+            connectionLineType={ConnectionLineType.SimpleBezier}
             fitView
           >
             <MiniMap

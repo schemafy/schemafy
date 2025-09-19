@@ -20,3 +20,39 @@ export const RELATIONSHIP_TYPES = {
 } as const;
 
 export type RelationshipType = keyof typeof RELATIONSHIP_TYPES;
+
+export const DATA_TYPES = [
+  'VARCHAR',
+  'CHAR',
+  'TEXT',
+  'LONGTEXT',
+  'INT',
+  'BIGINT',
+  'SMALLINT',
+  'TINYINT',
+  'DECIMAL',
+  'FLOAT',
+  'DOUBLE',
+  'DATETIME',
+  'DATE',
+  'TIME',
+  'TIMESTAMP',
+  'BOOLEAN',
+  'JSON',
+  'UUID',
+];
+
+export type FieldType = {
+  id: string;
+  name: string;
+  type: string;
+  isPrimaryKey: boolean;
+  isNotNull: boolean;
+  isUnique: boolean;
+};
+
+export type TableNodeData = {
+  tableName: string;
+  fields: FieldType[];
+  updateNode?: (nodeId: string, newData: Partial<TableNodeData>) => void;
+};
