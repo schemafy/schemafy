@@ -190,7 +190,9 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
 
       return {
         ...database,
-        projects: database.projects.map((schema) => (schema.id === schemaId ? { ...schema, name: newName } : schema)),
+        projects: database.projects.map((schema) =>
+          schema.id === schemaId ? { ...schema, name: newName, updatedAt: new Date() } : schema
+        ),
       };
     },
     createSchema: (database, schema) => {
@@ -213,7 +215,9 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
 
       return {
         ...database,
-        projects: database.projects.map((s) => (s.id === schemaId ? { ...s, deletedAt: new Date() } : s)),
+        projects: database.projects.map((s) =>
+          s.id === schemaId ? { ...s, updatedAt: new Date(), deletedAt: new Date() } : s
+        ),
       };
     },
 
@@ -247,7 +251,15 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
       return {
         ...database,
         projects: database.projects.map((s) =>
-          s.id === schemaId ? { ...s, tables: s.tables.filter((t) => t.id !== tableId) } : s
+          s.id === schemaId
+            ? {
+                ...s,
+                updatedAt: new Date(),
+                tables: s.tables.map((t) =>
+                  t.id === tableId ? { ...t, updatedAt: new Date(), deletedAt: new Date() } : t
+                ),
+              }
+            : s
         ),
       };
     },
@@ -262,7 +274,11 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
         ...database,
         projects: database.projects.map((s) =>
           s.id === schemaId
-            ? { ...s, tables: s.tables.map((t) => (t.id === tableId ? { ...t, name: newName } : t)) }
+            ? {
+                ...s,
+                updatedAt: new Date(),
+                tables: s.tables.map((t) => (t.id === tableId ? { ...t, updatedAt: new Date(), name: newName } : t)),
+              }
             : s
         ),
       };
