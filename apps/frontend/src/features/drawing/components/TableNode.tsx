@@ -120,30 +120,58 @@ export const TableNode = ({
   };
 
   return (
-    <div className="bg-schemafy-bg border-2 border-schemafy-button-bg rounded-lg shadow-md min-w-48 overflow-hidden">
+    <div className="group bg-schemafy-bg border-2 border-schemafy-button-bg rounded-lg shadow-md min-w-48 overflow-hidden">
       <Handle
         type="target"
         position={Position.Top}
         id={`${id}-top-handle`}
-        style={{ background: '#141414', width: 10, height: 10 }}
+        style={{
+          background: '#141414',
+          width: 10,
+          height: 10,
+          opacity: 0,
+          transition: 'opacity 0.2s ease-in-out',
+        }}
+        className="group-hover:!opacity-100"
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id={`${id}-bottom-handle`}
-        style={{ background: '#141414', width: 10, height: 10 }}
+        style={{
+          background: '#141414',
+          width: 10,
+          height: 10,
+          opacity: 0,
+          transition: 'opacity 0.2s ease-in-out',
+        }}
+        className="group-hover:!opacity-100"
       />
       <Handle
         type="target"
         position={Position.Left}
         id={`${id}-left-handle`}
-        style={{ background: '#141414', width: 10, height: 10 }}
+        style={{
+          background: '#141414',
+          width: 10,
+          height: 10,
+          opacity: 0,
+          transition: 'opacity 0.2s ease-in-out',
+        }}
+        className="group-hover:!opacity-100"
       />
       <Handle
         type="source"
         position={Position.Right}
         id={`${id}-right-handle`}
-        style={{ background: '#141414', width: 10, height: 10 }}
+        style={{
+          background: '#141414',
+          width: 10,
+          height: 10,
+          opacity: 0,
+          transition: 'opacity 0.2s ease-in-out',
+        }}
+        className="group-hover:!opacity-100"
       />
 
       <div className="bg-schemafy-button-bg text-schemafy-button-text p-3 flex items-center justify-between">
