@@ -1,6 +1,6 @@
-package com.schemafy.core.member.presentation.dto.request;
+package com.schemafy.core.user.controller.dto.request;
 
-import com.schemafy.core.member.application.dto.SignUpCommand;
+import com.schemafy.core.user.service.dto.SignUpCommand;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 

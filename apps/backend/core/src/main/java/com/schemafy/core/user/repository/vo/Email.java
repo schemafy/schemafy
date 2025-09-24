@@ -1,4 +1,4 @@
-package com.schemafy.core.member.domain.vo;
+package com.schemafy.core.user.repository.vo;
 
 public record Email(String address) {
     public Email {

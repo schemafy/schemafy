@@ -1,11 +1,11 @@
-package com.schemafy.core.member.presentation;
+package com.schemafy.core.user.controller;
 
 import com.github.f4b6a3.ulid.UlidCreator;
 import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.member.domain.repository.MemberRepository;
-import com.schemafy.core.member.presentation.dto.request.LoginRequest;
-import com.schemafy.core.member.presentation.dto.request.SignUpRequest;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.controller.dto.request.LoginRequest;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,16 +26,16 @@ import java.util.stream.Stream;
 @SpringBootTest
 @AutoConfigureWebTestClient
 @DisplayName("MemberController 통합 테스트")
-class MemberControllerTest {
+class UserControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
     @Autowired
-    private MemberRepository memberRepository;
+    private UserRepository userRepository;
 
     @BeforeEach
     void setUp() {
-        memberRepository.deleteAll().block();
+        userRepository.deleteAll().block();
     }
 
     @Test
@@ -45,7 +45,7 @@ class MemberControllerTest {
         SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
 
         // when & then
-        webTestClient.post().uri("/api/v1/members/signup")
+        webTestClient.post().uri("/api/v1/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -60,9 +60,9 @@ class MemberControllerTest {
     @DisplayName("유효하지 않은 회원가입 요청은 실패한다")
     @ParameterizedTest
     @MethodSource("invalidSignUpRequests")
-    void signUp_fail_invalid_request(SignUpRequest request) {
+    void signUpFail(SignUpRequest request) {
         // when & then
-        webTestClient.post().uri("/api/v1/members/signup")
+        webTestClient.post().uri("/api/v1/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -83,11 +83,11 @@ class MemberControllerTest {
 
     @Test
     @DisplayName("ID로 회원 조회에 성공한다")
-    void getMemberSuccess() {
+    void getUserSuccess() {
         // given
         SignUpRequest signUpRequest = new SignUpRequest("test2@example.com", "Test User 2", "password");
 
-        EntityExchangeResult<byte[]> result = webTestClient.post().uri("/api/v1/members/signup")
+        EntityExchangeResult<byte[]> result = webTestClient.post().uri("/api/v1/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -95,26 +95,26 @@ class MemberControllerTest {
                 .expectBody(byte[].class).returnResult();
 
         String responseBody = new String(result.getResponseBody());
-        String memberId = JsonPath.read(responseBody, "$.result.id");
+        String userId = JsonPath.read(responseBody, "$.result.id");
 
         // when & then
-        webTestClient.get().uri("/api/v1/members/{memberId}", memberId)
+        webTestClient.get().uri("/api/v1/users/{userId}", userId)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.id").isEqualTo(memberId)
+                .jsonPath("$.result.id").isEqualTo(userId)
                 .jsonPath("$.result.email").isEqualTo(signUpRequest.email());
     }
 
     @Test
     @DisplayName("존재하지 않는 회원은 실패한다")
-    void getMember_fail_not_found() {
+    void getUserNotFound() {
         // given
-        String nonExistentMemberId = UlidCreator.getUlid().toString();
+        String nonExistentUserId = UlidCreator.getUlid().toString();
 
         // when & then
-        webTestClient.get().uri("/api/v1/members/{memberId}", nonExistentMemberId)
+        webTestClient.get().uri("/api/v1/users/{userId}", nonExistentUserId)
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectBody()
@@ -124,10 +124,10 @@ class MemberControllerTest {
 
     @Test
     @DisplayName("로그인에 성공한다")
-    void login_success() {
+    void loginSuccess() {
         // given
         SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
-        webTestClient.post().uri("/api/v1/members/signup")
+        webTestClient.post().uri("/api/v1/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -136,7 +136,7 @@ class MemberControllerTest {
         LoginRequest loginRequest = new LoginRequest("test@example.com", "password");
 
         // when & then
-        webTestClient.post().uri("/api/v1/members/login")
+        webTestClient.post().uri("/api/v1/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
                 .exchange()
@@ -149,8 +149,8 @@ class MemberControllerTest {
     @DisplayName("유효하지 않은 로그인 요청은 실패한다")
     @ParameterizedTest
     @MethodSource("invalidLoginRequests")
-    void login_fail_invalid_request(LoginRequest request) {
-        webTestClient.post().uri("/api/v1/members/login")
+    void loginFail(LoginRequest request) {
+        webTestClient.post().uri("/api/v1/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -170,12 +170,12 @@ class MemberControllerTest {
 
     @Test
     @DisplayName("로그인 시 존재하지 않는 이메일이면 실패한다")
-    void login_fail_email_not_found() {
+    void loginFailEmailNotFound() {
         // given
         LoginRequest loginRequest = new LoginRequest("nonexistent@example.com", "password");
 
         // when & then
-        webTestClient.post().uri("/api/v1/members/login")
+        webTestClient.post().uri("/api/v1/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
                 .exchange()
@@ -187,10 +187,10 @@ class MemberControllerTest {
 
     @Test
     @DisplayName("로그인 시 비밀번호가 틀리면 실패한다")
-    void login_fail_password_mismatch() {
+    void loginFailPasswordMismatch() {
         // given
         SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
-        webTestClient.post().uri("/api/v1/members/signup")
+        webTestClient.post().uri("/api/v1/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -199,7 +199,7 @@ class MemberControllerTest {
         LoginRequest loginRequest = new LoginRequest("test@example.com", "wrong_password");
 
         // when & then
-        webTestClient.post().uri("/api/v1/members/login")
+        webTestClient.post().uri("/api/v1/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
                 .exchange()

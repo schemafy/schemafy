@@ -1,9 +1,9 @@
-package com.schemafy.core.member.domain.entity;
+package com.schemafy.core.user.repository.entity;
 
 import com.schemafy.core.common.type.BaseEntity;
-import com.schemafy.core.member.domain.vo.MemberStatus;
-import com.schemafy.core.member.domain.vo.Email;
-import com.schemafy.core.member.domain.vo.MemberInfo;
+import com.schemafy.core.user.repository.vo.UserStatus;
+import com.schemafy.core.user.repository.vo.Email;
+import com.schemafy.core.user.repository.vo.UserInfo;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,8 +16,8 @@ import reactor.core.scheduler.Schedulers;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table("members")
-public class Member extends BaseEntity {
+@Table("users")
+public class User extends BaseEntity {
 
     private String email;
 
@@ -25,24 +25,22 @@ public class Member extends BaseEntity {
 
     private String password;
 
-    private MemberStatus status;
+    private UserStatus status;
 
-    public static Mono<Member> signUp(MemberInfo memberInfo, PasswordEncoder passwordEncoder) {
+    public static Mono<User> signUp(UserInfo userInfo, PasswordEncoder passwordEncoder) {
         return Mono.fromCallable(() -> {
-            // VO 검증
-            Email email = new Email(memberInfo.email());
+            Email email = new Email(userInfo.email());
+            String encodedPassword = passwordEncoder.encode(userInfo.password());
 
-            String encodedPassword = passwordEncoder.encode(memberInfo.password());
-
-            Member newMember = new Member(
+            User newUser = new User(
                     email.address(),
-                    memberInfo.name(),
+                    userInfo.name(),
                     encodedPassword,
-                    MemberStatus.ACTIVE
+                    UserStatus.ACTIVE
             );
-            newMember.generateId();
+            newUser.generateId();
 
-            return newMember;
+            return newUser;
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

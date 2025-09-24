@@ -1,15 +1,14 @@
-package com.schemafy.core.member.application;
+package com.schemafy.core.user.service;
 
 import com.github.f4b6a3.ulid.UlidCreator;
 import com.schemafy.core.common.TestFixture;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.member.application.dto.LoginCommand;
-import com.schemafy.core.member.application.service.MemberService;
-import com.schemafy.core.member.domain.entity.Member;
-import com.schemafy.core.member.domain.repository.MemberRepository;
-import com.schemafy.core.member.presentation.dto.request.SignUpRequest;
-import com.schemafy.core.member.presentation.dto.response.MemberInfoResponse;
+import com.schemafy.core.user.service.dto.LoginCommand;
+import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,18 +22,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
-@DisplayName("MemberService 테스트")
-class MemberServiceTest {
+@DisplayName("UserService 테스트")
+class UserServiceTest {
 
     @Autowired
-    MemberService memberService;
+    UserService userService;
 
     @Autowired
-    MemberRepository memberRepository;
+    UserRepository userRepository;
 
     @BeforeEach
     void setUp() {
-        memberRepository.deleteAll().block();
+        userRepository.deleteAll().block();
     }
 
     @Test
@@ -44,26 +43,26 @@ class MemberServiceTest {
         SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
 
         // when
-        Mono<MemberInfoResponse> result = memberService.signUp(request.toCommand());
+        Mono<UserInfoResponse> result = userService.signUp(request.toCommand());
 
         // then
         StepVerifier.create(result)
-                .expectNextMatches(response -> response.email().equals("test@example.com"))
+                .expectNextMatches(res -> res.email().equals("test@example.com"))
                 .verifyComplete();
     }
 
     @Test
     @DisplayName("회원가입시 이미 존재하는 이메일이면 실패한다")
-    void signUp_fail_email_already_exists() {
+    void signUpAlreadyExists() {
         // given
-        TestFixture.createTestMember("test@example.com", "Test User", "password")
-                .flatMap(memberRepository::save)
+        TestFixture.createTestUser("test@example.com", "Test User", "password")
+                .flatMap(userRepository::save)
                 .block();
 
         SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
 
         // when
-        Mono<MemberInfoResponse> result = memberService.signUp(request.toCommand());
+        Mono<UserInfoResponse> result = userService.signUp(request.toCommand());
 
         // then
         StepVerifier.create(result)
@@ -76,33 +75,33 @@ class MemberServiceTest {
 
     @Test
     @DisplayName("ID로 회원 조회에 성공한다")
-    void getMemberByIdSuccess() {
+    void getUserByIdSuccess() {
         // given
-        Member member = TestFixture.createTestMember("test@example.com", "Test User", "password")
-                .flatMap(memberRepository::save)
+        User user = TestFixture.createTestUser("test@example.com", "Test User", "password")
+                .flatMap(userRepository::save)
                 .block();
 
         // when
-        Mono<MemberInfoResponse> result = memberService.getMemberById(member.getId());
+        Mono<UserInfoResponse> result = userService.getUserById(user.getId());
 
         // then
         StepVerifier.create(result)
                 .assertNext(res -> {
-                    assertThat(res.id()).isEqualTo(member.getId());
-                    assertThat(res.email()).isEqualTo(member.getEmail()) ;
-                    assertThat(res.name()).isEqualTo(member.getName());
+                    assertThat(res.id()).isEqualTo(user.getId());
+                    assertThat(res.email()).isEqualTo(user.getEmail()) ;
+                    assertThat(res.name()).isEqualTo(user.getName());
                 })
                 .verifyComplete();
     }
 
     @Test
     @DisplayName("존재하지 않는 회원은 조회에 실패한다")
-    void getMemberById_fail_not_found() {
+    void getUserByIdNotFound() {
         // given
         String id = UlidCreator.getUlid().toString();
 
         // when
-        Mono<MemberInfoResponse> result = memberService.getMemberById(id);
+        Mono<UserInfoResponse> result = userService.getUserById(id);
 
         // then
         StepVerifier.create(result)
@@ -115,17 +114,17 @@ class MemberServiceTest {
 
     @Test
     @DisplayName("로그인에 성공한다")
-    void login_success() {
+    void loginSuccess() {
         // given
         String rawPassword = "password";
-        TestFixture.createTestMember("test@example.com", "Test User", rawPassword)
-                .flatMap(memberRepository::save)
+        TestFixture.createTestUser("test@example.com", "Test User", rawPassword)
+                .flatMap(userRepository::save)
                 .block();
 
         LoginCommand command = new LoginCommand("test@example.com", rawPassword);
 
         // when
-        Mono<MemberInfoResponse> result = memberService.login(command);
+        Mono<UserInfoResponse> result = userService.login(command);
 
         // then
         StepVerifier.create(result)
@@ -140,7 +139,7 @@ class MemberServiceTest {
         LoginCommand command = new LoginCommand("nonexistent@example.com", "password");
 
         // when
-        Mono<MemberInfoResponse> result = memberService.login(command);
+        Mono<UserInfoResponse> result = userService.login(command);
 
         // then
         StepVerifier.create(result)
@@ -155,14 +154,14 @@ class MemberServiceTest {
     @DisplayName("로그인 시 비밀번호가 틀리면 실패한다")
     void login_fail_password_mismatch() {
         // given
-        TestFixture.createTestMember("test@example.com", "Test User", "password")
-                .flatMap(memberRepository::save)
+        TestFixture.createTestUser("test@example.com", "Test User", "password")
+                .flatMap(userRepository::save)
                 .block();
 
         LoginCommand command = new LoginCommand("test@example.com", "wrong_password");
 
         // when
-        Mono<MemberInfoResponse> result = memberService.login(command);
+        Mono<UserInfoResponse> result = userService.login(command);
 
         // then
         StepVerifier.create(result)
