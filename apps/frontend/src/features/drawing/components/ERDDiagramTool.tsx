@@ -7,6 +7,8 @@ import {
   ConnectionLineType,
   MiniMap,
   Controls,
+  Background,
+  BackgroundVariant,
 } from '@xyflow/react';
 import type {
   Node,
@@ -161,7 +163,7 @@ export function ERDDiagramTool() {
     <>
       <RelationshipMarker />
       <div className="flex flex-1">
-        <div className="flex items-center gap-4 p-4 border-b border-schemafy-light-gray absolute bottom-0 z-100">
+        <div className="flex items-center gap-4 p-4 absolute bottom-0 z-100">
           <Button
             onClick={() => {
               addTable();
@@ -187,6 +189,7 @@ export function ERDDiagramTool() {
             onEdgeClick={onEdgeClick}
             nodeTypes={nodeTypes}
             connectionLineType={ConnectionLineType.SimpleBezier}
+            proOptions={{ hideAttribution: true }}
             fitView
           >
             <MiniMap
@@ -212,6 +215,7 @@ export function ERDDiagramTool() {
                 borderRadius: '6px',
               }}
             />
+            <Background variant={BackgroundVariant.Dots} />
           </ReactFlow>
           {selectedEdge && (
             <div className="absolute top-4 right-4 z-10">
