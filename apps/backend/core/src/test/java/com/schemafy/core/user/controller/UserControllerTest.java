@@ -19,8 +19,11 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.test.StepVerifier;
 
 import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -55,6 +58,19 @@ class UserControllerTest {
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isNotEmpty()
                 .jsonPath("$.result.email").isEqualTo("test@example.com");
+
+        // then - db 검증
+        StepVerifier.create(userRepository.findByEmail("test@example.com"))
+                .as("user should be persisted with auditing columns")
+                .assertNext(user -> {
+                    assertThat(user.getEmail()).isEqualTo("test@example.com");
+                    assertThat(user.getName()).isEqualTo("Test User");
+                    assertThat(user.getId()).isNotNull();
+                    assertThat(user.getCreatedAt()).isNotNull();
+                    assertThat(user.getUpdatedAt()).isNotNull();
+                    assertThat(user.getDeletedAt()).isNull();
+                })
+                .verifyComplete();
     }
 
     @DisplayName("유효하지 않은 회원가입 요청은 실패한다")
@@ -108,7 +124,7 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 회원은 실패한다")
+    @DisplayName("존재하지 않는 회원은 조회에 실패한다")
     void getUserNotFound() {
         // given
         String nonExistentUserId = UlidCreator.getUlid().toString();

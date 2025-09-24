@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS users (
     name      VARCHAR(255) NOT NULL,
     password  VARCHAR(255) NOT NULL,
     status    VARCHAR(32)  NOT NULL DEFAULT 'ACTIVE',
+    created_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at  TIMESTAMP  NULL,
     CONSTRAINT pk_users PRIMARY KEY (id),
     CONSTRAINT ux_users_email UNIQUE (email),
     CONSTRAINT ck_users_status CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED'))

@@ -45,9 +45,22 @@ class UserServiceTest {
         // when
         Mono<UserInfoResponse> result = userService.signUp(request.toCommand());
 
-        // then
+        // then - 응답 검증
         StepVerifier.create(result)
                 .expectNextMatches(res -> res.email().equals("test@example.com"))
+                .verifyComplete();
+
+        // then - db 검증
+        StepVerifier.create(userRepository.findByEmail("test@example.com"))
+                .as("user should be persisted with auditing columns")
+                .assertNext(user -> {
+                    assertThat(user.getEmail()).isEqualTo("test@example.com");
+                    assertThat(user.getName()).isEqualTo("Test User");
+                    assertThat(user.getId()).isNotNull();
+                    assertThat(user.getCreatedAt()).isNotNull();
+                    assertThat(user.getUpdatedAt()).isNotNull();
+                    assertThat(user.getDeletedAt()).isNull();
+                })
                 .verifyComplete();
     }
 
