@@ -3,7 +3,6 @@ import {
   ReactFlow,
   ConnectionLineType,
   MiniMap,
-  Controls,
   Background,
   BackgroundVariant,
   ConnectionMode,
@@ -18,6 +17,7 @@ import {
   Toolbar,
   EdgeSelector,
   type RelationshipConfig,
+  CustomControls,
 } from '@/features/drawing';
 
 const NODE_TYPES = {
@@ -88,11 +88,13 @@ export const CanvasPage = () => {
               style={{
                 backgroundColor: 'var(--color-schemafy-bg-80)',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                borderRadius: '10px',
+                overflow: 'hidden',
               }}
               zoomable
               pannable
             />
-            <Controls position="top-left" />
+            <CustomControls />
             <Background variant={BackgroundVariant.Dots} />
           </ReactFlow>
 

@@ -34,7 +34,7 @@ export const EdgeSelector = ({
   };
 
   return (
-    <div className="absolute top-4 right-4 z-10 bg-schemafy-bg p-3 rounded-lg shadow-md border border-schemafy-light-gray space-y-3">
+    <div className="absolute top-4 left-4 z-10 bg-schemafy-bg p-3 rounded-lg shadow-md border border-schemafy-light-gray space-y-3">
       <div className="text-sm font-medium text-schemafy-text">
         Edit Relationship
       </div>
