@@ -16,8 +16,9 @@ import {
   RelationshipMarker,
   Toolbar,
   EdgeSelector,
-  type RelationshipConfig,
   CustomControls,
+  TablePreview,
+  type RelationshipConfig,
 } from '@/features/drawing';
 
 const NODE_TYPES = {
@@ -31,6 +32,7 @@ export const CanvasPage = () => {
       isOptional: false,
     });
   const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { screenToFlowPosition } = useReactFlow();
 
   const { nodes, addTable, onNodesChange } = useNodes();
@@ -55,6 +57,12 @@ export const CanvasPage = () => {
     }
   };
 
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (activeTool === 'table') {
+      setMousePosition({ x: e.pageX, y: e.pageY });
+    }
+  };
+
   return (
     <>
       <RelationshipMarker />
@@ -73,6 +81,7 @@ export const CanvasPage = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onPaneClick={handlePaneClick}
+            onPaneMouseMove={handleMouseMove}
             onConnect={onConnect}
             onEdgeClick={onEdgeClick}
             nodeTypes={NODE_TYPES}
@@ -96,6 +105,10 @@ export const CanvasPage = () => {
             />
             <CustomControls />
             <Background variant={BackgroundVariant.Dots} />
+
+            {activeTool === 'table' && (
+              <TablePreview mousePosition={mousePosition} />
+            )}
           </ReactFlow>
 
           {selectedEdge && (

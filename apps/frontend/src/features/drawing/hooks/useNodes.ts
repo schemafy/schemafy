@@ -46,16 +46,6 @@ export const useNodes = () => {
       position,
       data: {
         tableName: `Table_${nodes.length + 1}`,
-        fields: [
-          {
-            id: `field_${Date.now()}`,
-            name: 'id',
-            type: 'INT',
-            isPrimaryKey: true,
-            isNotNull: true,
-            isUnique: false,
-          },
-        ],
         updateNode,
       },
     };
