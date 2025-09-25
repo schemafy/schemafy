@@ -2,7 +2,7 @@ import { ThemeProvider } from '@/lib';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import { LandingPage, CanvasPage } from './pages';
+import { LandingPage, SignInPage, SignUpPage, CanvasPage } from '@/pages';
 
 function App() {
   return (
@@ -12,6 +12,8 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/signin" element={<SignInPage />} />
               <Route path="/canvas" element={<CanvasPage />} />
             </Routes>
           </Layout>
