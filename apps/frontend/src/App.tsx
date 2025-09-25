@@ -2,8 +2,7 @@ import { ThemeProvider } from '@/lib';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import { LandingPage } from './pages';
-import { ERDDiagramTool } from '@/features/drawing';
+import { LandingPage, CanvasPage } from './pages';
 
 function App() {
   return (
@@ -13,7 +12,7 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/canvas" element={<ERDDiagramTool />} />
+              <Route path="/canvas" element={<CanvasPage />} />
             </Routes>
           </Layout>
         </Router>

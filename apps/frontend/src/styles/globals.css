@@ -40,6 +40,7 @@
   --color-schemafy-destructive: hsl(var(--schemafy-destructive));
   --color-schemafy-button-bg: hsl(var(--schemafy-button-bg));
   --color-schemafy-button-text: hsl(var(--schemafy-button-text));
+  --color-schemafy-bg-80: hsl(var(--schemafy-bg) / 0.8);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
