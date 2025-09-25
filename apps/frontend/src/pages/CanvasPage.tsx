@@ -31,7 +31,7 @@ export const CanvasPage = () => {
       type: 'one-to-many',
       isDashed: false,
     });
-  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [activeTool, setActiveTool] = useState<string>('pointer');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { screenToFlowPosition } = useReactFlow();
 
@@ -53,7 +53,7 @@ export const CanvasPage = () => {
         y: e.clientY,
       });
       addTable(flowPosition);
-      setActiveTool(null);
+      setActiveTool('pointer');
     }
   };
 
@@ -82,6 +82,8 @@ export const CanvasPage = () => {
             onEdgesChange={onEdgesChange}
             onPaneClick={handlePaneClick}
             onPaneMouseMove={handleMouseMove}
+            nodesDraggable={activeTool !== 'hand'}
+            elementsSelectable={activeTool !== 'hand'}
             onConnect={onConnect}
             onEdgeClick={onEdgeClick}
             nodeTypes={NODE_TYPES}

@@ -2,16 +2,33 @@ import type { ComponentType } from 'react';
 import { RelationshipSelector } from './RelationshipSelector';
 import type { RelationshipConfig } from '../types';
 import { Button } from '@/components';
-import { Search, Table, MessageCircleMore, Spline } from 'lucide-react';
+import {
+  Search,
+  Table,
+  MessageCircleMore,
+  Spline,
+  MousePointer2,
+  Hand,
+} from 'lucide-react';
 
 interface ToolbarProps {
-  setActiveTool: (toolId: string | null) => void;
-  activeTool: string | null;
+  setActiveTool: (toolId: string) => void;
+  activeTool: string;
   relationshipConfig: RelationshipConfig;
   onRelationshipConfigChange: (config: RelationshipConfig) => void;
 }
 
 const TOOLS = [
+  {
+    id: 'pointer',
+    label: 'MousePointer',
+    icon: MousePointer2,
+  },
+  {
+    id: 'hand',
+    label: 'Hand',
+    icon: Hand,
+  },
   {
     id: 'table',
     label: 'Table',
@@ -44,7 +61,7 @@ export const Toolbar = ({
 }: ToolbarProps) => {
   const handleToolClick = (toolId: string) => {
     if (activeTool === toolId) {
-      setActiveTool(null);
+      setActiveTool('pointer');
     } else {
       setActiveTool(toolId);
     }
