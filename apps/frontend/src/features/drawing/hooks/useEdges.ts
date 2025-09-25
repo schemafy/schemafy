@@ -25,10 +25,6 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
     const baseConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
     const style = getRelationshipStyle(relationshipConfig.isOptional);
 
-    const label = relationshipConfig.isOptional
-      ? `${baseConfig.label}?`
-      : baseConfig.label;
-
     return {
       ...params,
       id: `edge_${Date.now()}`,
@@ -36,7 +32,7 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
       style,
       markerStart: baseConfig.markerStart,
       markerEnd: baseConfig.markerEnd,
-      label,
+      label: baseConfig.label,
       labelStyle: {
         fontSize: 12,
         fontWeight: 'bold',
