@@ -8,13 +8,13 @@ import {
 import { useState } from 'react';
 import { RELATIONSHIP_TYPES, type RelationshipConfig } from '../types';
 
-const getRelationshipStyle = (isOptional: boolean = false) => {
+const getRelationshipStyle = (isDashed: boolean = false) => {
   const baseStyle = {
     stroke: 'var(--color-schemafy-dark-gray)',
     strokeWidth: 2,
   };
 
-  return isOptional ? { ...baseStyle, strokeDasharray: '5 5' } : baseStyle;
+  return isDashed ? { ...baseStyle, strokeDasharray: '5 5' } : baseStyle;
 };
 
 export const useEdges = (relationshipConfig: RelationshipConfig) => {
@@ -23,7 +23,7 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
 
   const createEdge = (params: Connection): Edge => {
     const baseConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
-    const style = getRelationshipStyle(relationshipConfig.isOptional);
+    const style = getRelationshipStyle(relationshipConfig.isDashed);
 
     return {
       ...params,
@@ -40,7 +40,7 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
       },
       data: {
         relationshipType: relationshipConfig.type,
-        isOptional: relationshipConfig.isOptional,
+        isDashed: relationshipConfig.isDashed,
       },
     };
   };
@@ -64,7 +64,7 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
     newConfig: RelationshipConfig,
   ) => {
     const baseConfig = RELATIONSHIP_TYPES[newConfig.type];
-    const style = getRelationshipStyle(newConfig.isOptional);
+    const style = getRelationshipStyle(newConfig.isDashed);
 
     setEdges((eds) =>
       eds.map((edge) =>
@@ -82,7 +82,7 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
               },
               data: {
                 relationshipType: newConfig.type,
-                isOptional: newConfig.isOptional,
+                isDashed: newConfig.isDashed,
               },
             }
           : edge,

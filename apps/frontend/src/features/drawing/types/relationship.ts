@@ -17,7 +17,7 @@ export type RelationshipType = keyof typeof RELATIONSHIP_TYPES;
 
 export interface RelationshipConfig {
   type: RelationshipType;
-  isOptional: boolean;
+  isDashed: boolean;
 }
 
 export const isRelationshipType = (

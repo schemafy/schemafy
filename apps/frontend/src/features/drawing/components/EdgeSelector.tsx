@@ -19,14 +19,14 @@ export const EdgeSelector = ({
   const edge = edges.find((e) => e.id === selectedEdge);
 
   const relationshipType = edge?.data?.relationshipType;
-  const isOptional =
-    typeof edge?.data?.isOptional === 'boolean' ? edge.data.isOptional : false;
+  const isDashed =
+    typeof edge?.data?.isDashed === 'boolean' ? edge.data.isDashed : false;
 
   const currentConfig: RelationshipConfig = {
     type: isRelationshipType(relationshipType)
       ? relationshipType
       : 'one-to-many',
-    isOptional,
+    isDashed,
   };
 
   const handleConfigChange = (newConfig: RelationshipConfig) => {

@@ -29,7 +29,7 @@ export const CanvasPage = () => {
   const [relationshipConfig, setRelationshipConfig] =
     useState<RelationshipConfig>({
       type: 'one-to-many',
-      isOptional: false,
+      isDashed: false,
     });
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });

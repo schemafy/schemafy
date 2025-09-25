@@ -17,8 +17,8 @@ export const RelationshipSelector = ({
     onChange({ ...config, type });
   };
 
-  const handleOptionalChange = (isOptional: boolean) => {
-    onChange({ ...config, isOptional });
+  const handleOptionalChange = (isDashed: boolean) => {
+    onChange({ ...config, isDashed });
   };
 
   return (
@@ -39,7 +39,7 @@ export const RelationshipSelector = ({
           >
             <LinePreview
               type={key as RelationshipType}
-              isOptional={config.isOptional}
+              isDashed={config.isDashed}
             />
             {typeConfig.label}
           </button>
@@ -51,7 +51,7 @@ export const RelationshipSelector = ({
       <label className="flex items-center gap-2 cursor-pointer text-sm">
         <input
           type="checkbox"
-          checked={config.isOptional}
+          checked={config.isDashed}
           onChange={(e) => handleOptionalChange(e.target.checked)}
           className="w-4 h-4 text-schemafy-text rounded focus:ring-schemafy-text"
         />
@@ -62,10 +62,10 @@ export const RelationshipSelector = ({
 };
 
 const LinePreview = ({
-  isOptional,
+  isDashed,
 }: {
   type: RelationshipType;
-  isOptional: boolean;
+  isDashed: boolean;
 }) => {
   const color = 'var(--color-schemafy-dark-gray)';
 
@@ -78,7 +78,7 @@ const LinePreview = ({
         y2="2"
         stroke={color}
         strokeWidth="2"
-        strokeDasharray={isOptional ? '5 5' : 'none'}
+        strokeDasharray={isDashed ? '5 5' : 'none'}
       />
     </svg>
   );
