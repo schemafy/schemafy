@@ -5,132 +5,6 @@ import { Edit, Check, Settings, Plus } from 'lucide-react';
 import { FieldRow } from './Field';
 import { useDragAndDrop } from '../hooks';
 
-const TableHeader = ({
-  tableName,
-  isEditing,
-  editingName,
-  isFieldEditMode,
-  onStartEdit,
-  onSaveEdit,
-  onCancelEdit,
-  onEditingNameChange,
-  onToggleFieldEditMode,
-  onAddField,
-}: {
-  tableName: string;
-  isEditing: boolean;
-  editingName: string;
-  isFieldEditMode: boolean;
-  onStartEdit: () => void;
-  onSaveEdit: () => void;
-  onCancelEdit: () => void;
-  onEditingNameChange: (name: string) => void;
-  onToggleFieldEditMode: () => void;
-  onAddField: () => void;
-}) => {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') onSaveEdit();
-    if (e.key === 'Escape') onCancelEdit();
-  };
-
-  return (
-    <div className="bg-schemafy-button-bg text-schemafy-button-text p-3 flex items-center justify-between">
-      <div className="flex items-center gap-2 flex-1">
-        {isEditing ? (
-          <div className="flex items-center gap-2 flex-1">
-            <input
-              type="text"
-              value={editingName}
-              placeholder="Entity"
-              onChange={(e) => onEditingNameChange(e.target.value)}
-              className="bg-transparent border-b border-schemafy-button-text text-schemafy-button-text placeholder-schemafy-dark-gray outline-none flex-1"
-              onKeyDown={handleKeyDown}
-              autoFocus
-            />
-            <button
-              onClick={onSaveEdit}
-              className="p-1 hover:bg-schemafy-dark-gray rounded"
-            >
-              <Check size={14} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 flex-1">
-            <span className="font-medium">{tableName}</span>
-            <button
-              onClick={onStartEdit}
-              className="p-1 hover:bg-schemafy-dark-gray rounded"
-            >
-              <Edit size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-1">
-        <button
-          onClick={onToggleFieldEditMode}
-          className={`p-1 rounded ${
-            isFieldEditMode
-              ? 'bg-schemafy-dark-gray'
-              : 'hover:bg-schemafy-dark-gray'
-          }`}
-          title="Toggle Edit Mode"
-        >
-          <Settings size={14} />
-        </button>
-        <button
-          onClick={onAddField}
-          className="p-1 hover:bg-schemafy-dark-gray rounded"
-          title="Add Field"
-        >
-          <Plus size={14} />
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const ConnectionHandles = ({ nodeId }: { nodeId: string }) => {
-  const handles = [
-    {
-      type: 'target' as const,
-      position: Position.Top,
-      id: `${nodeId}-top-handle`,
-    },
-    {
-      type: 'source' as const,
-      position: Position.Bottom,
-      id: `${nodeId}-bottom-handle`,
-    },
-    {
-      type: 'target' as const,
-      position: Position.Left,
-      id: `${nodeId}-left-handle`,
-    },
-    {
-      type: 'source' as const,
-      position: Position.Right,
-      id: `${nodeId}-right-handle`,
-    },
-  ];
-
-  return (
-    <>
-      {handles.map(({ type, position, id }) => (
-        <Handle
-          key={id}
-          type={type}
-          position={position}
-          id={id}
-          style={HANDLE_STYLE}
-          className="group-hover:!opacity-100"
-        />
-      ))}
-    </>
-  );
-};
-
 export const TableNode = ({ data, id }: TableNodeProps) => {
   const [isEditingTableName, setIsEditingTableName] = useState(false);
   const [isFieldEditMode, setIsFieldEditMode] = useState(false);
@@ -230,5 +104,127 @@ export const TableNode = ({ data, id }: TableNodeProps) => {
         </div>
       )}
     </div>
+  );
+};
+
+const TableHeader = ({
+  tableName,
+  isEditing,
+  editingName,
+  isFieldEditMode,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onEditingNameChange,
+  onToggleFieldEditMode,
+  onAddField,
+}: {
+  tableName: string;
+  isEditing: boolean;
+  editingName: string;
+  isFieldEditMode: boolean;
+  onStartEdit: () => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onEditingNameChange: (name: string) => void;
+  onToggleFieldEditMode: () => void;
+  onAddField: () => void;
+}) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') onSaveEdit();
+    if (e.key === 'Escape') onCancelEdit();
+  };
+
+  return (
+    <div className="bg-schemafy-button-bg text-schemafy-button-text p-3 flex items-center justify-between">
+      <div className="flex items-center gap-2 flex-1">
+        {isEditing ? (
+          <div className="flex items-center gap-2 flex-1">
+            <input
+              type="text"
+              value={editingName}
+              placeholder="Entity"
+              onChange={(e) => onEditingNameChange(e.target.value)}
+              className="bg-transparent border-b border-schemafy-button-text text-schemafy-button-text placeholder-schemafy-dark-gray outline-none flex-1"
+              onKeyDown={handleKeyDown}
+              autoFocus
+            />
+            <button
+              onClick={onSaveEdit}
+              className="p-1 hover:bg-schemafy-dark-gray rounded"
+            >
+              <Check size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 flex-1">
+            <span className="font-medium">{tableName}</span>
+            <button
+              onClick={onStartEdit}
+              className="p-1 hover:bg-schemafy-dark-gray rounded"
+            >
+              <Edit size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1">
+        <button
+          onClick={onToggleFieldEditMode}
+          className={`p-1 rounded ${
+            isFieldEditMode
+              ? 'bg-schemafy-dark-gray'
+              : 'hover:bg-schemafy-dark-gray'
+          }`}
+          title="Toggle Edit Mode"
+        >
+          <Settings size={14} />
+        </button>
+        <button
+          onClick={onAddField}
+          className="p-1 hover:bg-schemafy-dark-gray rounded"
+          title="Add Field"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const ConnectionHandles = ({ nodeId }: { nodeId: string }) => {
+  const handles = [
+    {
+      position: Position.Top,
+      id: `${nodeId}-top-handle`,
+    },
+    {
+      position: Position.Bottom,
+      id: `${nodeId}-bottom-handle`,
+    },
+    {
+      position: Position.Left,
+      id: `${nodeId}-left-handle`,
+    },
+    {
+      position: Position.Right,
+      id: `${nodeId}-right-handle`,
+    },
+  ];
+
+  return (
+    <>
+      {handles.map(({ position, id }) => (
+        <Handle
+          key={id}
+          type={'source'}
+          position={position}
+          id={id}
+          style={HANDLE_STYLE}
+          className="group-hover:!opacity-100"
+        />
+      ))}
+    </>
   );
 };

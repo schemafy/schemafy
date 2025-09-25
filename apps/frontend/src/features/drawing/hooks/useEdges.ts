@@ -6,29 +6,46 @@ import {
   type EdgeChange,
 } from '@xyflow/react';
 import { useState } from 'react';
-import { RELATIONSHIP_TYPES, type RelationshipType } from '../types';
+import { RELATIONSHIP_TYPES, type RelationshipConfig } from '../types';
 
-export const useEdges = (currentRelationshipType: RelationshipType) => {
+const getRelationshipStyle = (isOptional: boolean = false) => {
+  const baseStyle = {
+    stroke: 'var(--color-schemafy-dark-gray)',
+    strokeWidth: 2,
+  };
+
+  return isOptional ? { ...baseStyle, strokeDasharray: '5 5' } : baseStyle;
+};
+
+export const useEdges = (relationshipConfig: RelationshipConfig) => {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
 
   const createEdge = (params: Connection): Edge => {
-    const relationshipConfig = RELATIONSHIP_TYPES[currentRelationshipType];
+    const baseConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
+    const style = getRelationshipStyle(relationshipConfig.isOptional);
+
+    const label = relationshipConfig.isOptional
+      ? `${baseConfig.label}?`
+      : baseConfig.label;
 
     return {
       ...params,
       id: `edge_${Date.now()}`,
       type: 'smoothstep',
-      style: relationshipConfig.style,
-      markerStart: relationshipConfig.markerStart,
-      markerEnd: relationshipConfig.markerEnd,
-      label: relationshipConfig.label,
+      style,
+      markerStart: baseConfig.markerStart,
+      markerEnd: baseConfig.markerEnd,
+      label,
       labelStyle: {
         fontSize: 12,
         fontWeight: 'bold',
-        color: relationshipConfig.style.stroke,
+        color: style.stroke,
       },
-      data: { relationshipType: currentRelationshipType },
+      data: {
+        relationshipType: relationshipConfig.type,
+        isOptional: relationshipConfig.isOptional,
+      },
     };
   };
 
@@ -46,27 +63,31 @@ export const useEdges = (currentRelationshipType: RelationshipType) => {
     setSelectedEdge(edge.id);
   };
 
-  const changeRelationshipType = (
+  const changeRelationshipConfig = (
     edgeId: string,
-    newType: RelationshipType,
+    newConfig: RelationshipConfig,
   ) => {
-    const config = RELATIONSHIP_TYPES[newType];
+    const baseConfig = RELATIONSHIP_TYPES[newConfig.type];
+    const style = getRelationshipStyle(newConfig.isOptional);
 
     setEdges((eds) =>
       eds.map((edge) =>
         edge.id === edgeId
           ? {
               ...edge,
-              style: config.style,
-              markerStart: config.markerStart,
-              markerEnd: config.markerEnd,
-              label: config.label,
+              style,
+              markerStart: baseConfig.markerStart,
+              markerEnd: baseConfig.markerEnd,
+              label: baseConfig.label,
               labelStyle: {
                 fontSize: 12,
                 fontWeight: 'bold',
-                color: config.style.stroke,
+                color: 'var(--color-schemafy-dark-gray)',
               },
-              data: { ...edge.data, relationshipType: newType },
+              data: {
+                relationshipType: newConfig.type,
+                isOptional: newConfig.isOptional,
+              },
             }
           : edge,
       ),
@@ -80,7 +101,7 @@ export const useEdges = (currentRelationshipType: RelationshipType) => {
     onConnect,
     onEdgesChange,
     onEdgeClick,
-    changeRelationshipType,
+    changeRelationshipConfig,
     setSelectedEdge,
   };
 };

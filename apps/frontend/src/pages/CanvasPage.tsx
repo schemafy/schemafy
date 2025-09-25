@@ -6,6 +6,7 @@ import {
   Controls,
   Background,
   BackgroundVariant,
+  ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
@@ -15,7 +16,7 @@ import {
   RelationshipMarker,
   Toolbar,
   EdgeSelector,
-  type RelationshipType,
+  type RelationshipConfig,
 } from '@/features/drawing';
 
 const NODE_TYPES = {
@@ -23,8 +24,11 @@ const NODE_TYPES = {
 };
 
 export const CanvasPage = () => {
-  const [currentRelationshipType, setCurrentRelationshipType] =
-    useState<RelationshipType>('one-to-many');
+  const [relationshipConfig, setRelationshipConfig] =
+    useState<RelationshipConfig>({
+      type: 'one-to-many',
+      isOptional: false,
+    });
 
   const { nodes, addTable, onNodesChange } = useNodes();
   const {
@@ -33,9 +37,9 @@ export const CanvasPage = () => {
     onConnect,
     onEdgesChange,
     onEdgeClick,
-    changeRelationshipType,
+    changeRelationshipConfig,
     setSelectedEdge,
-  } = useEdges(currentRelationshipType);
+  } = useEdges(relationshipConfig);
 
   return (
     <>
@@ -43,8 +47,8 @@ export const CanvasPage = () => {
       <div className="flex flex-1">
         <Toolbar
           onAddTable={() => addTable()}
-          currentRelationshipType={currentRelationshipType}
-          onRelationshipTypeChange={setCurrentRelationshipType}
+          relationshipConfig={relationshipConfig}
+          onRelationshipConfigChange={setRelationshipConfig}
         />
 
         <div className="flex-1 bg-schemafy-secondary relative">
@@ -58,11 +62,12 @@ export const CanvasPage = () => {
             nodeTypes={NODE_TYPES}
             connectionLineType={ConnectionLineType.SimpleBezier}
             proOptions={{ hideAttribution: true }}
+            connectionMode={ConnectionMode.Loose}
             fitView
           >
             <MiniMap
               position="bottom-right"
-              nodeColor={() => 'var(--color-schemafy-text'}
+              nodeColor={() => 'var(--color-schemafy-text)'}
               maskColor="var(--color-schemafy-bg-80)"
               style={{
                 backgroundColor: 'var(--color-schemafy-bg-80)',
@@ -74,11 +79,12 @@ export const CanvasPage = () => {
             <Controls position="top-left" />
             <Background variant={BackgroundVariant.Dots} />
           </ReactFlow>
+
           {selectedEdge && (
             <EdgeSelector
               selectedEdge={selectedEdge}
               edges={edges}
-              onRelationshipChange={changeRelationshipType}
+              onRelationshipChange={changeRelationshipConfig}
               onClose={() => setSelectedEdge(null)}
             />
           )}

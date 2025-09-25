@@ -1,32 +1,50 @@
 import type { Edge } from '@xyflow/react';
-import type { RelationshipType } from '../types';
-import { RelationshipSelector } from './RelationshipSelector';
 import { Button } from '@/components';
+import { RelationshipSelector } from './RelationshipSelector';
+import { type RelationshipConfig, isRelationshipType } from '../types';
+
+interface EdgeSelectorProps {
+  selectedEdge: string;
+  edges: Edge[];
+  onRelationshipChange: (edgeId: string, config: RelationshipConfig) => void;
+  onClose: () => void;
+}
 
 export const EdgeSelector = ({
   selectedEdge,
   edges,
   onRelationshipChange,
   onClose,
-}: {
-  selectedEdge: string;
-  edges: Edge[];
-  onRelationshipChange: (edgeId: string, type: RelationshipType) => void;
-  onClose: () => void;
-}) => {
+}: EdgeSelectorProps) => {
   const edge = edges.find((e) => e.id === selectedEdge);
-  const currentType =
-    (edge?.data?.relationshipType as RelationshipType) || 'one-to-many';
+
+  const relationshipType = edge?.data?.relationshipType;
+  const isOptional =
+    typeof edge?.data?.isOptional === 'boolean' ? edge.data.isOptional : false;
+
+  const currentConfig: RelationshipConfig = {
+    type: isRelationshipType(relationshipType)
+      ? relationshipType
+      : 'one-to-many',
+    isOptional,
+  };
+
+  const handleConfigChange = (newConfig: RelationshipConfig) => {
+    onRelationshipChange(selectedEdge, newConfig);
+  };
 
   return (
-    <div className="absolute top-4 right-4 z-10 bg-white p-3 rounded-lg shadow-md border">
-      <div className="mb-2">
-        <RelationshipSelector
-          onSelect={(type) => onRelationshipChange(selectedEdge, type)}
-          currentType={currentType}
-        />
+    <div className="absolute top-4 right-4 z-10 bg-schemafy-bg p-3 rounded-lg shadow-md border border-schemafy-light-gray space-y-3">
+      <div className="text-sm font-medium text-schemafy-text">
+        Edit Relationship
       </div>
-      <Button onClick={onClose} variant="outline">
+
+      <RelationshipSelector
+        config={currentConfig}
+        onChange={handleConfigChange}
+      />
+
+      <Button onClick={onClose} variant="outline" fullWidth>
         Close
       </Button>
     </div>
