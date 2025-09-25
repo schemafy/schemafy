@@ -32,7 +32,10 @@ export const CanvasPage = () => {
       isDashed: false,
     });
   const [activeTool, setActiveTool] = useState<string>('pointer');
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const { screenToFlowPosition } = useReactFlow();
 
   const { nodes, addTable, onNodesChange } = useNodes();
@@ -59,7 +62,7 @@ export const CanvasPage = () => {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (activeTool === 'table') {
-      setMousePosition({ x: e.pageX, y: e.pageY });
+      setMousePosition({ x: e.clientX, y: e.clientY });
     }
   };
 
