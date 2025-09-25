@@ -55,7 +55,7 @@ export const RelationshipSelector = ({
           onChange={(e) => handleOptionalChange(e.target.checked)}
           className="w-4 h-4 text-schemafy-text rounded focus:ring-schemafy-text"
         />
-        <span className="text-schemafy-text">Optional (점선)</span>
+        <span className="text-schemafy-text">Dashed</span>
       </label>
     </div>
   );

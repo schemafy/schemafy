@@ -7,6 +7,7 @@ import {
   Background,
   BackgroundVariant,
   ConnectionMode,
+  useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
@@ -29,6 +30,8 @@ export const CanvasPage = () => {
       type: 'one-to-many',
       isOptional: false,
     });
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const { screenToFlowPosition } = useReactFlow();
 
   const { nodes, addTable, onNodesChange } = useNodes();
   const {
@@ -41,12 +44,24 @@ export const CanvasPage = () => {
     setSelectedEdge,
   } = useEdges(relationshipConfig);
 
+  const handlePaneClick = (e: React.MouseEvent) => {
+    if (activeTool === 'table') {
+      const flowPosition = screenToFlowPosition({
+        x: e.clientX,
+        y: e.clientY,
+      });
+      addTable(flowPosition);
+      setActiveTool(null);
+    }
+  };
+
   return (
     <>
       <RelationshipMarker />
       <div className="flex flex-1">
         <Toolbar
-          onAddTable={() => addTable()}
+          setActiveTool={setActiveTool}
+          activeTool={activeTool}
           relationshipConfig={relationshipConfig}
           onRelationshipConfigChange={setRelationshipConfig}
         />
@@ -57,6 +72,7 @@ export const CanvasPage = () => {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onPaneClick={handlePaneClick}
             onConnect={onConnect}
             onEdgeClick={onEdgeClick}
             nodeTypes={NODE_TYPES}

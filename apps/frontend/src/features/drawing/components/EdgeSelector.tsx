@@ -44,7 +44,7 @@ export const EdgeSelector = ({
         onChange={handleConfigChange}
       />
 
-      <Button onClick={onClose} variant="outline" fullWidth>
+      <Button onClick={onClose} fullWidth>
         Close
       </Button>
     </div>

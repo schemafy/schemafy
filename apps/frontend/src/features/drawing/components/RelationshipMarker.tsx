@@ -21,8 +21,8 @@ export const RelationshipMarker = () => {
           orient="auto"
           markerUnits="strokeWidth"
         >
-          <path d="M5 1L5 9" stroke="currentColor" stroke-linecap="round" />
-          <path d="M9 5H1" stroke="currentColor" stroke-linecap="round" />
+          <path d="M5 1L5 9" stroke="currentColor" strokeLinecap="round" />
+          <path d="M9 5H1" stroke="currentColor" strokeLinecap="round" />
         </marker>
 
         <marker
@@ -35,8 +35,8 @@ export const RelationshipMarker = () => {
           orient="auto"
           markerUnits="strokeWidth"
         >
-          <path d="M5 1L5 9" stroke="currentColor" stroke-linecap="round" />
-          <path d="M9 5H1" stroke="currentColor" stroke-linecap="round" />
+          <path d="M5 1L5 9" stroke="currentColor" strokeLinecap="round" />
+          <path d="M9 5H1" stroke="currentColor" strokeLinecap="round" />
         </marker>
 
         <marker
@@ -49,9 +49,9 @@ export const RelationshipMarker = () => {
           orient="auto"
           markerUnits="strokeWidth"
         >
-          <path d="M7 9L1 5" stroke="currentColor" stroke-linecap="round" />
-          <path d="M7 1L1 5" stroke="currentColor" stroke-linecap="round" />
-          <path d="M1 5L7.5 5" stroke="currentColor" stroke-linecap="round" />
+          <path d="M7 9L1 5" stroke="currentColor" strokeLinecap="round" />
+          <path d="M7 1L1 5" stroke="currentColor" strokeLinecap="round" />
+          <path d="M1 5L7.5 5" stroke="currentColor" strokeLinecap="round" />
         </marker>
       </defs>
     </svg>

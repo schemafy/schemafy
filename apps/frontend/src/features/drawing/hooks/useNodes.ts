@@ -39,12 +39,7 @@ export const useNodes = () => {
     );
   }, []);
 
-  const addTable = (x?: number, y?: number) => {
-    const position = {
-      x: x ?? Math.random() * 400 + 100,
-      y: y ?? Math.random() * 300 + 100,
-    };
-
+  const addTable = (position: { x: number; y: number }) => {
     const newNode: Node = {
       id: `table_${Date.now()}`,
       type: 'table',
