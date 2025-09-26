@@ -121,43 +121,29 @@ interface ERDValidator {
     constraintColumnId: ConstraintColumn['id']
   ) => Database;
 
-  createRelationship: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    relationship: Omit<Relationship, 'id'>
-  ) => Database;
-  deleteRelationship: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    relationshipId: Relationship['id']
-  ) => Database;
+  createRelationship: (database: Database, schemaId: Schema['id'], relationship: Omit<Relationship, 'id'>) => Database;
+  deleteRelationship: (database: Database, schemaId: Schema['id'], relationshipId: Relationship['id']) => Database;
   changeRelationshipName: (
     database: Database,
     schemaId: Schema['id'],
-    tableId: Table['id'],
     relationshipId: Relationship['id'],
     newName: Relationship['name']
   ) => Database;
   changeRelationshipCardinality: (
     database: Database,
     schemaId: Schema['id'],
-    tableId: Table['id'],
     relationshipId: Relationship['id'],
     cardinality: Relationship['cardinality']
   ) => Database;
   addColumnToRelationship: (
     database: Database,
     schemaId: Schema['id'],
-    tableId: Table['id'],
     relationshipId: Relationship['id'],
     relationshipColumn: Omit<RelationshipColumn, 'id' | 'relationshipId'>
   ) => Database;
   removeColumnFromRelationship: (
     database: Database,
     schemaId: Schema['id'],
-    tableId: Table['id'],
     relationshipId: Relationship['id'],
     relationshipColumnId: RelationshipColumn['id']
   ) => Database;
@@ -252,22 +238,22 @@ export const ERD_VALIDATOR: ERDValidator = (() => {
       throw new Error('removeColumnFromConstraint: Not implemented yet');
     },
 
-    createRelationship: (database, schemaId, tableId, relationship) => {
+    createRelationship: (database, schemaId, relationship) => {
       throw new Error('createRelationship: Not implemented yet');
     },
-    deleteRelationship: (database, schemaId, tableId, relationshipId) => {
+    deleteRelationship: (database, schemaId, relationshipId) => {
       throw new Error('deleteRelationship: Not implemented yet');
     },
-    changeRelationshipName: (database, schemaId, tableId, relationshipId, newName) => {
+    changeRelationshipName: (database, schemaId, relationshipId, newName) => {
       throw new Error('changeRelationshipName: Not implemented yet');
     },
-    changeRelationshipCardinality: (database, schemaId, tableId, relationshipId, cardinality) => {
+    changeRelationshipCardinality: (database, schemaId, relationshipId, cardinality) => {
       throw new Error('changeRelationshipCardinality: Not implemented yet');
     },
-    addColumnToRelationship: (database, schemaId, tableId, relationshipId, relationshipColumn) => {
+    addColumnToRelationship: (database, schemaId, relationshipId, relationshipColumn) => {
       throw new Error('addColumnToRelationship: Not implemented yet');
     },
-    removeColumnFromRelationship: (database, schemaId, tableId, relationshipId, relationshipColumnId) => {
+    removeColumnFromRelationship: (database, schemaId, relationshipId, relationshipColumnId) => {
       throw new Error('removeColumnFromRelationship: Not implemented yet');
     },
   };
