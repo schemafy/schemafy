@@ -1,7 +1,4 @@
-import {
-  createColumnBuilder,
-  createTestDatabase,
-} from '../src/lib/builder';
+import { createColumnBuilder, createTestDatabase } from '../src/lib/builder';
 import {
   ColumnDataTypeInvalidError,
   ColumnDataTypeRequiredError,
@@ -14,8 +11,8 @@ import {
   ColumnPrecisionRequiredError,
   DefaultValueIncompatibleError,
   MultipleAutoIncrementColumnsError,
-  ERD_VALIDATOR,
-} from '../src';
+} from '../src/lib/errors';
+import { ERD_VALIDATOR } from '../src/lib/utils';
 
 describe('Column validation', () => {
   test.skip('같은 테이블 내 중복된 컬럼 이름은 금지된다', () => {
@@ -30,9 +27,7 @@ describe('Column validation', () => {
 
     const column = createColumnBuilder().withName('id').build();
 
-    expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(
-      ColumnNameNotUniqueError
-    );
+    expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(ColumnNameNotUniqueError);
   });
 
   test.skip('컬럼의 데이터 타입은 반드시 존재해야 한다', () => {
@@ -252,18 +247,15 @@ describe('Column validation', () => {
             t
               .withId('table-1')
               .withColumn((c) => c.withId('pk-col').withName('id').withDataType('INT'))
-              .withColumn((c) =>
-                c
-                  .withId('non-pk-ai-col')
-                  .withName('non_pk_ai')
-                  .withDataType('INT')
-                  .withAutoIncrement(true) // PK가 아닌 컬럼에 AI 설정
+              .withColumn(
+                (c) => c.withId('non-pk-ai-col').withName('non_pk_ai').withDataType('INT').withAutoIncrement(true) // PK가 아닌 컬럼에 AI 설정
               )
-              .withConstraint((c) =>
-                c
-                  .withName('pk_id')
-                  .withKind('PRIMARY_KEY')
-                  .withColumn((cc) => cc.withColumnId('pk-col')) // 다른 컬럼이 PK
+              .withConstraint(
+                (c) =>
+                  c
+                    .withName('pk_id')
+                    .withKind('PRIMARY_KEY')
+                    .withColumn((cc) => cc.withColumnId('pk-col')) // 다른 컬럼이 PK
               )
           )
         )
@@ -276,15 +268,13 @@ describe('Column validation', () => {
   test.skip('일반 컬럼을 삭제할 수 있다', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s
-          .withId('schema-1')
-          .withTable((t) =>
-            t
-              .withId('table-1')
-              .withColumn((c) => c.withId('id-col').withName('id').withDataType('INT'))
-              .withColumn((c) => c.withId('name-col').withName('name').withDataType('VARCHAR').withLengthScale('100'))
-              .withColumn((c) => c.withId('email-col').withName('email').withDataType('VARCHAR').withLengthScale('100'))
-          )
+        s.withId('schema-1').withTable((t) =>
+          t
+            .withId('table-1')
+            .withColumn((c) => c.withId('id-col').withName('id').withDataType('INT'))
+            .withColumn((c) => c.withId('name-col').withName('name').withDataType('VARCHAR').withLengthScale('100'))
+            .withColumn((c) => c.withId('email-col').withName('email').withDataType('VARCHAR').withLengthScale('100'))
+        )
       )
       .build();
 
@@ -295,19 +285,17 @@ describe('Column validation', () => {
     test.skip('Primary Key 컬럼 삭제 시 에러 발생', () => {
       const dbWithPK = createTestDatabase()
         .withSchema((s) =>
-          s
-            .withId('schema-1')
-            .withTable((t) =>
-              t
-                .withId('table-1')
-                .withColumn((c) => c.withId('id-col').withName('id').withDataType('INT'))
-                .withConstraint((c) =>
-                  c
-                    .withName('pk_id')
-                    .withKind('PRIMARY_KEY')
-                    .withColumn((cc) => cc.withColumnId('id-col'))
-                )
-            )
+          s.withId('schema-1').withTable((t) =>
+            t
+              .withId('table-1')
+              .withColumn((c) => c.withId('id-col').withName('id').withDataType('INT'))
+              .withConstraint((c) =>
+                c
+                  .withName('pk_id')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId('id-col'))
+              )
+          )
         )
         .build();
 
@@ -363,9 +351,7 @@ describe('Column validation', () => {
           s
             .withId('schema-1')
             .withTable((t) =>
-              t
-                .withId('table-1')
-                .withColumn((c) => c.withId('only-col').withName('only').withDataType('INT'))
+              t.withId('table-1').withColumn((c) => c.withId('only-col').withName('only').withDataType('INT'))
             )
         )
         .build();
@@ -377,15 +363,13 @@ describe('Column validation', () => {
   test.skip('컬럼 이름을 변경할 수 있다', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s
-          .withId('schema-1')
-          .withTable((t) =>
-            t
-              .withId('table-1')
-              .withColumn((c) => c.withId('id-col').withName('id'))
-              .withColumn((c) => c.withId('name-col').withName('name'))
-              .withColumn((c) => c.withId('email-col').withName('email'))
-          )
+        s.withId('schema-1').withTable((t) =>
+          t
+            .withId('table-1')
+            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('name-col').withName('name'))
+            .withColumn((c) => c.withId('email-col').withName('email'))
+        )
       )
       .build();
 
@@ -398,15 +382,13 @@ describe('Column validation', () => {
   test.skip('중복된 컬럼 이름으로 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s
-          .withId('schema-1')
-          .withTable((t) =>
-            t
-              .withId('table-1')
-              .withColumn((c) => c.withId('id-col').withName('id'))
-              .withColumn((c) => c.withId('name-col').withName('name'))
-              .withColumn((c) => c.withId('email-col').withName('email'))
-          )
+        s.withId('schema-1').withTable((t) =>
+          t
+            .withId('table-1')
+            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('name-col').withName('name'))
+            .withColumn((c) => c.withId('email-col').withName('email'))
+        )
       )
       .build();
 
@@ -418,15 +400,13 @@ describe('Column validation', () => {
   test.skip('존재하지 않는 컬럼 이름 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s
-          .withId('schema-1')
-          .withTable((t) =>
-            t
-              .withId('table-1')
-              .withColumn((c) => c.withId('id-col').withName('id'))
-              .withColumn((c) => c.withId('name-col').withName('name'))
-              .withColumn((c) => c.withId('email-col').withName('email'))
-          )
+        s.withId('schema-1').withTable((t) =>
+          t
+            .withId('table-1')
+            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('name-col').withName('name'))
+            .withColumn((c) => c.withId('email-col').withName('email'))
+        )
       )
       .build();
 
@@ -436,15 +416,13 @@ describe('Column validation', () => {
   test.skip('유효하지 않은 컬럼 이름으로 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s
-          .withId('schema-1')
-          .withTable((t) =>
-            t
-              .withId('table-1')
-              .withColumn((c) => c.withId('id-col').withName('id'))
-              .withColumn((c) => c.withId('name-col').withName('name'))
-              .withColumn((c) => c.withId('email-col').withName('email'))
-          )
+        s.withId('schema-1').withTable((t) =>
+          t
+            .withId('table-1')
+            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('name-col').withName('name'))
+            .withColumn((c) => c.withId('email-col').withName('email'))
+        )
       )
       .build();
 

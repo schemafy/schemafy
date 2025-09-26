@@ -1,5 +1,6 @@
 import { createTestDatabase } from '../src/lib/builder';
-import { SchemaNameInvalidError, SchemaNameNotUniqueError, SchemaNotExistError, ERD_VALIDATOR } from '../src';
+import { SchemaNameInvalidError, SchemaNameNotUniqueError, SchemaNotExistError } from '../src/lib/errors';
+import { ERD_VALIDATOR } from '../src/lib/utils';
 import type { Database } from '../src/lib/types';
 
 describe('Schema validation', () => {

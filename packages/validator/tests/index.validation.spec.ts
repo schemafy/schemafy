@@ -5,9 +5,9 @@ import {
   IndexColumnNotUniqueError,
   DuplicateIndexDefinitionError,
   IndexNotExistError,
-  ERD_VALIDATOR,
   IndexColumnSortDirInvalidError,
-} from '../src';
+} from '../src/lib/errors';
+import { ERD_VALIDATOR } from '../src/lib/utils';
 
 describe('Index validation', () => {
   test.skip('인덱스 이름은 테이블 내에서 중복될 수 없다', () => {

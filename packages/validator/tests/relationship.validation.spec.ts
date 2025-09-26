@@ -2,14 +2,10 @@ import { createRelationshipBuilder, createTestDatabase } from '../src/lib/builde
 import {
   RelationshipEmptyError,
   RelationshipNameNotUniqueError,
-  RelationshipColumnMappingDuplicateError,
   RelationshipTargetTableNotExistError,
-  RelationshipColumnTypeIncompatibleError,
-  RelationshipDeleteSetNullError,
   RelationshipCyclicReferenceError,
-  IdentifyingRelationshipOrderError,
-  ERD_VALIDATOR,
-} from '../src';
+} from '../src/lib/errors';
+import { ERD_VALIDATOR } from '../src/lib/utils';
 
 describe('Relationship validation', () => {
   test.skip('관계는 반드시 하나 이상의 컬럼 매핑을 가져야 한다', () => {
@@ -27,18 +23,16 @@ describe('Relationship validation', () => {
       )
       .build();
 
-    // createRelationship을 하는 경우에, 외래키 컬럼은 자동으로 생성됨. withRefColumnId만 지정하면 됨.
+    // createRelationship을 하는 경우에, 외래키 컬럼은 자동으로 생성됨. withRefColumnId만 지정하면 됨. (가정)
     const relationship = createRelationshipBuilder()
+      .withSrcTableId('child-table')
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
       .withTgtTableId('parent-table')
       .withColumn((rc) => rc.withRefColumnId('id-col'))
       .build();
 
-    // TODO: 테이블 하나만 받는데, 기준이 뭔지? 두 테이블을 받거나, 아니면 릴레이션 정보를 하나만 받아야하지 싶음.
-    expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', 'child-table', relationship)).toThrow(
-      RelationshipEmptyError
-    );
+    expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', relationship)).toThrow(RelationshipEmptyError);
   });
 
   test.skip('테이블이 자기 자신을 참조하는 관계를 맺을 수 있다', () => {
@@ -61,6 +55,7 @@ describe('Relationship validation', () => {
       .build();
 
     const relationship = createRelationshipBuilder()
+      .withSrcTableId('employee-table')
       .withName('fk_employee')
       .withKind('NON_IDENTIFYING')
       .withTgtTableId('employee-table')
@@ -68,7 +63,7 @@ describe('Relationship validation', () => {
       .build();
 
     // TODO: 이 경우에는 참조하는 테이블이 자기 자신이므로 컬럼을 추가하고 릴레이션을 추가하는데, 내부적으로 중복이 생기면 안된다.
-    expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', 'employee-table', relationship)).not.toThrow();
+    expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', relationship)).not.toThrow();
   });
 
   test.skip('기존 테이블에 중복된 이름의 관계를 추가할 수 없다.', () => {
@@ -91,22 +86,24 @@ describe('Relationship validation', () => {
       .build();
 
     const relationship = createRelationshipBuilder()
+      .withSrcTableId('child-table')
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
       .withTgtTableId('parent-table')
       .withColumn((rc) => rc.withRefColumnId('parent-id'))
       .build();
 
-    expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', 'child-table', relationship)).not.toThrow();
+    expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', relationship)).not.toThrow();
 
     const duplicateRelationship = createRelationshipBuilder()
+      .withSrcTableId('child-table')
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
       .withTgtTableId('parent-table')
       .withColumn((rc) => rc.withRefColumnId('parent-id'))
       .build();
 
-    expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', 'child-table', duplicateRelationship)).toThrow(
+    expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', duplicateRelationship)).toThrow(
       RelationshipNameNotUniqueError
     );
   });
@@ -124,13 +121,14 @@ describe('Relationship validation', () => {
       .build();
 
     const invalidRelationship = createRelationshipBuilder()
+      .withSrcTableId('child-table')
       .withName('invalid_fk')
       .withKind('NON_IDENTIFYING')
       .withTgtTableId('non-existent-table')
       .withColumn((rc) => rc.withRefColumnId('child-col').withRefColumnId('some-col'))
       .build();
 
-    expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', 'child-table', invalidRelationship)).toThrow(
+    expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', invalidRelationship)).toThrow(
       RelationshipTargetTableNotExistError
     );
   });
@@ -171,16 +169,18 @@ describe('Relationship validation', () => {
 
       // Step 2: 첫 번째 IDENTIFYING 관계 추가 (A -> B)
       const aToBRelationship = createRelationshipBuilder()
+        .withSrcTableId('table-a')
         .withName('fk_a_to_b')
         .withKind('IDENTIFYING') // IDENTIFYING 관계
         .withTgtTableId('table-b')
         .withColumn((rc) => rc.withRefColumnId('b-id'))
         .build();
 
-      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', 'table-a', aToBRelationship)).not.toThrow();
+      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', aToBRelationship)).not.toThrow();
 
       // Step 3: IDENTIFYING 관계에서 순환 참조 시도 (B -> A) - 논리적으로 불가능
       const cyclicRelationship = createRelationshipBuilder()
+        .withSrcTableId('table-b')
         .withName('fk_b_to_a')
         .withKind('IDENTIFYING') // IDENTIFYING 관계에서 순환은 불가능
         .withTgtTableId('table-a')
@@ -188,7 +188,7 @@ describe('Relationship validation', () => {
         .build();
 
       // IDENTIFYING 관계에서 순환 참조는 금지되어야 함
-      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', 'table-b', cyclicRelationship)).toThrow(
+      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', cyclicRelationship)).toThrow(
         RelationshipCyclicReferenceError
       );
     });
@@ -228,18 +228,18 @@ describe('Relationship validation', () => {
 
       // Step 2: 첫 번째 NON_IDENTIFYING 관계 추가 (user -> company)
       const userCompanyRelationship = createRelationshipBuilder()
+        .withSrcTableId('user-table')
         .withName('fk_user_company')
         .withKind('NON_IDENTIFYING') // NON_IDENTIFYING 관계
         .withTgtTableId('company-table')
         .withColumn((rc) => rc.withRefColumnId('company-id'))
         .build();
 
-      expect(() =>
-        ERD_VALIDATOR.createRelationship(db, 'schema-1', 'user-table', userCompanyRelationship)
-      ).not.toThrow();
+      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', userCompanyRelationship)).not.toThrow();
 
       // Step 3: NON_IDENTIFYING 관계에서 순환 참조 (company -> user) - 허용되어야 함
       const cyclicRelationship = createRelationshipBuilder()
+        .withSrcTableId('company-table')
         .withName('fk_company_owner')
         .withKind('NON_IDENTIFYING') // NON_IDENTIFYING에서는 순환 허용
         .withTgtTableId('user-table')
@@ -247,40 +247,7 @@ describe('Relationship validation', () => {
         .build();
 
       // NON_IDENTIFYING 관계에서 순환 참조는 허용되어야 함
-      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', 'company-table', cyclicRelationship)).not.toThrow();
-    });
-
-    test.skip('테이블이 자기 자신을 참조하는 관계 추가는 허용한다', () => {
-      // Step 1: 기본 테이블 생성 (외래키 컬럼 없이)
-      const db = createTestDatabase()
-        .withSchema((s) =>
-          s.withId('schema-1').withTable((t) =>
-            t
-              .withId('employee-table')
-              .withName('employee')
-              .withColumn((c) => c.withId('emp-id').withName('id').withDataType('INT'))
-              .withConstraint((c) =>
-                c
-                  .withName('pk_employee')
-                  .withKind('PRIMARY_KEY')
-                  .withColumn((cc) => cc.withColumnId('emp-id'))
-              )
-          )
-        )
-        .build();
-
-      // Step 2: 자기 참조 관계 추가 (manager_id 컬럼이 자동으로 추가될 것임)
-      const selfReferenceRelationship = createRelationshipBuilder()
-        .withName('fk_employee_manager')
-        .withKind('NON_IDENTIFYING')
-        .withTgtTableId('employee-table') // 자기 자신을 참조
-        .withColumn((rc) => rc.withRefColumnId('emp-id'))
-        .build();
-
-      // 자기 참조는 허용되어야 함
-      expect(() =>
-        ERD_VALIDATOR.createRelationship(db, 'schema-1', 'employee-table', selfReferenceRelationship)
-      ).not.toThrow();
+      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', cyclicRelationship)).not.toThrow();
     });
 
     test.skip('IDENTIFYING 관계에서 복합 PK 전파가 올바르게 처리된다', () => {
@@ -331,20 +298,20 @@ describe('Relationship validation', () => {
       // Step 2: IDENTIFYING 관계 추가 (Order -> OrderLine)
       // 결과: OrderLine의 PK = (line_id, order_id)
       const orderLineRelationship = createRelationshipBuilder()
+        .withSrcTableId('order-line-table')
         .withName('fk_order_line')
         .withKind('IDENTIFYING')
         .withTgtTableId('order-table')
         .withColumn((rc) => rc.withRefColumnId('order-id'))
         .build();
 
-      expect(() =>
-        ERD_VALIDATOR.createRelationship(db, 'schema-1', 'order-line-table', orderLineRelationship)
-      ).not.toThrow();
+      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', orderLineRelationship)).not.toThrow();
 
       // Step 3: IDENTIFYING 관계 추가 (OrderLine -> OrderLineDetail)
       // 문제: OrderLine의 PK는 이제 복합키 (line_id, order_id)
       // 따라서 OrderLineDetail은 이 복합키 전체를 참조해야 함
       const orderLineDetailRelationship = createRelationshipBuilder()
+        .withSrcTableId('order-line-detail-table')
         .withName('fk_order_line_detail')
         .withKind('IDENTIFYING')
         .withTgtTableId('order-line-table')
@@ -354,9 +321,7 @@ describe('Relationship validation', () => {
         .build();
 
       // 복합 PK를 올바르게 참조하는 IDENTIFYING 관계는 허용되어야 함
-      expect(() =>
-        ERD_VALIDATOR.createRelationship(db, 'schema-1', 'order-line-detail-table', orderLineDetailRelationship)
-      ).not.toThrow();
+      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', orderLineDetailRelationship)).not.toThrow();
 
       const orderLineDetailTable = db.schemas[0].tables.find((t) => t.id === 'order-line-detail-table');
       expect(orderLineDetailTable).toBeDefined();
@@ -387,16 +352,18 @@ describe('Relationship validation', () => {
 
       // Step 2: 첫 번째 자기 참조 관계 추가 (created_by_user_id 컬럼이 추가됨)
       const createdByRelationship = createRelationshipBuilder()
+        .withSrcTableId('user-table')
         .withName('fk_user_created_by')
         .withKind('NON_IDENTIFYING')
         .withTgtTableId('user-table')
         .withColumn((rc) => rc.withRefColumnId('user-id'))
         .build();
 
-      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', 'user-table', createdByRelationship)).not.toThrow();
+      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', createdByRelationship)).not.toThrow();
 
       // Step 3: 두 번째 자기 참조 관계 추가 (updated_by_user_id 컬럼이 추가됨)
       const updatedByRelationship = createRelationshipBuilder()
+        .withSrcTableId('user-table')
         .withName('fk_user_updated_by')
         .withKind('NON_IDENTIFYING')
         .withTgtTableId('user-table')
@@ -404,7 +371,7 @@ describe('Relationship validation', () => {
         .build();
 
       // 같은 테이블에 대한 여러 자기 참조 관계는 허용되어야 함
-      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', 'user-table', updatedByRelationship)).not.toThrow();
+      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', updatedByRelationship)).not.toThrow();
     });
   });
 });

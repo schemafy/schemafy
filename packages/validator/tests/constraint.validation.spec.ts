@@ -1,14 +1,13 @@
 import { createConstraintBuilder, createTestDatabase } from '../src/lib/builder';
 import {
   ConstraintColumnNotExistError,
-  ConstraintColumnRequiredError,
   ConstraintNameNotUniqueError,
   ConstraintColumnNotUniqueError,
-  ERD_VALIDATOR,
   UniqueSameAsPrimaryKeyError,
   DuplicateKeyDefinitionError,
   ConstraintNotExistError,
-} from '../src';
+} from '../src/lib/errors';
+import { ERD_VALIDATOR } from '../src/lib/utils';
 
 describe('Constraint validation', () => {
   test.skip('제약 조건의 이름은 스키마 내에서 고유해야 한다', () => {

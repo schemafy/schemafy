@@ -1,5 +1,6 @@
+import { ERD_VALIDATOR } from '../src/lib/utils';
+import { TableNameNotUniqueError, TableNotExistError } from '../src/lib/errors';
 import { createTestDatabase } from '../src/lib/builder';
-import { TableNameNotUniqueError, SchemaNotExistError, ERD_VALIDATOR, TableNotExistError } from '../src';
 import type { Table } from '../src/lib/types';
 
 describe('Table validation', () => {
