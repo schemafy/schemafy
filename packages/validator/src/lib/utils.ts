@@ -14,6 +14,8 @@ import {
 } from './types';
 
 interface ERDValidator {
+  validate: (database: Database) => void;
+
   changeSchemaName: (database: Database, schemaId: Schema['id'], newName: Schema['name']) => Database;
   createSchema: (database: Database, schema: Omit<Schema, 'id' | 'createdAt' | 'updatedAt'>) => Database;
   deleteSchema: (database: Database, schemaId: Schema['id']) => Database;
@@ -162,20 +164,27 @@ interface ERDValidator {
 }
 
 export const ERD_VALIDATOR: ERDValidator = (() => {
+  // 추가적으로 이걸 백엔드에서 검증하기 위해서, 프론트엔드에서 해당 ERD에 대한 모든 데이터가 필요할 것으로 보이는데, 이를 어떻게 하면 좋을지.
+  // 단순히 캐싱으로 처리해야하나?
   return {
+    validate: (database) => {
+      // 해당 데이터베이스를 전체적으로 검증하는 것이 필요.
+      throw new Error('validate: Not implemented yet');
+    },
+
     changeSchemaName: (database, schemaId, newName) => {
-      const schema = database.projects.find((s) => s.id === schemaId);
+      const schema = database.schemas.find((s) => s.id === schemaId);
       if (!schema) throw new SchemaNotExistError(schemaId);
 
       const result = SCHEMA.shape.name.safeParse(newName);
       if (!result.success) throw new SchemaNameInvalidError(newName);
 
-      const existingSchema = database.projects.find((schema) => schema.name === newName && schema.id !== schemaId);
+      const existingSchema = database.schemas.find((schema) => schema.name === newName && schema.id !== schemaId);
       if (existingSchema) throw new SchemaNameNotUniqueError(newName, existingSchema.id);
 
       return {
         ...database,
-        projects: database.projects.map((schema) => (schema.id === schemaId ? { ...schema, name: newName } : schema)),
+        schemas: database.schemas.map((schema) => (schema.id === schemaId ? { ...schema, name: newName } : schema)),
       };
     },
     createSchema: (database, schema) => {
