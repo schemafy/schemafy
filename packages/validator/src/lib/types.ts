@@ -7,8 +7,8 @@ const INDEX_SORT_DIR = z.enum(['ASC', 'DESC']);
 const CONSTRAINT_KIND = z.enum(['PRIMARY_KEY', 'UNIQUE', 'CHECK', 'DEFAULT', 'NOT_NULL']);
 const RELATIONSHIP_KIND = z.enum(['IDENTIFYING', 'NON_IDENTIFYING']);
 const RELATIONSHIP_CARDINALITY = z.enum(['1:1', '1:N']);
-const REALTIONSHIP_ON_DELETE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
-const REALTIONSHIP_ON_UPDATE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
+const RELATIONSHIP_ON_DELETE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
+const RELATIONSHIP_ON_UPDATE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
 
 export const COLUMN = z.object({
   id: ULID,
@@ -73,8 +73,8 @@ export const CONSTRAINT = z
 export const RELATIONSHIP_COLUMN = z.object({
   id: ULID,
   relationshipId: ULID,
-  srcColumnId: ULID,
-  tgtColumnId: ULID,
+  fkColumnId: ULID,
+  refColumnId: ULID,
   seqNo: z.number().positive(),
 });
 
@@ -85,8 +85,8 @@ export const RELATIONSHIP = z.object({
   name: z.string(),
   kind: RELATIONSHIP_KIND,
   cardinality: RELATIONSHIP_CARDINALITY,
-  onDelete: REALTIONSHIP_ON_DELETE,
-  onUpdate: REALTIONSHIP_ON_UPDATE,
+  onDelete: RELATIONSHIP_ON_DELETE,
+  onUpdate: RELATIONSHIP_ON_UPDATE,
   fkEnforced: z.literal(false),
   columns: z.array(RELATIONSHIP_COLUMN),
 });
@@ -122,7 +122,7 @@ export const SCHEMA = z.object({
 
 export const DATABASE = z.object({
   id: ULID,
-  projects: z.array(SCHEMA),
+  schemas: z.array(SCHEMA),
 });
 
 export type Schema = z.infer<typeof SCHEMA>;
