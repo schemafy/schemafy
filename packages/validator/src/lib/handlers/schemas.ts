@@ -41,7 +41,6 @@ export const schemaHandlers: SchemaHandlers = {
     const schema = database.projects.find((s) => s.id === schemaId);
 
     if (!schema) throw new SchemaNotExistError(schemaId);
-    if (schema.deletedAt) throw new SchemaNotExistError(schemaId);
 
     return {
       ...database,

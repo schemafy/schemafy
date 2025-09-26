@@ -43,7 +43,6 @@ export const tableHandlers: TableHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     // Find all relationships that reference this table
     const affectedRelationships = helper.findRelationshipsByTable(schema, tableId);
@@ -139,7 +138,6 @@ export const tableHandlers: TableHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     return {
       ...database,

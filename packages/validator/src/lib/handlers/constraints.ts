@@ -50,7 +50,6 @@ export const constraintHandlers: ConstraintHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     // Validate constraint name directly since CONSTRAINT has refinement
     if (!constraint.name || typeof constraint.name !== 'string') {
@@ -84,7 +83,6 @@ export const constraintHandlers: ConstraintHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const constraint = table.constraints.find((c) => c.id === constraintId);
     if (!constraint) throw new ConstraintNotExistError(constraintId);
@@ -116,7 +114,6 @@ export const constraintHandlers: ConstraintHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const constraint = table.constraints.find((c) => c.id === constraintId);
     if (!constraint) throw new ConstraintNotExistError(constraintId);
@@ -153,7 +150,6 @@ export const constraintHandlers: ConstraintHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const constraint = table.constraints.find((c) => c.id === constraintId);
     if (!constraint) throw new ConstraintNotExistError(constraintId);
@@ -192,7 +188,6 @@ export const constraintHandlers: ConstraintHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const constraint = table.constraints.find((c) => c.id === constraintId);
     if (!constraint) throw new ConstraintNotExistError(constraintId);

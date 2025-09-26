@@ -54,7 +54,6 @@ export const columnHandlers: ColumnHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const result = COLUMN.omit({ id: true, tableId: true, createdAt: true, updatedAt: true }).safeParse(column);
     if (!result.success) throw new ColumnNameInvalidError(column.name);
@@ -86,11 +85,9 @@ export const columnHandlers: ColumnHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
-    if (column.deletedAt) throw new ColumnNotExistError(columnId);
 
     // Find all relationships that use this column
     const affectedRelationships = helper.findRelationshipsByColumn(schema, columnId);
@@ -187,11 +184,9 @@ export const columnHandlers: ColumnHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
-    if (column.deletedAt) throw new ColumnNotExistError(columnId);
 
     const result = COLUMN.shape.name.safeParse(newName);
     if (!result.success) throw new ColumnNameInvalidError(newName);
@@ -225,11 +220,9 @@ export const columnHandlers: ColumnHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
-    if (column.deletedAt) throw new ColumnNotExistError(columnId);
 
     return {
       ...database,
@@ -262,15 +255,14 @@ export const columnHandlers: ColumnHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
-    if (column.deletedAt) throw new ColumnNotExistError(columnId);
 
-    const activeColumns = table.columns.filter((c) => !c.deletedAt);
-    if (newPosition < 1 || newPosition > activeColumns.length) {
-      throw new ColumnPositionInvalidError(newPosition, activeColumns.length);
+    const tableColumns = table.columns;
+
+    if (newPosition < 1 || newPosition > tableColumns.length) {
+      throw new ColumnPositionInvalidError(newPosition, tableColumns.length);
     }
 
     return {
@@ -302,17 +294,12 @@ export const columnHandlers: ColumnHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
-    if (column.deletedAt) throw new ColumnNotExistError(columnId);
 
     const currentNullable = helper.isColumnNullable(table, columnId);
-    if (currentNullable === nullable) {
-      // No change needed
-      return database;
-    }
+    if (currentNullable === nullable) return database;
 
     // Find relationships that might be affected by this change
     const affectedRelationships = helper.findRelationshipsByColumn(schema, columnId);

@@ -45,11 +45,9 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     const sourceTable = schema.tables.find((t) => t.id === relationship.srcTableId);
     if (!sourceTable) throw new TableNotExistError(relationship.srcTableId);
-    if (sourceTable.deletedAt) throw new TableNotExistError(relationship.srcTableId);
 
     const targetTable = schema.tables.find((t) => t.id === relationship.tgtTableId);
     if (!targetTable) throw new TableNotExistError(relationship.tgtTableId);
-    if (targetTable.deletedAt) throw new TableNotExistError(relationship.tgtTableId);
 
     // Check for circular references
     if (helper.detectCircularReference(schema, relationship.tgtTableId, relationship.srcTableId)) {

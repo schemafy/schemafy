@@ -45,7 +45,6 @@ export const indexHandlers: IndexHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const result = INDEX.omit({ id: true, tableId: true }).safeParse(index);
     if (!result.success) throw new IndexNameInvalidError(index.name);
@@ -77,7 +76,6 @@ export const indexHandlers: IndexHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
@@ -109,7 +107,6 @@ export const indexHandlers: IndexHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
@@ -144,7 +141,6 @@ export const indexHandlers: IndexHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
@@ -183,7 +179,6 @@ export const indexHandlers: IndexHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
-    if (table.deletedAt) throw new TableNotExistError(tableId);
 
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
