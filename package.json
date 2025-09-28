@@ -11,7 +11,10 @@
     "dev:backend": "cd apps/backend && npm run dev",
     "infra:up": "podman compose up -d mariadb",
     "infra:down": "podman compose down",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "docs": "./gradlew :apps:backend:core:asciidoctor && open apps/backend/core/build/docs/asciidoc/api-guide.html",
+    "docs:build": "./gradlew :apps:backend:core:asciidoctor",
+    "docs:open": "open apps/backend/core/build/docs/asciidoc/api-guide.html"
   },
   "devDependencies": {
     "turbo": "^2.5.6"

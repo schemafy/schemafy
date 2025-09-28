@@ -1,0 +1,123 @@
+= Schemafy API 가이드
+:toc: left
+:toclevels: 3
+:sectnums:
+:sectlinks:
+:source-highlighter: highlightjs
+:highlightjs-theme: github
+:icons: font
+:imagesdir: images
+
+== 개요
+
+Schemafy API
+
+=== 기본 응답 형식
+
+모든 API는 다음과 같은 공통 응답 형식을 사용합니다.
+
+[source,json]
+----
+{
+  "success": true,
+  "result": {
+    // API별 응답 데이터
+  },
+  "error": null
+}
+----
+
+**응답 필드**
+
+[cols="1,2,1"]
+|===
+|필드명 |설명 |타입
+
+|`success`
+|요청 성공 여부
+|Boolean
+
+|`result`
+|응답 데이터 (성공시)
+|Object
+
+|`error`
+|에러 정보 (실패시)
+|Object
+
+|`error.code`
+|에러 코드
+|String
+
+|`error.message`
+|에러 메시지
+|String
+|===
+
+== API 목록
+
+=== ULID 생성
+
+ULID를 생성합니다.
+
+==== 요청
+
+include::{snippets}/ulid-generate/http-request.adoc[]
+include::{snippets}/ulid-generate/request-headers.adoc[]
+include::{snippets}/ulid-generate/request-body.adoc[]
+include::{snippets}/ulid-generate/curl-request.adoc[]
+
+==== 응답
+
+include::{snippets}/ulid-generate/response-headers.adoc[]
+include::{snippets}/ulid-generate/response-body.adoc[]
+include::{snippets}/ulid-generate/http-response.adoc[]
+
+==== 응답 필드
+
+include::{snippets}/ulid-generate/response-fields.adoc[]
+
+==== 에러 타입
+
+[cols="1,2,1"]
+|===
+|HTTP 상태 코드 |에러 타입 |설명
+
+|500
+|`INTERNAL_SERVER_ERROR`
+|서버 내부 오류 (ULID 생성 실패)
+|===
+
+
+== 에러 응답
+
+API 호출이 실패한 경우 다음과 같은 형식으로 에러 응답을 반환합니다.
+
+[source,json]
+----
+{
+  "success": false,
+  "result": null,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Error description"
+  }
+}
+----
+
+**에러 코드**
+
+[cols="1,2"]
+|===
+|에러 코드 |설명
+
+|`VALIDATION_ERROR`
+|입력 데이터 검증 실패
+
+|`NOT_FOUND`
+|요청한 리소스를 찾을 수 없음
+
+|`INTERNAL_ERROR`
+|서버 내부 오류
+|===
+

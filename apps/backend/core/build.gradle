@@ -44,10 +44,11 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.springframework.restdocs:spring-restdocs-webtestclient'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	
-	// Mockito agent for inline mocking
-	testImplementation 'org.mockito:mockito-inline:5.2.0'
+	testImplementation 'org.mockito:mockito-core:5.2.0'
+	testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
 }
 
 tasks.named('test') {
@@ -58,4 +59,6 @@ tasks.named('test') {
 tasks.named('asciidoctor') {
 	inputs.dir snippetsDir
 	dependsOn test
+	
+	attributes 'snippets': snippetsDir
 }
