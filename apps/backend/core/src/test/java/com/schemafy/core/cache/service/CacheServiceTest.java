@@ -2,19 +2,19 @@ package com.schemafy.core.cache.service;
 
 import java.time.Duration;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import reactor.test.StepVerifier;
 
+@SpringBootTest
+@ActiveProfiles("test")
 class CacheServiceTest {
 
+    @Autowired
     private CacheService cacheService;
-
-    @BeforeEach
-    void setUp() {
-        cacheService = new CaffeineCacheService();
-    }
 
     @Test
     void testPutAndGet() {
