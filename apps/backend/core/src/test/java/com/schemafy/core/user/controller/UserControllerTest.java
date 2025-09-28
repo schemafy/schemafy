@@ -135,7 +135,7 @@ class UserControllerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error.code").isEqualTo(ErrorCode.MEMBER_NOT_FOUND.getCode());
+                .jsonPath("$.error.code").isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
     }
 
     @Test
@@ -198,7 +198,7 @@ class UserControllerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error.code").isEqualTo(ErrorCode.MEMBER_NOT_FOUND.getCode());
+                .jsonPath("$.error.code").isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
     }
 
     @Test

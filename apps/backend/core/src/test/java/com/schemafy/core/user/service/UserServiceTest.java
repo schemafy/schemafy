@@ -81,7 +81,7 @@ class UserServiceTest {
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
                         throwable instanceof BusinessException &&
-                                ((BusinessException) throwable).getErrorCode() == ErrorCode.MEMBER_ALREADY_EXISTS
+                                ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_ALREADY_EXISTS
                 )
                 .verify();
     }
@@ -120,7 +120,7 @@ class UserServiceTest {
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
                         throwable instanceof BusinessException &&
-                                ((BusinessException) throwable).getErrorCode() == ErrorCode.MEMBER_NOT_FOUND
+                                ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_NOT_FOUND
                 )
                 .verify();
     }
@@ -158,7 +158,7 @@ class UserServiceTest {
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
                         throwable instanceof BusinessException &&
-                                ((BusinessException) throwable).getErrorCode() == ErrorCode.MEMBER_NOT_FOUND
+                                ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_NOT_FOUND
                 )
                 .verify();
     }

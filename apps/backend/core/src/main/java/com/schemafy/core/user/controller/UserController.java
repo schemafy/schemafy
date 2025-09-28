@@ -1,5 +1,6 @@
 package com.schemafy.core.user.controller;
 
+import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.service.UserService;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping(ApiPath.USERS)
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
