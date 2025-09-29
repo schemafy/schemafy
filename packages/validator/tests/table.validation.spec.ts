@@ -6,7 +6,8 @@ import type { Table } from '../src/lib/types';
 describe('Table validation', () => {
   test.skip('새 테이블 생성 시, 같은 스키마 내에 중복된 이름이 있으면 에러를 발생시킨다', () => {
     const schemaId = 'schema-1';
-    const table: Omit<Table, 'id' | 'schemaId' | 'createdAt' | 'updatedAt'> = {
+    const table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'> = {
+      id: 'table-1',
       name: 'posts',
       columns: [],
       constraints: [],
@@ -30,7 +31,8 @@ describe('Table validation', () => {
 
   test.skip('테이블 이름 변경 시, 같은 스키마 내에 중복된 이름이 있으면 에러를 발생시킨다', () => {
     const schemaId = 'schema-1';
-    const table: Omit<Table, 'id' | 'schemaId' | 'createdAt' | 'updatedAt'> = {
+    const table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'> = {
+      id: 'table-1',
       name: 'users',
       columns: [],
       constraints: [],
@@ -57,7 +59,8 @@ describe('Table validation', () => {
 
   test.skip('다른 스키마에 있는 테이블 이름과는 중복되어도 괜찮다', () => {
     const schemaId = 'schema-1';
-    const table: Omit<Table, 'id' | 'schemaId' | 'createdAt' | 'updatedAt'> = {
+    const table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'> = {
+      id: 'table-1',
       name: 'users',
       columns: [],
       constraints: [],
