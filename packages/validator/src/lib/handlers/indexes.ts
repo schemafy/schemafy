@@ -1,11 +1,5 @@
-import {
-  SchemaNotExistError,
-  TableNotExistError,
-  IndexNotExistError,
-  IndexNameInvalidError,
-  IndexColumnNotExistError,
-} from '../errors';
-import { Database, INDEX, Schema, Table, Index, IndexColumn } from '../types';
+import { SchemaNotExistError, TableNotExistError, IndexNotExistError, IndexColumnNotExistError } from '../errors';
+import { Database, Schema, Table, Index, IndexColumn } from '../types';
 
 export interface IndexHandlers {
   createIndex: (
@@ -40,27 +34,22 @@ export interface IndexHandlers {
 
 export const indexHandlers: IndexHandlers = {
   createIndex: (database, schemaId, tableId, index) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
-    const result = INDEX.omit({ id: true, tableId: true }).safeParse(index);
-    if (!result.success) throw new IndexNameInvalidError(index.name);
-
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
                       indexes: [...t.indexes, { ...index, tableId }],
                     }
                   : t
@@ -71,7 +60,7 @@ export const indexHandlers: IndexHandlers = {
     };
   },
   deleteIndex: (database, schemaId, tableId, indexId) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -82,16 +71,14 @@ export const indexHandlers: IndexHandlers = {
 
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
                       indexes: t.indexes.filter((i) => i.id !== indexId),
                     }
                   : t
@@ -102,7 +89,7 @@ export const indexHandlers: IndexHandlers = {
     };
   },
   changeIndexName: (database, schemaId, tableId, indexId, newName) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -111,21 +98,16 @@ export const indexHandlers: IndexHandlers = {
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
 
-    const result = INDEX.shape.name.safeParse(newName);
-    if (!result.success) throw new IndexNameInvalidError(newName);
-
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
                       indexes: t.indexes.map((i) => (i.id === indexId ? { ...i, name: newName } : i)),
                     }
                   : t
@@ -136,7 +118,7 @@ export const indexHandlers: IndexHandlers = {
     };
   },
   addColumnToIndex: (database, schemaId, tableId, indexId, indexColumn) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -147,16 +129,14 @@ export const indexHandlers: IndexHandlers = {
 
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
                       indexes: t.indexes.map((i) =>
                         i.id === indexId
                           ? {
@@ -174,7 +154,7 @@ export const indexHandlers: IndexHandlers = {
     };
   },
   removeColumnFromIndex: (database, schemaId, tableId, indexId, indexColumnId) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -188,17 +168,14 @@ export const indexHandlers: IndexHandlers = {
 
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
-                      // 인덱스에서 컬럼 제거 후, 빈 인덱스는 삭제
                       indexes: t.indexes
                         .map((i) =>
                           i.id === indexId

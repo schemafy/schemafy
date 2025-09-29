@@ -12,6 +12,7 @@ import {
   relationshipHandlers,
   RelationshipHandlers,
 } from './handlers';
+import { Database } from './types';
 
 interface ERDValidator
   extends SchemaHandlers,
@@ -19,9 +20,14 @@ interface ERDValidator
     ColumnHandlers,
     IndexHandlers,
     ConstraintHandlers,
-    RelationshipHandlers {}
+    RelationshipHandlers {
+  validate: (database: Database) => void;
+}
 
 export const ERD_VALIDATOR: ERDValidator = {
+  validate: (database: Database) => {
+    return database;
+  },
   ...schemaHandlers,
   ...tableHandlers,
   ...columnHandlers,

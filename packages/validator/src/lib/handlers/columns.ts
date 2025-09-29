@@ -1,11 +1,5 @@
-import {
-  SchemaNotExistError,
-  TableNotExistError,
-  ColumnNotExistError,
-  ColumnNameInvalidError,
-  ColumnPositionInvalidError,
-} from '../errors';
-import { Database, COLUMN, Schema, Table, Column, Constraint } from '../types';
+import { SchemaNotExistError, TableNotExistError, ColumnNotExistError } from '../errors';
+import { Database, Schema, Table, Column, Constraint } from '../types';
 import * as helper from '../helper';
 
 export interface ColumnHandlers {
@@ -49,28 +43,31 @@ export interface ColumnHandlers {
 
 export const columnHandlers: ColumnHandlers = {
   createColumn: (database, schemaId, tableId, column) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
-    const result = COLUMN.omit({ id: true, tableId: true, createdAt: true, updatedAt: true }).safeParse(column);
-    if (!result.success) throw new ColumnNameInvalidError(column.name);
+    // 1. 기본 컬럼 생성
+    const newColumn = {
+      ...column,
+      tableId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    return {
+    let updatedDatabase = {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
-                      columns: [...t.columns, { ...column, tableId, createdAt: new Date(), updatedAt: new Date() }],
+                      columns: [...t.columns, newColumn],
                     }
                   : t
               ),
@@ -78,9 +75,116 @@ export const columnHandlers: ColumnHandlers = {
           : s
       ),
     };
+
+    const isPrimaryKey = table.constraints.some(
+      (constraint) => constraint.kind === 'PRIMARY_KEY' && constraint.columns.some((cc) => cc.columnId === column.id)
+    );
+
+    if (isPrimaryKey) {
+      const propagateNewPrimaryKey = (
+        currentSchema: Schema,
+        parentTableId: string,
+        newPkColumn: typeof newColumn,
+        visited: Set<string> = new Set()
+      ): Schema => {
+        if (visited.has(parentTableId)) return currentSchema;
+        visited.add(parentTableId);
+
+        let updatedSchema = currentSchema;
+
+        for (const table of updatedSchema.tables) {
+          for (const rel of table.relationships) {
+            if (rel.srcTableId === parentTableId) {
+              const childTable = updatedSchema.tables.find((t) => t.id === rel.tgtTableId);
+              if (!childTable) continue;
+
+              const parentTable = updatedSchema.tables.find((t) => t.id === parentTableId)!;
+              const existingColumn = childTable.columns.find((c) =>
+                c.name.startsWith(`${parentTable.name}_${newPkColumn.name}`)
+              );
+
+              if (!existingColumn) {
+                const newFkColumnId = `col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const columnName = `${parentTable.name}_${newPkColumn.name}`;
+
+                const newFkColumn = {
+                  ...newPkColumn,
+                  id: newFkColumnId,
+                  tableId: childTable.id,
+                  name: columnName,
+                  ordinalPosition: childTable.columns.length + 1,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                };
+
+                updatedSchema = {
+                  ...updatedSchema,
+                  tables: updatedSchema.tables.map((t) =>
+                    t.id === childTable.id
+                      ? {
+                          ...t,
+                          columns: [...t.columns, newFkColumn],
+                        }
+                      : t
+                  ),
+                };
+
+                const newRelColumn = {
+                  id: `rel_col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, //id 어떻게 하지....
+                  relationshipId: rel.id,
+                  fkColumnId: newFkColumnId,
+                  refColumnId: newPkColumn.id,
+                  seqNo: rel.columns.length + 1,
+                };
+
+                updatedSchema = {
+                  ...updatedSchema,
+                  tables: updatedSchema.tables.map((t) =>
+                    t.id === parentTableId
+                      ? {
+                          ...t,
+                          relationships: t.relationships.map((r) =>
+                            r.id === rel.id
+                              ? {
+                                  ...r,
+                                  columns: [...r.columns, newRelColumn],
+                                }
+                              : r
+                          ),
+                        }
+                      : t
+                  ),
+                };
+
+                if (rel.kind === 'IDENTIFYING') {
+                  updatedSchema = propagateNewPrimaryKey(
+                    structuredClone(updatedSchema),
+                    rel.tgtTableId,
+                    newFkColumn,
+                    new Set(visited)
+                  );
+                }
+              }
+            }
+          }
+        }
+
+        return updatedSchema;
+      };
+
+      const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
+      const propagatedSchema = propagateNewPrimaryKey(structuredClone(updatedSchema), tableId, newColumn);
+
+      updatedDatabase = {
+        ...updatedDatabase,
+        schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? propagatedSchema : s)),
+      };
+    }
+
+    return updatedDatabase;
   },
   deleteColumn: (database, schemaId, tableId, columnId) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -89,97 +193,136 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
 
-    // Find all relationships that use this column
-    const affectedRelationships = helper.findRelationshipsByColumn(schema, columnId);
+    const isPrimaryKey = table.constraints.some(
+      (constraint) => constraint.kind === 'PRIMARY_KEY' && constraint.columns.some((cc) => cc.columnId === columnId)
+    );
 
-    return {
+    let updatedDatabase = {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) => {
                 if (t.id === tableId) {
-                  // 현재 테이블에서 컬럼 삭제 및 관련 요소들 정리
                   return {
                     ...t,
-                    updatedAt: new Date(),
-                    // 컬럼 삭제
                     columns: t.columns.filter((c) => c.id !== columnId),
-                    // 인덱스에서 해당 컬럼 제거, 빈 인덱스는 삭제
                     indexes: t.indexes
                       .map((idx) => ({
                         ...idx,
                         columns: idx.columns.filter((ic) => ic.columnId !== columnId),
                       }))
                       .filter((idx) => idx.columns.length > 0),
-                    // 제약조건에서 해당 컬럼 제거, 빈 제약조건은 삭제
                     constraints: t.constraints
                       .map((constraint) => ({
                         ...constraint,
                         columns: constraint.columns.filter((cc) => cc.columnId !== columnId),
                       }))
                       .filter((constraint) => constraint.columns.length > 0),
-                    // 관계에서 해당 컬럼 제거, 빈 관계는 삭제
                     relationships: t.relationships
                       .map((rel) => ({
                         ...rel,
-                        columns: rel.columns.filter((rc) => rc.srcColumnId !== columnId && rc.tgtColumnId !== columnId),
-                      }))
-                      .filter((rel) => rel.columns.length > 0),
-                  };
-                } else {
-                  // 다른 테이블들에서 해당 컬럼을 참조하는 관계들 정리
-                  const hasAffectedRelationships = affectedRelationships.some((ar) => ar.table.id === t.id);
-
-                  if (hasAffectedRelationships) {
-                    return {
-                      ...t,
-                      updatedAt: new Date(),
-                      // 관계에서 해당 컬럼 참조 제거 후 빈 관계는 삭제
-                      relationships: t.relationships
-                        .map((rel) => ({
-                          ...rel,
-                          columns: rel.columns.filter(
-                            (rc) => rc.srcColumnId !== columnId && rc.tgtColumnId !== columnId
-                          ),
-                        }))
-                        .filter((rel) => rel.columns.length > 0),
-                    };
-                  }
-
-                  return t;
-                }
-              }),
-            }
-          : {
-              ...s,
-              // 다른 스키마의 테이블들에서도 해당 컬럼을 참조하는 관계들 정리
-              tables: s.tables.map((t) => {
-                const hasAffectedRelationships = affectedRelationships.some((ar) => ar.table.id === t.id);
-
-                if (hasAffectedRelationships) {
-                  return {
-                    ...t,
-                    updatedAt: new Date(),
-                    relationships: t.relationships
-                      .map((rel) => ({
-                        ...rel,
-                        columns: rel.columns.filter((rc) => rc.srcColumnId !== columnId && rc.tgtColumnId !== columnId),
+                        columns: rel.columns.filter((rc) => rc.fkColumnId !== columnId && rc.refColumnId !== columnId),
                       }))
                       .filter((rel) => rel.columns.length > 0),
                   };
                 }
-
                 return t;
               }),
             }
+          : s
       ),
     };
+
+    if (isPrimaryKey) {
+      const deleteCascadingForeignKeys = (
+        currentSchema: Schema,
+        parentTableId: string,
+        deletedPkColumnId: string,
+        visited: Set<string> = new Set()
+      ): Schema => {
+        if (visited.has(parentTableId)) return currentSchema;
+        visited.add(parentTableId);
+
+        let updatedSchema = currentSchema;
+
+        for (const table of updatedSchema.tables) {
+          for (const rel of table.relationships) {
+            if (rel.srcTableId === parentTableId) {
+              const childTable = updatedSchema.tables.find((t) => t.id === rel.tgtTableId);
+              if (!childTable) continue;
+
+              const fkColumnsToDelete = rel.columns
+                .filter((relCol) => relCol.refColumnId === deletedPkColumnId)
+                .map((relCol) => relCol.fkColumnId);
+
+              if (fkColumnsToDelete.length > 0) {
+                updatedSchema = {
+                  ...updatedSchema,
+                  tables: updatedSchema.tables.map((t) =>
+                    t.id === childTable.id
+                      ? {
+                          ...t,
+                          columns: t.columns.filter((col) => !fkColumnsToDelete.includes(col.id)),
+                          indexes: t.indexes
+                            .map((idx) => ({
+                              ...idx,
+                              columns: idx.columns.filter((ic) => !fkColumnsToDelete.includes(ic.columnId)),
+                            }))
+                            .filter((idx) => idx.columns.length > 0),
+                          constraints: t.constraints
+                            .map((constraint) => ({
+                              ...constraint,
+                              columns: constraint.columns.filter((cc) => !fkColumnsToDelete.includes(cc.columnId)),
+                            }))
+                            .filter((constraint) => constraint.columns.length > 0),
+                          relationships: t.relationships
+                            .map((relationship) => ({
+                              ...relationship,
+                              columns: relationship.columns.filter(
+                                (rc) =>
+                                  !fkColumnsToDelete.includes(rc.fkColumnId) &&
+                                  !fkColumnsToDelete.includes(rc.refColumnId)
+                              ),
+                            }))
+                            .filter((relationship) => relationship.columns.length > 0),
+                        }
+                      : t
+                  ),
+                };
+
+                if (rel.kind === 'IDENTIFYING') {
+                  for (const fkColumnId of fkColumnsToDelete) {
+                    updatedSchema = deleteCascadingForeignKeys(
+                      structuredClone(updatedSchema),
+                      rel.tgtTableId,
+                      fkColumnId,
+                      new Set(visited)
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        return updatedSchema;
+      };
+
+      const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
+      const cascadedSchema = deleteCascadingForeignKeys(structuredClone(updatedSchema), tableId, columnId);
+
+      updatedDatabase = {
+        ...updatedDatabase,
+        schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? cascadedSchema : s)),
+      };
+    }
+
+    return updatedDatabase;
   },
   changeColumnName: (database, schemaId, tableId, columnId, newName) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -188,24 +331,17 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
 
-    const result = COLUMN.shape.name.safeParse(newName);
-    if (!result.success) throw new ColumnNameInvalidError(newName);
-
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
-                      columns: t.columns.map((c) =>
-                        c.id === columnId ? { ...c, updatedAt: new Date(), name: newName } : c
-                      ),
+                      columns: t.columns.map((c) => (c.id === columnId ? { ...c, name: newName } : c)),
                     }
                   : t
               ),
@@ -215,7 +351,7 @@ export const columnHandlers: ColumnHandlers = {
     };
   },
   changeColumnType: (database, schemaId, tableId, columnId, dataType, lengthScale) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -226,20 +362,16 @@ export const columnHandlers: ColumnHandlers = {
 
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
                       columns: t.columns.map((c) =>
-                        c.id === columnId
-                          ? { ...c, updatedAt: new Date(), dataType, lengthScale: lengthScale || c.lengthScale }
-                          : c
+                        c.id === columnId ? { ...c, dataType, lengthScale: lengthScale || c.lengthScale } : c
                       ),
                     }
                   : t
@@ -250,7 +382,7 @@ export const columnHandlers: ColumnHandlers = {
     };
   },
   changeColumnPosition: (database, schemaId, tableId, columnId, newPosition) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -259,24 +391,16 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
 
-    const tableColumns = table.columns;
-
-    if (newPosition < 1 || newPosition > tableColumns.length) {
-      throw new ColumnPositionInvalidError(newPosition, tableColumns.length);
-    }
-
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      updatedAt: new Date(),
                       columns: t.columns.map((c) =>
                         c.id === columnId ? { ...c, updatedAt: new Date(), ordinalPosition: newPosition } : c
                       ),
@@ -289,7 +413,7 @@ export const columnHandlers: ColumnHandlers = {
     };
   },
   changeColumnNullable: (database, schemaId, tableId, columnId, nullable) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -301,95 +425,61 @@ export const columnHandlers: ColumnHandlers = {
     const currentNullable = helper.isColumnNullable(table, columnId);
     if (currentNullable === nullable) return database;
 
-    // Find relationships that might be affected by this change
-    const affectedRelationships = helper.findRelationshipsByColumn(schema, columnId);
-
-    return {
-      ...database,
-      projects: database.projects.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              updatedAt: new Date(),
-              tables: s.tables.map((t) => {
-                if (t.id === tableId) {
-                  // Update the column's nullable constraint
-                  let updatedConstraints = t.constraints;
-
-                  if (nullable) {
-                    // Remove NOT_NULL constraint if it exists
-                    updatedConstraints = t.constraints.filter(
-                      (constraint) =>
-                        !(constraint.kind === 'NOT_NULL' && constraint.columns.some((cc) => cc.columnId === columnId))
-                    );
-                  } else {
-                    // Add NOT_NULL constraint if it doesn't exist
-                    const hasNotNull = t.constraints.some(
-                      (constraint) =>
-                        constraint.kind === 'NOT_NULL' && constraint.columns.some((cc) => cc.columnId === columnId)
-                    );
-
-                    if (!hasNotNull) {
-                      const newConstraint: Constraint = {
-                        id: `constraint_${Date.now()}`, // In real implementation, use proper ULID
-                        tableId,
-                        name: `nn_${column.name}`,
-                        kind: 'NOT_NULL',
-                        checkExpr: null,
-                        defaultExpr: null,
-                        columns: [
-                          {
-                            id: `cc_${Date.now()}`, // In real implementation, use proper ULID
-                            constraintId: `constraint_${Date.now()}`,
-                            columnId,
-                            seqNo: 1,
-                          },
-                        ],
-                      };
-                      updatedConstraints = [...t.constraints, newConstraint];
-                    }
-                  }
-
-                  return {
-                    ...t,
-                    updatedAt: new Date(),
-                    constraints: updatedConstraints,
-                    // Update relationships that might be affected
-                    relationships: t.relationships.map((rel) => {
-                      if (helper.shouldUpdateCardinalityForNullChange(rel, columnId, nullable)) {
-                        return {
-                          ...rel,
-                          cardinality: '1:N' as const, // Change from 1:1 to 1:N when FK becomes nullable
-                        };
-                      }
-                      return rel;
-                    }),
-                  };
-                }
-
-                // Update relationships in other tables that reference this column
-                const hasAffectedRelationships = affectedRelationships.some((ar) => ar.table.id === t.id);
-                if (hasAffectedRelationships) {
-                  return {
-                    ...t,
-                    updatedAt: new Date(),
-                    relationships: t.relationships.map((rel) => {
-                      if (helper.shouldUpdateCardinalityForNullChange(rel, columnId, nullable)) {
-                        return {
-                          ...rel,
-                          cardinality: '1:N' as const,
-                        };
-                      }
-                      return rel;
-                    }),
-                  };
-                }
-
-                return t;
-              }),
-            }
-          : s
-      ),
+    const updatedColumn = {
+      ...column,
     };
+
+    let currentDatabase = columnHandlers.deleteColumn(structuredClone(database), schemaId, tableId, columnId);
+
+    currentDatabase = columnHandlers.createColumn(structuredClone(currentDatabase), schemaId, tableId, updatedColumn);
+
+    if (!nullable) {
+      const updatedSchema = currentDatabase.schemas.find((s) => s.id === schemaId)!;
+      const updatedTable = updatedSchema.tables.find((t) => t.id === tableId)!;
+
+      const hasNotNull = updatedTable.constraints.some(
+        (constraint) => constraint.kind === 'NOT_NULL' && constraint.columns.some((cc) => cc.columnId === columnId)
+      );
+
+      if (!hasNotNull) {
+        const newConstraint: Constraint = {
+          id: `constraint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, //id 어떻게 하지....
+          tableId,
+          name: `nn_${column.name}`,
+          kind: 'NOT_NULL' as const,
+          checkExpr: null,
+          defaultExpr: null,
+          columns: [
+            {
+              id: `cc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, //id 어떻게 하지....
+              constraintId: `constraint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              columnId,
+              seqNo: 1,
+            },
+          ],
+        };
+
+        currentDatabase = {
+          ...currentDatabase,
+          schemas: currentDatabase.schemas.map((s) =>
+            s.id === schemaId
+              ? {
+                  ...s,
+                  tables: s.tables.map((t) =>
+                    t.id === tableId
+                      ? {
+                          ...t,
+                          constraints: [...t.constraints, newConstraint],
+                        }
+                      : t
+                  ),
+                }
+              : s
+          ),
+        };
+      }
+    }
+
+    return currentDatabase;
   },
 };

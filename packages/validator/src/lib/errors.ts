@@ -2,7 +2,9 @@ export const ERROR_CODES = {
   SCHEMA_NOT_EXIST: 'SCHEMA_NOT_EXIST',
   SCHEMA_NAME_INVALID: 'SCHEMA_NAME_INVALID',
   SCHEMA_NAME_NOT_UNIQUE: 'SCHEMA_NAME_NOT_UNIQUE',
+  TABLE_NAME_NOT_INVALID: 'TABLE_NAME_NOT_INVALID',
   TABLE_NAME_NOT_UNIQUE: 'TABLE_NAME_NOT_UNIQUE',
+  COLUMN_NOT_EXIST: 'COLUMN_NOT_EXIST',
   COLUMN_NAME_NOT_UNIQUE: 'COLUMN_NAME_NOT_UNIQUE',
   COLUMN_DATA_TYPE_REQUIRED: 'COLUMN_DATA_TYPE_REQUIRED',
   COLUMN_DATA_TYPE_INVALID: 'COLUMN_DATA_TYPE_INVALID',
@@ -18,6 +20,7 @@ export const ERROR_CODES = {
   INDEX_TYPE_INVALID: 'INDEX_TYPE_INVALID',
   INDEX_COLUMN_NOT_UNIQUE: 'INDEX_COLUMN_NOT_UNIQUE',
   DUPLICATE_INDEX_DEFINITION: 'DUPLICATE_INDEX_DEFINITION',
+  INDEX_COLUMN_NOT_EXIST: 'INDEX_COLUMN_NOT_EXIST',
   INDEX_COLUMN_SEQ_ERROR: 'INDEX_COLUMN_SEQ_ERROR',
   INDEX_COLUMN_SORT_DIR_INVALID: 'INDEX_COLUMN_SORT_DIR_INVALID',
   CONSTRAINT_NAME_NOT_UNIQUE: 'CONSTRAINT_NAME_NOT_UNIQUE',
@@ -34,8 +37,10 @@ export const ERROR_CODES = {
   COLUMN_POSITION_SEQ_ERROR: 'COLUMN_POSITION_SEQ_ERROR',
   IDENTIFYING_RELATIONSHIP_ORDER_ERROR: 'IDENTIFYING_RELATIONSHIP_ORDER_ERROR',
   COMPOSITE_KEY_ORDER_MISMATCH: 'COMPOSITE_KEY_ORDER_MISMATCH',
+  RELATIONSHIP_NOT_EXIST: 'RELATIONSHIP_NOT_EXIST',
   RELATIONSHIP_EMPTY_ERROR: 'RELATIONSHIP_EMPTY_ERROR',
   RELATIONSHIP_NAME_NOT_UNIQUE: 'RELATIONSHIP_NAME_NOT_UNIQUE',
+  RELATIONSHIP_COLUNN_NOT_EXIST: 'RELATIONSHIP_COLUNN_NOT_EXIST',
   RELATIONSHIP_COLUMN_MAPPING_DUPLICATE: 'RELATIONSHIP_COLUMN_MAPPING_DUPLICATE',
   RELATIONSHIP_COLUMN_TYPE_INCOMPATIBLE: 'RELATIONSHIP_COLUMN_TYPE_INCOMPATIBLE',
   RELATIONSHIP_DELETE_SET_NULL_ERROR: 'RELATIONSHIP_DELETE_SET_NULL_ERROR',
@@ -110,10 +115,25 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
     messageTemplate: "Schema name '{0}' already exists. Schema names must be unique",
     createDetails: (name: string, existingSchemaId: string) => ({ name, existingSchemaId }),
   },
+  TABLE_NAME_NOT_INVALID: {
+    code: ERROR_CODES.TABLE_NAME_NOT_INVALID,
+    messageTemplate: "Table name '{0}' is invalid. Name must be between {1} and {2} characters",
+    createDetails: (name: string, minLength = 3, maxLength = 20) => ({
+      name,
+      minLength,
+      maxLength,
+      actualLength: name.length,
+    }),
+  },
   TABLE_NAME_NOT_UNIQUE: {
     code: ERROR_CODES.TABLE_NAME_NOT_UNIQUE,
     messageTemplate: "Table name '{0}' already exists in the schema. Table names must be unique within a schema",
     createDetails: (name: string, schemaId: string) => ({ name, schemaId }),
+  },
+  COLUMN_NOT_EXIST: {
+    code: ERROR_CODES.COLUMN_NOT_EXIST,
+    messageTemplate: "Column with ID '{0}' does not exist in table '{1}'",
+    createDetails: (columnId: string, tableId: string) => ({ columnId, tableId }),
   },
   COLUMN_NAME_NOT_UNIQUE: {
     code: ERROR_CODES.COLUMN_NAME_NOT_UNIQUE,
@@ -200,6 +220,11 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
     messageTemplate: "Index '{0}' has the same definition as existing index '{1}'.",
     createDetails: (indexName: string, existingIndexName: string) => ({ indexName, existingIndexName }),
   },
+  INDEX_COLUMN_NOT_EXIST: {
+    code: ERROR_CODES.INDEX_COLUMN_NOT_EXIST,
+    messageTemplate: "Column '{0}' specified in index '{1}' does not exist in the table.",
+    createDetails: (columnName: string, indexName: string) => ({ columnName, indexName }),
+  },
   INDEX_COLUMN_SEQ_ERROR: {
     code: ERROR_CODES.INDEX_COLUMN_SEQ_ERROR,
     messageTemplate: "Column sequence in index '{0}' must be consecutive starting from 1.",
@@ -284,6 +309,11 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
     messageTemplate: "Column order issue in {0} '{1}': {2}",
     createDetails: (keyType: string, keyName: string, reason: string) => ({ keyType, keyName, reason }),
   },
+  RELATIONSHIP_NOT_EXIST: {
+    code: ERROR_CODES.RELATIONSHIP_NOT_EXIST,
+    messageTemplate: "Relationship with ID '{0}' does not exist",
+    createDetails: (relationshipId: string) => ({ relationshipId }),
+  },
   RELATIONSHIP_EMPTY_ERROR: {
     code: ERROR_CODES.RELATIONSHIP_EMPTY_ERROR,
     messageTemplate: "Relationship '{0}' must have at least one column mapping",
@@ -293,6 +323,11 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
     code: ERROR_CODES.RELATIONSHIP_NAME_NOT_UNIQUE,
     messageTemplate: "Relationship name '{0}' must be unique within table '{1}'",
     createDetails: (relationshipName: string, tableId: string) => ({ relationshipName, tableId }),
+  },
+  RELATIONSHIP_COLUNN_NOT_EXIST: {
+    code: ERROR_CODES.RELATIONSHIP_COLUNN_NOT_EXIST,
+    messageTemplate: "Relationship column with ID '{0}' does not exist in relationship '{1}'",
+    createDetails: (relationshipColumnId: string, relationshipId: string) => ({ relationshipColumnId, relationshipId }),
   },
   RELATIONSHIP_COLUMN_MAPPING_DUPLICATE: {
     code: ERROR_CODES.RELATIONSHIP_COLUMN_MAPPING_DUPLICATE,
@@ -411,7 +446,12 @@ export const SchemaNameNotUniqueError = createErrorClass(
   'SchemaNameNotUnique',
   ERROR_DEFINITIONS.SCHEMA_NAME_NOT_UNIQUE
 );
+export const TableNameNotInvalidError = createErrorClass(
+  'TableNameNotInvalid',
+  ERROR_DEFINITIONS.TABLE_NAME_NOT_INVALID
+);
 export const TableNameNotUniqueError = createErrorClass('TableNameNotUnique', ERROR_DEFINITIONS.TABLE_NAME_NOT_UNIQUE);
+export const ColumnNotExistError = createErrorClass('ColumnNotExist', ERROR_DEFINITIONS.COLUMN_NOT_EXIST);
 export const ColumnNameNotUniqueError = createErrorClass(
   'ColumnNameNotUnique',
   ERROR_DEFINITIONS.COLUMN_NAME_NOT_UNIQUE
@@ -463,6 +503,10 @@ export const IndexColumnNotUniqueError = createErrorClass(
 export const DuplicateIndexDefinitionError = createErrorClass(
   'DuplicateIndexDefinition',
   ERROR_DEFINITIONS.DUPLICATE_INDEX_DEFINITION
+);
+export const IndexColumnNotExistError = createErrorClass(
+  'IndexColumnNotExist',
+  ERROR_DEFINITIONS.INDEX_COLUMN_NOT_EXIST
 );
 export const IndexColumnSeqError = createErrorClass('IndexColumnSeq', ERROR_DEFINITIONS.INDEX_COLUMN_SEQ_ERROR);
 export const IndexColumnSortDirInvalidError = createErrorClass(
@@ -518,10 +562,18 @@ export const CompositeKeyOrderMismatchError = createErrorClass(
   'CompositeKeyOrderMismatch',
   ERROR_DEFINITIONS.COMPOSITE_KEY_ORDER_MISMATCH
 );
+export const RelationshipNotExistError = createErrorClass(
+  'RelationshipNotExist',
+  ERROR_DEFINITIONS.RELATIONSHIP_NOT_EXIST
+);
 export const RelationshipEmptyError = createErrorClass('RelationshipEmpty', ERROR_DEFINITIONS.RELATIONSHIP_EMPTY_ERROR);
 export const RelationshipNameNotUniqueError = createErrorClass(
   'RelationshipNameNotUnique',
   ERROR_DEFINITIONS.RELATIONSHIP_NAME_NOT_UNIQUE
+);
+export const RelationshipColumnNotExistError = createErrorClass(
+  'RelationshipColumnNotExist',
+  ERROR_DEFINITIONS.RELATIONSHIP_COLUNN_NOT_EXIST
 );
 export const RelationshipColumnMappingDuplicateError = createErrorClass(
   'RelationshipColumnMappingDuplicate',

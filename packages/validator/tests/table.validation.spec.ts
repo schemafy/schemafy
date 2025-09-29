@@ -50,7 +50,9 @@ describe('Table validation', () => {
       .build();
 
     const dbWithUsers = ERD_VALIDATOR.createTable(database, schemaId, table);
-    expect(() => ERD_VALIDATOR.changeTableName(dbWithUsers, 'table-1', 'users')).toThrow(TableNameNotUniqueError);
+    expect(() => ERD_VALIDATOR.changeTableName(dbWithUsers, schemaId, 'table-1', 'users')).toThrow(
+      TableNameNotUniqueError
+    );
   });
 
   test.skip('다른 스키마에 있는 테이블 이름과는 중복되어도 괜찮다', () => {

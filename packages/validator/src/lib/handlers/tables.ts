@@ -1,6 +1,6 @@
-import { SchemaNotExistError, TableNameInvalidError, TableNotExistError } from '../errors';
-import { Database, TABLE, Schema, Table } from '../types';
-import * as helper from '../helper';
+import { SchemaNotExistError, TableNameNotUniqueError, TableNotExistError } from '../errors';
+import { Database, Schema, Table } from '../types';
+import { relationshipHandlers } from './relationships';
 
 export interface TableHandlers {
   createTable: (
@@ -19,15 +19,12 @@ export interface TableHandlers {
 
 export const tableHandlers: TableHandlers = {
   createTable: (database, schemaId, table) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
-
-    const result = TABLE.safeParse(table);
-    if (!result.success) throw new TableNameInvalidError(table.name);
 
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
@@ -38,114 +35,54 @@ export const tableHandlers: TableHandlers = {
     };
   },
   deleteTable: (database, schemaId, tableId) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
-    const table = schema.tables.find((t) => t.id === tableId);
-    if (!table) throw new TableNotExistError(tableId);
+    const tableToDelete = schema.tables.find((t) => t.id === tableId);
+    if (!tableToDelete) throw new TableNotExistError(tableId);
 
-    // Find all relationships that reference this table
-    const affectedRelationships = helper.findRelationshipsByTable(schema, tableId);
+    let currentDatabase = structuredClone(database);
+    const relationshipsToDelete: string[] = [];
 
-    // Collect all columns from the deleted table that are referenced in relationships
-    const deletedTableColumnIds = new Set<string>();
-    affectedRelationships.forEach(({ relationships }) => {
-      relationships.forEach((rel) => {
-        rel.columns.forEach((rc) => {
-          if (rel.srcTableId === tableId) {
-            deletedTableColumnIds.add(rc.srcColumnId);
-          }
-          if (rel.tgtTableId === tableId) {
-            deletedTableColumnIds.add(rc.tgtColumnId);
-          }
-        });
-      });
-    });
+    for (const table of schema.tables) {
+      for (const relationship of table.relationships) {
+        if (relationship.srcTableId === tableId || relationship.tgtTableId === tableId) {
+          relationshipsToDelete.push(relationship.id);
+        }
+      }
+    }
+
+    for (const relationshipId of relationshipsToDelete) {
+      currentDatabase = relationshipHandlers.deleteRelationship(currentDatabase, schemaId, relationshipId);
+    }
+
+    const updatedSchema = currentDatabase.schemas.find((s) => s.id === schemaId)!;
+    const finalSchema = {
+      ...updatedSchema,
+      tables: updatedSchema.tables.filter((t) => t.id !== tableId),
+    };
 
     return {
-      ...database,
-      projects: database.projects.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              updatedAt: new Date(),
-              tables: s.tables
-                .filter((t) => t.id !== tableId) // Remove the deleted table
-                .map((t) => {
-                  // For remaining tables, clean up:
-                  // 1. Remove relationships that reference the deleted table
-                  // 2. Remove orphaned FK columns and their constraints/indexes
-                  let updatedTable = {
-                    ...t,
-                    updatedAt: new Date(),
-                    relationships: t.relationships.filter((r) => r.srcTableId !== tableId && r.tgtTableId !== tableId),
-                  };
-
-                  // Find columns that were FKs to the deleted table
-                  const orphanedColumns: string[] = [];
-                  affectedRelationships.forEach(({ table: affectedTable, relationships }) => {
-                    if (affectedTable.id === t.id) {
-                      relationships.forEach((rel) => {
-                        if (rel.tgtTableId === tableId) {
-                          // This table has FK columns pointing to the deleted table
-                          rel.columns.forEach((rc) => {
-                            orphanedColumns.push(rc.srcColumnId);
-                          });
-                        }
-                      });
-                    }
-                  });
-
-                  // Remove orphaned FK columns
-                  if (orphanedColumns.length > 0) {
-                    updatedTable = {
-                      ...updatedTable,
-                      columns: updatedTable.columns.filter((c) => !orphanedColumns.includes(c.id)),
-                      // Remove indexes that reference orphaned columns
-                      indexes: updatedTable.indexes
-                        .map((idx) => ({
-                          ...idx,
-                          columns: idx.columns.filter((ic) => !orphanedColumns.includes(ic.columnId)),
-                        }))
-                        .filter((idx) => idx.columns.length > 0),
-                      // Remove constraints that reference orphaned columns
-                      constraints: updatedTable.constraints
-                        .map((constraint) => ({
-                          ...constraint,
-                          columns: constraint.columns.filter((cc) => !orphanedColumns.includes(cc.columnId)),
-                        }))
-                        .filter((constraint) => constraint.columns.length > 0),
-                    };
-                  }
-
-                  return updatedTable;
-                }),
-            }
-          : {
-              ...s,
-              // 다른 스키마의 테이블들에서도 삭제되는 테이블을 참조하는 관계들 제거
-              tables: s.tables.map((t) => ({
-                ...t,
-                relationships: t.relationships.filter((r) => r.srcTableId !== tableId && r.tgtTableId !== tableId),
-              })),
-            }
-      ),
+      ...currentDatabase,
+      schemas: currentDatabase.schemas.map((s) => (s.id === schemaId ? finalSchema : s)),
     };
   },
   changeTableName: (database, schemaId, tableId, newName) => {
-    const schema = database.projects.find((s) => s.id === schemaId);
+    const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
+
+    const tableNotUnique = schema.tables.find((t) => t.name === newName);
+    if (tableNotUnique) throw new TableNameNotUniqueError(newName);
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
     return {
       ...database,
-      projects: database.projects.map((s) =>
+      schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
-              updatedAt: new Date(),
               tables: s.tables.map((t) => (t.id === tableId ? { ...t, updatedAt: new Date(), name: newName } : t)),
             }
           : s
