@@ -6,15 +6,16 @@ import {
   type EdgeChange,
 } from '@xyflow/react';
 import { useState } from 'react';
-import { RELATIONSHIP_TYPES, type RelationshipConfig } from '../types';
+import {
+  RELATIONSHIP_TYPES,
+  RELATIONSHIP_STYLE_TYPES,
+  type RelationshipConfig,
+} from '../types';
 
 const getRelationshipStyle = (isDashed: boolean = false) => {
-  const baseStyle = {
-    stroke: 'var(--color-schemafy-dark-gray)',
-    strokeWidth: 2,
-  };
-
-  return isDashed ? { ...baseStyle, strokeDasharray: '5 5' } : baseStyle;
+  return isDashed
+    ? RELATIONSHIP_STYLE_TYPES.dashed
+    : RELATIONSHIP_STYLE_TYPES.solid;
 };
 
 export const useEdges = (relationshipConfig: RelationshipConfig) => {

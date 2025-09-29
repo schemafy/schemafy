@@ -13,6 +13,18 @@ export const RELATIONSHIP_TYPES = {
   },
 } as const;
 
+export const RELATIONSHIP_STYLE_TYPES = {
+  solid: {
+    stroke: 'var(--color-schemafy-dark-gray)',
+    strokeWidth: 2,
+  },
+  dashed: {
+    stroke: 'var(--color-schemafy-dark-gray)',
+    strokeWidth: 2,
+    strokeDasharray: '5 5',
+  },
+} as const;
+
 export type RelationshipType = keyof typeof RELATIONSHIP_TYPES;
 
 export interface RelationshipConfig {
