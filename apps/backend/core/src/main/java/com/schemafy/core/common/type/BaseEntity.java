@@ -1,6 +1,5 @@
 package com.schemafy.core.common.type;
 
-import com.github.f4b6a3.ulid.UlidCreator;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -45,11 +44,6 @@ public abstract class BaseEntity implements Persistable<String> {
         this.isNew = false;
     }
 
-    protected void generateId() {
-        if (this.id == null) {
-            this.id = UlidCreator.getUlid().toString();
-        }
-    }
 
     public void delete() {
         this.deletedAt = LocalDateTime.now();

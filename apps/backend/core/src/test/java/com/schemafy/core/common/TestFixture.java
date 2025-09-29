@@ -1,5 +1,6 @@
 package com.schemafy.core.common;
 
+import com.schemafy.core.common.util.ULIDUtils;
 import com.schemafy.core.user.service.dto.SignUpCommand;
 import com.schemafy.core.user.repository.entity.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -17,6 +18,6 @@ public class TestFixture {
         String defaultPassword = Objects.requireNonNullElse(password, "encodedPassword");
 
         SignUpCommand command = new SignUpCommand(defaultEmail, defaultName, defaultPassword);
-        return User.signUp(command.toUserInfo(), passwordEncoder);
+        return User.signUp(ULIDUtils.generateUlid(), command.toUserInfo(), passwordEncoder);
     }
 }

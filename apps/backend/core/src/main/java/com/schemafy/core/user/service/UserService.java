@@ -1,7 +1,9 @@
 package com.schemafy.core.user.service;
 
+import com.github.f4b6a3.ulid.Ulid;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.util.ULIDUtils;
 import com.schemafy.core.user.service.dto.LoginCommand;
 import com.schemafy.core.user.service.dto.SignUpCommand;
 import com.schemafy.core.user.repository.entity.User;
@@ -33,7 +35,9 @@ public class UserService {
     }
 
     private Mono<User> createNewUser(SignUpCommand request) {
-        return User.signUp(request.toUserInfo(), passwordEncoder)
+        Ulid id = ULIDUtils.generateUlid();
+
+        return User.signUp(id, request.toUserInfo(), passwordEncoder)
                 .flatMap(userRepository::save)
                 .onErrorMap(DuplicateKeyException.class,
                         e -> new BusinessException(ErrorCode.USER_ALREADY_EXISTS));

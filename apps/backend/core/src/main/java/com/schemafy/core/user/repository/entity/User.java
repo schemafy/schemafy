@@ -1,5 +1,6 @@
 package com.schemafy.core.user.repository.entity;
 
+import com.github.f4b6a3.ulid.Ulid;
 import com.schemafy.core.common.type.BaseEntity;
 import com.schemafy.core.user.repository.vo.UserStatus;
 import com.schemafy.core.user.repository.vo.Email;
@@ -27,7 +28,7 @@ public class User extends BaseEntity {
 
     private UserStatus status;
 
-    public static Mono<User> signUp(UserInfo userInfo, PasswordEncoder passwordEncoder) {
+    public static Mono<User> signUp(Ulid id, UserInfo userInfo, PasswordEncoder passwordEncoder) {
         return Mono.fromCallable(() -> {
             Email email = new Email(userInfo.email());
             String encodedPassword = passwordEncoder.encode(userInfo.password());
@@ -38,7 +39,7 @@ public class User extends BaseEntity {
                     encodedPassword,
                     UserStatus.ACTIVE
             );
-            newUser.generateId();
+            newUser.id = id.toString();
 
             return newUser;
         }).subscribeOn(Schedulers.boundedElastic());
