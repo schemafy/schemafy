@@ -19,10 +19,15 @@ import {
   CustomControls,
   TablePreview,
   type RelationshipConfig,
+  CustomSmoothStepEdge,
 } from '@/features/drawing';
 
 const NODE_TYPES = {
   table: TableNode,
+};
+
+const EDGE_TYPES = {
+  customSmoothStep: CustomSmoothStepEdge,
 };
 
 export const CanvasPage = () => {
@@ -90,7 +95,8 @@ export const CanvasPage = () => {
             onConnect={onConnect}
             onEdgeClick={onEdgeClick}
             nodeTypes={NODE_TYPES}
-            connectionLineType={ConnectionLineType.SimpleBezier}
+            edgeTypes={EDGE_TYPES}
+            connectionLineType={ConnectionLineType.SmoothStep}
             proOptions={{ hideAttribution: true }}
             connectionMode={ConnectionMode.Loose}
             fitView

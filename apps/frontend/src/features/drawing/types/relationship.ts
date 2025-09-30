@@ -30,6 +30,8 @@ export type RelationshipType = keyof typeof RELATIONSHIP_TYPES;
 export interface RelationshipConfig {
   type: RelationshipType;
   isDashed: boolean;
+  controlPointX?: number;
+  controlPointY?: number;
 }
 
 export const isRelationshipType = (

@@ -29,7 +29,7 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
     return {
       ...params,
       id: `edge_${Date.now()}`,
-      type: 'smoothstep',
+      type: 'customSmoothStep',
       style,
       markerStart: baseConfig.markerStart,
       markerEnd: baseConfig.markerEnd,
@@ -43,7 +43,7 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
         relationshipType: relationshipConfig.type,
         isDashed: relationshipConfig.isDashed,
       },
-    };
+    } as Edge;
   };
 
   const onConnect = (params: Connection) => {
@@ -82,6 +82,7 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
                 color: 'var(--color-schemafy-dark-gray)',
               },
               data: {
+                ...edge.data,
                 relationshipType: newConfig.type,
                 isDashed: newConfig.isDashed,
               },

@@ -48,7 +48,7 @@ export const RelationshipSelector = ({
 
       <div className="border-t border-schemafy-light-gray my-3"></div>
 
-      <label className="flex items-center gap-2 cursor-pointer text-sm">
+      <label className="flex items-center gap-2 cursor-pointer text-sm mb-3">
         <input
           type="checkbox"
           checked={config.isDashed}

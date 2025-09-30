@@ -21,12 +21,22 @@ export const EdgeSelector = ({
   const relationshipType = edge?.data?.relationshipType;
   const isDashed =
     typeof edge?.data?.isDashed === 'boolean' ? edge.data.isDashed : false;
+  const controlPointX =
+    typeof edge?.data?.controlPointX === 'number'
+      ? edge.data.controlPointX
+      : undefined;
+  const controlPointY =
+    typeof edge?.data?.controlPointY === 'number'
+      ? edge.data.controlPointY
+      : undefined;
 
   const currentConfig: RelationshipConfig = {
     type: isRelationshipType(relationshipType)
       ? relationshipType
       : 'one-to-many',
     isDashed,
+    controlPointX,
+    controlPointY,
   };
 
   const handleConfigChange = (newConfig: RelationshipConfig) => {
