@@ -1,4 +1,9 @@
-import { SchemaNotExistError, SchemaNameInvalidError, SchemaNameNotUniqueError } from '../errors';
+import {
+  SchemaNotExistError,
+  SchemaNameInvalidError,
+  SchemaNameNotUniqueError,
+  DatabaseEmptySchemaError,
+} from '../errors';
 import { Database, SCHEMA, Schema } from '../types';
 
 export interface SchemaHandlers {
@@ -36,6 +41,8 @@ export const schemaHandlers: SchemaHandlers = {
     };
   },
   deleteSchema: (database, schemaId) => {
+    if (database.schemas.length === 1) throw new DatabaseEmptySchemaError();
+
     const schema = database.schemas.find((s) => s.id === schemaId);
 
     if (!schema) throw new SchemaNotExistError(schemaId);

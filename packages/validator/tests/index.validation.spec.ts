@@ -66,14 +66,19 @@ describe('Index validation', () => {
     expect(() => ERD_VALIDATOR.createIndex(db, 'schema-1', 'table-1', index)).toThrow(IndexColumnNotUniqueError);
   });
 
-  test.skip('하나의 인덱스에 동일한 컬럼이 중복으로 들어갈 수 없다 - addColumnToIndex', () => {
+  test('하나의 인덱스에 동일한 컬럼이 중복으로 들어갈 수 없다 - addColumnToIndex', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
-        s.withTable((t) =>
+        s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
             .withColumn((c) => c.withId('column-1').withName('name'))
-            .withIndex((i) => i.withName('idx_duplicate_column').withColumn((ic) => ic.withColumnId('column-1')))
+            .withIndex((i) =>
+              i
+                .withId('index-1')
+                .withName('idx_duplicate_column')
+                .withColumn((ic) => ic.withColumnId('column-1'))
+            )
         )
       )
       .build();
@@ -132,10 +137,10 @@ describe('Index validation', () => {
     expect(() => ERD_VALIDATOR.createIndex(db, 'schema-1', 'table-1', newIndex)).toThrow(DuplicateIndexDefinitionError);
   });
 
-  test.skip('존재하지 않는 인덱스 삭제 시 에러 발생', () => {
+  test('존재하지 않는 인덱스 삭제 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s.withTable((t) =>
+        s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
             .withName('users')
@@ -153,15 +158,15 @@ describe('Index validation', () => {
     );
   });
 
-  test.skip('인덱스 이름을 변경할 수 있다', () => {
+  test('인덱스 이름을 변경할 수 있다', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s.withTable((t) =>
+        s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
             .withName('users')
             .withColumn((c) => c.withId('email-col').withName('email').withDataType('VARCHAR').withLengthScale('100'))
-            .withIndex((i) => i.withName('idx_email').withColumn((ic) => ic.withColumnId('email-col')))
+            .withIndex((i) => i.withId('idx_email').withColumn((ic) => ic.withColumnId('email-col')))
             .withIndex((i) => i.withName('idx_name').withColumn((ic) => ic.withColumnId('name-col')))
         )
       )
@@ -172,10 +177,10 @@ describe('Index validation', () => {
     ).not.toThrow();
   });
 
-  test.skip('중복된 인덱스 이름으로 변경 시 에러 발생', () => {
+  test('중복된 인덱스 이름으로 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s.withTable((t) =>
+        s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
             .withName('users')
@@ -202,10 +207,10 @@ describe('Index validation', () => {
     );
   });
 
-  test.skip('존재하지 않는 인덱스 이름 변경 시 에러 발생', () => {
+  test('존재하지 않는 인덱스 이름 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s.withTable((t) =>
+        s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
             .withName('users')

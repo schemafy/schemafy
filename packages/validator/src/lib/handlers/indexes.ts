@@ -1,5 +1,14 @@
-import { SchemaNotExistError, TableNotExistError, IndexNotExistError, IndexColumnNotExistError } from '../errors';
+import {
+  SchemaNotExistError,
+  TableNotExistError,
+  IndexNotExistError,
+  IndexColumnNotExistError,
+  IndexNameNotUniqueError,
+  IndexColumnNotUniqueError,
+  IndexTypeInvalidError,
+} from '../errors';
 import { Database, Schema, Table, Index, IndexColumn } from '../types';
+import * as helper from '../helper';
 
 export interface IndexHandlers {
   createIndex: (
@@ -39,6 +48,15 @@ export const indexHandlers: IndexHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
+
+    const indexNotUnique = table.indexes.find((i) => i.name === index.name);
+    if (indexNotUnique) throw new IndexNameNotUniqueError(index.name);
+
+    const indexColumnNotUnique = index.columns.map((ic) => ic.columnId);
+    if (indexColumnNotUnique.length !== new Set(indexColumnNotUnique).size)
+      throw new IndexColumnNotUniqueError(index.id);
+
+    if (!helper.categorizedMysqlDataTypes.includes(index.type)) throw new IndexTypeInvalidError(index.type);
 
     return {
       ...database,
@@ -98,6 +116,9 @@ export const indexHandlers: IndexHandlers = {
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
 
+    const indexNotUnique = table.indexes.find((i) => i.name === newName);
+    if (indexNotUnique) throw new IndexNameNotUniqueError(newName);
+
     return {
       ...database,
       schemas: database.schemas.map((s) =>
@@ -126,6 +147,9 @@ export const indexHandlers: IndexHandlers = {
 
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
+
+    const indexColumnNotUnique = index.columns.find((ic) => ic.columnId === indexColumn.columnId);
+    if (indexColumnNotUnique) throw new IndexColumnNotUniqueError(indexColumn.columnId);
 
     return {
       ...database,

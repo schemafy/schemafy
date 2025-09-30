@@ -1,9 +1,11 @@
 export const ERROR_CODES = {
+  DATABASE_EMPTY_SCHEMA: 'DATABASE_EMPTY_SCHEMA',
   SCHEMA_NOT_EXIST: 'SCHEMA_NOT_EXIST',
   SCHEMA_NAME_INVALID: 'SCHEMA_NAME_INVALID',
   SCHEMA_NAME_NOT_UNIQUE: 'SCHEMA_NAME_NOT_UNIQUE',
   TABLE_NAME_NOT_INVALID: 'TABLE_NAME_NOT_INVALID',
   TABLE_NAME_NOT_UNIQUE: 'TABLE_NAME_NOT_UNIQUE',
+  TABLE_EMPTY_COLUMN: 'TABLE_EMPTY_COLUMN',
   COLUMN_NOT_EXIST: 'COLUMN_NOT_EXIST',
   COLUMN_NAME_NOT_UNIQUE: 'COLUMN_NAME_NOT_UNIQUE',
   COLUMN_DATA_TYPE_REQUIRED: 'COLUMN_DATA_TYPE_REQUIRED',
@@ -95,6 +97,11 @@ function createErrorClass(name: string, definition: ErrorDefinition) {
 }
 
 const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
+  DATABASE_EMPTY_SCHEMA: {
+    code: ERROR_CODES.DATABASE_EMPTY_SCHEMA,
+    messageTemplate: 'Database must contain at least one schema',
+    createDetails: () => ({}),
+  },
   SCHEMA_NOT_EXIST: {
     code: ERROR_CODES.SCHEMA_NOT_EXIST,
     messageTemplate: "Schema with ID '{0}' does not exist",
@@ -129,6 +136,11 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
     code: ERROR_CODES.TABLE_NAME_NOT_UNIQUE,
     messageTemplate: "Table name '{0}' already exists in the schema. Table names must be unique within a schema",
     createDetails: (name: string, schemaId: string) => ({ name, schemaId }),
+  },
+  TABLE_EMPTY_COLUMN: {
+    code: ERROR_CODES.TABLE_EMPTY_COLUMN,
+    messageTemplate: "Table '{0}' must contain at least one column",
+    createDetails: (tableId: string) => ({ tableId }),
   },
   COLUMN_NOT_EXIST: {
     code: ERROR_CODES.COLUMN_NOT_EXIST,
@@ -440,6 +452,11 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
   },
 };
 
+export const DatabaseEmptySchemaError = createErrorClass(
+  'DatabaseEmptySchema',
+  ERROR_DEFINITIONS.DATABASE_EMPTY_SCHEMA
+);
+
 export const SchemaNotExistError = createErrorClass('SchemaNotExist', ERROR_DEFINITIONS.SCHEMA_NOT_EXIST);
 export const SchemaNameInvalidError = createErrorClass('SchemaNameInvalid', ERROR_DEFINITIONS.SCHEMA_NAME_INVALID);
 export const SchemaNameNotUniqueError = createErrorClass(
@@ -450,6 +467,7 @@ export const TableNameNotInvalidError = createErrorClass(
   'TableNameNotInvalid',
   ERROR_DEFINITIONS.TABLE_NAME_NOT_INVALID
 );
+export const TableEmptyColumnError = createErrorClass('TableEmptyColumn', ERROR_DEFINITIONS.TABLE_EMPTY_COLUMN);
 export const TableNameNotUniqueError = createErrorClass('TableNameNotUnique', ERROR_DEFINITIONS.TABLE_NAME_NOT_UNIQUE);
 export const ColumnNotExistError = createErrorClass('ColumnNotExist', ERROR_DEFINITIONS.COLUMN_NOT_EXIST);
 export const ColumnNameNotUniqueError = createErrorClass(

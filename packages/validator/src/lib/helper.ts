@@ -35,3 +35,68 @@ export const detectCircularReference = (
 
   return false;
 };
+
+export const isValidColumnName = (str: string): boolean => {
+  if (/-/.test(str)) {
+    return false;
+  }
+
+  if (/\s/.test(str)) {
+    return false;
+  }
+
+  if (/^[0-9]/.test(str)) {
+    return false;
+  }
+
+  if (/[^a-zA-Z0-9]/.test(str)) {
+    return false;
+  }
+
+  return true;
+};
+
+export const categorizedMysqlDataTypes = [
+  'TINYINT',
+  'SMALLINT',
+  'MEDIUMINT',
+  'INT',
+  'INTEGER',
+  'BIGINT',
+  'FLOAT',
+  'DOUBLE',
+  'REAL',
+  'DECIMAL',
+  'NUMERIC',
+  'BIT',
+  'BOOL',
+  'BOOLEAN',
+  'CHAR',
+  'VARCHAR',
+  'TINYTEXT',
+  'TEXT',
+  'MEDIUMTEXT',
+  'LONGTEXT',
+  'BINARY',
+  'VARBINARY',
+  'BLOB',
+  'TINYBLOB',
+  'MEDIUMBLOB',
+  'LONGBLOB',
+  'ENUM',
+  'SET',
+  'DATE',
+  'TIME',
+  'DATETIME',
+  'TIMESTAMP',
+  'YEAR',
+  'GEOMETRY',
+  'POINT',
+  'LINESTRING',
+  'POLYGON',
+  'MULTIPOINT',
+  'MULTILINESTRING',
+  'MULTIPOLYGON',
+  'GEOMETRYCOLLECTION',
+  'JSON',
+];

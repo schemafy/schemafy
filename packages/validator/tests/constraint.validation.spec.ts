@@ -176,11 +176,12 @@ describe('Constraint validation', () => {
     );
   });
 
-  test.skip('존재하지 않는 제약조건 삭제 시 에러 발생', () => {
+  test('존재하지 않는 제약조건 삭제 시 에러 발생', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
-        s.withTable((t) =>
+        s.withId('schema-1').withTable((t) =>
           t
+            .withId('table-1')
             .withName('posts')
             .withColumn((c) => c.withId('id-col').withName('id'))
             .withConstraint((c) =>

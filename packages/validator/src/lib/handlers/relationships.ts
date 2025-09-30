@@ -49,8 +49,11 @@ export const relationshipHandlers: RelationshipHandlers = {
     const targetTable = schema.tables.find((t) => t.id === relationship.tgtTableId);
     if (!targetTable) throw new TableNotExistError(relationship.tgtTableId);
 
-    if (helper.detectCircularReference(schema, relationship.srcTableId, relationship.tgtTableId)) {
-      throw new RelationshipCyclicReferenceError(relationship.srcTableId, relationship.tgtTableId);
+    if (
+      relationship.kind === 'IDENTIFYING' &&
+      helper.detectCircularReference(schema, relationship.tgtTableId, relationship.srcTableId)
+    ) {
+      throw new RelationshipCyclicReferenceError(relationship.tgtTableId, relationship.srcTableId);
     }
 
     const duplicateRelationship = sourceTable.relationships.find((r) => r.name === relationship.name);
@@ -150,7 +153,7 @@ export const relationshipHandlers: RelationshipHandlers = {
           ? {
               ...s,
               tables: s.tables.map((t) =>
-                t.id === relationship.srcTableId
+                t.id === relationship.tgtTableId
                   ? {
                       ...t,
                       relationships: [...t.relationships, relationship],
@@ -163,7 +166,7 @@ export const relationshipHandlers: RelationshipHandlers = {
     };
 
     const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
-    const propagatedSchema = propagateKeysToChildren(structuredClone(updatedSchema), relationship.srcTableId);
+    const propagatedSchema = propagateKeysToChildren(structuredClone(updatedSchema), relationship.tgtTableId);
 
     updatedDatabase = {
       ...updatedDatabase,

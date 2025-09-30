@@ -1,5 +1,20 @@
-import { SchemaNotExistError, TableNotExistError, ColumnNotExistError } from '../errors';
-import { Database, Schema, Table, Column, Constraint } from '../types';
+import {
+  SchemaNotExistError,
+  TableNotExistError,
+  ColumnNotExistError,
+  ColumnNameNotUniqueError,
+  ColumnNameInvalidError,
+  TableEmptyColumnError,
+  ColumnInPrimaryKeyError,
+  MultipleAutoIncrementColumnsError,
+  ColumnNameIsReservedKeywordError,
+  ColumnNameInvalidFormatError,
+  ColumnPrecisionRequiredError,
+  ColumnLengthRequiredError,
+  ColumnDataTypeInvalidError,
+  ColumnDataTypeRequiredError,
+} from '../errors';
+import { Database, Schema, Table, Column, Constraint, COLUMN } from '../types';
 import * as helper from '../helper';
 
 export interface ColumnHandlers {
@@ -49,13 +64,42 @@ export const columnHandlers: ColumnHandlers = {
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
-    // 1. 기본 컬럼 생성
+    const result = COLUMN.shape.name.safeParse(column.name);
+    if (!result.success) throw new ColumnNameInvalidError(column.name);
+
+    if (!column.dataType) throw new ColumnDataTypeRequiredError(column.name);
+
+    if (column.isAutoIncrement) {
+      const autoIncrementColumn = table.columns.find((c) => c.isAutoIncrement);
+      if (autoIncrementColumn) throw new MultipleAutoIncrementColumnsError(tableId);
+    }
+
+    const reservedKeywords = ['TABLE', 'SELECT', 'CREATE'];
+    if (reservedKeywords.some((keyword) => column.name.includes(keyword)))
+      throw new ColumnNameIsReservedKeywordError(column.name);
+
+    const presisionRequired = ['DECIMAL', 'NUMERIC'];
+    if (presisionRequired.includes(column.dataType) && !column.lengthScale)
+      throw new ColumnPrecisionRequiredError(column.dataType);
+
+    const lengthScaleRequired = ['VARCHAR', 'CHAR'];
+    if (lengthScaleRequired.includes(column.dataType) && !column.lengthScale)
+      throw new ColumnLengthRequiredError(column.dataType);
+
+    const vendorValid = helper.categorizedMysqlDataTypes.includes(column.dataType);
+    if (!vendorValid) throw new ColumnDataTypeInvalidError(column.dataType);
+
+    if (!helper.isValidColumnName(column.name)) throw new ColumnNameInvalidFormatError(column.name);
+
     const newColumn = {
       ...column,
       tableId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    const columnNotUnique = table.columns.find((c) => c.name === column.name);
+    if (columnNotUnique) throw new ColumnNameNotUniqueError(column.name);
 
     let updatedDatabase = {
       ...database,
@@ -94,8 +138,8 @@ export const columnHandlers: ColumnHandlers = {
 
         for (const table of updatedSchema.tables) {
           for (const rel of table.relationships) {
-            if (rel.srcTableId === parentTableId) {
-              const childTable = updatedSchema.tables.find((t) => t.id === rel.tgtTableId);
+            if (rel.tgtTableId === parentTableId) {
+              const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
               if (!childTable) continue;
 
               const parentTable = updatedSchema.tables.find((t) => t.id === parentTableId)!;
@@ -193,9 +237,13 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
 
+    if (table.columns.length === 1) throw new TableEmptyColumnError(tableId);
+
     const isPrimaryKey = table.constraints.some(
       (constraint) => constraint.kind === 'PRIMARY_KEY' && constraint.columns.some((cc) => cc.columnId === columnId)
     );
+
+    if (isPrimaryKey) throw new ColumnInPrimaryKeyError(columnId);
 
     let updatedDatabase = {
       ...database,
@@ -235,91 +283,92 @@ export const columnHandlers: ColumnHandlers = {
       ),
     };
 
-    if (isPrimaryKey) {
-      const deleteCascadingForeignKeys = (
-        currentSchema: Schema,
-        parentTableId: string,
-        deletedPkColumnId: string,
-        visited: Set<string> = new Set()
-      ): Schema => {
-        if (visited.has(parentTableId)) return currentSchema;
-        visited.add(parentTableId);
-
-        let updatedSchema = currentSchema;
-
-        for (const table of updatedSchema.tables) {
-          for (const rel of table.relationships) {
-            if (rel.srcTableId === parentTableId) {
-              const childTable = updatedSchema.tables.find((t) => t.id === rel.tgtTableId);
-              if (!childTable) continue;
-
-              const fkColumnsToDelete = rel.columns
-                .filter((relCol) => relCol.refColumnId === deletedPkColumnId)
-                .map((relCol) => relCol.fkColumnId);
-
-              if (fkColumnsToDelete.length > 0) {
-                updatedSchema = {
-                  ...updatedSchema,
-                  tables: updatedSchema.tables.map((t) =>
-                    t.id === childTable.id
-                      ? {
-                          ...t,
-                          columns: t.columns.filter((col) => !fkColumnsToDelete.includes(col.id)),
-                          indexes: t.indexes
-                            .map((idx) => ({
-                              ...idx,
-                              columns: idx.columns.filter((ic) => !fkColumnsToDelete.includes(ic.columnId)),
-                            }))
-                            .filter((idx) => idx.columns.length > 0),
-                          constraints: t.constraints
-                            .map((constraint) => ({
-                              ...constraint,
-                              columns: constraint.columns.filter((cc) => !fkColumnsToDelete.includes(cc.columnId)),
-                            }))
-                            .filter((constraint) => constraint.columns.length > 0),
-                          relationships: t.relationships
-                            .map((relationship) => ({
-                              ...relationship,
-                              columns: relationship.columns.filter(
-                                (rc) =>
-                                  !fkColumnsToDelete.includes(rc.fkColumnId) &&
-                                  !fkColumnsToDelete.includes(rc.refColumnId)
-                              ),
-                            }))
-                            .filter((relationship) => relationship.columns.length > 0),
-                        }
-                      : t
-                  ),
-                };
-
-                if (rel.kind === 'IDENTIFYING') {
-                  for (const fkColumnId of fkColumnsToDelete) {
-                    updatedSchema = deleteCascadingForeignKeys(
-                      structuredClone(updatedSchema),
-                      rel.tgtTableId,
-                      fkColumnId,
-                      new Set(visited)
-                    );
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        return updatedSchema;
-      };
-
-      const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
-      const cascadedSchema = deleteCascadingForeignKeys(structuredClone(updatedSchema), tableId, columnId);
-
-      updatedDatabase = {
-        ...updatedDatabase,
-        schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? cascadedSchema : s)),
-      };
-    }
-
     return updatedDatabase;
+
+    // PK 컬럼은 아예 삭제가 안되는건가요??
+    // if (isPrimaryKey) {
+    //   const deleteCascadingForeignKeys = (
+    //     currentSchema: Schema,
+    //     parentTableId: string,
+    //     deletedPkColumnId: string,
+    //     visited: Set<string> = new Set()
+    //   ): Schema => {
+    //     if (visited.has(parentTableId)) return currentSchema;
+    //     visited.add(parentTableId);
+
+    //     let updatedSchema = currentSchema;
+
+    //     for (const table of updatedSchema.tables) {
+    //       for (const rel of table.relationships) {
+    //         if (rel.tgtTableId === parentTableId) {
+    //           const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
+    //           if (!childTable) continue;
+
+    //           const fkColumnsToDelete = rel.columns
+    //             .filter((relCol) => relCol.refColumnId === deletedPkColumnId)
+    //             .map((relCol) => relCol.fkColumnId);
+
+    //           if (fkColumnsToDelete.length > 0) {
+    //             updatedSchema = {
+    //               ...updatedSchema,
+    //               tables: updatedSchema.tables.map((t) =>
+    //                 t.id === childTable.id
+    //                   ? {
+    //                       ...t,
+    //                       columns: t.columns.filter((col) => !fkColumnsToDelete.includes(col.id)),
+    //                       indexes: t.indexes
+    //                         .map((idx) => ({
+    //                           ...idx,
+    //                           columns: idx.columns.filter((ic) => !fkColumnsToDelete.includes(ic.columnId)),
+    //                         }))
+    //                         .filter((idx) => idx.columns.length > 0),
+    //                       constraints: t.constraints
+    //                         .map((constraint) => ({
+    //                           ...constraint,
+    //                           columns: constraint.columns.filter((cc) => !fkColumnsToDelete.includes(cc.columnId)),
+    //                         }))
+    //                         .filter((constraint) => constraint.columns.length > 0),
+    //                       relationships: t.relationships
+    //                         .map((relationship) => ({
+    //                           ...relationship,
+    //                           columns: relationship.columns.filter(
+    //                             (rc) =>
+    //                               !fkColumnsToDelete.includes(rc.fkColumnId) &&
+    //                               !fkColumnsToDelete.includes(rc.refColumnId)
+    //                           ),
+    //                         }))
+    //                         .filter((relationship) => relationship.columns.length > 0),
+    //                     }
+    //                   : t
+    //               ),
+    //             };
+
+    //             if (rel.kind === 'IDENTIFYING') {
+    //               for (const fkColumnId of fkColumnsToDelete) {
+    //                 updatedSchema = deleteCascadingForeignKeys(
+    //                   structuredClone(updatedSchema),
+    //                   rel.tgtTableId,
+    //                   fkColumnId,
+    //                   new Set(visited)
+    //                 );
+    //               }
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+
+    //     return updatedSchema;
+    //   };
+
+    //   const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
+    //   const cascadedSchema = deleteCascadingForeignKeys(structuredClone(updatedSchema), tableId, columnId);
+
+    //   updatedDatabase = {
+    //     ...updatedDatabase,
+    //     schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? cascadedSchema : s)),
+    //   };
+    // }
   },
   changeColumnName: (database, schemaId, tableId, columnId, newName) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
@@ -330,6 +379,12 @@ export const columnHandlers: ColumnHandlers = {
 
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
+
+    const columnNotUnique = table.columns.find((c) => c.name === newName);
+    if (columnNotUnique) throw new ColumnNameNotUniqueError(newName);
+
+    const result = COLUMN.shape.name.safeParse(newName);
+    if (!result.success) throw new ColumnNameInvalidError(newName);
 
     return {
       ...database,

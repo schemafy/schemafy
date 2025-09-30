@@ -211,7 +211,7 @@ describe('Column validation', () => {
   });
 
   describe('숫자 타입이 아닌 컬럼에 Auto Increment를 설정할 수 없다', () => {
-    test.skip('숫자 타입이 아닌 컬럼에 Auto Increment를 설정할 수 없다.', () => {
+    test('숫자 타입이 아닌 컬럼에 Auto Increment를 설정할 수 없다.', () => {
       createTestDatabase()
         .withSchema((s) =>
           s.withTable((t) =>
@@ -240,7 +240,7 @@ describe('Column validation', () => {
   });
 
   describe('Primary Key가 아닌 컬럼에 Auto Increment를 설정할 수 없다', () => {
-    test.skip('Primary Key가 아닌 컬럼에 Auto Increment를 설정할 수 없다.', () => {
+    test('Primary Key가 아닌 컬럼에 Auto Increment를 설정할 수 없다.', () => {
       createTestDatabase()
         .withSchema((s) =>
           s.withTable((t) =>
@@ -265,7 +265,7 @@ describe('Column validation', () => {
     });
   });
 
-  test.skip('일반 컬럼을 삭제할 수 있다', () => {
+  test('일반 컬럼을 삭제할 수 있다', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
@@ -282,13 +282,14 @@ describe('Column validation', () => {
   });
 
   describe('Primary Key 컬럼 삭제 시 에러 발생', () => {
-    test.skip('Primary Key 컬럼 삭제 시 에러 발생', () => {
+    test('Primary Key 컬럼 삭제 시 에러 발생', () => {
       const dbWithPK = createTestDatabase()
         .withSchema((s) =>
           s.withId('schema-1').withTable((t) =>
             t
               .withId('table-1')
               .withColumn((c) => c.withId('id-col').withName('id').withDataType('INT'))
+              .withColumn((c) => c.withId('id-col-2').withName('id-2').withDataType('INT'))
               .withConstraint((c) =>
                 c
                   .withName('pk_id')
@@ -306,10 +307,11 @@ describe('Column validation', () => {
   });
 
   describe('Foreign Key로 참조되는 컬럼도 삭제 가능하다', () => {
-    test.skip('Foreign Key로 참조되는 컬럼도 삭제 가능하다', () => {
+    test('Foreign Key로 참조되는 컬럼도 삭제 가능하다', () => {
       const dbWithFK = createTestDatabase()
         .withSchema((s) =>
           s
+            .withId('schema-1')
             .withTable((t) =>
               t
                 .withId('parent-table')
@@ -327,6 +329,7 @@ describe('Column validation', () => {
                 .withId('child-table')
                 .withName('child')
                 .withColumn((c) => c.withId('child-parent-id').withName('parent_id').withDataType('INT'))
+                .withColumn((c) => c.withId('parent-id-2').withName('id-2').withDataType('INT'))
                 .withRelationship((r) =>
                   r
                     .withName('fk_child_parent')
@@ -338,14 +341,14 @@ describe('Column validation', () => {
         )
         .build();
 
-      const result = ERD_VALIDATOR.deleteColumn(dbWithFK, 'schema-1', 'parent-table', 'parent-id');
-      const table = result.schemas[0].tables.find((t) => t.id === 'parent-table');
+      const result = ERD_VALIDATOR.deleteColumn(dbWithFK, 'schema-1', 'child-table', 'child-parent-id');
+      const table = result.schemas[0].tables.find((t) => t.id === 'child-table');
       expect(table?.columns.some((c) => c.id === 'parent-id')).toBeFalsy();
     });
   });
 
   describe('마지막 컬럼 삭제 시 에러 발생', () => {
-    test.skip('마지막 컬럼 삭제 시 에러 발생', () => {
+    test('마지막 컬럼 삭제 시 에러 발생', () => {
       const singleColumnDb = createTestDatabase()
         .withSchema((s) =>
           s
@@ -360,7 +363,7 @@ describe('Column validation', () => {
     });
   });
 
-  test.skip('컬럼 이름을 변경할 수 있다', () => {
+  test('컬럼 이름을 변경할 수 있다', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
@@ -379,7 +382,7 @@ describe('Column validation', () => {
     expect(column?.name).toBe('full_name');
   });
 
-  test.skip('중복된 컬럼 이름으로 변경 시 에러 발생', () => {
+  test('중복된 컬럼 이름으로 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
@@ -397,7 +400,7 @@ describe('Column validation', () => {
     );
   });
 
-  test.skip('존재하지 않는 컬럼 이름 변경 시 에러 발생', () => {
+  test('존재하지 않는 컬럼 이름 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
@@ -413,7 +416,7 @@ describe('Column validation', () => {
     expect(() => ERD_VALIDATOR.changeColumnName(database, 'schema-1', 'table-1', 'non-existent', 'new_name')).toThrow();
   });
 
-  test.skip('유효하지 않은 컬럼 이름으로 변경 시 에러 발생', () => {
+  test('유효하지 않은 컬럼 이름으로 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>

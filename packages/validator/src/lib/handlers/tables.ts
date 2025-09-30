@@ -22,6 +22,9 @@ export const tableHandlers: TableHandlers = {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
+    const tableNotUnique = schema.tables.find((t) => t.name === table.name);
+    if (tableNotUnique) throw new TableNameNotUniqueError(table.name);
+
     return {
       ...database,
       schemas: database.schemas.map((s) =>

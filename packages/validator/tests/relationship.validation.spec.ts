@@ -8,7 +8,7 @@ import {
 import { ERD_VALIDATOR } from '../src/lib/utils';
 
 describe('Relationship validation', () => {
-  test.skip('관계는 반드시 하나 이상의 컬럼 매핑을 가져야 한다', () => {
+  test('관계는 반드시 하나 이상의 컬럼 매핑을 가져야 한다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
         s
@@ -35,7 +35,7 @@ describe('Relationship validation', () => {
     expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', relationship)).toThrow(RelationshipEmptyError);
   });
 
-  test.skip('테이블이 자기 자신을 참조하는 관계를 맺을 수 있다', () => {
+  test('테이블이 자기 자신을 참조하는 관계를 맺을 수 있다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
         s.withTable((t) =>
@@ -66,7 +66,7 @@ describe('Relationship validation', () => {
     expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', relationship)).not.toThrow();
   });
 
-  test.skip('기존 테이블에 중복된 이름의 관계를 추가할 수 없다.', () => {
+  test('기존 테이블에 중복된 이름의 관계를 추가할 수 없다.', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s
@@ -108,7 +108,7 @@ describe('Relationship validation', () => {
     );
   });
 
-  test.skip('존재하지 않는 대상 테이블로는 관계를 생성할 수 없다.', () => {
+  test('존재하지 않는 대상 테이블로는 관계를 생성할 수 없다.', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withTable((t) =>
@@ -134,7 +134,7 @@ describe('Relationship validation', () => {
   });
 
   describe('순환 참조 검증', () => {
-    test.skip('IDENTIFYING 관계에서 직접적인 순환 참조는 금지된다', () => {
+    test('IDENTIFYING 관계에서 직접적인 순환 참조는 금지된다', () => {
       // Step 1: 관계 없는 기본 테이블들 생성
       const db = createTestDatabase()
         .withSchema((s) =>
@@ -193,7 +193,7 @@ describe('Relationship validation', () => {
       );
     });
 
-    test.skip('NON_IDENTIFYING 관계에서는 순환 참조가 허용된다', () => {
+    test('NON_IDENTIFYING 관계에서는 순환 참조가 허용된다', () => {
       // Step 1: 관계 없는 기본 테이블들 생성
       const db = createTestDatabase()
         .withSchema((s) =>
@@ -250,7 +250,7 @@ describe('Relationship validation', () => {
       expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', cyclicRelationship)).not.toThrow();
     });
 
-    test.skip('IDENTIFYING 관계에서 복합 PK 전파가 올바르게 처리된다', () => {
+    test('IDENTIFYING 관계에서 복합 PK 전파가 올바르게 처리된다', () => {
       // Step 1: 3단계 계층구조 테이블 생성 (Order -> OrderLine -> OrderLineDetail)
       const db = createTestDatabase()
         .withSchema((s) =>
@@ -331,7 +331,7 @@ describe('Relationship validation', () => {
       }
     });
 
-    test.skip('에지 케이스: 동일한 테이블 쌍 간에 여러 관계가 있을 때 순환 검증', () => {
+    test('에지 케이스: 동일한 테이블 쌍 간에 여러 관계가 있을 때 순환 검증', () => {
       // Step 1: 기본 테이블 생성 (외래키 컬럼들 없이)
       const db = createTestDatabase()
         .withSchema((s) =>
