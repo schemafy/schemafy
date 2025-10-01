@@ -1,11 +1,12 @@
 import {
   addEdge,
   applyEdgeChanges,
+  reconnectEdge,
   type Connection,
   type Edge,
   type EdgeChange,
 } from '@xyflow/react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   RELATIONSHIP_TYPES,
   RELATIONSHIP_STYLE_TYPES,
@@ -21,6 +22,7 @@ const getRelationshipStyle = (isDashed: boolean = false) => {
 export const useEdges = (relationshipConfig: RelationshipConfig) => {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
+  const edgeReconnectSuccessful = useRef(true);
 
   const createEdge = (params: Connection): Edge => {
     const baseConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
@@ -58,6 +60,22 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
   const onEdgeClick = (event: React.MouseEvent, edge: Edge) => {
     event.stopPropagation();
     setSelectedEdge(edge.id);
+  };
+
+  const onReconnectStart = () => {
+    edgeReconnectSuccessful.current = false;
+  };
+
+  const onReconnect = (oldEdge: Edge, newConnection: Connection) => {
+    edgeReconnectSuccessful.current = true;
+    setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
+  };
+
+  const onReconnectEnd = (_: MouseEvent | TouchEvent, edge: Edge) => {
+    if (!edgeReconnectSuccessful.current) {
+      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    }
+    edgeReconnectSuccessful.current = true;
   };
 
   const changeRelationshipConfig = (
@@ -99,6 +117,9 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
     onConnect,
     onEdgesChange,
     onEdgeClick,
+    onReconnectStart,
+    onReconnect,
+    onReconnectEnd,
     changeRelationshipConfig,
     setSelectedEdge,
   };

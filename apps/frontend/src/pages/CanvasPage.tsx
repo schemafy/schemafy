@@ -50,6 +50,9 @@ export const CanvasPage = () => {
     onConnect,
     onEdgesChange,
     onEdgeClick,
+    onReconnectStart,
+    onReconnect,
+    onReconnectEnd,
     changeRelationshipConfig,
     setSelectedEdge,
   } = useEdges(relationshipConfig);
@@ -94,6 +97,9 @@ export const CanvasPage = () => {
             elementsSelectable={activeTool !== 'hand'}
             onConnect={onConnect}
             onEdgeClick={onEdgeClick}
+            onReconnect={onReconnect}
+            onReconnectStart={onReconnectStart}
+            onReconnectEnd={onReconnectEnd}
             nodeTypes={NODE_TYPES}
             edgeTypes={EDGE_TYPES}
             connectionLineType={ConnectionLineType.SmoothStep}
