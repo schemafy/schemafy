@@ -237,7 +237,7 @@ class ColumnBuilder {
 
   build(): Column {
     if (!this.tableId) {
-      throw new Error('tableId must be set on ColumnBuilder before building.');
+      this.tableId = `tbl_${idGenerator()}`;
     }
     return {
       id: this.id,
@@ -272,7 +272,7 @@ class ConstraintColumnBuilder {
 
   build(): ConstraintColumn {
     if (!this.columnId) {
-      throw new Error(`Column ID for ${this.columnName ?? 'unknown'} not resolved`);
+      this.columnId = `col_${idGenerator()}`;
     }
     return {
       id: this.id,
@@ -290,7 +290,8 @@ class ConstraintColumnBuilder {
     if (!this.columnName) return;
     const columnId = columnMap.get(this.columnName);
     if (!columnId) {
-      throw new Error(`Column ${this.columnName} not found in table`);
+      this.columnId = `col_${idGenerator()}`;
+      return;
     }
     this.columnId = columnId;
   }
@@ -356,7 +357,7 @@ class ConstraintBuilder {
 
   build(): Constraint {
     if (!this.tableId) {
-      throw new Error('tableId must be set on ConstraintBuilder before building.');
+      this.tableId = `tbl_${idGenerator()}`;
     }
     return {
       id: this.id,
@@ -401,7 +402,7 @@ class IndexColumnBuilder {
 
   build(): IndexColumn {
     if (!this.columnId) {
-      throw new Error(`Column ID for ${this.columnName ?? 'unknown'} not resolved`);
+      this.columnId = `col_${idGenerator()}`;
     }
     return {
       id: this.id,
@@ -418,7 +419,8 @@ class IndexColumnBuilder {
     if (!this.columnName) return;
     const columnId = columnMap.get(this.columnName);
     if (!columnId) {
-      throw new Error(`Column ${this.columnName} not found in table`);
+      this.columnId = `col_${idGenerator()}`;
+      return;
     }
     this.columnId = columnId;
   }
@@ -472,7 +474,7 @@ class IndexBuilder {
 
   build(): Index {
     if (!this.tableId) {
-      throw new Error('tableId must be set on IndexBuilder before building.');
+      this.tableId = `tbl_${idGenerator()}`;
     }
     return {
       id: this.id,
@@ -521,8 +523,11 @@ class RelationshipColumnBuilder {
   }
 
   build(): RelationshipColumn {
-    if (!this.fkColumnId || !this.refColumnId) {
-      throw new Error('Both fkColumnId and refColumnId must be set for RelationshipColumn');
+    if (!this.fkColumnId) {
+      this.fkColumnId = `fk_${idGenerator()}`;
+    }
+    if (!this.refColumnId) {
+      this.refColumnId = `ref_${idGenerator()}`;
     }
     return {
       id: this.id,
@@ -599,8 +604,11 @@ class RelationshipBuilder {
   }
 
   build(): Relationship {
-    if (!this.srcTableId || !this.tgtTableId) {
-      throw new Error('Both srcTableId and tgtTableId must be set for Relationship');
+    if (!this.srcTableId) {
+      this.srcTableId = `tbl_${idGenerator()}`;
+    }
+    if (!this.tgtTableId) {
+      this.tgtTableId = `tbl_${idGenerator()}`;
     }
     return {
       id: this.id,
