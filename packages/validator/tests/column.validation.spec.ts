@@ -19,11 +19,11 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
-    const column = createColumnBuilder().withName('id').build();
+    const column = createColumnBuilder().withName('id2').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(ColumnNameNotUniqueError);
   });
@@ -34,7 +34,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -49,7 +49,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -65,7 +65,7 @@ describe('Column validation', () => {
       .withSchema((s) =>
         s
           .withId('schema-1')
-          .withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id').withDataType('')))
+          .withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id2').withDataType('')))
       )
       .build();
 
@@ -75,7 +75,7 @@ describe('Column validation', () => {
   test('validate 단계에서 데이터 타입이 null이면 에러를 발생시킨다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
-        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -91,7 +91,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -108,7 +108,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -128,7 +128,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -148,7 +148,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -169,7 +169,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -189,7 +189,7 @@ describe('Column validation', () => {
         s
           .withId(schemaId)
           .withTable((t) =>
-            t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id').withAutoIncrement(true))
+            t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2').withAutoIncrement(true))
           )
       )
       .build();
@@ -232,7 +232,7 @@ describe('Column validation', () => {
         s.withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('pk-col').withName('id').withDataType('INT'))
+            .withColumn((c) => c.withId('pk-col').withName('id2').withDataType('INT'))
             .withColumn(
               (c) => c.withId('non-pk-ai-col').withName('non_pk_ai').withDataType('INT').withAutoIncrement(true) // PK가 아닌 컬럼에 AI 설정
             )
@@ -256,7 +256,7 @@ describe('Column validation', () => {
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id').withDataType('INT'))
+            .withColumn((c) => c.withId('id-col').withName('id2').withDataType('INT'))
             .withColumn((c) => c.withId('name-col').withName('name').withDataType('VARCHAR').withLengthScale('100'))
             .withColumn((c) => c.withId('email-col').withName('email').withDataType('VARCHAR').withLengthScale('100'))
         )
@@ -275,7 +275,7 @@ describe('Column validation', () => {
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id').withDataType('INT'))
+              .withColumn((c) => c.withId('parent-id').withName('id2').withDataType('INT'))
               .withConstraint((c) =>
                 c
                   .withName('pk_parent')
@@ -310,7 +310,7 @@ describe('Column validation', () => {
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
         )
@@ -329,7 +329,7 @@ describe('Column validation', () => {
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
         )
@@ -347,7 +347,7 @@ describe('Column validation', () => {
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
         )
@@ -363,7 +363,7 @@ describe('Column validation', () => {
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
         )

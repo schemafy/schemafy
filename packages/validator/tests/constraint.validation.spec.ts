@@ -25,7 +25,7 @@ describe('Constraint validation', () => {
             t
               .withId('table-1')
               .withName('posts')
-              .withColumn((c) => c.withId('id-col').withName('id'))
+              .withColumn((c) => c.withId('id-col').withName('id2'))
               .withConstraint((c) =>
                 c
                   .withName('pk_users')
@@ -51,7 +51,7 @@ describe('Constraint validation', () => {
 
     const db = createTestDatabase()
       .withSchema((s) =>
-        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -70,7 +70,7 @@ describe('Constraint validation', () => {
 
     const db = createTestDatabase()
       .withSchema((s) =>
-        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -194,7 +194,7 @@ describe('Constraint validation', () => {
           t
             .withId('table-1')
             .withName('posts')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withConstraint((c) =>
               c
                 .withName('pk_posts')

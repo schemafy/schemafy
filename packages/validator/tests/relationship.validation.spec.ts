@@ -17,7 +17,7 @@ describe('Relationship validation', () => {
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('id-col').withName('id'))
+              .withColumn((c) => c.withId('id-col').withName('id2'))
           )
           .withTable((t) => t.withId('child-table').withName('child'))
       )
@@ -42,7 +42,7 @@ describe('Relationship validation', () => {
           t
             .withId('employee-table')
             .withName('employee')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('manager-col').withName('manager_id'))
             .withConstraint((c) =>
               c
@@ -75,13 +75,13 @@ describe('Relationship validation', () => {
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id'))
+              .withColumn((c) => c.withId('parent-id').withName('id2'))
           )
           .withTable((t) =>
             t
               .withId('child-table')
               .withName('child')
-              .withColumn((c) => c.withId('child-id').withName('id'))
+              .withColumn((c) => c.withId('child-id').withName('id2'))
           )
       )
       .build();
@@ -149,7 +149,7 @@ describe('Relationship validation', () => {
               t
                 .withId('table-a')
                 .withName('table_a')
-                .withColumn((c) => c.withId('a-id').withName('id').withDataType('INT'))
+                .withColumn((c) => c.withId('a-id').withName('id2').withDataType('INT'))
                 .withConstraint((c) =>
                   c
                     .withName('pk_a')
@@ -161,7 +161,7 @@ describe('Relationship validation', () => {
               t
                 .withId('table-b')
                 .withName('table_b')
-                .withColumn((c) => c.withId('b-id').withName('id').withDataType('INT'))
+                .withColumn((c) => c.withId('b-id').withName('id2').withDataType('INT'))
                 .withConstraint((c) =>
                   c
                     .withName('pk_b')
@@ -208,7 +208,7 @@ describe('Relationship validation', () => {
               t
                 .withId('user-table')
                 .withName('user')
-                .withColumn((c) => c.withId('user-id').withName('id').withDataType('INT'))
+                .withColumn((c) => c.withId('user-id').withName('id2').withDataType('INT'))
                 .withConstraint((c) =>
                   c
                     .withName('pk_user')
@@ -220,7 +220,7 @@ describe('Relationship validation', () => {
               t
                 .withId('company-table')
                 .withName('company')
-                .withColumn((c) => c.withId('company-id').withName('id').withDataType('INT'))
+                .withColumn((c) => c.withId('company-id').withName('id2').withDataType('INT'))
                 .withConstraint((c) =>
                   c
                     .withName('pk_company')
@@ -265,7 +265,7 @@ describe('Relationship validation', () => {
               t
                 .withId('order-table')
                 .withName('order')
-                .withColumn((c) => c.withId('order-id').withName('id').withDataType('INT'))
+                .withColumn((c) => c.withId('order-id').withName('id2').withDataType('INT'))
                 .withConstraint((c) =>
                   c
                     .withName('pk_order')
@@ -344,7 +344,7 @@ describe('Relationship validation', () => {
             t
               .withId('user-table')
               .withName('user')
-              .withColumn((c) => c.withId('user-id').withName('id').withDataType('INT'))
+              .withColumn((c) => c.withId('user-id').withName('id2').withDataType('INT'))
               .withConstraint((c) =>
                 c
                   .withName('pk_user')

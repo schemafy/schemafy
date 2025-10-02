@@ -101,7 +101,7 @@ describe('Table validation', () => {
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id').withDataType('INT'))
+              .withColumn((c) => c.withId('parent-id').withName('id2').withDataType('INT'))
           )
           .withTable((t) =>
             t
@@ -124,7 +124,7 @@ describe('Table validation', () => {
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id').withDataType('INT'))
+              .withColumn((c) => c.withId('parent-id').withName('id2').withDataType('INT'))
               .withConstraint((c) =>
                 c
                   .withName('pk_parent')
@@ -176,7 +176,7 @@ describe('Table validation', () => {
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id'))
+              .withColumn((c) => c.withId('parent-id').withName('id2'))
               .withRelationship((r) =>
                 r
                   .withName('fk_child_parent')

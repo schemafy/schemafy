@@ -20,7 +20,7 @@ describe('Index validation', () => {
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withIndex((i) => i.withName('idx_name').withColumn((ic) => ic.withColumnId('id-col')))
         )
@@ -41,7 +41,7 @@ describe('Index validation', () => {
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
         )
       )
@@ -98,7 +98,7 @@ describe('Index validation', () => {
   test('인덱스 컬럼의 정렬 방향은 asc 또는 desc만 허용된다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
-        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -123,7 +123,7 @@ describe('Index validation', () => {
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
             .withIndex((i) =>
@@ -146,7 +146,7 @@ describe('Index validation', () => {
           t
             .withId('table-1')
             .withName('users')
-            .withColumn((c) => c.withId('id-col').withName('id').withDataType('INT'))
+            .withColumn((c) => c.withId('id-col').withName('id2').withDataType('INT'))
             .withColumn((c) => c.withId('email-col').withName('email').withDataType('VARCHAR').withLengthScale('100'))
             .withConstraint((c) => c.withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('id-col')))
             .withConstraint((c) => c.withKind('UNIQUE').withColumn((cc) => cc.withColumnId('email-col')))
