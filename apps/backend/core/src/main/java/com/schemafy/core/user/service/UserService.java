@@ -10,11 +10,14 @@ import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -45,7 +48,11 @@ public class UserService {
 
     public Mono<UserInfoResponse> getUserById(String userId) {
         return userRepository.findById(userId)
+                .doOnNext(user -> {
+                    log.info("user: {}", user);
+                })
                 .map(UserInfoResponse::from)
+                .doOnError(e -> log.error("getUserById 오류: userId={}, error={}", userId, e.getMessage(), e))
                 .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)));
     }
 

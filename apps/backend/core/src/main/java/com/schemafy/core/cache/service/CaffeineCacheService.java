@@ -12,7 +12,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@ConditionalOnProperty(name = "cache.type", havingValue = "caffeine", matchIfMissing = true)
+@ConditionalOnProperty(name = "cache.type", havingValue = "CAFFEINE", matchIfMissing = true)
 public class CaffeineCacheService implements CacheService {
 
     private final Cache<String, String> cache;

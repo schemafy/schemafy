@@ -13,6 +13,8 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
+    withJavadocJar()
+    withSourcesJar()
 }
 
 configurations {
@@ -80,8 +82,14 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
     // doc
 	implementation 'org.springdoc:springdoc-openapi-starter-webflux-api:2.8.13'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ["-parameters"]
 }
 
 tasks.named('test') {
