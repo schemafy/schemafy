@@ -1,7 +1,7 @@
 import {
   SchemaNotExistError,
-  TableNotExistError,
   RelationshipNotExistError,
+  RelationshipTargetTableNotExistError,
   RelationshipColumnNotExistError,
   RelationshipNameNotUniqueError,
   RelationshipCyclicReferenceError,
@@ -44,10 +44,10 @@ export const relationshipHandlers: RelationshipHandlers = {
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const sourceTable = schema.tables.find((t) => t.id === relationship.srcTableId);
-    if (!sourceTable) throw new TableNotExistError(relationship.srcTableId);
+    if (!sourceTable) throw new RelationshipTargetTableNotExistError(relationship.srcTableId, schemaId);
 
     const targetTable = schema.tables.find((t) => t.id === relationship.tgtTableId);
-    if (!targetTable) throw new TableNotExistError(relationship.tgtTableId);
+    if (!targetTable) throw new RelationshipTargetTableNotExistError(relationship.tgtTableId, schemaId);
 
     if (
       relationship.kind === 'IDENTIFYING' &&
@@ -56,7 +56,7 @@ export const relationshipHandlers: RelationshipHandlers = {
       throw new RelationshipCyclicReferenceError(relationship.tgtTableId, relationship.srcTableId);
     }
 
-    const duplicateRelationship = sourceTable.relationships.find((r) => r.name === relationship.name);
+    const duplicateRelationship = targetTable.relationships.find((r) => r.name === relationship.name);
     if (duplicateRelationship) throw new RelationshipNameNotUniqueError(relationship.name);
 
     const propagateKeysToChildren = (

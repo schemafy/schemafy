@@ -38,7 +38,7 @@ describe('Relationship validation', () => {
   test('테이블이 자기 자신을 참조하는 관계를 맺을 수 있다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
-        s.withTable((t) =>
+        s.withId('schema-1').withTable((t) =>
           t
             .withId('employee-table')
             .withName('employee')
@@ -70,6 +70,7 @@ describe('Relationship validation', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s
+          .withId('schema-1')
           .withTable((t) =>
             t
               .withId('parent-table')
@@ -93,7 +94,11 @@ describe('Relationship validation', () => {
       .withColumn((rc) => rc.withRefColumnId('parent-id'))
       .build();
 
-    expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', relationship)).not.toThrow();
+    let duplicateDatabase = database;
+
+    expect(
+      () => (duplicateDatabase = ERD_VALIDATOR.createRelationship(database, 'schema-1', relationship))
+    ).not.toThrow();
 
     const duplicateRelationship = createRelationshipBuilder()
       .withSrcTableId('child-table')
@@ -103,7 +108,7 @@ describe('Relationship validation', () => {
       .withColumn((rc) => rc.withRefColumnId('parent-id'))
       .build();
 
-    expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', duplicateRelationship)).toThrow(
+    expect(() => ERD_VALIDATOR.createRelationship(duplicateDatabase, 'schema-1', duplicateRelationship)).toThrow(
       RelationshipNameNotUniqueError
     );
   });
@@ -111,7 +116,7 @@ describe('Relationship validation', () => {
   test('존재하지 않는 대상 테이블로는 관계를 생성할 수 없다.', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
-        s.withTable((t) =>
+        s.withId('schema-1').withTable((t) =>
           t
             .withId('child-table')
             .withName('child')
