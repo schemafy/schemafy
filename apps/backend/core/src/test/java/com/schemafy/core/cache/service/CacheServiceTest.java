@@ -1,7 +1,5 @@
 package com.schemafy.core.cache.service;
 
-import java.time.Duration;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,10 +18,9 @@ class CacheServiceTest {
     void testPutAndGet() {
         String key = "test-key";
         String value = "test-value";
-        Duration ttl = Duration.ofMinutes(5);
 
         StepVerifier.create(
-                cacheService.put(key, value, ttl)
+                cacheService.put(key, value)
                         .then(cacheService.get(key)))
                 .expectNext(value)
                 .verifyComplete();
@@ -42,10 +39,9 @@ class CacheServiceTest {
     void testExists() {
         String key = "test-key";
         String value = "test-value";
-        Duration ttl = Duration.ofMinutes(5);
 
         StepVerifier.create(
-                cacheService.put(key, value, ttl)
+                cacheService.put(key, value)
                         .then(cacheService.exists(key)))
                 .expectNext(true)
                 .verifyComplete();
@@ -64,10 +60,9 @@ class CacheServiceTest {
     void testEvict() {
         String key = "test-key";
         String value = "test-value";
-        Duration ttl = Duration.ofMinutes(5);
 
         StepVerifier.create(
-                cacheService.put(key, value, ttl)
+                cacheService.put(key, value)
                         .then(cacheService.evict(key))
                         .then(cacheService.exists(key)))
                 .expectNext(false)
@@ -80,16 +75,15 @@ class CacheServiceTest {
         String key2 = "key2";
         String value1 = "value1";
         String value2 = "value2";
-        Duration ttl = Duration.ofMinutes(5);
 
         StepVerifier.create(
-                cacheService.put(key1, value1, ttl)
+                cacheService.put(key1, value1)
                         .then(cacheService.get(key1)))
                 .expectNext(value1)
                 .verifyComplete();
 
         StepVerifier.create(
-                cacheService.put(key2, value2, ttl)
+                cacheService.put(key2, value2)
                         .then(cacheService.get(key2)))
                 .expectNext(value2)
                 .verifyComplete();
@@ -99,10 +93,9 @@ class CacheServiceTest {
     void testCacheEvictAfterPut() {
         String key = "evict-test-key";
         String value = "evict-test-value";
-        Duration ttl = Duration.ofMinutes(5);
 
         StepVerifier.create(
-                cacheService.put(key, value, ttl)
+                cacheService.put(key, value)
                         .then(cacheService.exists(key)))
                 .expectNext(true)
                 .verifyComplete();

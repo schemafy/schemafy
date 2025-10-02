@@ -33,7 +33,7 @@ public class CaffeineCacheService implements CacheService {
     }
 
     @Override
-    public Mono<Void> put(String key, String value, Duration ttl) {
+    public Mono<Void> put(String key, String value) {
         cache.put(key, value);
         return Mono.empty();
     }
