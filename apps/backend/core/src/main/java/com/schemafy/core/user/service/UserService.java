@@ -1,20 +1,19 @@
 package com.schemafy.core.user.service;
 
-import com.github.f4b6a3.ulid.Ulid;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.common.util.ULIDUtils;
-import com.schemafy.core.user.service.dto.LoginCommand;
-import com.schemafy.core.user.service.dto.SignUpCommand;
-import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.core.user.service.dto.LoginCommand;
+import com.schemafy.core.user.service.dto.SignUpCommand;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -38,9 +37,7 @@ public class UserService {
     }
 
     private Mono<User> createNewUser(SignUpCommand request) {
-        Ulid id = ULIDUtils.generateUlid();
-
-        return User.signUp(id, request.toUserInfo(), passwordEncoder)
+        return User.signUp(request.toUserInfo(), passwordEncoder)
                 .flatMap(userRepository::save)
                 .onErrorMap(DuplicateKeyException.class,
                         e -> new BusinessException(ErrorCode.USER_ALREADY_EXISTS));
@@ -48,11 +45,7 @@ public class UserService {
 
     public Mono<UserInfoResponse> getUserById(String userId) {
         return userRepository.findById(userId)
-                .doOnNext(user -> {
-                    log.info("user: {}", user);
-                })
                 .map(UserInfoResponse::from)
-                .doOnError(e -> log.error("getUserById 오류: userId={}, error={}", userId, e.getMessage(), e))
                 .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)));
     }
 

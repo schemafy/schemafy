@@ -3,6 +3,8 @@ package com.schemafy.core.common.type;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 public abstract class BaseEntity implements Persistable<String> {
 
     @Id
+    @Setter
     protected String id;
 
     @CreatedDate
@@ -43,7 +46,6 @@ public abstract class BaseEntity implements Persistable<String> {
     public void markAsNotNew() {
         this.isNew = false;
     }
-
 
     public void delete() {
         this.deletedAt = LocalDateTime.now();

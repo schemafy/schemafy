@@ -1,16 +1,18 @@
 package com.schemafy.core.user.repository.entity;
 
-import com.github.f4b6a3.ulid.Ulid;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import com.schemafy.core.common.type.BaseEntity;
-import com.schemafy.core.user.repository.vo.UserStatus;
+import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.repository.vo.Email;
 import com.schemafy.core.user.repository.vo.UserInfo;
+import com.schemafy.core.user.repository.vo.UserStatus;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.relational.core.mapping.Table;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -28,7 +30,7 @@ public class User extends BaseEntity {
 
     private UserStatus status;
 
-    public static Mono<User> signUp(Ulid id, UserInfo userInfo, PasswordEncoder passwordEncoder) {
+    public static Mono<User> signUp(UserInfo userInfo, PasswordEncoder passwordEncoder) {
         return Mono.fromCallable(() -> {
             Email email = new Email(userInfo.email());
             String encodedPassword = passwordEncoder.encode(userInfo.password());
@@ -37,9 +39,8 @@ public class User extends BaseEntity {
                     email.address(),
                     userInfo.name(),
                     encodedPassword,
-                    UserStatus.ACTIVE
-            );
-            newUser.id = id.toString();
+                    UserStatus.ACTIVE);
+            newUser.setId(UlidGenerator.generate());
 
             return newUser;
         }).subscribeOn(Schedulers.boundedElastic());
