@@ -42,9 +42,9 @@ class UlidControllerTest {
 
         // When & Then
         webTestClient
-                .post()
+                .get()
                 .uri("/api/ulid/generate")
-                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -52,12 +52,17 @@ class UlidControllerTest {
                 .jsonPath("$.result.ulid").isEqualTo(mockUlid)
                 .consumeWith(document("ulid-generate",
                         requestHeaders(
-                                headerWithName("Content-Type").description("요청 컨텐츠 타입")),
+                                headerWithName("Accept")
+                                        .description("요청 응답 포맷(Accept 헤더)")),
                         responseHeaders(
-                                headerWithName("Content-Type").description("응답 컨텐츠 타입")),
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
                         responseFields(
-                                fieldWithPath("success").description("요청 성공 여부").type(Boolean.class),
-                                fieldWithPath("result").description("응답 데이터").type(Object.class),
-                                fieldWithPath("result.ulid").description("생성된 ULID 문자열").type(String.class))));
+                                fieldWithPath("success").description("요청 성공 여부")
+                                        .type("boolean"),
+                                fieldWithPath("result").description("응답 데이터")
+                                        .type("object"),
+                                fieldWithPath("result.ulid").description("생성된 ULID 문자열")
+                                        .type("string"))));
     }
 }

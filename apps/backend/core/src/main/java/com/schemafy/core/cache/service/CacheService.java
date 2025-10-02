@@ -1,5 +1,6 @@
 package com.schemafy.core.cache.service;
 
+import com.schemafy.core.cache.service.dto.CacheStatsDto;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -14,5 +15,5 @@ public interface CacheService {
 
     Mono<Boolean> exists(String key);
 
-    Mono<String> getStats();
+    Mono<CacheStatsDto> getStats();
 }

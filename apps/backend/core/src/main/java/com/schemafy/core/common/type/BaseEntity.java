@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 public abstract class BaseEntity implements Persistable<String> {
 
     @Id
-    @Setter
+    @Setter(lombok.AccessLevel.PROTECTED)
     protected String id;
 
     @CreatedDate

@@ -14,7 +14,7 @@ public class UlidController {
 
     private final UlidService ulidService;
 
-    @PostMapping("/generate")
+    @GetMapping("/generate")
     public Mono<BaseResponse<UlidResponse>> generateTemporaryUlid() {
         return ulidService.generateTemporaryUlid()
                 .map(UlidResponse::new)

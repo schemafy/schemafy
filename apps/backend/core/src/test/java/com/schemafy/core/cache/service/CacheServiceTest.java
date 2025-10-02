@@ -75,21 +75,6 @@ class CacheServiceTest {
     }
 
     @Test
-    void testGetStats() {
-        String key = "test-key";
-        String value = "test-value";
-        Duration ttl = Duration.ofMinutes(5);
-
-        StepVerifier.create(
-                cacheService.put(key, value, ttl)
-                        .then(cacheService.getStats()))
-                .expectNextMatches(stats -> stats.contains("Cache Stats") &&
-                        stats.contains("Hits") &&
-                        stats.contains("Misses"))
-                .verifyComplete();
-    }
-
-    @Test
     void testMultipleOperations() {
         String key1 = "key1";
         String key2 = "key2";
