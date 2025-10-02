@@ -15,7 +15,7 @@ export const COLUMN = z.object({
   tableId: ULID,
   name: z.string().min(3).max(40),
   ordinalPosition: z.number().positive(),
-  dataType: z.string(),
+  dataType: z.string().nullable().optional(),
   lengthScale: z.string(),
   isAutoIncrement: z.boolean(),
   charset: z.string(),
