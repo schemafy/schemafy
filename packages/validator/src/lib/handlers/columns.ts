@@ -283,92 +283,91 @@ export const columnHandlers: ColumnHandlers = {
       ),
     };
 
+    if (isPrimaryKey) {
+      const deleteCascadingForeignKeys = (
+        currentSchema: Schema,
+        parentTableId: string,
+        deletedPkColumnId: string,
+        visited: Set<string> = new Set()
+      ): Schema => {
+        if (visited.has(parentTableId)) return currentSchema;
+        visited.add(parentTableId);
+
+        let updatedSchema = currentSchema;
+
+        for (const table of updatedSchema.tables) {
+          for (const rel of table.relationships) {
+            if (rel.tgtTableId === parentTableId) {
+              const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
+              if (!childTable) continue;
+
+              const fkColumnsToDelete = rel.columns
+                .filter((relCol) => relCol.refColumnId === deletedPkColumnId)
+                .map((relCol) => relCol.fkColumnId);
+
+              if (fkColumnsToDelete.length > 0) {
+                updatedSchema = {
+                  ...updatedSchema,
+                  tables: updatedSchema.tables.map((t) =>
+                    t.id === childTable.id
+                      ? {
+                          ...t,
+                          columns: t.columns.filter((col) => !fkColumnsToDelete.includes(col.id)),
+                          indexes: t.indexes
+                            .map((idx) => ({
+                              ...idx,
+                              columns: idx.columns.filter((ic) => !fkColumnsToDelete.includes(ic.columnId)),
+                            }))
+                            .filter((idx) => idx.columns.length > 0),
+                          constraints: t.constraints
+                            .map((constraint) => ({
+                              ...constraint,
+                              columns: constraint.columns.filter((cc) => !fkColumnsToDelete.includes(cc.columnId)),
+                            }))
+                            .filter((constraint) => constraint.columns.length > 0),
+                          relationships: t.relationships
+                            .map((relationship) => ({
+                              ...relationship,
+                              columns: relationship.columns.filter(
+                                (rc) =>
+                                  !fkColumnsToDelete.includes(rc.fkColumnId) &&
+                                  !fkColumnsToDelete.includes(rc.refColumnId)
+                              ),
+                            }))
+                            .filter((relationship) => relationship.columns.length > 0),
+                        }
+                      : t
+                  ),
+                };
+
+                if (rel.kind === 'IDENTIFYING') {
+                  for (const fkColumnId of fkColumnsToDelete) {
+                    updatedSchema = deleteCascadingForeignKeys(
+                      structuredClone(updatedSchema),
+                      rel.tgtTableId,
+                      fkColumnId,
+                      new Set(visited)
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        return updatedSchema;
+      };
+
+      const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
+      const cascadedSchema = deleteCascadingForeignKeys(structuredClone(updatedSchema), tableId, columnId);
+
+      updatedDatabase = {
+        ...updatedDatabase,
+        schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? cascadedSchema : s)),
+      };
+    }
+
     return updatedDatabase;
-
-    // PK 컬럼은 아예 삭제가 안되는건가요??
-    // if (isPrimaryKey) {
-    //   const deleteCascadingForeignKeys = (
-    //     currentSchema: Schema,
-    //     parentTableId: string,
-    //     deletedPkColumnId: string,
-    //     visited: Set<string> = new Set()
-    //   ): Schema => {
-    //     if (visited.has(parentTableId)) return currentSchema;
-    //     visited.add(parentTableId);
-
-    //     let updatedSchema = currentSchema;
-
-    //     for (const table of updatedSchema.tables) {
-    //       for (const rel of table.relationships) {
-    //         if (rel.tgtTableId === parentTableId) {
-    //           const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
-    //           if (!childTable) continue;
-
-    //           const fkColumnsToDelete = rel.columns
-    //             .filter((relCol) => relCol.refColumnId === deletedPkColumnId)
-    //             .map((relCol) => relCol.fkColumnId);
-
-    //           if (fkColumnsToDelete.length > 0) {
-    //             updatedSchema = {
-    //               ...updatedSchema,
-    //               tables: updatedSchema.tables.map((t) =>
-    //                 t.id === childTable.id
-    //                   ? {
-    //                       ...t,
-    //                       columns: t.columns.filter((col) => !fkColumnsToDelete.includes(col.id)),
-    //                       indexes: t.indexes
-    //                         .map((idx) => ({
-    //                           ...idx,
-    //                           columns: idx.columns.filter((ic) => !fkColumnsToDelete.includes(ic.columnId)),
-    //                         }))
-    //                         .filter((idx) => idx.columns.length > 0),
-    //                       constraints: t.constraints
-    //                         .map((constraint) => ({
-    //                           ...constraint,
-    //                           columns: constraint.columns.filter((cc) => !fkColumnsToDelete.includes(cc.columnId)),
-    //                         }))
-    //                         .filter((constraint) => constraint.columns.length > 0),
-    //                       relationships: t.relationships
-    //                         .map((relationship) => ({
-    //                           ...relationship,
-    //                           columns: relationship.columns.filter(
-    //                             (rc) =>
-    //                               !fkColumnsToDelete.includes(rc.fkColumnId) &&
-    //                               !fkColumnsToDelete.includes(rc.refColumnId)
-    //                           ),
-    //                         }))
-    //                         .filter((relationship) => relationship.columns.length > 0),
-    //                     }
-    //                   : t
-    //               ),
-    //             };
-
-    //             if (rel.kind === 'IDENTIFYING') {
-    //               for (const fkColumnId of fkColumnsToDelete) {
-    //                 updatedSchema = deleteCascadingForeignKeys(
-    //                   structuredClone(updatedSchema),
-    //                   rel.tgtTableId,
-    //                   fkColumnId,
-    //                   new Set(visited)
-    //                 );
-    //               }
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-
-    //     return updatedSchema;
-    //   };
-
-    //   const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
-    //   const cascadedSchema = deleteCascadingForeignKeys(structuredClone(updatedSchema), tableId, columnId);
-
-    //   updatedDatabase = {
-    //     ...updatedDatabase,
-    //     schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? cascadedSchema : s)),
-    //   };
-    // }
   },
   changeColumnName: (database, schemaId, tableId, columnId, newName) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
