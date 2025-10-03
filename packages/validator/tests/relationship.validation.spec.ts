@@ -29,7 +29,6 @@ describe('Relationship validation', () => {
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
       .withTgtTableId('parent-table')
-      .withColumn((rc) => rc.withRefColumnId('id-col'))
       .build();
 
     expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', relationship)).toThrow(RelationshipEmptyError);
@@ -182,6 +181,7 @@ describe('Relationship validation', () => {
         .build();
 
       expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', aToBRelationship)).not.toThrow();
+      const aToBDb = ERD_VALIDATOR.createRelationship(db, 'schema-1', aToBRelationship);
 
       // Step 3: IDENTIFYING 관계에서 순환 참조 시도 (B -> A) - 논리적으로 불가능
       const cyclicRelationship = createRelationshipBuilder()
@@ -193,7 +193,7 @@ describe('Relationship validation', () => {
         .build();
 
       // IDENTIFYING 관계에서 순환 참조는 금지되어야 함
-      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', cyclicRelationship)).toThrow(
+      expect(() => ERD_VALIDATOR.createRelationship(aToBDb, 'schema-1', cyclicRelationship)).toThrow(
         RelationshipCyclicReferenceError
       );
     });
@@ -311,6 +311,7 @@ describe('Relationship validation', () => {
         .build();
 
       expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', orderLineRelationship)).not.toThrow();
+      const orderDb = ERD_VALIDATOR.createRelationship(db, 'schema-1', orderLineRelationship);
 
       // Step 3: IDENTIFYING 관계 추가 (OrderLine -> OrderLineDetail)
       // 문제: OrderLine의 PK는 이제 복합키 (line_id, order_id)
@@ -326,13 +327,17 @@ describe('Relationship validation', () => {
         .build();
 
       // 복합 PK를 올바르게 참조하는 IDENTIFYING 관계는 허용되어야 함
-      expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', orderLineDetailRelationship)).not.toThrow();
+      expect(() => ERD_VALIDATOR.createRelationship(orderDb, 'schema-1', orderLineDetailRelationship)).not.toThrow();
+      const orderLineDetailDb = ERD_VALIDATOR.createRelationship(orderDb, 'schema-1', orderLineDetailRelationship);
 
-      const orderLineDetailTable = db.schemas[0].tables.find((t) => t.id === 'order-line-detail-table');
+      const orderLineDetailTable = orderLineDetailDb.schemas[0].tables.find((t) => t.id === 'order-line-detail-table');
       expect(orderLineDetailTable).toBeDefined();
       if (orderLineDetailTable) {
-        const pkConstraint = orderLineDetailTable.constraints.filter((c) => c.kind === 'PRIMARY_KEY');
-        expect(pkConstraint.length).toBe(3); // detail_id, line_id, order_id
+        const pkConstraint = orderLineDetailTable.constraints.find((c) => c.kind === 'PRIMARY_KEY');
+        expect(pkConstraint).toBeDefined();
+        if (pkConstraint) {
+          expect(pkConstraint.columns.length).toBe(3); // detail_id, line_id, order_id
+        }
       }
     });
 

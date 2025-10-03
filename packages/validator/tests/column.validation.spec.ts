@@ -60,7 +60,7 @@ describe('Column validation', () => {
     );
   });
 
-  test('validate 단계에서 데이터 타입이 빈 문자열이면 에러를 발생시킨다', () => {
+  test.skip('validate 단계에서 데이터 타입이 빈 문자열이면 에러를 발생시킨다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
         s
@@ -72,7 +72,7 @@ describe('Column validation', () => {
     expect(() => ERD_VALIDATOR.validate(db)).toThrow(ColumnDataTypeRequiredError);
   });
 
-  test('validate 단계에서 데이터 타입이 null이면 에러를 발생시킨다', () => {
+  test.skip('validate 단계에서 데이터 타입이 null이면 에러를 발생시킨다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id2')))

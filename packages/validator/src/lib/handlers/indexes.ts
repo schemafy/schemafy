@@ -7,9 +7,9 @@ import {
   IndexColumnNotUniqueError,
   IndexTypeInvalidError,
   DuplicateIndexDefinitionError,
+  IndexColumnSortDirInvalidError,
 } from '../errors';
 import { Database, Schema, Table, Index, IndexColumn } from '../types';
-import * as helper from '../helper';
 
 export interface IndexHandlers {
   createIndex: (
@@ -53,14 +53,34 @@ export const indexHandlers: IndexHandlers = {
     const indexNotUnique = table.indexes.find((i) => i.name === index.name);
     if (indexNotUnique) throw new IndexNameNotUniqueError(index.name);
 
-    if (table.indexes.find((i) => JSON.stringify(i.columns) === JSON.stringify(index.columns)))
-      throw new DuplicateIndexDefinitionError(index.id);
+    if (
+      table.indexes.find((i) => {
+        const existingIndexDef = i.columns
+          .map((ic) => `${ic.columnId}:${ic.sortDir}`)
+          .sort()
+          .join(',');
+        const newIndexDef = index.columns
+          .map((ic) => `${ic.columnId}:${ic.sortDir}`)
+          .sort()
+          .join(',');
+        return existingIndexDef === newIndexDef && i.type === index.type;
+      })
+    )
+      throw new DuplicateIndexDefinitionError(index.name, 'existing');
 
     const indexColumnNotUnique = index.columns.map((ic) => ic.columnId);
     if (indexColumnNotUnique.length !== new Set(indexColumnNotUnique).size)
       throw new IndexColumnNotUniqueError(index.id);
 
-    if (!helper.categorizedMysqlDataTypes.includes(index.type)) throw new IndexTypeInvalidError(index.type);
+    const validIndexTypes = ['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER'];
+    if (!validIndexTypes.includes(index.type)) throw new IndexTypeInvalidError(index.type);
+
+    for (const indexColumn of index.columns) {
+      const validSortDirs = ['ASC', 'DESC'];
+      if (!validSortDirs.includes(indexColumn.sortDir)) {
+        throw new IndexColumnSortDirInvalidError(indexColumn.sortDir);
+      }
+    }
 
     return {
       ...database,

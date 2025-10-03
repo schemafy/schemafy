@@ -123,7 +123,7 @@ export const ERD_VALIDATOR: ERDValidator = {
         }
 
         const constraintNames = new Set<string>();
-        const uniqueConstraints = new Set<string>();
+        const constraintDefinitions = new Set<string>();
 
         for (const constraint of table.constraints) {
           const fullConstraintName = `${schema.name}.${constraint.name}`;
@@ -139,25 +139,26 @@ export const ERD_VALIDATOR: ERDValidator = {
             }
           }
 
-          if (constraint.kind === 'UNIQUE') {
-            const columnIds = constraint.columns
-              .map((cc) => cc.columnId)
-              .sort()
-              .join(',');
-            if (uniqueConstraints.has(columnIds)) {
-              const existingConstraint = table.constraints.find(
-                (c) =>
-                  c.kind === 'UNIQUE' &&
-                  c.columns
-                    .map((cc) => cc.columnId)
-                    .sort()
-                    .join(',') === columnIds &&
-                  c.id !== constraint.id
-              );
-              throw new DuplicateKeyDefinitionError(constraint.name, existingConstraint?.name || 'unknown');
-            }
-            uniqueConstraints.add(columnIds);
+          const constraintDef = JSON.stringify({
+            kind: constraint.kind,
+            checkExpr: constraint.checkExpr,
+            defaultExpr: constraint.defaultExpr,
+            columnIds: constraint.columns.map((cc) => cc.columnId).sort(),
+          });
+
+          if (constraintDefinitions.has(constraintDef)) {
+            const existingConstraint = table.constraints.find((c) => {
+              const existingDef = JSON.stringify({
+                kind: c.kind,
+                checkExpr: c.checkExpr,
+                defaultExpr: c.defaultExpr,
+                columnIds: c.columns.map((cc) => cc.columnId).sort(),
+              });
+              return existingDef === constraintDef && c.id !== constraint.id;
+            });
+            throw new DuplicateKeyDefinitionError(constraint.name, existingConstraint?.name || 'unknown');
           }
+          constraintDefinitions.add(constraintDef);
         }
 
         const indexNames = new Set<string>();

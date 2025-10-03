@@ -4,6 +4,10 @@ import {
   ConstraintNotExistError,
   ConstraintColumnNotExistError,
   DuplicateKeyDefinitionError,
+  ConstraintNameNotUniqueError,
+  ConstraintColumnNotExistError as ConstraintColumnNotExistValidationError,
+  ConstraintColumnNotUniqueError,
+  UniqueSameAsPrimaryKeyError,
 } from '../errors';
 import { Database, Schema, Table, Constraint, ConstraintColumn } from '../types';
 
@@ -51,6 +55,51 @@ export const constraintHandlers: ConstraintHandlers = {
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
+    const newDatabase = {
+      ...database,
+      schemas: database.schemas.map((s) =>
+        s.id === schemaId
+          ? {
+              ...s,
+              tables: s.tables.map((t) =>
+                t.id === tableId
+                  ? {
+                      ...t,
+                      constraints: [...t.constraints, { ...constraint, tableId }],
+                    }
+                  : t
+              ),
+            }
+          : s
+      ),
+    };
+
+    const constraintNames = new Set<string>();
+    for (const schemaTable of schema.tables) {
+      for (const c of schemaTable.constraints) {
+        const fullConstraintName = `${schema.name}.${c.name}`;
+        constraintNames.add(fullConstraintName);
+      }
+    }
+
+    const newFullConstraintName = `${schema.name}.${constraint.name}`;
+    if (constraintNames.has(newFullConstraintName)) {
+      throw new ConstraintNameNotUniqueError(constraint.name, schemaId);
+    }
+
+    const constraintColumnIds = new Set<string>();
+    for (const constraintColumn of constraint.columns) {
+      const columnExists = table.columns.some((col) => col.id === constraintColumn.columnId);
+      if (!columnExists) {
+        throw new ConstraintColumnNotExistValidationError(constraintColumn.columnId, constraint.name);
+      }
+
+      if (constraintColumnIds.has(constraintColumn.columnId)) {
+        throw new ConstraintColumnNotUniqueError(constraintColumn.columnId, constraint.name);
+      }
+      constraintColumnIds.add(constraintColumn.columnId);
+    }
+
     const existingConstraint = table.constraints.find((c) => {
       if (
         c.kind !== constraint.kind ||
@@ -69,24 +118,66 @@ export const constraintHandlers: ConstraintHandlers = {
       throw new DuplicateKeyDefinitionError(constraint.name, existingConstraint.name);
     }
 
-    return {
-      ...database,
-      schemas: database.schemas.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              tables: s.tables.map((t) =>
-                t.id === tableId
-                  ? {
-                      ...t,
-                      constraints: [...t.constraints, { ...constraint, tableId }],
-                    }
-                  : t
-              ),
-            }
-          : s
-      ),
-    };
+    let updatedDatabase = newDatabase;
+    if (constraint.kind === 'PRIMARY_KEY') {
+      for (const constraintColumn of constraint.columns) {
+        const hasNotNull = table.constraints.some(
+          (c) => c.kind === 'NOT_NULL' && c.columns.some((cc) => cc.columnId === constraintColumn.columnId)
+        );
+
+        if (!hasNotNull) {
+          const constraintId = `nn_${constraintColumn.columnId}_${Date.now()}`;
+          const notNullConstraint = {
+            id: constraintId,
+            name: `nn_${table.name}_${constraintColumn.columnId}`,
+            kind: 'NOT_NULL' as const,
+            columns: [
+              {
+                id: `nncol_${Date.now()}`,
+                columnId: constraintColumn.columnId,
+                seqNo: 1,
+                constraintId: constraintId,
+              },
+            ],
+            checkExpr: undefined,
+            defaultExpr: undefined,
+          };
+
+          updatedDatabase = {
+            ...updatedDatabase,
+            schemas: updatedDatabase.schemas.map((s) =>
+              s.id === schemaId
+                ? {
+                    ...s,
+                    tables: s.tables.map((t) =>
+                      t.id === tableId
+                        ? {
+                            ...t,
+                            constraints: [...t.constraints, { ...notNullConstraint, tableId }],
+                          }
+                        : t
+                    ),
+                  }
+                : s
+            ),
+          };
+        }
+      }
+    }
+
+    if (constraint.kind === 'UNIQUE') {
+      const pkConstraint = table.constraints.find((c) => c.kind === 'PRIMARY_KEY');
+      if (pkConstraint) {
+        const pkColumnIds = pkConstraint.columns.map((col) => col.columnId).sort();
+        const uniqueColumnIds = constraint.columns.map((col) => col.columnId).sort();
+
+        if (JSON.stringify(pkColumnIds) === JSON.stringify(uniqueColumnIds)) {
+          throw new UniqueSameAsPrimaryKeyError(constraint.name);
+        }
+      }
+    }
+
+    return updatedDatabase;
   },
   deleteConstraint: (database, schemaId, tableId, constraintId) => {
     const schema = database.schemas.find((s) => s.id === schemaId);

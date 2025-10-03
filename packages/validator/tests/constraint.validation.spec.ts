@@ -33,7 +33,12 @@ describe('Constraint validation', () => {
                   .withColumn((cc) => cc.withColumnId('id-col'))
               )
           )
-          .withTable((t) => t.withId('table-2').withName('users'))
+          .withTable((t) =>
+            t
+              .withId('table-2')
+              .withName('users')
+              .withColumn((c) => c.withId('id-col').withName('id'))
+          )
       )
       .build();
 
@@ -92,9 +97,9 @@ describe('Constraint validation', () => {
       .withColumn((cc) => cc.withColumnId('id-col'))
       .build();
 
-    expect(() => ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', pkConstraint)).not.toThrow();
+    const updatedDb = ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', pkConstraint);
 
-    const table = db.schemas.find((s) => s.id === 'schema-1')?.tables.find((t) => t.id === 'table-1');
+    const table = updatedDb.schemas.find((s) => s.id === 'schema-1')?.tables.find((t) => t.id === 'table-1');
     expect(table?.constraints?.filter((c) => c.columns.some((cc) => cc.columnId === 'id-col'))?.length).toBe(2); // PK, NN
   });
 
@@ -118,7 +123,8 @@ describe('Constraint validation', () => {
       .build();
 
     expect(() => ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', pkConstraint)).not.toThrow();
-    expect(() => ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', ukConstraint)).toThrow(
+    const dbWithConstraint = ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', pkConstraint);
+    expect(() => ERD_VALIDATOR.createConstraint(dbWithConstraint, 'schema-1', 'table-1', ukConstraint)).toThrow(
       UniqueSameAsPrimaryKeyError
     );
   });
@@ -180,7 +186,8 @@ describe('Constraint validation', () => {
       .build();
 
     expect(() => ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', ukConstraint1)).not.toThrow();
-    expect(() => ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', ukConstraint2)).toThrow(
+    const dbWithConstraint = ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', ukConstraint1);
+    expect(() => ERD_VALIDATOR.createConstraint(dbWithConstraint, 'schema-1', 'table-1', ukConstraint2)).toThrow(
       DuplicateKeyDefinitionError
     );
   });
