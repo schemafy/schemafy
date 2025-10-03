@@ -3,6 +3,7 @@ import {
   TableNotExistError,
   ConstraintNotExistError,
   ConstraintColumnNotExistError,
+  DuplicateKeyDefinitionError,
 } from '../errors';
 import { Database, Schema, Table, Constraint, ConstraintColumn } from '../types';
 
@@ -49,6 +50,24 @@ export const constraintHandlers: ConstraintHandlers = {
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
+
+    const existingConstraint = table.constraints.find((c) => {
+      if (
+        c.kind !== constraint.kind ||
+        c.checkExpr !== constraint.checkExpr ||
+        c.defaultExpr !== constraint.defaultExpr
+      )
+        return false;
+
+      const existingColumnIds = c.columns.map((col) => col.columnId).sort();
+      const newColumnIds = constraint.columns.map((col) => col.columnId).sort();
+
+      return JSON.stringify(existingColumnIds) === JSON.stringify(newColumnIds);
+    });
+
+    if (existingConstraint) {
+      throw new DuplicateKeyDefinitionError(constraint.name, existingConstraint.name);
+    }
 
     return {
       ...database,

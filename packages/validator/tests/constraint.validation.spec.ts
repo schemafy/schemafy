@@ -126,13 +126,12 @@ describe('Constraint validation', () => {
   test('동일한 컬럼 조합이지만 순서가 다른 제약조건은 서로 다른 것으로 인정되어야 한다.', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
-        s
-          .withId('schema-1')
-          .withTable((t) =>
-            t
-              .withColumn((c) => c.withId('col1').withName('column1'))
-              .withColumn((c) => c.withId('col2').withName('column2'))
-          )
+        s.withId('schema-1').withTable((t) =>
+          t
+            .withId('table-1')
+            .withColumn((c) => c.withId('col1').withName('column1'))
+            .withColumn((c) => c.withId('col2').withName('column2'))
+        )
       )
       .build();
 
@@ -157,13 +156,12 @@ describe('Constraint validation', () => {
   test('완전히 동일한 컬럼 조합과 순서를 가진 제약조건은 중복으로 간주되어야 한다.', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
-        s
-          .withId('schema-1')
-          .withTable((t) =>
-            t
-              .withColumn((c) => c.withId('col1').withName('column1'))
-              .withColumn((c) => c.withId('col2').withName('column2'))
-          )
+        s.withId('schema-1').withTable((t) =>
+          t
+            .withId('table-1')
+            .withColumn((c) => c.withId('col1').withName('column1'))
+            .withColumn((c) => c.withId('col2').withName('column2'))
+        )
       )
       .build();
 

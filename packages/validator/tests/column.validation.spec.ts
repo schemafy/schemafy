@@ -38,7 +38,7 @@ describe('Column validation', () => {
       )
       .build();
 
-    const column = createColumnBuilder().withDataType('').build();
+    const column = createColumnBuilder().withName('id3').withDataType('').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).not.toThrow();
   });
@@ -53,7 +53,7 @@ describe('Column validation', () => {
       )
       .build();
 
-    const column = createColumnBuilder().withDataType('INVALID_TYPE').build();
+    const column = createColumnBuilder().withName('id3').withDataType('INVALID_TYPE').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(
       ColumnDataTypeInvalidError
@@ -95,7 +95,7 @@ describe('Column validation', () => {
       )
       .build();
 
-    const column = createColumnBuilder().withDataType(dataType).withLengthScale('').build();
+    const column = createColumnBuilder().withName('id3').withDataType(dataType).withLengthScale('').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(
       ColumnLengthRequiredError
@@ -112,7 +112,7 @@ describe('Column validation', () => {
       )
       .build();
 
-    const column = createColumnBuilder().withDataType(dataType).withLengthScale('').build();
+    const column = createColumnBuilder().withName('id3').withDataType(dataType).withLengthScale('').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(
       ColumnPrecisionRequiredError
@@ -281,6 +281,13 @@ describe('Column validation', () => {
                   .withName('pk_parent')
                   .withKind('PRIMARY_KEY')
                   .withColumn((cc) => cc.withColumnId('parent-id'))
+              )
+              .withColumn((c) => c.withId('parent-id2').withName('id3').withDataType('INT'))
+              .withConstraint((c) =>
+                c
+                  .withName('pk_parent2')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId('parent-id2'))
               )
           )
           .withTable((t) =>

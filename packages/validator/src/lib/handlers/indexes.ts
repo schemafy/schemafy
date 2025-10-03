@@ -6,6 +6,7 @@ import {
   IndexNameNotUniqueError,
   IndexColumnNotUniqueError,
   IndexTypeInvalidError,
+  DuplicateIndexDefinitionError,
 } from '../errors';
 import { Database, Schema, Table, Index, IndexColumn } from '../types';
 import * as helper from '../helper';
@@ -51,6 +52,9 @@ export const indexHandlers: IndexHandlers = {
 
     const indexNotUnique = table.indexes.find((i) => i.name === index.name);
     if (indexNotUnique) throw new IndexNameNotUniqueError(index.name);
+
+    if (table.indexes.find((i) => JSON.stringify(i.columns) === JSON.stringify(index.columns)))
+      throw new DuplicateIndexDefinitionError(index.id);
 
     const indexColumnNotUnique = index.columns.map((ic) => ic.columnId);
     if (indexColumnNotUnique.length !== new Set(indexColumnNotUnique).size)

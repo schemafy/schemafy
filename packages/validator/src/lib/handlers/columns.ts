@@ -5,14 +5,12 @@ import {
   ColumnNameNotUniqueError,
   ColumnNameInvalidError,
   TableEmptyColumnError,
-  ColumnInPrimaryKeyError,
   MultipleAutoIncrementColumnsError,
   ColumnNameIsReservedKeywordError,
   ColumnNameInvalidFormatError,
   ColumnPrecisionRequiredError,
   ColumnLengthRequiredError,
   ColumnDataTypeInvalidError,
-  ColumnDataTypeRequiredError,
 } from '../errors';
 import { Database, Schema, Table, Column, Constraint, COLUMN } from '../types';
 import * as helper from '../helper';
@@ -67,8 +65,6 @@ export const columnHandlers: ColumnHandlers = {
     const result = COLUMN.shape.name.safeParse(column.name);
     if (!result.success) throw new ColumnNameInvalidError(column.name);
 
-    if (!column.dataType) throw new ColumnDataTypeRequiredError(column.name);
-
     if (column.isAutoIncrement) {
       const autoIncrementColumn = table.columns.find((c) => c.isAutoIncrement);
       if (autoIncrementColumn) throw new MultipleAutoIncrementColumnsError(tableId);
@@ -78,16 +74,18 @@ export const columnHandlers: ColumnHandlers = {
     if (reservedKeywords.some((keyword) => column.name.includes(keyword)))
       throw new ColumnNameIsReservedKeywordError(column.name);
 
-    const presisionRequired = ['DECIMAL', 'NUMERIC'];
-    if (presisionRequired.includes(column.dataType) && !column.lengthScale)
-      throw new ColumnPrecisionRequiredError(column.dataType);
+    if (column.dataType) {
+      const presisionRequired = ['DECIMAL', 'NUMERIC'];
+      if (presisionRequired.includes(column.dataType) && !column.lengthScale)
+        throw new ColumnPrecisionRequiredError(column.dataType);
 
-    const lengthScaleRequired = ['VARCHAR', 'CHAR'];
-    if (lengthScaleRequired.includes(column.dataType) && !column.lengthScale)
-      throw new ColumnLengthRequiredError(column.dataType);
+      const lengthScaleRequired = ['VARCHAR', 'CHAR'];
+      if (lengthScaleRequired.includes(column.dataType) && !column.lengthScale)
+        throw new ColumnLengthRequiredError(column.dataType);
 
-    const vendorValid = helper.categorizedMysqlDataTypes.includes(column.dataType);
-    if (!vendorValid) throw new ColumnDataTypeInvalidError(column.dataType);
+      const vendorValid = helper.categorizedMysqlDataTypes.includes(column.dataType);
+      if (!vendorValid) throw new ColumnDataTypeInvalidError(column.dataType);
+    }
 
     if (!helper.isValidColumnName(column.name)) throw new ColumnNameInvalidFormatError(column.name);
 
@@ -242,8 +240,6 @@ export const columnHandlers: ColumnHandlers = {
     const isPrimaryKey = table.constraints.some(
       (constraint) => constraint.kind === 'PRIMARY_KEY' && constraint.columns.some((cc) => cc.columnId === columnId)
     );
-
-    if (isPrimaryKey) throw new ColumnInPrimaryKeyError(columnId);
 
     let updatedDatabase = {
       ...database,
