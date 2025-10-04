@@ -60,24 +60,28 @@ Schemafy API
 
 ULID를 생성합니다.
 
-==== 요청
+[discrete]
+=== 요청
 
 include::{snippets}/ulid-generate/http-request.adoc[]
 include::{snippets}/ulid-generate/request-headers.adoc[]
 include::{snippets}/ulid-generate/request-body.adoc[]
 include::{snippets}/ulid-generate/curl-request.adoc[]
 
-==== 응답
+[discrete]
+=== 응답
 
 include::{snippets}/ulid-generate/response-headers.adoc[]
 include::{snippets}/ulid-generate/response-body.adoc[]
 include::{snippets}/ulid-generate/http-response.adoc[]
 
-==== 응답 필드
+[discrete]
+=== 응답 필드
 
 include::{snippets}/ulid-generate/response-fields.adoc[]
 
-==== 에러 타입
+[discrete]
+=== 에러 타입
 
 [cols="1,2,1"]
 |===
