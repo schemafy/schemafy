@@ -34,7 +34,7 @@ export const Menu = ({ trigger, children, className }: MenuProps) => {
       <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-schemafy-bg border border-schemafy-light-gray rounded-lg shadow-lg z-50 py-2">
+        <div className="absolute right-0 bg-schemafy-bg border border-schemafy-light-gray rounded-lg shadow-lg z-50">
           {children}
         </div>
       )}
@@ -52,7 +52,7 @@ export const MenuItem = ({
     <button
       onClick={onClick}
       className={cn(
-        'w-full px-4 py-2 text-left font-body-md hover:bg-schemafy-secondary transition-colors',
+        'px-4 py-2 text-left font-overline-sm hover:bg-schemafy-secondary transition-colors',
         variant === 'destructive' && 'text-schemafy-destructive',
         className,
       )}

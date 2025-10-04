@@ -33,7 +33,7 @@ interface TableCellProps {
 
 export const Table = ({ children, className }: TableProps) => {
   return (
-    <div className="w-full overflow-auto">
+    <div className="w-full overflow-visible">
       <table className={cn('w-full border-collapse', className)}>
         {children}
       </table>

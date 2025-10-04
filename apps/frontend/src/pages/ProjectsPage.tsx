@@ -7,6 +7,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  Pagination,
   Menu,
   MenuItem,
   Button,
@@ -48,6 +49,7 @@ export const ProjectsPage = () => {
   const [selectedWorkspace, setSelectedWorkspace] =
     useState("Workspace's name");
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [projects] = useState<Project[]>(mockProjects);
 
   const workspaceOptions = ["Workspace's name", 'Workspace 2', 'Workspace 3'];
@@ -56,26 +58,10 @@ export const ProjectsPage = () => {
     project.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const renderMemberAvatars = (count: number) => {
-    const avatars = [];
-    for (let i = 0; i < count; i++) {
-      avatars.push(
-        <div
-          key={i}
-          className="w-8 h-8 rounded-full bg-schemafy-dark-gray flex items-center justify-center text-white font-caption-md"
-          style={{ marginLeft: i > 0 ? '-8px' : '0' }}
-        >
-          {String.fromCharCode(65 + i)}
-        </div>,
-      );
-    }
-    return <div className="flex items-center">{avatars}</div>;
-  };
-
   return (
     <div className="min-h-screen bg-schemafy-bg">
-      <div className="max-w-[1280px] mx-auto px-10 py-8">
-        <div className="mb-6">
+      <div className="flex flex-col">
+        <div className="my-5">
           <Dropdown
             value={selectedWorkspace}
             options={workspaceOptions}
@@ -83,7 +69,7 @@ export const ProjectsPage = () => {
           />
         </div>
 
-        <div className="mb-6">
+        <div className="mb-8">
           <div className="relative">
             <svg
               width="20"
@@ -111,7 +97,7 @@ export const ProjectsPage = () => {
               placeholder="Search projects"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-schemafy-bg border border-schemafy-light-gray rounded-lg font-body-md text-schemafy-text placeholder-schemafy-dark-gray focus:outline-none focus:ring-2 focus:ring-schemafy-button-bg"
+              className="w-full pl-12 pr-4 py-3 bg-schemafy-secondary rounded-xl font-body-md text-schemafy-text placeholder-schemafy-dark-gray focus:outline-none focus:ring-2 focus:ring-schemafy-button-bg"
             />
           </div>
         </div>
@@ -121,55 +107,61 @@ export const ProjectsPage = () => {
           <Button>New Project</Button>
         </div>
 
-        <div className="bg-schemafy-bg border border-schemafy-light-gray rounded-lg overflow-hidden mb-6">
+        <div className="bg-schemafy-bg border border-schemafy-light-gray rounded-lg mb-6">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-schemafy-light-gray hover:bg-transparent">
-                <TableHead>Name</TableHead>
-                <TableHead>Last Modified</TableHead>
-                <TableHead>Access</TableHead>
-                <TableHead className="w-16"></TableHead>
+                <TableHead className="font-overline-sm text-schemafy-text">
+                  Name
+                </TableHead>
+                <TableHead className="font-overline-sm text-schemafy-text">
+                  Last Modified
+                </TableHead>
+                <TableHead className="font-overline-sm text-schemafy-text">
+                  Access
+                </TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProjects.map((project) => (
                 <TableRow key={project.id}>
-                  <TableCell>
-                    <div className="font-overline-md">{project.name}</div>
+                  <TableCell className="font-body-sm text-schemafy-text">
+                    {project.name}
                   </TableCell>
-                  <TableCell>
-                    <div className="text-schemafy-dark-gray">
-                      {project.lastModified}
-                    </div>
+                  <TableCell className="font-body-sm text-schemafy-dark-gray">
+                    {project.lastModified}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-4">
                       <span
-                        className={`px-3 py-1 rounded-full font-body-sm ${
-                          project.access === 'Private'
-                            ? 'bg-schemafy-secondary text-schemafy-text'
-                            : 'bg-schemafy-button-bg text-schemafy-button-text'
-                        }`}
+                        className={
+                          'px-15 py-1 rounded-2xl font-overline-sm bg-schemafy-secondary text-schemafy-text'
+                        }
                       >
                         {project.access}
                       </span>
-                      {renderMemberAvatars(project.members)}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Menu
                       trigger={
-                        <button className="p-2 hover:bg-schemafy-secondary rounded transition-colors">
+                        <button className="relative p-2 hover:bg-schemafy-secondary rounded transition-colors">
                           <svg
                             width="4"
                             height="16"
                             viewBox="0 0 4 16"
                             fill="none"
-                            className="text-schemafy-text"
+                            className="text-schemafy-dark-gray"
                           >
-                            <circle cx="2" cy="2" r="2" fill="currentColor" />
-                            <circle cx="2" cy="8" r="2" fill="currentColor" />
-                            <circle cx="2" cy="14" r="2" fill="currentColor" />
+                            <circle cx="2" cy="2" r="1.5" fill="currentColor" />
+                            <circle cx="2" cy="8" r="1.5" fill="currentColor" />
+                            <circle
+                              cx="2"
+                              cy="14"
+                              r="1.5"
+                              fill="currentColor"
+                            />
                           </svg>
                         </button>
                       }
@@ -183,6 +175,14 @@ export const ProjectsPage = () => {
               ))}
             </TableBody>
           </Table>
+        </div>
+
+        <div className="flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={3}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
     </div>

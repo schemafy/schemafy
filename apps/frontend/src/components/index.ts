@@ -11,3 +11,4 @@ export {
   TableCell,
 } from './Table';
 export { Menu, MenuItem } from './Menu';
+export { Pagination } from './Pagination';
