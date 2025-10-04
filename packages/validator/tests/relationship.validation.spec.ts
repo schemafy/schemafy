@@ -341,7 +341,7 @@ describe('Relationship validation', () => {
       }
     });
 
-    test('에지 케이스: 동일한 테이블 쌍 간에 여러 관계가 있을 때 순환 검증', () => {
+    test('엣지 케이스: 동일한 테이블 쌍 간에 여러 관계가 있을 때 순환 검증', () => {
       // Step 1: 기본 테이블 생성 (외래키 컬럼들 없이)
       const db = createTestDatabase()
         .withSchema((s) =>
