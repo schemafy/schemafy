@@ -1,0 +1,30 @@
+{
+  "properties": [
+    {
+      "name": "cache.type",
+      "type": "java.lang.String",
+      "description": "Cache provider type (e.g., caffeine, redis).",
+      "defaultValue": "caffeine"
+    },
+    {
+      "name": "cache.maximum-size",
+      "type": "java.lang.Long",
+      "description": "Maximum number of entries allowed in the cache.",
+      "defaultValue": 10000
+    },
+    {
+      "name": "cache.expire-after-write",
+      "type": "java.lang.Integer",
+      "description": "Time-to-live in minutes after a write operation.",
+      "defaultValue": 30
+    },
+    {
+      "name": "cache.expire-after-access",
+      "type": "java.lang.Integer",
+      "description": "Time-to-live in minutes after an access operation.",
+      "defaultValue": 10
+    }
+  ]
+}
+
+

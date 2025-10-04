@@ -1,29 +1,31 @@
 package com.schemafy.core.user.controller;
 
-import com.github.f4b6a3.ulid.UlidCreator;
-import com.jayway.jsonpath.JsonPath;
-import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.controller.dto.request.LoginRequest;
-import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import com.jayway.jsonpath.JsonPath;
+import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.core.user.controller.dto.request.LoginRequest;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.repository.UserRepository;
+
 import reactor.test.StepVerifier;
-
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -91,7 +93,8 @@ class UserControllerTest {
     static Stream<Arguments> invalidSignUpRequests() {
         return Stream.of(
                 Arguments.of(new SignUpRequest("", "Test User", "password")), // empty email
-                Arguments.of(new SignUpRequest("invalid-email", "Test User", "password")), // invalid email
+                Arguments.of(new SignUpRequest("invalid-email", "Test User", "password")), // invalid
+                                                                                           // email
                 Arguments.of(new SignUpRequest("test@example.com", "", "password")), // empty name
                 Arguments.of(new SignUpRequest("test@example.com", "Test User", "")) // empty password
         );
@@ -127,7 +130,7 @@ class UserControllerTest {
     @DisplayName("존재하지 않는 회원은 조회에 실패한다")
     void getUserNotFound() {
         // given
-        String nonExistentUserId = UlidCreator.getUlid().toString();
+        String nonExistentUserId = UlidGenerator.generate();
 
         // when & then
         webTestClient.get().uri("/api/v1/users/{userId}", nonExistentUserId)

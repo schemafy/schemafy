@@ -20,13 +20,13 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         return http
-                .csrf().disable()                           // CSRF 보호 비활성화
-                .cors().disable()                           // CORS 설정 비활성화
-                .httpBasic().disable()                      // HTTP Basic 인증 비활성화
-                .formLogin().disable()                      // Form 로그인 비활성화
-                .logout().disable()                         // 로그아웃 기능 비활성화
+                .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화
+                .cors(cors -> cors.disable()) // CORS 설정 비활성화
+                .httpBasic(httpBasic -> httpBasic.disable()) // HTTP Basic 인증 비활성화
+                .formLogin(formLogin -> formLogin.disable()) // Form 로그인 비활성화
+                .logout(logout -> logout.disable()) // 로그아웃 기능 비활성화
                 .authorizeExchange(exchanges -> exchanges
-                        .anyExchange().permitAll()              // 모든 요청 허용
+                        .anyExchange().permitAll() // 모든 요청 허용
                 )
                 .build();
     }
