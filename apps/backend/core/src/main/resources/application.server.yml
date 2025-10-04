@@ -17,8 +17,8 @@ spring:
 cache:
   type: CAFFEINE
   maximum-size: 10000
-  expire-after-write: 30
-  expire-after-access: 10
+  expire-after-write-minutes: 30
+  expire-after-access-minutes: 10
 
 management:
   endpoints:

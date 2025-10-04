@@ -27,8 +27,8 @@ spring:
 cache:
   type: CAFFEINE
   maximum-size: 1000
-  expire-after-write: 5
-  expire-after-access: 2
+  expire-after-write-minutes: 5
+  expire-after-access-minutes: 2
 
 logging:
   level:
