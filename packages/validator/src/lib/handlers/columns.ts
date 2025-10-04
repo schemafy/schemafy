@@ -492,8 +492,9 @@ export const columnHandlers: ColumnHandlers = {
       );
 
       if (!hasNotNull) {
+        const newConstraintId = `constraint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const newConstraint: Constraint = {
-          id: `constraint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, //id 어떻게 하지....
+          id: newConstraintId,
           tableId,
           name: `nn_${column.name}`,
           kind: 'NOT_NULL' as const,
@@ -501,8 +502,8 @@ export const columnHandlers: ColumnHandlers = {
           defaultExpr: null,
           columns: [
             {
-              id: `cc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, //id 어떻게 하지....
-              constraintId: `constraint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              id: `cc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              constraintId: newConstraintId,
               columnId,
               seqNo: 1,
             },

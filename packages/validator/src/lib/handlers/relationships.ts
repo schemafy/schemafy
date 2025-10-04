@@ -99,7 +99,7 @@ export const relationshipHandlers: RelationshipHandlers = {
                 if (existingColumn) continue;
               }
 
-              const newColumnId = `fkcol_${rel.id}_${pkColumn.id}`;
+              const newColumnId = `fkcol_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
               const columnName = `${parentTable.name}_${pkColumn.name}`;
 
               const newColumn = {
