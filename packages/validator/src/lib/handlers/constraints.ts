@@ -126,14 +126,15 @@ export const constraintHandlers: ConstraintHandlers = {
         );
 
         if (!hasNotNull) {
-          const constraintId = `nn_${constraintColumn.columnId}_${Date.now()}`;
+          const constraintId = `nn_${constraintColumn.columnId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const notNullConstraint = {
             id: constraintId,
+            tableId: tableId,
             name: `nn_${table.name}_${constraintColumn.columnId}`,
             kind: 'NOT_NULL' as const,
             columns: [
               {
-                id: `nncol_${Date.now()}`,
+                id: `nncol_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 columnId: constraintColumn.columnId,
                 seqNo: 1,
                 constraintId: constraintId,
@@ -153,7 +154,7 @@ export const constraintHandlers: ConstraintHandlers = {
                       t.id === tableId
                         ? {
                             ...t,
-                            constraints: [...t.constraints, { ...notNullConstraint, tableId }],
+                            constraints: [...t.constraints, notNullConstraint],
                           }
                         : t
                     ),
