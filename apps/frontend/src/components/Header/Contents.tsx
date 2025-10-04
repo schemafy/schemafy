@@ -3,7 +3,7 @@ import { Button } from '../Button';
 export const DefaultContents = () => {
   return (
     <div className="flex items-center gap-9">
-      <Button variant={'none'} size={'none'} to="/product">
+      <Button variant={'none'} size={'none'} to="/projects">
         Product
       </Button>
       <Button variant={'none'} size={'none'} to="/pricing">
