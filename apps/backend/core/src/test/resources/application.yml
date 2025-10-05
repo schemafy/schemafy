@@ -1,14 +1,5 @@
 spring:
-  application:
-    name: core
-  sql:
-    init:
-      schema-locations: classpath:sql/ddl/schema-h2.sql
-      mode: always
-
   r2dbc:
-    # 메모리 DB: 애플리케이션 생애주기 동안 유지 (DB_CLOSE_DELAY=-1)
-    # MySQL 호환 모드: MODE=MySQL  (MariaDB 쿼리와 최대한 비슷하게)
     url: r2dbc:h2:mem:///schemafy;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password:
@@ -16,8 +7,21 @@ spring:
       enabled: true
       initial-size: 5
       max-size: 20
-    initialization:
-      enabled: true
+
+  sql:
+    init:
+      schema-locations: classpath:sql/ddl/schema-mariadb.sql
+      mode: always
+
+jwt:
+  secret: my-super-secret-key-for-jwt-token-generation-min-256-bits-required
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+  issuer: schemafy-test
+  audience: schemafy-test-audience
+
+cors:
+  allowed-origins: http://localhost:3000
 
 logging:
   level:

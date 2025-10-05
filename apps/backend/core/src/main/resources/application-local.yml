@@ -18,6 +18,16 @@ spring:
     initialization:
       enabled: true
 
+jwt:
+  secret: my-super-secret-key-for-jwt-token-generation-min-256-bits-required
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+  issuer: schemafy-test
+  audience: schemafy-test-audience
+
+cors:
+  allowed-origins: http://localhost:3000
+
 management:
   endpoints:
     web:
