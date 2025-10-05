@@ -1,36 +1,35 @@
 package com.schemafy.core.user.controller;
 
-import com.github.f4b6a3.ulid.UlidCreator;
-import com.jayway.jsonpath.JsonPath;
-import com.schemafy.core.common.config.TestSecurityConfig;
-import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.controller.dto.request.LoginRequest;
-import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import com.jayway.jsonpath.JsonPath;
+import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.core.user.controller.dto.request.LoginRequest;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.repository.UserRepository;
+
 import reactor.test.StepVerifier;
-
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
-@Import(TestSecurityConfig.class)
 @DisplayName("MemberController 통합 테스트")
 class UserControllerTest {
     @Autowired
@@ -130,7 +129,7 @@ class UserControllerTest {
     @DisplayName("존재하지 않는 회원은 조회에 실패한다")
     void getUserNotFound() {
         // given
-        String nonExistentUserId = UlidCreator.getUlid().toString();
+        String nonExistentUserId = UlidGenerator.generate();
 
         // when & then
         webTestClient.get().uri("/api/v1/users/{userId}", nonExistentUserId)

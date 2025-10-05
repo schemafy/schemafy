@@ -48,3 +48,6 @@ out/
 .turbo/
 
 **/dist/
+
+### Cursor ###
+.cursor/

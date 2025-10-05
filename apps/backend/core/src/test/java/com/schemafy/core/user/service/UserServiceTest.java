@@ -1,6 +1,6 @@
 package com.schemafy.core.user.service;
 
-import com.github.f4b6a3.ulid.UlidCreator;
+import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.common.TestFixture;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -79,10 +79,8 @@ class UserServiceTest {
 
         // then
         StepVerifier.create(result)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof BusinessException &&
-                                ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_ALREADY_EXISTS
-                )
+                .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
+                        ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_ALREADY_EXISTS)
                 .verify();
     }
 
@@ -101,7 +99,7 @@ class UserServiceTest {
         StepVerifier.create(result)
                 .assertNext(res -> {
                     assertThat(res.id()).isEqualTo(user.getId());
-                    assertThat(res.email()).isEqualTo(user.getEmail()) ;
+                    assertThat(res.email()).isEqualTo(user.getEmail());
                     assertThat(res.name()).isEqualTo(user.getName());
                 })
                 .verifyComplete();
@@ -111,17 +109,15 @@ class UserServiceTest {
     @DisplayName("존재하지 않는 회원은 조회에 실패한다")
     void getUserByIdNotFound() {
         // given
-        String id = UlidCreator.getUlid().toString();
+        String id = UlidGenerator.generate();
 
         // when
         Mono<UserInfoResponse> result = userService.getUserById(id);
 
         // then
         StepVerifier.create(result)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof BusinessException &&
-                                ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_NOT_FOUND
-                )
+                .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
+                        ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_NOT_FOUND)
                 .verify();
     }
 
@@ -156,10 +152,8 @@ class UserServiceTest {
 
         // then
         StepVerifier.create(result)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof BusinessException &&
-                                ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_NOT_FOUND
-                )
+                .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
+                        ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_NOT_FOUND)
                 .verify();
     }
 
@@ -178,10 +172,8 @@ class UserServiceTest {
 
         // then
         StepVerifier.create(result)
-                .expectErrorMatches(throwable ->
-                        throwable instanceof BusinessException &&
-                                ((BusinessException) throwable).getErrorCode() == ErrorCode.LOGIN_FAILED
-                )
+                .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
+                        ((BusinessException) throwable).getErrorCode() == ErrorCode.LOGIN_FAILED)
                 .verify();
     }
 }

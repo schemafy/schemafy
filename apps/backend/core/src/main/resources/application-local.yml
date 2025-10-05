@@ -18,6 +18,12 @@ spring:
     initialization:
       enabled: true
 
+cache:
+  type: CAFFEINE
+  maximum-size: 10000
+  expire-after-write-minutes: 30
+  expire-after-access-minutes: 10
+
 jwt:
   secret: my-super-secret-key-for-jwt-token-generation-min-256-bits-required
   access-token-expiration: 7200000

@@ -23,11 +23,25 @@ jwt:
 cors:
   allowed-origins: http://localhost:3000
 
+  security:
+    user:
+      name: test
+      password: test
+
+cache:
+  type: CAFFEINE
+  maximum-size: 1000
+  expire-after-write-minutes: 5
+  expire-after-access-minutes: 2
+
 logging:
   level:
+    com:
+      schemafy: DEBUG
     io.r2dbc:
       h2: DEBUG
     org.springframework:
+      cache: DEBUG
       data.r2dbc.core: DEBUG
       r2dbc.core: DEBUG
 

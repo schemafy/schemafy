@@ -13,47 +13,47 @@ import {
 import { ERD_VALIDATOR } from '../src/lib/utils';
 
 describe('Column validation', () => {
-  test.skip('같은 테이블 내 중복된 컬럼 이름은 금지된다', () => {
+  test('같은 테이블 내 중복된 컬럼 이름은 금지된다', () => {
     const schemaId = 'schema-1';
     const tableId = 'table-1';
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
-    const column = createColumnBuilder().withName('id').build();
+    const column = createColumnBuilder().withName('id2').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(ColumnNameNotUniqueError);
   });
 
-  test.skip('데이터 타입이 비어 있어도 컬럼 생성 단계에서는 허용된다', () => {
+  test('데이터 타입이 비어 있어도 컬럼 생성 단계에서는 허용된다', () => {
     const schemaId = 'schema-1';
     const tableId = 'table-1';
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
-    const column = createColumnBuilder().withDataType('').build();
+    const column = createColumnBuilder().withName('id3').withDataType('').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).not.toThrow();
   });
 
-  test.skip('컬럼의 데이터 타입은 데이터베이스 벤더에서 유효한 값이어야 한다', () => {
+  test('컬럼의 데이터 타입은 데이터베이스 벤더에서 유효한 값이어야 한다', () => {
     const schemaId = 'schema-1';
     const tableId = 'table-1';
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
-    const column = createColumnBuilder().withDataType('INVALID_TYPE').build();
+    const column = createColumnBuilder().withName('id3').withDataType('INVALID_TYPE').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(
       ColumnDataTypeInvalidError
@@ -65,7 +65,7 @@ describe('Column validation', () => {
       .withSchema((s) =>
         s
           .withId('schema-1')
-          .withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id').withDataType('')))
+          .withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id2').withDataType('')))
       )
       .build();
 
@@ -75,7 +75,7 @@ describe('Column validation', () => {
   test.skip('validate 단계에서 데이터 타입이 null이면 에러를 발생시킨다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
-        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -85,41 +85,41 @@ describe('Column validation', () => {
     expect(() => ERD_VALIDATOR.validate(db)).toThrow(ColumnDataTypeRequiredError);
   });
 
-  test.skip.each(['VARCHAR', 'CHAR'])('%s 타입은 반드시 길이를 지정해야 한다', (dataType) => {
+  test.each(['VARCHAR', 'CHAR'])('%s 타입은 반드시 길이를 지정해야 한다', (dataType) => {
     const schemaId = 'schema-1';
     const tableId = 'table-1';
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
-    const column = createColumnBuilder().withDataType(dataType).withLengthScale('').build();
+    const column = createColumnBuilder().withName('id3').withDataType(dataType).withLengthScale('').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(
       ColumnLengthRequiredError
     );
   });
 
-  test.skip.each(['DECIMAL', 'NUMERIC'])('%s 타입은 반드시 정밀도와 스케일을 지정해야 한다', (dataType) => {
+  test.each(['DECIMAL', 'NUMERIC'])('%s 타입은 반드시 정밀도와 스케일을 지정해야 한다', (dataType) => {
     const schemaId = 'schema-1';
     const tableId = 'table-1';
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
-    const column = createColumnBuilder().withDataType(dataType).withLengthScale('').build();
+    const column = createColumnBuilder().withName('id3').withDataType(dataType).withLengthScale('').build();
 
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(
       ColumnPrecisionRequiredError
     );
   });
 
-  test.skip.each([
+  test.each([
     ['c1', '너무 짧은 컬럼 이름'],
     ['a'.repeat(41), '너무 긴 컬럼 이름'],
   ])('컬럼의 이름은 3글자 이상 40글자 이하만 허용된다: %s', (name) => {
@@ -128,7 +128,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -137,7 +137,7 @@ describe('Column validation', () => {
     expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(ColumnNameInvalidError);
   });
 
-  test.skip.each([
+  test.each([
     ['col-name', '하이픈 포함'],
     ['col name', '공백 포함'],
     ['1col', '숫자로 시작'],
@@ -148,7 +148,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -159,7 +159,7 @@ describe('Column validation', () => {
     );
   });
 
-  test.skip.each([
+  test.each([
     ['TABLE', '테이블 생성 예약어'],
     ['SELECT', '데이터 조회 예약어'],
     ['CREATE', '객체 생성 예약어'],
@@ -169,7 +169,7 @@ describe('Column validation', () => {
 
     const baseDatabase = createTestDatabase()
       .withSchema((s) =>
-        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id')))
+        s.withId(schemaId).withTable((t) => t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2')))
       )
       .build();
 
@@ -180,7 +180,7 @@ describe('Column validation', () => {
     );
   });
 
-  test.skip('Auto Increment 컬럼은 테이블 당 하나만 존재할 수 있다.', () => {
+  test('Auto Increment 컬럼은 테이블 당 하나만 존재할 수 있다.', () => {
     const schemaId = 'schema-1';
     const tableId = 'table-1';
     const newColumn = createColumnBuilder().withName('new_ai_column').withAutoIncrement(true).build();
@@ -189,7 +189,7 @@ describe('Column validation', () => {
         s
           .withId(schemaId)
           .withTable((t) =>
-            t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id').withAutoIncrement(true))
+            t.withId(tableId).withColumn((c) => c.withId('id-col').withName('id2').withAutoIncrement(true))
           )
       )
       .build();
@@ -199,7 +199,7 @@ describe('Column validation', () => {
     );
   });
 
-  test.skip('숫자 타입이 아닌 컬럼에 Auto Increment를 설정할 수 없다.', () => {
+  test('숫자 타입이 아닌 컬럼에 Auto Increment를 설정할 수 없다.', () => {
     createTestDatabase()
       .withSchema((s) =>
         s.withTable((t) =>
@@ -226,13 +226,13 @@ describe('Column validation', () => {
     // expect(() => ERD_VALIDATOR.validate(db)).toThrow(AutoIncrementNonNumericError);
   });
 
-  test.skip('Primary Key가 아닌 컬럼에 Auto Increment를 설정할 수 없다.', () => {
+  test('Primary Key가 아닌 컬럼에 Auto Increment를 설정할 수 없다.', () => {
     createTestDatabase()
       .withSchema((s) =>
         s.withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('pk-col').withName('id').withDataType('INT'))
+            .withColumn((c) => c.withId('pk-col').withName('id2').withDataType('INT'))
             .withColumn(
               (c) => c.withId('non-pk-ai-col').withName('non_pk_ai').withDataType('INT').withAutoIncrement(true) // PK가 아닌 컬럼에 AI 설정
             )
@@ -250,13 +250,13 @@ describe('Column validation', () => {
     // expect(() => ERD_VALIDATOR.validate(db)).toThrow(AutoIncrementNonPrimaryKeyError);
   });
 
-  test.skip('일반 컬럼을 삭제할 수 있다', () => {
+  test('일반 컬럼을 삭제할 수 있다', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id').withDataType('INT'))
+            .withColumn((c) => c.withId('id-col').withName('id2').withDataType('INT'))
             .withColumn((c) => c.withId('name-col').withName('name').withDataType('VARCHAR').withLengthScale('100'))
             .withColumn((c) => c.withId('email-col').withName('email').withDataType('VARCHAR').withLengthScale('100'))
         )
@@ -266,20 +266,28 @@ describe('Column validation', () => {
     expect(() => ERD_VALIDATOR.deleteColumn(database, 'schema-1', 'table-1', 'name-col')).not.toThrow();
   });
 
-  test.skip('Foreign Key로 참조되는 컬럼도 삭제 가능하다', () => {
+  test('Foreign Key로 참조되는 컬럼도 삭제 가능하다', () => {
     const dbWithFK = createTestDatabase()
       .withSchema((s) =>
         s
+          .withId('schema-1')
           .withTable((t) =>
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id').withDataType('INT'))
+              .withColumn((c) => c.withId('parent-id').withName('id2').withDataType('INT'))
               .withConstraint((c) =>
                 c
                   .withName('pk_parent')
                   .withKind('PRIMARY_KEY')
                   .withColumn((cc) => cc.withColumnId('parent-id'))
+              )
+              .withColumn((c) => c.withId('parent-id2').withName('id3').withDataType('INT'))
+              .withConstraint((c) =>
+                c
+                  .withName('pk_parent2')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId('parent-id2'))
               )
           )
           .withTable((t) =>
@@ -303,13 +311,13 @@ describe('Column validation', () => {
     expect(table?.columns.some((c) => c.id === 'parent-id')).toBeFalsy();
   });
 
-  test.skip('컬럼 이름을 변경할 수 있다', () => {
+  test('컬럼 이름을 변경할 수 있다', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
         )
@@ -322,13 +330,13 @@ describe('Column validation', () => {
     expect(column?.name).toBe('full_name');
   });
 
-  test.skip('중복된 컬럼 이름으로 변경 시 에러 발생', () => {
+  test('중복된 컬럼 이름으로 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
         )
@@ -340,13 +348,13 @@ describe('Column validation', () => {
     );
   });
 
-  test.skip('존재하지 않는 컬럼 이름 변경 시 에러 발생', () => {
+  test('존재하지 않는 컬럼 이름 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
         )
@@ -356,13 +364,13 @@ describe('Column validation', () => {
     expect(() => ERD_VALIDATOR.changeColumnName(database, 'schema-1', 'table-1', 'non-existent', 'new_name')).toThrow();
   });
 
-  test.skip('유효하지 않은 컬럼 이름으로 변경 시 에러 발생', () => {
+  test('유효하지 않은 컬럼 이름으로 변경 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) =>
           t
             .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id'))
+            .withColumn((c) => c.withId('id-col').withName('id2'))
             .withColumn((c) => c.withId('name-col').withName('name'))
             .withColumn((c) => c.withId('email-col').withName('email'))
         )
