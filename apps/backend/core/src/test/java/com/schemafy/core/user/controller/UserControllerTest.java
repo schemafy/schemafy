@@ -2,6 +2,7 @@ package com.schemafy.core.user.controller;
 
 import com.github.f4b6a3.ulid.UlidCreator;
 import com.jayway.jsonpath.JsonPath;
+import com.schemafy.core.common.config.TestSecurityConfig;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
@@ -13,6 +14,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.junit.jupiter.params.provider.Arguments;
@@ -28,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
+@Import(TestSecurityConfig.class)
 @DisplayName("MemberController 통합 테스트")
 class UserControllerTest {
     @Autowired
