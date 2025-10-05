@@ -12,6 +12,10 @@ public enum ErrorCode {
     COMMON_SYSTEM_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C001", "시스템 오류가 발생했습니다."),
     COMMON_INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "C002", "유효하지 않은 파라미터입니다."),
 
+    // Authentication & Authorization
+    AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "A001", "인증이 필요합니다. 유효한 토큰을 제공해주세요."),
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "A002", "접근 권한이 없습니다."),
+
     // USER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "회원을 찾을 수 없습니다."),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "U002", "이미 존재하는 회원입니다."),

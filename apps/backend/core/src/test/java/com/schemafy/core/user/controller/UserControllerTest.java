@@ -20,12 +20,15 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.repository.UserRepository;
 
 import reactor.test.StepVerifier;
+
+import java.util.HashMap;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -38,9 +41,16 @@ class UserControllerTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private JwtProvider jwtProvider;
+
     @BeforeEach
     void setUp() {
         userRepository.deleteAll().block();
+    }
+
+    private String generateAccessToken(String userId) {
+        return jwtProvider.generateAccessToken(userId, new HashMap<>(), System.currentTimeMillis());
     }
 
     @Test
@@ -114,9 +124,11 @@ class UserControllerTest {
 
         String responseBody = new String(result.getResponseBody());
         String userId = JsonPath.read(responseBody, "$.result.id");
+        String accessToken = generateAccessToken(userId);
 
         // when & then
         webTestClient.get().uri("/api/v1/users/{userId}", userId)
+                .header("Authorization", "Bearer " + accessToken)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -130,9 +142,11 @@ class UserControllerTest {
     void getUserNotFound() {
         // given
         String nonExistentUserId = UlidGenerator.generate();
+        String accessToken = generateAccessToken(nonExistentUserId);
 
         // when & then
         webTestClient.get().uri("/api/v1/users/{userId}", nonExistentUserId)
+                .header("Authorization", "Bearer " + accessToken)
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectBody()

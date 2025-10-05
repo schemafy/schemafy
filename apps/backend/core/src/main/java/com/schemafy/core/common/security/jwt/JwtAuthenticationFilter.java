@@ -55,7 +55,7 @@ public class JwtAuthenticationFilter implements WebFilter {
                         return handleJwtError(exchange, authResult.getErrorType(), authResult.getErrorMessage());
                     }
                 })
-                .onErrorResume(e -> handleJwtError(exchange, "INVALID_TOKEN", "토큰 검증 중 오류가 발생했습니다."));
+                .onErrorResume(e -> handleJwtError(exchange, JwtErrorCode.TOKEN_VALIDATION_ERROR));
     }
 
     private AuthenticationResult validateTokenAndGetAuth(String token) {
@@ -64,11 +64,11 @@ public class JwtAuthenticationFilter implements WebFilter {
             String tokenType = jwtProvider.getTokenType(token);
 
             if (!"ACCESS".equals(tokenType)) {
-                return AuthenticationResult.error("INVALID_TOKEN_TYPE", "액세스 토큰이 아닙니다.");
+                return AuthenticationResult.error(JwtErrorCode.INVALID_TOKEN_TYPE);
             }
 
             if (!jwtProvider.validateToken(token, userId)) {
-                return AuthenticationResult.error("INVALID_TOKEN", "유효하지 않은 토큰입니다.");
+                return AuthenticationResult.error(JwtErrorCode.INVALID_TOKEN);
             }
 
             UsernamePasswordAuthenticationToken authentication =
@@ -77,24 +77,24 @@ public class JwtAuthenticationFilter implements WebFilter {
             return AuthenticationResult.success(authentication);
 
         } catch (ExpiredJwtException e) {
-            return AuthenticationResult.error("EXPIRED_TOKEN", "만료된 토큰입니다.");
+            return AuthenticationResult.error(JwtErrorCode.EXPIRED_TOKEN);
         } catch (JwtException e) {
-            return AuthenticationResult.error("INVALID_TOKEN", "위조되거나 손상된 토큰입니다.");
+            return AuthenticationResult.error(JwtErrorCode.MALFORMED_TOKEN);
         } catch (Exception e) {
-            return AuthenticationResult.error("INVALID_TOKEN", "토큰 검증 중 오류가 발생했습니다.");
+            return AuthenticationResult.error(JwtErrorCode.TOKEN_VALIDATION_ERROR);
         }
     }
 
-    private Mono<Void> handleJwtError(ServerWebExchange exchange, String errorType, String errorMessage) {
+    private Mono<Void> handleJwtError(ServerWebExchange exchange, String errorCode, String errorMessage) {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now().toString());
-        errorResponse.put("status", 401);
-        errorResponse.put("error", "Unauthorized");
+        errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
+        errorResponse.put("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
+        errorResponse.put("code", errorCode);
         errorResponse.put("message", errorMessage);
-        errorResponse.put("errorType", errorType);
         errorResponse.put("path", exchange.getRequest().getPath().value());
 
         try {
@@ -104,6 +104,10 @@ public class JwtAuthenticationFilter implements WebFilter {
         } catch (JsonProcessingException e) {
             return exchange.getResponse().setComplete();
         }
+    }
+
+    private Mono<Void> handleJwtError(ServerWebExchange exchange, JwtErrorCode errorCode) {
+        return handleJwtError(exchange, errorCode.getCode(), errorCode.getMessage());
     }
 
     private String extractToken(ServerHttpRequest request) {
@@ -134,8 +138,8 @@ public class JwtAuthenticationFilter implements WebFilter {
             return new AuthenticationResult(true, authentication, null, null);
         }
 
-        static AuthenticationResult error(String errorType, String errorMessage) {
-            return new AuthenticationResult(false, null, errorType, errorMessage);
+        static AuthenticationResult error(JwtErrorCode errorCode) {
+            return new AuthenticationResult(false, null, errorCode.getCode(), errorCode.getMessage());
         }
 
         boolean isValid() {
