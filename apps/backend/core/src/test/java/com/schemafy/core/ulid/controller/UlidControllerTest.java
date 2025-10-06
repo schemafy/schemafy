@@ -9,6 +9,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
@@ -28,6 +29,9 @@ import reactor.core.publisher.Mono;
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
+
+    @MockitoBean
+    WebExchangeErrorWriter errorResponseWriter;
 
     @MockitoBean
     JwtProvider jwtProvider;

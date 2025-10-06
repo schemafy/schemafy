@@ -1,16 +1,12 @@
 package com.schemafy.core.common.security.jwt;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -22,10 +18,7 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -34,7 +27,7 @@ public class JwtAuthenticationFilter implements WebFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtProvider jwtProvider;
-    private final ObjectMapper objectMapper;
+    private final WebExchangeErrorWriter errorResponseWriter;
 
     @Override
     public Mono<Void> filter(@NotNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {
@@ -55,7 +48,7 @@ public class JwtAuthenticationFilter implements WebFilter {
                         return handleJwtError(exchange, authResult.getErrorType(), authResult.getErrorMessage());
                     }
                 })
-                .onErrorResume(e -> handleJwtError(exchange, JwtErrorCode.TOKEN_VALIDATION_ERROR));
+                .onErrorResume(e -> handleUnexpectedError(exchange));
     }
 
     private AuthenticationResult validateTokenAndGetAuth(String token) {
@@ -86,28 +79,25 @@ public class JwtAuthenticationFilter implements WebFilter {
     }
 
     private Mono<Void> handleJwtError(ServerWebExchange exchange, String errorCode, String errorMessage) {
-        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("timestamp", LocalDateTime.now().toString());
-        errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
-        errorResponse.put("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        errorResponse.put("code", errorCode);
-        errorResponse.put("message", errorMessage);
-        errorResponse.put("path", exchange.getRequest().getPath().value());
-
-        try {
-            byte[] bytes = objectMapper.writeValueAsBytes(errorResponse);
-            DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
-            return exchange.getResponse().writeWith(Mono.just(buffer));
-        } catch (JsonProcessingException e) {
-            return exchange.getResponse().setComplete();
-        }
+        return errorResponseWriter.writeErrorResponse(
+                exchange,
+                HttpStatus.UNAUTHORIZED,
+                errorCode,
+                errorMessage
+        );
     }
 
-    private Mono<Void> handleJwtError(ServerWebExchange exchange, JwtErrorCode errorCode) {
-        return handleJwtError(exchange, errorCode.getCode(), errorCode.getMessage());
+    private Mono<Void> handleJwtError(ServerWebExchange exchange, JwtErrorCode jwtErrorCode) {
+        return errorResponseWriter.writeErrorResponse(
+                exchange,
+                HttpStatus.UNAUTHORIZED,
+                jwtErrorCode.getCode(),
+                jwtErrorCode.getMessage()
+        );
+    }
+
+    private Mono<Void> handleUnexpectedError(ServerWebExchange exchange) {
+        return handleJwtError(exchange, JwtErrorCode.TOKEN_VALIDATION_ERROR);
     }
 
     private String extractToken(ServerHttpRequest request) {

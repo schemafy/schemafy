@@ -3,6 +3,7 @@ package com.schemafy.core.common.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,11 +31,12 @@ class JwtAuthenticationFilterTest {
 
     JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    final ObjectMapper objectMapper = new ObjectMapper();
+    WebExchangeErrorWriter errorResponseWriter;
 
     @BeforeEach
     void setUp() {
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider, objectMapper);
+        errorResponseWriter = new WebExchangeErrorWriter(new ObjectMapper());
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider, errorResponseWriter);
     }
 
     @Test
