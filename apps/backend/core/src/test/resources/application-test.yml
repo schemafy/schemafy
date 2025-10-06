@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: core
+  sql:
+    init:
+      schema-locations: classpath:sql/ddl/schema-h2.sql
+      mode: always
+
+  r2dbc:
+    # 메모리 DB: 애플리케이션 생애주기 동안 유지 (DB_CLOSE_DELAY=-1)
+    # MySQL 호환 모드: MODE=MySQL  (MariaDB 쿼리와 최대한 비슷하게)
+    url: r2dbc:h2:mem:///schemafy;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+    initialization:
+      enabled: true
+
+  security:
+    user:
+      name: test
+      password: test
+
+cache:
+  type: CAFFEINE
+  maximum-size: 1000
+  expire-after-write-minutes: 5
+  expire-after-access-minutes: 2
+
+logging:
+  level:
+    com:
+      schemafy: DEBUG
+    io.r2dbc:
+      h2: DEBUG
+    org.springframework:
+      cache: DEBUG
+      data.r2dbc.core: DEBUG
+      r2dbc.core: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      probes:
+        enabled: true

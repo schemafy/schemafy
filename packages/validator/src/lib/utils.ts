@@ -1,265 +1,270 @@
-import { SchemaNotExistError, SchemaNameInvalidError, SchemaNameNotUniqueError } from './errors';
 import {
-  Database,
-  SCHEMA,
-  Schema,
-  Table,
-  Column,
-  Index,
-  IndexColumn,
-  Constraint,
-  ConstraintColumn,
-  Relationship,
-  RelationshipColumn,
-} from './types';
+  schemaHandlers,
+  SchemaHandlers,
+  tableHandlers,
+  TableHandlers,
+  columnHandlers,
+  ColumnHandlers,
+  indexHandlers,
+  IndexHandlers,
+  constraintHandlers,
+  ConstraintHandlers,
+  relationshipHandlers,
+  RelationshipHandlers,
+} from './handlers';
+import { Database, DATABASE } from './types';
+import {
+  SchemaNameInvalidError,
+  SchemaNameNotUniqueError,
+  TableNameNotInvalidError,
+  TableNameNotUniqueError,
+  ColumnNameInvalidError,
+  ColumnNameNotUniqueError,
+  ColumnDataTypeRequiredError,
+  ColumnNameIsReservedKeywordError,
+  MultipleAutoIncrementColumnsError,
+  ConstraintNameNotUniqueError,
+  ConstraintColumnNotExistError,
+  DuplicateKeyDefinitionError,
+  IndexNameNotUniqueError,
+  IndexTypeInvalidError,
+  IndexColumnNotExistError,
+  DuplicateIndexDefinitionError,
+  RelationshipNameNotUniqueError,
+  RelationshipEmptyError,
+  RelationshipTargetTableNotExistError,
+  RelationshipCyclicReferenceError,
+  ERDValidationError,
+} from './errors';
 
-interface ERDValidator {
-  changeSchemaName: (database: Database, schemaId: Schema['id'], newName: Schema['name']) => Database;
-  createSchema: (database: Database, schema: Omit<Schema, 'id' | 'createdAt' | 'updatedAt'>) => Database;
-  deleteSchema: (database: Database, schemaId: Schema['id']) => Database;
-
-  createTable: (
-    database: Database,
-    schemaId: Schema['id'],
-    table: Omit<Table, 'id' | 'schemaId' | 'createdAt' | 'updatedAt'>
-  ) => Database;
-  deleteTable: (database: Database, schemaId: Schema['id'], tableId: Table['id']) => Database;
-  changeTableName: (database: Database, tableId: Table['id'], newName: Table['name']) => Database;
-
-  createColumn: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    column: Omit<Column, 'id' | 'tableId' | 'createdAt' | 'updatedAt'>
-  ) => Database;
-  deleteColumn: (database: Database, schemaId: Schema['id'], tableId: Table['id'], columnId: Column['id']) => Database;
-  changeColumnName: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    columnId: Column['id'],
-    newName: Column['name']
-  ) => Database;
-  changeColumnType: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    columnId: Column['id'],
-    dataType: Column['dataType'],
-    lengthScale?: Column['lengthScale']
-  ) => Database;
-  changeColumnPosition: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    columnId: Column['id'],
-    newPosition: Column['ordinalPosition']
-  ) => Database;
-
-  createIndex: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    index: Omit<Index, 'id' | 'tableId'>
-  ) => Database;
-  deleteIndex: (database: Database, schemaId: Schema['id'], tableId: Table['id'], indexId: Index['id']) => Database;
-  changeIndexName: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    indexId: Index['id'],
-    newName: Index['name']
-  ) => Database;
-  addColumnToIndex: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    indexId: Index['id'],
-    indexColumn: Omit<IndexColumn, 'id' | 'indexId'>
-  ) => Database;
-  removeColumnFromIndex: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    indexId: Index['id'],
-    indexColumnId: IndexColumn['id']
-  ) => Database;
-
-  createConstraint: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    constraint: Omit<Constraint, 'id' | 'tableId'>
-  ) => Database;
-  deleteConstraint: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    constraintId: Constraint['id']
-  ) => Database;
-  changeConstraintName: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    constraintId: Constraint['id'],
-    newName: Constraint['name']
-  ) => Database;
-  addColumnToConstraint: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    constraintId: Constraint['id'],
-    constraintColumn: Omit<ConstraintColumn, 'id' | 'constraintId'>
-  ) => Database;
-  removeColumnFromConstraint: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    constraintId: Constraint['id'],
-    constraintColumnId: ConstraintColumn['id']
-  ) => Database;
-
-  createRelationship: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    relationship: Omit<Relationship, 'id'>
-  ) => Database;
-  deleteRelationship: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    relationshipId: Relationship['id']
-  ) => Database;
-  changeRelationshipName: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    relationshipId: Relationship['id'],
-    newName: Relationship['name']
-  ) => Database;
-  changeRelationshipCardinality: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    relationshipId: Relationship['id'],
-    cardinality: Relationship['cardinality']
-  ) => Database;
-  addColumnToRelationship: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    relationshipId: Relationship['id'],
-    relationshipColumn: Omit<RelationshipColumn, 'id' | 'relationshipId'>
-  ) => Database;
-  removeColumnFromRelationship: (
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    relationshipId: Relationship['id'],
-    relationshipColumnId: RelationshipColumn['id']
-  ) => Database;
+interface ERDValidator
+  extends SchemaHandlers,
+    TableHandlers,
+    ColumnHandlers,
+    IndexHandlers,
+    ConstraintHandlers,
+    RelationshipHandlers {
+  validate: (database: Database) => void;
 }
 
-export const ERD_VALIDATOR: ERDValidator = (() => {
-  return {
-    changeSchemaName: (database, schemaId, newName) => {
-      const schema = database.projects.find((s) => s.id === schemaId);
-      if (!schema) throw new SchemaNotExistError(schemaId);
+export const ERD_VALIDATOR: ERDValidator = {
+  validate: (database: Database) => {
+    const parseResult = DATABASE.safeParse(database);
+    if (!parseResult.success) {
+      const zodError = parseResult.error.issues[0];
+      throw new ERDValidationError(
+        'SCHEMA_VALIDATION_ERROR' as any,
+        `Schema validation failed: ${zodError.message} at ${zodError.path.join('.')}`
+      );
+    }
 
-      const result = SCHEMA.shape.name.safeParse(newName);
-      if (!result.success) throw new SchemaNameInvalidError(newName);
+    const schemaNames = new Set<string>();
+    for (const schema of database.schemas) {
+      if (schema.name.length < 3 || schema.name.length > 20) {
+        throw new SchemaNameInvalidError(schema.name);
+      }
 
-      const existingSchema = database.projects.find((schema) => schema.name === newName && schema.id !== schemaId);
-      if (existingSchema) throw new SchemaNameNotUniqueError(newName, existingSchema.id);
+      if (schemaNames.has(schema.name)) {
+        const existingSchemaId = database.schemas.find((s) => s.name === schema.name && s.id !== schema.id)?.id || '';
+        throw new SchemaNameNotUniqueError(schema.name, existingSchemaId);
+      }
+      schemaNames.add(schema.name);
 
-      return {
-        ...database,
-        projects: database.projects.map((schema) => (schema.id === schemaId ? { ...schema, name: newName } : schema)),
+      const tableNames = new Set<string>();
+      for (const table of schema.tables) {
+        if (table.name.length < 3 || table.name.length > 20) {
+          throw new TableNameNotInvalidError(table.name);
+        }
+
+        if (tableNames.has(table.name)) {
+          throw new TableNameNotUniqueError(table.name, schema.id);
+        }
+        tableNames.add(table.name);
+
+        const columnNames = new Set<string>();
+        let autoIncrementCount = 0;
+
+        for (const column of table.columns) {
+          if (column.name.length < 3 || column.name.length > 40) {
+            throw new ColumnNameInvalidError(column.name);
+          }
+
+          if (columnNames.has(column.name)) {
+            throw new ColumnNameNotUniqueError(column.name, table.id);
+          }
+          columnNames.add(column.name);
+
+          if (!column.dataType || column.dataType.trim() === '') {
+            throw new ColumnDataTypeRequiredError(column.name, table.id);
+          }
+
+          if (column.isAutoIncrement) {
+            autoIncrementCount++;
+            if (autoIncrementCount > 1) {
+              throw new MultipleAutoIncrementColumnsError(table.id);
+            }
+          }
+
+          const reservedKeywords = [
+            'SELECT',
+            'INSERT',
+            'UPDATE',
+            'DELETE',
+            'FROM',
+            'WHERE',
+            'JOIN',
+            'ORDER',
+            'GROUP',
+            'HAVING',
+          ];
+          if (reservedKeywords.includes(column.name.toUpperCase())) {
+            throw new ColumnNameIsReservedKeywordError(column.name, schema.dbVendorId);
+          }
+        }
+
+        const constraintNames = new Set<string>();
+        const constraintDefinitions = new Set<string>();
+
+        for (const constraint of table.constraints) {
+          const fullConstraintName = `${schema.name}.${constraint.name}`;
+          if (constraintNames.has(fullConstraintName)) {
+            throw new ConstraintNameNotUniqueError(constraint.name, schema.id);
+          }
+          constraintNames.add(fullConstraintName);
+
+          for (const constraintColumn of constraint.columns) {
+            const columnExists = table.columns.some((col) => col.id === constraintColumn.columnId);
+            if (!columnExists) {
+              throw new ConstraintColumnNotExistError(constraintColumn.columnId, constraint.name);
+            }
+          }
+
+          const constraintDef = JSON.stringify({
+            kind: constraint.kind,
+            checkExpr: constraint.checkExpr,
+            defaultExpr: constraint.defaultExpr,
+            columnIds: constraint.columns.map((cc) => cc.columnId).sort(),
+          });
+
+          if (constraintDefinitions.has(constraintDef)) {
+            const existingConstraint = table.constraints.find((c) => {
+              const existingDef = JSON.stringify({
+                kind: c.kind,
+                checkExpr: c.checkExpr,
+                defaultExpr: c.defaultExpr,
+                columnIds: c.columns.map((cc) => cc.columnId).sort(),
+              });
+              return existingDef === constraintDef && c.id !== constraint.id;
+            });
+            throw new DuplicateKeyDefinitionError(constraint.name, existingConstraint?.name || 'unknown');
+          }
+          constraintDefinitions.add(constraintDef);
+        }
+
+        const indexNames = new Set<string>();
+        const indexDefinitions = new Set<string>();
+
+        for (const index of table.indexes) {
+          if (indexNames.has(index.name)) {
+            throw new IndexNameNotUniqueError(index.name, table.id);
+          }
+          indexNames.add(index.name);
+
+          const validIndexTypes = ['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER'];
+          if (!validIndexTypes.includes(index.type)) {
+            throw new IndexTypeInvalidError(index.type, schema.dbVendorId);
+          }
+
+          for (const indexColumn of index.columns) {
+            const columnExists = table.columns.some((col) => col.id === indexColumn.columnId);
+            if (!columnExists) {
+              const columnName =
+                table.columns.find((col) => col.id === indexColumn.columnId)?.name || indexColumn.columnId;
+              throw new IndexColumnNotExistError(columnName, index.name);
+            }
+          }
+
+          const indexDef = index.columns
+            .map((ic) => `${ic.columnId}:${ic.sortDir}`)
+            .sort()
+            .join(',');
+          if (indexDefinitions.has(indexDef)) {
+            const existingIndex = table.indexes.find(
+              (i) =>
+                i.columns
+                  .map((ic) => `${ic.columnId}:${ic.sortDir}`)
+                  .sort()
+                  .join(',') === indexDef && i.id !== index.id
+            );
+            throw new DuplicateIndexDefinitionError(index.name, existingIndex?.name || 'unknown');
+          }
+          indexDefinitions.add(indexDef);
+        }
+
+        const relationshipNames = new Set<string>();
+
+        for (const relationship of table.relationships) {
+          if (relationshipNames.has(relationship.name)) {
+            throw new RelationshipNameNotUniqueError(relationship.name, table.id);
+          }
+          relationshipNames.add(relationship.name);
+
+          if (!relationship.columns || relationship.columns.length === 0) {
+            throw new RelationshipEmptyError(relationship.name);
+          }
+
+          const targetTableExists = schema.tables.some((t) => t.id === relationship.tgtTableId);
+          if (!targetTableExists) {
+            throw new RelationshipTargetTableNotExistError(relationship.name, relationship.tgtTableId);
+          }
+        }
+      }
+    }
+
+    for (const schema of database.schemas) {
+      const visited = new Set<string>();
+      const recursionStack = new Set<string>();
+
+      const detectCycle = (tableId: string): boolean => {
+        if (recursionStack.has(tableId)) {
+          return true;
+        }
+        if (visited.has(tableId)) {
+          return false;
+        }
+
+        visited.add(tableId);
+        recursionStack.add(tableId);
+
+        const table = schema.tables.find((t) => t.id === tableId);
+        if (table) {
+          for (const relationship of table.relationships) {
+            if (detectCycle(relationship.tgtTableId)) {
+              const srcTableName = table.name;
+              const tgtTable = schema.tables.find((t) => t.id === relationship.tgtTableId);
+              const tgtTableName = tgtTable?.name || relationship.tgtTableId;
+              throw new RelationshipCyclicReferenceError(srcTableName, tgtTableName);
+            }
+          }
+        }
+
+        recursionStack.delete(tableId);
+        return false;
       };
-    },
-    createSchema: (database, schema) => {
-      throw new Error('createSchema: Not implemented yet');
-    },
-    deleteSchema: (database, schemaId) => {
-      throw new Error('deleteSchema: Not implemented yet');
-    },
 
-    createTable: (database, schemaId, table) => {
-      throw new Error('createTable: Not implemented yet');
-    },
-    deleteTable: (database, schemaId, tableId) => {
-      throw new Error('deleteTable: Not implemented yet');
-    },
-    changeTableName: (database, tableId, newName) => {
-      throw new Error('changeTableName: Not implemented yet');
-    },
+      for (const table of schema.tables) {
+        if (!visited.has(table.id)) {
+          detectCycle(table.id);
+        }
+      }
+    }
 
-    createColumn: (database, schemaId, tableId, column) => {
-      throw new Error('createColumn: Not implemented yet');
-    },
-    deleteColumn: (database, schemaId, tableId, columnId) => {
-      throw new Error('deleteColumn: Not implemented yet');
-    },
-    changeColumnName: (database, schemaId, tableId, columnId, newName) => {
-      throw new Error('changeColumnName: Not implemented yet');
-    },
-    changeColumnType: (database, schemaId, tableId, columnId, dataType, lengthScale) => {
-      throw new Error('changeColumnType: Not implemented yet');
-    },
-    changeColumnPosition: (database, schemaId, tableId, columnId, newPosition) => {
-      throw new Error('changeColumnPosition: Not implemented yet');
-    },
-
-    createIndex: (database, schemaId, tableId, index) => {
-      throw new Error('createIndex: Not implemented yet');
-    },
-    deleteIndex: (database, schemaId, tableId, indexId) => {
-      throw new Error('deleteIndex: Not implemented yet');
-    },
-    changeIndexName: (database, schemaId, tableId, indexId, newName) => {
-      throw new Error('changeIndexName: Not implemented yet');
-    },
-    addColumnToIndex: (database, schemaId, tableId, indexId, indexColumn) => {
-      throw new Error('addColumnToIndex: Not implemented yet');
-    },
-    removeColumnFromIndex: (database, schemaId, tableId, indexId, indexColumnId) => {
-      throw new Error('removeColumnFromIndex: Not implemented yet');
-    },
-
-    createConstraint: (database, schemaId, tableId, constraint) => {
-      throw new Error('createConstraint: Not implemented yet');
-    },
-    deleteConstraint: (database, schemaId, tableId, constraintId) => {
-      throw new Error('deleteConstraint: Not implemented yet');
-    },
-    changeConstraintName: (database, schemaId, tableId, constraintId, newName) => {
-      throw new Error('changeConstraintName: Not implemented yet');
-    },
-    addColumnToConstraint: (database, schemaId, tableId, constraintId, constraintColumn) => {
-      throw new Error('addColumnToConstraint: Not implemented yet');
-    },
-    removeColumnFromConstraint: (database, schemaId, tableId, constraintId, constraintColumnId) => {
-      throw new Error('removeColumnFromConstraint: Not implemented yet');
-    },
-
-    createRelationship: (database, schemaId, tableId, relationship) => {
-      throw new Error('createRelationship: Not implemented yet');
-    },
-    deleteRelationship: (database, schemaId, tableId, relationshipId) => {
-      throw new Error('deleteRelationship: Not implemented yet');
-    },
-    changeRelationshipName: (database, schemaId, tableId, relationshipId, newName) => {
-      throw new Error('changeRelationshipName: Not implemented yet');
-    },
-    changeRelationshipCardinality: (database, schemaId, tableId, relationshipId, cardinality) => {
-      throw new Error('changeRelationshipCardinality: Not implemented yet');
-    },
-    addColumnToRelationship: (database, schemaId, tableId, relationshipId, relationshipColumn) => {
-      throw new Error('addColumnToRelationship: Not implemented yet');
-    },
-    removeColumnFromRelationship: (database, schemaId, tableId, relationshipId, relationshipColumnId) => {
-      throw new Error('removeColumnFromRelationship: Not implemented yet');
-    },
-  };
-})();
+    return database;
+  },
+  ...schemaHandlers,
+  ...tableHandlers,
+  ...columnHandlers,
+  ...indexHandlers,
+  ...constraintHandlers,
+  ...relationshipHandlers,
+};

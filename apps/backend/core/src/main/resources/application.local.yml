@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: core
+  config:
+    activate:
+      on-profile: local
+
+  r2dbc:
+    # 메모리 DB: 애플리케이션 생애주기 동안 유지 (DB_CLOSE_DELAY=-1)
+    # MySQL 호환 모드: MODE=MySQL  (MariaDB 쿼리와 최대한 비슷하게)
+    url: r2dbc:h2:mem:///schemafy;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+    initialization:
+      enabled: true
+
+cache:
+  type: CAFFEINE
+  maximum-size: 10000
+  expire-after-write-minutes: 30
+  expire-after-access-minutes: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      probes:
+        enabled: true
