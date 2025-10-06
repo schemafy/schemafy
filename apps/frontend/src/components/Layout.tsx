@@ -13,8 +13,8 @@ export const Layout = ({ children }: PropsWithChildren) => {
       <Header isCanvasPage={isCanvasPage} />
       <main
         className={cn(
-          'flex-grow w-full',
-          !isCanvasPage && 'max-w-[960px] py-5',
+          'flex-grow w-full flex',
+          !isCanvasPage && 'max-w-[960px]',
         )}
       >
         {children}
