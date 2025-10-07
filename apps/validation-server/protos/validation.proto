@@ -426,4 +426,7 @@ service ValidationService {
     rpc CreateTable (CreateTableRequest) returns (ValidateResult);
     rpc DeleteTable (DeleteTableRequest) returns (ValidateResult);
     rpc ChangeTableName (ChangeTableNameRequest) returns (ValidateResult);
+
+    // Full validation
+    rpc ValidateDatabase (Database) returns (ValidateResult);
 }

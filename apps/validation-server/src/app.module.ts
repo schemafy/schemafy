@@ -7,6 +7,7 @@ import { SchemasModule } from './validations/schemas/schemas.module';
 import { IndexesModule } from './validations/indexes/indexes.module';
 import { ConstraintsModule } from './validations/constraints/constraints.module';
 import { RelationshipsModule } from './validations/relationships/relationships.module';
+import { ValidationModule } from './validations/validation/validation.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { RelationshipsModule } from './validations/relationships/relationships.m
     IndexesModule,
     ConstraintsModule,
     RelationshipsModule,
+    ValidationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
