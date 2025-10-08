@@ -15,7 +15,7 @@ import {
 
 export class ErdStore {
   database: Database | null = null;
-  lastError: Error | null = null;
+  loadingState: 'idle' | 'loading' | 'loaded' | 'error' = 'idle';
 
   constructor() {
     // database는 깊은 observable이 되면 내부 배열이 MobX ObservableArray(Proxy)로 래핑되어
@@ -25,46 +25,41 @@ export class ErdStore {
 
   // state
   load(database: Database) {
+    this.loadingState = 'loading';
     this.database = database;
-    this.lastError = null;
+    this.loadingState = 'loaded';
   }
 
   reset() {
     this.database = null;
-    this.lastError = null;
-  }
-
-  get isLoaded() {
-    if (!this.database) return false;
-
-    return true;
+    this.loadingState = 'idle';
   }
 
   validate() {
     if (!this.database) {
-      this.lastError = new Error('Database is not loaded');
-      throw this.lastError;
+      this.loadingState = 'error';
+      throw new Error('Database is not loaded');
     }
 
     try {
       ERD_VALIDATOR.validate(this.database);
     } catch (e) {
-      this.lastError = e as Error;
+      this.loadingState = 'error';
       throw e;
     }
   }
 
   private update(updater: (db: Database) => Database) {
     if (!this.database) {
-      this.lastError = new Error('Database is not loaded');
-      throw this.lastError;
+      this.loadingState = 'error';
+      throw new Error('Database is not loaded');
     }
     try {
       const next = updater(this.database);
       this.database = next;
-      this.lastError = null;
+      this.loadingState = 'loaded';
     } catch (e) {
-      this.lastError = e as Error;
+      this.loadingState = 'error';
       throw e;
     }
   }
