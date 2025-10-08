@@ -1,8 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import type { ValidateResult } from '../common';
+
 import { TablesService } from './tables.service';
-import type { Database, Table, Schema } from '@schemafy/validator';
+
+import type { ValidateResult } from '../common';
+import type { Database, Schema, Table } from '@schemafy/validator';
 
 @Controller()
 export class TablesController {

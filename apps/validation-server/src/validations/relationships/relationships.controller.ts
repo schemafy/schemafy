@@ -1,7 +1,9 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import type { ValidateResult } from '../common';
+
 import { RelationshipsService } from './relationships.service';
+
+import type { ValidateResult } from '../common';
 import type {
   Database,
   Schema,

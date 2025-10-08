@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import type { ValidateResult } from '../common';
+import { ERD_VALIDATOR } from '@schemafy/validator';
+
 import { toErrorDetails } from '../common/error-mapper';
+
+import type { ValidateResult } from '../common';
 import type {
   Database,
   Schema,
   Relationship,
   RelationshipColumn,
 } from '@schemafy/validator';
-import { ERD_VALIDATOR } from '@schemafy/validator';
 
 @Injectable()
 export class RelationshipsService {
