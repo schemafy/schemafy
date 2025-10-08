@@ -35,16 +35,30 @@ export class ErdStore {
   }
 
   get isLoaded() {
-    return this.database !== null;
+    if (!this.database) return false;
+
+    return true;
   }
 
   validate() {
-    if (!this.database) return;
-    ERD_VALIDATOR.validate(this.database);
+    if (!this.database) {
+      this.lastError = new Error('Database is not loaded');
+      throw this.lastError;
+    }
+
+    try {
+      ERD_VALIDATOR.validate(this.database);
+    } catch (e) {
+      this.lastError = e as Error;
+      throw e;
+    }
   }
 
   private update(updater: (db: Database) => Database) {
-    if (!this.database) return;
+    if (!this.database) {
+      this.lastError = new Error('Database is not loaded');
+      throw this.lastError;
+    }
     try {
       const next = updater(this.database);
       this.database = next;
