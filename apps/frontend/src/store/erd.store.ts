@@ -13,9 +13,21 @@ import {
   type RelationshipColumn,
 } from '@schemafy/validator';
 
+interface IDLE {
+  state: 'idle';
+}
+
+interface LOADING {
+  state: 'loading';
+}
+
+interface LOADED {
+  state: 'loaded';
+}
+
 export class ErdStore {
   database: Database | null = null;
-  loadingState: 'idle' | 'loading' | 'loaded' | 'error' = 'idle';
+  loadingState: IDLE | LOADING | LOADED = { state: 'idle' };
 
   constructor() {
     // database는 깊은 observable이 되면 내부 배열이 MobX ObservableArray(Proxy)로 래핑되어
@@ -25,41 +37,39 @@ export class ErdStore {
 
   // state
   load(database: Database) {
-    this.loadingState = 'loading';
+    this.loadingState = { state: 'loading' };
     this.database = database;
-    this.loadingState = 'loaded';
+    this.loadingState = { state: 'loaded' };
   }
 
   reset() {
     this.database = null;
-    this.loadingState = 'idle';
+    this.loadingState = { state: 'idle' };
   }
 
   validate() {
     if (!this.database) {
-      this.loadingState = 'error';
       throw new Error('Database is not loaded');
     }
 
     try {
       ERD_VALIDATOR.validate(this.database);
     } catch (e) {
-      this.loadingState = 'error';
+      console.error(e);
       throw e;
     }
   }
 
   private update(updater: (db: Database) => Database) {
     if (!this.database) {
-      this.loadingState = 'error';
       throw new Error('Database is not loaded');
     }
     try {
       const next = updater(this.database);
       this.database = next;
-      this.loadingState = 'loaded';
+      this.loadingState = { state: 'loaded' };
     } catch (e) {
-      this.loadingState = 'error';
+      console.error(e);
       throw e;
     }
   }
