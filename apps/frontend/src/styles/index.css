@@ -22,3 +22,7 @@ body {
 button {
   cursor: pointer;
 }
+
+#root {
+  width: 100vw;
+}
