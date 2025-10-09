@@ -15,12 +15,10 @@ import {
 
 interface IDLE {
   state: 'idle';
-  database: null;
 }
 
 interface LOADING {
   state: 'loading';
-  database: null;
 }
 
 interface LOADED {
@@ -31,9 +29,10 @@ interface LOADED {
 type LoadingState = IDLE | LOADING | LOADED;
 
 export class ErdStore {
-  erdState: LoadingState = { state: 'idle', database: null };
+  private static instance: ErdStore;
+  erdState: LoadingState = { state: 'idle' };
 
-  constructor() {
+  private constructor() {
     // database는 깊은 observable이 되면 내부 배열이 MobX ObservableArray(Proxy)로 래핑되어
     // validator 내부의 structuredClone에서 복제가 실패할 수 있다. 참조형으로만 추적한다.
     makeAutoObservable(
@@ -43,14 +42,21 @@ export class ErdStore {
     );
   }
 
+  static getInstance(): ErdStore {
+    if (!ErdStore.instance) {
+      ErdStore.instance = new ErdStore();
+    }
+    return ErdStore.instance;
+  }
+
   // state
   load(database: Database) {
-    this.erdState = { state: 'loading', database: null };
+    this.erdState = { state: 'loading' };
     this.erdState = { state: 'loaded', database };
   }
 
   reset() {
-    this.erdState = { state: 'idle', database: null };
+    this.erdState = { state: 'idle' };
   }
 
   validate() {
@@ -413,5 +419,3 @@ export class ErdStore {
     );
   }
 }
-
-export const erdStore = new ErdStore();

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Button } from '@/components';
-import { erdStore } from '@/store';
+import { ErdStore } from '@/store';
 
 type IdPrefix =
   | 'db'
@@ -18,13 +18,15 @@ type IdPrefix =
 const genId = (prefix: IdPrefix) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
+const erdStore = ErdStore.getInstance();
+
 export const ERDSimPage = observer(() => {
   const [error, setError] = useState<string | null>(null);
 
-  const schemaId = useMemo(
-    () => erdStore.erdState.database?.schemas[0]?.id ?? null,
-    [erdStore.erdState],
-  );
+  const schemaId = useMemo(() => {
+    if (erdStore.erdState.state !== 'loaded') return null;
+    return erdStore.erdState.database?.schemas[0]?.id;
+  }, [erdStore.erdState]);
 
   const loadInitial = () => {
     setError(null);
@@ -256,10 +258,10 @@ export const ERDSimPage = observer(() => {
     setError(null);
   };
 
-  const dbJson = useMemo(
-    () => JSON.stringify(erdStore.erdState.database, null, 2),
-    [erdStore.erdState],
-  );
+  const dbJson = useMemo(() => {
+    if (erdStore.erdState.state !== 'loaded') return null;
+    return JSON.stringify(erdStore.erdState.database, null, 2);
+  }, [erdStore.erdState]);
 
   return (
     <div className="flex flex-col gap-4 p-4">
