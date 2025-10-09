@@ -15,45 +15,51 @@ import {
 
 interface IDLE {
   state: 'idle';
+  database: null;
 }
 
 interface LOADING {
   state: 'loading';
+  database: null;
 }
 
 interface LOADED {
   state: 'loaded';
+  database: Database;
 }
 
+type LoadingState = IDLE | LOADING | LOADED;
+
 export class ErdStore {
-  database: Database | null = null;
-  loadingState: IDLE | LOADING | LOADED = { state: 'idle' };
+  erdState: LoadingState = { state: 'idle', database: null };
 
   constructor() {
     // database는 깊은 observable이 되면 내부 배열이 MobX ObservableArray(Proxy)로 래핑되어
     // validator 내부의 structuredClone에서 복제가 실패할 수 있다. 참조형으로만 추적한다.
-    makeAutoObservable(this, { database: observable.ref }, { autoBind: true });
+    makeAutoObservable(
+      this,
+      { erdState: observable.struct },
+      { autoBind: true },
+    );
   }
 
   // state
   load(database: Database) {
-    this.loadingState = { state: 'loading' };
-    this.database = database;
-    this.loadingState = { state: 'loaded' };
+    this.erdState = { state: 'loading', database: null };
+    this.erdState = { state: 'loaded', database };
   }
 
   reset() {
-    this.database = null;
-    this.loadingState = { state: 'idle' };
+    this.erdState = { state: 'idle', database: null };
   }
 
   validate() {
-    if (!this.database) {
+    if (this.erdState.state !== 'loaded') {
       throw new Error('Database is not loaded');
     }
 
     try {
-      ERD_VALIDATOR.validate(this.database);
+      ERD_VALIDATOR.validate(this.erdState.database);
     } catch (e) {
       console.error(e);
       throw e;
@@ -61,13 +67,12 @@ export class ErdStore {
   }
 
   private update(updater: (db: Database) => Database) {
-    if (!this.database) {
+    if (this.erdState.state !== 'loaded') {
       throw new Error('Database is not loaded');
     }
     try {
-      const next = updater(this.database);
-      this.database = next;
-      this.loadingState = { state: 'loaded' };
+      const next = updater(this.erdState.database);
+      this.erdState = { state: 'loaded', database: next };
     } catch (e) {
       console.error(e);
       throw e;

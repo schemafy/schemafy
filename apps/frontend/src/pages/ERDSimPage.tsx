@@ -22,8 +22,8 @@ export const ERDSimPage = observer(() => {
   const [error, setError] = useState<string | null>(null);
 
   const schemaId = useMemo(
-    () => erdStore.database?.schemas[0]?.id ?? null,
-    [erdStore.database],
+    () => erdStore.erdState.database?.schemas[0]?.id ?? null,
+    [erdStore.erdState],
   );
 
   const loadInitial = () => {
@@ -70,8 +70,8 @@ export const ERDSimPage = observer(() => {
   };
 
   const addUsersIdColumn = () => {
-    if (!schemaId || !erdStore.database) return;
-    const users = erdStore.database.schemas[0].tables.find(
+    if (!schemaId || erdStore.erdState.state !== 'loaded') return;
+    const users = erdStore.erdState.database.schemas[0].tables.find(
       (t) => t.name === 'users',
     );
     if (!users) return;
@@ -94,8 +94,8 @@ export const ERDSimPage = observer(() => {
   };
 
   const setUsersPk = () => {
-    if (!schemaId || !erdStore.database) return;
-    const users = erdStore.database.schemas[0].tables.find(
+    if (!schemaId || erdStore.erdState.state !== 'loaded') return;
+    const users = erdStore.erdState.database.schemas[0].tables.find(
       (t) => t.name === 'users',
     );
     const idCol = users?.columns.find((c) => c.name === 'id2');
@@ -142,8 +142,8 @@ export const ERDSimPage = observer(() => {
   };
 
   const addPostsIdColumn = () => {
-    if (!schemaId || !erdStore.database) return;
-    const posts = erdStore.database.schemas[0].tables.find(
+    if (!schemaId || erdStore.erdState.state !== 'loaded') return;
+    const posts = erdStore.erdState.database.schemas[0].tables.find(
       (t) => t.name === 'posts',
     );
     if (!posts) return;
@@ -166,8 +166,8 @@ export const ERDSimPage = observer(() => {
   };
 
   const relatePostsToUsers = () => {
-    if (!schemaId || !erdStore.database) return;
-    const schema = erdStore.database.schemas[0];
+    if (!schemaId || erdStore.erdState.state !== 'loaded') return;
+    const schema = erdStore.erdState.database.schemas[0];
     const users = schema.tables.find((t) => t.name === 'users');
     const posts = schema.tables.find((t) => t.name === 'posts');
     const usersPk = users?.constraints.find((c) => c.kind === 'PRIMARY_KEY');
@@ -201,8 +201,8 @@ export const ERDSimPage = observer(() => {
   };
 
   const addIndexOnPostsFirstColumn = () => {
-    if (!schemaId || !erdStore.database) return;
-    const posts = erdStore.database.schemas[0].tables.find(
+    if (!schemaId || erdStore.erdState.state !== 'loaded') return;
+    const posts = erdStore.erdState.database.schemas[0].tables.find(
       (t) => t.name === 'posts',
     );
     const firstCol = posts?.columns[0];
@@ -230,8 +230,8 @@ export const ERDSimPage = observer(() => {
   };
 
   const renameUsersToMembers = () => {
-    if (!schemaId || !erdStore.database) return;
-    const users = erdStore.database.schemas[0].tables.find(
+    if (!schemaId || erdStore.erdState.state !== 'loaded') return;
+    const users = erdStore.erdState.database.schemas[0].tables.find(
       (t) => t.name === 'users',
     );
     if (!users) return;
@@ -257,8 +257,8 @@ export const ERDSimPage = observer(() => {
   };
 
   const dbJson = useMemo(
-    () => JSON.stringify(erdStore.database, null, 2),
-    [erdStore.database],
+    () => JSON.stringify(erdStore.erdState.database, null, 2),
+    [erdStore.erdState],
   );
 
   return (
