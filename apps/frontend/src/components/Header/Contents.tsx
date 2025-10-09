@@ -1,21 +1,32 @@
 import { Button } from '../Button';
 
-export const DefaultContents = () => {
+export const LandingContents = () => {
+  return (
+    <div className="flex items-center gap-2">
+      <Button round to="/signup">
+        Get Started
+      </Button>
+      <Button variant={'secondary'} round to="/signin">
+        Sign In
+      </Button>
+    </div>
+  );
+};
+
+export const DashBoardContents = () => {
   return (
     <div className="flex items-center gap-9">
-      <Button variant={'none'} size={'none'} to="/product">
-        Product
+      <Button variant={'none'} size={'none'}>
+        Projects
       </Button>
-      <Button variant={'none'} size={'none'} to="/pricing">
-        Pricing
+      <Button variant={'none'} size={'none'}>
+        Settings
       </Button>
-      <Button variant={'none'} size={'none'} to="/resources">
-        Resources
+      <Button variant={'none'} size={'none'}>
+        Notifications
       </Button>
       <div className="flex gap-2">
-        <Button round to="/start">
-          Get Started
-        </Button>
+        <Button round>New Project</Button>
         <Button variant={'secondary'} round to="/signin">
           Sign In
         </Button>
