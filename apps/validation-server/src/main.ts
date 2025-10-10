@@ -13,6 +13,9 @@ async function bootstrap() {
       package: 'validation',
       protoPath: [join(__dirname, '..', 'protos', 'validation.proto')],
       url: process.env.GRPC_URL ?? '0.0.0.0:50051',
+      loader: {
+        enums: String,
+      },
     },
   });
 
@@ -20,4 +23,4 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 }
 
-bootstrap();
+void bootstrap();

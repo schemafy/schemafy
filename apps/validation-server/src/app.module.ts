@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ProtoTransformInterceptor } from './interceptors/proto-transform.interceptor';
 import { ColumnsModule } from './validations/columns/columns.module';
 import { ConstraintsModule } from './validations/constraints/constraints.module';
 import { IndexesModule } from './validations/indexes/indexes.module';
@@ -21,6 +23,9 @@ import { ValidationModule } from './validations/validation/validation.module';
     ValidationModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_INTERCEPTOR, useClass: ProtoTransformInterceptor },
+  ],
 })
 export class AppModule {}
