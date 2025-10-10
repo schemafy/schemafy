@@ -43,6 +43,12 @@ enum RelationshipCardinality {
     ONE_TO_MANY = 2; // '1:N'
 }
 
+// Defines FK behavior when parent record is deleted
+// NO_ACTION: Do nothing (may fail if DB enforces FK)
+// RESTRICT: Prevent deletion if child records exist
+// CASCADE: Automatically delete child records
+// SET_NULL: Set child FK to NULL
+// SET_DEFAULT: Set child FK to default value
 enum RelationshipOnDelete {
     RELATIONSHIP_ON_DELETE_UNSPECIFIED = 0;
     NO_ACTION = 1;
@@ -52,6 +58,12 @@ enum RelationshipOnDelete {
     SET_DEFAULT = 5;
 }
 
+// Defines FK behavior when parent PK is updated
+// NO_ACTION: Do nothing (may fail if DB enforces FK)
+// RESTRICT: Prevent update if child records exist
+// CASCADE: Automatically update child FK values
+// SET_NULL: Set child FK to NULL
+// SET_DEFAULT: Set child FK to default value
 enum RelationshipOnUpdate {
     RELATIONSHIP_ON_UPDATE_UNSPECIFIED = 0;
     NO_ACTION_UPDATE = 1; // avoid enum name clash with onDelete NO_ACTION
