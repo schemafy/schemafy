@@ -4,6 +4,10 @@ import { GrpcMethod } from '@nestjs/microservices';
 import { SchemasService } from './schemas.service';
 
 import type { ValidateResult } from '../common';
+import type {
+  CreateSchemaRequest,
+  DeleteSchemaRequest,
+} from '../../types/validation.types';
 import type { Database, Schema } from '@schemafy/validator';
 
 @Controller()
@@ -11,19 +15,13 @@ export class SchemasController {
   constructor(private readonly service: SchemasService) {}
 
   @GrpcMethod('ValidationService', 'CreateSchema')
-  createSchema(req: {
-    database: Database;
-    schema: Omit<Schema, 'createdAt' | 'updatedAt'>;
-  }): ValidateResult {
+  createSchema(req: CreateSchemaRequest): ValidateResult {
     const { database, schema } = req;
     return this.service.createSchema(database, schema);
   }
 
   @GrpcMethod('ValidationService', 'DeleteSchema')
-  deleteSchema(req: {
-    database: Database;
-    schemaId: Schema['id'];
-  }): ValidateResult {
+  deleteSchema(req: DeleteSchemaRequest): ValidateResult {
     const { database, schemaId } = req;
     return this.service.deleteSchema(database, schemaId);
   }

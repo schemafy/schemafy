@@ -5,47 +5,31 @@ import { IndexesService } from './indexes.service';
 
 import type { ValidateResult } from '../common';
 import type {
-  Database,
-  Schema,
-  Table,
-  Index,
-  IndexColumn,
-} from '@schemafy/validator';
+  AddColumnToIndexRequest,
+  ChangeIndexNameRequest,
+  CreateIndexRequest,
+  DeleteIndexRequest,
+  RemoveColumnFromIndexRequest,
+} from '../../types/validation.types';
 
 @Controller()
 export class IndexesController {
   constructor(private readonly service: IndexesService) {}
 
   @GrpcMethod('ValidationService', 'CreateIndex')
-  createIndex(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    index: Omit<Index, 'tableId'>;
-  }): ValidateResult {
+  createIndex(req: CreateIndexRequest): ValidateResult {
     const { database, schemaId, tableId, index } = req;
     return this.service.createIndex(database, schemaId, tableId, index);
   }
 
   @GrpcMethod('ValidationService', 'DeleteIndex')
-  deleteIndex(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    indexId: Index['id'];
-  }): ValidateResult {
+  deleteIndex(req: DeleteIndexRequest): ValidateResult {
     const { database, schemaId, tableId, indexId } = req;
     return this.service.deleteIndex(database, schemaId, tableId, indexId);
   }
 
   @GrpcMethod('ValidationService', 'ChangeIndexName')
-  changeIndexName(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    indexId: Index['id'];
-    newName: Index['name'];
-  }): ValidateResult {
+  changeIndexName(req: ChangeIndexNameRequest): ValidateResult {
     const { database, schemaId, tableId, indexId, newName } = req;
     return this.service.changeIndexName(
       database,
@@ -57,13 +41,7 @@ export class IndexesController {
   }
 
   @GrpcMethod('ValidationService', 'AddColumnToIndex')
-  addColumnToIndex(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    indexId: Index['id'];
-    indexColumn: Omit<IndexColumn, 'indexId'>;
-  }): ValidateResult {
+  addColumnToIndex(req: AddColumnToIndexRequest): ValidateResult {
     const { database, schemaId, tableId, indexId, indexColumn } = req;
     return this.service.addColumnToIndex(
       database,
@@ -75,13 +53,7 @@ export class IndexesController {
   }
 
   @GrpcMethod('ValidationService', 'RemoveColumnFromIndex')
-  removeColumnFromIndex(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    indexId: Index['id'];
-    indexColumnId: IndexColumn['id'];
-  }): ValidateResult {
+  removeColumnFromIndex(req: RemoveColumnFromIndexRequest): ValidateResult {
     const { database, schemaId, tableId, indexId, indexColumnId } = req;
     return this.service.removeColumnFromIndex(
       database,

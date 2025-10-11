@@ -5,24 +5,19 @@ import { ConstraintsService } from './constraints.service';
 
 import type { ValidateResult } from '../common';
 import type {
-  Database,
-  Schema,
-  Table,
-  Constraint,
-  ConstraintColumn,
-} from '@schemafy/validator';
+  AddColumnToConstraintRequest,
+  ChangeConstraintNameRequest,
+  CreateConstraintRequest,
+  DeleteConstraintRequest,
+  RemoveColumnFromConstraintRequest,
+} from '../../types/validation.types';
 
 @Controller()
 export class ConstraintsController {
   constructor(private readonly service: ConstraintsService) {}
 
   @GrpcMethod('ValidationService', 'CreateConstraint')
-  createConstraint(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    constraint: Constraint;
-  }): ValidateResult {
+  createConstraint(req: CreateConstraintRequest): ValidateResult {
     const { database, schemaId, tableId, constraint } = req;
     return this.service.createConstraint(
       database,
@@ -33,12 +28,7 @@ export class ConstraintsController {
   }
 
   @GrpcMethod('ValidationService', 'DeleteConstraint')
-  deleteConstraint(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    constraintId: Constraint['id'];
-  }): ValidateResult {
+  deleteConstraint(req: DeleteConstraintRequest): ValidateResult {
     const { database, schemaId, tableId, constraintId } = req;
     return this.service.deleteConstraint(
       database,
@@ -49,13 +39,7 @@ export class ConstraintsController {
   }
 
   @GrpcMethod('ValidationService', 'ChangeConstraintName')
-  changeConstraintName(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    constraintId: Constraint['id'];
-    newName: Constraint['name'];
-  }): ValidateResult {
+  changeConstraintName(req: ChangeConstraintNameRequest): ValidateResult {
     const { database, schemaId, tableId, constraintId, newName } = req;
     return this.service.changeConstraintName(
       database,
@@ -67,13 +51,7 @@ export class ConstraintsController {
   }
 
   @GrpcMethod('ValidationService', 'AddColumnToConstraint')
-  addColumnToConstraint(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    constraintId: Constraint['id'];
-    constraintColumn: ConstraintColumn;
-  }): ValidateResult {
+  addColumnToConstraint(req: AddColumnToConstraintRequest): ValidateResult {
     const { database, schemaId, tableId, constraintId, constraintColumn } = req;
     return this.service.addColumnToConstraint(
       database,
@@ -85,13 +63,9 @@ export class ConstraintsController {
   }
 
   @GrpcMethod('ValidationService', 'RemoveColumnFromConstraint')
-  removeColumnFromConstraint(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    tableId: Table['id'];
-    constraintId: Constraint['id'];
-    constraintColumnId: ConstraintColumn['id'];
-  }): ValidateResult {
+  removeColumnFromConstraint(
+    req: RemoveColumnFromConstraintRequest,
+  ): ValidateResult {
     const { database, schemaId, tableId, constraintId, constraintColumnId } =
       req;
     return this.service.removeColumnFromConstraint(
