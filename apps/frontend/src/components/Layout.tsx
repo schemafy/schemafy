@@ -9,11 +9,11 @@ export const Layout = ({ children }: PropsWithChildren) => {
   const isCanvasPage = location.pathname === '/canvas';
 
   return (
-    <div className="flex flex-col min-h-screen bg-schemafy-bg w-screen items-center">
+    <div className="layout flex flex-col min-h-screen bg-schemafy-bg w-full items-center">
       <Header isCanvasPage={isCanvasPage} />
       <main
         className={cn(
-          'flex-grow w-full flex',
+          'flex-grow w-full flex ',
           !isCanvasPage && 'max-w-[960px]',
         )}
       >
