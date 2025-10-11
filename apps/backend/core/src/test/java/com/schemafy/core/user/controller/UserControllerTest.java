@@ -53,6 +53,10 @@ class UserControllerTest {
         return jwtProvider.generateAccessToken(userId, new HashMap<>(), System.currentTimeMillis());
     }
 
+    private String generateRefreshToken(String userId) {
+        return jwtProvider.generateRefreshToken(userId);
+    }
+
     @Test
     @DisplayName("회원가입에 성공한다")
     void signUpSuccess() {
@@ -65,6 +69,8 @@ class UserControllerTest {
                 .bodyValue(request)
                 .exchange()
                 .expectStatus().isOk()
+                .expectHeader().exists("Authorization")
+                .expectHeader().exists("Set-Cookie")
                 .expectBody()
                 .consumeWith(System.out::println) // Print response
                 .jsonPath("$.success").isEqualTo(true)
@@ -173,6 +179,8 @@ class UserControllerTest {
                 .bodyValue(loginRequest)
                 .exchange()
                 .expectStatus().isOk()
+                .expectHeader().exists("Authorization")
+                .expectHeader().exists("Set-Cookie")
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.email").isEqualTo("test@example.com");
@@ -239,5 +247,70 @@ class UserControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
                 .jsonPath("$.error.code").isEqualTo(ErrorCode.LOGIN_FAILED.getCode());
+    }
+
+    @Test
+    @DisplayName("유효한 리프레시 토큰으로 토큰 갱신에 성공한다")
+    void refreshTokenSuccess() {
+        // given
+        SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
+        EntityExchangeResult<byte[]> signupResult = webTestClient.post().uri("/api/v1/users/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(signUpRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class).returnResult();
+
+        String responseBody = new String(signupResult.getResponseBody());
+        String userId = JsonPath.read(responseBody, "$.result.id");
+        String refreshToken = generateRefreshToken(userId);
+
+        // when & then - 쿠키로 Refresh Token 전달
+        webTestClient.post().uri("/api/v1/users/refresh")
+                .cookie("refreshToken", refreshToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().exists("Authorization")
+                .expectHeader().exists("Set-Cookie")
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("잘못된 타입의 토큰으로 갱신 시 실패한다")
+    void refreshTokenFailWithAccessToken() {
+        // given
+        SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
+        EntityExchangeResult<byte[]> signupResult = webTestClient.post().uri("/api/v1/users/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(signUpRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class).returnResult();
+
+        String responseBody = new String(signupResult.getResponseBody());
+        String userId = JsonPath.read(responseBody, "$.result.id");
+        String accessToken = generateAccessToken(userId);
+
+        // when & then - 쿠키로 Access Token 전달 (잘못된 토큰 타입)
+        webTestClient.post().uri("/api/v1/users/refresh")
+                .cookie("refreshToken", accessToken)
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error.code").isEqualTo("A004");
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰 쿠키가 없으면 갱신 시 실패한다")
+    void refreshTokenFailWithoutCookie() {
+        // when & then - 쿠키 없이 요청
+        webTestClient.post().uri("/api/v1/users/refresh")
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error.code").isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
     }
 }

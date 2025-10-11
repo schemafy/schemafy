@@ -15,6 +15,9 @@ public enum ErrorCode {
     // Authentication & Authorization
     AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "A001", "인증이 필요합니다. 유효한 토큰을 제공해주세요."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "A002", "접근 권한이 없습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A003", "유효하지 않은 리프레시 토큰입니다."),
+    INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "A004", "유효하지 않은 토큰 타입입니다."),
+    MISSING_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A005", "리프레시 토큰이 없습니다."),
 
     // USER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "회원을 찾을 수 없습니다."),

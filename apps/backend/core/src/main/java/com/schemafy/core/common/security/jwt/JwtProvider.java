@@ -47,6 +47,8 @@ public class JwtProvider {
         return Jwts.builder()
                 .subject(userId)
                 .claim(CLAIM_TYPE, REFRESH_TOKEN)
+                .issuer(jwtProperties.getIssuer())
+                .audience().add(jwtProperties.getAudience()).and()
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshTokenExpiration()))
                 .signWith(secretKey)

@@ -43,11 +43,11 @@ class UserServiceTest {
         SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
 
         // when
-        Mono<UserInfoResponse> result = userService.signUp(request.toCommand());
+        Mono<User> result = userService.signUp(request.toCommand());
 
         // then - 응답 검증
         StepVerifier.create(result)
-                .expectNextMatches(res -> res.email().equals("test@example.com"))
+                .expectNextMatches(user -> user.getEmail().equals("test@example.com"))
                 .verifyComplete();
 
         // then - db 검증
@@ -75,7 +75,7 @@ class UserServiceTest {
         SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
 
         // when
-        Mono<UserInfoResponse> result = userService.signUp(request.toCommand());
+        Mono<User> result = userService.signUp(request.toCommand());
 
         // then
         StepVerifier.create(result)
@@ -133,11 +133,11 @@ class UserServiceTest {
         LoginCommand command = new LoginCommand("test@example.com", rawPassword);
 
         // when
-        Mono<UserInfoResponse> result = userService.login(command);
+        Mono<User> result = userService.login(command);
 
         // then
         StepVerifier.create(result)
-                .expectNextMatches(response -> response.email().equals("test@example.com"))
+                .expectNextMatches(user -> user.getEmail().equals("test@example.com"))
                 .verifyComplete();
     }
 
@@ -148,7 +148,7 @@ class UserServiceTest {
         LoginCommand command = new LoginCommand("nonexistent@example.com", "password");
 
         // when
-        Mono<UserInfoResponse> result = userService.login(command);
+        Mono<User> result = userService.login(command);
 
         // then
         StepVerifier.create(result)
@@ -168,7 +168,7 @@ class UserServiceTest {
         LoginCommand command = new LoginCommand("test@example.com", "wrong_password");
 
         // when
-        Mono<UserInfoResponse> result = userService.login(command);
+        Mono<User> result = userService.login(command);
 
         // then
         StepVerifier.create(result)

@@ -23,10 +23,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public Mono<UserInfoResponse> signUp(SignUpCommand request) {
+    public Mono<User> signUp(SignUpCommand request) {
         return checkEmailUniqueness(request.email())
-                .then(createNewUser(request))
-                .map(UserInfoResponse::from);
+                .then(createNewUser(request));
     }
 
     private Mono<Void> checkEmailUniqueness(String email) {
@@ -49,10 +48,9 @@ public class UserService {
                 .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)));
     }
 
-    public Mono<UserInfoResponse> login(LoginCommand command) {
+    public Mono<User> login(LoginCommand command) {
         return findUserByEmail(command.email())
-                .flatMap(user -> getUserByPasswordMatch(user, command.password()))
-                .map(UserInfoResponse::from);
+                .flatMap(user -> getUserByPasswordMatch(user, command.password()));
     }
 
     private Mono<User> findUserByEmail(String email) {
