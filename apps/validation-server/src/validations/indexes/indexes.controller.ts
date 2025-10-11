@@ -3,33 +3,33 @@ import { GrpcMethod } from '@nestjs/microservices';
 
 import { IndexesService } from './indexes.service';
 
-import type { ValidateResult } from '../common';
 import type {
-  AddColumnToIndexRequest,
-  ChangeIndexNameRequest,
-  CreateIndexRequest,
-  DeleteIndexRequest,
-  RemoveColumnFromIndexRequest,
-} from '../../types/validation.types';
+  AddColumnToIndexDto,
+  ChangeIndexNameDto,
+  CreateIndexDto,
+  DeleteIndexDto,
+  RemoveColumnFromIndexDto,
+} from './dto';
+import type { ValidateResult } from '../common';
 
 @Controller()
 export class IndexesController {
   constructor(private readonly service: IndexesService) {}
 
   @GrpcMethod('ValidationService', 'CreateIndex')
-  createIndex(req: CreateIndexRequest): ValidateResult {
+  createIndex(req: CreateIndexDto): ValidateResult {
     const { database, schemaId, tableId, index } = req;
     return this.service.createIndex(database, schemaId, tableId, index);
   }
 
   @GrpcMethod('ValidationService', 'DeleteIndex')
-  deleteIndex(req: DeleteIndexRequest): ValidateResult {
+  deleteIndex(req: DeleteIndexDto): ValidateResult {
     const { database, schemaId, tableId, indexId } = req;
     return this.service.deleteIndex(database, schemaId, tableId, indexId);
   }
 
   @GrpcMethod('ValidationService', 'ChangeIndexName')
-  changeIndexName(req: ChangeIndexNameRequest): ValidateResult {
+  changeIndexName(req: ChangeIndexNameDto): ValidateResult {
     const { database, schemaId, tableId, indexId, newName } = req;
     return this.service.changeIndexName(
       database,
@@ -41,7 +41,7 @@ export class IndexesController {
   }
 
   @GrpcMethod('ValidationService', 'AddColumnToIndex')
-  addColumnToIndex(req: AddColumnToIndexRequest): ValidateResult {
+  addColumnToIndex(req: AddColumnToIndexDto): ValidateResult {
     const { database, schemaId, tableId, indexId, indexColumn } = req;
     return this.service.addColumnToIndex(
       database,
@@ -53,7 +53,7 @@ export class IndexesController {
   }
 
   @GrpcMethod('ValidationService', 'RemoveColumnFromIndex')
-  removeColumnFromIndex(req: RemoveColumnFromIndexRequest): ValidateResult {
+  removeColumnFromIndex(req: RemoveColumnFromIndexDto): ValidateResult {
     const { database, schemaId, tableId, indexId, indexColumnId } = req;
     return this.service.removeColumnFromIndex(
       database,

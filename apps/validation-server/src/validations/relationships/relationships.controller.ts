@@ -3,90 +3,47 @@ import { GrpcMethod } from '@nestjs/microservices';
 
 import { RelationshipsService } from './relationships.service';
 
-import type { ValidateResult } from '../common';
 import type {
-  AddColumnPairToRelationshipRequest,
-  ChangeRelationshipNameRequest,
-  CreateRelationshipRequest,
-  DeleteRelationshipRequest,
-  RemoveColumnPairFromRelationshipRequest,
-} from '../../types/validation.types';
-import type { Database, Relationship, Schema } from '@schemafy/validator';
+  AddColumnToRelationshipDto,
+  ChangeRelationshipCardinalityDto,
+  ChangeRelationshipNameDto,
+  CreateRelationshipDto,
+  DeleteRelationshipDto,
+  RemoveColumnFromRelationshipDto,
+} from './dto';
+import type { ValidateResult } from '../common';
 
 @Controller()
 export class RelationshipsController {
   constructor(private readonly service: RelationshipsService) {}
 
   @GrpcMethod('ValidationService', 'CreateRelationship')
-  createRelationship(req: CreateRelationshipRequest): ValidateResult {
-    const { database, relationship } = req;
-    return this.service.createRelationship(
-      database,
-      relationship.sourceSchemaId,
-      relationship,
-    );
+  createRelationship(req: CreateRelationshipDto): ValidateResult {
+    const { database, schemaId, relationship } = req;
+    return this.service.createRelationship(database, schemaId, relationship);
   }
 
   @GrpcMethod('ValidationService', 'DeleteRelationship')
-  deleteRelationship(req: DeleteRelationshipRequest): ValidateResult {
-    const { database, relationshipId } = req;
-    // Note: schemaId is needed by service but not in proto - extracting from relationship
-    const relationship = database.schemas
-      .flatMap((s) => s.relationships || [])
-      .find((r) => r.id === relationshipId);
-    if (!relationship) {
-      return {
-        failure: {
-          errors: [
-            {
-              code: 'NOT_FOUND',
-              message: `Relationship ${relationshipId} not found`,
-            },
-          ],
-        },
-      };
-    }
-    return this.service.deleteRelationship(
-      database,
-      relationship.sourceSchemaId,
-      relationshipId,
-    );
+  deleteRelationship(req: DeleteRelationshipDto): ValidateResult {
+    const { database, schemaId, relationshipId } = req;
+    return this.service.deleteRelationship(database, schemaId, relationshipId);
   }
 
   @GrpcMethod('ValidationService', 'ChangeRelationshipName')
-  changeRelationshipName(req: ChangeRelationshipNameRequest): ValidateResult {
-    const { database, relationshipId, newName } = req;
-    // Note: schemaId is needed by service but not in proto - extracting from relationship
-    const relationship = database.schemas
-      .flatMap((s) => s.relationships || [])
-      .find((r) => r.id === relationshipId);
-    if (!relationship) {
-      return {
-        failure: {
-          errors: [
-            {
-              code: 'NOT_FOUND',
-              message: `Relationship ${relationshipId} not found`,
-            },
-          ],
-        },
-      };
-    }
+  changeRelationshipName(req: ChangeRelationshipNameDto): ValidateResult {
+    const { database, schemaId, relationshipId, newName } = req;
     return this.service.changeRelationshipName(
       database,
-      relationship.sourceSchemaId,
+      schemaId,
       relationshipId,
       newName,
     );
   }
 
   @GrpcMethod('ValidationService', 'ChangeRelationshipCardinality')
-  changeRelationshipCardinality(req: {
-    database: Database;
-    schemaId: Schema['id'];
-    relationshipId: Relationship['id'];
-    cardinality: Relationship['cardinality'];
-  }): ValidateResult {
+  changeRelationshipCardinality(
+    req: ChangeRelationshipCardinalityDto,
+  ): ValidateResult {
     const { database, schemaId, relationshipId, cardinality } = req;
     return this.service.changeRelationshipCardinality(
       database,
@@ -97,58 +54,24 @@ export class RelationshipsController {
   }
 
   @GrpcMethod('ValidationService', 'AddColumnToRelationship')
-  addColumnToRelationship(
-    req: AddColumnPairToRelationshipRequest,
-  ): ValidateResult {
-    const { database, relationshipId, columnPair } = req;
-    // Note: schemaId is needed by service but not in proto - extracting from relationship
-    const relationship = database.schemas
-      .flatMap((s) => s.relationships || [])
-      .find((r) => r.id === relationshipId);
-    if (!relationship) {
-      return {
-        failure: {
-          errors: [
-            {
-              code: 'NOT_FOUND',
-              message: `Relationship ${relationshipId} not found`,
-            },
-          ],
-        },
-      };
-    }
+  addColumnToRelationship(req: AddColumnToRelationshipDto): ValidateResult {
+    const { database, schemaId, relationshipId, relationshipColumn } = req;
     return this.service.addColumnToRelationship(
       database,
-      relationship.sourceSchemaId,
+      schemaId,
       relationshipId,
-      columnPair,
+      relationshipColumn,
     );
   }
 
   @GrpcMethod('ValidationService', 'RemoveColumnFromRelationship')
   removeColumnFromRelationship(
-    req: RemoveColumnPairFromRelationshipRequest,
+    req: RemoveColumnFromRelationshipDto,
   ): ValidateResult {
-    const { database, relationshipId, relationshipColumnId } = req;
-    // Note: schemaId is needed by service but not in proto - extracting from relationship
-    const relationship = database.schemas
-      .flatMap((s) => s.relationships || [])
-      .find((r) => r.id === relationshipId);
-    if (!relationship) {
-      return {
-        failure: {
-          errors: [
-            {
-              code: 'NOT_FOUND',
-              message: `Relationship ${relationshipId} not found`,
-            },
-          ],
-        },
-      };
-    }
+    const { database, schemaId, relationshipId, relationshipColumnId } = req;
     return this.service.removeColumnFromRelationship(
       database,
-      relationship.sourceSchemaId,
+      schemaId,
       relationshipId,
       relationshipColumnId,
     );

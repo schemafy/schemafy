@@ -3,21 +3,21 @@ import { GrpcMethod } from '@nestjs/microservices';
 
 import { ConstraintsService } from './constraints.service';
 
-import type { ValidateResult } from '../common';
 import type {
-  AddColumnToConstraintRequest,
-  ChangeConstraintNameRequest,
-  CreateConstraintRequest,
-  DeleteConstraintRequest,
-  RemoveColumnFromConstraintRequest,
-} from '../../types/validation.types';
+  AddColumnToConstraintDto,
+  ChangeConstraintNameDto,
+  CreateConstraintDto,
+  DeleteConstraintDto,
+  RemoveColumnFromConstraintDto,
+} from './dto';
+import type { ValidateResult } from '../common';
 
 @Controller()
 export class ConstraintsController {
   constructor(private readonly service: ConstraintsService) {}
 
   @GrpcMethod('ValidationService', 'CreateConstraint')
-  createConstraint(req: CreateConstraintRequest): ValidateResult {
+  createConstraint(req: CreateConstraintDto): ValidateResult {
     const { database, schemaId, tableId, constraint } = req;
     return this.service.createConstraint(
       database,
@@ -28,7 +28,7 @@ export class ConstraintsController {
   }
 
   @GrpcMethod('ValidationService', 'DeleteConstraint')
-  deleteConstraint(req: DeleteConstraintRequest): ValidateResult {
+  deleteConstraint(req: DeleteConstraintDto): ValidateResult {
     const { database, schemaId, tableId, constraintId } = req;
     return this.service.deleteConstraint(
       database,
@@ -39,7 +39,7 @@ export class ConstraintsController {
   }
 
   @GrpcMethod('ValidationService', 'ChangeConstraintName')
-  changeConstraintName(req: ChangeConstraintNameRequest): ValidateResult {
+  changeConstraintName(req: ChangeConstraintNameDto): ValidateResult {
     const { database, schemaId, tableId, constraintId, newName } = req;
     return this.service.changeConstraintName(
       database,
@@ -51,7 +51,7 @@ export class ConstraintsController {
   }
 
   @GrpcMethod('ValidationService', 'AddColumnToConstraint')
-  addColumnToConstraint(req: AddColumnToConstraintRequest): ValidateResult {
+  addColumnToConstraint(req: AddColumnToConstraintDto): ValidateResult {
     const { database, schemaId, tableId, constraintId, constraintColumn } = req;
     return this.service.addColumnToConstraint(
       database,
@@ -64,7 +64,7 @@ export class ConstraintsController {
 
   @GrpcMethod('ValidationService', 'RemoveColumnFromConstraint')
   removeColumnFromConstraint(
-    req: RemoveColumnFromConstraintRequest,
+    req: RemoveColumnFromConstraintDto,
   ): ValidateResult {
     const { database, schemaId, tableId, constraintId, constraintColumnId } =
       req;
