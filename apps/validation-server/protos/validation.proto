@@ -4,7 +4,7 @@ package validation;
 
 enum DbVendor {
     DB_VENDOR_UNSPECIFIED = 0;
-    MYSQL = 1; // types.ts: z.enum(['mysql'])
+    MYSQL = 1;
 }
 
 enum IndexType {
@@ -66,7 +66,7 @@ enum RelationshipOnDelete {
 // SET_DEFAULT: Set child FK to default value
 enum RelationshipOnUpdate {
     RELATIONSHIP_ON_UPDATE_UNSPECIFIED = 0;
-    NO_ACTION_UPDATE = 1; // avoid enum name clash with onDelete NO_ACTION
+    NO_ACTION_UPDATE = 1;
     RESTRICT_UPDATE = 2;
     CASCADE_UPDATE = 3;
     SET_NULL_UPDATE = 4;
@@ -76,24 +76,24 @@ enum RelationshipOnUpdate {
 message Column {
     string id = 1;
     string tableId = 2;
-    string name = 3; // min 3, max 40 (validation is app-level)
-    uint32 ordinalPosition = 4; // positive
-    string dataType = 5; // optional/nullable -> represent as empty string if absent
-    string lengthScale = 6;
+    string name = 3;
+    uint32 ordinalPosition = 4;
+    string dataType = 5;
+    optional string lengthScale = 6;
     bool isAutoIncrement = 7;
-    string charset = 8;
-    string collation = 9;
-    string comment = 10; // optional/nullable
-    string createdAt = 11; // ISO datetime as string
-    string updatedAt = 12; // ISO datetime as string
-    optional string deletedAt = 13; // optional/nullable
+    optional string charset = 8;
+    optional string collation = 9;
+    optional string comment = 10;
+    string createdAt = 11;
+    string updatedAt = 12;
+    optional string deletedAt = 13;
 }
 
 message IndexColumn {
     string id = 1;
     string indexId = 2;
     string columnId = 3;
-    uint32 seqNo = 4; // positive
+    uint32 seqNo = 4;
     IndexSortDir sortDir = 5;
 }
 
@@ -102,7 +102,7 @@ message Index {
     string tableId = 2;
     string name = 3;
     IndexType type = 4;
-    string comment = 5; // optional/nullable
+    optional string comment = 5; // optional/nullable
     repeated IndexColumn columns = 6;
 }
 
@@ -110,7 +110,7 @@ message ConstraintColumn {
     string id = 1;
     string constraintId = 2;
     string columnId = 3;
-    uint32 seqNo = 4; // positive
+    uint32 seqNo = 4;
 }
 
 message Constraint {
@@ -118,8 +118,8 @@ message Constraint {
     string tableId = 2;
     string name = 3;
     ConstraintKind kind = 4;
-    string checkExpr = 5; // optional when kind == CHECK
-    string defaultExpr = 6; // optional when kind == DEFAULT
+    optional string checkExpr = 5; // optional when kind == CHECK
+    optional string defaultExpr = 6; // optional when kind == DEFAULT
     repeated ConstraintColumn columns = 7;
 }
 
@@ -128,7 +128,7 @@ message RelationshipColumn {
     string relationshipId = 2;
     string fkColumnId = 3;
     string refColumnId = 4;
-    uint32 seqNo = 5; // positive
+    uint32 seqNo = 5;
 }
 
 message Relationship {
@@ -140,18 +140,18 @@ message Relationship {
     RelationshipCardinality cardinality = 6;
     RelationshipOnDelete onDelete = 7;
     RelationshipOnUpdate onUpdate = 8;
-    bool fkEnforced = 9; // types.ts literal false; not enforceable here
+    bool fkEnforced = 9;
     repeated RelationshipColumn columns = 10;
 }
 
 message Table {
     string id = 1;
     string schemaId = 2;
-    string name = 3; // min 3, max 20
-    string comment = 4; // optional/nullable
-    string tableOptions = 5;
-    string createdAt = 6; // ISO datetime
-    string updatedAt = 7; // ISO datetime
+    string name = 3;
+    optional string comment = 4; // optional/nullable
+    optional string tableOptions = 5;
+    string createdAt = 6;
+    string updatedAt = 7;
     optional string deletedAt = 8; // optional/nullable
     repeated Column columns = 9;
     repeated Index indexes = 10;
@@ -162,13 +162,13 @@ message Table {
 message Schema {
     string id = 1;
     string projectId = 2;
-    DbVendor dbVendorId = 3; // z.enum(['mysql'])
+    DbVendor dbVendorId = 3;
     string name = 4;
-    string charset = 5;
-    string collation = 6;
-    string vendorOption = 7;
-    string createdAt = 8; // ISO datetime
-    string updatedAt = 9; // ISO datetime
+    optional string charset = 5;
+    optional string collation = 6;
+    optional string vendorOption = 7;
+    string createdAt = 8;
+    string updatedAt = 9;
     optional string deletedAt = 10; // optional/nullable
     repeated Table tables = 11;
 }
