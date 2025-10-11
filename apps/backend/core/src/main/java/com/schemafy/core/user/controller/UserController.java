@@ -73,8 +73,9 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public Mono<BaseResponse<UserInfoResponse>> getMember(@PathVariable String userId) {
+    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMember(@PathVariable String userId) {
         return userService.getUserById(userId)
-                .map(BaseResponse::success);
+                .map(BaseResponse::success)
+                .map(ResponseEntity::ok);
     }
 }
