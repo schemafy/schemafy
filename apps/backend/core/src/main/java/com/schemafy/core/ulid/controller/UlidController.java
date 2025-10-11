@@ -20,8 +20,8 @@ public class UlidController {
 
     @GetMapping("/ulid/generate")
     public Mono<BaseResponse<UlidResponse>> generateTemporaryUlid(@ApiVersion String version) {
-        log.debug("API Version: {}", version);
-        return ulidService.generateTemporaryUlid()
+        return ulidService
+                .generateTemporaryUlid()
                 .map(UlidResponse::new)
                 .map(BaseResponse::success);
     }
