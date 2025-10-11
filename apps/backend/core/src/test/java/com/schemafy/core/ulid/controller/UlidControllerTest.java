@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+    private static final String API_BASE_PATH = ApiPath.AUTH_API.replace("{version}",
             "v1.0");
 
     @Autowired
