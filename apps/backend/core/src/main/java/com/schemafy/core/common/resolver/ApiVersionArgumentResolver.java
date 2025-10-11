@@ -33,7 +33,7 @@ public class ApiVersionArgumentResolver implements HandlerMethodArgumentResolver
                 HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
 
         if (pathVariables == null || !pathVariables.containsKey("version")) {
-            return Mono.error(new IllegalStateException("Path variable 'version' not found"));
+            return Mono.error(new BusinessException(ErrorCode.COMMON_API_VERSION_INVALID));
         }
 
         String versionString = pathVariables.get("version");

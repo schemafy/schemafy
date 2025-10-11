@@ -21,27 +21,26 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/users/signup")
-    public Mono<BaseResponse<UserInfoResponse>> signUp(@ApiVersion String version,
+    public Mono<BaseResponse<UserInfoResponse>> signUp(
+            @ApiVersion String version,
             @Valid @RequestBody SignUpRequest request) {
-        return userService
-                .signUp(request
-                        .toCommand())
+        return userService.signUp(request.toCommand())
                 .map(BaseResponse::success);
     }
 
     @PostMapping("/users/login")
-    public Mono<BaseResponse<UserInfoResponse>> login(@ApiVersion String version,
+    public Mono<BaseResponse<UserInfoResponse>> login(
+            @ApiVersion String version,
             @Valid @RequestBody LoginRequest request) {
-        return userService
-                .login(request
-                        .toCommand())
+        return userService.login(request.toCommand())
                 .map(BaseResponse::success);
     }
 
     @GetMapping("/users/{userId}")
-    public Mono<BaseResponse<UserInfoResponse>> getUser(@ApiVersion String version, @PathVariable String userId) {
-        return userService
-                .getUserById(userId)
+    public Mono<BaseResponse<UserInfoResponse>> getUser(
+            @ApiVersion String version,
+            @PathVariable String userId) {
+        return userService.getUserById(userId)
                 .map(BaseResponse::success);
     }
 }
