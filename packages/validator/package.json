@@ -20,6 +20,9 @@
     "dev": "tsup --watch",
     "test": "jest",
     "test:watch": "jest --watch",
+    "lint": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },
