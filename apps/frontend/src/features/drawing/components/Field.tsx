@@ -52,21 +52,11 @@ export const FieldRow = ({
   );
 };
 
-export const EditModeField = ({
-  field,
-  onDragStart,
-  onDragEnd,
-  onUpdateField,
-  onRemoveField,
-}: EditModeFieldProps) => {
+export const EditModeField = ({ field, onDragStart, onDragEnd, onUpdateField, onRemoveField }: EditModeFieldProps) => {
   return (
     <div className="p-2 space-y-2">
       <div className="flex items-center gap-2">
-        <DragHandle
-          fieldId={field.id}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-        />
+        <DragHandle fieldId={field.id} onDragStart={onDragStart} onDragEnd={onDragEnd} />
 
         <input
           type="text"
@@ -76,10 +66,7 @@ export const EditModeField = ({
           placeholder="Field name"
         />
 
-        <TypeSelector
-          value={field.type}
-          onChange={(value) => onUpdateField(field.id, 'type', value)}
-        />
+        <TypeSelector value={field.type} onChange={(value) => onUpdateField(field.id, 'type', value)} />
 
         <button
           onClick={() => onRemoveField(field.id)}
@@ -100,18 +87,10 @@ export const ViewModeField = ({ field }: ViewModeFieldProps) => {
     <div className="p-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span
-            className={`text-sm ${
-              field.isPrimaryKey
-                ? 'font-bold text-yellow-600'
-                : 'text-schemafy-text'
-            }`}
-          >
+          <span className={`text-sm ${field.isPrimaryKey ? 'font-bold text-yellow-600' : 'text-schemafy-text'}`}>
             {field.name}
           </span>
-          <span className="text-xs text-schemafy-dark-gray">
-            ({field.type})
-          </span>
+          <span className="text-xs text-schemafy-dark-gray">({field.type})</span>
         </div>
 
         <FieldBadges field={field} />
@@ -120,11 +99,7 @@ export const ViewModeField = ({ field }: ViewModeFieldProps) => {
   );
 };
 
-export const DragHandle = ({
-  fieldId,
-  onDragStart,
-  onDragEnd,
-}: DragHandleProps) => {
+export const DragHandle = ({ fieldId, onDragStart, onDragEnd }: DragHandleProps) => {
   return (
     <span
       draggable
@@ -155,10 +130,7 @@ export const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
   );
 };
 
-export const FieldConstraints = ({
-  field,
-  onUpdateField,
-}: FieldConstraintsProps) => {
+export const FieldConstraints = ({ field, onUpdateField }: FieldConstraintsProps) => {
   const constraints = [
     { key: 'isPrimaryKey', label: 'PK', color: 'text-yellow-600' },
     { key: 'isNotNull', label: 'NOT NULL', color: 'text-red-600' },
@@ -185,15 +157,9 @@ export const FieldConstraints = ({
 export const FieldBadges = ({ field }: FieldBadgesProps) => {
   return (
     <div className="flex items-center gap-1">
-      {field.isPrimaryKey && (
-        <span className="text-xs text-yellow-600 font-medium">PK</span>
-      )}
-      {field.isNotNull && (
-        <span className="text-xs text-red-600 font-medium">*</span>
-      )}
-      {field.isUnique && (
-        <span className="text-xs text-blue-600 font-medium">UQ</span>
-      )}
+      {field.isPrimaryKey && <span className="text-xs text-yellow-600 font-medium">PK</span>}
+      {field.isNotNull && <span className="text-xs text-red-600 font-medium">*</span>}
+      {field.isUnique && <span className="text-xs text-blue-600 font-medium">UQ</span>}
     </div>
   );
 };

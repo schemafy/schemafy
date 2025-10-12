@@ -40,8 +40,7 @@ const initialForm: SignUpFormValues = {
 const validationRules: ValidationRules<SignUpFormValues> = {
   name: (value: string) => {
     if (!value.trim()) return 'Name is required.';
-    if (value.trim().length > 200)
-      return 'Name must be 200 characters or less.';
+    if (value.trim().length > 200) return 'Name must be 200 characters or less.';
     return '';
   },
   email: (value: string) => {
@@ -64,10 +63,7 @@ const validationRules: ValidationRules<SignUpFormValues> = {
 };
 
 export const SignUpForm = () => {
-  const { form, errors, handleChange, handleBlur } = useFormState(
-    initialForm,
-    validationRules,
-  );
+  const { form, errors, handleChange, handleBlur } = useFormState(initialForm, validationRules);
   const { pending } = useFormStatus();
 
   return (

@@ -3,20 +3,9 @@ import { observer } from 'mobx-react-lite';
 import { Button } from '@/components';
 import { ErdStore } from '@/store';
 
-type IdPrefix =
-  | 'db'
-  | 'schema'
-  | 'table'
-  | 'col'
-  | 'idx'
-  | 'idxcol'
-  | 'constraint'
-  | 'cc'
-  | 'rel'
-  | 'relcol';
+type IdPrefix = 'db' | 'schema' | 'table' | 'col' | 'idx' | 'idxcol' | 'constraint' | 'cc' | 'rel' | 'relcol';
 
-const genId = (prefix: IdPrefix) =>
-  `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+const genId = (prefix: IdPrefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 const erdStore = ErdStore.getInstance();
 
@@ -73,9 +62,7 @@ export const ERDSimPage = observer(() => {
 
   const addUsersIdColumn = () => {
     if (!schemaId || erdStore.erdState.state !== 'loaded') return;
-    const users = erdStore.erdState.database.schemas[0].tables.find(
-      (t) => t.name === 'users',
-    );
+    const users = erdStore.erdState.database.schemas[0].tables.find((t) => t.name === 'users');
     if (!users) return;
     try {
       erdStore.createColumn(schemaId, users.id, {
@@ -97,9 +84,7 @@ export const ERDSimPage = observer(() => {
 
   const setUsersPk = () => {
     if (!schemaId || erdStore.erdState.state !== 'loaded') return;
-    const users = erdStore.erdState.database.schemas[0].tables.find(
-      (t) => t.name === 'users',
-    );
+    const users = erdStore.erdState.database.schemas[0].tables.find((t) => t.name === 'users');
     const idCol = users?.columns.find((c) => c.name === 'id2');
     if (!users || !idCol) return;
     try {
@@ -145,9 +130,7 @@ export const ERDSimPage = observer(() => {
 
   const addPostsIdColumn = () => {
     if (!schemaId || erdStore.erdState.state !== 'loaded') return;
-    const posts = erdStore.erdState.database.schemas[0].tables.find(
-      (t) => t.name === 'posts',
-    );
+    const posts = erdStore.erdState.database.schemas[0].tables.find((t) => t.name === 'posts');
     if (!posts) return;
     try {
       erdStore.createColumn(schemaId, posts.id, {
@@ -204,9 +187,7 @@ export const ERDSimPage = observer(() => {
 
   const addIndexOnPostsFirstColumn = () => {
     if (!schemaId || erdStore.erdState.state !== 'loaded') return;
-    const posts = erdStore.erdState.database.schemas[0].tables.find(
-      (t) => t.name === 'posts',
-    );
+    const posts = erdStore.erdState.database.schemas[0].tables.find((t) => t.name === 'posts');
     const firstCol = posts?.columns[0];
     if (!posts || !firstCol) return;
     try {
@@ -233,9 +214,7 @@ export const ERDSimPage = observer(() => {
 
   const renameUsersToMembers = () => {
     if (!schemaId || erdStore.erdState.state !== 'loaded') return;
-    const users = erdStore.erdState.database.schemas[0].tables.find(
-      (t) => t.name === 'users',
-    );
+    const users = erdStore.erdState.database.schemas[0].tables.find((t) => t.name === 'users');
     if (!users) return;
     try {
       erdStore.changeTableName(schemaId, users.id, 'members');
@@ -274,12 +253,8 @@ export const ERDSimPage = observer(() => {
         <Button onClick={createPostsTable}>5) Create table posts</Button>
         <Button onClick={addPostsIdColumn}>6) Add posts.id</Button>
         <Button onClick={relatePostsToUsers}>7) Relate posts to users</Button>
-        <Button onClick={addIndexOnPostsFirstColumn}>
-          8) Add index on posts
-        </Button>
-        <Button onClick={renameUsersToMembers}>
-          9) Rename users to members
-        </Button>
+        <Button onClick={addIndexOnPostsFirstColumn}>8) Add index on posts</Button>
+        <Button onClick={renameUsersToMembers}>9) Rename users to members</Button>
         <Button onClick={runValidate}>Validate</Button>
         <Button onClick={reset} variant="secondary">
           Reset

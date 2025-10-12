@@ -30,21 +30,13 @@ export const Avatar = ((
   ref: React.Ref<HTMLDivElement>,
 ) => {
   return (
-    <AvatarRoot
-      ref={ref}
-      className={cn(avatarVariants({ size, deactivate }), className)}
-      {...props}
-    >
+    <AvatarRoot ref={ref} className={cn(avatarVariants({ size, deactivate }), className)} {...props}>
       {src && <AvatarImage src={src} alt={alt || 'Avatar'} />}
     </AvatarRoot>
   );
 }) as React.ComponentType<CustomAvatarProps>;
 
-const AvatarRoot = ({
-  className,
-  ref,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root>) => (
+const AvatarRoot = ({ className, ref, ...props }: React.ComponentProps<typeof AvatarPrimitive.Root>) => (
   <AvatarPrimitive.Root
     data-slot="avatar"
     ref={ref}
@@ -53,14 +45,6 @@ const AvatarRoot = ({
   />
 );
 
-const AvatarImage = ({
-  className,
-  ref,
-  ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) => (
-  <AvatarPrimitive.Image
-    ref={ref}
-    className={cn('aspect-square h-full w-full', className)}
-    {...props}
-  />
+const AvatarImage = ({ className, ref, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>) => (
+  <AvatarPrimitive.Image ref={ref} className={cn('aspect-square h-full w-full', className)} {...props} />
 );

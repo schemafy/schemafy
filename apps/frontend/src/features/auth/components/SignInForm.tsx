@@ -39,10 +39,7 @@ const validationRules: ValidationRules<SignInFormValues> = {
 };
 
 export const SignInForm = () => {
-  const { form, errors, handleChange, handleBlur } = useFormState(
-    initialForm,
-    validationRules,
-  );
+  const { form, errors, handleChange, handleBlur } = useFormState(initialForm, validationRules);
   const { pending } = useFormStatus();
 
   return (
@@ -61,11 +58,7 @@ export const SignInForm = () => {
           onBlur={handleBlur}
         />
       ))}
-      <Button
-        variant={'none'}
-        size={'none'}
-        className="text-schemafy-dark-gray pt-1 pb-3"
-      >
+      <Button variant={'none'} size={'none'} className="text-schemafy-dark-gray pt-1 pb-3">
         Forgot Password?
       </Button>
       <div className="flex flex-col w-full gap-6 py-3">
