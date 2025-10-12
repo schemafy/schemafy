@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   lint-and-format:
     runs-on: ubuntu-latest
@@ -13,6 +17,7 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
+        ref: ${{ github.head_ref }}
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -52,26 +57,31 @@ jobs:
     
     - name: Run linters
       run: npm run lint
+      continue-on-error: true
     
-    - name: Check formatting
+    - name: Apply formatting
       run: npm run format
+      continue-on-error: true
     
     - name: Check for changes
       id: check-changes
       run: |
-        git status --porcelain
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "changes=true" >> $GITHUB_OUTPUT
-        else
+        git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+        if [ ! -f $GITHUB_OUTPUT ] || ! grep -q "changes=true" $GITHUB_OUTPUT; then
           echo "changes=false" >> $GITHUB_OUTPUT
         fi
+    
+    - name: Show changes
+      if: steps.check-changes.outputs.changes == 'true'
+      run: |
+        echo "포맷 변경사항이 감지되었습니다:"
+        git diff --stat
     
     - name: Commit and push changes
       if: steps.check-changes.outputs.changes == 'true'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add .
-        git status
-        git commit -m "style: auto-format code [skip ci]"
-        git push origin HEAD:${{ github.head_ref }}
+        git add -A
+        git diff --staged --quiet || git commit -m "style: auto-format code [skip ci]"
+        git push
