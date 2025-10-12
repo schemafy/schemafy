@@ -47,14 +47,8 @@ export const TableNode = ({ data, id }: TableNodeProps) => {
     updateFields(newFields);
   };
 
-  const updateField = (
-    fieldId: string,
-    key: keyof FieldType,
-    value: string | boolean,
-  ) => {
-    const newFields = fields.map((field) =>
-      field.id === fieldId ? { ...field, [key]: value } : field,
-    );
+  const updateField = (fieldId: string, key: keyof FieldType, value: string | boolean) => {
+    const newFields = fields.map((field) => (field.id === fieldId ? { ...field, [key]: value } : field));
     setFields(newFields);
     updateFields(newFields);
   };
@@ -99,9 +93,7 @@ export const TableNode = ({ data, id }: TableNodeProps) => {
         ))}
       </div>
       {fields.length === 0 && (
-        <div className="p-4 text-center text-schemafy-dark-gray text-sm">
-          Click + to add a field.
-        </div>
+        <div className="p-4 text-center text-schemafy-dark-gray text-sm">Click + to add a field.</div>
       )}
     </div>
   );
@@ -149,20 +141,14 @@ const TableHeader = ({
               onKeyDown={handleKeyDown}
               autoFocus
             />
-            <button
-              onClick={onSaveEdit}
-              className="p-1 hover:bg-schemafy-dark-gray rounded"
-            >
+            <button onClick={onSaveEdit} className="p-1 hover:bg-schemafy-dark-gray rounded">
               <Check size={14} />
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2 flex-1">
             <span className="font-medium">{tableName}</span>
-            <button
-              onClick={onStartEdit}
-              className="p-1 hover:bg-schemafy-dark-gray rounded"
-            >
+            <button onClick={onStartEdit} className="p-1 hover:bg-schemafy-dark-gray rounded">
               <Edit size={14} />
             </button>
           </div>
@@ -172,20 +158,12 @@ const TableHeader = ({
       <div className="flex items-center gap-1">
         <button
           onClick={onToggleFieldEditMode}
-          className={`p-1 rounded ${
-            isFieldEditMode
-              ? 'bg-schemafy-dark-gray'
-              : 'hover:bg-schemafy-dark-gray'
-          }`}
+          className={`p-1 rounded ${isFieldEditMode ? 'bg-schemafy-dark-gray' : 'hover:bg-schemafy-dark-gray'}`}
           title="Toggle Edit Mode"
         >
           <Settings size={14} />
         </button>
-        <button
-          onClick={onAddField}
-          className="p-1 hover:bg-schemafy-dark-gray rounded"
-          title="Add Field"
-        >
+        <button onClick={onAddField} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Add Field">
           <Plus size={14} />
         </button>
       </div>

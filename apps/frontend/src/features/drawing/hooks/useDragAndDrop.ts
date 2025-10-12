@@ -19,10 +19,7 @@ interface UseDragAndDropReturn {
   isDragOverItem: (itemId: string) => boolean;
 }
 
-export const useDragAndDrop = ({
-  items,
-  onReorder,
-}: UseDragAndDropProps): UseDragAndDropReturn => {
+export const useDragAndDrop = ({ items, onReorder }: UseDragAndDropProps): UseDragAndDropReturn => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverItem, setDragOverItem] = useState<string | null>(null);
 

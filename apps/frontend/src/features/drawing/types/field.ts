@@ -19,11 +19,7 @@ export interface FieldRowProps {
   onDragLeave: (e: DragEvent) => void;
   onDrop: (e: DragEvent, fieldId: string) => void;
   onDragEnd: () => void;
-  onUpdateField: (
-    fieldId: string,
-    key: keyof FieldType,
-    value: string | boolean,
-  ) => void;
+  onUpdateField: (fieldId: string, key: keyof FieldType, value: string | boolean) => void;
   onRemoveField: (fieldId: string) => void;
 }
 
@@ -31,11 +27,7 @@ export interface EditModeFieldProps {
   field: FieldType;
   onDragStart: (e: DragEvent, fieldId: string) => void;
   onDragEnd: () => void;
-  onUpdateField: (
-    fieldId: string,
-    key: keyof FieldType,
-    value: string | boolean,
-  ) => void;
+  onUpdateField: (fieldId: string, key: keyof FieldType, value: string | boolean) => void;
   onRemoveField: (fieldId: string) => void;
 }
 
@@ -56,11 +48,7 @@ export interface TypeSelectorProps {
 
 export interface FieldConstraintsProps {
   field: FieldType;
-  onUpdateField: (
-    fieldId: string,
-    key: keyof FieldType,
-    value: boolean,
-  ) => void;
+  onUpdateField: (fieldId: string, key: keyof FieldType, value: boolean) => void;
 }
 
 export interface FieldBadgesProps {

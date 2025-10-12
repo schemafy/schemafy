@@ -2,14 +2,7 @@ import type { ComponentType } from 'react';
 import { RelationshipSelector } from './RelationshipSelector';
 import type { RelationshipConfig } from '../types';
 import { Button } from '@/components';
-import {
-  Search,
-  Table,
-  MessageCircleMore,
-  Spline,
-  MousePointer2,
-  Hand,
-} from 'lucide-react';
+import { Search, Table, MessageCircleMore, Spline, MousePointer2, Hand } from 'lucide-react';
 
 interface ToolbarProps {
   setActiveTool: (toolId: string) => void;
@@ -85,10 +78,7 @@ export const Toolbar = ({
 
       {activeTool && TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2">
-          <RelationshipSelector
-            config={relationshipConfig}
-            onChange={onRelationshipConfigChange}
-          />
+          <RelationshipSelector config={relationshipConfig} onChange={onRelationshipConfigChange} />
         </div>
       )}
     </div>
@@ -104,9 +94,7 @@ const Tool = ({
   Icon: ComponentType<{ size: number; color: string }>;
   isActive: boolean;
 }) => {
-  const color = isActive
-    ? 'var(--color-schemafy-text)'
-    : 'var(--color-schemafy-tools)';
+  const color = isActive ? 'var(--color-schemafy-text)' : 'var(--color-schemafy-tools)';
 
   return (
     <Button

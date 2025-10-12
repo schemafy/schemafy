@@ -5,22 +5,22 @@ import { join } from 'node:path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule);
 
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.GRPC,
-    options: {
-      package: 'validation',
-      protoPath: [join(__dirname, '..', 'protos', 'validation.proto')],
-      url: process.env.GRPC_URL ?? '0.0.0.0:50051',
-      loader: {
-        enums: String,
-      },
-    },
-  });
+    app.connectMicroservice<MicroserviceOptions>({
+        transport: Transport.GRPC,
+        options: {
+            package: 'validation',
+            protoPath: [join(__dirname, '..', 'protos', 'validation.proto')],
+            url: process.env.GRPC_URL ?? '0.0.0.0:50051',
+            loader: {
+                enums: String,
+            },
+        },
+    });
 
-  await app.startAllMicroservices();
-  await app.listen(process.env.PORT ?? 3000);
+    await app.startAllMicroservices();
+    await app.listen(process.env.PORT ?? 3000);
 }
 
 void bootstrap();

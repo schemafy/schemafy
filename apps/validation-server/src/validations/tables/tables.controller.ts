@@ -8,23 +8,23 @@ import type { ValidateResult } from '../common';
 
 @Controller()
 export class TablesController {
-  constructor(private readonly service: TablesService) {}
+    constructor(private readonly service: TablesService) {}
 
-  @GrpcMethod('ValidationService', 'CreateTable')
-  createTable(req: CreateTableDto): ValidateResult {
-    const { database, schemaId, table } = req;
-    return this.service.createTable(database, schemaId, table);
-  }
+    @GrpcMethod('ValidationService', 'CreateTable')
+    createTable(req: CreateTableDto): ValidateResult {
+        const { database, schemaId, table } = req;
+        return this.service.createTable(database, schemaId, table);
+    }
 
-  @GrpcMethod('ValidationService', 'DeleteTable')
-  deleteTable(req: DeleteTableDto): ValidateResult {
-    const { database, schemaId, tableId } = req;
-    return this.service.deleteTable(database, schemaId, tableId);
-  }
+    @GrpcMethod('ValidationService', 'DeleteTable')
+    deleteTable(req: DeleteTableDto): ValidateResult {
+        const { database, schemaId, tableId } = req;
+        return this.service.deleteTable(database, schemaId, tableId);
+    }
 
-  @GrpcMethod('ValidationService', 'ChangeTableName')
-  changeTableName(req: ChangeTableNameDto): ValidateResult {
-    const { database, schemaId, tableId, newName } = req;
-    return this.service.changeTableName(database, schemaId, tableId, newName);
-  }
+    @GrpcMethod('ValidationService', 'ChangeTableName')
+    changeTableName(req: ChangeTableNameDto): ValidateResult {
+        const { database, schemaId, tableId, newName } = req;
+        return this.service.changeTableName(database, schemaId, tableId, newName);
+    }
 }

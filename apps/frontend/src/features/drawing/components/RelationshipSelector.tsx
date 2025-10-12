@@ -1,18 +1,11 @@
-import {
-  type RelationshipConfig,
-  type RelationshipType,
-  RELATIONSHIP_TYPES,
-} from '../types';
+import { type RelationshipConfig, type RelationshipType, RELATIONSHIP_TYPES } from '../types';
 
 interface RelationshipSelectorProps {
   config: RelationshipConfig;
   onChange: (config: RelationshipConfig) => void;
 }
 
-export const RelationshipSelector = ({
-  config,
-  onChange,
-}: RelationshipSelectorProps) => {
+export const RelationshipSelector = ({ config, onChange }: RelationshipSelectorProps) => {
   const handleTypeChange = (type: RelationshipType) => {
     onChange({ ...config, type });
   };
@@ -23,9 +16,7 @@ export const RelationshipSelector = ({
 
   return (
     <div className="bg-schemafy-bg border border-schemafy-light-gray rounded-lg p-3 min-w-48">
-      <div className="text-xs font-medium text-schemafy-text mb-3">
-        Relationship Type
-      </div>
+      <div className="text-xs font-medium text-schemafy-text mb-3">Relationship Type</div>
 
       <div className="space-y-2 mb-3">
         {Object.entries(RELATIONSHIP_TYPES).map(([key, typeConfig]) => (
@@ -37,10 +28,7 @@ export const RelationshipSelector = ({
               ${config.type === key ? 'bg-schemafy-secondary border border-schemafy-light-gray' : ''}
             `}
           >
-            <LinePreview
-              type={key as RelationshipType}
-              isDashed={config.isDashed}
-            />
+            <LinePreview type={key as RelationshipType} isDashed={config.isDashed} />
             {typeConfig.label}
           </button>
         ))}
@@ -61,25 +49,12 @@ export const RelationshipSelector = ({
   );
 };
 
-const LinePreview = ({
-  isDashed,
-}: {
-  type: RelationshipType;
-  isDashed: boolean;
-}) => {
+const LinePreview = ({ isDashed }: { type: RelationshipType; isDashed: boolean }) => {
   const color = 'var(--color-schemafy-dark-gray)';
 
   return (
     <svg width="24" height="4" className="flex-shrink-0">
-      <line
-        x1="0"
-        y1="2"
-        x2="24"
-        y2="2"
-        stroke={color}
-        strokeWidth="2"
-        strokeDasharray={isDashed ? '5 5' : 'none'}
-      />
+      <line x1="0" y1="2" x2="24" y2="2" stroke={color} strokeWidth="2" strokeDasharray={isDashed ? '5 5' : 'none'} />
     </svg>
   );
 };
