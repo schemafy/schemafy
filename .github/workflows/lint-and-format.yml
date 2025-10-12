@@ -59,17 +59,19 @@ jobs:
       run: npm run lint
       continue-on-error: true
     
-    - name: Apply formatting
-      run: npm run format
+    - name: Apply formatting (no cache)
+      run: npx turbo run format --force
       continue-on-error: true
     
     - name: Check for changes
       id: check-changes
       run: |
-        if git diff --quiet; then
-          echo "changes=false" >> $GITHUB_OUTPUT
-        else
+        echo "Checking for changes after formatting..."
+        git status --porcelain
+        if [ -n "$(git status --porcelain)" ]; then
           echo "changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "changes=false" >> $GITHUB_OUTPUT
         fi
     
     - name: Show changes
