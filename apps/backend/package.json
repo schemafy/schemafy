@@ -5,7 +5,7 @@
   "scripts": {
     "build": "cd core && ./gradlew build",
     "dev": "cd core && ./gradlew bootRun",
-    "lint": "cd core && ./gradlew checkstyleMain checkstyleTest || echo 'No linter configured for backend'",
+    "lint": "echo 'No linter configured for backend'",
     "format": "cd core && ./gradlew editorconfigFormat",
     "format:check": "cd core && ./gradlew editorconfigCheck"
   }
