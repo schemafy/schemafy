@@ -4,7 +4,7 @@ import { RelationshipsController } from './relationships.controller';
 import { RelationshipsService } from './relationships.service';
 
 @Module({
-  controllers: [RelationshipsController],
-  providers: [RelationshipsService],
+    controllers: [RelationshipsController],
+    providers: [RelationshipsService],
 })
 export class RelationshipsModule {}
