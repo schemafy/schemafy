@@ -1,0 +1,444 @@
+syntax = "proto3";
+
+package validation;
+
+enum DbVendor {
+    DB_VENDOR_UNSPECIFIED = 0;
+    MYSQL = 1;
+}
+
+enum IndexType {
+    INDEX_TYPE_UNSPECIFIED = 0;
+    BTREE = 1;
+    HASH = 2;
+    FULLTEXT = 3;
+    SPATIAL = 4;
+    OTHER = 5;
+}
+
+enum IndexSortDir {
+    INDEX_SORT_DIR_UNSPECIFIED = 0;
+    ASC = 1;
+    DESC = 2;
+}
+
+enum ConstraintKind {
+    CONSTRAINT_KIND_UNSPECIFIED = 0;
+    PRIMARY_KEY = 1;
+    UNIQUE = 2;
+    CHECK = 3;
+    DEFAULT = 4;
+    NOT_NULL = 5;
+}
+
+enum RelationshipKind {
+    RELATIONSHIP_KIND_UNSPECIFIED = 0;
+    IDENTIFYING = 1;
+    NON_IDENTIFYING = 2;
+}
+
+enum RelationshipCardinality {
+    RELATIONSHIP_CARDINALITY_UNSPECIFIED = 0;
+    ONE_TO_ONE = 1; // '1:1'
+    ONE_TO_MANY = 2; // '1:N'
+}
+
+// Defines FK behavior when parent record is deleted
+// NO_ACTION: Do nothing (may fail if DB enforces FK)
+// RESTRICT: Prevent deletion if child records exist
+// CASCADE: Automatically delete child records
+// SET_NULL: Set child FK to NULL
+// SET_DEFAULT: Set child FK to default value
+enum RelationshipOnDelete {
+    RELATIONSHIP_ON_DELETE_UNSPECIFIED = 0;
+    NO_ACTION = 1;
+    RESTRICT = 2;
+    CASCADE = 3;
+    SET_NULL = 4;
+    SET_DEFAULT = 5;
+}
+
+// Defines FK behavior when parent PK is updated
+// NO_ACTION: Do nothing (may fail if DB enforces FK)
+// RESTRICT: Prevent update if child records exist
+// CASCADE: Automatically update child FK values
+// SET_NULL: Set child FK to NULL
+// SET_DEFAULT: Set child FK to default value
+enum RelationshipOnUpdate {
+    RELATIONSHIP_ON_UPDATE_UNSPECIFIED = 0;
+    NO_ACTION_UPDATE = 1;
+    RESTRICT_UPDATE = 2;
+    CASCADE_UPDATE = 3;
+    SET_NULL_UPDATE = 4;
+    SET_DEFAULT_UPDATE = 5;
+}
+
+message Column {
+    string id = 1;
+    string tableId = 2;
+    string name = 3;
+    uint32 ordinalPosition = 4;
+    string dataType = 5;
+    optional string lengthScale = 6;
+    bool isAutoIncrement = 7;
+    optional string charset = 8;
+    optional string collation = 9;
+    optional string comment = 10;
+    string createdAt = 11;
+    string updatedAt = 12;
+    optional string deletedAt = 13;
+}
+
+message IndexColumn {
+    string id = 1;
+    string indexId = 2;
+    string columnId = 3;
+    uint32 seqNo = 4;
+    IndexSortDir sortDir = 5;
+}
+
+message Index {
+    string id = 1;
+    string tableId = 2;
+    string name = 3;
+    IndexType type = 4;
+    optional string comment = 5; // optional/nullable
+    repeated IndexColumn columns = 6;
+}
+
+message ConstraintColumn {
+    string id = 1;
+    string constraintId = 2;
+    string columnId = 3;
+    uint32 seqNo = 4;
+}
+
+message Constraint {
+    string id = 1;
+    string tableId = 2;
+    string name = 3;
+    ConstraintKind kind = 4;
+    optional string checkExpr = 5; // optional when kind == CHECK
+    optional string defaultExpr = 6; // optional when kind == DEFAULT
+    repeated ConstraintColumn columns = 7;
+}
+
+message RelationshipColumn {
+    string id = 1;
+    string relationshipId = 2;
+    string fkColumnId = 3;
+    string refColumnId = 4;
+    uint32 seqNo = 5;
+}
+
+message Relationship {
+    string id = 1;
+    string srcTableId = 2;
+    string tgtTableId = 3;
+    string name = 4;
+    RelationshipKind kind = 5;
+    RelationshipCardinality cardinality = 6;
+    RelationshipOnDelete onDelete = 7;
+    RelationshipOnUpdate onUpdate = 8;
+    bool fkEnforced = 9;
+    repeated RelationshipColumn columns = 10;
+}
+
+message Table {
+    string id = 1;
+    string schemaId = 2;
+    string name = 3;
+    optional string comment = 4; // optional/nullable
+    optional string tableOptions = 5;
+    string createdAt = 6;
+    string updatedAt = 7;
+    optional string deletedAt = 8; // optional/nullable
+    repeated Column columns = 9;
+    repeated Index indexes = 10;
+    repeated Constraint constraints = 11;
+    repeated Relationship relationships = 12;
+}
+
+message Schema {
+    string id = 1;
+    string projectId = 2;
+    DbVendor dbVendorId = 3;
+    string name = 4;
+    optional string charset = 5;
+    optional string collation = 6;
+    optional string vendorOption = 7;
+    string createdAt = 8;
+    string updatedAt = 9;
+    optional string deletedAt = 10; // optional/nullable
+    repeated Table tables = 11;
+}
+
+message Database {
+    string id = 1;
+    repeated Schema schemas = 2;
+}
+
+message CreateColumnRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    Column column = 4;
+}
+
+message DeleteColumnRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string columnId = 4;
+}
+
+message ChangeColumnNameRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string columnId = 4;
+    string newName = 5;
+}
+
+message ChangeColumnTypeRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string columnId = 4;
+    string dataType = 5;
+    optional string lengthScale = 6;
+}
+
+message ChangeColumnPositionRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string columnId = 4;
+    uint32 newPosition = 5;
+}
+
+message ChangeColumnNullableRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string columnId = 4;
+    bool nullable = 5;
+}
+
+message CreateConstraintRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    Constraint constraint = 4;
+}
+
+message DeleteConstraintRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string constraintId = 4;
+}
+
+message ChangeConstraintNameRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string constraintId = 4;
+    string newName = 5;
+}
+
+message AddColumnToConstraintRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string constraintId = 4;
+    ConstraintColumn constraintColumn = 5;
+}
+
+message RemoveColumnFromConstraintRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string constraintId = 4;
+    string constraintColumnId = 5;
+}
+
+message CreateIndexRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    Index index = 4;
+}
+
+message DeleteIndexRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string indexId = 4;
+}
+
+message ChangeIndexNameRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string indexId = 4;
+    string newName = 5;
+}
+
+message AddColumnToIndexRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string indexId = 4;
+    IndexColumn indexColumn = 5;
+}
+
+message RemoveColumnFromIndexRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string indexId = 4;
+    string indexColumnId = 5;
+}
+
+message CreateRelationshipRequest {
+    Database database = 1;
+    string schemaId = 2;
+    Relationship relationship = 3;
+}
+
+message DeleteRelationshipRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string relationshipId = 3;
+}
+
+message ChangeRelationshipNameRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string relationshipId = 3;
+    string newName = 4;
+}
+
+message ChangeRelationshipCardinalityRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string relationshipId = 3;
+    RelationshipCardinality cardinality = 4;
+}
+
+message AddColumnToRelationshipRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string relationshipId = 3;
+    RelationshipColumn relationshipColumn = 4;
+}
+
+message RemoveColumnFromRelationshipRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string relationshipId = 3;
+    string relationshipColumnId = 4;
+}
+
+message ChangeSchemaNameRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string newName = 3;
+}
+
+message CreateSchemaRequest {
+    Database database = 1;
+    Schema schema = 2;
+}
+
+message DeleteSchemaRequest {
+    Database database = 1;
+    string schemaId = 2;
+}
+
+message CreateTableRequest {
+    Database database = 1;
+    string schemaId = 2;
+    Table table = 3;
+}
+
+message DeleteTableRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+}
+
+message ChangeTableNameRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string tableId = 3;
+    string newName = 4;
+}
+
+message ErrorDetail {
+    string code = 1;
+    string message = 2;
+    map<string, string> meta = 3;
+}
+
+message ValidateSuccess {
+    Database database = 1;
+}
+
+message ValidateFailure {
+    repeated ErrorDetail errors = 1;
+}
+
+message ValidateResult {
+    oneof result {
+        ValidateSuccess success = 1;
+        ValidateFailure failure = 2;
+    }
+}
+
+
+service ValidationService {
+    // Column
+    rpc CreateColumn (CreateColumnRequest) returns (ValidateResult);
+    rpc DeleteColumn (DeleteColumnRequest) returns (ValidateResult);
+    rpc ChangeColumnName (ChangeColumnNameRequest) returns (ValidateResult);
+    rpc ChangeColumnType (ChangeColumnTypeRequest) returns (ValidateResult);
+    rpc ChangeColumnPosition (ChangeColumnPositionRequest) returns (ValidateResult);
+    rpc ChangeColumnNullable (ChangeColumnNullableRequest) returns (ValidateResult);
+
+    // Constraint
+    rpc CreateConstraint (CreateConstraintRequest) returns (ValidateResult);
+    rpc DeleteConstraint (DeleteConstraintRequest) returns (ValidateResult);
+    rpc ChangeConstraintName (ChangeConstraintNameRequest) returns (ValidateResult);
+    rpc AddColumnToConstraint (AddColumnToConstraintRequest) returns (ValidateResult);
+    rpc RemoveColumnFromConstraint (RemoveColumnFromConstraintRequest) returns (ValidateResult);
+
+    // Index
+    rpc CreateIndex (CreateIndexRequest) returns (ValidateResult);
+    rpc DeleteIndex (DeleteIndexRequest) returns (ValidateResult);
+    rpc ChangeIndexName (ChangeIndexNameRequest) returns (ValidateResult);
+    rpc AddColumnToIndex (AddColumnToIndexRequest) returns (ValidateResult);
+    rpc RemoveColumnFromIndex (RemoveColumnFromIndexRequest) returns (ValidateResult);
+
+    // Relationship
+    rpc CreateRelationship (CreateRelationshipRequest) returns (ValidateResult);
+    rpc DeleteRelationship (DeleteRelationshipRequest) returns (ValidateResult);
+    rpc ChangeRelationshipName (ChangeRelationshipNameRequest) returns (ValidateResult);
+    rpc ChangeRelationshipCardinality (ChangeRelationshipCardinalityRequest) returns (ValidateResult);
+    rpc AddColumnToRelationship (AddColumnToRelationshipRequest) returns (ValidateResult);
+    rpc RemoveColumnFromRelationship (RemoveColumnFromRelationshipRequest) returns (ValidateResult);
+
+    // Schema
+    rpc CreateSchema (CreateSchemaRequest) returns (ValidateResult);
+    rpc DeleteSchema (DeleteSchemaRequest) returns (ValidateResult);
+    rpc ChangeSchemaName (ChangeSchemaNameRequest) returns (ValidateResult);
+
+    // Table
+    rpc CreateTable (CreateTableRequest) returns (ValidateResult);
+    rpc DeleteTable (DeleteTableRequest) returns (ValidateResult);
+    rpc ChangeTableName (ChangeTableNameRequest) returns (ValidateResult);
+
+    // Full validation
+    rpc ValidateDatabase (Database) returns (ValidateResult);
+}
