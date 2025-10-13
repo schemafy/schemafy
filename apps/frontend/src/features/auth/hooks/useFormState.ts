@@ -1,10 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { FormValues, ValidationRules } from '../types';
 
-export const useFormState = <T extends FormValues>(
-  initialForm: T,
-  validationRules: ValidationRules<T> = {},
-) => {
+export const useFormState = <T extends FormValues>(initialForm: T, validationRules: ValidationRules<T> = {}) => {
   const [form, setForm] = useState<T>(initialForm);
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
   const touchedRef = useRef<Partial<Record<keyof T, boolean>>>({});

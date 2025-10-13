@@ -12,6 +12,8 @@
     "infra:up": "podman compose up -d mariadb",
     "infra:down": "podman compose down",
     "lint": "turbo run lint",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
     "docs": "./gradlew :apps:backend:core:asciidoctor && open apps/backend/core/build/docs/asciidoc/api-guide.html",
     "docs:build": "./gradlew :apps:backend:core:asciidoctor",
     "docs:open": "open apps/backend/core/build/docs/asciidoc/api-guide.html"

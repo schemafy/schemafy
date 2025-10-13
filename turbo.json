@@ -10,6 +10,8 @@
       "persistent": true,
       "dependsOn": []
     },
-    "lint": {}
+    "lint": {},
+    "format": {},
+    "format:check": {}
   }
 }

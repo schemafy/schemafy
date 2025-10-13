@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib';
 import { logoImg } from '@/assets';
-import { DefaultContents, CanvasContents } from './Contents';
+import { LandingContents, CanvasContents } from './Contents';
 
 export const Header = ({ isCanvasPage }: { isCanvasPage: boolean }) => {
   return (
@@ -18,7 +18,7 @@ export const Header = ({ isCanvasPage }: { isCanvasPage: boolean }) => {
             <h1 className="font-heading-md">Schemafy</h1>
           </div>
         </Link>
-        {isCanvasPage ? <CanvasContents /> : <DefaultContents />}
+        {isCanvasPage ? <CanvasContents /> : <LandingContents />}
       </div>
     </header>
   );

@@ -7,15 +7,8 @@ export const SignInPage = () => {
       <h2 className="font-heading-xl mb-3 mt-5">Sign in to your account</h2>
       <SignInForm />
       <div className="flex gap-2 pt-1 pb-3 items-center justify-center">
-        <p className="font-body-sm text-schemafy-dark-gray">
-          Don't have an account?
-        </p>
-        <Button
-          variant={'none'}
-          size={'none'}
-          className="text-schemafy-dark-gray"
-          to="/signup"
-        >
+        <p className="font-body-sm text-schemafy-dark-gray">Don't have an account?</p>
+        <Button variant={'none'} size={'none'} className="text-schemafy-dark-gray" to="/signup">
           Sign Up
         </Button>
       </div>
