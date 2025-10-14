@@ -56,7 +56,7 @@ public class UserController {
                     String userId = jwtProvider.extractUserId(refreshToken);
                     String tokenType = jwtProvider.getTokenType(refreshToken);
 
-                    if (!"REFRESH".equals(tokenType)) {
+                    if (!JwtProvider.ACCESS_TOKEN.equals(tokenType)) {
                         throw new BusinessException(ErrorCode.INVALID_TOKEN_TYPE);
                     }
 

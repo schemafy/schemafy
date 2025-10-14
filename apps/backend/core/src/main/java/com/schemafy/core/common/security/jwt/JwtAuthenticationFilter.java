@@ -56,7 +56,7 @@ public class JwtAuthenticationFilter implements WebFilter {
             String userId = jwtProvider.extractUserId(token);
             String tokenType = jwtProvider.getTokenType(token);
 
-            if (!"ACCESS".equals(tokenType)) {
+            if (!JwtProvider.ACCESS_TOKEN.equals(tokenType)) {
                 return AuthenticationResult.error(JwtErrorCode.INVALID_TOKEN_TYPE);
             }
 

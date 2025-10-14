@@ -52,7 +52,7 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
         when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token)).thenReturn("ACCESS");
+        when(jwtProvider.getTokenType(token)).thenReturn(JwtProvider.ACCESS_TOKEN);
         when(jwtProvider.validateToken(token, userId)).thenReturn(true);
 
         // When & Then
@@ -112,7 +112,7 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
         when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token)).thenReturn("ACCESS");
+        when(jwtProvider.getTokenType(token)).thenReturn(JwtProvider.ACCESS_TOKEN);
         when(jwtProvider.validateToken(token, userId)).thenReturn(false);
 
         // When & Then
@@ -133,7 +133,7 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
         when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token)).thenReturn("REFRESH");
+        when(jwtProvider.getTokenType(token)).thenReturn(JwtProvider.REFRESH_TOKEN);
 
         // When & Then
         StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))

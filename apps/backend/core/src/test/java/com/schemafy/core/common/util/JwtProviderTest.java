@@ -48,7 +48,7 @@ class JwtProviderTest {
         // Then
         assertThat(token).isNotNull().isNotEmpty();
         assertThat(jwtProvider.extractUserId(token)).isEqualTo(userId);
-        assertThat(jwtProvider.getTokenType(token)).isEqualTo("ACCESS");
+        assertThat(jwtProvider.getTokenType(token)).isEqualTo(JwtProvider.ACCESS_TOKEN);
     }
 
     @Test
@@ -63,7 +63,7 @@ class JwtProviderTest {
         // Then
         assertThat(token).isNotNull().isNotEmpty();
         assertThat(jwtProvider.extractUserId(token)).isEqualTo(userId);
-        assertThat(jwtProvider.getTokenType(token)).isEqualTo("REFRESH");
+        assertThat(jwtProvider.getTokenType(token)).isEqualTo(JwtProvider.REFRESH_TOKEN);
     }
 
     @Test
@@ -227,7 +227,7 @@ class JwtProviderTest {
         String refreshToken = jwtProvider.generateRefreshToken(userId);
 
         // Then
-        assertThat(jwtProvider.getTokenType(accessToken)).isEqualTo("ACCESS");
-        assertThat(jwtProvider.getTokenType(refreshToken)).isEqualTo("REFRESH");
+        assertThat(jwtProvider.getTokenType(accessToken)).isEqualTo(JwtProvider.ACCESS_TOKEN);
+        assertThat(jwtProvider.getTokenType(refreshToken)).isEqualTo(JwtProvider.REFRESH_TOKEN);
     }
 }
