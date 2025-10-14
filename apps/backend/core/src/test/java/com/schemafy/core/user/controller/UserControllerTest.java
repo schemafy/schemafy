@@ -19,6 +19,7 @@ import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.jayway.jsonpath.JsonPath;
+import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
@@ -32,6 +33,9 @@ import reactor.test.StepVerifier;
 @AutoConfigureWebTestClient
 @DisplayName("MemberController 통합 테스트")
 class UserControllerTest {
+    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+            "v1.0");
+
     @Autowired
     private WebTestClient webTestClient;
 
@@ -50,7 +54,7 @@ class UserControllerTest {
         SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
 
         // when & then
-        webTestClient.post().uri("/api/v1/users/signup")
+        webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -80,7 +84,7 @@ class UserControllerTest {
     @MethodSource("invalidSignUpRequests")
     void signUpFail(SignUpRequest request) {
         // when & then
-        webTestClient.post().uri("/api/v1/users/signup")
+        webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -106,7 +110,7 @@ class UserControllerTest {
         // given
         SignUpRequest signUpRequest = new SignUpRequest("test2@example.com", "Test User 2", "password");
 
-        EntityExchangeResult<byte[]> result = webTestClient.post().uri("/api/v1/users/signup")
+        EntityExchangeResult<byte[]> result = webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -117,7 +121,7 @@ class UserControllerTest {
         String userId = JsonPath.read(responseBody, "$.result.id");
 
         // when & then
-        webTestClient.get().uri("/api/v1/users/{userId}", userId)
+        webTestClient.get().uri(API_BASE_PATH + "/users/{userId}", userId)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -133,7 +137,7 @@ class UserControllerTest {
         String nonExistentUserId = UlidGenerator.generate();
 
         // when & then
-        webTestClient.get().uri("/api/v1/users/{userId}", nonExistentUserId)
+        webTestClient.get().uri(API_BASE_PATH + "/users/{userId}", nonExistentUserId)
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectBody()
@@ -146,7 +150,7 @@ class UserControllerTest {
     void loginSuccess() {
         // given
         SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
-        webTestClient.post().uri("/api/v1/users/signup")
+        webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -155,7 +159,7 @@ class UserControllerTest {
         LoginRequest loginRequest = new LoginRequest("test@example.com", "password");
 
         // when & then
-        webTestClient.post().uri("/api/v1/users/login")
+        webTestClient.post().uri(API_BASE_PATH + "/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
                 .exchange()
@@ -169,7 +173,7 @@ class UserControllerTest {
     @ParameterizedTest
     @MethodSource("invalidLoginRequests")
     void loginFail(LoginRequest request) {
-        webTestClient.post().uri("/api/v1/users/login")
+        webTestClient.post().uri(API_BASE_PATH + "/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
@@ -194,7 +198,7 @@ class UserControllerTest {
         LoginRequest loginRequest = new LoginRequest("nonexistent@example.com", "password");
 
         // when & then
-        webTestClient.post().uri("/api/v1/users/login")
+        webTestClient.post().uri(API_BASE_PATH + "/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
                 .exchange()
@@ -209,7 +213,7 @@ class UserControllerTest {
     void loginFailPasswordMismatch() {
         // given
         SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
-        webTestClient.post().uri("/api/v1/users/signup")
+        webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -218,7 +222,7 @@ class UserControllerTest {
         LoginRequest loginRequest = new LoginRequest("test@example.com", "wrong_password");
 
         // when & then
-        webTestClient.post().uri("/api/v1/users/login")
+        webTestClient.post().uri(API_BASE_PATH + "/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
                 .exchange()
