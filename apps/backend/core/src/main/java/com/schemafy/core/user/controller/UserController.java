@@ -1,5 +1,6 @@
 package com.schemafy.core.user.controller;
 
+import com.schemafy.core.common.annotation.ApiVersion;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -12,19 +13,22 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @RestController
-@RequestMapping(ApiPath.USERS)
+@RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
     private final JwtTokenIssuer jwtTokenIssuer;
 
-    @PostMapping("/signup")
-    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> signUp(@Valid @RequestBody SignUpRequest request) {
+    @PostMapping("/users/signup")
+    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> signUp(
+            @Valid @RequestBody SignUpRequest request) {
         return userService.signUp(request.toCommand())
                 .map(user -> jwtTokenIssuer.issueTokens(
                         user.getId(),
@@ -32,8 +36,9 @@ public class UserController {
                 ));
     }
 
-    @PostMapping("/login")
-    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> login(@Valid @RequestBody LoginRequest request) {
+    @PostMapping("/users/login")
+    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> login(
+            @Valid @RequestBody LoginRequest request) {
         return userService.login(request.toCommand())
                 .map(user -> jwtTokenIssuer.issueTokens(
                         user.getId(),
@@ -41,7 +46,7 @@ public class UserController {
                 ));
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/users/refresh")
     public Mono<ResponseEntity<BaseResponse<Void>>> refresh(ServerHttpRequest request) {
         return Mono.fromCallable(() -> extractRefreshTokenFromCookie(request))
                 .flatMap(userService::getUserIdFromRefreshToken)
@@ -56,8 +61,9 @@ public class UserController {
         return refreshTokenCookie.getValue();
     }
 
-    @GetMapping("/{userId}")
-    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMember(@PathVariable String userId) {
+    @GetMapping("/users/{userId}")
+    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getUser(
+            @PathVariable String userId) {
         return userService.getUserById(userId)
                 .map(BaseResponse::success)
                 .map(ResponseEntity::ok);

@@ -20,6 +20,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.schemafy.core.TestSecurityConfig;
+import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.ulid.service.UlidService;
 
 import reactor.core.publisher.Mono;
@@ -29,6 +30,8 @@ import reactor.core.publisher.Mono;
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
+    private static final String API_BASE_PATH = ApiPath.AUTH_API.replace("{version}",
+            "v1.0");
 
     @MockitoBean
     WebExchangeErrorWriter errorResponseWriter;
@@ -51,7 +54,7 @@ class UlidControllerTest {
         // When & Then
         webTestClient
                 .get()
-                .uri("/api/ulid/generate")
+                .uri(API_BASE_PATH + "/ulid/generate")
                 .header("Accept", "application/json")
                 .exchange()
                 .expectStatus().isOk()

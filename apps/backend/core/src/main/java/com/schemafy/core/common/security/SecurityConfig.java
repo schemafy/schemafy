@@ -1,5 +1,6 @@
 package com.schemafy.core.common.security;
 
+import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
@@ -27,13 +28,14 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final CorsProperties corsProperties;
+    private static final String API_BASE_PATH = ApiPath.API.replace("{version}", "v1.0");
 
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/api/v1/auth/**",
-            "/api/v1/public/**",
-            "/api/v1/users/signup",
-            "/api/v1/users/login",
-            "/api/v1/users/refresh",
+            API_BASE_PATH +"/auth/**",
+            API_BASE_PATH + "/public/**",
+            API_BASE_PATH + "/users/signup",
+            API_BASE_PATH + "/users/login",
+            API_BASE_PATH + "/users/refresh",
             "/actuator/health",
             "/actuator/info",
             "/webjars/**",
