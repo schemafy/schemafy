@@ -45,7 +45,7 @@ public class JwtAuthenticationFilter implements WebFilter {
                         return chain.filter(exchange)
                                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authResult.getAuthentication()));
                     } else {
-                        return handleJwtError(exchange, authResult.getErrorType(), authResult.getErrorMessage());
+                        return handleJwtError(exchange, authResult.getErrorType(), authResult.getErrorMessage(), authResult.getStatus());
                     }
                 })
                 .onErrorResume(e -> handleUnexpectedError(exchange));
@@ -57,7 +57,7 @@ public class JwtAuthenticationFilter implements WebFilter {
             String tokenType = jwtProvider.getTokenType(token);
 
             if (!JwtProvider.ACCESS_TOKEN.equals(tokenType)) {
-                return AuthenticationResult.error(JwtErrorCode.INVALID_TOKEN_TYPE);
+                return AuthenticationResult.error(JwtErrorCode.INVALID_ACCESS_TOKEN_TYPE);
             }
 
             if (!jwtProvider.validateToken(token, userId)) {
@@ -78,10 +78,10 @@ public class JwtAuthenticationFilter implements WebFilter {
         }
     }
 
-    private Mono<Void> handleJwtError(ServerWebExchange exchange, String errorCode, String errorMessage) {
+    private Mono<Void> handleJwtError(ServerWebExchange exchange, String errorCode, String errorMessage, HttpStatus status) {
         return errorResponseWriter.writeErrorResponse(
                 exchange,
-                HttpStatus.UNAUTHORIZED,
+                status,
                 errorCode,
                 errorMessage
         );
@@ -90,7 +90,7 @@ public class JwtAuthenticationFilter implements WebFilter {
     private Mono<Void> handleJwtError(ServerWebExchange exchange, JwtErrorCode jwtErrorCode) {
         return errorResponseWriter.writeErrorResponse(
                 exchange,
-                HttpStatus.UNAUTHORIZED,
+                jwtErrorCode.getStatus(),
                 jwtErrorCode.getCode(),
                 jwtErrorCode.getMessage()
         );
@@ -113,23 +113,25 @@ public class JwtAuthenticationFilter implements WebFilter {
     private static class AuthenticationResult {
         private final boolean valid;
         private final UsernamePasswordAuthenticationToken authentication;
+        private final HttpStatus status;
         private final String errorType;
         private final String errorMessage;
 
         private AuthenticationResult(boolean valid, UsernamePasswordAuthenticationToken authentication,
-                                     String errorType, String errorMessage) {
+                                     HttpStatus status, String errorType, String errorMessage) {
             this.valid = valid;
             this.authentication = authentication;
+            this.status = status;
             this.errorType = errorType;
             this.errorMessage = errorMessage;
         }
 
         static AuthenticationResult success(UsernamePasswordAuthenticationToken authentication) {
-            return new AuthenticationResult(true, authentication, null, null);
+            return new AuthenticationResult(true, authentication, null, null, null);
         }
 
         static AuthenticationResult error(JwtErrorCode errorCode) {
-            return new AuthenticationResult(false, null, errorCode.getCode(), errorCode.getMessage());
+            return new AuthenticationResult(false, null, errorCode.getStatus(), errorCode.getCode(), errorCode.getMessage());
         }
 
         boolean isValid() {
@@ -138,6 +140,10 @@ public class JwtAuthenticationFilter implements WebFilter {
 
         UsernamePasswordAuthenticationToken getAuthentication() {
             return authentication;
+        }
+
+        HttpStatus getStatus() {
+            return status;
         }
 
         String getErrorType() {
