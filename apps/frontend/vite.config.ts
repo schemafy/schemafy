@@ -12,10 +12,7 @@ export default defineConfig(({ command }) => {
 
   // Only add validator alias in development for faster build times
   if (isDev) {
-    aliases['@schemafy/validator'] = path.resolve(
-      __dirname,
-      '../../packages/validator/src',
-    );
+    aliases['@schemafy/validator'] = path.resolve(__dirname, '../../packages/validator/src');
   }
 
   return {
@@ -25,11 +22,9 @@ export default defineConfig(({ command }) => {
     },
     server: isDev
       ? {
+          port: 3000,
           fs: {
-            allow: [
-              path.resolve(__dirname),
-              path.resolve(__dirname, '../../packages/validator/src'),
-            ],
+            allow: [path.resolve(__dirname), path.resolve(__dirname, '../../packages/validator/src')],
           },
         }
       : undefined,
