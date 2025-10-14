@@ -3,7 +3,6 @@ package com.schemafy.core.user.controller;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.service.UserService;
@@ -23,7 +22,6 @@ import reactor.core.publisher.Mono;
 public class UserController {
     private final UserService userService;
     private final JwtTokenIssuer jwtTokenIssuer;
-    private final JwtProvider jwtProvider;
 
     @PostMapping("/signup")
     public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> signUp(@Valid @RequestBody SignUpRequest request) {
@@ -45,31 +43,17 @@ public class UserController {
 
     @PostMapping("/refresh")
     public Mono<ResponseEntity<BaseResponse<Void>>> refresh(ServerHttpRequest request) {
-        return Mono.fromCallable(() -> {
-                    // HttpOnly Cookie에서 Refresh Token 추출
-                    var refreshTokenCookie = request.getCookies().getFirst("refreshToken");
-                    if (refreshTokenCookie == null) {
-                        throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
-                    }
+        return Mono.fromCallable(() -> extractRefreshTokenFromCookie(request))
+                .flatMap(userService::getUserIdFromRefreshToken)
+                .map(userId -> jwtTokenIssuer.issueTokens(userId, BaseResponse.success(null)));
+    }
 
-                    String refreshToken = refreshTokenCookie.getValue();
-                    String userId = jwtProvider.extractUserId(refreshToken);
-                    String tokenType = jwtProvider.getTokenType(refreshToken);
-
-                    if (!JwtProvider.REFRESH_TOKEN.equals(tokenType)) {
-                        throw new BusinessException(ErrorCode.INVALID_TOKEN_TYPE);
-                    }
-
-                    if (!jwtProvider.validateToken(refreshToken, userId)) {
-                        throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
-                    }
-
-                    return userId;
-                })
-                .map(userId -> jwtTokenIssuer.issueTokens(userId, BaseResponse.<Void>success(null)))
-                .onErrorResume(BusinessException.class, Mono::error)
-                .onErrorMap(e -> !(e instanceof BusinessException),
-                        e -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
+    private String extractRefreshTokenFromCookie(ServerHttpRequest request) {
+        var refreshTokenCookie = request.getCookies().getFirst("refreshToken");
+        if (refreshTokenCookie == null) {
+            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
+        }
+        return refreshTokenCookie.getValue();
     }
 
     @GetMapping("/{userId}")
