@@ -16,7 +16,7 @@ const buttonVariants = cva(
         none: 'text-schemafy-text font-overline-sm',
       },
       size: {
-        dropdown: 'py-2 font-overline-xs',
+        dropdown: 'py-2 font-overline-xs min-w-[5rem]',
         default: 'px-4 h-10',
         none: '',
       },
