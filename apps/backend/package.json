@@ -6,8 +6,8 @@
     "build": "cd core && ./gradlew build",
     "dev": "cd core && ./gradlew bootRun",
     "lint": "echo 'No linter configured for backend'",
-    "format": "cd core && ./gradlew editorconfigFormat",
-    "format:check": "cd core && ./gradlew editorconfigCheck",
+    "format": "cd core && ./gradlew spotlessApply",
+    "format:check": "cd core && ./gradlew spotlessCheck",
     "test": "cd core && ./gradlew test"
   }
 }

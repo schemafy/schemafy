@@ -3,7 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '3.5.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
-	id 'org.ec4j.editorconfig' version '0.1.0'
+	id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'com.schemafy'
@@ -91,11 +91,16 @@ tasks.named('asciidoctor') {
 	attributes 'snippets': snippetsDir
 }
 
-editorconfig {
-	includes = ['src/**/*.java']
-	excludes = ['build/**', '.gradle/**']
+spotless {
+	java {
+		target 'src/**/*.java'
+		eclipse().configFile('java-formatter.xml')
+		removeUnusedImports()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
 }
 
 tasks.named('check') {
-	dependsOn 'editorconfigCheck'
+	dependsOn 'spotlessCheck'
 }
