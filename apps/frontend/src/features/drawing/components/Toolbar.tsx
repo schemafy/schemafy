@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import { RelationshipSelector } from './RelationshipSelector';
 import type { RelationshipConfig } from '../types';
-import { Button } from '@/components';
+import { Button, Tooltip, TooltipTrigger, TooltipContent } from '@/components';
 import { Search, Table, MessageCircleMore, Spline, MousePointer2, Hand } from 'lucide-react';
 
 interface ToolbarProps {
@@ -14,33 +14,39 @@ interface ToolbarProps {
 const TOOLS = [
   {
     id: 'pointer',
+    name: 'Pointer',
     label: 'MousePointer',
     icon: MousePointer2,
   },
   {
     id: 'hand',
+    name: 'Hand',
     label: 'Hand',
     icon: Hand,
   },
   {
     id: 'table',
+    name: 'Add Entity',
     label: 'Table',
     icon: Table,
     action: 'addTable',
   },
   {
     id: 'relationship',
+    name: 'Change Relationship',
     label: 'RelationshipSelector',
     icon: Spline,
     isRelationship: true,
   },
   {
     id: 'comment',
+    name: 'Add Comment',
     label: 'Comment',
     icon: MessageCircleMore,
   },
   {
     id: 'search',
+    name: 'Search Entities',
     label: 'Search',
     icon: Search,
   },
@@ -72,6 +78,7 @@ export const Toolbar = ({
           key={tool.id}
           onClick={() => handleToolClick(tool.id)}
           Icon={tool.icon}
+          name={tool.name}
           isActive={activeTool === tool.id}
         />
       ))}
@@ -88,25 +95,34 @@ export const Toolbar = ({
 const Tool = ({
   onClick,
   Icon,
+  name,
   isActive,
 }: {
   onClick: () => void;
   Icon: ComponentType<{ size: number; color: string }>;
+  name: string;
   isActive: boolean;
 }) => {
   const color = isActive ? 'var(--color-schemafy-text)' : 'var(--color-schemafy-tools)';
 
   return (
-    <Button
-      onClick={onClick}
-      variant={'none'}
-      size={'none'}
-      className={`
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          onClick={onClick}
+          variant={'none'}
+          size={'none'}
+          className={`
         p-2 rounded-md transition-colors duration-200 
         hover:bg-schemafy-secondary
       `}
-    >
-      <Icon size={16} color={color} />
-    </Button>
+        >
+          <Icon size={16} color={color} />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{name}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 };
