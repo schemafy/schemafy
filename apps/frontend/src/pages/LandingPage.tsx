@@ -18,10 +18,13 @@ const Description = () => {
       <img src={landingPageImages.hero.description} alt="description image" />
       <div className="inline-flex flex-col justify-center items-start gap-8">
         <div className="flex flex-col justify-start items-start gap-2">
-          <h2 className="font-display-lg">Design ERDs with AI assistance and collaboration features</h2>
+          <h2 className="font-display-lg">
+            Design ERDs with AI assistance and collaboration features
+          </h2>
           <p className="font-body-md">
-            Schemafy is a tool for drawing ERDs with AI assistance and collaboration features. It helps you design
-            databases faster and more efficiently.
+            Schemafy is a tool for drawing ERDs with AI assistance and
+            collaboration features. It helps you design databases faster and
+            more efficiently.
           </p>
         </div>
         <Button fullWidth>Get Started</Button>
@@ -35,12 +38,14 @@ const Features = () => {
     {
       icon: landingPageImages.features.aiAssistant,
       title: 'AI Assistance',
-      description: 'Get AI-powered suggestions for your ERDs, making the design process faster and more intuitive.',
+      description:
+        'Get AI-powered suggestions for your ERDs, making the design process faster and more intuitive.',
     },
     {
       icon: landingPageImages.features.collaboration,
       title: 'Collaboration',
-      description: 'Collaborate with your team in real-time, ensuring everyone is on the same page.',
+      description:
+        'Collaborate with your team in real-time, ensuring everyone is on the same page.',
     },
     {
       icon: landingPageImages.features.use,
@@ -54,7 +59,9 @@ const Features = () => {
     <section className="inline-flex flex-col px-4 py-10 gap-10">
       <div className="flex flex-col justify-between">
         <h2 className="font-display-md">Benefits</h2>
-        <p className="font-body-md">Experience the benefits of using Schemafy for your ERD design needs.</p>
+        <p className="font-body-md">
+          Experience the benefits of using Schemafy for your ERD design needs.
+        </p>
       </div>
       <div className="flex flex-grow gap-3">
         {features.map((feature) => (
@@ -79,17 +86,20 @@ const Benefits = () => {
     {
       image: landingPageImages.benefits.faster,
       title: 'Faster Design',
-      description: 'Design ERDs in minutes with AI assistance, saving you valuable time.',
+      description:
+        'Design ERDs in minutes with AI assistance, saving you valuable time.',
     },
     {
       image: landingPageImages.benefits.accuracy,
       title: 'Improved Accuracy',
-      description: 'Reduce errors and ensure accuracy with AI-powered suggestions and validation.',
+      description:
+        'Reduce errors and ensure accuracy with AI-powered suggestions and validation.',
     },
     {
       image: landingPageImages.benefits.teamwork,
       title: 'Enhanced Teamwork',
-      description: 'Work together seamlessly with real-time collaboration features, boosting team productivity.',
+      description:
+        'Work together seamlessly with real-time collaboration features, boosting team productivity.',
     },
   ];
 
@@ -97,12 +107,22 @@ const Benefits = () => {
     <section className="inline-flex flex-col px-4 py-10 gap-10">
       <div className="flex flex-col justify-between">
         <h2 className="font-display-md">Benefits</h2>
-        <p className="font-body-md">Schemafy offers a range of features to help you design ERDs more efficiently.</p>
+        <p className="font-body-md">
+          Schemafy offers a range of features to help you design ERDs more
+          efficiently.
+        </p>
       </div>
       <div className="flex flex-grow gap-3">
         {benefits.map((benefit) => (
-          <article key={benefit.title} className="flex flex-col gap-3 w-[300px]">
-            <img src={benefit.image} alt={benefit.title} className="self-stretch" />
+          <article
+            key={benefit.title}
+            className="flex flex-col gap-3 w-[300px]"
+          >
+            <img
+              src={benefit.image}
+              alt={benefit.title}
+              className="self-stretch"
+            />
             <div className="flex flex-col">
               <h3 className="font-heading-sm">{benefit.title}</h3>
               <p className="font-body-sm">{benefit.description}</p>
@@ -119,7 +139,9 @@ const ReadyToUse = () => {
     <section className="flex flex-col py-20 px-10 gap-8 items-center">
       <div className="flex flex-col gap-2 items-center">
         <h3 className="font-display-md">Ready to design your next database?</h3>
-        <p className="font-body-md">Start using Schemafy today and experience the difference.</p>
+        <p className="font-body-md">
+          Start using Schemafy today and experience the difference.
+        </p>
       </div>
       <Button>Get Started</Button>
     </section>

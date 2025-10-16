@@ -7,7 +7,8 @@ import java.time.Instant;
 public class UlidGenerator {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final char[] BASE32_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
+    private static final char[] BASE32_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+            .toCharArray();
 
     public static String generate() {
         long timestamp = Instant.now().toEpochMilli();
@@ -41,13 +42,15 @@ public class UlidGenerator {
             bufferLength += 8;
 
             while (bufferLength >= 5) {
-                result.append(BASE32_ALPHABET[(buffer >>> (bufferLength - 5)) & 0x1F]);
+                result.append(BASE32_ALPHABET[(buffer >>> (bufferLength - 5))
+                        & 0x1F]);
                 bufferLength -= 5;
             }
         }
 
         if (bufferLength > 0) {
-            result.append(BASE32_ALPHABET[(buffer << (5 - bufferLength)) & 0x1F]);
+            result.append(
+                    BASE32_ALPHABET[(buffer << (5 - bufferLength)) & 0x1F]);
         }
 
         return result.toString();
@@ -94,7 +97,8 @@ public class UlidGenerator {
         for (char c : base32.toCharArray()) {
             int index = charToIndex[c];
             if (index == -1) {
-                throw new IllegalArgumentException("Invalid Base32 character: " + c);
+                throw new IllegalArgumentException(
+                        "Invalid Base32 character: " + c);
             }
 
             bitBuffer = (bitBuffer << 5) | index;

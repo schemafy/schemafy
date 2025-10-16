@@ -4,6 +4,7 @@ import com.schemafy.core.user.repository.entity.User;
 
 public record UserInfoResponse(String id, String email, String name) {
     public static UserInfoResponse from(User user) {
-        return new UserInfoResponse(user.getId(), user.getEmail(), user.getName());
+        return new UserInfoResponse(user.getId(), user.getEmail(),
+                user.getName());
     }
 }
