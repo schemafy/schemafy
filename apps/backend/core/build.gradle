@@ -96,6 +96,15 @@ spotless {
 		target 'src/**/*.java'
 		eclipse().configFile('java-formatter.xml')
 		removeUnusedImports()
+		importOrder(
+			'java',
+			'jakarta',
+			'org.springframework',
+			'org',
+			'com',
+			'',
+			'\\#'
+		)
 		trimTrailingWhitespace()
 		endWithNewline()
 	}
