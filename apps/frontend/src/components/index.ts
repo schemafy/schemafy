@@ -5,3 +5,4 @@ export { Avatar } from './Avatar';
 export * from './Tooltip';
 export * from './DropDown';
 export * from './RadioGroup';
+export * from './Select';

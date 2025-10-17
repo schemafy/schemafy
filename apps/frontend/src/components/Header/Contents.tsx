@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from '../RadioGroup';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../DropDown';
 import { FilePlus, Link } from 'lucide-react';
 import { ThemeProviderContext, type Theme } from '@/lib/config';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../Select';
 
 export const LandingContents = () => {
   return (
@@ -142,7 +143,18 @@ const ShareContents = () => {
             <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
             <p>name</p>
           </div>
-          {/* selector */}
+          <Select>
+            <SelectTrigger className="w-[3.75rem] border-none font-body-xs">
+              <SelectValue placeholder="admin" />
+            </SelectTrigger>
+            <SelectContent popover="manual">
+              <SelectGroup>
+                <SelectItem value="admin">admin</SelectItem>
+                <SelectItem value="viewer">viewer</SelectItem>
+                <SelectItem value="editor">editor</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -204,6 +216,7 @@ const SettingsContents = () => {
           <RadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)} className="flex-row">
             <RadioGroupItem value={'light'}>Light</RadioGroupItem>
             <RadioGroupItem value={'dark'}>Dark</RadioGroupItem>
+            <RadioGroupItem value={'system'}>System</RadioGroupItem>
           </RadioGroup>
         </div>
         <Button fullWidth size={'dropdown'}>
