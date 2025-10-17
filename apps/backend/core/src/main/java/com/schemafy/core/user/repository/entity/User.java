@@ -30,10 +30,12 @@ public class User extends BaseEntity {
 
     private UserStatus status;
 
-    public static Mono<User> signUp(UserInfo userInfo, PasswordEncoder passwordEncoder) {
+    public static Mono<User> signUp(UserInfo userInfo,
+            PasswordEncoder passwordEncoder) {
         return Mono.fromCallable(() -> {
             Email email = new Email(userInfo.email());
-            String encodedPassword = passwordEncoder.encode(userInfo.password());
+            String encodedPassword = passwordEncoder
+                    .encode(userInfo.password());
 
             User newUser = new User(
                     email.address(),
@@ -46,8 +48,10 @@ public class User extends BaseEntity {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    public Mono<Boolean> matchesPassword(String rawPassword, PasswordEncoder passwordEncoder) {
-        return Mono.fromCallable(() -> passwordEncoder.matches(rawPassword, this.password))
+    public Mono<Boolean> matchesPassword(String rawPassword,
+            PasswordEncoder passwordEncoder) {
+        return Mono.fromCallable(
+                () -> passwordEncoder.matches(rawPassword, this.password))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 }

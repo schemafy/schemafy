@@ -1,9 +1,6 @@
 package com.schemafy.core.common.type;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -11,7 +8,10 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
 
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
@@ -34,14 +34,10 @@ public abstract class BaseEntity implements Persistable<String> {
     protected boolean isNew = true;
 
     @Override
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
 
     @Override
-    public boolean isNew() {
-        return isNew;
-    }
+    public boolean isNew() { return isNew; }
 
     public void markAsNotNew() {
         this.isNew = false;
@@ -51,7 +47,5 @@ public abstract class BaseEntity implements Persistable<String> {
         this.deletedAt = LocalDateTime.now();
     }
 
-    public boolean isDeleted() {
-        return deletedAt != null;
-    }
+    public boolean isDeleted() { return deletedAt != null; }
 }
