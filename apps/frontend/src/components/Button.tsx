@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg transition-all duration-200 
-  disabled:pointer-events-none disabled:opacity-50 active:scale-95 font-heading-xs`,
+  disabled:pointer-events-none disabled:opacity-50 active:scale-95 font-heading-xs focus:outline-none`,
   {
     variants: {
       variant: {
