@@ -20,6 +20,7 @@ import {
   TablePreview,
   type RelationshipConfig,
   CustomSmoothStepEdge,
+  FloatingButtons,
 } from '@/features/drawing';
 
 const NODE_TYPES = {
@@ -135,6 +136,7 @@ export const CanvasPage = () => {
           )}
         </div>
       </div>
+      <FloatingButtons />
     </>
   );
 };
