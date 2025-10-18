@@ -13,16 +13,16 @@ import { TablesModule } from './validations/tables/tables.module';
 import { ValidationModule } from './validations/validation/validation.module';
 
 @Module({
-    imports: [
-        ColumnsModule,
-        TablesModule,
-        SchemasModule,
-        IndexesModule,
-        ConstraintsModule,
-        RelationshipsModule,
-        ValidationModule,
-    ],
-    controllers: [AppController],
-    providers: [AppService, { provide: APP_INTERCEPTOR, useClass: ProtoTransformInterceptor }],
+  imports: [
+    ColumnsModule,
+    TablesModule,
+    SchemasModule,
+    IndexesModule,
+    ConstraintsModule,
+    RelationshipsModule,
+    ValidationModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService, { provide: APP_INTERCEPTOR, useClass: ProtoTransformInterceptor }],
 })
 export class AppModule {}
