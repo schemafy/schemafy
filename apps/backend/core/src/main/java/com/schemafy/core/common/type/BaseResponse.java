@@ -1,6 +1,7 @@
 package com.schemafy.core.common.type;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,9 +20,16 @@ public class BaseResponse<T> {
     }
 
     public static <T> BaseResponse<T> error(String code, String message) {
-        return new BaseResponse<>(false, null, new ErrorResponse(code, message));
+        return new BaseResponse<>(false, null,
+                new ErrorResponse(code, message, null));
     }
 
-    public record ErrorResponse(String code, String message) {
+    public static <T> BaseResponse<T> error(String code, String message,
+            Object details) {
+        return new BaseResponse<>(false, null,
+                new ErrorResponse(code, message, details));
+    }
+
+    private record ErrorResponse(String code, String message, Object details) {
     }
 }
