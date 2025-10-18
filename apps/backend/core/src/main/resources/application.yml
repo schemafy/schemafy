@@ -3,13 +3,23 @@ spring:
     name: core
 
   r2dbc:
-    url: 'r2dbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:schemafy}'
-    username: '${DB_USER:schemafy}'
-    password: '${DB_PASSWORD:schemafy}'
+    url: "r2dbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:schemafy}"
+    username: "${DB_USER:schemafy}"
+    password: "${DB_PASSWORD:schemafy}"
     pool:
       enabled: true
       initial-size: 5
       max-size: 20
+
+  output:
+    ansi:
+      enabled: always
+
+grpc:
+  validation:
+    host: ${GRPC_VALIDATION_HOST:localhost}
+    port: ${GRPC_VALIDATION_PORT:50051}
+    deadline-seconds: 30
 
 cache:
   type: CAFFEINE
@@ -29,3 +39,5 @@ management:
     health:
       probes:
         enabled: true
+      show-details: always
+      show-components: always

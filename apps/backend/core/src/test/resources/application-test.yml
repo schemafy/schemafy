@@ -24,6 +24,10 @@ spring:
       name: test
       password: test
 
+  output:
+    ansi:
+      enabled: always
+
 cache:
   type: CAFFEINE
   maximum-size: 1000

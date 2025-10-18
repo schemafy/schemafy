@@ -18,6 +18,10 @@ spring:
     initialization:
       enabled: true
 
+  output:
+    ansi:
+      enabled: always
+
 cache:
   type: CAFFEINE
   maximum-size: 10000
