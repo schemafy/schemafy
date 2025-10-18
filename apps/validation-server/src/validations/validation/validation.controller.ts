@@ -12,6 +12,6 @@ export class ValidationController {
 
   @GrpcMethod('ValidationService', 'ValidateDatabase')
   validateDatabase(req: ValidateDatabaseDto): ValidateResult {
-    return this.service.validateDatabase(req.database);
+    return this.service.validateDatabase(req);
   }
 }
