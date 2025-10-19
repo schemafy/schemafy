@@ -1,5 +1,6 @@
 package com.schemafy.core.user.controller;
 
+import java.util.HashMap;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
@@ -43,9 +45,21 @@ class UserControllerTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private JwtProvider jwtProvider;
+
     @BeforeEach
     void setUp() {
         userRepository.deleteAll().block();
+    }
+
+    private String generateAccessToken(String userId) {
+        return jwtProvider.generateAccessToken(userId, new HashMap<>(),
+                System.currentTimeMillis());
+    }
+
+    private String generateRefreshToken(String userId) {
+        return jwtProvider.generateRefreshToken(userId);
     }
 
     @Test
@@ -61,6 +75,8 @@ class UserControllerTest {
                 .bodyValue(request)
                 .exchange()
                 .expectStatus().isOk()
+                .expectHeader().exists("Authorization")
+                .expectHeader().exists("Set-Cookie")
                 .expectBody()
                 .consumeWith(System.out::println) // Print response
                 .jsonPath("$.success").isEqualTo(true)
@@ -130,9 +146,11 @@ class UserControllerTest {
 
         String responseBody = new String(result.getResponseBody());
         String userId = JsonPath.read(responseBody, "$.result.id");
+        String accessToken = generateAccessToken(userId);
 
         // when & then
         webTestClient.get().uri(API_BASE_PATH + "/users/{userId}", userId)
+                .header("Authorization", "Bearer " + accessToken)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -146,10 +164,12 @@ class UserControllerTest {
     void getUserNotFound() {
         // given
         String nonExistentUserId = UlidGenerator.generate();
+        String accessToken = generateAccessToken(nonExistentUserId);
 
         // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/users/{userId}", nonExistentUserId)
+                .header("Authorization", "Bearer " + accessToken)
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectBody()
@@ -179,6 +199,8 @@ class UserControllerTest {
                 .bodyValue(loginRequest)
                 .exchange()
                 .expectStatus().isOk()
+                .expectHeader().exists("Authorization")
+                .expectHeader().exists("Set-Cookie")
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.email").isEqualTo("test@example.com");
@@ -253,5 +275,75 @@ class UserControllerTest {
                 .jsonPath("$.success").isEqualTo(false)
                 .jsonPath("$.error.code")
                 .isEqualTo(ErrorCode.LOGIN_FAILED.getCode());
+    }
+
+    @Test
+    @DisplayName("유효한 리프레시 토큰으로 토큰 갱신에 성공한다")
+    void refreshTokenSuccess() {
+        // given
+        SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
+                "Test User", "password");
+        EntityExchangeResult<byte[]> signupResult = webTestClient.post()
+                .uri(API_BASE_PATH + "/users/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(signUpRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class).returnResult();
+
+        String responseBody = new String(signupResult.getResponseBody());
+        String userId = JsonPath.read(responseBody, "$.result.id");
+        String refreshToken = generateRefreshToken(userId);
+
+        // when & then - 쿠키로 Refresh Token 전달
+        webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
+                .cookie("refreshToken", refreshToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().exists("Authorization")
+                .expectHeader().exists("Set-Cookie")
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("잘못된 타입의 토큰으로 갱신 시 실패한다")
+    void refreshTokenFailWithAccessToken() {
+        // given
+        SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
+                "Test User", "password");
+        EntityExchangeResult<byte[]> signupResult = webTestClient.post()
+                .uri(API_BASE_PATH + "/users/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(signUpRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class).returnResult();
+
+        String responseBody = new String(signupResult.getResponseBody());
+        String userId = JsonPath.read(responseBody, "$.result.id");
+        String accessToken = generateAccessToken(userId);
+
+        // when & then - 쿠키로 Access Token 전달 (잘못된 토큰 타입)
+        webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
+                .cookie("refreshToken", accessToken)
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error.code").isEqualTo("A004");
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰 쿠키가 없으면 갱신 시 실패한다")
+    void refreshTokenFailWithoutCookie() {
+        // when & then - 쿠키 없이 요청
+        webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false)
+                .jsonPath("$.error.code")
+                .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
     }
 }

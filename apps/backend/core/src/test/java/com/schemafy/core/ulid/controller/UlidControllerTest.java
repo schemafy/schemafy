@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.TestSecurityConfig;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 import com.schemafy.core.ulid.service.UlidService;
 
 import reactor.core.publisher.Mono;
@@ -32,6 +34,12 @@ class UlidControllerTest {
     private static final String API_BASE_PATH = ApiPath.AUTH_API.replace(
             "{version}",
             "v1.0");
+
+    @MockitoBean
+    WebExchangeErrorWriter errorResponseWriter;
+
+    @MockitoBean
+    JwtProvider jwtProvider;
 
     @Autowired
     private WebTestClient webTestClient;
