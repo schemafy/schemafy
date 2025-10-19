@@ -19,6 +19,7 @@ import lombok.Setter;
 @Builder
 @Table("db_indexes")
 public class Index extends BaseEntity {
+
     @Column("table_id")
     private String tableId;
 
@@ -30,4 +31,5 @@ public class Index extends BaseEntity {
 
     @Column("comment")
     private String comment;
+
 }

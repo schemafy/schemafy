@@ -19,6 +19,7 @@ import lombok.Setter;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_index_columns")
 public class IndexColumn extends BaseEntity {
+
     @Column("index_id")
     private String indexId;
 
@@ -30,4 +31,5 @@ public class IndexColumn extends BaseEntity {
 
     @Column("sort_dir")
     private String sortDir;
+
 }

@@ -19,6 +19,7 @@ import lombok.Setter;
 @Builder
 @Table("db_columns")
 public class Column extends BaseEntity {
+
     @org.springframework.data.relational.core.mapping.Column("table_id")
     private String tableId;
 
@@ -48,6 +49,11 @@ public class Column extends BaseEntity {
     private String collation;
 
     @Nullable
+    @org.springframework.data.relational.core.mapping.Column("nullable")
+    private boolean nullable;
+
+    @Nullable
     @org.springframework.data.relational.core.mapping.Column("comment")
     private String comment;
+
 }

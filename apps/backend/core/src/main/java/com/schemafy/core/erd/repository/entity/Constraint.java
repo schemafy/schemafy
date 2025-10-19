@@ -20,6 +20,7 @@ import lombok.Setter;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_constraints")
 public class Constraint extends BaseEntity {
+
     @Column("table_id")
     private String tableId;
 
@@ -36,4 +37,5 @@ public class Constraint extends BaseEntity {
     @Nullable
     @Column("default_expr")
     private String defaultExpr;
+
 }

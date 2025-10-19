@@ -19,6 +19,7 @@ import lombok.Setter;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_constraint_columns")
 public class ConstraintColumn extends BaseEntity {
+
     @Column("constraint_id")
     private String constraintId;
 
@@ -27,4 +28,5 @@ public class ConstraintColumn extends BaseEntity {
 
     @Column("seq_no")
     private int seqNo;
+
 }
