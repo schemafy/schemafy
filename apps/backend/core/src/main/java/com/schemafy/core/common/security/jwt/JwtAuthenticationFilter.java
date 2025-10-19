@@ -49,7 +49,8 @@ public class JwtAuthenticationFilter implements WebFilter {
                     if (result.valid()) {
                         return chain.filter(exchange)
                                 .contextWrite(ReactiveSecurityContextHolder
-                                        .withAuthentication(result.authentication()));
+                                        .withAuthentication(
+                                                result.authentication()));
                     } else {
                         return handleJwtError(exchange,
                                 result.errorType(),
@@ -129,8 +130,10 @@ public class JwtAuthenticationFilter implements WebFilter {
             String errorType,
             String errorMessage) {
 
-        static AuthenticationResult success(UsernamePasswordAuthenticationToken authentication) {
-            return new AuthenticationResult(true, authentication, null, null, null);
+        static AuthenticationResult success(
+                UsernamePasswordAuthenticationToken authentication) {
+            return new AuthenticationResult(true, authentication, null, null,
+                    null);
         }
 
         static AuthenticationResult error(ErrorCode errorCode) {
