@@ -15,12 +15,15 @@ spring:
       enabled: true
       initial-size: 5
       max-size: 20
-    initialization:
-      enabled: true
 
   output:
     ansi:
       enabled: always
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema/h2/**/*.sql
 
 cache:
   type: CAFFEINE

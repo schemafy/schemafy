@@ -3,7 +3,7 @@ spring:
     name: core
   sql:
     init:
-      schema-locations: classpath:sql/ddl/schema-h2.sql
+      schema-locations: classpath:db/schema/h2/**/*.sql
       mode: always
 
   r2dbc:
@@ -16,8 +16,6 @@ spring:
       enabled: true
       initial-size: 5
       max-size: 20
-    initialization:
-      enabled: true
 
   security:
     user:

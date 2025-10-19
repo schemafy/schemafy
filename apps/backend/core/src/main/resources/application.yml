@@ -15,6 +15,11 @@ spring:
     ansi:
       enabled: always
 
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema/mariadb/**/*.sql
+
 grpc:
   validation:
     host: ${GRPC_VALIDATION_HOST:localhost}
