@@ -18,9 +18,9 @@ import com.schemafy.core.ulid.service.UlidService;
 
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.ulid.docs.UlidApiSnippets.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-import static com.schemafy.core.ulid.docs.UlidApiSnippets.*;
 
 @WebFluxTest(controllers = UlidController.class)
 @AutoConfigureRestDocs

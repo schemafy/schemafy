@@ -14,8 +14,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.paramete
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 
 /**
- * User API 문서화를 위한 스니펫 제공 클래스
- * - User 도메인에 특화된 스니펫 정의
+ * User API 문서화를 위한 스니펫 제공 클래스 - User 도메인에 특화된 스니펫 정의
  */
 public class UserApiSnippets extends RestDocsSnippets {
 
@@ -26,12 +25,12 @@ public class UserApiSnippets extends RestDocsSnippets {
      */
     private static FieldDescriptor[] userInfoFields() {
         return new FieldDescriptor[] {
-                fieldWithPath("result.id").type(JsonFieldType.STRING)
-                        .description("사용자 고유 ID (ULID)"),
-                fieldWithPath("result.email").type(JsonFieldType.STRING)
-                        .description("사용자 이메일"),
-                fieldWithPath("result.name").type(JsonFieldType.STRING)
-                        .description("사용자 이름")
+            fieldWithPath("result.id").type(JsonFieldType.STRING)
+                    .description("사용자 고유 ID (ULID)"),
+            fieldWithPath("result.email").type(JsonFieldType.STRING)
+                    .description("사용자 이메일"),
+            fieldWithPath("result.name").type(JsonFieldType.STRING)
+                    .description("사용자 이름")
         };
     }
 
@@ -44,8 +43,7 @@ public class UserApiSnippets extends RestDocsSnippets {
                 fieldWithPath("name").type(JsonFieldType.STRING)
                         .description("사용자 이름"),
                 fieldWithPath("password").type(JsonFieldType.STRING)
-                        .description("비밀번호")
-        );
+                        .description("비밀번호"));
     }
 
     public static Snippet signUpResponseHeaders() {
@@ -53,7 +51,8 @@ public class UserApiSnippets extends RestDocsSnippets {
     }
 
     public static Snippet signUpResponse() {
-        return createResponseFieldsSnippet(successResponseFields(userInfoFields()));
+        return createResponseFieldsSnippet(
+                successResponseFields(userInfoFields()));
     }
 
     // ========== 로그인 API ==========
@@ -63,8 +62,7 @@ public class UserApiSnippets extends RestDocsSnippets {
                 fieldWithPath("email").type(JsonFieldType.STRING)
                         .description("사용자 이메일"),
                 fieldWithPath("password").type(JsonFieldType.STRING)
-                        .description("비밀번호")
-        );
+                        .description("비밀번호"));
     }
 
     public static Snippet loginResponseHeaders() {
@@ -72,15 +70,15 @@ public class UserApiSnippets extends RestDocsSnippets {
     }
 
     public static Snippet loginResponse() {
-        return createResponseFieldsSnippet(successResponseFields(userInfoFields()));
+        return createResponseFieldsSnippet(
+                successResponseFields(userInfoFields()));
     }
 
     // ========== 사용자 조회 API ==========
 
     public static Snippet getUserPathParameters() {
         return pathParameters(
-                parameterWithName("userId").description("조회할 사용자 ID (ULID)")
-        );
+                parameterWithName("userId").description("조회할 사용자 ID (ULID)"));
     }
 
     public static Snippet getUserRequestHeaders() {
@@ -92,15 +90,15 @@ public class UserApiSnippets extends RestDocsSnippets {
     }
 
     public static Snippet getUserResponse() {
-        return createResponseFieldsSnippet(successResponseFields(userInfoFields()));
+        return createResponseFieldsSnippet(
+                successResponseFields(userInfoFields()));
     }
 
     // ========== 토큰 갱신 API ==========
 
     public static Snippet refreshTokenRequestCookies() {
         return requestCookies(
-                cookieWithName("refreshToken").description("리프레시 토큰 (JWT)")
-        );
+                cookieWithName("refreshToken").description("리프레시 토큰 (JWT)"));
     }
 
     public static Snippet refreshTokenResponseHeaders() {
@@ -108,6 +106,7 @@ public class UserApiSnippets extends RestDocsSnippets {
     }
 
     public static Snippet refreshTokenResponse() {
-        return createResponseFieldsSnippet(successResponseFieldsWithNullResult());
+        return createResponseFieldsSnippet(
+                successResponseFieldsWithNullResult());
     }
 }

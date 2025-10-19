@@ -30,9 +30,9 @@ import com.schemafy.core.user.repository.UserRepository;
 
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-import static com.schemafy.core.user.docs.UserApiSnippets.*;
 
 @ActiveProfiles("test")
 @SpringBootTest

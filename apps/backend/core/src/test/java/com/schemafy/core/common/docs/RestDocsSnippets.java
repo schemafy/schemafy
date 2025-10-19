@@ -12,8 +12,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 
 /**
- * REST Docs 문서화를 위한 공통 스니펫 제공 추상 클래스
- * - 도메인별 ApiSnippets 클래스는 이 클래스를 상속받아 구현
+ * REST Docs 문서화를 위한 공통 스니펫 제공 추상 클래스 - 도메인별 ApiSnippets 클래스는 이 클래스를 상속받아 구현
  */
 public abstract class RestDocsSnippets {
 
@@ -24,8 +23,8 @@ public abstract class RestDocsSnippets {
      */
     protected static HeaderDescriptor[] commonRequestHeaders() {
         return new HeaderDescriptor[] {
-                headerWithName("Content-Type").description("요청 컨텐츠 타입").optional(),
-                headerWithName("Accept").description("응답 포맷").optional()
+            headerWithName("Content-Type").description("요청 컨텐츠 타입").optional(),
+            headerWithName("Accept").description("응답 포맷").optional()
         };
     }
 
@@ -33,7 +32,8 @@ public abstract class RestDocsSnippets {
      * Authorization 헤더 생성 (JWT 인증용)
      */
     protected static HeaderDescriptor authorizationHeader() {
-        return headerWithName("Authorization").description("JWT 액세스 토큰 (Bearer {token})");
+        return headerWithName("Authorization")
+                .description("JWT 액세스 토큰 (Bearer {token})");
     }
 
     /**
@@ -41,7 +41,7 @@ public abstract class RestDocsSnippets {
      */
     protected static HeaderDescriptor[] commonResponseHeaders() {
         return new HeaderDescriptor[] {
-                headerWithName("Content-Type").description("응답 컨텐츠 타입")
+            headerWithName("Content-Type").description("응답 컨텐츠 타입")
         };
     }
 
@@ -50,9 +50,10 @@ public abstract class RestDocsSnippets {
      */
     protected static HeaderDescriptor[] authResponseHeaders() {
         return new HeaderDescriptor[] {
-                headerWithName("Content-Type").description("응답 컨텐츠 타입"),
-                headerWithName("Authorization").description("발급된 JWT 액세스 토큰"),
-                headerWithName("Set-Cookie").description("발급된 리프레시 토큰 (HttpOnly 쿠키)")
+            headerWithName("Content-Type").description("응답 컨텐츠 타입"),
+            headerWithName("Authorization").description("발급된 JWT 액세스 토큰"),
+            headerWithName("Set-Cookie")
+                    .description("발급된 리프레시 토큰 (HttpOnly 쿠키)")
         };
     }
 
@@ -60,16 +61,18 @@ public abstract class RestDocsSnippets {
 
     /**
      * 성공 응답 필드 생성 (result 필드 포함)
+     *
      * @param resultFields result 객체 내부 필드들
      */
-    protected static FieldDescriptor[] successResponseFields(FieldDescriptor... resultFields) {
+    protected static FieldDescriptor[] successResponseFields(
+            FieldDescriptor... resultFields) {
         FieldDescriptor[] baseFields = new FieldDescriptor[] {
-                fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-                        .description("요청 성공 여부"),
-                fieldWithPath("result").type(JsonFieldType.OBJECT)
-                        .description("응답 데이터").optional(),
-                fieldWithPath("error").type(JsonFieldType.NULL)
-                        .description("에러 정보 (성공 시 null)").optional()
+            fieldWithPath("success").type(JsonFieldType.BOOLEAN)
+                    .description("요청 성공 여부"),
+            fieldWithPath("result").type(JsonFieldType.OBJECT)
+                    .description("응답 데이터").optional(),
+            fieldWithPath("error").type(JsonFieldType.NULL)
+                    .description("에러 정보 (성공 시 null)").optional()
         };
 
         return concat(baseFields, resultFields);
@@ -80,12 +83,12 @@ public abstract class RestDocsSnippets {
      */
     protected static FieldDescriptor[] successResponseFieldsWithNullResult() {
         return new FieldDescriptor[] {
-                fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-                        .description("요청 성공 여부"),
-                fieldWithPath("result").type(JsonFieldType.NULL)
-                        .description("응답 데이터 (없음)").optional(),
-                fieldWithPath("error").type(JsonFieldType.NULL)
-                        .description("에러 정보 (성공 시 null)").optional()
+            fieldWithPath("success").type(JsonFieldType.BOOLEAN)
+                    .description("요청 성공 여부"),
+            fieldWithPath("result").type(JsonFieldType.NULL)
+                    .description("응답 데이터 (없음)").optional(),
+            fieldWithPath("error").type(JsonFieldType.NULL)
+                    .description("에러 정보 (성공 시 null)").optional()
         };
     }
 
@@ -94,16 +97,16 @@ public abstract class RestDocsSnippets {
      */
     protected static FieldDescriptor[] errorResponseFields() {
         return new FieldDescriptor[] {
-                fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-                        .description("요청 성공 여부 (항상 false)"),
-                fieldWithPath("result").type(JsonFieldType.NULL)
-                        .description("응답 데이터 (에러 시 null)").optional(),
-                fieldWithPath("error").type(JsonFieldType.OBJECT)
-                        .description("에러 정보"),
-                fieldWithPath("error.code").type(JsonFieldType.STRING)
-                        .description("에러 코드"),
-                fieldWithPath("error.message").type(JsonFieldType.STRING)
-                        .description("에러 메시지")
+            fieldWithPath("success").type(JsonFieldType.BOOLEAN)
+                    .description("요청 성공 여부 (항상 false)"),
+            fieldWithPath("result").type(JsonFieldType.NULL)
+                    .description("응답 데이터 (에러 시 null)").optional(),
+            fieldWithPath("error").type(JsonFieldType.OBJECT)
+                    .description("에러 정보"),
+            fieldWithPath("error.code").type(JsonFieldType.STRING)
+                    .description("에러 코드"),
+            fieldWithPath("error.message").type(JsonFieldType.STRING)
+                    .description("에러 메시지")
         };
     }
 
@@ -112,21 +115,24 @@ public abstract class RestDocsSnippets {
     /**
      * 요청 헤더 Snippet 생성
      */
-    protected static Snippet createRequestHeadersSnippet(HeaderDescriptor... headers) {
+    protected static Snippet createRequestHeadersSnippet(
+            HeaderDescriptor... headers) {
         return requestHeaders(headers);
     }
 
     /**
      * 응답 헤더 Snippet 생성
      */
-    protected static Snippet createResponseHeadersSnippet(HeaderDescriptor... headers) {
+    protected static Snippet createResponseHeadersSnippet(
+            HeaderDescriptor... headers) {
         return responseHeaders(headers);
     }
 
     /**
      * 응답 필드 Snippet 생성
      */
-    protected static Snippet createResponseFieldsSnippet(FieldDescriptor... fields) {
+    protected static Snippet createResponseFieldsSnippet(
+            FieldDescriptor... fields) {
         return responseFields(fields);
     }
 
@@ -135,8 +141,10 @@ public abstract class RestDocsSnippets {
     /**
      * 배열 병합 유틸리티
      */
-    protected static FieldDescriptor[] concat(FieldDescriptor[] first, FieldDescriptor[] second) {
-        FieldDescriptor[] result = new FieldDescriptor[first.length + second.length];
+    protected static FieldDescriptor[] concat(FieldDescriptor[] first,
+            FieldDescriptor[] second) {
+        FieldDescriptor[] result = new FieldDescriptor[first.length
+                + second.length];
         System.arraycopy(first, 0, result, 0, first.length);
         System.arraycopy(second, 0, result, first.length, second.length);
         return result;

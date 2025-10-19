@@ -21,8 +21,8 @@ public class UlidApiSnippets extends RestDocsSnippets {
      */
     private static FieldDescriptor[] ulidResponseFields() {
         return new FieldDescriptor[] {
-                fieldWithPath("result.ulid").type(JsonFieldType.STRING)
-                        .description("생성된 ULID 문자열")
+            fieldWithPath("result.ulid").type(JsonFieldType.STRING)
+                    .description("생성된 ULID 문자열")
         };
     }
 
@@ -33,8 +33,7 @@ public class UlidApiSnippets extends RestDocsSnippets {
      */
     public static Snippet generateUlidRequestHeaders() {
         return createRequestHeadersSnippet(
-                headerWithName("Accept").description("요청 응답 포맷(Accept 헤더)")
-        );
+                headerWithName("Accept").description("요청 응답 포맷(Accept 헤더)"));
     }
 
     /**
@@ -48,6 +47,7 @@ public class UlidApiSnippets extends RestDocsSnippets {
      * ULID 생성 응답 필드
      */
     public static Snippet generateUlidResponse() {
-        return createResponseFieldsSnippet(successResponseFields(ulidResponseFields()));
+        return createResponseFieldsSnippet(
+                successResponseFields(ulidResponseFields()));
     }
 }
