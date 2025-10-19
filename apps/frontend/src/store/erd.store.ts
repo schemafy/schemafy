@@ -35,7 +35,11 @@ export class ErdStore {
   private constructor() {
     // database는 깊은 observable이 되면 내부 배열이 MobX ObservableArray(Proxy)로 래핑되어
     // validator 내부의 structuredClone에서 복제가 실패할 수 있다. 참조형으로만 추적한다.
-    makeAutoObservable(this, { erdState: observable.struct }, { autoBind: true });
+    makeAutoObservable(
+      this,
+      { erdState: observable.struct },
+      { autoBind: true },
+    );
   }
 
   static getInstance(): ErdStore {
@@ -95,12 +99,21 @@ export class ErdStore {
   }
 
   // tables
-  createTable(schemaId: Schema['id'], table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'>) {
+  createTable(
+    schemaId: Schema['id'],
+    table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'>,
+  ) {
     this.update((db) => ERD_VALIDATOR.createTable(db, schemaId, table));
   }
 
-  changeTableName(schemaId: Schema['id'], tableId: Table['id'], newName: Table['name']) {
-    this.update((db) => ERD_VALIDATOR.changeTableName(db, schemaId, tableId, newName));
+  changeTableName(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    newName: Table['name'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeTableName(db, schemaId, tableId, newName),
+    );
   }
 
   deleteTable(schemaId: Schema['id'], tableId: Table['id']) {
@@ -113,15 +126,30 @@ export class ErdStore {
     tableId: Table['id'],
     column: Omit<Column, 'tableId' | 'createdAt' | 'updatedAt'>,
   ) {
-    this.update((db) => ERD_VALIDATOR.createColumn(db, schemaId, tableId, column));
+    this.update((db) =>
+      ERD_VALIDATOR.createColumn(db, schemaId, tableId, column),
+    );
   }
 
-  deleteColumn(schemaId: Schema['id'], tableId: Table['id'], columnId: Column['id']) {
-    this.update((db) => ERD_VALIDATOR.deleteColumn(db, schemaId, tableId, columnId));
+  deleteColumn(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    columnId: Column['id'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.deleteColumn(db, schemaId, tableId, columnId),
+    );
   }
 
-  changeColumnName(schemaId: Schema['id'], tableId: Table['id'], columnId: Column['id'], newName: Column['name']) {
-    this.update((db) => ERD_VALIDATOR.changeColumnName(db, schemaId, tableId, columnId, newName));
+  changeColumnName(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    columnId: Column['id'],
+    newName: Column['name'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeColumnName(db, schemaId, tableId, columnId, newName),
+    );
   }
 
   changeColumnType(
@@ -131,7 +159,16 @@ export class ErdStore {
     dataType: Column['dataType'],
     lengthScale?: Column['lengthScale'],
   ) {
-    this.update((db) => ERD_VALIDATOR.changeColumnType(db, schemaId, tableId, columnId, dataType, lengthScale));
+    this.update((db) =>
+      ERD_VALIDATOR.changeColumnType(
+        db,
+        schemaId,
+        tableId,
+        columnId,
+        dataType,
+        lengthScale,
+      ),
+    );
   }
 
   changeColumnPosition(
@@ -140,24 +177,64 @@ export class ErdStore {
     columnId: Column['id'],
     newPosition: Column['ordinalPosition'],
   ) {
-    this.update((db) => ERD_VALIDATOR.changeColumnPosition(db, schemaId, tableId, columnId, newPosition));
+    this.update((db) =>
+      ERD_VALIDATOR.changeColumnPosition(
+        db,
+        schemaId,
+        tableId,
+        columnId,
+        newPosition,
+      ),
+    );
   }
 
-  changeColumnNullable(schemaId: Schema['id'], tableId: Table['id'], columnId: Column['id'], nullable: boolean) {
-    this.update((db) => ERD_VALIDATOR.changeColumnNullable(db, schemaId, tableId, columnId, nullable));
+  changeColumnNullable(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    columnId: Column['id'],
+    nullable: boolean,
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeColumnNullable(
+        db,
+        schemaId,
+        tableId,
+        columnId,
+        nullable,
+      ),
+    );
   }
 
   // indexes
-  createIndex(schemaId: Schema['id'], tableId: Table['id'], index: Omit<Index, 'tableId'>) {
-    this.update((db) => ERD_VALIDATOR.createIndex(db, schemaId, tableId, index));
+  createIndex(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    index: Omit<Index, 'tableId'>,
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.createIndex(db, schemaId, tableId, index),
+    );
   }
 
-  deleteIndex(schemaId: Schema['id'], tableId: Table['id'], indexId: Index['id']) {
-    this.update((db) => ERD_VALIDATOR.deleteIndex(db, schemaId, tableId, indexId));
+  deleteIndex(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.deleteIndex(db, schemaId, tableId, indexId),
+    );
   }
 
-  changeIndexName(schemaId: Schema['id'], tableId: Table['id'], indexId: Index['id'], newName: Index['name']) {
-    this.update((db) => ERD_VALIDATOR.changeIndexName(db, schemaId, tableId, indexId, newName));
+  changeIndexName(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    newName: Index['name'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeIndexName(db, schemaId, tableId, indexId, newName),
+    );
   }
 
   addColumnToIndex(
@@ -166,7 +243,15 @@ export class ErdStore {
     indexId: Index['id'],
     indexColumn: Omit<IndexColumn, 'indexId'>,
   ) {
-    this.update((db) => ERD_VALIDATOR.addColumnToIndex(db, schemaId, tableId, indexId, indexColumn));
+    this.update((db) =>
+      ERD_VALIDATOR.addColumnToIndex(
+        db,
+        schemaId,
+        tableId,
+        indexId,
+        indexColumn,
+      ),
+    );
   }
 
   removeColumnFromIndex(
@@ -175,16 +260,36 @@ export class ErdStore {
     indexId: Index['id'],
     indexColumnId: IndexColumn['id'],
   ) {
-    this.update((db) => ERD_VALIDATOR.removeColumnFromIndex(db, schemaId, tableId, indexId, indexColumnId));
+    this.update((db) =>
+      ERD_VALIDATOR.removeColumnFromIndex(
+        db,
+        schemaId,
+        tableId,
+        indexId,
+        indexColumnId,
+      ),
+    );
   }
 
   // constraints
-  createConstraint(schemaId: Schema['id'], tableId: Table['id'], constraint: Omit<Constraint, 'tableId'>) {
-    this.update((db) => ERD_VALIDATOR.createConstraint(db, schemaId, tableId, constraint));
+  createConstraint(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraint: Omit<Constraint, 'tableId'>,
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.createConstraint(db, schemaId, tableId, constraint),
+    );
   }
 
-  deleteConstraint(schemaId: Schema['id'], tableId: Table['id'], constraintId: Constraint['id']) {
-    this.update((db) => ERD_VALIDATOR.deleteConstraint(db, schemaId, tableId, constraintId));
+  deleteConstraint(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.deleteConstraint(db, schemaId, tableId, constraintId),
+    );
   }
 
   changeConstraintName(
@@ -193,7 +298,15 @@ export class ErdStore {
     constraintId: Constraint['id'],
     newName: Constraint['name'],
   ) {
-    this.update((db) => ERD_VALIDATOR.changeConstraintName(db, schemaId, tableId, constraintId, newName));
+    this.update((db) =>
+      ERD_VALIDATOR.changeConstraintName(
+        db,
+        schemaId,
+        tableId,
+        constraintId,
+        newName,
+      ),
+    );
   }
 
   addColumnToConstraint(
@@ -202,7 +315,15 @@ export class ErdStore {
     constraintId: Constraint['id'],
     constraintColumn: Omit<ConstraintColumn, 'constraintId'>,
   ) {
-    this.update((db) => ERD_VALIDATOR.addColumnToConstraint(db, schemaId, tableId, constraintId, constraintColumn));
+    this.update((db) =>
+      ERD_VALIDATOR.addColumnToConstraint(
+        db,
+        schemaId,
+        tableId,
+        constraintId,
+        constraintColumn,
+      ),
+    );
   }
 
   removeColumnFromConstraint(
@@ -212,21 +333,45 @@ export class ErdStore {
     constraintColumnId: ConstraintColumn['id'],
   ) {
     this.update((db) =>
-      ERD_VALIDATOR.removeColumnFromConstraint(db, schemaId, tableId, constraintId, constraintColumnId),
+      ERD_VALIDATOR.removeColumnFromConstraint(
+        db,
+        schemaId,
+        tableId,
+        constraintId,
+        constraintColumnId,
+      ),
     );
   }
 
   // relationships
   createRelationship(schemaId: Schema['id'], relationship: Relationship) {
-    this.update((db) => ERD_VALIDATOR.createRelationship(db, schemaId, relationship));
+    this.update((db) =>
+      ERD_VALIDATOR.createRelationship(db, schemaId, relationship),
+    );
   }
 
-  deleteRelationship(schemaId: Schema['id'], relationshipId: Relationship['id']) {
-    this.update((db) => ERD_VALIDATOR.deleteRelationship(db, schemaId, relationshipId));
+  deleteRelationship(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.deleteRelationship(db, schemaId, relationshipId),
+    );
   }
 
-  changeRelationshipName(schemaId: Schema['id'], relationshipId: Relationship['id'], newName: Relationship['name']) {
-    this.update((db) => ERD_VALIDATOR.changeRelationshipName(db, schemaId, relationshipId, newName));
+  changeRelationshipName(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    newName: Relationship['name'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeRelationshipName(
+        db,
+        schemaId,
+        relationshipId,
+        newName,
+      ),
+    );
   }
 
   changeRelationshipCardinality(
@@ -234,7 +379,14 @@ export class ErdStore {
     relationshipId: Relationship['id'],
     cardinality: Relationship['cardinality'],
   ) {
-    this.update((db) => ERD_VALIDATOR.changeRelationshipCardinality(db, schemaId, relationshipId, cardinality));
+    this.update((db) =>
+      ERD_VALIDATOR.changeRelationshipCardinality(
+        db,
+        schemaId,
+        relationshipId,
+        cardinality,
+      ),
+    );
   }
 
   addColumnToRelationship(
@@ -242,7 +394,14 @@ export class ErdStore {
     relationshipId: Relationship['id'],
     relationshipColumn: Omit<RelationshipColumn, 'relationshipId'>,
   ) {
-    this.update((db) => ERD_VALIDATOR.addColumnToRelationship(db, schemaId, relationshipId, relationshipColumn));
+    this.update((db) =>
+      ERD_VALIDATOR.addColumnToRelationship(
+        db,
+        schemaId,
+        relationshipId,
+        relationshipColumn,
+      ),
+    );
   }
 
   removeColumnFromRelationship(
@@ -250,6 +409,13 @@ export class ErdStore {
     relationshipId: Relationship['id'],
     relationshipColumnId: RelationshipColumn['id'],
   ) {
-    this.update((db) => ERD_VALIDATOR.removeColumnFromRelationship(db, schemaId, relationshipId, relationshipColumnId));
+    this.update((db) =>
+      ERD_VALIDATOR.removeColumnFromRelationship(
+        db,
+        schemaId,
+        relationshipId,
+        relationshipColumnId,
+      ),
+    );
   }
 }

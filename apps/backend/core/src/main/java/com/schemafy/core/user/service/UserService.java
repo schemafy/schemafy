@@ -33,7 +33,8 @@ public class UserService {
     private Mono<Void> checkEmailUniqueness(String email) {
         return userRepository.existsByEmail(email)
                 .flatMap(exists -> exists
-                        ? Mono.error(new BusinessException(ErrorCode.USER_ALREADY_EXISTS))
+                        ? Mono.error(new BusinessException(
+                                ErrorCode.USER_ALREADY_EXISTS))
                         : Mono.empty());
     }
 
@@ -41,13 +42,15 @@ public class UserService {
         return User.signUp(request.toUserInfo(), passwordEncoder)
                 .flatMap(userRepository::save)
                 .onErrorMap(DuplicateKeyException.class,
-                        e -> new BusinessException(ErrorCode.USER_ALREADY_EXISTS));
+                        e -> new BusinessException(
+                                ErrorCode.USER_ALREADY_EXISTS));
     }
 
     public Mono<UserInfoResponse> getUserById(String userId) {
         return userRepository.findById(userId)
                 .map(UserInfoResponse::from)
-                .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)));
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.USER_NOT_FOUND)));
     }
 
     public Mono<User> login(LoginCommand command) {
@@ -57,14 +60,16 @@ public class UserService {
 
     private Mono<User> findUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)));
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.USER_NOT_FOUND)));
     }
 
     private Mono<User> getUserByPasswordMatch(User user, String password) {
         return user.matchesPassword(password, passwordEncoder)
                 .filter(Boolean::booleanValue)
                 .map(matches -> user)
-                .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.LOGIN_FAILED)));
+                .switchIfEmpty(Mono
+                        .error(new BusinessException(ErrorCode.LOGIN_FAILED)));
     }
 
     public Mono<String> getUserIdFromRefreshToken(String refreshToken) {

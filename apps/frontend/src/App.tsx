@@ -2,7 +2,13 @@ import { ThemeProvider } from '@/lib';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import { LandingPage, SignInPage, SignUpPage, CanvasPage, ERDSimPage } from '@/pages';
+import {
+  LandingPage,
+  SignInPage,
+  SignUpPage,
+  CanvasPage,
+  ERDSimPage,
+} from '@/pages';
 
 function App() {
   return (

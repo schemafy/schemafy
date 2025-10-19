@@ -1,9 +1,22 @@
-import { addEdge, applyEdgeChanges, reconnectEdge, type Connection, type Edge, type EdgeChange } from '@xyflow/react';
+import {
+  addEdge,
+  applyEdgeChanges,
+  reconnectEdge,
+  type Connection,
+  type Edge,
+  type EdgeChange,
+} from '@xyflow/react';
 import { useState, useRef } from 'react';
-import { RELATIONSHIP_TYPES, RELATIONSHIP_STYLE_TYPES, type RelationshipConfig } from '../types';
+import {
+  RELATIONSHIP_TYPES,
+  RELATIONSHIP_STYLE_TYPES,
+  type RelationshipConfig,
+} from '../types';
 
 const getRelationshipStyle = (isDashed: boolean = false) => {
-  return isDashed ? RELATIONSHIP_STYLE_TYPES.dashed : RELATIONSHIP_STYLE_TYPES.solid;
+  return isDashed
+    ? RELATIONSHIP_STYLE_TYPES.dashed
+    : RELATIONSHIP_STYLE_TYPES.solid;
 };
 
 export const useEdges = (relationshipConfig: RelationshipConfig) => {
@@ -65,7 +78,10 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
     edgeReconnectSuccessful.current = true;
   };
 
-  const changeRelationshipConfig = (edgeId: string, newConfig: RelationshipConfig) => {
+  const changeRelationshipConfig = (
+    edgeId: string,
+    newConfig: RelationshipConfig,
+  ) => {
     const baseConfig = RELATIONSHIP_TYPES[newConfig.type];
     const style = getRelationshipStyle(newConfig.isDashed);
 

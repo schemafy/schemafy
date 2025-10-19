@@ -8,10 +8,10 @@ import type { ValidateResult } from '../common';
 
 @Controller()
 export class ValidationController {
-    constructor(private readonly service: ValidationService) {}
+  constructor(private readonly service: ValidationService) {}
 
-    @GrpcMethod('ValidationService', 'ValidateDatabase')
-    validateDatabase(req: ValidateDatabaseDto): ValidateResult {
-        return this.service.validateDatabase(req.database);
-    }
+  @GrpcMethod('ValidationService', 'ValidateDatabase')
+  validateDatabase(req: ValidateDatabaseDto): ValidateResult {
+    return this.service.validateDatabase(req.database);
+  }
 }

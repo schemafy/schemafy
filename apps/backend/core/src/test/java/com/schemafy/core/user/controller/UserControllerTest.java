@@ -1,15 +1,7 @@
 package com.schemafy.core.user.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +9,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
@@ -30,6 +29,8 @@ import com.schemafy.core.user.repository.UserRepository;
 import reactor.test.StepVerifier;
 
 import java.util.HashMap;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -65,7 +66,8 @@ class UserControllerTest {
     @DisplayName("회원가입에 성공한다")
     void signUpSuccess() {
         // given
-        SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
+        SignUpRequest request = new SignUpRequest("test@example.com",
+                "Test User", "password");
 
         // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
@@ -107,15 +109,23 @@ class UserControllerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error.code").isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+                .jsonPath("$.error.code")
+                .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
     }
 
     static Stream<Arguments> invalidSignUpRequests() {
         return Stream.of(
-                Arguments.of(new SignUpRequest("", "Test User", "password")), // empty email
-                Arguments.of(new SignUpRequest("invalid-email", "Test User", "password")), // invalid email
-                Arguments.of(new SignUpRequest("test@example.com", "", "password")), // empty name
-                Arguments.of(new SignUpRequest("test@example.com", "Test User", "")) // empty password
+                Arguments.of(new SignUpRequest("", "Test User", "password")), // empty
+                                                                              // email
+                Arguments.of(new SignUpRequest("invalid-email", "Test User",
+                        "password")), // invalid
+                                      // email
+                Arguments.of(
+                        new SignUpRequest("test@example.com", "", "password")), // empty
+                                                                                // name
+                Arguments.of(
+                        new SignUpRequest("test@example.com", "Test User", "")) // empty
+                                                                                // password
         );
     }
 
@@ -123,9 +133,11 @@ class UserControllerTest {
     @DisplayName("ID로 회원 조회에 성공한다")
     void getUserSuccess() {
         // given
-        SignUpRequest signUpRequest = new SignUpRequest("test2@example.com", "Test User 2", "password");
+        SignUpRequest signUpRequest = new SignUpRequest("test2@example.com",
+                "Test User 2", "password");
 
-        EntityExchangeResult<byte[]> result = webTestClient.post().uri(API_BASE_PATH + "/users/signup")
+        EntityExchangeResult<byte[]> result = webTestClient.post()
+                .uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -155,27 +167,31 @@ class UserControllerTest {
         String accessToken = generateAccessToken(nonExistentUserId);
 
         // when & then
-        webTestClient.get().uri(API_BASE_PATH + "/users/{userId}", nonExistentUserId)
+        webTestClient.get()
+                .uri(API_BASE_PATH + "/users/{userId}", nonExistentUserId)
                 .header("Authorization", "Bearer " + accessToken)
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error.code").isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
+                .jsonPath("$.error.code")
+                .isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
     }
 
     @Test
     @DisplayName("로그인에 성공한다")
     void loginSuccess() {
         // given
-        SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
+        SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
+                "Test User", "password");
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
                 .expectStatus().isOk();
 
-        LoginRequest loginRequest = new LoginRequest("test@example.com", "password");
+        LoginRequest loginRequest = new LoginRequest("test@example.com",
+                "password");
 
         // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/login")
@@ -201,14 +217,17 @@ class UserControllerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error.code").isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+                .jsonPath("$.error.code")
+                .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
     }
 
     static Stream<Arguments> invalidLoginRequests() {
         return Stream.of(
                 Arguments.of(new LoginRequest("", "password")), // empty email
-                Arguments.of(new LoginRequest("invalid-email", "password")), // invalid email
-                Arguments.of(new LoginRequest("test@example.com", "")) // empty password
+                Arguments.of(new LoginRequest("invalid-email", "password")), // invalid
+                                                                             // email
+                Arguments.of(new LoginRequest("test@example.com", "")) // empty
+                                                                       // password
         );
     }
 
@@ -216,7 +235,8 @@ class UserControllerTest {
     @DisplayName("로그인 시 존재하지 않는 이메일이면 실패한다")
     void loginFailEmailNotFound() {
         // given
-        LoginRequest loginRequest = new LoginRequest("nonexistent@example.com", "password");
+        LoginRequest loginRequest = new LoginRequest("nonexistent@example.com",
+                "password");
 
         // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/login")
@@ -226,21 +246,24 @@ class UserControllerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error.code").isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
+                .jsonPath("$.error.code")
+                .isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
     }
 
     @Test
     @DisplayName("로그인 시 비밀번호가 틀리면 실패한다")
     void loginFailPasswordMismatch() {
         // given
-        SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
+        SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
+                "Test User", "password");
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
                 .expectStatus().isOk();
 
-        LoginRequest loginRequest = new LoginRequest("test@example.com", "wrong_password");
+        LoginRequest loginRequest = new LoginRequest("test@example.com",
+                "wrong_password");
 
         // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/login")
@@ -250,7 +273,8 @@ class UserControllerTest {
                 .expectStatus().isUnauthorized()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error.code").isEqualTo(ErrorCode.LOGIN_FAILED.getCode());
+                .jsonPath("$.error.code")
+                .isEqualTo(ErrorCode.LOGIN_FAILED.getCode());
     }
 
     @Test

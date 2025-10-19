@@ -5,6 +5,7 @@ plugins {
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
 	id 'com.github.spotbugs' version '6.0.26'
 	id 'org.ec4j.editorconfig' version '0.1.0'
+	id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'com.schemafy'
@@ -131,10 +132,29 @@ tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
 }
 
 editorconfig {
-	includes = ['src/**/*.java']
-	excludes = ['build/**', '.gradle/**']
+    includes = ['src/**/*.java']
+    excludes = ['build/**', '.gradle/**']
+}
+
+spotless {
+	java {
+		target 'src/**/*.java'
+		eclipse().configFile('java-formatter.xml')
+		removeUnusedImports()
+		importOrder(
+			'java',
+			'jakarta',
+			'org.springframework',
+			'org',
+			'com',
+			'',
+			'\\#'
+		)
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
 }
 
 tasks.named('check') {
-	dependsOn 'editorconfigCheck'
+	dependsOn 'spotlessCheck'
 }

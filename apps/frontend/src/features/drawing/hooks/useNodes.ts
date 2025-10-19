@@ -21,7 +21,13 @@ export const useNodes = () => {
   const [nodes, setNodes] = useState<Node[]>(INITIAL_NODES);
 
   const updateNode = (nodeId: string, newData: Partial<TableNodeData>) => {
-    setNodes((nds) => nds.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, ...newData } } : node)));
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, ...newData } }
+          : node,
+      ),
+    );
   };
 
   useEffect(() => {

@@ -1,20 +1,23 @@
 package com.schemafy.core.user.service;
 
-import com.schemafy.core.ulid.generator.UlidGenerator;
-import com.schemafy.core.common.TestFixture;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.user.service.dto.LoginCommand;
-import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.schemafy.core.common.TestFixture;
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.core.user.service.dto.LoginCommand;
+
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -40,7 +43,8 @@ class UserServiceTest {
     @DisplayName("회원가입에 성공한다")
     void signupSuccess() {
         // given
-        SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
+        SignUpRequest request = new SignUpRequest("test@example.com",
+                "Test User", "password");
 
         // when
         Mono<User> result = userService.signUp(request.toCommand());
@@ -72,15 +76,18 @@ class UserServiceTest {
                 .flatMap(userRepository::save)
                 .block();
 
-        SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
+        SignUpRequest request = new SignUpRequest("test@example.com",
+                "Test User", "password");
 
         // when
         Mono<User> result = userService.signUp(request.toCommand());
 
         // then
         StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
-                        ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_ALREADY_EXISTS)
+                .expectErrorMatches(
+                        throwable -> throwable instanceof BusinessException &&
+                                ((BusinessException) throwable)
+                                        .getErrorCode() == ErrorCode.USER_ALREADY_EXISTS)
                 .verify();
     }
 
@@ -88,7 +95,8 @@ class UserServiceTest {
     @DisplayName("ID로 회원 조회에 성공한다")
     void getUserByIdSuccess() {
         // given
-        User user = TestFixture.createTestUser("test@example.com", "Test User", "password")
+        User user = TestFixture
+                .createTestUser("test@example.com", "Test User", "password")
                 .flatMap(userRepository::save)
                 .block();
 
@@ -116,8 +124,10 @@ class UserServiceTest {
 
         // then
         StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
-                        ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_NOT_FOUND)
+                .expectErrorMatches(
+                        throwable -> throwable instanceof BusinessException &&
+                                ((BusinessException) throwable)
+                                        .getErrorCode() == ErrorCode.USER_NOT_FOUND)
                 .verify();
     }
 
@@ -130,14 +140,16 @@ class UserServiceTest {
                 .flatMap(userRepository::save)
                 .block();
 
-        LoginCommand command = new LoginCommand("test@example.com", rawPassword);
+        LoginCommand command = new LoginCommand("test@example.com",
+                rawPassword);
 
         // when
         Mono<User> result = userService.login(command);
 
         // then
         StepVerifier.create(result)
-                .expectNextMatches(user -> user.getEmail().equals("test@example.com"))
+                .expectNextMatches(
+                        user -> user.getEmail().equals("test@example.com"))
                 .verifyComplete();
     }
 
@@ -145,15 +157,18 @@ class UserServiceTest {
     @DisplayName("로그인 시 존재하지 않는 이메일이면 실패한다")
     void login_fail_email_not_found() {
         // given
-        LoginCommand command = new LoginCommand("nonexistent@example.com", "password");
+        LoginCommand command = new LoginCommand("nonexistent@example.com",
+                "password");
 
         // when
         Mono<User> result = userService.login(command);
 
         // then
         StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
-                        ((BusinessException) throwable).getErrorCode() == ErrorCode.USER_NOT_FOUND)
+                .expectErrorMatches(
+                        throwable -> throwable instanceof BusinessException &&
+                                ((BusinessException) throwable)
+                                        .getErrorCode() == ErrorCode.USER_NOT_FOUND)
                 .verify();
     }
 
@@ -165,15 +180,18 @@ class UserServiceTest {
                 .flatMap(userRepository::save)
                 .block();
 
-        LoginCommand command = new LoginCommand("test@example.com", "wrong_password");
+        LoginCommand command = new LoginCommand("test@example.com",
+                "wrong_password");
 
         // when
         Mono<User> result = userService.login(command);
 
         // then
         StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable instanceof BusinessException &&
-                        ((BusinessException) throwable).getErrorCode() == ErrorCode.LOGIN_FAILED)
+                .expectErrorMatches(
+                        throwable -> throwable instanceof BusinessException &&
+                                ((BusinessException) throwable)
+                                        .getErrorCode() == ErrorCode.LOGIN_FAILED)
                 .verify();
     }
 }

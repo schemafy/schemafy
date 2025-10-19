@@ -12,7 +12,8 @@ public class RestDocsConfiguration {
     public RestDocsWebTestClientConfigurationCustomizer restDocsWebTestClientConfigurationCustomizer() {
         return new RestDocsWebTestClientConfigurationCustomizer() {
             @Override
-            public void customize(WebTestClientRestDocumentationConfigurer configurer) {
+            public void customize(
+                    WebTestClientRestDocumentationConfigurer configurer) {
             }
         };
     }
