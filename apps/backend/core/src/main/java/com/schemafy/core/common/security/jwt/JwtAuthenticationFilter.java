@@ -45,17 +45,16 @@ public class JwtAuthenticationFilter implements WebFilter {
         // JWT 검증을 boundedElastic 스케줄러로 분리 (블로킹 호출 방지)
         return Mono.fromCallable(() -> validateTokenAndGetAuth(token))
                 .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(authResult -> {
-                    if (authResult.isValid()) {
+                .flatMap(result -> {
+                    if (result.valid()) {
                         return chain.filter(exchange)
                                 .contextWrite(ReactiveSecurityContextHolder
-                                        .withAuthentication(authResult
-                                                .getAuthentication()));
+                                        .withAuthentication(result.authentication()));
                     } else {
                         return handleJwtError(exchange,
-                                authResult.getErrorType(),
-                                authResult.getErrorMessage(),
-                                authResult.getStatus());
+                                result.errorType(),
+                                result.errorMessage(),
+                                result.status());
                     }
                 })
                 .onErrorResume(e -> handleUnexpectedError(exchange));
@@ -123,44 +122,20 @@ public class JwtAuthenticationFilter implements WebFilter {
         return null;
     }
 
-    private static class AuthenticationResult {
-        private final boolean valid;
-        private final UsernamePasswordAuthenticationToken authentication;
-        private final HttpStatus status;
-        private final String errorType;
-        private final String errorMessage;
+    private record AuthenticationResult(
+            boolean valid,
+            UsernamePasswordAuthenticationToken authentication,
+            HttpStatus status,
+            String errorType,
+            String errorMessage) {
 
-        private AuthenticationResult(boolean valid,
-                UsernamePasswordAuthenticationToken authentication,
-                HttpStatus status, String errorType, String errorMessage) {
-            this.valid = valid;
-            this.authentication = authentication;
-            this.status = status;
-            this.errorType = errorType;
-            this.errorMessage = errorMessage;
-        }
-
-        static AuthenticationResult success(
-                UsernamePasswordAuthenticationToken authentication) {
-            return new AuthenticationResult(true, authentication, null, null,
-                    null);
+        static AuthenticationResult success(UsernamePasswordAuthenticationToken authentication) {
+            return new AuthenticationResult(true, authentication, null, null, null);
         }
 
         static AuthenticationResult error(ErrorCode errorCode) {
             return new AuthenticationResult(false, null, errorCode.getStatus(),
                     errorCode.getCode(), errorCode.getMessage());
         }
-
-        boolean isValid() { return valid; }
-
-        UsernamePasswordAuthenticationToken getAuthentication() {
-            return authentication;
-        }
-
-        HttpStatus getStatus() { return status; }
-
-        String getErrorType() { return errorType; }
-
-        String getErrorMessage() { return errorMessage; }
     }
 }
