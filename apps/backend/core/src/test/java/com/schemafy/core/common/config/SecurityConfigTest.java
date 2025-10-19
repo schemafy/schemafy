@@ -1,13 +1,14 @@
 package com.schemafy.core.common.config;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -39,7 +40,8 @@ class SecurityConfigTest {
     @DisplayName("CORS 설정 빈이 생성된다")
     void corsConfigurationExists() {
         // This test verifies that CORS configuration is properly set up
-        // Actual CORS behavior is tested in integration tests with real browsers
+        // Actual CORS behavior is tested in integration tests with real
+        // browsers
         webTestClient.get()
                 .uri("/actuator/health")
                 .exchange()

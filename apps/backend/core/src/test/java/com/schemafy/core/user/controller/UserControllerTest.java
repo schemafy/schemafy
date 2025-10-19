@@ -1,5 +1,6 @@
 package com.schemafy.core.user.controller;
 
+import java.util.HashMap;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +29,6 @@ import com.schemafy.core.user.repository.UserRepository;
 
 import reactor.test.StepVerifier;
 
-import java.util.HashMap;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
@@ -55,7 +54,8 @@ class UserControllerTest {
     }
 
     private String generateAccessToken(String userId) {
-        return jwtProvider.generateAccessToken(userId, new HashMap<>(), System.currentTimeMillis());
+        return jwtProvider.generateAccessToken(userId, new HashMap<>(),
+                System.currentTimeMillis());
     }
 
     private String generateRefreshToken(String userId) {
@@ -281,8 +281,10 @@ class UserControllerTest {
     @DisplayName("유효한 리프레시 토큰으로 토큰 갱신에 성공한다")
     void refreshTokenSuccess() {
         // given
-        SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
-        EntityExchangeResult<byte[]> signupResult = webTestClient.post().uri(API_BASE_PATH + "/users/signup")
+        SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
+                "Test User", "password");
+        EntityExchangeResult<byte[]> signupResult = webTestClient.post()
+                .uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -308,8 +310,10 @@ class UserControllerTest {
     @DisplayName("잘못된 타입의 토큰으로 갱신 시 실패한다")
     void refreshTokenFailWithAccessToken() {
         // given
-        SignUpRequest signUpRequest = new SignUpRequest("test@example.com", "Test User", "password");
-        EntityExchangeResult<byte[]> signupResult = webTestClient.post().uri(API_BASE_PATH + "/users/signup")
+        SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
+                "Test User", "password");
+        EntityExchangeResult<byte[]> signupResult = webTestClient.post()
+                .uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(signUpRequest)
                 .exchange()
@@ -339,6 +343,7 @@ class UserControllerTest {
                 .expectStatus().isUnauthorized()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false)
-                .jsonPath("$.error.code").isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
+                .jsonPath("$.error.code")
+                .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
     }
 }

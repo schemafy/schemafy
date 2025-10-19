@@ -1,20 +1,23 @@
 package com.schemafy.core.common.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
+import org.springframework.http.HttpHeaders;
+import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
+import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.web.server.WebFilterChain;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpHeaders;
-import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
-import org.springframework.mock.web.server.MockServerWebExchange;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.web.server.WebFilterChain;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
+
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -36,7 +39,8 @@ class JwtAuthenticationFilterTest {
     @BeforeEach
     void setUp() {
         errorResponseWriter = new WebExchangeErrorWriter(new ObjectMapper());
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider, errorResponseWriter);
+        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider,
+                errorResponseWriter);
     }
 
     @Test
@@ -52,16 +56,19 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
         when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token)).thenReturn(JwtProvider.ACCESS_TOKEN);
+        when(jwtProvider.getTokenType(token))
+                .thenReturn(JwtProvider.ACCESS_TOKEN);
         when(jwtProvider.validateToken(token, userId)).thenReturn(true);
 
         // When & Then
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain)
+        StepVerifier
+                .create(jwtAuthenticationFilter.filter(exchange, filterChain)
                         .contextWrite(ctx -> {
                             return ctx;
                         })
                         .then(Mono.deferContextual(Mono::just))
-                        .flatMap(ctx -> ReactiveSecurityContextHolder.getContext()))
+                        .flatMap(ctx -> ReactiveSecurityContextHolder
+                                .getContext()))
                 .expectNextCount(0)
                 .verifyComplete();
     }
@@ -112,11 +119,13 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
         when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token)).thenReturn(JwtProvider.ACCESS_TOKEN);
+        when(jwtProvider.getTokenType(token))
+                .thenReturn(JwtProvider.ACCESS_TOKEN);
         when(jwtProvider.validateToken(token, userId)).thenReturn(false);
 
         // When & Then
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        StepVerifier
+                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
 
@@ -133,10 +142,12 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
         when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token)).thenReturn(JwtProvider.REFRESH_TOKEN);
+        when(jwtProvider.getTokenType(token))
+                .thenReturn(JwtProvider.REFRESH_TOKEN);
 
         // When & Then
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        StepVerifier
+                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
 
@@ -151,10 +162,12 @@ class JwtAuthenticationFilterTest {
                 .build();
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        when(jwtProvider.extractUserId(token)).thenThrow(new RuntimeException("Invalid token"));
+        when(jwtProvider.extractUserId(token))
+                .thenThrow(new RuntimeException("Invalid token"));
 
         // When & Then
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        StepVerifier
+                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
 
@@ -169,7 +182,8 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
         // When & Then
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        StepVerifier
+                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
 
@@ -201,7 +215,8 @@ class JwtAuthenticationFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
         // When & Then
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        StepVerifier
+                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
 }

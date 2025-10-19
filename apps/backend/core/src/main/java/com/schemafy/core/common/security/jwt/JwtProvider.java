@@ -1,34 +1,37 @@
 package com.schemafy.core.common.security.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import javax.crypto.SecretKey;
+
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtProvider {
 
     public static final String ACCESS_TOKEN = "ACCESS";
     public static final String REFRESH_TOKEN = "REFRESH";
-    private static final String CLAIM_TYPE   = "type";
+    private static final String CLAIM_TYPE = "type";
 
     private final JwtProperties jwtProperties;
     private final SecretKey secretKey;
 
     public JwtProvider(JwtProperties properties) {
         this.jwtProperties = properties;
-        this.secretKey = Keys.hmacShaKeyFor(properties.getSecret().getBytes(StandardCharsets.UTF_8));
+        this.secretKey = Keys.hmacShaKeyFor(
+                properties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(String userId, Map<String, Object> claims, long now) {
+    public String generateAccessToken(String userId, Map<String, Object> claims,
+            long now) {
         Map<String, Object> tokenClaims = new HashMap<>(claims);
         tokenClaims.put(CLAIM_TYPE, ACCESS_TOKEN);
 
@@ -38,7 +41,8 @@ public class JwtProvider {
                 .issuer(jwtProperties.getIssuer())
                 .issuedAt(new Date(now))
                 .audience().add(jwtProperties.getAudience()).and()
-                .expiration(new Date(now + jwtProperties.getAccessTokenExpiration()))
+                .expiration(new Date(
+                        now + jwtProperties.getAccessTokenExpiration()))
                 .signWith(secretKey)
                 .compact();
     }
@@ -50,7 +54,8 @@ public class JwtProvider {
                 .issuer(jwtProperties.getIssuer())
                 .audience().add(jwtProperties.getAudience()).and()
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshTokenExpiration()))
+                .expiration(new Date(System.currentTimeMillis()
+                        + jwtProperties.getRefreshTokenExpiration()))
                 .signWith(secretKey)
                 .compact();
     }
@@ -63,7 +68,8 @@ public class JwtProvider {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(String token,
+            Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
@@ -85,10 +91,15 @@ public class JwtProvider {
             Claims claims = extractAllClaims(token);
 
             // 정책 체크
-            if (!Objects.equals(jwtProperties.getIssuer(), claims.getIssuer())) return false;
-            if (claims.getAudience() == null || !claims.getAudience().contains(jwtProperties.getAudience())) return false;
-            if (!Objects.equals(userId, claims.getSubject())) return false;
-            if (claims.getExpiration() == null || isTokenExpired(token)) return false;
+            if (!Objects.equals(jwtProperties.getIssuer(), claims.getIssuer()))
+                return false;
+            if (claims.getAudience() == null || !claims.getAudience()
+                    .contains(jwtProperties.getAudience()))
+                return false;
+            if (!Objects.equals(userId, claims.getSubject()))
+                return false;
+            if (claims.getExpiration() == null || isTokenExpired(token))
+                return false;
         } catch (Exception e) {
             return false;
         }
@@ -98,6 +109,7 @@ public class JwtProvider {
     }
 
     public String getTokenType(String token) {
-        return extractClaim(token, claims -> claims.get(CLAIM_TYPE, String.class));
+        return extractClaim(token,
+                claims -> claims.get(CLAIM_TYPE, String.class));
     }
 }

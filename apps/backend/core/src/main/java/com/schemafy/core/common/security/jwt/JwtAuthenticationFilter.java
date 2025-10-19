@@ -1,10 +1,9 @@
 package com.schemafy.core.common.security.jwt;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
+import java.util.Collections;
+
 import jakarta.validation.constraints.NotNull;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -15,10 +14,15 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
+
+import com.schemafy.core.common.exception.ErrorCode;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-
-import java.util.Collections;
 
 @Component
 @RequiredArgsConstructor
@@ -30,7 +34,8 @@ public class JwtAuthenticationFilter implements WebFilter {
     private final WebExchangeErrorWriter errorResponseWriter;
 
     @Override
-    public Mono<Void> filter(@NotNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {
+    public Mono<Void> filter(@NotNull ServerWebExchange exchange,
+            @NonNull WebFilterChain chain) {
         String token = extractToken(exchange.getRequest());
 
         if (token == null) {
@@ -43,9 +48,14 @@ public class JwtAuthenticationFilter implements WebFilter {
                 .flatMap(authResult -> {
                     if (authResult.isValid()) {
                         return chain.filter(exchange)
-                                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authResult.getAuthentication()));
+                                .contextWrite(ReactiveSecurityContextHolder
+                                        .withAuthentication(authResult
+                                                .getAuthentication()));
                     } else {
-                        return handleJwtError(exchange, authResult.getErrorType(), authResult.getErrorMessage(), authResult.getStatus());
+                        return handleJwtError(exchange,
+                                authResult.getErrorType(),
+                                authResult.getErrorMessage(),
+                                authResult.getStatus());
                     }
                 })
                 .onErrorResume(e -> handleUnexpectedError(exchange));
@@ -57,53 +67,56 @@ public class JwtAuthenticationFilter implements WebFilter {
             String tokenType = jwtProvider.getTokenType(token);
 
             if (!JwtProvider.ACCESS_TOKEN.equals(tokenType)) {
-                return AuthenticationResult.error(JwtErrorCode.INVALID_ACCESS_TOKEN_TYPE);
+                return AuthenticationResult
+                        .error(ErrorCode.INVALID_ACCESS_TOKEN_TYPE);
             }
 
             if (!jwtProvider.validateToken(token, userId)) {
-                return AuthenticationResult.error(JwtErrorCode.INVALID_TOKEN);
+                return AuthenticationResult.error(ErrorCode.INVALID_TOKEN);
             }
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    userId, null, Collections.emptyList());
 
             return AuthenticationResult.success(authentication);
 
         } catch (ExpiredJwtException e) {
-            return AuthenticationResult.error(JwtErrorCode.EXPIRED_TOKEN);
+            return AuthenticationResult.error(ErrorCode.EXPIRED_TOKEN);
         } catch (JwtException e) {
-            return AuthenticationResult.error(JwtErrorCode.MALFORMED_TOKEN);
+            return AuthenticationResult.error(ErrorCode.MALFORMED_TOKEN);
         } catch (Exception e) {
-            return AuthenticationResult.error(JwtErrorCode.TOKEN_VALIDATION_ERROR);
+            return AuthenticationResult.error(ErrorCode.TOKEN_VALIDATION_ERROR);
         }
     }
 
-    private Mono<Void> handleJwtError(ServerWebExchange exchange, String errorCode, String errorMessage, HttpStatus status) {
+    private Mono<Void> handleJwtError(ServerWebExchange exchange,
+            String errorCode, String errorMessage, HttpStatus status) {
         return errorResponseWriter.writeErrorResponse(
                 exchange,
                 status,
                 errorCode,
-                errorMessage
-        );
+                errorMessage);
     }
 
-    private Mono<Void> handleJwtError(ServerWebExchange exchange, JwtErrorCode jwtErrorCode) {
+    private Mono<Void> handleJwtError(ServerWebExchange exchange,
+            ErrorCode errorCode) {
         return errorResponseWriter.writeErrorResponse(
                 exchange,
-                jwtErrorCode.getStatus(),
-                jwtErrorCode.getCode(),
-                jwtErrorCode.getMessage()
-        );
+                errorCode.getStatus(),
+                errorCode.getCode(),
+                errorCode.getMessage());
     }
 
     private Mono<Void> handleUnexpectedError(ServerWebExchange exchange) {
-        return handleJwtError(exchange, JwtErrorCode.TOKEN_VALIDATION_ERROR);
+        return handleJwtError(exchange, ErrorCode.TOKEN_VALIDATION_ERROR);
     }
 
     private String extractToken(ServerHttpRequest request) {
-        String bearerToken = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String bearerToken = request.getHeaders()
+                .getFirst(HttpHeaders.AUTHORIZATION);
 
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+        if (StringUtils.hasText(bearerToken)
+                && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(BEARER_PREFIX.length());
         }
 
@@ -117,8 +130,9 @@ public class JwtAuthenticationFilter implements WebFilter {
         private final String errorType;
         private final String errorMessage;
 
-        private AuthenticationResult(boolean valid, UsernamePasswordAuthenticationToken authentication,
-                                     HttpStatus status, String errorType, String errorMessage) {
+        private AuthenticationResult(boolean valid,
+                UsernamePasswordAuthenticationToken authentication,
+                HttpStatus status, String errorType, String errorMessage) {
             this.valid = valid;
             this.authentication = authentication;
             this.status = status;
@@ -126,32 +140,27 @@ public class JwtAuthenticationFilter implements WebFilter {
             this.errorMessage = errorMessage;
         }
 
-        static AuthenticationResult success(UsernamePasswordAuthenticationToken authentication) {
-            return new AuthenticationResult(true, authentication, null, null, null);
+        static AuthenticationResult success(
+                UsernamePasswordAuthenticationToken authentication) {
+            return new AuthenticationResult(true, authentication, null, null,
+                    null);
         }
 
-        static AuthenticationResult error(JwtErrorCode errorCode) {
-            return new AuthenticationResult(false, null, errorCode.getStatus(), errorCode.getCode(), errorCode.getMessage());
+        static AuthenticationResult error(ErrorCode errorCode) {
+            return new AuthenticationResult(false, null, errorCode.getStatus(),
+                    errorCode.getCode(), errorCode.getMessage());
         }
 
-        boolean isValid() {
-            return valid;
-        }
+        boolean isValid() { return valid; }
 
         UsernamePasswordAuthenticationToken getAuthentication() {
             return authentication;
         }
 
-        HttpStatus getStatus() {
-            return status;
-        }
+        HttpStatus getStatus() { return status; }
 
-        String getErrorType() {
-            return errorType;
-        }
+        String getErrorType() { return errorType; }
 
-        String getErrorMessage() {
-            return errorMessage;
-        }
+        String getErrorMessage() { return errorMessage; }
     }
 }

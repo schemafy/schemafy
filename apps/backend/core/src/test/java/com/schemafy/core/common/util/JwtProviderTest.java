@@ -1,16 +1,18 @@
 package com.schemafy.core.common.util;
 
-import com.schemafy.core.common.security.jwt.JwtProperties;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.security.SignatureException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.schemafy.core.common.security.jwt.JwtProperties;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,7 +25,8 @@ class JwtProviderTest {
     @BeforeEach
     void setUp() {
         jwtProperties = new JwtProperties();
-        jwtProperties.setSecret("test-secret-key-minimum-32-characters-for-hs256");
+        jwtProperties
+                .setSecret("test-secret-key-minimum-32-characters-for-hs256");
         jwtProperties.setIssuer("schemafy");
         jwtProperties.setRefreshTokenExpiration(604800000L); // 7 days
         jwtProperties.setAccessTokenExpiration(36000000L); // 1 hour
@@ -48,7 +51,8 @@ class JwtProviderTest {
         // Then
         assertThat(token).isNotNull().isNotEmpty();
         assertThat(jwtProvider.extractUserId(token)).isEqualTo(userId);
-        assertThat(jwtProvider.getTokenType(token)).isEqualTo(JwtProvider.ACCESS_TOKEN);
+        assertThat(jwtProvider.getTokenType(token))
+                .isEqualTo(JwtProvider.ACCESS_TOKEN);
     }
 
     @Test
@@ -63,7 +67,8 @@ class JwtProviderTest {
         // Then
         assertThat(token).isNotNull().isNotEmpty();
         assertThat(jwtProvider.extractUserId(token)).isEqualTo(userId);
-        assertThat(jwtProvider.getTokenType(token)).isEqualTo(JwtProvider.REFRESH_TOKEN);
+        assertThat(jwtProvider.getTokenType(token))
+                .isEqualTo(JwtProvider.REFRESH_TOKEN);
     }
 
     @Test
@@ -72,7 +77,8 @@ class JwtProviderTest {
         // Given
         long now = System.currentTimeMillis();
         String userId = "user456";
-        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(), now);
+        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(),
+                now);
 
         // When
         String extractedUserId = jwtProvider.extractUserId(token);
@@ -87,7 +93,8 @@ class JwtProviderTest {
         // Given
         long now = System.currentTimeMillis();
         String userId = "user789";
-        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(), now);
+        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(),
+                now);
 
         // When
         boolean isValid = jwtProvider.validateToken(token, userId);
@@ -103,7 +110,8 @@ class JwtProviderTest {
         long now = System.currentTimeMillis();
         String userId = "user123";
         String wrongUserId = "user456";
-        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(), now);
+        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(),
+                now);
 
         // When
         boolean isValid = jwtProvider.validateToken(token, wrongUserId);
@@ -118,7 +126,8 @@ class JwtProviderTest {
         // Given
         long now = System.currentTimeMillis();
         String userId = "user123";
-        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(), now);
+        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(),
+                now);
 
         // When
         boolean isExpired = jwtProvider.isTokenExpired(token);
@@ -135,7 +144,8 @@ class JwtProviderTest {
         jwtProperties.setAccessTokenExpiration(-1000); // Expired 1 second ago
         JwtProvider expiredJwtProvider = new JwtProvider(jwtProperties);
         String userId = "user123";
-        String token = expiredJwtProvider.generateAccessToken(userId, new HashMap<>(), now);
+        String token = expiredJwtProvider.generateAccessToken(userId,
+                new HashMap<>(), now);
 
         // When & Then
         assertThatThrownBy(() -> expiredJwtProvider.isTokenExpired(token))
@@ -159,7 +169,8 @@ class JwtProviderTest {
         // Given
         long now = System.currentTimeMillis();
         String userId = "user123";
-        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(), now);
+        String token = jwtProvider.generateAccessToken(userId, new HashMap<>(),
+                now);
         String tamperedToken = token.substring(0, token.length() - 5) + "XXXXX";
 
         // When & Then
@@ -223,11 +234,14 @@ class JwtProviderTest {
         String userId = "user123";
 
         // When
-        String accessToken = jwtProvider.generateAccessToken(userId, new HashMap<>(), now);
+        String accessToken = jwtProvider.generateAccessToken(userId,
+                new HashMap<>(), now);
         String refreshToken = jwtProvider.generateRefreshToken(userId);
 
         // Then
-        assertThat(jwtProvider.getTokenType(accessToken)).isEqualTo(JwtProvider.ACCESS_TOKEN);
-        assertThat(jwtProvider.getTokenType(refreshToken)).isEqualTo(JwtProvider.REFRESH_TOKEN);
+        assertThat(jwtProvider.getTokenType(accessToken))
+                .isEqualTo(JwtProvider.ACCESS_TOKEN);
+        assertThat(jwtProvider.getTokenType(refreshToken))
+                .isEqualTo(JwtProvider.REFRESH_TOKEN);
     }
 }

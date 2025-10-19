@@ -1,10 +1,5 @@
 package com.schemafy.core.common.security;
 
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
-import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
-import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,6 +16,13 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
+import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
+import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
+
 @Configuration
 @EnableWebFluxSecurity
 @EnableMethodSecurity
@@ -28,19 +30,20 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final CorsProperties corsProperties;
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}", "v1.0");
+    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+            "v1.0");
 
     private static final String[] PUBLIC_ENDPOINTS = {
-            API_BASE_PATH +"/auth/**",
-            API_BASE_PATH + "/public/**",
-            API_BASE_PATH + "/users/signup",
-            API_BASE_PATH + "/users/login",
-            API_BASE_PATH + "/users/refresh",
-            "/actuator/health",
-            "/actuator/info",
-            "/webjars/**",
-            "/v3/api-docs/**",
-            "/swagger-ui/**"
+        API_BASE_PATH + "/auth/**",
+        API_BASE_PATH + "/public/**",
+        API_BASE_PATH + "/users/signup",
+        API_BASE_PATH + "/users/login",
+        API_BASE_PATH + "/users/refresh",
+        "/actuator/health",
+        "/actuator/info",
+        "/webjars/**",
+        "/v3/api-docs/**",
+        "/swagger-ui/**"
     };
 
     @Bean
@@ -53,12 +56,13 @@ public class SecurityConfig {
             ServerHttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter,
             JwtAuthenticationEntryPoint authenticationEntryPoint,
-            JwtAccessDeniedHandler accessDeniedHandler
-    ) {
+            JwtAccessDeniedHandler accessDeniedHandler) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource(corsProperties)))
+                .securityContextRepository(
+                        NoOpServerSecurityContextRepository.getInstance())
+                .cors(cors -> cors.configurationSource(
+                        corsConfigurationSource(corsProperties)))
 
                 // 불필요한 로그인 엔드포인트 비활성
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
@@ -66,25 +70,26 @@ public class SecurityConfig {
                 .logout(ServerHttpSecurity.LogoutSpec::disable)
 
                 // Request cache 비활성(원치 않는 리다이렉트/저장 방지)
-                .requestCache(rc -> rc.requestCache(NoOpServerRequestCache.getInstance()))
+                .requestCache(rc -> rc
+                        .requestCache(NoOpServerRequestCache.getInstance()))
 
                 // 예외 처리 핸들러 설정
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler)
-                )
+                        .accessDeniedHandler(accessDeniedHandler))
 
-                .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .addFilterAt(jwtAuthenticationFilter,
+                        SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyExchange().authenticated()
-                )
+                        .anyExchange().authenticated())
                 .build();
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource(CorsProperties props) {
+    public CorsConfigurationSource corsConfigurationSource(
+            CorsProperties props) {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(props.getAllowedOrigins());

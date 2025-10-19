@@ -14,7 +14,8 @@ public class TestSecurityConfig {
 
     @Bean
     @Primary
-    public SecurityWebFilterChain testSecurityFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain testSecurityFilterChain(
+            ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
@@ -22,8 +23,7 @@ public class TestSecurityConfig {
                 .logout(ServerHttpSecurity.LogoutSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                        .anyExchange().permitAll()
-                )
+                        .anyExchange().permitAll())
                 .build();
     }
 }

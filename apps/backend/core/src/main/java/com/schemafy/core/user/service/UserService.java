@@ -55,7 +55,8 @@ public class UserService {
 
     public Mono<User> login(LoginCommand command) {
         return findUserByEmail(command.email())
-                .flatMap(user -> getUserByPasswordMatch(user, command.password()));
+                .flatMap(user -> getUserByPasswordMatch(user,
+                        command.password()));
     }
 
     private Mono<User> findUserByEmail(String email) {

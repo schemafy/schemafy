@@ -51,7 +51,8 @@ class UserServiceTest {
 
         // then - 응답 검증
         StepVerifier.create(result)
-                .expectNextMatches(user -> user.getEmail().equals("test@example.com"))
+                .expectNextMatches(
+                        user -> user.getEmail().equals("test@example.com"))
                 .verifyComplete();
 
         // then - db 검증

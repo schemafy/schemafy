@@ -2,6 +2,8 @@ package com.schemafy.core.user.controller;
 
 import jakarta.validation.Valid;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
@@ -11,13 +13,11 @@ import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -34,8 +34,7 @@ public class UserController {
         return userService.signUp(request.toCommand())
                 .map(user -> jwtTokenIssuer.issueTokens(
                         user.getId(),
-                        BaseResponse.success(UserInfoResponse.from(user))
-                ));
+                        BaseResponse.success(UserInfoResponse.from(user))));
     }
 
     @PostMapping("/users/login")
@@ -44,15 +43,16 @@ public class UserController {
         return userService.login(request.toCommand())
                 .map(user -> jwtTokenIssuer.issueTokens(
                         user.getId(),
-                        BaseResponse.success(UserInfoResponse.from(user))
-                ));
+                        BaseResponse.success(UserInfoResponse.from(user))));
     }
 
     @PostMapping("/users/refresh")
-    public Mono<ResponseEntity<BaseResponse<Void>>> refresh(ServerHttpRequest request) {
+    public Mono<ResponseEntity<BaseResponse<Void>>> refresh(
+            ServerHttpRequest request) {
         return Mono.fromCallable(() -> extractRefreshTokenFromCookie(request))
                 .flatMap(userService::getUserIdFromRefreshToken)
-                .map(userId -> jwtTokenIssuer.issueTokens(userId, BaseResponse.success(null)));
+                .map(userId -> jwtTokenIssuer.issueTokens(userId,
+                        BaseResponse.success(null)));
     }
 
     private String extractRefreshTokenFromCookie(ServerHttpRequest request) {

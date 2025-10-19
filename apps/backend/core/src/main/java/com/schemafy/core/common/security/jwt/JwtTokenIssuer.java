@@ -1,14 +1,15 @@
 package com.schemafy.core.common.security.jwt;
 
-import lombok.RequiredArgsConstructor;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -16,7 +17,8 @@ public class JwtTokenIssuer {
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final Duration REFRESH_TOKEN_COOKIE_MAX_AGE = Duration.ofDays(7);
+    private static final Duration REFRESH_TOKEN_COOKIE_MAX_AGE = Duration
+            .ofDays(7);
 
     private final JwtProvider jwtProvider;
 
@@ -24,11 +26,13 @@ public class JwtTokenIssuer {
         long now = System.currentTimeMillis();
         Map<String, Object> claims = new HashMap<>();
 
-        String accessToken = jwtProvider.generateAccessToken(userId, claims, now);
+        String accessToken = jwtProvider.generateAccessToken(userId, claims,
+                now);
         String refreshToken = jwtProvider.generateRefreshToken(userId);
 
         // Refresh Token을 HttpOnly Cookie로 설정
-        ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
+        ResponseCookie refreshTokenCookie = ResponseCookie
+                .from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
                 .secure(true) // HTTPS에서만 전송
                 .path("/")

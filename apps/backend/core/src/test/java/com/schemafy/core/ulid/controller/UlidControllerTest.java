@@ -1,16 +1,5 @@
 package com.schemafy.core.ulid.controller;
 
-import static org.mockito.Mockito.when;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -19,11 +8,23 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import org.junit.jupiter.api.Test;
+
 import com.schemafy.core.TestSecurityConfig;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 import com.schemafy.core.ulid.service.UlidService;
 
 import reactor.core.publisher.Mono;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @WebFluxTest(controllers = UlidController.class)
 @AutoConfigureRestDocs
@@ -75,7 +76,8 @@ class UlidControllerTest {
                                         .type("boolean"),
                                 fieldWithPath("result").description("응답 데이터")
                                         .type("object"),
-                                fieldWithPath("result.ulid").description("생성된 ULID 문자열")
+                                fieldWithPath("result.ulid")
+                                        .description("생성된 ULID 문자열")
                                         .type("string"))));
     }
 }
