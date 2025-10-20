@@ -18,12 +18,8 @@ import com.schemafy.core.ulid.service.UlidService;
 
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.ulid.docs.UlidApiSnippets.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @WebFluxTest(controllers = UlidController.class)
@@ -65,19 +61,8 @@ class UlidControllerTest {
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.ulid").isEqualTo(mockUlid)
                 .consumeWith(document("ulid-generate",
-                        requestHeaders(
-                                headerWithName("Accept")
-                                        .description("요청 응답 포맷(Accept 헤더)")),
-                        responseHeaders(
-                                headerWithName("Content-Type")
-                                        .description("응답 컨텐츠 타입")),
-                        responseFields(
-                                fieldWithPath("success").description("요청 성공 여부")
-                                        .type("boolean"),
-                                fieldWithPath("result").description("응답 데이터")
-                                        .type("object"),
-                                fieldWithPath("result.ulid")
-                                        .description("생성된 ULID 문자열")
-                                        .type("string"))));
+                        generateUlidRequestHeaders(),
+                        generateUlidResponseHeaders(),
+                        generateUlidResponse()));
     }
 }

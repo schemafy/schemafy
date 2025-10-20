@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -29,11 +30,14 @@ import com.schemafy.core.user.repository.UserRepository;
 
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
+@AutoConfigureRestDocs
 @DisplayName("MemberController 통합 테스트")
 class UserControllerTest {
     private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
@@ -78,7 +82,10 @@ class UserControllerTest {
                 .expectHeader().exists("Authorization")
                 .expectHeader().exists("Set-Cookie")
                 .expectBody()
-                .consumeWith(System.out::println) // Print response
+                .consumeWith(document("user-signup",
+                        signUpRequest(),
+                        signUpResponseHeaders(),
+                        signUpResponse()))
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isNotEmpty()
                 .jsonPath("$.result.email").isEqualTo("test@example.com");
@@ -154,6 +161,11 @@ class UserControllerTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
+                .consumeWith(document("user-get",
+                        getUserPathParameters(),
+                        getUserRequestHeaders(),
+                        getUserResponseHeaders(),
+                        getUserResponse()))
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo(userId)
                 .jsonPath("$.result.email").isEqualTo(signUpRequest.email());
@@ -202,6 +214,10 @@ class UserControllerTest {
                 .expectHeader().exists("Authorization")
                 .expectHeader().exists("Set-Cookie")
                 .expectBody()
+                .consumeWith(document("user-login",
+                        loginRequest(),
+                        loginResponseHeaders(),
+                        loginResponse()))
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.email").isEqualTo("test@example.com");
     }
@@ -303,6 +319,10 @@ class UserControllerTest {
                 .expectHeader().exists("Authorization")
                 .expectHeader().exists("Set-Cookie")
                 .expectBody()
+                .consumeWith(document("user-refresh",
+                        refreshTokenRequestCookies(),
+                        refreshTokenResponseHeaders(),
+                        refreshTokenResponse()))
                 .jsonPath("$.success").isEqualTo(true);
     }
 
