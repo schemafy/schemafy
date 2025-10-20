@@ -127,9 +127,9 @@ include::{snippets}/user-login/http-response.adoc[]
 include::{snippets}/user-login/response-headers.adoc[]
 include::{snippets}/user-login/response-fields.adoc[]
 
-=== 사용자 조회
+=== * 사용자 조회 (스펙 변경 예정)
 
-사용자 ID로 사용자 정보를 조회합니다. (인증 필요)
+사용자 ID로 사용자 정보를 조회합니다. (인증 필요). 요구 사항에 따른 변경 예정
 
 [discrete]
 ==== 요청
