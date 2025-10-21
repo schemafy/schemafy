@@ -1,3 +1,3 @@
 export * from './useDragAndDrop';
-export * from './useEdges';
-export * from './useNodes';
+export * from './useRelationships';
+export * from './useTables';

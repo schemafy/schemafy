@@ -10,8 +10,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
-  useEdges,
-  useNodes,
+  useRelationships,
+  useTables,
   TableNode,
   RelationshipMarker,
   Toolbar,
@@ -43,19 +43,19 @@ export const CanvasPage = () => {
   } | null>(null);
   const { screenToFlowPosition } = useReactFlow();
 
-  const { nodes, addTable, onNodesChange } = useNodes();
+  const { tables, addTable, onTablesChange } = useTables();
   const {
-    edges,
-    selectedEdge,
+    relationships,
+    selectedRelationship,
     onConnect,
-    onEdgesChange,
-    onEdgeClick,
+    onRelationshipsChange,
+    onRelationshipClick,
     onReconnectStart,
     onReconnect,
     onReconnectEnd,
     changeRelationshipConfig,
-    setSelectedEdge,
-  } = useEdges(relationshipConfig);
+    setSelectedRelationship,
+  } = useRelationships(relationshipConfig);
 
   const handlePaneClick = (e: React.MouseEvent) => {
     if (activeTool === 'table') {
@@ -87,16 +87,16 @@ export const CanvasPage = () => {
 
         <div className="flex-1 bg-schemafy-secondary relative">
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            nodes={tables}
+            edges={relationships}
+            onNodesChange={onTablesChange}
+            onEdgesChange={onRelationshipsChange}
             onPaneClick={handlePaneClick}
             onPaneMouseMove={handleMouseMove}
             nodesDraggable={activeTool !== 'hand'}
             elementsSelectable={activeTool !== 'hand'}
             onConnect={onConnect}
-            onEdgeClick={onEdgeClick}
+            onEdgeClick={onRelationshipClick}
             onReconnect={onReconnect}
             onReconnectStart={onReconnectStart}
             onReconnectEnd={onReconnectEnd}
@@ -105,7 +105,6 @@ export const CanvasPage = () => {
             connectionLineType={ConnectionLineType.SmoothStep}
             proOptions={{ hideAttribution: true }}
             connectionMode={ConnectionMode.Loose}
-            fitView
           >
             <MiniMap
               position="bottom-right"
@@ -126,12 +125,12 @@ export const CanvasPage = () => {
             {activeTool === 'table' && <TablePreview mousePosition={mousePosition} />}
           </ReactFlow>
 
-          {selectedEdge && (
+          {selectedRelationship && (
             <EdgeSelector
-              selectedEdge={selectedEdge}
-              edges={edges}
+              selectedRelationship={selectedRelationship}
+              relationships={relationships}
               onRelationshipChange={changeRelationshipConfig}
-              onClose={() => setSelectedEdge(null)}
+              onClose={() => setSelectedRelationship(null)}
             />
           )}
         </div>

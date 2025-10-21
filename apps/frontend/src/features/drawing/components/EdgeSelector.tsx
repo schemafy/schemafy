@@ -3,20 +3,20 @@ import { Button } from '@/components';
 import { RelationshipSelector } from './RelationshipSelector';
 import { type RelationshipConfig, isRelationshipType } from '../types';
 
-interface EdgeSelectorProps {
-  selectedEdge: string;
-  edges: Edge[];
-  onRelationshipChange: (edgeId: string, config: RelationshipConfig) => void;
+interface RelationshipSelectorProps {
+  selectedRelationship: string;
+  relationships: Edge[];
+  onRelationshipChange: (relationshipId: string, config: RelationshipConfig) => void;
   onClose: () => void;
 }
 
-export const EdgeSelector = ({ selectedEdge, edges, onRelationshipChange, onClose }: EdgeSelectorProps) => {
-  const edge = edges.find((e) => e.id === selectedEdge);
+export const EdgeSelector = ({ selectedRelationship, relationships, onRelationshipChange, onClose }: RelationshipSelectorProps) => {
+  const relationship = relationships.find((r) => r.id === selectedRelationship);
 
-  const relationshipType = edge?.data?.relationshipType;
-  const isDashed = typeof edge?.data?.isDashed === 'boolean' ? edge.data.isDashed : false;
-  const controlPointX = typeof edge?.data?.controlPointX === 'number' ? edge.data.controlPointX : undefined;
-  const controlPointY = typeof edge?.data?.controlPointY === 'number' ? edge.data.controlPointY : undefined;
+  const relationshipType = relationship?.data?.relationshipType;
+  const isDashed = typeof relationship?.data?.isDashed === 'boolean' ? relationship.data.isDashed : false;
+  const controlPointX = typeof relationship?.data?.controlPointX === 'number' ? relationship.data.controlPointX : undefined;
+  const controlPointY = typeof relationship?.data?.controlPointY === 'number' ? relationship.data.controlPointY : undefined;
 
   const currentConfig: RelationshipConfig = {
     type: isRelationshipType(relationshipType) ? relationshipType : 'one-to-many',
@@ -26,7 +26,7 @@ export const EdgeSelector = ({ selectedEdge, edges, onRelationshipChange, onClos
   };
 
   const handleConfigChange = (newConfig: RelationshipConfig) => {
-    onRelationshipChange(selectedEdge, newConfig);
+    onRelationshipChange(selectedRelationship, newConfig);
   };
 
   return (

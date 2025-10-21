@@ -6,18 +6,18 @@ const getRelationshipStyle = (isDashed: boolean = false) => {
   return isDashed ? RELATIONSHIP_STYLE_TYPES.dashed : RELATIONSHIP_STYLE_TYPES.solid;
 };
 
-export const useEdges = (relationshipConfig: RelationshipConfig) => {
-  const [edges, setEdges] = useState<Edge[]>([]);
-  const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
-  const edgeReconnectSuccessful = useRef(true);
+export const useRelationships = (relationshipConfig: RelationshipConfig) => {
+  const [relationships, setRelationships] = useState<Edge[]>([]);
+  const [selectedRelationship, setSelectedRelationship] = useState<string | null>(null);
+  const relationshipReconnectSuccessful = useRef(true);
 
-  const createEdge = (params: Connection): Edge => {
+  const createRelationship = (params: Connection): Edge => {
     const baseConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
     const style = getRelationshipStyle(relationshipConfig.isDashed);
 
     return {
       ...params,
-      id: `edge_${Date.now()}`,
+      id: `relationship_${Date.now()}`,
       type: 'customSmoothStep',
       style,
       markerStart: baseConfig.markerStart,
@@ -36,44 +36,44 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
   };
 
   const onConnect = (params: Connection) => {
-    const newEdge = createEdge(params);
-    setEdges((eds) => addEdge(newEdge, eds));
+    const newRelationship = createRelationship(params);
+    setRelationships((rels) => addEdge(newRelationship, rels));
   };
 
-  const onEdgesChange = (changes: EdgeChange[]) => {
-    setEdges((eds) => applyEdgeChanges(changes, eds));
+  const onRelationshipsChange = (changes: EdgeChange[]) => {
+    setRelationships((rels) => applyEdgeChanges(changes, rels));
   };
 
-  const onEdgeClick = (event: React.MouseEvent, edge: Edge) => {
+  const onRelationshipClick = (event: React.MouseEvent, relationship: Edge) => {
     event.stopPropagation();
-    setSelectedEdge(edge.id);
+    setSelectedRelationship(relationship.id);
   };
 
   const onReconnectStart = () => {
-    edgeReconnectSuccessful.current = false;
+    relationshipReconnectSuccessful.current = false;
   };
 
-  const onReconnect = (oldEdge: Edge, newConnection: Connection) => {
-    edgeReconnectSuccessful.current = true;
-    setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
+  const onReconnect = (oldRelationship: Edge, newConnection: Connection) => {
+    relationshipReconnectSuccessful.current = true;
+    setRelationships((rels) => reconnectEdge(oldRelationship, newConnection, rels));
   };
 
-  const onReconnectEnd = (_: MouseEvent | TouchEvent, edge: Edge) => {
-    if (!edgeReconnectSuccessful.current) {
-      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+  const onReconnectEnd = (_: MouseEvent | TouchEvent, relationship: Edge) => {
+    if (!relationshipReconnectSuccessful.current) {
+      setRelationships((rels) => rels.filter((r) => r.id !== relationship.id));
     }
-    edgeReconnectSuccessful.current = true;
+    relationshipReconnectSuccessful.current = true;
   };
 
-  const changeRelationshipConfig = (edgeId: string, newConfig: RelationshipConfig) => {
+  const changeRelationshipConfig = (relationshipId: string, newConfig: RelationshipConfig) => {
     const baseConfig = RELATIONSHIP_TYPES[newConfig.type];
     const style = getRelationshipStyle(newConfig.isDashed);
 
-    setEdges((eds) =>
-      eds.map((edge) =>
-        edge.id === edgeId
+    setRelationships((rels) =>
+      rels.map((relationship) =>
+        relationship.id === relationshipId
           ? {
-              ...edge,
+              ...relationship,
               style,
               markerStart: baseConfig.markerStart,
               markerEnd: baseConfig.markerEnd,
@@ -84,27 +84,27 @@ export const useEdges = (relationshipConfig: RelationshipConfig) => {
                 color: 'var(--color-schemafy-dark-gray)',
               },
               data: {
-                ...edge.data,
+                ...relationship.data,
                 relationshipType: newConfig.type,
                 isDashed: newConfig.isDashed,
               },
             }
-          : edge,
+          : relationship,
       ),
     );
-    setSelectedEdge(null);
+    setSelectedRelationship(null);
   };
 
   return {
-    edges,
-    selectedEdge,
+    relationships,
+    selectedRelationship,
     onConnect,
-    onEdgesChange,
-    onEdgeClick,
+    onRelationshipsChange,
+    onRelationshipClick,
     onReconnectStart,
     onReconnect,
     onReconnectEnd,
     changeRelationshipConfig,
-    setSelectedEdge,
+    setSelectedRelationship,
   };
 };

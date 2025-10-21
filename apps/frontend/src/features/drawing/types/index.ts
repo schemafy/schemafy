@@ -1,3 +1,3 @@
-export * from './field';
-export * from './node';
+export * from './column';
+export * from './table';
 export * from './relationship';

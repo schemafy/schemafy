@@ -1,9 +1,9 @@
 import { useState, type DragEvent } from 'react';
-import type { FieldType } from '../types';
+import type { ColumnType } from '../types';
 
 interface UseDragAndDropProps {
-  items: FieldType[];
-  onReorder: (newItems: FieldType[]) => void;
+  items: ColumnType[];
+  onReorder: (newItems: ColumnType[]) => void;
 }
 
 interface UseDragAndDropReturn {

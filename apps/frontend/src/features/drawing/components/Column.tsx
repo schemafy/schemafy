@@ -1,17 +1,17 @@
 import { Trash2, GripVertical } from 'lucide-react';
 import { DATA_TYPES } from '../types';
 import type {
-  FieldRowProps,
-  EditModeFieldProps,
-  ViewModeFieldProps,
+  ColumnRowProps,
+  EditModeColumnProps,
+  ViewModeColumnProps,
   DragHandleProps,
   TypeSelectorProps,
-  FieldConstraintsProps,
-  FieldBadgesProps,
+  ColumnConstraintsProps,
+  ColumnBadgesProps,
 } from '../types';
 
-export const FieldRow = ({
-  field,
+export const ColumnRow = ({
+  column,
   isEditMode,
   draggedItem,
   dragOverItem,
@@ -20,90 +20,90 @@ export const FieldRow = ({
   onDragLeave,
   onDrop,
   onDragEnd,
-  onUpdateField,
-  onRemoveField,
-}: FieldRowProps) => {
+  onUpdateColumn,
+  onRemoveColumn,
+}: ColumnRowProps) => {
   const rowClassName = `
-    border-b border-schemafy-light-gray last:border-b-0 transition-colors duration-200 
+    border-b border-schemafy-light-gray last:border-b-0 transition-colors duration-200
     ${isEditMode ? 'hover:bg-schemafy-secondary' : ''}
-    ${draggedItem === field.id ? 'opacity-50' : ''}
-    ${dragOverItem === field.id ? 'bg-blue-50 border-blue-200' : ''}
+    ${draggedItem === column.id ? 'opacity-50' : ''}
+    ${dragOverItem === column.id ? 'bg-blue-50 border-blue-200' : ''}
   `.trim();
 
   return (
     <div
       className={rowClassName}
-      onDragOver={(e) => onDragOver(e, field.id)}
+      onDragOver={(e) => onDragOver(e, column.id)}
       onDragLeave={onDragLeave}
-      onDrop={(e) => onDrop(e, field.id)}
+      onDrop={(e) => onDrop(e, column.id)}
     >
       {isEditMode ? (
-        <EditModeField
-          field={field}
+        <EditModeColumn
+          column={column}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
-          onUpdateField={onUpdateField}
-          onRemoveField={onRemoveField}
+          onUpdateColumn={onUpdateColumn}
+          onRemoveColumn={onRemoveColumn}
         />
       ) : (
-        <ViewModeField field={field} />
+        <ViewModeColumn column={column} />
       )}
     </div>
   );
 };
 
-export const EditModeField = ({ field, onDragStart, onDragEnd, onUpdateField, onRemoveField }: EditModeFieldProps) => {
+export const EditModeColumn = ({ column, onDragStart, onDragEnd, onUpdateColumn, onRemoveColumn }: EditModeColumnProps) => {
   return (
     <div className="p-2 space-y-2">
       <div className="flex items-center gap-2">
-        <DragHandle fieldId={field.id} onDragStart={onDragStart} onDragEnd={onDragEnd} />
+        <DragHandle columnId={column.id} onDragStart={onDragStart} onDragEnd={onDragEnd} />
 
         <input
           type="text"
-          value={field.name}
-          onChange={(e) => onUpdateField(field.id, 'name', e.target.value)}
+          value={column.name}
+          onChange={(e) => onUpdateColumn(column.id, 'name', e.target.value)}
           className="flex-1 px-2 py-1 text-sm border border-schemafy-light-gray rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-          placeholder="Field name"
+          placeholder="Column name"
         />
 
-        <TypeSelector value={field.type} onChange={(value) => onUpdateField(field.id, 'type', value)} />
+        <TypeSelector value={column.type} onChange={(value) => onUpdateColumn(column.id, 'type', value)} />
 
         <button
-          onClick={() => onRemoveField(field.id)}
+          onClick={() => onRemoveColumn(column.id)}
           className="p-1 text-schemafy-destructive hover:bg-red-100 rounded flex-shrink-0"
-          title="Remove Field"
+          title="Remove Column"
         >
           <Trash2 size={12} />
         </button>
       </div>
 
-      <FieldConstraints field={field} onUpdateField={onUpdateField} />
+      <ColumnConstraints column={column} onUpdateColumn={onUpdateColumn} />
     </div>
   );
 };
 
-export const ViewModeField = ({ field }: ViewModeFieldProps) => {
+export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
   return (
     <div className="p-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className={`text-sm ${field.isPrimaryKey ? 'font-bold text-yellow-600' : 'text-schemafy-text'}`}>
-            {field.name}
+          <span className={`text-sm ${column.isPrimaryKey ? 'font-bold text-yellow-600' : 'text-schemafy-text'}`}>
+            {column.name}
           </span>
-          <span className="text-xs text-schemafy-dark-gray">({field.type})</span>
+          <span className="text-xs text-schemafy-dark-gray">({column.type})</span>
         </div>
 
-        <FieldBadges field={field} />
+        <ColumnBadges column={column} />
       </div>
     </div>
   );
 };
 
-export const DragHandle = ({ fieldId, onDragStart, onDragEnd }: DragHandleProps) => {
+export const DragHandle = ({ columnId, onDragStart, onDragEnd }: DragHandleProps) => {
   return (
     <span
       draggable
-      onDragStart={(e) => onDragStart(e, fieldId)}
+      onDragStart={(e) => onDragStart(e, columnId)}
       onDragEnd={onDragEnd}
       className="cursor-move p-1 hover:bg-schemafy-light-gray rounded transition-colors nodrag"
       title="Drag to reorder"
@@ -130,7 +130,7 @@ export const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
   );
 };
 
-export const FieldConstraints = ({ field, onUpdateField }: FieldConstraintsProps) => {
+export const ColumnConstraints = ({ column, onUpdateColumn }: ColumnConstraintsProps) => {
   const constraints = [
     { key: 'isPrimaryKey', label: 'PK', color: 'text-yellow-600' },
     { key: 'isNotNull', label: 'NOT NULL', color: 'text-red-600' },
@@ -143,8 +143,8 @@ export const FieldConstraints = ({ field, onUpdateField }: FieldConstraintsProps
         <label key={key} className="flex items-center gap-1 cursor-pointer">
           <input
             type="checkbox"
-            checked={field[key]}
-            onChange={(e) => onUpdateField(field.id, key, e.target.checked)}
+            checked={column[key]}
+            onChange={(e) => onUpdateColumn(column.id, key, e.target.checked)}
             className="w-3 h-3"
           />
           <span className={`${color} font-medium`}>{label}</span>
@@ -154,12 +154,12 @@ export const FieldConstraints = ({ field, onUpdateField }: FieldConstraintsProps
   );
 };
 
-export const FieldBadges = ({ field }: FieldBadgesProps) => {
+export const ColumnBadges = ({ column }: ColumnBadgesProps) => {
   return (
     <div className="flex items-center gap-1">
-      {field.isPrimaryKey && <span className="text-xs text-yellow-600 font-medium">PK</span>}
-      {field.isNotNull && <span className="text-xs text-red-600 font-medium">*</span>}
-      {field.isUnique && <span className="text-xs text-blue-600 font-medium">UQ</span>}
+      {column.isPrimaryKey && <span className="text-xs text-yellow-600 font-medium">PK</span>}
+      {column.isNotNull && <span className="text-xs text-red-600 font-medium">*</span>}
+      {column.isUnique && <span className="text-xs text-blue-600 font-medium">UQ</span>}
     </div>
   );
 };

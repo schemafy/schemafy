@@ -63,17 +63,17 @@ export const CustomSmoothStepEdge = ({
         y: e.clientY,
       });
 
-      setEdges((edges) =>
-        edges.map((edge) => {
-          if (edge.id !== id) return edge;
+      setEdges((relationships) =>
+        relationships.map((relationship) => {
+          if (relationship.id !== id) return relationship;
 
           const newControlPointX = isHorizontal ? flowPosition.x : controlPointX;
           const newControlPointY = isHorizontal ? controlPointY : flowPosition.y;
 
           return {
-            ...edge,
+            ...relationship,
             data: {
-              ...edge.data,
+              ...relationship.data,
               controlPointX: newControlPointX,
               controlPointY: newControlPointY,
             },

@@ -1,61 +1,61 @@
 import { Handle, Position } from '@xyflow/react';
 import { useState } from 'react';
-import { HANDLE_STYLE, type TableNodeProps, type FieldType } from '../types';
+import { HANDLE_STYLE, type TableProps, type ColumnType } from '../types';
 import { Edit, Check, Settings, Plus } from 'lucide-react';
-import { FieldRow } from './Field';
+import { ColumnRow } from './Column';
 import { useDragAndDrop } from '../hooks';
 
-export const TableNode = ({ data, id }: TableNodeProps) => {
+export const TableNode = ({ data, id }: TableProps) => {
   const [isEditingTableName, setIsEditingTableName] = useState(false);
-  const [isFieldEditMode, setIsFieldEditMode] = useState(false);
+  const [isColumnEditMode, setIsColumnEditMode] = useState(false);
   const [editingTableName, setEditingTableName] = useState(data.tableName);
-  const [fields, setFields] = useState(data.fields || []);
+  const [columns, setColumns] = useState(data.columns || []);
 
   const dragAndDrop = useDragAndDrop({
-    items: fields,
-    onReorder: (newFields) => {
-      setFields(newFields);
-      updateFields(newFields);
+    items: columns,
+    onReorder: (newColumns) => {
+      setColumns(newColumns);
+      updateColumns(newColumns);
     },
   });
 
   const saveTableName = () => {
-    if (data.updateNode) {
-      data.updateNode(id, { tableName: editingTableName });
+    if (data.updateTable) {
+      data.updateTable(id, { tableName: editingTableName });
     }
     setIsEditingTableName(false);
   };
 
-  const addField = () => {
-    const newField: FieldType = {
-      id: `field_${Date.now()}`,
-      name: 'new_field',
+  const addColumn = () => {
+    const newColumn: ColumnType = {
+      id: `column_${Date.now()}`,
+      name: 'new_column',
       type: 'VARCHAR',
       isPrimaryKey: false,
       isNotNull: false,
       isUnique: false,
     };
-    const newFields = [...fields, newField];
-    setFields(newFields);
-    updateFields(newFields);
-    setIsFieldEditMode(true);
+    const newColumns = [...columns, newColumn];
+    setColumns(newColumns);
+    updateColumns(newColumns);
+    setIsColumnEditMode(true);
   };
 
-  const removeField = (fieldId: string) => {
-    const newFields = fields.filter((field) => field.id !== fieldId);
-    setFields(newFields);
-    updateFields(newFields);
+  const removeColumn = (columnId: string) => {
+    const newColumns = columns.filter((column) => column.id !== columnId);
+    setColumns(newColumns);
+    updateColumns(newColumns);
   };
 
-  const updateField = (fieldId: string, key: keyof FieldType, value: string | boolean) => {
-    const newFields = fields.map((field) => (field.id === fieldId ? { ...field, [key]: value } : field));
-    setFields(newFields);
-    updateFields(newFields);
+  const updateColumn = (columnId: string, key: keyof ColumnType, value: string | boolean) => {
+    const newColumns = columns.map((column) => (column.id === columnId ? { ...column, [key]: value } : column));
+    setColumns(newColumns);
+    updateColumns(newColumns);
   };
 
-  const updateFields = (newFields: FieldType[]) => {
-    if (data.updateNode) {
-      data.updateNode(id, { fields: newFields });
+  const updateColumns = (newColumns: ColumnType[]) => {
+    if (data.updateTable) {
+      data.updateTable(id, { columns: newColumns });
     }
   };
 
@@ -66,20 +66,20 @@ export const TableNode = ({ data, id }: TableNodeProps) => {
         tableName={data.tableName}
         isEditing={isEditingTableName}
         editingName={editingTableName}
-        isFieldEditMode={isFieldEditMode}
+        isColumnEditMode={isColumnEditMode}
         onStartEdit={() => setIsEditingTableName(true)}
         onSaveEdit={saveTableName}
         onCancelEdit={() => setIsEditingTableName(false)}
         onEditingNameChange={setEditingTableName}
-        onToggleFieldEditMode={() => setIsFieldEditMode(!isFieldEditMode)}
-        onAddField={addField}
+        onToggleColumnEditMode={() => setIsColumnEditMode(!isColumnEditMode)}
+        onAddColumn={addColumn}
       />
       <div className="max-h-96 overflow-y-auto">
-        {fields.map((field) => (
-          <FieldRow
-            key={field.id}
-            field={field}
-            isEditMode={isFieldEditMode}
+        {columns.map((column) => (
+          <ColumnRow
+            key={column.id}
+            column={column}
+            isEditMode={isColumnEditMode}
             draggedItem={dragAndDrop.draggedItem}
             dragOverItem={dragAndDrop.dragOverItem}
             onDragStart={dragAndDrop.handleDragStart}
@@ -87,13 +87,13 @@ export const TableNode = ({ data, id }: TableNodeProps) => {
             onDragLeave={dragAndDrop.handleDragLeave}
             onDrop={dragAndDrop.handleDrop}
             onDragEnd={dragAndDrop.handleDragEnd}
-            onUpdateField={updateField}
-            onRemoveField={removeField}
+            onUpdateColumn={updateColumn}
+            onRemoveColumn={removeColumn}
           />
         ))}
       </div>
-      {fields.length === 0 && (
-        <div className="p-4 text-center text-schemafy-dark-gray text-sm">Click + to add a field.</div>
+      {columns.length === 0 && (
+        <div className="p-4 text-center text-schemafy-dark-gray text-sm">Click + to add a column.</div>
       )}
     </div>
   );
@@ -103,24 +103,24 @@ const TableHeader = ({
   tableName,
   isEditing,
   editingName,
-  isFieldEditMode,
+  isColumnEditMode,
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
   onEditingNameChange,
-  onToggleFieldEditMode,
-  onAddField,
+  onToggleColumnEditMode,
+  onAddColumn,
 }: {
   tableName: string;
   isEditing: boolean;
   editingName: string;
-  isFieldEditMode: boolean;
+  isColumnEditMode: boolean;
   onStartEdit: () => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onEditingNameChange: (name: string) => void;
-  onToggleFieldEditMode: () => void;
-  onAddField: () => void;
+  onToggleColumnEditMode: () => void;
+  onAddColumn: () => void;
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') onSaveEdit();
@@ -157,13 +157,13 @@ const TableHeader = ({
 
       <div className="flex items-center gap-1">
         <button
-          onClick={onToggleFieldEditMode}
-          className={`p-1 rounded ${isFieldEditMode ? 'bg-schemafy-dark-gray' : 'hover:bg-schemafy-dark-gray'}`}
+          onClick={onToggleColumnEditMode}
+          className={`p-1 rounded ${isColumnEditMode ? 'bg-schemafy-dark-gray' : 'hover:bg-schemafy-dark-gray'}`}
           title="Toggle Edit Mode"
         >
           <Settings size={14} />
         </button>
-        <button onClick={onAddField} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Add Field">
+        <button onClick={onAddColumn} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Add Column">
           <Plus size={14} />
         </button>
       </div>
