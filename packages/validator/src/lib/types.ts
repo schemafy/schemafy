@@ -97,7 +97,6 @@ export const TABLE = z.object({
     name: z.string().min(3).max(20),
     comment: z.string().nullable().optional(),
     tableOptions: z.string(),
-    extra: z.unknown().optional(), // 프론트엔드 전용 메타데이터 (검증 없음)
     createdAt: z.date(),
     updatedAt: z.date(),
     deletedAt: z.date().nullable().optional(),
@@ -105,6 +104,7 @@ export const TABLE = z.object({
     indexes: z.array(INDEX),
     constraints: z.array(CONSTRAINT),
     relationships: z.array(RELATIONSHIP),
+    extra: z.unknown().optional(),
 });
 
 export const SCHEMA = z.object({
@@ -124,6 +124,7 @@ export const SCHEMA = z.object({
 export const DATABASE = z.object({
     id: ULID,
     schemas: z.array(SCHEMA),
+    extra: z.unknown().optional(),
 });
 
 export type Schema = z.infer<typeof SCHEMA>;

@@ -1,5 +1,5 @@
 import { SchemaNotExistError, TableNameNotUniqueError, TableNotExistError } from "../errors";
-import { Database, Schema, Table } from "../types";
+import type { Database, Schema, Table } from "../types";
 import { relationshipHandlers } from "./relationships";
 
 export interface TableHandlers {

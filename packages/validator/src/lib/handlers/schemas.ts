@@ -4,7 +4,7 @@ import {
     SchemaNameNotUniqueError,
     DatabaseEmptySchemaError,
 } from "../errors";
-import { Database, SCHEMA, Schema } from "../types";
+import { type Database, SCHEMA, type Schema } from "../types";
 
 export interface SchemaHandlers {
     changeSchemaName: (database: Database, schemaId: Schema["id"], newName: Schema["name"]) => Database;

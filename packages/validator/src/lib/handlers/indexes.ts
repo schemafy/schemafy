@@ -9,7 +9,7 @@ import {
     DuplicateIndexDefinitionError,
     IndexColumnSortDirInvalidError,
 } from "../errors";
-import { Database, Schema, Table, Index, IndexColumn } from "../types";
+import type { Database, Schema, Table, Index, IndexColumn } from "../types";
 
 export interface IndexHandlers {
     createIndex: (

@@ -7,7 +7,7 @@ import {
     RelationshipEmptyError,
     RelationshipCyclicReferenceError,
 } from "../errors";
-import { Database, Schema, Relationship, RelationshipColumn, Table } from "../types";
+import type { Database, Schema, Relationship, RelationshipColumn, Table } from "../types";
 import * as helper from "../helper";
 
 export interface RelationshipHandlers {

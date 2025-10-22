@@ -9,7 +9,7 @@ import {
     ConstraintColumnNotUniqueError,
     UniqueSameAsPrimaryKeyError,
 } from "../errors";
-import { Database, Schema, Table, Constraint, ConstraintColumn } from "../types";
+import type { Database, Schema, Table, Constraint, ConstraintColumn } from "../types";
 
 export interface ConstraintHandlers {
     createConstraint: (

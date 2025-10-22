@@ -1,4 +1,4 @@
-import { Column, Schema, Table } from "..";
+import type { Column, Schema, Table } from "..";
 
 export const isColumnNullable = (table: Table, columnId: Column["id"]): boolean => {
     const notNullConstraint = table.constraints.find(

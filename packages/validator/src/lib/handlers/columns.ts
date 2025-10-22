@@ -12,7 +12,7 @@ import {
     ColumnLengthRequiredError,
     ColumnDataTypeInvalidError,
 } from "../errors";
-import { Database, Schema, Table, Column, Constraint, COLUMN } from "../types";
+import { type Database, type Schema, type Table, type Column, type Constraint, COLUMN } from "../types";
 import * as helper from "../helper";
 
 export interface ColumnHandlers {
