@@ -103,6 +103,20 @@ export class ErdStore {
     this.update((db) => ERD_VALIDATOR.changeTableName(db, schemaId, tableId, newName));
   }
 
+  updateTableExtra(schemaId: Schema['id'], tableId: Table['id'], extra: unknown) {
+    this.update((db) => {
+      const schema = db.schemas.find((s) => s.id === schemaId);
+      if (!schema) throw new Error(`Schema ${schemaId} not found`);
+
+      const table = schema.tables.find((t) => t.id === tableId);
+      if (!table) throw new Error(`Table ${tableId} not found`);
+
+      table.extra = extra;
+
+      return { ...db };
+    });
+  }
+
   deleteTable(schemaId: Schema['id'], tableId: Table['id']) {
     this.update((db) => ERD_VALIDATOR.deleteTable(db, schemaId, tableId));
   }

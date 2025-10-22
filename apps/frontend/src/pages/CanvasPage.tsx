@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
 import {
   ReactFlow,
   ConnectionLineType,
@@ -22,6 +23,7 @@ import {
   CustomSmoothStepEdge,
   FloatingButtons,
 } from '@/features/drawing';
+import { ErdStore } from '@/store/erd.store';
 
 const NODE_TYPES = {
   table: TableNode,
@@ -31,7 +33,10 @@ const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
-export const CanvasPage = () => {
+const genId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+const CanvasPageComponent = () => {
+  const erdStore = ErdStore.getInstance();
   const [relationshipConfig, setRelationshipConfig] = useState<RelationshipConfig>({
     type: 'one-to-many',
     isDashed: false,
@@ -42,6 +47,31 @@ export const CanvasPage = () => {
     y: number;
   } | null>(null);
   const { screenToFlowPosition } = useReactFlow();
+
+  useEffect(() => {
+    if (erdStore.erdState.state === 'idle') {
+      const dbId = genId('db');
+      const schemaId = genId('schema');
+      erdStore.load({
+        id: dbId,
+        schemas: [
+          {
+            id: schemaId,
+            projectId: genId('project'),
+            dbVendorId: 'mysql',
+            name: 'public',
+            charset: 'utf8mb4',
+            collation: 'utf8mb4_general_ci',
+            vendorOption: '',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            deletedAt: null,
+            tables: [],
+          },
+        ],
+      });
+    }
+  }, [erdStore]);
 
   const { tables, addTable, onTablesChange } = useTables();
   const {
@@ -65,12 +95,15 @@ export const CanvasPage = () => {
       });
       addTable(flowPosition);
       setActiveTool('pointer');
+      setMousePosition(null);
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (activeTool === 'table') {
       setMousePosition({ x: e.clientX, y: e.clientY });
+    } else {
+      setMousePosition(null);
     }
   };
 
@@ -139,3 +172,5 @@ export const CanvasPage = () => {
     </>
   );
 };
+
+export const CanvasPage = observer(CanvasPageComponent);

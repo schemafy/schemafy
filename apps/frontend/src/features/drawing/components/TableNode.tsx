@@ -1,11 +1,14 @@
 import { Handle, Position } from '@xyflow/react';
 import { useState } from 'react';
+import { observer } from 'mobx-react-lite';
 import { HANDLE_STYLE, type TableProps, type ColumnType } from '../types';
 import { Edit, Check, Settings, Plus } from 'lucide-react';
 import { ColumnRow } from './Column';
 import { useDragAndDrop } from '../hooks';
+import { ErdStore } from '@/store/erd.store';
 
-export const TableNode = ({ data, id }: TableProps) => {
+const TableNodeComponent = ({ data, id }: TableProps) => {
+  const erdStore = ErdStore.getInstance();
   const [isEditingTableName, setIsEditingTableName] = useState(false);
   const [isColumnEditMode, setIsColumnEditMode] = useState(false);
   const [editingTableName, setEditingTableName] = useState(data.tableName);
@@ -15,14 +18,13 @@ export const TableNode = ({ data, id }: TableProps) => {
     items: columns,
     onReorder: (newColumns) => {
       setColumns(newColumns);
-      updateColumns(newColumns);
+      // TODO: ErdStore changeColumnPosition 호출
+      console.log('Column reorder:', newColumns);
     },
   });
 
   const saveTableName = () => {
-    if (data.updateTable) {
-      data.updateTable(id, { tableName: editingTableName });
-    }
+    erdStore.changeTableName(data.schemaId, id, editingTableName);
     setIsEditingTableName(false);
   };
 
@@ -37,26 +39,24 @@ export const TableNode = ({ data, id }: TableProps) => {
     };
     const newColumns = [...columns, newColumn];
     setColumns(newColumns);
-    updateColumns(newColumns);
+
+    // TODO: ErdStore createColumn 호출
+    console.log('Add column:', newColumn);
     setIsColumnEditMode(true);
   };
 
   const removeColumn = (columnId: string) => {
     const newColumns = columns.filter((column) => column.id !== columnId);
     setColumns(newColumns);
-    updateColumns(newColumns);
+    erdStore.deleteColumn(data.schemaId, id, columnId);
   };
 
   const updateColumn = (columnId: string, key: keyof ColumnType, value: string | boolean) => {
     const newColumns = columns.map((column) => (column.id === columnId ? { ...column, [key]: value } : column));
     setColumns(newColumns);
-    updateColumns(newColumns);
-  };
 
-  const updateColumns = (newColumns: ColumnType[]) => {
-    if (data.updateTable) {
-      data.updateTable(id, { columns: newColumns });
-    }
+    // TODO: ErdStore updateColumn 호출
+    console.log('Update column:', columnId, key, value);
   };
 
   return (
@@ -206,3 +206,5 @@ const ConnectionHandles = ({ nodeId }: { nodeId: string }) => {
     </>
   );
 };
+
+export const TableNode = observer(TableNodeComponent);

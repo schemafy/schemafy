@@ -97,6 +97,7 @@ export const TABLE = z.object({
     name: z.string().min(3).max(20),
     comment: z.string().nullable().optional(),
     tableOptions: z.string(),
+    extra: z.unknown().optional(), // 프론트엔드 전용 메타데이터 (검증 없음)
     createdAt: z.date(),
     updatedAt: z.date(),
     deletedAt: z.date().nullable().optional(),

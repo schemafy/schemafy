@@ -3,6 +3,7 @@ import type { ColumnType } from './column';
 export type TableData = {
   tableName: string;
   columns: ColumnType[];
+  schemaId: string;
   updateTable?: (tableId: string, newData: Partial<TableData>) => void;
 };
 
