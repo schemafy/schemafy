@@ -29,7 +29,7 @@ export const schemaHandlers: SchemaHandlers = {
         };
     },
     createSchema: (database, schema) => {
-        const result = SCHEMA.safeParse(schema);
+        const result = SCHEMA.safeParse({ ...schema, createdAt: new Date(), updatedAt: new Date() });
         if (!result.success) throw new SchemaNameInvalidError(schema.name);
 
         const existingSchema = database.schemas.find((s) => s.name === schema.name);

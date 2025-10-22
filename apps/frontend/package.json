@@ -31,7 +31,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.2",
-    "tailwindcss": "^4.1.12"
+    "tailwindcss": "^4.1.12",
+    "ulid": "^3.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

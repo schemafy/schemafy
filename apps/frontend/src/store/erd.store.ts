@@ -48,11 +48,45 @@ export class ErdStore {
   // state
   load(database: Database) {
     this.erdState = { state: 'loading' };
+
+    const extra = (database.extra || {}) as { selectedSchemaId?: string };
+    if (!extra.selectedSchemaId && database.schemas.length > 0) {
+      database = {
+        ...database,
+        extra: {
+          ...extra,
+          selectedSchemaId: database.schemas[0].id,
+        },
+      };
+    }
+
     this.erdState = { state: 'loaded', database };
   }
 
   reset() {
     this.erdState = { state: 'idle' };
+  }
+
+  get selectedSchemaId(): string | null {
+    if (this.erdState.state !== 'loaded') return null;
+
+    const extra = this.erdState.database.extra as { selectedSchemaId?: string } | undefined;
+    return extra?.selectedSchemaId || null;
+  }
+
+  selectSchema(schemaId: string) {
+    this.update((db) => {
+      const schema = db.schemas.find((s) => s.id === schemaId);
+      if (!schema) throw new Error(`Schema ${schemaId} not found`);
+
+      return {
+        ...db,
+        extra: {
+          ...((db.extra as object) || {}),
+          selectedSchemaId: schemaId,
+        },
+      };
+    });
   }
 
   validate() {

@@ -6,3 +6,4 @@ export * from './CustomControls';
 export * from './TablePreview';
 export * from './CustomSmoothStepEdge';
 export * from './FloatingButtons';
+export * from './SchemaSelector';

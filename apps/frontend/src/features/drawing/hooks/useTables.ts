@@ -13,10 +13,45 @@ export const useTables = () => {
 
   const tablesFromStore: Node<TableData>[] =
     erdStore.erdState.state === 'loaded'
-      ? erdStore.erdState.database.schemas.flatMap((schema: Schema) =>
-          schema.tables.map((table: Table): Node<TableData> => {
+      ? (() => {
+          const { database } = erdStore.erdState;
+          const selectedSchemaId = erdStore.selectedSchemaId;
+          const selectedSchema = database.schemas.find((s: Schema) => s.id === selectedSchemaId);
+
+          if (!selectedSchema) return [];
+
+          return selectedSchema.tables.map((table: Table): Node<TableData> => {
             const extra = (table.extra || {}) as TableExtra;
             const position = extra.position || { x: 0, y: 0 };
+            const columns = table.columns.map((col) => {
+              const isPrimaryKey = table.constraints.some(
+                (constraint) =>
+                  constraint.kind === 'PRIMARY_KEY' && constraint.columns.some((cc) => cc.columnId === col.id),
+              );
+
+              const isNotNull =
+                isPrimaryKey ||
+                table.constraints.some(
+                  (constraint) =>
+                    constraint.kind === 'NOT_NULL' && constraint.columns.some((cc) => cc.columnId === col.id),
+                );
+
+              const isUnique =
+                isPrimaryKey ||
+                table.constraints.some(
+                  (constraint) =>
+                    constraint.kind === 'UNIQUE' && constraint.columns.some((cc) => cc.columnId === col.id),
+                );
+
+              return {
+                id: col.id,
+                name: col.name,
+                type: col.dataType || 'VARCHAR',
+                isPrimaryKey,
+                isNotNull,
+                isUnique,
+              };
+            });
 
             return {
               id: table.id,
@@ -24,12 +59,12 @@ export const useTables = () => {
               position,
               data: {
                 tableName: table.name,
-                columns: [], // TODO: column 데이터 매핑
-                schemaId: schema.id,
+                columns,
+                schemaId: selectedSchema.id,
               },
             };
-          }),
-        )
+          });
+        })()
       : [];
 
   const [localTables, setLocalTables] = useState<Node<TableData>[]>(tablesFromStore);
@@ -52,15 +87,21 @@ export const useTables = () => {
         return;
       }
 
-      // TODO: schema 매핑
-      const firstSchema = erdStore.erdState.database.schemas[0];
-      if (!firstSchema) {
-        console.error('No schema found');
+      const selectedSchemaId = erdStore.selectedSchemaId;
+      if (!selectedSchemaId) {
+        console.error('No schema selected');
         return;
       }
 
-      const tableCount = firstSchema.tables.length;
-      erdStore.createTable(firstSchema.id, {
+      const selectedSchema = erdStore.erdState.database.schemas.find((s: Schema) => s.id === selectedSchemaId);
+
+      if (!selectedSchema) {
+        console.error('Selected schema not found');
+        return;
+      }
+
+      const tableCount = selectedSchema.tables.length;
+      erdStore.createTable(selectedSchemaId, {
         id: `table_${Date.now()}`,
         name: `Table_${tableCount + 1}`,
         columns: [],

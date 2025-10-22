@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { ulid } from 'ulid';
 import {
   ReactFlow,
   ConnectionLineType,
@@ -22,6 +23,7 @@ import {
   type RelationshipConfig,
   CustomSmoothStepEdge,
   FloatingButtons,
+  SchemaSelector,
 } from '@/features/drawing';
 import { ErdStore } from '@/store/erd.store';
 
@@ -32,8 +34,6 @@ const NODE_TYPES = {
 const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
-
-const genId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 const CanvasPageComponent = () => {
   const erdStore = ErdStore.getInstance();
@@ -50,14 +50,14 @@ const CanvasPageComponent = () => {
 
   useEffect(() => {
     if (erdStore.erdState.state === 'idle') {
-      const dbId = genId('db');
-      const schemaId = genId('schema');
+      const dbId = ulid();
+      const schemaId = ulid();
       erdStore.load({
         id: dbId,
         schemas: [
           {
             id: schemaId,
-            projectId: genId('project'),
+            projectId: ulid(),
             dbVendorId: 'mysql',
             name: 'public',
             charset: 'utf8mb4',
@@ -119,6 +119,10 @@ const CanvasPageComponent = () => {
         />
 
         <div className="flex-1 bg-schemafy-secondary relative">
+          <div className="absolute top-4 right-4 z-10">
+            <SchemaSelector />
+          </div>
+
           <ReactFlow
             nodes={tables}
             edges={relationships}
