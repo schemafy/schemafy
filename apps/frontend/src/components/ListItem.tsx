@@ -1,3 +1,5 @@
+import { formatDate } from '@/lib/utils';
+
 export const ListItem = ({
   name,
   count,
@@ -7,7 +9,7 @@ export const ListItem = ({
   name: string;
   count: number;
   description?: string;
-  date: string;
+  date: Date;
 }) => {
   return (
     <li className="flex flex-col gap-1 items-center px-3 py-2 w-full rounded-[10px] border border-schemafy-light-gray">
@@ -17,7 +19,7 @@ export const ListItem = ({
       </div>
       <div className="flex w-full justify-between items-center font-body-xs text-schemafy-dark-gray">
         <p>{description}</p>
-        <p>Last Updated: {date}</p>
+        <p>Last Updated: {formatDate(date)}</p>
       </div>
     </li>
   );

@@ -2,13 +2,14 @@ import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { ulid } from 'ulid';
 import { ErdStore } from '@/store/erd.store';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components';
+import { Button, ListItem } from '@/components';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export const SchemaSelector = observer(() => {
   const erdStore = ErdStore.getInstance();
   const [isAdding, setIsAdding] = useState(false);
   const [newSchemaName, setNewSchemaName] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   if (erdStore.erdState.state !== 'loaded') {
     return null;
@@ -16,6 +17,7 @@ export const SchemaSelector = observer(() => {
 
   const { database } = erdStore.erdState;
   const selectedSchemaId = erdStore.selectedSchemaId;
+  const selectedSchemaName = database.schemas.find((schema) => schema.id === selectedSchemaId)?.name || '';
 
   const handleSchemaChange = (value: string) => {
     erdStore.selectSchema(value);
@@ -23,48 +25,28 @@ export const SchemaSelector = observer(() => {
 
   const handleAddSchema = () => {
     const trimmedName = newSchemaName.trim();
+    const schemaId = ulid();
+    const firstSchema = database.schemas[0];
+    const defaultValues = {
+      projectId: firstSchema.projectId,
+      dbVendorId: firstSchema.dbVendorId,
+      charset: firstSchema.charset,
+      collation: firstSchema.collation,
+      vendorOption: firstSchema.vendorOption,
+    };
 
-    if (trimmedName.length < 3 || trimmedName.length > 20) {
-      setError('Schema name must be between 3 and 20 characters');
-      return;
-    }
+    const newSchema = {
+      id: schemaId,
+      name: trimmedName,
+      tables: [],
+      ...defaultValues,
+    };
 
-    try {
-      const schemaId = ulid();
+    erdStore.createSchema(newSchema);
+    erdStore.selectSchema(schemaId);
 
-      const firstSchema = database.schemas[0];
-      const defaultValues = firstSchema
-        ? {
-            projectId: firstSchema.projectId,
-            dbVendorId: firstSchema.dbVendorId,
-            charset: firstSchema.charset,
-            collation: firstSchema.collation,
-            vendorOption: firstSchema.vendorOption,
-          }
-        : {
-            projectId: ulid(),
-            dbVendorId: 'mysql' as const,
-            charset: 'utf8mb4',
-            collation: 'utf8mb4_unicode_ci',
-            vendorOption: '',
-          };
-
-      const newSchema = {
-        id: schemaId,
-        name: trimmedName,
-        tables: [],
-        ...defaultValues,
-      };
-
-      erdStore.createSchema(newSchema);
-      erdStore.selectSchema(schemaId);
-
-      setNewSchemaName('');
-      setIsAdding(false);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add schema');
-    }
+    setNewSchemaName('');
+    setIsAdding(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -73,70 +55,98 @@ export const SchemaSelector = observer(() => {
     } else if (e.key === 'Escape') {
       setIsAdding(false);
       setNewSchemaName('');
-      setError(null);
     }
   };
 
   return (
-    <div className="flex items-center gap-2 bg-schemafy-bg px-4 py-2 rounded-lg shadow-md border border-schemafy-button-bg">
-      <label className="text-sm font-medium text-schemafy-text">Schema:</label>
-      <Select value={selectedSchemaId || ''} onValueChange={handleSchemaChange}>
-        <SelectTrigger className="w-[180px] h-8 text-sm">
-          <SelectValue placeholder="Select a schema" />
-        </SelectTrigger>
-        <SelectContent>
-          {database.schemas.map((schema) => (
-            <SelectItem key={schema.id} value={schema.id}>
-              {schema.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {isAdding ? (
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-1">
-            <input
-              type="text"
-              value={newSchemaName}
-              onChange={(e) => {
-                setNewSchemaName(e.target.value);
-                setError(null);
+    <div className="flex flex-col items-center bg-schemafy-bg rounded-[10px] shadow-lg p-4 transition-all duration-300 ease-in-out">
+      <div className="w-full flex justify-between">
+        <label className="text-sm font-heading-base text-schemafy-text">
+          {isExpanded ? 'Schemas' : `${selectedSchemaName}`}
+        </label>
+        {isExpanded ? (
+          <ChevronUp
+            size={16}
+            color="var(--color-schemafy-dark-gray)"
+            onClick={() => {
+              setIsExpanded((prev) => !prev);
+            }}
+            cursor={'pointer'}
+          />
+        ) : (
+          <ChevronDown
+            size={16}
+            color="var(--color-schemafy-dark-gray)"
+            onClick={() => {
+              setIsExpanded((prev) => !prev);
+            }}
+            cursor={'pointer'}
+          />
+        )}
+      </div>
+      <div
+        className={`flex flex-col gap-2 transition-all duration-300 ${
+          isExpanded ? 'mt-4 h-auto opacity-100' : 'h-0 opacity-0 overflow-hidden'
+        }`}
+      >
+        {database.schemas.map((schema) => (
+          <div
+            onClick={() => {
+              handleSchemaChange(schema.id);
+              setIsExpanded(false);
+            }}
+          >
+            <ListItem key={schema.id} name={schema.name} count={schema.tables.length} date={schema.updatedAt} />
+          </div>
+        ))}
+        <div
+          className={`flex transition-all duration-300 gap-1 ${
+            isAdding ? 'h-auto opacity-100 w-full' : 'h-0 w-0 opacity-0 overflow-hidden'
+          }`}
+        >
+          <input
+            type="text"
+            value={newSchemaName}
+            onChange={(e) => {
+              setNewSchemaName(e.target.value);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Schema name"
+            maxLength={20}
+            className="p-3 font-body-xs w-full rounded-[8px] bg-schemafy-secondary text-schemafy-text focus:outline-none focus:ring-1 focus:ring-schemafy-primary"
+            autoFocus
+          />
+        </div>
+        {isAdding ? (
+          <div className="flex w-full gap-2">
+            <Button
+              onClick={() => {
+                handleAddSchema();
+                setIsExpanded(false);
               }}
-              onKeyDown={handleKeyDown}
-              placeholder="Schema name (3-20 chars)"
-              maxLength={20}
-              className="px-2 py-1 text-sm border border-schemafy-light-gray rounded bg-schemafy-bg text-schemafy-text focus:outline-none focus:ring-1 focus:ring-schemafy-primary"
-              autoFocus
-            />
-            <button
-              onClick={handleAddSchema}
               disabled={newSchemaName.trim().length < 3 || newSchemaName.trim().length > 20}
-              className="px-2 py-1 text-sm bg-schemafy-button-bg text-schemafy-button-text rounded hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+              size={'dropdown'}
+              fullWidth
             >
               Add
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => {
                 setIsAdding(false);
                 setNewSchemaName('');
-                setError(null);
               }}
-              className="px-2 py-1 text-sm bg-schemafy-button-bg text-schemafy-button-text rounded hover:opacity-80"
+              size={'dropdown'}
+              fullWidth
             >
               Cancel
-            </button>
+            </Button>
           </div>
-          {error && <p className="text-xs text-schemafy-destructive">{error}</p>}
-        </div>
-      ) : (
-        <button
-          onClick={() => setIsAdding(true)}
-          className="px-2 py-1 text-sm bg-schemafy-button-bg text-schemafy-button-text rounded hover:opacity-80"
-        >
-          + Add Schema
-        </button>
-      )}
+        ) : (
+          <Button onClick={() => setIsAdding(true)} fullWidth size={'dropdown'}>
+            New Schema
+          </Button>
+        )}
+      </div>
     </div>
   );
 });

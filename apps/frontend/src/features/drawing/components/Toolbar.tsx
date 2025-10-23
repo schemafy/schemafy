@@ -124,10 +124,10 @@ export const Toolbar = ({
             <Search size={16} color="var(--color-schemafy-dark-gray)" />
           </div>
           <ul className="flex flex-col w-full max-h-[12.5rem] gap-2.5 overflow-y-scroll overflow-x-hidden pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-schemafy-light-gray [&::-webkit-scrollbar-track]:bg-transparent">
-            <ListItem count={6} name="User" description={'사용자 정보'} date="2025-08-25" />
-            <ListItem count={6} name="User" description={'사용자 정보'} date="2025-08-25" />
-            <ListItem count={6} name="User" description={'사용자 정보'} date="2025-08-25" />
-            <ListItem count={6} name="User" description={'사용자 정보'} date="2025-08-25" />
+            <ListItem count={6} name="User" description={'사용자 정보'} date={new Date()} />
+            <ListItem count={6} name="User" description={'사용자 정보'} date={new Date()} />
+            <ListItem count={6} name="User" description={'사용자 정보'} date={new Date()} />
+            <ListItem count={6} name="User" description={'사용자 정보'} date={new Date()} />
           </ul>
         </DialogContent>
       </Dialog>
