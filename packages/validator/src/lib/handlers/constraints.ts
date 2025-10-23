@@ -1,20 +1,19 @@
 import {
+  ConstraintColumnNotExistError,
+  ConstraintColumnNotUniqueError,
+  ConstraintNameNotUniqueError,
+  ConstraintNotExistError,
+  DuplicateKeyDefinitionError,
   SchemaNotExistError,
   TableNotExistError,
-  ConstraintNotExistError,
-  ConstraintColumnNotExistError,
-  DuplicateKeyDefinitionError,
-  ConstraintNameNotUniqueError,
-  ConstraintColumnNotExistError as ConstraintColumnNotExistValidationError,
-  ConstraintColumnNotUniqueError,
   UniqueSameAsPrimaryKeyError,
 } from "../errors";
 import {
+  Constraint,
+  ConstraintColumn,
   Database,
   Schema,
   Table,
-  Constraint,
-  ConstraintColumn,
 } from "../types";
 
 export interface ConstraintHandlers {
@@ -61,19 +60,22 @@ export const constraintHandlers: ConstraintHandlers = {
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
-    const newDatabase = {
+    const newDatabase: Database = {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       constraints: [
                         ...t.constraints,
-                        { ...constraint, tableId },
+                        { ...constraint, isAffected: true, tableId },
                       ],
                     }
                   : t,
@@ -102,7 +104,7 @@ export const constraintHandlers: ConstraintHandlers = {
         (col) => col.id === constraintColumn.columnId,
       );
       if (!columnExists) {
-        throw new ConstraintColumnNotExistValidationError(
+        throw new ConstraintColumnNotExistError(
           constraintColumn.columnId,
           constraint.name,
         );
@@ -149,7 +151,7 @@ export const constraintHandlers: ConstraintHandlers = {
 
         if (!hasNotNull) {
           const constraintId = `nn_${constraintColumn.columnId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          const notNullConstraint = {
+          const notNullConstraint: Constraint = {
             id: constraintId,
             tableId: tableId,
             name: `nn_${table.name}_${constraintColumn.columnId}`,
@@ -160,22 +162,27 @@ export const constraintHandlers: ConstraintHandlers = {
                 columnId: constraintColumn.columnId,
                 seqNo: 1,
                 constraintId: constraintId,
+                isAffected: true,
               },
             ],
             checkExpr: undefined,
             defaultExpr: undefined,
+            isAffected: true,
           };
 
           updatedDatabase = {
             ...updatedDatabase,
+            isAffected: true,
             schemas: updatedDatabase.schemas.map((s) =>
               s.id === schemaId
                 ? {
                     ...s,
+                    isAffected: true,
                     tables: s.tables.map((t) =>
                       t.id === tableId
                         ? {
                             ...t,
+                            isAffected: true,
                             constraints: [...t.constraints, notNullConstraint],
                           }
                         : t,
@@ -220,14 +227,17 @@ export const constraintHandlers: ConstraintHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: t.constraints.some((c) => c.id === constraintId),
                       constraints: t.constraints.filter(
                         (c) => c.id !== constraintId,
                       ),
@@ -257,16 +267,19 @@ export const constraintHandlers: ConstraintHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       constraints: t.constraints.map((c) =>
-                        c.id === constraintId ? { ...c, name: newName } : c,
+                        c.id === constraintId ? { ...c, name: newName, isAffected: true } : c,
                       ),
                     }
                   : t,
@@ -294,21 +307,25 @@ export const constraintHandlers: ConstraintHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       constraints: t.constraints.map((c) =>
                         c.id === constraintId
                           ? {
                               ...c,
+                              isAffected: true,
                               columns: [
                                 ...c.columns,
-                                { ...constraintColumn, constraintId },
+                                { ...constraintColumn, constraintId, isAffected: true },
                               ],
                             }
                           : c,
@@ -345,19 +362,23 @@ export const constraintHandlers: ConstraintHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
-                      ...t,
+                      ...t, 
+                      isAffected: true,
                       constraints: t.constraints
                         .map((c) =>
                           c.id === constraintId
                             ? {
                                 ...c,
+                                isAffected: c.columns.some((cc) => cc.id === constraintColumnId),
                                 columns: c.columns.filter(
                                   (cc) => cc.id !== constraintColumnId,
                                 ),

@@ -35,8 +35,9 @@ export const schemaHandlers: SchemaHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((schema) =>
-        schema.id === schemaId ? { ...schema, name: newName } : schema,
+        schema.id === schemaId ? { ...schema, name: newName, isAffected: true } : schema,
       ),
     };
   },
@@ -50,9 +51,10 @@ export const schemaHandlers: SchemaHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: [
         ...database.schemas,
-        { ...schema, createdAt: new Date(), updatedAt: new Date() },
+        { ...schema, isAffected: true, createdAt: new Date(), updatedAt: new Date() },
       ],
     };
   },
@@ -65,6 +67,7 @@ export const schemaHandlers: SchemaHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.filter((s) => s.id !== schemaId),
     };
   },
