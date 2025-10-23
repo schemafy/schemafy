@@ -37,6 +37,7 @@ class DatabaseBuilder {
     return {
       id: this.id,
       schemas: this.schemas.map((builder) => builder.build()),
+      isAffected: false,
     };
   }
 }
@@ -86,6 +87,7 @@ class SchemaBuilder {
       updatedAt: new Date(),
       deletedAt: null,
       tables: this.tables.map((builder) => builder.build()),
+      isAffected: false,
     };
   }
 }
@@ -186,6 +188,7 @@ class TableBuilder {
       indexes,
       constraints,
       relationships,
+      isAffected: false,
     };
   }
 }
@@ -257,6 +260,7 @@ class ColumnBuilder {
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
+      isAffected: false,
     };
   }
 }
@@ -283,6 +287,7 @@ class ConstraintColumnBuilder {
       constraintId: this.constraintId,
       columnId: this.columnId,
       seqNo: this.seqNo,
+      isAffected: false,
     };
   }
 
@@ -371,6 +376,7 @@ class ConstraintBuilder {
       columns: this.columns.map((c) => c.build()),
       defaultExpr: this.defaultExpr,
       checkExpr: this.checkExpr,
+      isAffected: false,
     };
   }
 
@@ -414,6 +420,7 @@ class IndexColumnBuilder {
       columnId: this.columnId,
       seqNo: this.seqNo,
       sortDir: this.sortDir,
+      isAffected: false,
     };
   }
 
@@ -487,6 +494,7 @@ class IndexBuilder {
       type: this.type,
       columns: this.columns.map((c) => c.build()),
       comment: null,
+      isAffected: false,
     };
   }
 
@@ -539,6 +547,7 @@ class RelationshipColumnBuilder {
       fkColumnId: this.fkColumnId,
       refColumnId: this.refColumnId,
       seqNo: this.seqNo,
+      isAffected: false,
     };
   }
 }
@@ -625,6 +634,7 @@ class RelationshipBuilder {
       onUpdate: this.onUpdate,
       fkEnforced: this.fkEnforced,
       columns: this.columns.map((c) => c.build()),
+      isAffected: false,
     };
   }
 }
