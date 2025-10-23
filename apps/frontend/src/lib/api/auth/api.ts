@@ -42,7 +42,6 @@ export const refreshToken = async (): Promise<ApiResponse<null>> => {
     '/api/v1.0/users/refresh',
   );
 
-  // 응답 헤더에서 새로운 Access Token 추출 및 저장
   const accessToken = response.headers['authorization'];
   if (accessToken && accessToken.startsWith('Bearer ')) {
     const token = accessToken.replace('Bearer ', '');
