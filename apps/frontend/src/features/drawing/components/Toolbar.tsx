@@ -85,7 +85,7 @@ export const Toolbar = ({
   return (
     <>
       <div
-        className="flex items-center gap-3 py-2 px-6 absolute bottom-3 left-1/2 -translate-x-1/2 z-20 bg-schemafy-bg rounded-lg"
+        className="flex items-center gap-3 py-2 px-6 absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-schemafy-bg rounded-lg"
         style={{
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
         }}

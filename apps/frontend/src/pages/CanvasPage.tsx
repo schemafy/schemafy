@@ -144,7 +144,6 @@ const CanvasPageComponent = () => {
             connectionMode={ConnectionMode.Loose}
           >
             <MiniMap
-              position="bottom-right"
               nodeColor={() => 'var(--color-schemafy-text)'}
               maskColor="var(--color-schemafy-bg-80)"
               style={{
@@ -152,6 +151,10 @@ const CanvasPageComponent = () => {
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 borderRadius: '10px',
                 overflow: 'hidden',
+                position: 'absolute',
+                bottom: '1rem',
+                right: '1rem',
+                margin: '0',
               }}
               zoomable
               pannable

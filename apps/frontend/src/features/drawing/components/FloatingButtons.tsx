@@ -5,7 +5,7 @@ export const FloatingButtons = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="fixed bottom-3 left-3">
+    <div className="fixed bottom-4 left-4">
       <div
         className="flex flex-col items-center bg-schemafy-bg rounded-full shadow-lg p-2 transition-all duration-300 ease-in-out"
         onMouseEnter={() => setIsExpanded(true)}
