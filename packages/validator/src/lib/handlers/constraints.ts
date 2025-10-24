@@ -237,7 +237,9 @@ export const constraintHandlers: ConstraintHandlers = {
                 t.id === tableId
                   ? {
                       ...t,
-                      isAffected: t.constraints.some((c) => c.id === constraintId),
+                      isAffected: t.constraints.some(
+                        (c) => c.id === constraintId,
+                      ),
                       constraints: t.constraints.filter(
                         (c) => c.id !== constraintId,
                       ),
@@ -279,7 +281,9 @@ export const constraintHandlers: ConstraintHandlers = {
                       ...t,
                       isAffected: true,
                       constraints: t.constraints.map((c) =>
-                        c.id === constraintId ? { ...c, name: newName, isAffected: true } : c,
+                        c.id === constraintId
+                          ? { ...c, name: newName, isAffected: true }
+                          : c,
                       ),
                     }
                   : t,
@@ -325,7 +329,11 @@ export const constraintHandlers: ConstraintHandlers = {
                               isAffected: true,
                               columns: [
                                 ...c.columns,
-                                { ...constraintColumn, constraintId, isAffected: true },
+                                {
+                                  ...constraintColumn,
+                                  constraintId,
+                                  isAffected: true,
+                                },
                               ],
                             }
                           : c,
@@ -371,14 +379,16 @@ export const constraintHandlers: ConstraintHandlers = {
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
-                      ...t, 
+                      ...t,
                       isAffected: true,
                       constraints: t.constraints
                         .map((c) =>
                           c.id === constraintId
                             ? {
                                 ...c,
-                                isAffected: c.columns.some((cc) => cc.id === constraintColumnId),
+                                isAffected: c.columns.some(
+                                  (cc) => cc.id === constraintColumnId,
+                                ),
                                 columns: c.columns.filter(
                                   (cc) => cc.id !== constraintColumnId,
                                 ),

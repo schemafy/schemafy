@@ -28,20 +28,20 @@ export interface ColumnHandlers {
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
-    column: Omit<Column, "tableId" | "createdAt" | "updatedAt">
+    column: Omit<Column, "tableId" | "createdAt" | "updatedAt">,
   ) => Database;
   deleteColumn: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
-    columnId: Column["id"]
+    columnId: Column["id"],
   ) => Database;
   changeColumnName: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
     columnId: Column["id"],
-    newName: Column["name"]
+    newName: Column["name"],
   ) => Database;
   changeColumnType: (
     database: Database,
@@ -49,21 +49,21 @@ export interface ColumnHandlers {
     tableId: Table["id"],
     columnId: Column["id"],
     dataType: Column["dataType"],
-    lengthScale?: Column["lengthScale"]
+    lengthScale?: Column["lengthScale"],
   ) => Database;
   changeColumnPosition: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
     columnId: Column["id"],
-    newPosition: Column["ordinalPosition"]
+    newPosition: Column["ordinalPosition"],
   ) => Database;
   changeColumnNullable: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
     columnId: Column["id"],
-    nullable: boolean
+    nullable: boolean,
   ) => Database;
 }
 
@@ -98,7 +98,7 @@ export const columnHandlers: ColumnHandlers = {
         throw new ColumnLengthRequiredError(column.dataType);
 
       const vendorValid = helper.categorizedMysqlDataTypes.includes(
-        column.dataType
+        column.dataType,
       );
       if (!vendorValid) throw new ColumnDataTypeInvalidError(column.dataType);
     }
@@ -132,17 +132,17 @@ export const columnHandlers: ColumnHandlers = {
                       isAffected: true,
                       columns: [...t.columns, newColumn],
                     }
-                  : t
+                  : t,
               ),
             }
-          : s
+          : s,
       ),
     };
 
     const isPrimaryKey = table.constraints.some(
       (constraint) =>
         constraint.kind === "PRIMARY_KEY" &&
-        constraint.columns.some((cc) => cc.columnId === column.id)
+        constraint.columns.some((cc) => cc.columnId === column.id),
     );
 
     if (isPrimaryKey) {
@@ -150,7 +150,7 @@ export const columnHandlers: ColumnHandlers = {
         currentSchema: Schema,
         parentTableId: string,
         newPkColumn: typeof newColumn,
-        visited: Set<string> = new Set()
+        visited: Set<string> = new Set(),
       ): Schema => {
         if (visited.has(parentTableId)) return currentSchema;
         visited.add(parentTableId);
@@ -161,15 +161,15 @@ export const columnHandlers: ColumnHandlers = {
           for (const rel of table.relationships) {
             if (rel.tgtTableId === parentTableId) {
               const childTable = updatedSchema.tables.find(
-                (t) => t.id === rel.srcTableId
+                (t) => t.id === rel.srcTableId,
               );
               if (!childTable) continue;
 
               const parentTable = updatedSchema.tables.find(
-                (t) => t.id === parentTableId
+                (t) => t.id === parentTableId,
               )!;
               const existingColumn = childTable.columns.find((c) =>
-                c.name.startsWith(`${parentTable.name}_${newPkColumn.name}`)
+                c.name.startsWith(`${parentTable.name}_${newPkColumn.name}`),
               );
 
               if (!existingColumn) {
@@ -197,7 +197,7 @@ export const columnHandlers: ColumnHandlers = {
                           isAffected: true,
                           columns: [...t.columns, newFkColumn],
                         }
-                      : t
+                      : t,
                   ),
                 };
 
@@ -225,10 +225,10 @@ export const columnHandlers: ColumnHandlers = {
                                   isAffected: true,
                                   columns: [...r.columns, newRelColumn],
                                 }
-                              : r
+                              : r,
                           ),
                         }
-                      : t
+                      : t,
                   ),
                 };
 
@@ -237,7 +237,7 @@ export const columnHandlers: ColumnHandlers = {
                     structuredClone(updatedSchema),
                     rel.tgtTableId,
                     newFkColumn,
-                    new Set(visited)
+                    new Set(visited),
                   );
                 }
               }
@@ -249,19 +249,19 @@ export const columnHandlers: ColumnHandlers = {
       };
 
       const updatedSchema = updatedDatabase.schemas.find(
-        (s) => s.id === schemaId
+        (s) => s.id === schemaId,
       )!;
       const propagatedSchema = propagateNewPrimaryKey(
         structuredClone(updatedSchema),
         tableId,
-        newColumn
+        newColumn,
       );
 
       updatedDatabase = {
         ...updatedDatabase,
         isAffected: true,
         schemas: updatedDatabase.schemas.map((s) =>
-          s.id === schemaId ? { ...propagatedSchema, isAffected: true } : s
+          s.id === schemaId ? { ...propagatedSchema, isAffected: true } : s,
         ),
       };
     }
@@ -286,7 +286,7 @@ export const columnHandlers: ColumnHandlers = {
     const isPrimaryKey = table.constraints.some(
       (constraint) =>
         constraint.kind === "PRIMARY_KEY" &&
-        constraint.columns.some((cc) => cc.columnId === columnId)
+        constraint.columns.some((cc) => cc.columnId === columnId),
     );
 
     let updatedDatabase: Database = {
@@ -307,10 +307,10 @@ export const columnHandlers: ColumnHandlers = {
                       .map((idx) => ({
                         ...idx,
                         isAffected: idx.columns.some(
-                          (ic) => ic.columnId === columnId
+                          (ic) => ic.columnId === columnId,
                         ),
                         columns: idx.columns.filter(
-                          (ic) => ic.columnId !== columnId
+                          (ic) => ic.columnId !== columnId,
                         ),
                       }))
                       .filter((idx) => idx.columns.length > 0),
@@ -318,10 +318,10 @@ export const columnHandlers: ColumnHandlers = {
                       .map((constraint) => ({
                         ...constraint,
                         isAffected: constraint.columns.some(
-                          (cc) => cc.columnId === columnId
+                          (cc) => cc.columnId === columnId,
                         ),
                         columns: constraint.columns.filter(
-                          (cc) => cc.columnId !== columnId
+                          (cc) => cc.columnId !== columnId,
                         ),
                       }))
                       .filter((constraint) => constraint.columns.length > 0),
@@ -331,12 +331,12 @@ export const columnHandlers: ColumnHandlers = {
                         isAffected: rel.columns.some(
                           (rc) =>
                             rc.fkColumnId === columnId ||
-                            rc.refColumnId === columnId
+                            rc.refColumnId === columnId,
                         ),
                         columns: rel.columns.filter(
                           (rc) =>
                             rc.fkColumnId !== columnId &&
-                            rc.refColumnId !== columnId
+                            rc.refColumnId !== columnId,
                         ),
                       }))
                       .filter((rel) => rel.columns.length > 0),
@@ -345,7 +345,7 @@ export const columnHandlers: ColumnHandlers = {
                 return t;
               }),
             }
-          : s
+          : s,
       ),
     };
 
@@ -354,7 +354,7 @@ export const columnHandlers: ColumnHandlers = {
         currentSchema: Schema,
         parentTableId: string,
         deletedPkColumnId: string,
-        visited: Set<string> = new Set()
+        visited: Set<string> = new Set(),
       ): Schema => {
         if (visited.has(parentTableId)) return currentSchema;
         visited.add(parentTableId);
@@ -365,7 +365,7 @@ export const columnHandlers: ColumnHandlers = {
           for (const rel of table.relationships) {
             if (rel.tgtTableId === parentTableId) {
               const childTable = updatedSchema.tables.find(
-                (t) => t.id === rel.srcTableId
+                (t) => t.id === rel.srcTableId,
               );
               if (!childTable) continue;
 
@@ -382,19 +382,20 @@ export const columnHandlers: ColumnHandlers = {
                       ? {
                           ...t,
                           isAffected: t.columns.some((c) =>
-                            fkColumnsToDelete.includes(c.id)
+                            fkColumnsToDelete.includes(c.id),
                           ),
                           columns: t.columns.filter(
-                            (col) => !fkColumnsToDelete.includes(col.id)
+                            (col) => !fkColumnsToDelete.includes(col.id),
                           ),
                           indexes: t.indexes
                             .map((idx) => ({
                               ...idx,
                               isAffected: idx.columns.some((ic) =>
-                                fkColumnsToDelete.includes(ic.columnId)
+                                fkColumnsToDelete.includes(ic.columnId),
                               ),
                               columns: idx.columns.filter(
-                                (ic) => !fkColumnsToDelete.includes(ic.columnId)
+                                (ic) =>
+                                  !fkColumnsToDelete.includes(ic.columnId),
                               ),
                             }))
                             .filter((idx) => idx.columns.length > 0),
@@ -402,14 +403,15 @@ export const columnHandlers: ColumnHandlers = {
                             .map((constraint) => ({
                               ...constraint,
                               isAffected: constraint.columns.some((cc) =>
-                                fkColumnsToDelete.includes(cc.columnId)
+                                fkColumnsToDelete.includes(cc.columnId),
                               ),
                               columns: constraint.columns.filter(
-                                (cc) => !fkColumnsToDelete.includes(cc.columnId)
+                                (cc) =>
+                                  !fkColumnsToDelete.includes(cc.columnId),
                               ),
                             }))
                             .filter(
-                              (constraint) => constraint.columns.length > 0
+                              (constraint) => constraint.columns.length > 0,
                             ),
                           relationships: t.relationships
                             .map((relationship) => ({
@@ -417,19 +419,19 @@ export const columnHandlers: ColumnHandlers = {
                               isAffected: relationship.columns.some(
                                 (rc) =>
                                   fkColumnsToDelete.includes(rc.fkColumnId) ||
-                                  fkColumnsToDelete.includes(rc.refColumnId)
+                                  fkColumnsToDelete.includes(rc.refColumnId),
                               ),
                               columns: relationship.columns.filter(
                                 (rc) =>
                                   !fkColumnsToDelete.includes(rc.fkColumnId) &&
-                                  !fkColumnsToDelete.includes(rc.refColumnId)
+                                  !fkColumnsToDelete.includes(rc.refColumnId),
                               ),
                             }))
                             .filter(
-                              (relationship) => relationship.columns.length > 0
+                              (relationship) => relationship.columns.length > 0,
                             ),
                         }
-                      : t
+                      : t,
                   ),
                 };
 
@@ -439,7 +441,7 @@ export const columnHandlers: ColumnHandlers = {
                       structuredClone(updatedSchema),
                       rel.tgtTableId,
                       fkColumnId,
-                      new Set(visited)
+                      new Set(visited),
                     );
                   }
                 }
@@ -452,19 +454,19 @@ export const columnHandlers: ColumnHandlers = {
       };
 
       const updatedSchema = updatedDatabase.schemas.find(
-        (s) => s.id === schemaId
+        (s) => s.id === schemaId,
       )!;
       const cascadedSchema = deleteCascadingForeignKeys(
         structuredClone(updatedSchema),
         tableId,
-        columnId
+        columnId,
       );
 
       updatedDatabase = {
         ...updatedDatabase,
         isAffected: true,
         schemas: updatedDatabase.schemas.map((s) =>
-          s.id === schemaId ? { ...cascadedSchema, isAffected: true } : s
+          s.id === schemaId ? { ...cascadedSchema, isAffected: true } : s,
         ),
       };
     }
@@ -505,13 +507,13 @@ export const columnHandlers: ColumnHandlers = {
                       columns: t.columns.map((c) =>
                         c.id === columnId
                           ? { ...c, name: newName, isAffected: true }
-                          : c
+                          : c,
                       ),
                     }
-                  : t
+                  : t,
               ),
             }
-          : s
+          : s,
       ),
     };
   },
@@ -521,7 +523,7 @@ export const columnHandlers: ColumnHandlers = {
     tableId,
     columnId,
     dataType,
-    lengthScale
+    lengthScale,
   ) => {
     // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
 
@@ -555,13 +557,13 @@ export const columnHandlers: ColumnHandlers = {
                               dataType,
                               lengthScale: lengthScale || c.lengthScale,
                             }
-                          : c
+                          : c,
                       ),
                     }
-                  : t
+                  : t,
               ),
             }
-          : s
+          : s,
       ),
     };
   },
@@ -570,7 +572,7 @@ export const columnHandlers: ColumnHandlers = {
     schemaId,
     tableId,
     columnId,
-    newPosition
+    newPosition,
   ) => {
     // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
 
@@ -604,13 +606,13 @@ export const columnHandlers: ColumnHandlers = {
                               updatedAt: new Date(),
                               ordinalPosition: newPosition,
                             }
-                          : c
+                          : c,
                       ),
                     }
-                  : t
+                  : t,
               ),
             }
-          : s
+          : s,
       ),
     };
   },
@@ -639,26 +641,26 @@ export const columnHandlers: ColumnHandlers = {
       structuredClone(database),
       schemaId,
       tableId,
-      columnId
+      columnId,
     );
 
     currentDatabase = columnHandlers.createColumn(
       structuredClone(currentDatabase),
       schemaId,
       tableId,
-      updatedColumn
+      updatedColumn,
     );
 
     if (!nullable) {
       const updatedSchema = currentDatabase.schemas.find(
-        (s) => s.id === schemaId
+        (s) => s.id === schemaId,
       )!;
       const updatedTable = updatedSchema.tables.find((t) => t.id === tableId)!;
 
       const hasNotNull = updatedTable.constraints.some(
         (constraint) =>
           constraint.kind === "NOT_NULL" &&
-          constraint.columns.some((cc) => cc.columnId === columnId)
+          constraint.columns.some((cc) => cc.columnId === columnId),
       );
 
       if (!hasNotNull) {
@@ -697,10 +699,10 @@ export const columnHandlers: ColumnHandlers = {
                           isAffected: true,
                           constraints: [...t.constraints, newConstraint],
                         }
-                      : t
+                      : t,
                   ),
                 }
-              : s
+              : s,
           ),
         };
       }

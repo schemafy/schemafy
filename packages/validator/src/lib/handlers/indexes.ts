@@ -101,7 +101,10 @@ export const indexHandlers: IndexHandlers = {
                   ? {
                       ...t,
                       isAffected: true,
-                      indexes: [...t.indexes, { ...index, isAffected: true, tableId }],
+                      indexes: [
+                        ...t.indexes,
+                        { ...index, isAffected: true, tableId },
+                      ],
                     }
                   : t,
               ),
@@ -169,7 +172,9 @@ export const indexHandlers: IndexHandlers = {
                       ...t,
                       isAffected: true,
                       indexes: t.indexes.map((i) =>
-                        i.id === indexId ? { ...i, name: newName, isAffected: true } : i,
+                        i.id === indexId
+                          ? { ...i, name: newName, isAffected: true }
+                          : i,
                       ),
                     }
                   : t,
@@ -265,7 +270,9 @@ export const indexHandlers: IndexHandlers = {
                           i.id === indexId
                             ? {
                                 ...i,
-                                isAffected: i.columns.some((ic) => ic.id === indexColumnId),
+                                isAffected: i.columns.some(
+                                  (ic) => ic.id === indexColumnId,
+                                ),
                                 columns: i.columns.filter(
                                   (ic) => ic.id !== indexColumnId,
                                 ),
