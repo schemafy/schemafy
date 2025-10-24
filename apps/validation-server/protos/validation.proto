@@ -87,6 +87,7 @@ message Column {
     string createdAt = 11;
     string updatedAt = 12;
     optional string deletedAt = 13;
+    bool isAffected = 14;
 }
 
 message IndexColumn {
@@ -95,6 +96,7 @@ message IndexColumn {
     string columnId = 3;
     uint32 seqNo = 4;
     IndexSortDir sortDir = 5;
+    bool isAffected = 6;
 }
 
 message Index {
@@ -104,6 +106,7 @@ message Index {
     IndexType type = 4;
     optional string comment = 5; // optional/nullable
     repeated IndexColumn columns = 6;
+    bool isAffected = 7;
 }
 
 message ConstraintColumn {
@@ -111,6 +114,7 @@ message ConstraintColumn {
     string constraintId = 2;
     string columnId = 3;
     uint32 seqNo = 4;
+    bool isAffected = 5;
 }
 
 message Constraint {
@@ -121,6 +125,7 @@ message Constraint {
     optional string checkExpr = 5; // optional when kind == CHECK
     optional string defaultExpr = 6; // optional when kind == DEFAULT
     repeated ConstraintColumn columns = 7;
+    bool isAffected = 8;
 }
 
 message RelationshipColumn {
@@ -129,6 +134,7 @@ message RelationshipColumn {
     string fkColumnId = 3;
     string refColumnId = 4;
     uint32 seqNo = 5;
+    bool isAffected = 6;
 }
 
 message Relationship {
@@ -142,6 +148,7 @@ message Relationship {
     RelationshipOnUpdate onUpdate = 8;
     bool fkEnforced = 9;
     repeated RelationshipColumn columns = 10;
+    bool isAffected = 11;
 }
 
 message Table {
@@ -157,6 +164,7 @@ message Table {
     repeated Index indexes = 10;
     repeated Constraint constraints = 11;
     repeated Relationship relationships = 12;
+    bool isAffected = 13;
 }
 
 message Schema {
@@ -171,11 +179,13 @@ message Schema {
     string updatedAt = 9;
     optional string deletedAt = 10; // optional/nullable
     repeated Table tables = 11;
+    bool isAffected = 12;
 }
 
 message Database {
     string id = 1;
     repeated Schema schemas = 2;
+    bool isAffected = 3;
 }
 
 message CreateColumnRequest {
