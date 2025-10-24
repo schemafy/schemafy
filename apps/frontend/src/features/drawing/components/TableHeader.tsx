@@ -1,4 +1,4 @@
-import { Edit, Check, Settings, Plus } from 'lucide-react';
+import { Edit, Check, Settings, Plus, Trash } from 'lucide-react';
 
 interface TableHeaderProps {
   tableName: string;
@@ -12,6 +12,7 @@ interface TableHeaderProps {
   onToggleColumnEditMode: () => void;
   onSaveAllPendingChanges: () => void;
   onAddColumn: () => void;
+  onDeleteTable: () => void;
 }
 
 export const TableHeader = ({
@@ -26,6 +27,7 @@ export const TableHeader = ({
   onToggleColumnEditMode,
   onSaveAllPendingChanges,
   onAddColumn,
+  onDeleteTable,
 }: TableHeaderProps) => {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') onSaveEdit();
@@ -33,7 +35,7 @@ export const TableHeader = ({
   };
 
   return (
-    <div className="bg-schemafy-button-bg text-schemafy-button-text p-3 flex items-center justify-between">
+    <div className="bg-schemafy-button-bg text-schemafy-button-text p-3 flex items-center justify-between gap-4">
       <div className="flex items-center gap-2 flex-1">
         {isEditing ? (
           <div className="flex items-center gap-2 flex-1">
@@ -80,6 +82,9 @@ export const TableHeader = ({
         )}
         <button onClick={onAddColumn} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Add Column">
           <Plus size={14} />
+        </button>
+        <button onClick={onDeleteTable} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Delete Table">
+          <Trash size={14} />
         </button>
       </div>
     </div>

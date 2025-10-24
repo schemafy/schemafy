@@ -50,6 +50,10 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
     erdStore.deleteColumn(data.schemaId, id, columnId);
   };
 
+  const deleteTable = () => {
+    erdStore.deleteTable(data.schemaId, id);
+  };
+
   const handleSaveAllPendingChanges = () => {
     saveAllPendingChanges();
     setIsColumnEditMode(false);
@@ -70,6 +74,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         onToggleColumnEditMode={() => setIsColumnEditMode(!isColumnEditMode)}
         onSaveAllPendingChanges={handleSaveAllPendingChanges}
         onAddColumn={addColumn}
+        onDeleteTable={deleteTable}
       />
       <div className="max-h-96 overflow-y-auto">
         {columns.map((column) => (
