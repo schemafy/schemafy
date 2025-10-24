@@ -1,162 +1,146 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
 import { ErdStore } from '@/store';
-import type { Schema, Table } from '@schemafy/validator';
-import type { TableData } from '../types';
+import type { Schema, Table, Column, Constraint } from '@schemafy/validator';
+import type { TableData, ColumnType, ConstraintKind } from '../types';
+import { ulid } from 'ulid';
 
 type TableExtra = {
   position?: { x: number; y: number };
 };
 
+const hasConstraint = (constraints: Constraint[], columnId: string, kind: ConstraintKind): boolean => {
+  return constraints.some((c) => c.kind === kind && c.columns.some((cc) => cc.columnId === columnId));
+};
+
+const transformColumn = (col: Column, constraints: Constraint[]): ColumnType => {
+  const isPrimaryKey = hasConstraint(constraints, col.id, 'PRIMARY_KEY');
+  const isNotNull = hasConstraint(constraints, col.id, 'NOT_NULL');
+  const isUnique = isPrimaryKey || hasConstraint(constraints, col.id, 'UNIQUE');
+
+  return {
+    id: col.id,
+    name: col.name,
+    type: col.dataType || 'VARCHAR',
+    isPrimaryKey,
+    isNotNull,
+    isUnique,
+  };
+};
+
+const transformTableToNode = (table: Table, schemaId: string): Node<TableData> => {
+  const extra = (table.extra || {}) as TableExtra;
+  const position = extra.position || { x: 0, y: 0 };
+  const columns = table.columns.map((col) => transformColumn(col, table.constraints));
+
+  return {
+    id: table.id,
+    type: 'table',
+    position,
+    data: {
+      tableName: table.name,
+      columns,
+      schemaId,
+    },
+  };
+};
+
 export const useTables = () => {
   const erdStore = ErdStore.getInstance();
 
-  const tablesFromStore: Node<TableData>[] =
-    erdStore.erdState.state === 'loaded'
-      ? (() => {
-          const { database } = erdStore.erdState;
-          const selectedSchemaId = erdStore.selectedSchemaId;
-          const selectedSchema = database.schemas.find((s: Schema) => s.id === selectedSchemaId);
+  const tablesFromStore = useMemo<Node<TableData>[]>(() => {
+    if (erdStore.erdState.state !== 'loaded') return [];
 
-          if (!selectedSchema) return [];
+    const { database } = erdStore.erdState;
+    const selectedSchemaId = erdStore.selectedSchemaId;
+    const selectedSchema = database.schemas.find((s: Schema) => s.id === selectedSchemaId);
 
-          return selectedSchema.tables.map((table: Table): Node<TableData> => {
-            const extra = (table.extra || {}) as TableExtra;
-            const position = extra.position || { x: 0, y: 0 };
-            const columns = table.columns.map((col) => {
-              const isPrimaryKey = table.constraints.some(
-                (constraint) =>
-                  constraint.kind === 'PRIMARY_KEY' && constraint.columns.some((cc) => cc.columnId === col.id),
-              );
+    if (!selectedSchema) return [];
 
-              const isNotNull =
-                isPrimaryKey ||
-                table.constraints.some(
-                  (constraint) =>
-                    constraint.kind === 'NOT_NULL' && constraint.columns.some((cc) => cc.columnId === col.id),
-                );
+    return selectedSchema.tables.map((table) => transformTableToNode(table, selectedSchema.id));
+  }, [erdStore.erdState, erdStore.selectedSchemaId]);
 
-              const isUnique =
-                isPrimaryKey ||
-                table.constraints.some(
-                  (constraint) =>
-                    constraint.kind === 'UNIQUE' && constraint.columns.some((cc) => cc.columnId === col.id),
-                );
-
-              return {
-                id: col.id,
-                name: col.name,
-                type: col.dataType || 'VARCHAR',
-                isPrimaryKey,
-                isNotNull,
-                isUnique,
-              };
-            });
-
-            return {
-              id: table.id,
-              type: 'table',
-              position,
-              data: {
-                tableName: table.name,
-                columns,
-                schemaId: selectedSchema.id,
-              },
-            };
-          });
-        })()
-      : [];
-
-  const [localTables, setLocalTables] = useState<Node<TableData>[]>(tablesFromStore);
-
-  const tableIds = tablesFromStore
-    .map((t) => t.id)
-    .sort()
-    .join(',');
+  const [tables, setTables] = useState<Node<TableData>[]>(tablesFromStore);
 
   useEffect(() => {
-    setLocalTables(tablesFromStore);
-  }, [tableIds]);
+    setTables(tablesFromStore);
+  }, [tablesFromStore]);
 
-  const tables = localTables;
+  const addTable = (position: { x: number; y: number }) => {
+    if (erdStore.erdState.state !== 'loaded') {
+      console.error('Database is not loaded');
+      return;
+    }
 
-  const addTable = useCallback(
-    (position: { x: number; y: number }) => {
-      if (erdStore.erdState.state !== 'loaded') {
-        console.error('Database is not loaded');
-        return;
-      }
+    const selectedSchemaId = erdStore.selectedSchemaId;
+    if (!selectedSchemaId) {
+      console.error('No schema selected');
+      return;
+    }
 
-      const selectedSchemaId = erdStore.selectedSchemaId;
-      if (!selectedSchemaId) {
-        console.error('No schema selected');
-        return;
-      }
+    const selectedSchema = erdStore.erdState.database.schemas.find((s: Schema) => s.id === selectedSchemaId);
+    if (!selectedSchema) {
+      console.error('Selected schema not found');
+      return;
+    }
 
-      const selectedSchema = erdStore.erdState.database.schemas.find((s: Schema) => s.id === selectedSchemaId);
-
-      if (!selectedSchema) {
-        console.error('Selected schema not found');
-        return;
-      }
-
-      const tableCount = selectedSchema.tables.length;
-      erdStore.createTable(selectedSchemaId, {
-        id: `table_${Date.now()}`,
-        name: `Table_${tableCount + 1}`,
-        columns: [],
-        indexes: [],
-        constraints: [],
-        relationships: [],
-        tableOptions: '',
-        extra: { position },
-      });
-    },
-    [erdStore],
-  );
+    const tableCount = selectedSchema.tables.length;
+    erdStore.createTable(selectedSchemaId, {
+      id: ulid(),
+      name: `Table_${tableCount + 1}`,
+      columns: [],
+      indexes: [],
+      constraints: [],
+      relationships: [],
+      tableOptions: '',
+      extra: { position },
+    });
+  };
 
   const onTablesChange = useCallback(
     (changes: NodeChange[]) => {
-      setLocalTables((nds) => applyNodeChanges(changes, nds) as Node<TableData>[]);
+      setTables((nds) => {
+        const updatedTables = applyNodeChanges(changes, nds) as Node<TableData>[];
 
-      if (erdStore.erdState.state !== 'loaded') return;
+        if (erdStore.erdState.state !== 'loaded') return updatedTables;
 
-      const { database } = erdStore.erdState;
+        const { database } = erdStore.erdState;
 
-      const positionChanges = changes.filter(
-        (change) => change.type === 'position' && change.dragging === false && change.position,
-      );
+        changes
+          .filter((change) => change.type === 'position' && change.dragging === false && change.position)
+          .forEach((change) => {
+            if (change.type !== 'position' || !change.position) return;
 
-      positionChanges.forEach((change) => {
-        if (change.type !== 'position' || !change.position) return;
+            const table = nds.find((t) => t.id === change.id);
+            if (!table) return;
 
-        const table = tables.find((t) => t.id === change.id);
-        if (!table) return;
+            const schemaId = table.data.schemaId;
+            const currentTable = database.schemas
+              .find((s: Schema) => s.id === schemaId)
+              ?.tables.find((t: Table) => t.id === change.id);
 
-        const schemaId: string = table.data.schemaId;
-        const currentTable = database.schemas
-          .find((s: Schema) => s.id === schemaId)
-          ?.tables.find((t: Table) => t.id === change.id);
+            if (currentTable) {
+              const currentExtra = (currentTable.extra || {}) as TableExtra;
+              erdStore.updateTableExtra(schemaId, change.id, {
+                ...currentExtra,
+                position: change.position,
+              });
+            }
+          });
 
-        if (currentTable) {
-          const currentExtra = (currentTable.extra || {}) as TableExtra;
-          const newExtra: TableExtra = {
-            ...currentExtra,
-            position: change.position,
-          };
-          erdStore.updateTableExtra(schemaId, change.id, newExtra);
-        }
-      });
+        changes
+          .filter((change) => change.type === 'remove')
+          .forEach((change) => {
+            const table = nds.find((t) => t.id === change.id);
+            if (table?.data.schemaId) {
+              erdStore.deleteTable(table.data.schemaId, change.id);
+            }
+          });
 
-      const removeChanges = changes.filter((change) => change.type === 'remove');
-      removeChanges.forEach((change) => {
-        const table = tables.find((t) => t.id === change.id);
-        if (table?.data.schemaId) {
-          erdStore.deleteTable(table.data.schemaId, change.id);
-        }
+        return updatedTables;
       });
     },
-    [erdStore, tables],
+    [erdStore],
   );
 
   return {

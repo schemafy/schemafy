@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Trash2, GripVertical } from 'lucide-react';
 import { DATA_TYPES } from '../types';
 import type {
@@ -13,6 +14,7 @@ import type {
 export const ColumnRow = ({
   column,
   isEditMode,
+  isLastColumn,
   draggedItem,
   dragOverItem,
   onDragStart,
@@ -40,6 +42,7 @@ export const ColumnRow = ({
       {isEditMode ? (
         <EditModeColumn
           column={column}
+          isLastColumn={isLastColumn}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
           onUpdateColumn={onUpdateColumn}
@@ -52,7 +55,25 @@ export const ColumnRow = ({
   );
 };
 
-export const EditModeColumn = ({ column, onDragStart, onDragEnd, onUpdateColumn, onRemoveColumn }: EditModeColumnProps) => {
+export const EditModeColumn = ({
+  column,
+  isLastColumn,
+  onDragStart,
+  onDragEnd,
+  onUpdateColumn,
+  onRemoveColumn,
+}: EditModeColumnProps) => {
+  const [localName, setLocalName] = useState(column.name);
+
+  useEffect(() => {
+    setLocalName(column.name);
+  }, [column.name]);
+
+  const handleNameChange = (value: string) => {
+    setLocalName(value);
+    onUpdateColumn(column.id, 'name', value);
+  };
+
   return (
     <div className="p-2 space-y-2">
       <div className="flex items-center gap-2">
@@ -60,8 +81,8 @@ export const EditModeColumn = ({ column, onDragStart, onDragEnd, onUpdateColumn,
 
         <input
           type="text"
-          value={column.name}
-          onChange={(e) => onUpdateColumn(column.id, 'name', e.target.value)}
+          value={localName}
+          onChange={(e) => handleNameChange(e.target.value)}
           className="flex-1 px-2 py-1 text-sm border border-schemafy-light-gray rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
           placeholder="Column name"
         />
@@ -70,8 +91,11 @@ export const EditModeColumn = ({ column, onDragStart, onDragEnd, onUpdateColumn,
 
         <button
           onClick={() => onRemoveColumn(column.id)}
-          className="p-1 text-schemafy-destructive hover:bg-red-100 rounded flex-shrink-0"
-          title="Remove Column"
+          disabled={isLastColumn}
+          className={`p-1 rounded flex-shrink-0 ${
+            isLastColumn ? 'text-gray-300 cursor-not-allowed' : 'text-schemafy-destructive hover:bg-red-100'
+          }`}
+          title={isLastColumn ? 'Cannot delete the last column' : 'Remove Column'}
         >
           <Trash2 size={12} />
         </button>
@@ -139,17 +163,25 @@ export const ColumnConstraints = ({ column, onUpdateColumn }: ColumnConstraintsP
 
   return (
     <div className="flex flex-wrap gap-3 text-xs ml-4">
-      {constraints.map(({ key, label, color }) => (
-        <label key={key} className="flex items-center gap-1 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={column[key]}
-            onChange={(e) => onUpdateColumn(column.id, key, e.target.checked)}
-            className="w-3 h-3"
-          />
-          <span className={`${color} font-medium`}>{label}</span>
-        </label>
-      ))}
+      {constraints.map(({ key, label, color }) => {
+        const isDisabled = column.isPrimaryKey && (key === 'isNotNull' || key === 'isUnique');
+
+        return (
+          <label
+            key={key}
+            className={`flex items-center gap-1 ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+          >
+            <input
+              type="checkbox"
+              checked={column[key]}
+              onChange={(e) => onUpdateColumn(column.id, key, e.target.checked)}
+              disabled={isDisabled}
+              className="w-3 h-3"
+            />
+            <span className={`${color} font-medium`}>{label}</span>
+          </label>
+        );
+      })}
     </div>
   );
 };

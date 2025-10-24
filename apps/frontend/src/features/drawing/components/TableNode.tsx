@@ -1,10 +1,11 @@
 import { Handle, Position } from '@xyflow/react';
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { HANDLE_STYLE, type TableProps, type ColumnType } from '../types';
-import { Edit, Check, Settings, Plus } from 'lucide-react';
+import { ulid } from 'ulid';
+import { HANDLE_STYLE, type TableProps } from '../types';
 import { ColumnRow } from './Column';
-import { useDragAndDrop } from '../hooks';
+import { TableHeader } from './TableHeader';
+import { useDragAndDrop, useColumnUpdate } from '../hooks';
 import { ErdStore } from '@/store/erd.store';
 
 const TableNodeComponent = ({ data, id }: TableProps) => {
@@ -12,14 +13,17 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const [isEditingTableName, setIsEditingTableName] = useState(false);
   const [isColumnEditMode, setIsColumnEditMode] = useState(false);
   const [editingTableName, setEditingTableName] = useState(data.tableName);
-  const [columns, setColumns] = useState(data.columns || []);
+
+  const columns = data.columns || [];
+
+  const { updateColumn, saveAllPendingChanges } = useColumnUpdate(erdStore, data.schemaId, id);
 
   const dragAndDrop = useDragAndDrop({
     items: columns,
     onReorder: (newColumns) => {
-      setColumns(newColumns);
-      // TODO: ErdStore changeColumnPosition 호출
-      console.log('Column reorder:', newColumns);
+      newColumns.forEach((column, index) => {
+        erdStore.changeColumnPosition(data.schemaId, id, column.id, index);
+      });
     },
   });
 
@@ -29,34 +33,26 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   };
 
   const addColumn = () => {
-    const newColumn: ColumnType = {
-      id: `column_${Date.now()}`,
-      name: 'new_column',
-      type: 'VARCHAR',
-      isPrimaryKey: false,
-      isNotNull: false,
-      isUnique: false,
-    };
-    const newColumns = [...columns, newColumn];
-    setColumns(newColumns);
-
-    // TODO: ErdStore createColumn 호출
-    console.log('Add column:', newColumn);
+    erdStore.createColumn(data.schemaId, id, {
+      id: ulid(),
+      name: `newColumn${columns.length + 1}`,
+      ordinalPosition: columns.length,
+      dataType: 'VARCHAR',
+      lengthScale: '255',
+      isAutoIncrement: false,
+      charset: 'utf8mb4',
+      collation: 'utf8mb4_general_ci',
+    });
     setIsColumnEditMode(true);
   };
 
   const removeColumn = (columnId: string) => {
-    const newColumns = columns.filter((column) => column.id !== columnId);
-    setColumns(newColumns);
     erdStore.deleteColumn(data.schemaId, id, columnId);
   };
 
-  const updateColumn = (columnId: string, key: keyof ColumnType, value: string | boolean) => {
-    const newColumns = columns.map((column) => (column.id === columnId ? { ...column, [key]: value } : column));
-    setColumns(newColumns);
-
-    // TODO: ErdStore updateColumn 호출
-    console.log('Update column:', columnId, key, value);
+  const handleSaveAllPendingChanges = () => {
+    saveAllPendingChanges();
+    setIsColumnEditMode(false);
   };
 
   return (
@@ -72,6 +68,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         onCancelEdit={() => setIsEditingTableName(false)}
         onEditingNameChange={setEditingTableName}
         onToggleColumnEditMode={() => setIsColumnEditMode(!isColumnEditMode)}
+        onSaveAllPendingChanges={handleSaveAllPendingChanges}
         onAddColumn={addColumn}
       />
       <div className="max-h-96 overflow-y-auto">
@@ -80,6 +77,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
             key={column.id}
             column={column}
             isEditMode={isColumnEditMode}
+            isLastColumn={columns.length === 1}
             draggedItem={dragAndDrop.draggedItem}
             dragOverItem={dragAndDrop.dragOverItem}
             onDragStart={dragAndDrop.handleDragStart}
@@ -95,78 +93,6 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
       {columns.length === 0 && (
         <div className="p-4 text-center text-schemafy-dark-gray text-sm">Click + to add a column.</div>
       )}
-    </div>
-  );
-};
-
-const TableHeader = ({
-  tableName,
-  isEditing,
-  editingName,
-  isColumnEditMode,
-  onStartEdit,
-  onSaveEdit,
-  onCancelEdit,
-  onEditingNameChange,
-  onToggleColumnEditMode,
-  onAddColumn,
-}: {
-  tableName: string;
-  isEditing: boolean;
-  editingName: string;
-  isColumnEditMode: boolean;
-  onStartEdit: () => void;
-  onSaveEdit: () => void;
-  onCancelEdit: () => void;
-  onEditingNameChange: (name: string) => void;
-  onToggleColumnEditMode: () => void;
-  onAddColumn: () => void;
-}) => {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') onSaveEdit();
-    if (e.key === 'Escape') onCancelEdit();
-  };
-
-  return (
-    <div className="bg-schemafy-button-bg text-schemafy-button-text p-3 flex items-center justify-between">
-      <div className="flex items-center gap-2 flex-1">
-        {isEditing ? (
-          <div className="flex items-center gap-2 flex-1">
-            <input
-              type="text"
-              value={editingName}
-              placeholder="Entity"
-              onChange={(e) => onEditingNameChange(e.target.value)}
-              className="bg-transparent border-b border-schemafy-button-text text-schemafy-button-text placeholder-schemafy-dark-gray outline-none flex-1"
-              onKeyDown={handleKeyDown}
-              autoFocus
-            />
-            <button onClick={onSaveEdit} className="p-1 hover:bg-schemafy-dark-gray rounded">
-              <Check size={14} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 flex-1">
-            <span className="font-medium">{tableName}</span>
-            <button onClick={onStartEdit} className="p-1 hover:bg-schemafy-dark-gray rounded">
-              <Edit size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-1">
-        <button
-          onClick={onToggleColumnEditMode}
-          className={`p-1 rounded ${isColumnEditMode ? 'bg-schemafy-dark-gray' : 'hover:bg-schemafy-dark-gray'}`}
-          title="Toggle Edit Mode"
-        >
-          <Settings size={14} />
-        </button>
-        <button onClick={onAddColumn} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Add Column">
-          <Plus size={14} />
-        </button>
-      </div>
     </div>
   );
 };

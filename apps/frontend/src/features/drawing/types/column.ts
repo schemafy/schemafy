@@ -12,6 +12,7 @@ export type ColumnType = {
 export interface ColumnRowProps {
   column: ColumnType;
   isEditMode: boolean;
+  isLastColumn: boolean;
   draggedItem: string | null;
   dragOverItem: string | null;
   onDragStart: (e: DragEvent, columnId: string) => void;
@@ -25,6 +26,7 @@ export interface ColumnRowProps {
 
 export interface EditModeColumnProps {
   column: ColumnType;
+  isLastColumn: boolean;
   onDragStart: (e: DragEvent, columnId: string) => void;
   onDragEnd: () => void;
   onUpdateColumn: (columnId: string, key: keyof ColumnType, value: string | boolean) => void;
@@ -55,6 +57,7 @@ export interface ColumnBadgesProps {
   column: ColumnType;
 }
 
+// TODO: 데이터 타입은 백엔드에서 length_scale이랑 같이 제공
 export const DATA_TYPES = [
   'VARCHAR',
   'CHAR',
@@ -75,3 +78,5 @@ export const DATA_TYPES = [
   'JSON',
   'UUID',
 ];
+
+export type ConstraintKind = 'PRIMARY_KEY' | 'NOT_NULL' | 'UNIQUE';
