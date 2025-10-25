@@ -91,6 +91,7 @@ describe('Index validation', () => {
         seqNo: 1,
         sortDir: 'ASC',
         id: 'index-column-1',
+        isAffected: false,
       })
     ).toThrow(IndexColumnNotUniqueError);
   });

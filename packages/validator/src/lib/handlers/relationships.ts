@@ -13,6 +13,7 @@ import {
   Relationship,
   RelationshipColumn,
   Table,
+  Column,
 } from "../types";
 import * as helper from "../helper";
 
@@ -150,8 +151,9 @@ export const relationshipHandlers: RelationshipHandlers = {
               const newColumnId = `fkcol_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
               const columnName = `${parentTable.name}_${pkColumn.name}`;
 
-              const newColumn = {
+              const newColumn: Column = {
                 ...pkColumn,
+                isAffected: true,
                 id: newColumnId,
                 tableId: childTable.id,
                 name: columnName,
@@ -162,26 +164,30 @@ export const relationshipHandlers: RelationshipHandlers = {
 
               updatedChildTable = {
                 ...updatedChildTable,
+                isAffected: true,
                 columns: [...updatedChildTable.columns, newColumn],
               };
 
               newlyCreatedFkColumns.push(newColumn);
 
-              const newRelColumn = {
+              const newRelColumn: RelationshipColumn = {
                 id: `rel_col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 relationshipId: rel.id,
                 fkColumnId: newColumnId,
                 refColumnId: pkColumn.id,
                 seqNo: rel.columns.length + 1,
+                isAffected: true,
               };
 
-              const updatedRel = {
+              const updatedRel: Relationship = {
                 ...rel,
+                isAffected: true,
                 columns: [...rel.columns, newRelColumn],
               };
 
               updatedChildTable = {
                 ...updatedChildTable,
+                isAffected: true,
                 relationships: updatedChildTable.relationships.map((r) =>
                   r.id === rel.id ? updatedRel : r,
                 ),
@@ -190,6 +196,7 @@ export const relationshipHandlers: RelationshipHandlers = {
 
             updatedSchema = {
               ...updatedSchema,
+              isAffected: true,
               tables: updatedSchema.tables.map((t) =>
                 t.id === childTable.id ? updatedChildTable : t,
               ),
@@ -205,6 +212,7 @@ export const relationshipHandlers: RelationshipHandlers = {
                 for (const fkColumn of newlyCreatedFkColumns) {
                   newPkColumns.push({
                     id: `constraint_col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    isAffected: true,
                     constraintId: childPkConstraint.id,
                     columnId: fkColumn.id,
                     seqNo:
@@ -217,11 +225,13 @@ export const relationshipHandlers: RelationshipHandlers = {
                 if (newPkColumns.length > 0) {
                   const updatedPkConstraint = {
                     ...childPkConstraint,
+                    isAffected: true,
                     columns: [...childPkConstraint.columns, ...newPkColumns],
                   };
 
                   updatedChildTable = {
                     ...updatedChildTable,
+                    isAffected: true,
                     constraints: updatedChildTable.constraints.map((c) =>
                       c.id === childPkConstraint.id ? updatedPkConstraint : c,
                     ),
@@ -229,6 +239,7 @@ export const relationshipHandlers: RelationshipHandlers = {
 
                   updatedSchema = {
                     ...updatedSchema,
+                    isAffected: true,
                     tables: updatedSchema.tables.map((t) =>
                       t.id === childTable.id ? updatedChildTable : t,
                     ),
@@ -251,15 +262,21 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     let updatedDatabase = {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === relationship.tgtTableId
                   ? {
                       ...t,
-                      relationships: [...t.relationships, relationship],
+                      isAffected: true,
+                      relationships: [
+                        ...t.relationships,
+                        { ...relationship, isAffected: true },
+                      ],
                     }
                   : t,
               ),
@@ -278,8 +295,9 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     updatedDatabase = {
       ...updatedDatabase,
+      isAffected: true,
       schemas: updatedDatabase.schemas.map((s) =>
-        s.id === schemaId ? propagatedSchema : s,
+        s.id === schemaId ? { ...propagatedSchema, isAffected: true } : s,
       ),
     };
 
@@ -320,10 +338,25 @@ export const relationshipHandlers: RelationshipHandlers = {
 
       updatedSchema = {
         ...updatedSchema,
+        isAffected: true,
         tables: updatedSchema.tables.map((table) => {
           if (table.id === relationshipToDelete.srcTableId) {
+            const isAffected =
+              table.relationships.some(
+                (r) => r.id === relationshipToDelete.id,
+              ) ||
+              table.columns.some((col) => fkColumnsToDelete.has(col.id)) ||
+              table.indexes.some((idx) =>
+                idx.columns.some((ic) => fkColumnsToDelete.has(ic.columnId)),
+              ) ||
+              table.constraints.some((constraint) =>
+                constraint.columns.some((cc) =>
+                  fkColumnsToDelete.has(cc.columnId),
+                ),
+              );
             return {
               ...table,
+              isAffected,
               relationships: table.relationships.filter(
                 (r) => r.id !== relationshipToDelete.id,
               ),
@@ -382,8 +415,9 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
-        s.id === schemaId ? updatedSchema : s,
+        s.id === schemaId ? { ...updatedSchema, isAffected: true } : s,
       ),
     };
   },
@@ -412,18 +446,24 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     if (!foundRelationship) throw new RelationshipNotExistError(relationshipId);
 
+    // ? 양방향으로 넣기로 한거 같은데, 왜 이런 것인지?
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === sourceTableId
                   ? {
                       ...t,
+                      isAffected: true,
                       relationships: t.relationships.map((r) =>
-                        r.id === relationshipId ? { ...r, name: newName } : r,
+                        r.id === relationshipId
+                          ? { ...r, name: newName, isAffected: true }
+                          : r,
                       ),
                     }
                   : t,
@@ -455,8 +495,9 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     if (!foundRelationship) throw new RelationshipNotExistError(relationshipId);
 
-    const updatedRelationship = {
+    const updatedRelationship: Relationship = {
       ...foundRelationship,
+      isAffected: true,
       cardinality,
     };
 
@@ -500,21 +541,29 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === sourceTableId
                   ? {
                       ...t,
+                      isAffected: true,
                       relationships: t.relationships.map((r) =>
                         r.id === relationshipId
                           ? {
                               ...r,
+                              isAffected: true,
                               columns: [
                                 ...r.columns,
-                                { ...relationshipColumn, relationshipId },
+                                {
+                                  ...relationshipColumn,
+                                  relationshipId,
+                                  isAffected: true,
+                                },
                               ],
                             }
                           : r,
@@ -559,19 +608,23 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === sourceTableId
                   ? {
                       ...t,
+                      isAffected: true,
                       relationships: t.relationships
                         .map((r) =>
                           r.id === relationshipId
                             ? {
                                 ...r,
+                                isAffected: true,
                                 columns: r.columns.filter(
                                   (rc) => rc.id !== relationshipColumnId,
                                 ),
