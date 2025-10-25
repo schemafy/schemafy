@@ -89,6 +89,7 @@ export const RELATIONSHIP = z.object({
     onUpdate: RELATIONSHIP_ON_UPDATE,
     fkEnforced: z.literal(false),
     columns: z.array(RELATIONSHIP_COLUMN),
+    extra: z.unknown().optional(),
 });
 
 export const TABLE = z.object({

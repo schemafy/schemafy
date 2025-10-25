@@ -1,15 +1,17 @@
 export const RELATIONSHIP_TYPES = {
   'one-to-one': {
     label: '1:1',
+    cardinality: '1:1',
     style: { stroke: 'var(--color-schemafy-dark-gray)', strokeWidth: 2 },
     markerStart: 'erd-one-start',
     markerEnd: 'erd-one-end',
   },
   'one-to-many': {
     label: '1:N',
+    cardinality: '1:N',
     style: { stroke: 'var(--color-schemafy-dark-gray)', strokeWidth: 2 },
-    markerStart: 'erd-one-start',
-    markerEnd: 'erd-many-end',
+    markerStart: 'erd-many-start',
+    markerEnd: 'erd-one-end',
   },
 } as const;
 
@@ -29,7 +31,7 @@ export type RelationshipType = keyof typeof RELATIONSHIP_TYPES;
 
 export interface RelationshipConfig {
   type: RelationshipType;
-  isDashed: boolean;
+  isNonIdentifying: boolean;
   controlPointX?: number;
   controlPointY?: number;
 }

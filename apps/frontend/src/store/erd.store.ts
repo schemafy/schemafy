@@ -285,6 +285,25 @@ export class ErdStore {
     this.update((db) => ERD_VALIDATOR.changeRelationshipCardinality(db, schemaId, relationshipId, cardinality));
   }
 
+  updateRelationshipExtra(schemaId: Schema['id'], relationshipId: Relationship['id'], extra: unknown) {
+    this.update((db) => {
+      const schema = db.schemas.find((s) => s.id === schemaId);
+      if (!schema) throw new Error(`Schema ${schemaId} not found`);
+
+      let relationship: Relationship | undefined;
+      for (const table of schema.tables) {
+        relationship = table.relationships.find((r) => r.id === relationshipId);
+        if (relationship) break;
+      }
+
+      if (!relationship) throw new Error(`Relationship ${relationshipId} not found`);
+
+      relationship.extra = extra;
+
+      return { ...db };
+    });
+  }
+
   addColumnToRelationship(
     schemaId: Schema['id'],
     relationshipId: Relationship['id'],

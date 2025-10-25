@@ -39,7 +39,7 @@ const CanvasPageComponent = () => {
   const erdStore = ErdStore.getInstance();
   const [relationshipConfig, setRelationshipConfig] = useState<RelationshipConfig>({
     type: 'one-to-many',
-    isDashed: false,
+    isNonIdentifying: false,
   });
   const [activeTool, setActiveTool] = useState<string>('pointer');
   const [mousePosition, setMousePosition] = useState<{
@@ -84,6 +84,7 @@ const CanvasPageComponent = () => {
     onReconnect,
     onReconnectEnd,
     changeRelationshipConfig,
+    deleteRelationship,
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
@@ -170,6 +171,7 @@ const CanvasPageComponent = () => {
               selectedRelationship={selectedRelationship}
               relationships={relationships}
               onRelationshipChange={changeRelationshipConfig}
+              onRelationshipDelete={deleteRelationship}
               onClose={() => setSelectedRelationship(null)}
             />
           )}
