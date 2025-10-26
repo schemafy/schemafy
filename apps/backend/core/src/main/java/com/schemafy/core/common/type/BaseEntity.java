@@ -8,10 +8,11 @@ import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.time.Instant;
 
 @Getter
 @AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
@@ -23,15 +24,12 @@ public abstract class BaseEntity implements Persistable<String> {
     protected String id;
 
     @CreatedDate
-    protected LocalDateTime createdAt;
+    protected Instant createdAt;
 
     @LastModifiedDate
-    protected LocalDateTime updatedAt;
+    protected Instant updatedAt;
 
-    protected LocalDateTime deletedAt;
-
-    @Transient
-    protected boolean isNew = true;
+    protected Instant deletedAt;
 
     @Override
     public String getId() {
@@ -40,15 +38,11 @@ public abstract class BaseEntity implements Persistable<String> {
 
     @Override
     public boolean isNew() {
-        return isNew;
-    }
-
-    public void markAsNotNew() {
-        this.isNew = false;
+        return this.createdAt == null;
     }
 
     public void delete() {
-        this.deletedAt = LocalDateTime.now();
+        this.deletedAt = Instant.now();
     }
 
     public boolean isDeleted() {

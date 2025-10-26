@@ -30,7 +30,10 @@ public enum ErrorCode {
     VALIDATION_TIMEOUT(HttpStatus.REQUEST_TIMEOUT, "V003",
             "검증 서비스 요청 시간이 초과되었습니다."),
     VALIDATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "V004",
-            "검증 처리 중 오류가 발생했습니다.");
+            "검증 처리 중 오류가 발생했습니다."),
+
+    // ERD
+    ERD_SCHEMA_NOT_FOUND(HttpStatus.NOT_FOUND, "E001", "스키마를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

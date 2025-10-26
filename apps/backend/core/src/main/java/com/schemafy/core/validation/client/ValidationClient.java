@@ -65,185 +65,185 @@ public class ValidationClient {
     @Value("${grpc.validation.deadline-seconds:30}")
     private long deadlineSeconds;
 
-    public Mono<ValidateResult> validateDatabase(Database database) {
+    public Mono<Database> validateDatabase(Database database) {
         return executeValidation(
                 () -> withDeadline().validateDatabase(database),
                 "validateDatabase");
     }
 
-    public Mono<ValidateResult> createColumn(CreateColumnRequest request) {
+    public Mono<Database> createColumn(CreateColumnRequest request) {
         return executeValidation(() -> withDeadline().createColumn(request),
                 "createColumn");
     }
 
-    public Mono<ValidateResult> deleteColumn(DeleteColumnRequest request) {
+    public Mono<Database> deleteColumn(DeleteColumnRequest request) {
         return executeValidation(() -> withDeadline().deleteColumn(request),
                 "deleteColumn");
     }
 
-    public Mono<ValidateResult> changeColumnName(
+    public Mono<Database> changeColumnName(
             ChangeColumnNameRequest request) {
         return executeValidation(() -> withDeadline().changeColumnName(request),
                 "changeColumnName");
     }
 
-    public Mono<ValidateResult> changeColumnType(
+    public Mono<Database> changeColumnType(
             ChangeColumnTypeRequest request) {
         return executeValidation(() -> withDeadline().changeColumnType(request),
                 "changeColumnType");
     }
 
-    public Mono<ValidateResult> changeColumnPosition(
+    public Mono<Database> changeColumnPosition(
             ChangeColumnPositionRequest request) {
         return executeValidation(
                 () -> withDeadline().changeColumnPosition(request),
                 "changeColumnPosition");
     }
 
-    public Mono<ValidateResult> changeColumnNullable(
+    public Mono<Database> changeColumnNullable(
             ChangeColumnNullableRequest request) {
         return executeValidation(
                 () -> withDeadline().changeColumnNullable(request),
                 "changeColumnNullable");
     }
 
-    public Mono<ValidateResult> createConstraint(
+    public Mono<Database> createConstraint(
             CreateConstraintRequest request) {
         return executeValidation(() -> withDeadline().createConstraint(request),
                 "createConstraint");
     }
 
-    public Mono<ValidateResult> deleteConstraint(
+    public Mono<Database> deleteConstraint(
             DeleteConstraintRequest request) {
         return executeValidation(() -> withDeadline().deleteConstraint(request),
                 "deleteConstraint");
     }
 
-    public Mono<ValidateResult> changeConstraintName(
+    public Mono<Database> changeConstraintName(
             ChangeConstraintNameRequest request) {
         return executeValidation(
                 () -> withDeadline().changeConstraintName(request),
                 "changeConstraintName");
     }
 
-    public Mono<ValidateResult> addColumnToConstraint(
+    public Mono<Database> addColumnToConstraint(
             AddColumnToConstraintRequest request) {
         return executeValidation(
                 () -> withDeadline().addColumnToConstraint(request),
                 "addColumnToConstraint");
     }
 
-    public Mono<ValidateResult> removeColumnFromConstraint(
+    public Mono<Database> removeColumnFromConstraint(
             RemoveColumnFromConstraintRequest request) {
         return executeValidation(
                 () -> withDeadline().removeColumnFromConstraint(request),
                 "removeColumnFromConstraint");
     }
 
-    public Mono<ValidateResult> createIndex(CreateIndexRequest request) {
+    public Mono<Database> createIndex(CreateIndexRequest request) {
         return executeValidation(() -> withDeadline().createIndex(request),
                 "createIndex");
     }
 
-    public Mono<ValidateResult> deleteIndex(DeleteIndexRequest request) {
+    public Mono<Database> deleteIndex(DeleteIndexRequest request) {
         return executeValidation(() -> withDeadline().deleteIndex(request),
                 "deleteIndex");
     }
 
-    public Mono<ValidateResult> changeIndexName(
+    public Mono<Database> changeIndexName(
             ChangeIndexNameRequest request) {
         return executeValidation(() -> withDeadline().changeIndexName(request),
                 "changeIndexName");
     }
 
-    public Mono<ValidateResult> addColumnToIndex(
+    public Mono<Database> addColumnToIndex(
             AddColumnToIndexRequest request) {
         return executeValidation(() -> withDeadline().addColumnToIndex(request),
                 "addColumnToIndex");
     }
 
-    public Mono<ValidateResult> removeColumnFromIndex(
+    public Mono<Database> removeColumnFromIndex(
             RemoveColumnFromIndexRequest request) {
         return executeValidation(
                 () -> withDeadline().removeColumnFromIndex(request),
                 "removeColumnFromIndex");
     }
 
-    public Mono<ValidateResult> createRelationship(
+    public Mono<Database> createRelationship(
             CreateRelationshipRequest request) {
         return executeValidation(
                 () -> withDeadline().createRelationship(request),
                 "createRelationship");
     }
 
-    public Mono<ValidateResult> deleteRelationship(
+    public Mono<Database> deleteRelationship(
             DeleteRelationshipRequest request) {
         return executeValidation(
                 () -> withDeadline().deleteRelationship(request),
                 "deleteRelationship");
     }
 
-    public Mono<ValidateResult> changeRelationshipName(
+    public Mono<Database> changeRelationshipName(
             ChangeRelationshipNameRequest request) {
         return executeValidation(
                 () -> withDeadline().changeRelationshipName(request),
                 "changeRelationshipName");
     }
 
-    public Mono<ValidateResult> changeRelationshipCardinality(
+    public Mono<Database> changeRelationshipCardinality(
             ChangeRelationshipCardinalityRequest request) {
         return executeValidation(
                 () -> withDeadline().changeRelationshipCardinality(request),
                 "changeRelationshipCardinality");
     }
 
-    public Mono<ValidateResult> addColumnToRelationship(
+    public Mono<Database> addColumnToRelationship(
             AddColumnToRelationshipRequest request) {
         return executeValidation(
                 () -> withDeadline().addColumnToRelationship(request),
                 "addColumnToRelationship");
     }
 
-    public Mono<ValidateResult> removeColumnFromRelationship(
+    public Mono<Database> removeColumnFromRelationship(
             RemoveColumnFromRelationshipRequest request) {
         return executeValidation(
                 () -> withDeadline().removeColumnFromRelationship(request),
                 "removeColumnFromRelationship");
     }
 
-    public Mono<ValidateResult> createSchema(CreateSchemaRequest request) {
+    public Mono<Database> createSchema(CreateSchemaRequest request) {
         return executeValidation(() -> withDeadline().createSchema(request),
                 "createSchema");
     }
 
-    public Mono<ValidateResult> deleteSchema(DeleteSchemaRequest request) {
+    public Mono<Database> deleteSchema(DeleteSchemaRequest request) {
         return executeValidation(() -> withDeadline().deleteSchema(request),
                 "deleteSchema");
     }
 
-    public Mono<ValidateResult> changeSchemaName(
+    public Mono<Database> changeSchemaName(
             ChangeSchemaNameRequest request) {
         return executeValidation(() -> withDeadline().changeSchemaName(request),
                 "changeSchemaName");
     }
 
-    public Mono<ValidateResult> createTable(CreateTableRequest request) {
+    public Mono<Database> createTable(CreateTableRequest request) {
         return executeValidation(() -> withDeadline().createTable(request),
                 "createTable");
     }
 
-    public Mono<ValidateResult> deleteTable(DeleteTableRequest request) {
+    public Mono<Database> deleteTable(DeleteTableRequest request) {
         return executeValidation(() -> withDeadline().deleteTable(request),
                 "deleteTable");
     }
 
-    public Mono<ValidateResult> changeTableName(
+    public Mono<Database> changeTableName(
             ChangeTableNameRequest request) {
         return executeValidation(() -> withDeadline().changeTableName(request),
                 "changeTableName");
     }
 
-    private Mono<ValidateResult> executeValidation(ValidationCall call,
+    private Mono<Database> executeValidation(ValidationCall call,
             String operationName) {
         return Mono.fromFuture(toCompletableFuture(call.execute()))
                 .map(result -> {
@@ -257,7 +257,7 @@ public class ValidationClient {
                                 .toList();
                         throw new ValidationFailedException(errors);
                     }
-                    return result;
+                    return result.getSuccess().getDatabase();
                 })
                 .doOnSubscribe(s -> log.debug(
                         "[ValidationClient::executeValidation] Executing validation: {}",

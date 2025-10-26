@@ -1,10 +1,13 @@
 package com.schemafy.core.erd.repository.entity;
 
+import java.time.Instant;
+
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.lang.Nullable;
 
 import com.schemafy.core.common.type.BaseEntity;
+import com.schemafy.core.ulid.generator.UlidGenerator;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -17,9 +20,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
 @Table("db_schemas")
 public class Schema extends BaseEntity {
+
     @Column("project_id")
     private String projectId;
 
@@ -41,7 +44,14 @@ public class Schema extends BaseEntity {
     @Column("vendor_option")
     private String vendorOption;
 
-    @Nullable
-    @Column("canvas_viewport")
-    private String canvasViewport;
+    @Builder(builderMethodName = "builder", buildMethodName = "build")
+    private static Schema newSchema(String projectId, String dbVendorId,
+            String name,
+            String charset, String collation, String vendorOption) {
+        Schema schema = new Schema(projectId, dbVendorId, name, charset,
+                collation, vendorOption);
+        schema.setId(UlidGenerator.generate());
+        return schema;
+    }
+
 }
