@@ -19,6 +19,7 @@ export const ERROR_CODES = {
   MULTIPLE_AUTO_INCREMENT: 'MULTIPLE_AUTO_INCREMENT',
   AUTO_INCREMENT_INVALID: 'AUTO_INCREMENT_INVALID',
   DEFAULT_VALUE_INCOMPATIBLE: 'DEFAULT_VALUE_INCOMPATIBLE',
+  INDEX_PARSE_INVALID: 'INDEX_PARSE_INVALID',
   INDEX_NAME_NOT_UNIQUE: 'INDEX_NAME_NOT_UNIQUE',
   INDEX_TYPE_INVALID: 'INDEX_TYPE_INVALID',
   INDEX_COLUMN_NOT_UNIQUE: 'INDEX_COLUMN_NOT_UNIQUE',
@@ -235,6 +236,11 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
       dataType,
       columnName,
     }),
+  },
+  INDEX_PARSE_INVALID: {
+    code: ERROR_CODES.INDEX_PARSE_INVALID,
+    messageTemplate: 'Invalid index: {0}',
+    createDetails: (reason: string) => ({ reason }),
   },
   INDEX_NAME_NOT_UNIQUE: {
     code: ERROR_CODES.INDEX_NAME_NOT_UNIQUE,
@@ -597,7 +603,7 @@ export const DefaultValueIncompatibleError = createErrorClass(
   'DefaultValueIncompatible',
   ERROR_DEFINITIONS.DEFAULT_VALUE_INCOMPATIBLE
 );
-
+export const IndexParseInvalidError = createErrorClass('IndexParseInvalid', ERROR_DEFINITIONS.INDEX_PARSE_INVALID);
 export const IndexNameNotUniqueError = createErrorClass('IndexNameNotUnique', ERROR_DEFINITIONS.INDEX_NAME_NOT_UNIQUE);
 export const IndexTypeInvalidError = createErrorClass('IndexTypeInvalid', ERROR_DEFINITIONS.INDEX_TYPE_INVALID);
 export const IndexColumnNotUniqueError = createErrorClass(
