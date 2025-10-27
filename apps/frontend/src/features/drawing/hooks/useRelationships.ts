@@ -88,6 +88,14 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
       if (!schema) return;
 
+      // Source table 찾기 - relationship은 source table의 relationships 배열에 저장됨
+      const sourceTable = schema.tables.find((t) => t.id === params.source);
+      if (!sourceTable) {
+        console.error('Source table not found');
+        return;
+      }
+
+      // Target table의 PK는 참조용으로만 사용
       const targetTable = schema.tables.find((t) => t.id === params.target);
       if (!targetTable) {
         console.error('Target table not found');
@@ -135,7 +143,9 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         },
       };
 
+      // Source table의 relationships 배열에 추가
       createRelationship(selectedSchemaId, newRelationship);
+      console.log(erdStore.erdState);
     },
     [erdStore, relationshipConfig],
   );
@@ -172,12 +182,21 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
       relationshipReconnectSuccessful.current = true;
 
+      // 기존 relationship은 source table의 relationships 배열에서 삭제
       deleteRelationship(selectedSchemaId, oldRelationship.id);
 
       if (newConnection.source && newConnection.target) {
         const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
         if (!schema) return;
 
+        // 새로운 source table 찾기
+        const sourceTable = schema.tables.find((t) => t.id === newConnection.source);
+        if (!sourceTable) {
+          console.error('Source table not found');
+          return;
+        }
+
+        // Target table의 PK는 참조용으로만 사용
         const targetTable = schema.tables.find((t) => t.id === newConnection.target);
         if (!targetTable) {
           console.error('Target table not found');
@@ -225,6 +244,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
           },
         };
 
+        // 새로운 source table의 relationships 배열에 추가
         createRelationship(selectedSchemaId, newRelationship);
       }
     },
@@ -237,6 +257,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
       if (!selectedSchemaId) return;
 
+      // Reconnect가 실패한 경우 source table의 relationships 배열에서 삭제
       if (!relationshipReconnectSuccessful.current) {
         deleteRelationship(selectedSchemaId, relationship.id);
       }
@@ -258,6 +279,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         return;
       }
 
+      // Source table의 relationships 배열에서 삭제
       deleteRel(selectedSchemaId, relationshipId);
       setSelectedRelationship(null);
     },

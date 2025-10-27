@@ -60,7 +60,7 @@ export const relationshipHandlers: RelationshipHandlers = {
         )
             throw new RelationshipCyclicReferenceError(relationship.tgtTableId, relationship.srcTableId);
 
-        const duplicateRelationship = targetTable.relationships.find((r) => r.name === relationship.name);
+        const duplicateRelationship = sourceTable.relationships.find((r) => r.name === relationship.name);
         if (duplicateRelationship) throw new RelationshipNameNotUniqueError(relationship.name);
 
         const propagateKeysToChildren = (
@@ -203,7 +203,7 @@ export const relationshipHandlers: RelationshipHandlers = {
                     ? {
                           ...s,
                           tables: s.tables.map((t) =>
-                              t.id === relationship.tgtTableId
+                              t.id === relationship.srcTableId
                                   ? {
                                         ...t,
                                         relationships: [...t.relationships, relationship],
