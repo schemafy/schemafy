@@ -40,6 +40,7 @@ const transformTableToNode = (table: Table, schemaId: string): Node<TableData> =
     data: {
       tableName: table.name,
       columns,
+      indexes: table.indexes || [],
       schemaId,
     },
   };

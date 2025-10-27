@@ -55,7 +55,7 @@ export const TableHeader = ({
         ) : (
           <div className="flex items-center gap-2 flex-1">
             <span className="font-medium">{tableName}</span>
-            <button onClick={onStartEdit} className="p-1 hover:bg-schemafy-dark-gray rounded">
+            <button onClick={onStartEdit} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Edit Table Name">
               <Edit size={14} />
             </button>
           </div>

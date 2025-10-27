@@ -2,9 +2,10 @@ import { Handle, Position } from '@xyflow/react';
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ulid } from 'ulid';
-import { HANDLE_STYLE, type TableProps } from '../types';
+import { HANDLE_STYLE, type TableProps, type IndexType, type IndexSortDir } from '../types';
 import { ColumnRow } from './Column';
 import { TableHeader } from './TableHeader';
+import { IndexSection } from './IndexSection';
 import { useDragAndDrop, useColumnUpdate } from '../hooks';
 import { ErdStore } from '@/store/erd.store';
 
@@ -15,6 +16,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const [editingTableName, setEditingTableName] = useState(data.tableName);
 
   const columns = data.columns || [];
+  const indexes = data.indexes || [];
 
   const { updateColumn, saveAllPendingChanges } = useColumnUpdate(erdStore, data.schemaId, id);
 
@@ -59,6 +61,65 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
     setIsColumnEditMode(false);
   };
 
+  const createIndex = () => {
+    erdStore.createIndex(data.schemaId, id, {
+      id: ulid(),
+      name: `idx_${data.tableName}_${indexes.length + 1}`,
+      type: 'BTREE' as IndexType,
+      comment: null,
+      columns: [],
+    });
+  };
+
+  const deleteIndex = (indexId: string) => {
+    erdStore.deleteIndex(data.schemaId, id, indexId);
+  };
+
+  const changeIndexName = (indexId: string, newName: string) => {
+    erdStore.changeIndexName(data.schemaId, id, indexId, newName);
+  };
+
+  const changeIndexType = (indexId: string, newType: IndexType) => {
+    const index = indexes.find((idx) => idx.id === indexId);
+    if (!index) return;
+
+    erdStore.deleteIndex(data.schemaId, id, indexId);
+    erdStore.createIndex(data.schemaId, id, {
+      ...index,
+      type: newType,
+    });
+  };
+
+  const addColumnToIndex = (indexId: string, columnId: string) => {
+    const index = indexes.find((idx) => idx.id === indexId);
+    if (index) {
+      erdStore.addColumnToIndex(data.schemaId, id, indexId, {
+        id: ulid(),
+        columnId,
+        seqNo: index.columns.length + 1,
+        sortDir: 'ASC' as IndexSortDir,
+      });
+    }
+  };
+
+  const removeColumnFromIndex = (indexId: string, indexColumnId: string) => {
+    erdStore.removeColumnFromIndex(data.schemaId, id, indexId, indexColumnId);
+  };
+
+  const changeSortDir = (indexId: string, indexColumnId: string, sortDir: IndexSortDir) => {
+    const index = indexes.find((idx) => idx.id === indexId);
+    if (!index) return;
+
+    const indexColumn = index.columns.find((col) => col.id === indexColumnId);
+    if (!indexColumn) return;
+
+    erdStore.deleteIndex(data.schemaId, id, indexId);
+    erdStore.createIndex(data.schemaId, id, {
+      ...index,
+      columns: index.columns.map((col) => (col.id === indexColumnId ? { ...col, sortDir } : col)),
+    });
+  };
+
   return (
     <div className="group bg-schemafy-bg border-2 border-schemafy-button-bg rounded-lg shadow-md min-w-48 overflow-hidden">
       <ConnectionHandles nodeId={id} />
@@ -98,6 +159,20 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
       {columns.length === 0 && (
         <div className="p-4 text-center text-schemafy-dark-gray text-sm">Click + to add a column.</div>
       )}
+      <IndexSection
+        schemaId={data.schemaId}
+        tableId={id}
+        indexes={indexes}
+        tableColumns={columns.map((col) => ({ id: col.id, name: col.name }))}
+        isEditMode={isColumnEditMode}
+        onCreateIndex={createIndex}
+        onDeleteIndex={deleteIndex}
+        onChangeIndexName={changeIndexName}
+        onChangeIndexType={changeIndexType}
+        onAddColumnToIndex={addColumnToIndex}
+        onRemoveColumnFromIndex={removeColumnFromIndex}
+        onChangeSortDir={changeSortDir}
+      />
     </div>
   );
 };

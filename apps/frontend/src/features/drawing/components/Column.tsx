@@ -10,6 +10,7 @@ import type {
   ColumnConstraintsProps,
   ColumnBadgesProps,
 } from '../types';
+import { Select, SelectGroup, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components';
 
 export const ColumnRow = ({
   column,
@@ -75,7 +76,7 @@ export const EditModeColumn = ({
   };
 
   return (
-    <div className="p-2 space-y-2">
+    <div className="p-2 space-y-2 text-schemafy-text">
       <div className="flex items-center gap-2">
         <DragHandle columnId={column.id} onDragStart={onDragStart} onDragEnd={onDragEnd} />
 
@@ -93,7 +94,7 @@ export const EditModeColumn = ({
           onClick={() => onRemoveColumn(column.id)}
           disabled={isLastColumn}
           className={`p-1 rounded flex-shrink-0 ${
-            isLastColumn ? 'text-gray-300 cursor-not-allowed' : 'text-schemafy-destructive hover:bg-red-100'
+            isLastColumn ? 'text-schemafy-dark-gray cursor-not-allowed' : 'text-schemafy-destructive hover:bg-red-100'
           }`}
           title={isLastColumn ? 'Cannot delete the last column' : 'Remove Column'}
         >
@@ -108,13 +109,13 @@ export const EditModeColumn = ({
 
 export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
   return (
-    <div className="p-2">
+    <div className="p-2 text-schemafy-text">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className={`text-sm ${column.isPrimaryKey ? 'font-bold text-yellow-600' : 'text-schemafy-text'}`}>
+          <span className={`text-sm ${column.isPrimaryKey ? 'font-bold text-schemafy-yellow' : 'text-schemafy-text'}`}>
             {column.name}
           </span>
-          <span className="text-xs text-schemafy-dark-gray">({column.type})</span>
+          <span className="text-xs text-schemafy-dark-gray font-mono">({column.type})</span>
         </div>
 
         <ColumnBadges column={column} />
@@ -140,25 +141,28 @@ export const DragHandle = ({ columnId, onDragStart, onDragEnd }: DragHandleProps
 
 export const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="px-2 py-1 text-sm border border-schemafy-light-gray rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-    >
-      {DATA_TYPES.map((type) => (
-        <option key={type} value={type}>
-          {type}
-        </option>
-      ))}
-    </select>
+    <Select onValueChange={(value) => onChange(value)} value={value}>
+      <SelectTrigger className="text-xs font-mono p-1.5 border border-schemafy-light-gray rounded focus:outline-none w-[6rem]">
+        <SelectValue placeholder={value} />
+      </SelectTrigger>
+      <SelectContent popover="auto">
+        <SelectGroup>
+          {DATA_TYPES.map((type) => (
+            <SelectItem key={type} value={type}>
+              {type}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 };
 
 export const ColumnConstraints = ({ column, onUpdateColumn }: ColumnConstraintsProps) => {
   const constraints = [
-    { key: 'isPrimaryKey', label: 'PK', color: 'text-yellow-600' },
-    { key: 'isNotNull', label: 'NOT NULL', color: 'text-red-600' },
-    { key: 'isUnique', label: 'UNIQUE', color: 'text-blue-600' },
+    { key: 'isPrimaryKey', label: 'PK', color: 'text-schemafy-yellow' },
+    { key: 'isNotNull', label: 'NOT NULL', color: 'text-schemafy-destructive' },
+    { key: 'isUnique', label: 'UNIQUE', color: 'text-schemafy-blue' },
   ] as const;
 
   return (
@@ -189,9 +193,9 @@ export const ColumnConstraints = ({ column, onUpdateColumn }: ColumnConstraintsP
 export const ColumnBadges = ({ column }: ColumnBadgesProps) => {
   return (
     <div className="flex items-center gap-1">
-      {column.isPrimaryKey && <span className="text-xs text-yellow-600 font-medium">PK</span>}
-      {column.isNotNull && <span className="text-xs text-red-600 font-medium">*</span>}
-      {column.isUnique && <span className="text-xs text-blue-600 font-medium">UQ</span>}
+      {column.isPrimaryKey && <span className="text-xs text-schemafy-yellow font-medium">PK</span>}
+      {column.isNotNull && <span className="text-xs text-schemafy-destructive font-medium">*</span>}
+      {column.isUnique && <span className="text-xs text-schemafy-blue font-medium">UQ</span>}
     </div>
   );
 };

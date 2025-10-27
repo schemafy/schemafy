@@ -7,3 +7,5 @@ export * from './TablePreview';
 export * from './CustomSmoothStepEdge';
 export * from './FloatingButtons';
 export * from './SchemaSelector';
+export * from './IndexRow';
+export * from './IndexSection';

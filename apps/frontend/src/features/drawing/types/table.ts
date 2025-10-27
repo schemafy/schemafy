@@ -1,8 +1,10 @@
 import type { ColumnType } from './column';
+import type { IndexDataType } from './indexTypes';
 
 export type TableData = {
   tableName: string;
   columns: ColumnType[];
+  indexes: IndexDataType[];
   schemaId: string;
   updateTable?: (tableId: string, newData: Partial<TableData>) => void;
 };
