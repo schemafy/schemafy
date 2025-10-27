@@ -2,7 +2,7 @@ import { type Connection, type Edge, type EdgeChange } from '@xyflow/react';
 import { useState, useRef, useMemo, useCallback } from 'react';
 import { ulid } from 'ulid';
 import { ErdStore } from '@/store';
-import type { Relationship } from '@schemafy/validator';
+import type { Relationship, Schema } from '@schemafy/validator';
 import { RELATIONSHIP_TYPES, RELATIONSHIP_STYLE_TYPES, type RelationshipConfig, type RelationshipType } from '../types';
 
 const getRelationshipType = (cardinality: string): RelationshipType => {
@@ -11,6 +11,82 @@ const getRelationshipType = (cardinality: string): RelationshipType => {
 
 const getRelationshipStyle = (isNonIdentifying: boolean) => {
   return isNonIdentifying ? RELATIONSHIP_STYLE_TYPES.dashed : RELATIONSHIP_STYLE_TYPES.solid;
+};
+
+interface CreateRelationshipParams {
+  schema: Schema;
+  connection: Connection;
+  relationshipConfig: RelationshipConfig;
+}
+
+const createRelationshipFromConnection = ({
+  schema,
+  connection,
+  relationshipConfig,
+}: CreateRelationshipParams): Relationship | null => {
+  if (!connection.source || !connection.target) {
+    return null;
+  }
+
+  const sourceTable = schema.tables.find((t) => t.id === connection.source);
+  if (!sourceTable) {
+    console.error('Source table not found');
+    return null;
+  }
+
+  const targetTable = schema.tables.find((t) => t.id === connection.target);
+  if (!targetTable) {
+    console.error('Target table not found');
+    return null;
+  }
+
+  const targetPk = targetTable.constraints.find((c) => c.kind === 'PRIMARY_KEY');
+  const targetPkColId = targetPk?.columns[0]?.columnId;
+
+  if (!targetPkColId) {
+    console.error('Target table must have a primary key to create a relationship');
+    return null;
+  }
+
+  const relId = ulid();
+  const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
+  const kind = relationshipConfig.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
+  const fkColumnId = ulid();
+
+  return {
+    id: relId,
+    srcTableId: connection.source,
+    tgtTableId: connection.target,
+    name: `fk_${connection.source}_${connection.target}`,
+    kind,
+    cardinality: typeConfig.cardinality,
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+    fkEnforced: false,
+    columns: [
+      {
+        id: ulid(),
+        relationshipId: relId,
+        fkColumnId,
+        refColumnId: targetPkColId,
+        seqNo: 1,
+      },
+    ],
+    extra: {
+      sourceHandle: connection.sourceHandle,
+      targetHandle: connection.targetHandle,
+      controlPointX: relationshipConfig.controlPointX,
+      controlPointY: relationshipConfig.controlPointY,
+    },
+  };
+};
+
+const findRelationshipInSchema = (schema: Schema, relationshipId: string): Relationship | undefined => {
+  for (const table of schema.tables) {
+    const relationship = table.relationships.find((r) => r.id === relationshipId);
+    if (relationship) return relationship;
+  }
+  return undefined;
 };
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
@@ -88,64 +164,15 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
       if (!schema) return;
 
-      // Source table 찾기 - relationship은 source table의 relationships 배열에 저장됨
-      const sourceTable = schema.tables.find((t) => t.id === params.source);
-      if (!sourceTable) {
-        console.error('Source table not found');
-        return;
+      const newRelationship = createRelationshipFromConnection({
+        schema,
+        connection: params,
+        relationshipConfig,
+      });
+
+      if (newRelationship) {
+        createRelationship(selectedSchemaId, newRelationship);
       }
-
-      // Target table의 PK는 참조용으로만 사용
-      const targetTable = schema.tables.find((t) => t.id === params.target);
-      if (!targetTable) {
-        console.error('Target table not found');
-        return;
-      }
-
-      const targetPk = targetTable.constraints.find((c) => c.kind === 'PRIMARY_KEY');
-      const targetPkColId = targetPk?.columns[0]?.columnId;
-
-      if (!targetPkColId) {
-        console.error('Target table must have a primary key to create a relationship');
-        return;
-      }
-
-      const relId = ulid();
-      const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
-      const kind = relationshipConfig.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
-
-      const fkColumnId = ulid();
-
-      const newRelationship: Relationship = {
-        id: relId,
-        srcTableId: params.source,
-        tgtTableId: params.target,
-        name: `fk_${params.source}_${params.target}`,
-        kind,
-        cardinality: typeConfig.cardinality,
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
-        fkEnforced: false,
-        columns: [
-          {
-            id: ulid(),
-            relationshipId: relId,
-            fkColumnId,
-            refColumnId: targetPkColId,
-            seqNo: 1,
-          },
-        ],
-        extra: {
-          sourceHandle: params.sourceHandle,
-          targetHandle: params.targetHandle,
-          controlPointX: relationshipConfig.controlPointX,
-          controlPointY: relationshipConfig.controlPointY,
-        },
-      };
-
-      // Source table의 relationships 배열에 추가
-      createRelationship(selectedSchemaId, newRelationship);
-      console.log(erdStore.erdState);
     },
     [erdStore, relationshipConfig],
   );
@@ -181,70 +208,18 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       if (!selectedSchemaId || erdState.state !== 'loaded') return;
 
       relationshipReconnectSuccessful.current = true;
-
-      // 기존 relationship은 source table의 relationships 배열에서 삭제
       deleteRelationship(selectedSchemaId, oldRelationship.id);
 
-      if (newConnection.source && newConnection.target) {
-        const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
-        if (!schema) return;
+      const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
+      if (!schema) return;
 
-        // 새로운 source table 찾기
-        const sourceTable = schema.tables.find((t) => t.id === newConnection.source);
-        if (!sourceTable) {
-          console.error('Source table not found');
-          return;
-        }
+      const newRelationship = createRelationshipFromConnection({
+        schema,
+        connection: newConnection,
+        relationshipConfig,
+      });
 
-        // Target table의 PK는 참조용으로만 사용
-        const targetTable = schema.tables.find((t) => t.id === newConnection.target);
-        if (!targetTable) {
-          console.error('Target table not found');
-          return;
-        }
-
-        const targetPk = targetTable.constraints.find((c) => c.kind === 'PRIMARY_KEY');
-        const targetPkColId = targetPk?.columns[0]?.columnId;
-
-        if (!targetPkColId) {
-          console.error('Target table must have a primary key to create a relationship');
-          return;
-        }
-
-        const relId = ulid();
-        const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
-        const kind = relationshipConfig.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
-
-        const fkColumnId = ulid();
-
-        const newRelationship: Relationship = {
-          id: relId,
-          srcTableId: newConnection.source,
-          tgtTableId: newConnection.target,
-          name: `fk_${newConnection.source}_${newConnection.target}`,
-          kind,
-          cardinality: typeConfig.cardinality,
-          onDelete: 'CASCADE',
-          onUpdate: 'CASCADE',
-          fkEnforced: false,
-          columns: [
-            {
-              id: ulid(),
-              relationshipId: relId,
-              fkColumnId,
-              refColumnId: targetPkColId,
-              seqNo: 1,
-            },
-          ],
-          extra: {
-            sourceHandle: newConnection.sourceHandle,
-            targetHandle: newConnection.targetHandle,
-            controlPointX: relationshipConfig.controlPointX,
-            controlPointY: relationshipConfig.controlPointY,
-          },
-        };
-
-        // 새로운 source table의 relationships 배열에 추가
+      if (newRelationship) {
         createRelationship(selectedSchemaId, newRelationship);
       }
     },
@@ -257,7 +232,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
       if (!selectedSchemaId) return;
 
-      // Reconnect가 실패한 경우 source table의 relationships 배열에서 삭제
       if (!relationshipReconnectSuccessful.current) {
         deleteRelationship(selectedSchemaId, relationship.id);
       }
@@ -266,9 +240,64 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     [erdStore],
   );
 
-  const changeRelationshipConfig = () => {
-    setSelectedRelationship(null);
-  };
+  const updateRelationshipConfig = useCallback(
+    (relationshipId: string, config: RelationshipConfig) => {
+      const { selectedSchemaId, erdState } = erdStore;
+
+      if (!selectedSchemaId || erdState.state !== 'loaded') {
+        console.error('No schema selected or database not loaded');
+        return;
+      }
+
+      const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
+      if (!schema) return;
+
+      const currentRelationship = findRelationshipInSchema(schema, relationshipId);
+      if (!currentRelationship) {
+        console.error('Relationship not found');
+        return;
+      }
+
+      const typeConfig = RELATIONSHIP_TYPES[config.type];
+      const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
+      const currentExtra = (currentRelationship.extra || {}) as {
+        sourceHandle?: string;
+        targetHandle?: string;
+        controlPointX?: number;
+        controlPointY?: number;
+      };
+
+      const needsRecreation =
+        currentRelationship.kind !== newKind || currentRelationship.cardinality !== typeConfig.cardinality;
+
+      if (needsRecreation) {
+        const { deleteRelationship: deleteRel, createRelationship } = erdStore;
+
+        deleteRel(selectedSchemaId, relationshipId);
+        createRelationship(selectedSchemaId, {
+          ...currentRelationship,
+          kind: newKind,
+          cardinality: typeConfig.cardinality,
+          extra: {
+            ...currentExtra,
+            controlPointX: config.controlPointX,
+            controlPointY: config.controlPointY,
+          },
+        });
+      } else {
+        const newExtra = {
+          ...currentExtra,
+          controlPointX: config.controlPointX,
+          controlPointY: config.controlPointY,
+        };
+
+        if (JSON.stringify(currentExtra) !== JSON.stringify(newExtra)) {
+          erdStore.updateRelationshipExtra(selectedSchemaId, relationshipId, newExtra);
+        }
+      }
+    },
+    [erdStore],
+  );
 
   const deleteRelationship = useCallback(
     (relationshipId: string) => {
@@ -278,8 +307,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         console.error('No schema selected');
         return;
       }
-
-      // Source table의 relationships 배열에서 삭제
       deleteRel(selectedSchemaId, relationshipId);
       setSelectedRelationship(null);
     },
@@ -295,7 +322,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     onReconnectStart,
     onReconnect,
     onReconnectEnd,
-    changeRelationshipConfig,
+    updateRelationshipConfig,
     deleteRelationship,
     setSelectedRelationship,
   };

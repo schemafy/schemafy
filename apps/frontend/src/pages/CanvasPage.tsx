@@ -83,7 +83,7 @@ const CanvasPageComponent = () => {
     onReconnectStart,
     onReconnect,
     onReconnectEnd,
-    changeRelationshipConfig,
+    updateRelationshipConfig,
     deleteRelationship,
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
@@ -170,7 +170,7 @@ const CanvasPageComponent = () => {
             <EdgeSelector
               selectedRelationship={selectedRelationship}
               relationships={relationships}
-              onRelationshipChange={changeRelationshipConfig}
+              onRelationshipChange={updateRelationshipConfig}
               onRelationshipDelete={deleteRelationship}
               onClose={() => setSelectedRelationship(null)}
             />
