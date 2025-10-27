@@ -119,25 +119,43 @@ export const relationshipHandlers: RelationshipHandlers = {
 
                             newlyCreatedFkColumns.push(newColumn);
 
-                            const newRelColumn = {
-                                id: `rel_col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                                relationshipId: rel.id,
-                                fkColumnId: newColumnId,
-                                refColumnId: pkColumn.id,
-                                seqNo: rel.columns.length + 1,
-                            };
+                            if (relColumn) {
+                                // relColumn이 있으면 기존 relColumn의 fkColumnId만 업데이트
+                                const updatedRel = {
+                                    ...rel,
+                                    columns: rel.columns.map((rc) =>
+                                        rc.id === relColumn.id ? { ...rc, fkColumnId: newColumnId } : rc,
+                                    ),
+                                };
 
-                            const updatedRel = {
-                                ...rel,
-                                columns: [...rel.columns, newRelColumn],
-                            };
+                                updatedChildTable = {
+                                    ...updatedChildTable,
+                                    relationships: updatedChildTable.relationships.map((r) =>
+                                        r.id === rel.id ? updatedRel : r,
+                                    ),
+                                };
+                            } else {
+                                // relColumn이 없으면 새 relColumn 생성
+                                const newRelColumn = {
+                                    id: `rel_col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                                    relationshipId: rel.id,
+                                    fkColumnId: newColumnId,
+                                    refColumnId: pkColumn.id,
+                                    seqNo: rel.columns.length + 1,
+                                };
 
-                            updatedChildTable = {
-                                ...updatedChildTable,
-                                relationships: updatedChildTable.relationships.map((r) =>
-                                    r.id === rel.id ? updatedRel : r,
-                                ),
-                            };
+                                const updatedRel = {
+                                    ...rel,
+                                    columns: [...rel.columns, newRelColumn],
+                                };
+
+                                updatedChildTable = {
+                                    ...updatedChildTable,
+                                    relationships: updatedChildTable.relationships.map((r) =>
+                                        r.id === rel.id ? updatedRel : r,
+                                    ),
+                                };
+                            }
                         }
 
                         updatedSchema = {

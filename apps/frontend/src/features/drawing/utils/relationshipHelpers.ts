@@ -57,7 +57,6 @@ export const createRelationshipFromConnection = ({
   const relId = ulid();
   const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
   const kind = relationshipConfig.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
-  const fkColumnId = ulid();
 
   return {
     id: relId,
@@ -73,7 +72,7 @@ export const createRelationshipFromConnection = ({
       {
         id: ulid(),
         relationshipId: relId,
-        fkColumnId,
+        fkColumnId: '',
         refColumnId: targetPkColId,
         seqNo: 1,
       },
