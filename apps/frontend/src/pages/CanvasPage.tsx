@@ -17,7 +17,7 @@ import {
   TableNode,
   RelationshipMarker,
   Toolbar,
-  EdgeSelector,
+  RelationshipEditor,
   CustomControls,
   TablePreview,
   type RelationshipConfig,
@@ -59,7 +59,7 @@ const CanvasPageComponent = () => {
             id: schemaId,
             projectId: ulid(),
             dbVendorId: 'mysql',
-            name: 'public',
+            name: 'schema1',
             charset: 'utf8mb4',
             collation: 'utf8mb4_general_ci',
             vendorOption: '',
@@ -85,6 +85,7 @@ const CanvasPageComponent = () => {
     onReconnectEnd,
     updateRelationshipConfig,
     deleteRelationship,
+    changeRelationshipName,
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
@@ -167,10 +168,11 @@ const CanvasPageComponent = () => {
           </ReactFlow>
 
           {selectedRelationship && (
-            <EdgeSelector
+            <RelationshipEditor
               selectedRelationship={selectedRelationship}
               relationships={relationships}
               onRelationshipChange={updateRelationshipConfig}
+              onRelationshipNameChange={changeRelationshipName}
               onRelationshipDelete={deleteRelationship}
               onClose={() => setSelectedRelationship(null)}
             />
