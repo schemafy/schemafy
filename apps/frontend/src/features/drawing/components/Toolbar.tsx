@@ -49,9 +49,9 @@ const TOOLS = [
     isRelationship: true,
   },
   {
-    id: 'comment',
-    name: 'Add Comment',
-    label: 'Comment',
+    id: 'memo',
+    name: 'Add Memo',
+    label: 'Memo',
     icon: MessageCircleMore,
   },
   {
