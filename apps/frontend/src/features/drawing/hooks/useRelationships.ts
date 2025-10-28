@@ -15,40 +15,33 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const relationshipReconnectSuccessful = useRef(true);
 
   const getRelationships = (): Edge[] => {
-    const { erdState, selectedSchemaId } = erdStore;
+    const selectedSchema = erdStore.selectedSchema;
 
-    if (erdState.state !== 'loaded' || !selectedSchemaId) {
+    if (!selectedSchema) {
       return [];
     }
 
-    const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
-    if (!schema) {
-      return [];
-    }
-
-    return convertRelationshipsToEdges(schema);
+    return convertRelationshipsToEdges(selectedSchema);
   };
 
   const relationships = getRelationships();
 
   const onConnect = (params: Connection) => {
-    const { selectedSchemaId, erdState, createRelationship } = erdStore;
+    const selectedSchemaId = erdStore.selectedSchemaId;
+    const selectedSchema = erdStore.selectedSchema;
 
-    if (!selectedSchemaId || !params.source || !params.target || erdState.state !== 'loaded') {
+    if (!selectedSchemaId || !selectedSchema || !params.source || !params.target) {
       return;
     }
 
-    const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
-    if (!schema) return;
-
     const newRelationship = createRelationshipFromConnection({
-      schema,
+      schema: selectedSchema,
       connection: params,
       relationshipConfig,
     });
 
     if (newRelationship) {
-      createRelationship(selectedSchemaId, newRelationship);
+      erdStore.createRelationship(selectedSchemaId, newRelationship);
     }
   };
 
@@ -74,24 +67,22 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const onReconnect = (oldRelationship: Edge, newConnection: Connection) => {
-    const { selectedSchemaId, erdState, deleteRelationship, createRelationship } = erdStore;
+    const selectedSchemaId = erdStore.selectedSchemaId;
+    const selectedSchema = erdStore.selectedSchema;
 
-    if (!selectedSchemaId || erdState.state !== 'loaded') return;
+    if (!selectedSchemaId || !selectedSchema) return;
 
     relationshipReconnectSuccessful.current = true;
-    deleteRelationship(selectedSchemaId, oldRelationship.id);
-
-    const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
-    if (!schema) return;
+    erdStore.deleteRelationship(selectedSchemaId, oldRelationship.id);
 
     const newRelationship = createRelationshipFromConnection({
-      schema,
+      schema: selectedSchema,
       connection: newConnection,
       relationshipConfig,
     });
 
     if (newRelationship) {
-      createRelationship(selectedSchemaId, newRelationship);
+      erdStore.createRelationship(selectedSchemaId, newRelationship);
     }
   };
 
@@ -107,17 +98,15 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const updateRelationshipConfig = (relationshipId: string, config: RelationshipConfig) => {
-    const { selectedSchemaId, erdState } = erdStore;
+    const selectedSchemaId = erdStore.selectedSchemaId;
+    const selectedSchema = erdStore.selectedSchema;
 
-    if (!selectedSchemaId || erdState.state !== 'loaded') {
+    if (!selectedSchemaId || !selectedSchema) {
       console.error('No schema selected or database not loaded');
       return;
     }
 
-    const schema = erdState.database.schemas.find((s) => s.id === selectedSchemaId);
-    if (!schema) return;
-
-    const currentRelationship = findRelationshipInSchema(schema, relationshipId);
+    const currentRelationship = findRelationshipInSchema(selectedSchema, relationshipId);
     if (!currentRelationship) {
       console.error('Relationship not found');
       return;
@@ -136,10 +125,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       currentRelationship.kind !== newKind || currentRelationship.cardinality !== typeConfig.cardinality;
 
     if (needsRecreation) {
-      const { deleteRelationship: deleteRel, createRelationship } = erdStore;
-
-      deleteRel(selectedSchemaId, relationshipId);
-      createRelationship(selectedSchemaId, {
+      erdStore.deleteRelationship(selectedSchemaId, relationshipId);
+      erdStore.createRelationship(selectedSchemaId, {
         ...currentRelationship,
         kind: newKind,
         cardinality: typeConfig.cardinality,

@@ -74,6 +74,20 @@ export class ErdStore {
     return extra?.selectedSchemaId || null;
   }
 
+  get selectedSchema(): Schema | null {
+    if (this.erdState.state !== 'loaded') return null;
+
+    const selectedSchemaId = this.selectedSchemaId;
+    if (!selectedSchemaId) return null;
+
+    return this.erdState.database.schemas.find((s) => s.id === selectedSchemaId) || null;
+  }
+
+  get database(): Database | null {
+    if (this.erdState.state !== 'loaded') return null;
+    return this.erdState.database;
+  }
+
   selectSchema(schemaId: string) {
     this.update((db) => {
       const schema = db.schemas.find((s) => s.id === schemaId);
@@ -139,15 +153,24 @@ export class ErdStore {
 
   updateTableExtra(schemaId: Schema['id'], tableId: Table['id'], extra: unknown) {
     this.update((db) => {
-      const schema = db.schemas.find((s) => s.id === schemaId);
-      if (!schema) throw new Error(`Schema ${schemaId} not found`);
+      return {
+        ...db,
+        schemas: db.schemas.map((schema) => {
+          if (schema.id !== schemaId) return schema;
 
-      const table = schema.tables.find((t) => t.id === tableId);
-      if (!table) throw new Error(`Table ${tableId} not found`);
+          return {
+            ...schema,
+            tables: schema.tables.map((table) => {
+              if (table.id !== tableId) return table;
 
-      table.extra = extra;
-
-      return { ...db };
+              return {
+                ...table,
+                extra,
+              };
+            }),
+          };
+        }),
+      };
     });
   }
 
@@ -287,20 +310,29 @@ export class ErdStore {
 
   updateRelationshipExtra(schemaId: Schema['id'], relationshipId: Relationship['id'], extra: unknown) {
     this.update((db) => {
-      const schema = db.schemas.find((s) => s.id === schemaId);
-      if (!schema) throw new Error(`Schema ${schemaId} not found`);
+      return {
+        ...db,
+        schemas: db.schemas.map((schema) => {
+          if (schema.id !== schemaId) return schema;
 
-      let relationship: Relationship | undefined;
-      for (const table of schema.tables) {
-        relationship = table.relationships.find((r) => r.id === relationshipId);
-        if (relationship) break;
-      }
+          return {
+            ...schema,
+            tables: schema.tables.map((table) => {
+              return {
+                ...table,
+                relationships: table.relationships.map((relationship) => {
+                  if (relationship.id !== relationshipId) return relationship;
 
-      if (!relationship) throw new Error(`Relationship ${relationshipId} not found`);
-
-      relationship.extra = extra;
-
-      return { ...db };
+                  return {
+                    ...relationship,
+                    extra,
+                  };
+                }),
+              };
+            }),
+          };
+        }),
+      };
     });
   }
 
