@@ -1,5 +1,7 @@
 import type { Connection, Edge, EdgeChange } from '@xyflow/react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { applyEdgeChanges } from '@xyflow/react';
+import { reaction } from 'mobx';
 import { ErdStore } from '@/store';
 import type { RelationshipConfig } from '../types';
 import { RELATIONSHIP_TYPES } from '../types';
@@ -9,22 +11,66 @@ import {
   findRelationshipInSchema,
 } from '../utils/relationshipHelpers';
 
+type RelationshipExtra = {
+  sourceHandle?: string;
+  targetHandle?: string;
+  controlPointX?: number;
+  controlPointY?: number;
+};
+
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const erdStore = ErdStore.getInstance();
   const [selectedRelationship, setSelectedRelationship] = useState<string | null>(null);
   const relationshipReconnectSuccessful = useRef(true);
 
-  const getRelationships = (): Edge[] => {
+  const updateRelationshipControlPoint = (relationshipId: string, controlPointX: number, controlPointY: number) => {
+    const selectedSchemaId = erdStore.selectedSchemaId;
     const selectedSchema = erdStore.selectedSchema;
 
-    if (!selectedSchema) {
-      return [];
-    }
+    if (!selectedSchemaId || !selectedSchema) return;
 
-    return convertRelationshipsToEdges(selectedSchema);
+    const currentRelationship = findRelationshipInSchema(selectedSchema, relationshipId);
+    if (!currentRelationship) return;
+
+    const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
+
+    erdStore.updateRelationshipExtra(selectedSchemaId, relationshipId, {
+      ...currentExtra,
+      controlPointX,
+      controlPointY,
+    });
   };
 
-  const relationships = getRelationships();
+  const getRelationships = (): Edge[] => {
+    const selectedSchema = erdStore.selectedSchema;
+    if (!selectedSchema) return [];
+
+    const edges = convertRelationshipsToEdges(selectedSchema);
+
+    return edges.map((edge) => ({
+      ...edge,
+      data: {
+        ...edge.data,
+        onControlPointDragEnd: updateRelationshipControlPoint,
+      },
+    }));
+  };
+
+  const [relationships, setRelationships] = useState<Edge[]>(() => getRelationships());
+
+  useEffect(() => {
+    const dispose = reaction(
+      () => ({
+        schema: erdStore.selectedSchema,
+        schemaId: erdStore.selectedSchemaId,
+      }),
+      () => {
+        setRelationships(getRelationships());
+      },
+    );
+
+    return () => dispose();
+  }, []);
 
   const onConnect = (params: Connection) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
@@ -46,15 +92,16 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const onRelationshipsChange = (changes: EdgeChange[]) => {
-    const { selectedSchemaId, deleteRelationship } = erdStore;
-
+    const selectedSchemaId = erdStore.selectedSchemaId;
     if (!selectedSchemaId) return;
 
-    changes.forEach((change) => {
-      if (change.type === 'remove') {
-        deleteRelationship(selectedSchemaId, change.id);
-      }
-    });
+    changes
+      .filter((change) => change.type === 'remove')
+      .forEach((change) => {
+        erdStore.deleteRelationship(selectedSchemaId, change.id);
+      });
+
+    setRelationships((edges) => applyEdgeChanges(changes, edges) as Edge[]);
   };
 
   const onRelationshipClick = (event: React.MouseEvent, relationship: Edge) => {
@@ -87,12 +134,12 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const onReconnectEnd = (_: MouseEvent | TouchEvent, relationship: Edge) => {
-    const { selectedSchemaId, deleteRelationship } = erdStore;
+    const selectedSchemaId = erdStore.selectedSchemaId;
 
     if (!selectedSchemaId) return;
 
     if (!relationshipReconnectSuccessful.current) {
-      deleteRelationship(selectedSchemaId, relationship.id);
+      erdStore.deleteRelationship(selectedSchemaId, relationship.id);
     }
     relationshipReconnectSuccessful.current = true;
   };
@@ -114,12 +161,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
     const typeConfig = RELATIONSHIP_TYPES[config.type];
     const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
-    const currentExtra = (currentRelationship.extra || {}) as {
-      sourceHandle?: string;
-      targetHandle?: string;
-      controlPointX?: number;
-      controlPointY?: number;
-    };
+    const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
 
     const needsRecreation =
       currentRelationship.kind !== newKind || currentRelationship.cardinality !== typeConfig.cardinality;
@@ -150,24 +192,26 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const deleteRelationship = (relationshipId: string) => {
-    const { selectedSchemaId, deleteRelationship: deleteRel } = erdStore;
+    const selectedSchemaId = erdStore.selectedSchemaId;
 
     if (!selectedSchemaId) {
       console.error('No schema selected');
       return;
     }
-    deleteRel(selectedSchemaId, relationshipId);
+
+    erdStore.deleteRelationship(selectedSchemaId, relationshipId);
     setSelectedRelationship(null);
   };
 
   const changeRelationshipName = (relationshipId: string, newName: string) => {
-    const { selectedSchemaId, changeRelationshipName: changeName } = erdStore;
+    const selectedSchemaId = erdStore.selectedSchemaId;
 
     if (!selectedSchemaId) {
       console.error('No schema selected');
       return;
     }
-    changeName(selectedSchemaId, relationshipId, newName);
+
+    erdStore.changeRelationshipName(selectedSchemaId, relationshipId, newName);
   };
 
   return {

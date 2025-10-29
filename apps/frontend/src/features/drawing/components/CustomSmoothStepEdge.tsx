@@ -57,18 +57,24 @@ export const CustomSmoothStepEdge = ({
   useEffect(() => {
     if (!isDragging) return;
 
+    let finalControlPointX = controlPointX;
+    let finalControlPointY = controlPointY;
+
     const handleMouseMove = (e: MouseEvent) => {
       const flowPosition = screenToFlowPosition({
         x: e.clientX,
         y: e.clientY,
       });
 
+      const newControlPointX = isHorizontal ? flowPosition.x : controlPointX;
+      const newControlPointY = isHorizontal ? controlPointY : flowPosition.y;
+
+      finalControlPointX = newControlPointX;
+      finalControlPointY = newControlPointY;
+
       setEdges((relationships) =>
         relationships.map((relationship) => {
           if (relationship.id !== id) return relationship;
-
-          const newControlPointX = isHorizontal ? flowPosition.x : controlPointX;
-          const newControlPointY = isHorizontal ? controlPointY : flowPosition.y;
 
           return {
             ...relationship,
@@ -84,6 +90,9 @@ export const CustomSmoothStepEdge = ({
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      if (data && typeof data.onControlPointDragEnd === 'function') {
+        data.onControlPointDragEnd(id, finalControlPointX, finalControlPointY);
+      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -93,7 +102,7 @@ export const CustomSmoothStepEdge = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, id, setEdges, screenToFlowPosition, isHorizontal, controlPointX, controlPointY]);
+  }, [isDragging, id, data, setEdges, screenToFlowPosition, isHorizontal, controlPointX, controlPointY]);
 
   return (
     <>
