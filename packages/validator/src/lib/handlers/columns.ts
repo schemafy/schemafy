@@ -13,7 +13,7 @@ import {
   TableNotExistError,
 } from '../errors';
 import * as helper from '../helper';
-import { Column, COLUMN, Constraint, Database, RelationshipColumn, Schema, Table } from '../types';
+import { Column, COLUMN, Constraint, Database, Schema, Table } from '../types';
 
 export interface ColumnHandlers {
   createColumn: (

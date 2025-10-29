@@ -164,28 +164,6 @@ export const constraintHandlers: ConstraintHandlers = {
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
-    let updatedDatabase: Database = {
-      ...database,
-      isAffected: true,
-      schemas: database.schemas.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              isAffected: true,
-              tables: s.tables.map((t) =>
-                t.id === tableId
-                  ? {
-                      ...t,
-                      isAffected: true,
-                      constraints: [...t.constraints, { ...constraint, isAffected: true, tableId }],
-                    }
-                  : t
-              ),
-            }
-          : s
-      ),
-    };
-
     for (const schemaTable of schema.tables) {
       for (const c of schemaTable.constraints) {
         if (c.name === constraint.name) throw new ConstraintNameNotUniqueError(constraint.name, schemaId);
@@ -222,6 +200,22 @@ export const constraintHandlers: ConstraintHandlers = {
     if (existingConstraint) {
       throw new DuplicateKeyDefinitionError(constraint.name, existingConstraint.name);
     }
+
+    const changeTables: Table[] = schema.tables.map((t) =>
+      t.id === tableId
+        ? { ...t, isAffected: true, constraints: [...t.constraints, { ...constraint, isAffected: true, tableId }] }
+        : { ...t, isAffected: true }
+    );
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s
+    );
+
+    let updatedDatabase: Database = {
+      ...database,
+      isAffected: true,
+      schemas: changeSchemas,
+    };
 
     if (constraint.kind === 'PRIMARY_KEY') {
       const columns = constraint.columns.map((column) => table.columns.find((c) => c.id === column.columnId)!);
