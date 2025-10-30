@@ -13,7 +13,7 @@ import {
   TableNotExistError,
 } from '../errors';
 import * as helper from '../helper';
-import { Column, COLUMN, Constraint, Database, Schema, Table } from '../types';
+import { Column, COLUMN, Constraint, Database, Index, Relationship, Schema, Table } from '../types';
 
 export interface ColumnHandlers {
   createColumn: (
@@ -115,9 +115,6 @@ export const columnHandlers: ColumnHandlers = {
     };
   },
   deleteColumn: (database, schemaId, tableId, columnId) => {
-    // NOTE: 코드 전반으로 index, constraint, relationship에서 컬럼이 없을 때, 해당 인덱스, 컨스트레인트, 릴레이션쉽을 삭제하도록 구현되어 있음.
-    //       이 부분에 참고하여서, 외부에서 아이디 매핑시에, 특정 아이디를 찾을 떄 못 찾을 수도 있음. (해당 부분 고려 필요)
-
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -129,149 +126,46 @@ export const columnHandlers: ColumnHandlers = {
 
     if (table.columns.length === 1) throw new TableEmptyColumnError(tableId);
 
-    const isPrimaryKey = table.constraints.some(
-      (constraint) => constraint.kind === 'PRIMARY_KEY' && constraint.columns.some((cc) => cc.columnId === columnId)
+    const updateIndexes: Index[] = table.indexes.map((idx) => ({
+      ...idx,
+      isAffected: idx.columns.some((ic) => ic.columnId === columnId),
+      columns: idx.columns.filter((ic) => ic.columnId !== columnId),
+    }));
+
+    const updateConstraints: Constraint[] = table.constraints.map((constraint) => ({
+      ...constraint,
+      isAffected: constraint.columns.some((cc) => cc.columnId === columnId),
+      columns: constraint.columns.filter((cc) => cc.columnId !== columnId),
+    }));
+
+    const updateRelationships: Relationship[] = table.relationships.map((rel) => ({
+      ...rel,
+      isAffected: rel.columns.some((rc) => rc.fkColumnId === columnId || rc.refColumnId === columnId),
+      columns: rel.columns.filter((rc) => rc.fkColumnId !== columnId && rc.refColumnId !== columnId),
+    }));
+
+    const changeTables: Table[] = schema.tables.map((t) =>
+      t.id === tableId
+        ? {
+            ...t,
+            isAffected: true,
+            columns: t.columns.filter((c) => c.id !== columnId),
+            indexes: updateIndexes,
+            constraints: updateConstraints,
+            relationships: updateRelationships,
+          }
+        : { ...t, isAffected: true }
     );
 
-    let updatedDatabase: Database = {
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s
+    );
+
+    return {
       ...database,
       isAffected: true,
-      schemas: database.schemas.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              isAffected: true,
-              tables: s.tables.map((t) => {
-                if (t.id === tableId) {
-                  return {
-                    ...t,
-                    isAffected: true,
-                    columns: t.columns.filter((c) => c.id !== columnId),
-                    indexes: t.indexes
-                      .map((idx) => ({
-                        ...idx,
-                        isAffected: idx.columns.some((ic) => ic.columnId === columnId),
-                        columns: idx.columns.filter((ic) => ic.columnId !== columnId),
-                      }))
-                      .filter((idx) => idx.columns.length > 0),
-                    constraints: t.constraints
-                      .map((constraint) => ({
-                        ...constraint,
-                        isAffected: constraint.columns.some((cc) => cc.columnId === columnId),
-                        columns: constraint.columns.filter((cc) => cc.columnId !== columnId),
-                      }))
-                      .filter((constraint) => constraint.columns.length > 0),
-                    relationships: t.relationships
-                      .map((rel) => ({
-                        ...rel,
-                        isAffected: rel.columns.some((rc) => rc.fkColumnId === columnId || rc.refColumnId === columnId),
-                        columns: rel.columns.filter((rc) => rc.fkColumnId !== columnId && rc.refColumnId !== columnId),
-                      }))
-                      .filter((rel) => rel.columns.length > 0),
-                  };
-                }
-                return t;
-              }),
-            }
-          : s
-      ),
+      schemas: changeSchemas,
     };
-
-    if (isPrimaryKey) {
-      const deleteCascadingForeignKeys = (
-        currentSchema: Schema,
-        parentTableId: string,
-        deletedPkColumnId: string,
-        visited: Set<string> = new Set()
-      ): Schema => {
-        if (visited.has(parentTableId)) return currentSchema;
-        visited.add(parentTableId);
-
-        let updatedSchema = currentSchema;
-
-        for (const table of updatedSchema.tables) {
-          for (const rel of table.relationships) {
-            if (rel.tgtTableId === parentTableId) {
-              const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
-              if (!childTable) continue;
-
-              const fkColumnsToDelete = rel.columns
-                .filter((relCol) => relCol.refColumnId === deletedPkColumnId)
-                .map((relCol) => relCol.fkColumnId);
-
-              if (fkColumnsToDelete.length > 0) {
-                updatedSchema = {
-                  ...updatedSchema,
-                  isAffected: true,
-                  tables: updatedSchema.tables.map((t) =>
-                    t.id === childTable.id
-                      ? {
-                          ...t,
-                          isAffected: t.columns.some((c) => fkColumnsToDelete.includes(c.id)),
-                          columns: t.columns.filter((col) => !fkColumnsToDelete.includes(col.id)),
-                          indexes: t.indexes
-                            .map((idx) => ({
-                              ...idx,
-                              isAffected: idx.columns.some((ic) => fkColumnsToDelete.includes(ic.columnId)),
-                              columns: idx.columns.filter((ic) => !fkColumnsToDelete.includes(ic.columnId)),
-                            }))
-                            .filter((idx) => idx.columns.length > 0),
-                          constraints: t.constraints
-                            .map((constraint) => ({
-                              ...constraint,
-                              isAffected: constraint.columns.some((cc) => fkColumnsToDelete.includes(cc.columnId)),
-                              columns: constraint.columns.filter((cc) => !fkColumnsToDelete.includes(cc.columnId)),
-                            }))
-                            .filter((constraint) => constraint.columns.length > 0),
-                          relationships: t.relationships
-                            .map((relationship) => ({
-                              ...relationship,
-                              isAffected: relationship.columns.some(
-                                (rc) =>
-                                  fkColumnsToDelete.includes(rc.fkColumnId) ||
-                                  fkColumnsToDelete.includes(rc.refColumnId)
-                              ),
-                              columns: relationship.columns.filter(
-                                (rc) =>
-                                  !fkColumnsToDelete.includes(rc.fkColumnId) &&
-                                  !fkColumnsToDelete.includes(rc.refColumnId)
-                              ),
-                            }))
-                            .filter((relationship) => relationship.columns.length > 0),
-                        }
-                      : t
-                  ),
-                };
-
-                if (rel.kind === 'IDENTIFYING') {
-                  for (const fkColumnId of fkColumnsToDelete) {
-                    updatedSchema = deleteCascadingForeignKeys(
-                      structuredClone(updatedSchema),
-                      rel.tgtTableId,
-                      fkColumnId,
-                      new Set(visited)
-                    );
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        return updatedSchema;
-      };
-
-      const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
-      const cascadedSchema = deleteCascadingForeignKeys(structuredClone(updatedSchema), tableId, columnId);
-
-      updatedDatabase = {
-        ...updatedDatabase,
-        isAffected: true,
-        schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? { ...cascadedSchema, isAffected: true } : s)),
-      };
-    }
-
-    return updatedDatabase;
   },
   changeColumnName: (database, schemaId, tableId, columnId, newName) => {
     // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
