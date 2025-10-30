@@ -44,34 +44,37 @@ export const useTables = () => {
     });
   };
 
+  const handlePositionChanges = (changes: NodeChange[], nodes: Node<TableData>[]) => {
+    changes
+      .filter((change) => change.type === 'position' && change.dragging === false && change.position)
+      .forEach((change) => {
+        if (change.type !== 'position' || !change.position) return;
+
+        const table = nodes.find((t) => t.id === change.id);
+        if (!table) return;
+
+        erdStore.updateTableExtra(table.data.schemaId, change.id, {
+          position: change.position,
+        });
+      });
+  };
+
+  const handleRemoveChanges = (changes: NodeChange[], nodes: Node<TableData>[]) => {
+    changes
+      .filter((change) => change.type === 'remove')
+      .forEach((change) => {
+        const table = nodes.find((t) => t.id === change.id);
+        if (table?.data.schemaId) {
+          erdStore.deleteTable(table.data.schemaId, change.id);
+        }
+      });
+  };
+
   const onTablesChange = (changes: NodeChange[]) => {
     setTables((nds) => {
       const updatedTables = applyNodeChanges(changes, nds) as Node<TableData>[];
-
-      changes
-        .filter((change) => change.type === 'position' && change.dragging === false && change.position)
-        .forEach((change) => {
-          if (change.type !== 'position' || !change.position) return;
-
-          const table = nds.find((t) => t.id === change.id);
-          if (!table) return;
-
-          const schemaId = table.data.schemaId;
-
-          erdStore.updateTableExtra(schemaId, change.id, {
-            position: change.position,
-          });
-        });
-
-      changes
-        .filter((change) => change.type === 'remove')
-        .forEach((change) => {
-          const table = nds.find((t) => t.id === change.id);
-          if (table?.data.schemaId) {
-            erdStore.deleteTable(table.data.schemaId, change.id);
-          }
-        });
-
+      handlePositionChanges(changes, nds);
+      handleRemoveChanges(changes, nds);
       return updatedTables;
     });
   };

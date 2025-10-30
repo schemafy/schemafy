@@ -21,22 +21,25 @@ interface RelationshipData {
   controlPointY?: number;
 }
 
+const DEFAULT_RELATIONSHIP_DATA: RelationshipData = {
+  name: '',
+  type: 'one-to-many',
+  isNonIdentifying: false,
+  controlPointX: undefined,
+  controlPointY: undefined,
+};
+
 const extractRelationshipData = (relationship: Edge | undefined): RelationshipData => {
-  const relationshipType = relationship?.data?.relationshipType;
-  const isNonIdentifying =
-    typeof relationship?.data?.isNonIdentifying === 'boolean' ? relationship.data.isNonIdentifying : false;
-  const controlPointX =
-    typeof relationship?.data?.controlPointX === 'number' ? relationship.data.controlPointX : undefined;
-  const controlPointY =
-    typeof relationship?.data?.controlPointY === 'number' ? relationship.data.controlPointY : undefined;
-  const name = (relationship?.label as string) || '';
+  if (!relationship) return DEFAULT_RELATIONSHIP_DATA;
+
+  const data = relationship.data || {};
 
   return {
-    name,
-    type: isRelationshipType(relationshipType) ? relationshipType : 'one-to-many',
-    isNonIdentifying,
-    controlPointX,
-    controlPointY,
+    name: (relationship.label as string) || '',
+    type: isRelationshipType(data.relationshipType) ? data.relationshipType : 'one-to-many',
+    isNonIdentifying: typeof data.isNonIdentifying === 'boolean' ? data.isNonIdentifying : false,
+    controlPointX: typeof data.controlPointX === 'number' ? data.controlPointX : undefined,
+    controlPointY: typeof data.controlPointY === 'number' ? data.controlPointY : undefined,
   };
 };
 

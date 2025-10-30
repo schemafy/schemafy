@@ -86,6 +86,36 @@ export const createRelationshipFromConnection = ({
   };
 };
 
+export type RelationshipExtra = {
+  sourceHandle?: string;
+  targetHandle?: string;
+  controlPointX?: number;
+  controlPointY?: number;
+};
+
+export const shouldRecreateRelationship = (
+  currentRelationship: Relationship,
+  newKind: string,
+  newCardinality: string,
+): boolean => {
+  return currentRelationship.kind !== newKind || currentRelationship.cardinality !== newCardinality;
+};
+
+export const mergeRelationshipExtra = (
+  current: RelationshipExtra,
+  config: RelationshipConfig,
+): RelationshipExtra => {
+  return {
+    ...current,
+    controlPointX: config.controlPointX,
+    controlPointY: config.controlPointY,
+  };
+};
+
+export const hasExtraChanged = (current: RelationshipExtra, updated: RelationshipExtra): boolean => {
+  return JSON.stringify(current) !== JSON.stringify(updated);
+};
+
 export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
   const allRelationships: Edge[] = [];
 
@@ -95,12 +125,7 @@ export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
       const baseConfig = RELATIONSHIP_TYPES[relationshipType];
       const isNonIdentifying = rel.kind === 'NON_IDENTIFYING';
       const style = getRelationshipStyle(isNonIdentifying);
-      const extra = (rel.extra || {}) as {
-        sourceHandle?: string;
-        targetHandle?: string;
-        controlPointX?: number;
-        controlPointY?: number;
-      };
+      const extra = (rel.extra || {}) as RelationshipExtra;
 
       const edge: Edge = {
         id: rel.id,

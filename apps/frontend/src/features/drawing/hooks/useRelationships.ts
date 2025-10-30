@@ -9,14 +9,11 @@ import {
   convertRelationshipsToEdges,
   createRelationshipFromConnection,
   findRelationshipInSchema,
+  shouldRecreateRelationship,
+  mergeRelationshipExtra,
+  hasExtraChanged,
+  type RelationshipExtra,
 } from '../utils/relationshipHelpers';
-
-type RelationshipExtra = {
-  sourceHandle?: string;
-  targetHandle?: string;
-  controlPointX?: number;
-  controlPointY?: number;
-};
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const erdStore = ErdStore.getInstance();
@@ -163,29 +160,18 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
     const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
 
-    const needsRecreation =
-      currentRelationship.kind !== newKind || currentRelationship.cardinality !== typeConfig.cardinality;
-
-    if (needsRecreation) {
+    if (shouldRecreateRelationship(currentRelationship, newKind, typeConfig.cardinality)) {
       erdStore.deleteRelationship(selectedSchemaId, relationshipId);
       erdStore.createRelationship(selectedSchemaId, {
         ...currentRelationship,
         kind: newKind,
         cardinality: typeConfig.cardinality,
-        extra: {
-          ...currentExtra,
-          controlPointX: config.controlPointX,
-          controlPointY: config.controlPointY,
-        },
+        extra: mergeRelationshipExtra(currentExtra, config),
       });
     } else {
-      const newExtra = {
-        ...currentExtra,
-        controlPointX: config.controlPointX,
-        controlPointY: config.controlPointY,
-      };
+      const newExtra = mergeRelationshipExtra(currentExtra, config);
 
-      if (JSON.stringify(currentExtra) !== JSON.stringify(newExtra)) {
+      if (hasExtraChanged(currentExtra, newExtra)) {
         erdStore.updateRelationshipExtra(selectedSchemaId, relationshipId, newExtra);
       }
     }
