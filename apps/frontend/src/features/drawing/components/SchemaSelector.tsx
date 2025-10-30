@@ -14,7 +14,7 @@ export const SchemaSelector = observer(() => {
   const [isAdding, setIsAdding] = useState(false);
   const [newSchemaName, setNewSchemaName] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
-  const { editingSchemaId, editingSchemaName, startEdit, updateEditingName, cancelEdit, resetEdit } = useSchemaEditor();
+  const { editingSchemaId, editingSchemaName, startEdit, updateEditingName, cancelEdit } = useSchemaEditor();
 
   if (erdStore.erdState.state !== 'loaded') {
     return null;
@@ -58,7 +58,7 @@ export const SchemaSelector = observer(() => {
     const trimmedName = editingSchemaName.trim();
     if (validateSchemaName(trimmedName)) {
       erdStore.changeSchemaName(schemaId, trimmedName);
-      resetEdit();
+      cancelEdit();
     }
   };
 

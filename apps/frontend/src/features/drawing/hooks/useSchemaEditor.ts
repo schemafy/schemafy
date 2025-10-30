@@ -18,17 +18,11 @@ export const useSchemaEditor = () => {
     setEditingSchemaName('');
   };
 
-  const resetEdit = () => {
-    setEditingSchemaId(null);
-    setEditingSchemaName('');
-  };
-
   return {
     editingSchemaId,
     editingSchemaName,
     startEdit,
     updateEditingName,
     cancelEdit,
-    resetEdit,
   };
 };

@@ -97,6 +97,27 @@ export const saveColumnUnique = (
   saveColumnConstraint(erdStore, schemaId, tableId, columnId, 'UNIQUE', isUnique);
 };
 
+type ColumnFieldSaver = (
+  erdStore: ErdStore,
+  schemaId: string,
+  tableId: string,
+  columnId: string,
+  value: string | boolean,
+) => void;
+
+const COLUMN_FIELD_SAVERS: Partial<Record<keyof ColumnType, ColumnFieldSaver>> = {
+  name: (erdStore, schemaId, tableId, columnId, value) =>
+    saveColumnName(erdStore, schemaId, tableId, columnId, value as string),
+  type: (erdStore, schemaId, tableId, columnId, value) =>
+    saveColumnType(erdStore, schemaId, tableId, columnId, value as string),
+  isPrimaryKey: (erdStore, schemaId, tableId, columnId, value) =>
+    saveColumnPrimaryKey(erdStore, schemaId, tableId, columnId, value as boolean),
+  isNotNull: (erdStore, schemaId, tableId, columnId, value) =>
+    saveColumnNotNull(erdStore, schemaId, tableId, columnId, value as boolean),
+  isUnique: (erdStore, schemaId, tableId, columnId, value) =>
+    saveColumnUnique(erdStore, schemaId, tableId, columnId, value as boolean),
+};
+
 export const saveColumnField = (
   erdStore: ErdStore,
   schemaId: string,
@@ -105,15 +126,8 @@ export const saveColumnField = (
   key: keyof ColumnType,
   value: string | boolean,
 ) => {
-  if (key === 'name') {
-    saveColumnName(erdStore, schemaId, tableId, columnId, value as string);
-  } else if (key === 'type') {
-    saveColumnType(erdStore, schemaId, tableId, columnId, value as string);
-  } else if (key === 'isPrimaryKey') {
-    saveColumnPrimaryKey(erdStore, schemaId, tableId, columnId, value as boolean);
-  } else if (key === 'isNotNull') {
-    saveColumnNotNull(erdStore, schemaId, tableId, columnId, value as boolean);
-  } else if (key === 'isUnique') {
-    saveColumnUnique(erdStore, schemaId, tableId, columnId, value as boolean);
+  const saver = COLUMN_FIELD_SAVERS[key];
+  if (saver) {
+    saver(erdStore, schemaId, tableId, columnId, value);
   }
 };
