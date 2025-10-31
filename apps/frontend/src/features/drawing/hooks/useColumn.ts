@@ -4,7 +4,7 @@ import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType } from '../types';
 import { saveColumnField } from '../utils/columnHelpers';
 
-export const useColumnUpdate = (erdStore: ErdStore, schemaId: string, tableId: string) => {
+export const useColumn = (erdStore: ErdStore, schemaId: string, tableId: string) => {
   const debouncedSaveRef = useRef<Map<string, ReturnType<typeof debounce>>>(new Map());
 
   const updateColumn = (columnId: string, key: keyof ColumnType, value: string | boolean) => {

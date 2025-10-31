@@ -1,9 +1,10 @@
 import { ulid } from 'ulid';
 import type { ErdStore } from '@/store/erd.store';
-import type { IndexType, IndexSortDir } from '../../types';
+import type { IndexType, IndexSortDir } from '../types';
 import type { Index } from '@schemafy/validator';
+import { generateUniqueName } from '../utils/nameGenerator';
 
-interface UseIndexActionsProps {
+interface UseIndexesProps {
   erdStore: ErdStore;
   schemaId: string;
   tableId: string;
@@ -11,11 +12,13 @@ interface UseIndexActionsProps {
   indexes: Index[];
 }
 
-export const useIndexActions = ({ erdStore, schemaId, tableId, tableName, indexes }: UseIndexActionsProps) => {
+export const useIndexes = ({ erdStore, schemaId, tableId, tableName, indexes }: UseIndexesProps) => {
   const createIndex = () => {
+    const existingIndexNames = indexes.map((idx) => idx.name);
+
     erdStore.createIndex(schemaId, tableId, {
       id: ulid(),
-      name: `idx_${tableName}_${indexes.length + 1}`,
+      name: generateUniqueName(existingIndexNames, `idx_${tableName}_`),
       type: 'BTREE' as IndexType,
       comment: null,
       columns: [],

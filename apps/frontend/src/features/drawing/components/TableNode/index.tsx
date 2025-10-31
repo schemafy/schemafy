@@ -4,12 +4,9 @@ import type { TableProps } from '../../types';
 import { ColumnRow } from '../Column';
 import { TableHeader } from '../TableHeader';
 import { IndexSection } from '../IndexSection';
-import { useDragAndDrop, useColumnUpdate } from '../../hooks';
+import { useDragAndDrop, useColumn, useTable, useColumns, useIndexes } from '../../hooks';
 import { ErdStore } from '@/store/erd.store';
 import { ConnectionHandles } from './ConnectionHandles';
-import { useTableActions } from './useTableActions';
-import { useColumnActions } from './useColumnActions';
-import { useIndexActions } from './useIndexActions';
 
 const TableNodeComponent = ({ data, id }: TableProps) => {
   const erdStore = ErdStore.getInstance();
@@ -18,23 +15,23 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const columns = data.columns || [];
   const indexes = data.indexes || [];
 
-  const { updateColumn, saveAllPendingChanges } = useColumnUpdate(erdStore, data.schemaId, id);
+  const { updateColumn, saveAllPendingChanges } = useColumn(erdStore, data.schemaId, id);
 
-  const tableActions = useTableActions({
+  const tableActions = useTable({
     erdStore,
     schemaId: data.schemaId,
     tableId: id,
     tableName: data.tableName,
   });
 
-  const columnActions = useColumnActions({
+  const columnActions = useColumns({
     erdStore,
     schemaId: data.schemaId,
     tableId: id,
     columns,
   });
 
-  const indexActions = useIndexActions({
+  const indexActions = useIndexes({
     erdStore,
     schemaId: data.schemaId,
     tableId: id,

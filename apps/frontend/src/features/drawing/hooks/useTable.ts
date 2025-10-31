@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import type { ErdStore } from '@/store/erd.store';
 
-interface UseTableActionsProps {
+interface UseTableProps {
   erdStore: ErdStore;
   schemaId: string;
   tableId: string;
   tableName: string;
 }
 
-export const useTableActions = ({ erdStore, schemaId, tableId, tableName }: UseTableActionsProps) => {
+export const useTable = ({ erdStore, schemaId, tableId, tableName }: UseTableProps) => {
   const [isEditingTableName, setIsEditingTableName] = useState(false);
   const [editingTableName, setEditingTableName] = useState(tableName);
 

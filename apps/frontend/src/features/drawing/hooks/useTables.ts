@@ -4,6 +4,7 @@ import { ErdStore } from '@/store';
 import type { TableData } from '../types';
 import { ulid } from 'ulid';
 import { transformTableToNode } from '../utils/tableHelpers';
+import { generateUniqueName } from '../utils/nameGenerator';
 
 export const useTables = () => {
   const erdStore = ErdStore.getInstance();
@@ -31,10 +32,11 @@ export const useTables = () => {
       return;
     }
 
-    const tableCount = selectedSchema.tables.length;
+    const existingTableNames = selectedSchema.tables.map((table) => table.name);
+
     erdStore.createTable(selectedSchemaId, {
       id: ulid(),
-      name: `Table_${tableCount + 1}`,
+      name: generateUniqueName(existingTableNames, 'Table'),
       columns: [],
       indexes: [],
       constraints: [],

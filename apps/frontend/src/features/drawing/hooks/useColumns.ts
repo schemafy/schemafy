@@ -1,19 +1,22 @@
 import { ulid } from 'ulid';
 import type { ErdStore } from '@/store/erd.store';
-import type { ColumnType } from '../../types';
+import type { ColumnType } from '../types';
+import { generateUniqueName } from '../utils/nameGenerator';
 
-interface UseColumnActionsProps {
+interface UseColumnsProps {
   erdStore: ErdStore;
   schemaId: string;
   tableId: string;
   columns: ColumnType[];
 }
 
-export const useColumnActions = ({ erdStore, schemaId, tableId, columns }: UseColumnActionsProps) => {
+export const useColumns = ({ erdStore, schemaId, tableId, columns }: UseColumnsProps) => {
   const addColumn = () => {
+    const existingColumnNames = columns.map((col) => col.name);
+
     erdStore.createColumn(schemaId, tableId, {
       id: ulid(),
-      name: `newColumn${columns.length + 1}`,
+      name: generateUniqueName(existingColumnNames, 'Column'),
       ordinalPosition: columns.length,
       dataType: 'VARCHAR',
       lengthScale: '255',
