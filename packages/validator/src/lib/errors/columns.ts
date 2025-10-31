@@ -111,3 +111,21 @@ export const ColumnTypeIncompatibleError = createErrorClass('ColumnTypeIncompati
     reason,
   }),
 });
+
+export const ColumnNameChangeSameError = createErrorClass('ColumnNameChangeSame', {
+  code: ERROR_CODES.COLUMN_NAME_CHANGE_SAME,
+  messageTemplate: "Cannot change column '{0}' same name as before",
+  createDetails: (columnId: string) => ({ columnId }),
+});
+
+export const ColumnTypeChangeSameError = createErrorClass('ColumnTypeChangeSame', {
+  code: ERROR_CODES.COLUMN_TYPE_CHANGE_SAME,
+  messageTemplate: "Cannot change column '{0}' type same as before",
+  createDetails: (columnId: string) => ({ columnId }),
+});
+
+export const ColumnPositionChangeSameError = createErrorClass('ColumnPositionChangeSame', {
+  code: ERROR_CODES.COLUMN_POSITION_CHANGE_SAME,
+  messageTemplate: "Cannot change column '{0}' position same as before",
+  createDetails: (columnId: string) => ({ columnId }),
+});

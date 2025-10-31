@@ -3,7 +3,7 @@ import {
   TableNameNotUniqueError,
   TableNotExistError,
   TableNameNotInvalidError,
-  TableNameNotChangedError,
+  TableNameChangeSameError,
 } from '../errors';
 import { Database, Schema, TABLE, Table } from '../types';
 import { relationshipHandlers } from './relationships';
@@ -100,9 +100,7 @@ export const tableHandlers: TableHandlers = {
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
-    if (newName === table.name) {
-      throw new TableNameNotChangedError(newName);
-    }
+    if (newName === table.name) throw new TableNameChangeSameError(tableId);
 
     return {
       ...database,

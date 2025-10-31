@@ -54,3 +54,9 @@ export const IndexNotExistError = createErrorClass('IndexNotExist', {
   messageTemplate: "Index '{0}' does not exist in table '{1}'",
   createDetails: (indexId: string, tableId: string) => ({ indexId, tableId }),
 });
+
+export const IndexNameChangeSameError = createErrorClass('IndexNameChangeSame', {
+  code: ERROR_CODES.INDEX_NAME_CHANGE_SAME,
+  messageTemplate: "Cannot change index '{0}' name same as before",
+  createDetails: (indexId: string) => ({ indexId }),
+});

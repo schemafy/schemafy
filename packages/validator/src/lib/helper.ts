@@ -50,6 +50,9 @@ export const isValidColumnName = (str: string): boolean => {
   return true;
 };
 
+export const precisionRequired = ['DECIMAL', 'NUMERIC'];
+export const lengthScaleRequired = ['VARCHAR', 'CHAR'];
+
 export const categorizedMysqlDataTypes = [
   'TINYINT',
   'SMALLINT',

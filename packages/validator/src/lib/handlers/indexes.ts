@@ -3,6 +3,7 @@ import {
   IndexColumnNotExistError,
   IndexColumnNotUniqueError,
   IndexColumnSortDirInvalidError,
+  IndexNameChangeSameError,
   IndexNameNotUniqueError,
   IndexNotExistError,
   IndexParseInvalidError,
@@ -143,6 +144,8 @@ export const indexHandlers: IndexHandlers = {
 
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
+
+    if (index.name === newName) throw new IndexNameChangeSameError(indexId);
 
     const indexNotUnique = table.indexes.find((i) => i.name === newName && i.id !== indexId);
     if (indexNotUnique) throw new IndexNameNotUniqueError(newName);

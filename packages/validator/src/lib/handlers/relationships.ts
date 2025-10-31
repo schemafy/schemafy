@@ -6,6 +6,8 @@ import {
   RelationshipNameNotUniqueError,
   RelationshipEmptyError,
   RelationshipCyclicReferenceError,
+  RelationshipNameChangeSameError,
+  RelationshipCardinalityChangeSameError,
 } from '../errors';
 import { Database, Schema, Relationship, RelationshipColumn, Table } from '../types';
 import * as helper from '../helper';
@@ -139,6 +141,8 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
+    if (relationship.name === newName) throw new RelationshipNameChangeSameError(relationshipId);
+
     const changeTables: Table[] = schema.tables.map((t) =>
       t.id === relationship.srcTableId || t.id === relationship.tgtTableId
         ? {
@@ -171,19 +175,16 @@ export const relationshipHandlers: RelationshipHandlers = {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
-    let foundRelationship = null;
-    for (const table of schema.tables) {
-      const relationship = table.relationships.find((r) => r.id === relationshipId);
-      if (relationship) {
-        foundRelationship = relationship;
-        break;
-      }
-    }
+    const relationship: Relationship | undefined = schema.tables
+      .find((t) => t.relationships.some((r) => r.id === relationshipId))
+      ?.relationships.find((r) => r.id === relationshipId);
 
-    if (!foundRelationship) throw new RelationshipNotExistError(relationshipId);
+    if (!relationship) throw new RelationshipNotExistError(relationshipId);
+
+    if (relationship.cardinality === cardinality) throw new RelationshipCardinalityChangeSameError(relationshipId);
 
     const updatedRelationship: Relationship = {
-      ...foundRelationship,
+      ...relationship,
       isAffected: true,
       cardinality,
     };

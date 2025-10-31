@@ -41,3 +41,9 @@ export const LastSchemaCannotDeleteError = createErrorClass('LastSchemaCannotDel
   messageTemplate: "Cannot delete the last schema '{0}'. Database must have at least one schema",
   createDetails: (schemaId: string) => ({ schemaId }),
 });
+
+export const SchemaNameChangeSameError = createErrorClass('SchemaNameChangeSame', {
+  code: ERROR_CODES.SCHEMA_NAME_CHANGE_SAME,
+  messageTemplate: "Cannot change schema '{0}' name same as before",
+  createDetails: (schemaId: string) => ({ schemaId }),
+});

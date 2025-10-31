@@ -11,6 +11,9 @@ import {
   SchemaNotExistError,
   TableEmptyColumnError,
   TableNotExistError,
+  ColumnNameChangeSameError,
+  ColumnTypeChangeSameError,
+  ColumnPositionChangeSameError,
 } from '../errors';
 import * as helper from '../helper';
 import { Column, COLUMN, Constraint, Database, Index, Relationship, Schema, Table } from '../types';
@@ -70,12 +73,10 @@ export const columnHandlers: ColumnHandlers = {
       throw new ColumnNameIsReservedKeywordError(column.name);
 
     if (column.dataType) {
-      const precisionRequired = ['DECIMAL', 'NUMERIC']; // NOTE: 이 내용 외부에서 요청받아서 처리하도록 수정 필요할듯.
-      if (precisionRequired.includes(column.dataType) && !column.lengthScale)
+      if (helper.precisionRequired.includes(column.dataType) && !column.lengthScale)
         throw new ColumnPrecisionRequiredError(column.dataType);
 
-      const lengthScaleRequired = ['VARCHAR', 'CHAR']; // NOTE: 이 내용 외부에서 요청받아서 처리하도록 수정 필요할듯.
-      if (lengthScaleRequired.includes(column.dataType) && !column.lengthScale)
+      if (helper.lengthScaleRequired.includes(column.dataType) && !column.lengthScale)
         throw new ColumnLengthRequiredError(column.dataType);
 
       const vendorValid = helper.categorizedMysqlDataTypes.includes(column.dataType);
@@ -163,8 +164,6 @@ export const columnHandlers: ColumnHandlers = {
     };
   },
   changeColumnName: (database, schemaId, tableId, columnId, newName) => {
-    // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
-
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -179,6 +178,8 @@ export const columnHandlers: ColumnHandlers = {
 
     const result = COLUMN.shape.name.safeParse(newName);
     if (!result.success) throw new ColumnInvalidError({ name: newName });
+
+    if (column.name === newName) throw new ColumnNameChangeSameError(columnId);
 
     const changeTables: Table[] = schema.tables.map((t) =>
       t.id === tableId
@@ -201,8 +202,6 @@ export const columnHandlers: ColumnHandlers = {
     };
   },
   changeColumnType: (database, schemaId, tableId, columnId, dataType, lengthScale) => {
-    // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
-
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -211,6 +210,9 @@ export const columnHandlers: ColumnHandlers = {
 
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
+
+    if (column.dataType === dataType && column.lengthScale === lengthScale)
+      throw new ColumnTypeChangeSameError(columnId);
 
     const changeColumns: Column[] = table.columns.map((c) =>
       c.id === columnId ? { ...c, isAffected: true, dataType, lengthScale: lengthScale || c.lengthScale } : c
@@ -227,8 +229,6 @@ export const columnHandlers: ColumnHandlers = {
     return { ...database, isAffected: true, schemas: changeSchemas };
   },
   changeColumnPosition: (database, schemaId, tableId, columnId, newPosition) => {
-    // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
-
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -237,6 +237,8 @@ export const columnHandlers: ColumnHandlers = {
 
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId);
+
+    if (column.ordinalPosition === newPosition) throw new ColumnPositionChangeSameError(columnId);
 
     const changeColumns: Column[] = table.columns.map((c) =>
       c.id === columnId ? { ...c, isAffected: true, ordinalPosition: newPosition } : c

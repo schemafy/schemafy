@@ -3,6 +3,7 @@ import {
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,
   DatabaseEmptySchemaError,
+  SchemaNameChangeSameError,
 } from '../errors';
 import { Database, SCHEMA, Schema } from '../types';
 
@@ -19,6 +20,8 @@ export const schemaHandlers: SchemaHandlers = {
 
     const result = SCHEMA.shape.name.safeParse(newName);
     if (!result.success) throw new SchemaNameInvalidError(newName);
+
+    if (schema.name === newName) throw new SchemaNameChangeSameError(schemaId);
 
     const existingSchema = database.schemas.find((schema) => schema.name === newName && schema.id !== schemaId);
     if (existingSchema) throw new SchemaNameNotUniqueError(newName, existingSchema.id);

@@ -4,6 +4,7 @@ import {
   ConstraintNameNotUniqueError,
   ConstraintNotExistError,
   ConstraintNullableChangeNotAllowedError,
+  ConstraintNullableChangeSameError,
   DuplicateKeyDefinitionError,
   SchemaNotExistError,
   TableNotExistError,
@@ -298,8 +299,6 @@ export const constraintHandlers: ConstraintHandlers = {
     };
   },
   changeConstraintNullable: (database, schemaId, tableId, constraintId, nullable) => {
-    // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
-
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -311,6 +310,10 @@ export const constraintHandlers: ConstraintHandlers = {
 
     if (constraint.kind === 'PRIMARY_KEY' || constraint.kind === 'UNIQUE')
       throw new ConstraintNullableChangeNotAllowedError(constraintId);
+
+    if (constraint.kind === 'NOT_NULL' && !nullable) throw new ConstraintNullableChangeSameError(constraintId);
+    if ((constraint.kind === 'DEFAULT' || constraint.kind === 'CHECK') && nullable)
+      throw new ConstraintNullableChangeSameError(constraintId);
 
     let currentDatabase: Database = constraintHandlers.deleteConstraint(
       structuredClone(database),
@@ -331,59 +334,6 @@ export const constraintHandlers: ConstraintHandlers = {
       tableId,
       updatedConstraint
     );
-
-    // if (!nullable) {
-    //   const updatedSchema = currentDatabase.schemas.find((s) => s.id === schemaId)!;
-    //   const updatedTable = updatedSchema.tables.find((t) => t.id === tableId)!;
-
-    //   const hasNotNull = updatedTable.constraints.some(
-    //     (constraint) => constraint.kind === 'NOT_NULL' && constraint.columns.some((cc) => cc.columnId === columnId)
-    //   );
-
-    //   if (!hasNotNull) {
-    //     const newConstraintId = `constraint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    //     const newConstraint: Constraint = {
-    //       id: newConstraintId,
-    //       tableId,
-    //       name: `nn_${column.name}`,
-    //       kind: 'NOT_NULL' as const,
-    //       checkExpr: null,
-    //       defaultExpr: null,
-    //       columns: [
-    //         {
-    //           id: `cc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    //           constraintId: newConstraintId,
-    //           columnId,
-    //           seqNo: 1,
-    //           isAffected: true,
-    //         },
-    //       ],
-    //       isAffected: true,
-    //     };
-
-    //     currentDatabase = {
-    //       ...currentDatabase,
-    //       isAffected: true,
-    //       schemas: currentDatabase.schemas.map((s) =>
-    //         s.id === schemaId
-    //           ? {
-    //               ...s,
-    //               isAffected: true,
-    //               tables: s.tables.map((t) =>
-    //                 t.id === tableId
-    //                   ? {
-    //                       ...t,
-    //                       isAffected: true,
-    //                       constraints: [...t.constraints, newConstraint],
-    //                     }
-    //                   : t
-    //               ),
-    //             }
-    //           : s
-    //       ),
-    //     };
-    //   }
-    // }
 
     return currentDatabase;
   },

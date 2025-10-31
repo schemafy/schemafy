@@ -97,3 +97,9 @@ export const UniqueSameAsPrimaryKeyError = createErrorClass('UniqueSameAsPrimary
   messageTemplate: "Unique constraint '{0}' duplicates the Primary Key columns '{1}'",
   createDetails: (constraintName: string, primaryKeyName: string) => ({ constraintName, primaryKeyName }),
 });
+
+export const ConstraintNullableChangeSameError = createErrorClass('ConstraintNullableChangeSame', {
+  code: ERROR_CODES.CONSTRAINT_NULLABLE_CHANGE_SAME,
+  messageTemplate: "Cannot change constraint '{0}' nullable same as before",
+  createDetails: (constraintId: string) => ({ constraintId }),
+});

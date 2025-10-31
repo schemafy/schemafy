@@ -24,12 +24,6 @@ export const TableNameNotUniqueError = createErrorClass('TableNameNotUnique', {
   createDetails: (name: string, schemaId: string) => ({ name, schemaId }),
 });
 
-export const TableNameNotChangedError = createErrorClass('TableNameNotChanged', {
-  code: ERROR_CODES.TABLE_NAME_NOT_CHANGED,
-  messageTemplate: "Table name '{0}' is not changed",
-  createDetails: (name: string) => ({ name }),
-});
-
 export const TableNotExistError = createErrorClass('TableNotExist', {
   code: ERROR_CODES.TABLE_NOT_EXIST,
   messageTemplate: "Table '{0}' does not exist in schema '{1}'",
@@ -46,4 +40,10 @@ export const ColumnPositionSeqError = createErrorClass('ColumnPositionSeq', {
   code: ERROR_CODES.COLUMN_POSITION_SEQ_ERROR,
   messageTemplate: "Column positions in table '{0}' must be consecutive starting from 1.",
   createDetails: (tableName: string) => ({ tableName }),
+});
+
+export const TableNameChangeSameError = createErrorClass('TableNameChangeSame', {
+  code: ERROR_CODES.TABLE_NAME_CHANGE_SAME,
+  messageTemplate: "Cannot change table '{0}' name same as before",
+  createDetails: (tableId: string) => ({ tableId }),
 });

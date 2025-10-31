@@ -86,3 +86,15 @@ export const RelationshipTargetTableNotExistError = createErrorClass('Relationsh
   messageTemplate: "Target table '{1}' does not exist for relationship '{0}'",
   createDetails: (relationshipName: string, targetTableId: string) => ({ relationshipName, targetTableId }),
 });
+
+export const RelationshipNameChangeSameError = createErrorClass('RelationshipNameChangeSame', {
+  code: ERROR_CODES.RELATIONSHIP_NAME_CHANGE_SAME,
+  messageTemplate: "Cannot change relationship '{0}' name same as before",
+  createDetails: (relationshipId: string) => ({ relationshipId }),
+});
+
+export const RelationshipCardinalityChangeSameError = createErrorClass('RelationshipCardinalityChangeSame', {
+  code: ERROR_CODES.RELATIONSHIP_CARDINALITY_CHANGE_SAME,
+  messageTemplate: "Cannot change relationship '{0}' cardinality same as before",
+  createDetails: (relationshipId: string) => ({ relationshipId }),
+});
