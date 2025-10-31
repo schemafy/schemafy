@@ -9,5 +9,7 @@ export * from './FloatingButtons';
 export * from './SchemaSelector';
 export * from './IndexRow';
 export * from './IndexSection';
+export * from './ConstraintRow';
+export * from './ConstraintSection';
 export * from './Memo';
 export * from './TempMemoPreview';

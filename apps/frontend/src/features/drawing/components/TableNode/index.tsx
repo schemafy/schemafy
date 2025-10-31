@@ -4,7 +4,8 @@ import type { TableProps } from '../../types';
 import { ColumnRow } from '../Column';
 import { TableHeader } from '../TableHeader';
 import { IndexSection } from '../IndexSection';
-import { useDragAndDrop, useColumn, useTable, useColumns, useIndexes } from '../../hooks';
+import { ConstraintSection } from '../ConstraintSection';
+import { useDragAndDrop, useColumn, useTable, useColumns, useIndexes, useConstraints } from '../../hooks';
 import { ErdStore } from '@/store/erd.store';
 import { ConnectionHandles } from './ConnectionHandles';
 
@@ -14,6 +15,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
 
   const columns = data.columns || [];
   const indexes = data.indexes || [];
+  const constraints = data.constraints || [];
 
   const { updateColumn, saveAllPendingChanges } = useColumn(erdStore, data.schemaId, id);
 
@@ -37,6 +39,14 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
     tableId: id,
     tableName: data.tableName,
     indexes,
+  });
+
+  const constraintActions = useConstraints({
+    erdStore,
+    schemaId: data.schemaId,
+    tableId: id,
+    tableName: data.tableName,
+    constraints,
   });
 
   const dragAndDrop = useDragAndDrop({
@@ -110,6 +120,18 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         onAddColumnToIndex={indexActions.addColumnToIndex}
         onRemoveColumnFromIndex={indexActions.removeColumnFromIndex}
         onChangeSortDir={indexActions.changeSortDir}
+      />
+      <ConstraintSection
+        schemaId={data.schemaId}
+        tableId={id}
+        constraints={constraints}
+        tableColumns={columns.map((col) => ({ id: col.id, name: col.name }))}
+        isEditMode={isColumnEditMode}
+        onCreateConstraint={constraintActions.createConstraint}
+        onDeleteConstraint={constraintActions.deleteConstraint}
+        onChangeConstraintName={constraintActions.changeConstraintName}
+        onAddColumnToConstraint={constraintActions.addColumnToConstraint}
+        onRemoveColumnFromConstraint={constraintActions.removeColumnFromConstraint}
       />
     </div>
   );

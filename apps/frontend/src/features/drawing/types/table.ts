@@ -1,10 +1,12 @@
 import type { ColumnType } from './column';
 import type { IndexDataType } from './indexTypes';
+import type { Constraint } from '@schemafy/validator';
 
 export type TableData = {
   tableName: string;
   columns: ColumnType[];
   indexes: IndexDataType[];
+  constraints: Constraint[];
   schemaId: string;
   updateTable?: (tableId: string, newData: Partial<TableData>) => void;
 };

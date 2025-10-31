@@ -7,7 +7,9 @@ type TableExtra = {
 };
 
 export const hasConstraint = (constraints: Constraint[], columnId: string, kind: ConstraintKind): boolean => {
-  return constraints.some((c) => c.kind === kind && c.columns.some((cc) => cc.columnId === columnId));
+  return constraints.some(
+    (c) => c.kind === kind && c.columns.length === 1 && c.columns.some((cc) => cc.columnId === columnId),
+  );
 };
 
 export const transformColumn = (col: Column, constraints: Constraint[]): ColumnType => {
@@ -38,6 +40,7 @@ export const transformTableToNode = (table: Table, schemaId: string): Node<Table
       tableName: table.name,
       columns,
       indexes: table.indexes || [],
+      constraints: table.constraints || [],
       schemaId,
     },
   };
