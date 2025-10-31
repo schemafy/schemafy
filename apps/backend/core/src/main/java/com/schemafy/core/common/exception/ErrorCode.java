@@ -33,9 +33,15 @@ public enum ErrorCode {
             "검증 처리 중 오류가 발생했습니다."),
 
     // ERD
-    ERD_SCHEMA_NOT_FOUND(HttpStatus.NOT_FOUND, "E001", "스키마를 찾을 수 없습니다.");
+    ERD_SCHEMA_NOT_FOUND(HttpStatus.NOT_FOUND, "E001", "스키마를 찾을 수 없습니다."),
+    ERD_TABLE_NOT_FOUND(HttpStatus.NOT_FOUND, "E002", "테이블을 찾을 수 없습니다."),
+    ERD_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E003", "컬럼을 찾을 수 없습니다."),
+    ERD_CONSTRAINT_NOT_FOUND(HttpStatus.NOT_FOUND, "E004", "제약조건을 찾을 수 없습니다."),
+    ERD_INDEX_NOT_FOUND(HttpStatus.NOT_FOUND, "E005", "인덱스를 찾을 수 없습니다."),
+    ERD_RELATIONSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "E006", "관계를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;
     private final String message;
+
 }

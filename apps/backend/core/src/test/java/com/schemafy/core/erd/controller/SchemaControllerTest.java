@@ -22,13 +22,9 @@ import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.repository.entity.Schema;
 import com.schemafy.core.erd.service.SchemaService;
 
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import validation.Validation.ChangeSchemaNameRequest;
-import validation.Validation.CreateSchemaRequest;
-import validation.Validation.DeleteSchemaRequest;
+import validation.Validation;
 
-@Slf4j
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -45,7 +41,8 @@ class SchemaControllerTest {
     @DisplayName("스키마 생성: 성공 시 200과 ID 매핑 반환")
     void createSchema_success() {
         // given
-        CreateSchemaRequest request = CreateSchemaRequest.newBuilder()
+        Validation.CreateSchemaRequest request = Validation.CreateSchemaRequest
+                .newBuilder()
                 .setSchema(validation.Validation.Schema.newBuilder()
                         .setId("fe-id").setName("new-schema").build())
                 .build();
@@ -54,9 +51,11 @@ class SchemaControllerTest {
                 Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(), Collections.emptyMap(),
-                Collections.emptyMap());
-        given(schemaService.createSchema(any(CreateSchemaRequest.class)))
-                .willReturn(Mono.just(mockResponse));
+                Collections.emptyMap(),
+                AffectedMappingResponse.PropagatedEntities.empty());
+        given(schemaService
+                .createSchema(any(Validation.CreateSchemaRequest.class)))
+                        .willReturn(Mono.just(mockResponse));
 
         // when & then
         webTestClient.post().uri("/schemas")
@@ -96,9 +95,10 @@ class SchemaControllerTest {
 
     @Test
     @DisplayName("스키마 이름 변경: 성공 시 200 반환")
-    void changeSchemaName_success_returns_ok() {
+    void updateSchemaName_success_returns_ok() {
         String id = "schema-id";
-        ChangeSchemaNameRequest request = ChangeSchemaNameRequest.newBuilder()
+        Validation.ChangeSchemaNameRequest request = Validation.ChangeSchemaNameRequest
+                .newBuilder()
                 .setSchemaId(id)
                 .setNewName("new-name")
                 .build();
@@ -110,7 +110,7 @@ class SchemaControllerTest {
                 .build();
         ReflectionTestUtils.setField(updated, "id", id);
 
-        given(schemaService.changeSchemaName(id, "new-name"))
+        given(schemaService.updateSchemaName(request))
                 .willReturn(Mono.just(updated));
 
         webTestClient.put().uri("/schemas/{schemaId}/name", id)
@@ -125,9 +125,10 @@ class SchemaControllerTest {
 
     @Test
     @DisplayName("스키마 이름 변경: 경로와 바디의 schemaId 불일치 시 400")
-    void changeSchemaName_mismatch_returns_bad_request() {
+    void updateSchemaName_mismatch_returns_bad_request() {
         String pathId = "path-id";
-        ChangeSchemaNameRequest request = ChangeSchemaNameRequest.newBuilder()
+        Validation.ChangeSchemaNameRequest request = Validation.ChangeSchemaNameRequest
+                .newBuilder()
                 .setSchemaId("body-id")
                 .setNewName("new-name")
                 .build();
@@ -146,10 +147,11 @@ class SchemaControllerTest {
     void deleteSchema_success() {
         // given
         String id = "schema-to-delete";
-        DeleteSchemaRequest request = DeleteSchemaRequest.newBuilder()
+        Validation.DeleteSchemaRequest request = Validation.DeleteSchemaRequest
+                .newBuilder()
                 .setSchemaId(id)
                 .build();
-        given(schemaService.deleteSchema(id)).willReturn(Mono.empty());
+        given(schemaService.deleteSchema(request)).willReturn(Mono.empty());
 
         // when & then
         webTestClient.method(HttpMethod.DELETE).uri("/schemas/{schemaId}", id)
@@ -165,7 +167,8 @@ class SchemaControllerTest {
     @DisplayName("스키마 삭제: 경로와 바디의 schemaId 불일치 시 400")
     void deleteSchema_mismatch_returns_bad_request() {
         String pathId = "path-id";
-        DeleteSchemaRequest request = DeleteSchemaRequest.newBuilder()
+        Validation.DeleteSchemaRequest request = Validation.DeleteSchemaRequest
+                .newBuilder()
                 .setSchemaId("body-id")
                 .build();
 

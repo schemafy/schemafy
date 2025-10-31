@@ -49,8 +49,9 @@ public class Column extends BaseEntity {
     private String collation;
 
     @Nullable
+    @Builder.Default
     @org.springframework.data.relational.core.mapping.Column("nullable")
-    private boolean nullable;
+    private boolean nullable = true;
 
     @Nullable
     @org.springframework.data.relational.core.mapping.Column("comment")
