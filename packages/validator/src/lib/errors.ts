@@ -1,7 +1,7 @@
 export const ERROR_CODES = {
   DATABASE_EMPTY_SCHEMA: 'DATABASE_EMPTY_SCHEMA',
   SCHEMA_NOT_EXIST: 'SCHEMA_NOT_EXIST',
-  SCHEMA_NAME_INVALID: 'SCHEMA_NAME_INVALID',
+  SCHEMA_INVALID: 'SCHEMA_INVALID',
   SCHEMA_NAME_NOT_UNIQUE: 'SCHEMA_NAME_NOT_UNIQUE',
   TABLE_NAME_NOT_INVALID: 'TABLE_NAME_NOT_INVALID',
   TABLE_NAME_NOT_UNIQUE: 'TABLE_NAME_NOT_UNIQUE',
@@ -13,8 +13,8 @@ export const ERROR_CODES = {
   COLUMN_DATA_TYPE_INVALID: 'COLUMN_DATA_TYPE_INVALID',
   COLUMN_LENGTH_REQUIRED: 'COLUMN_LENGTH_REQUIRED',
   COLUMN_PRECISION_REQUIRED: 'COLUMN_PRECISION_REQUIRED',
-  COLUMN_NAME_INVALID: 'COLUMN_NAME_INVALID',
-  COLUMN_NAME_INVALID_FORMAT: 'COLUMN_NAME_INVALID_FORMAT',
+  COLUMN_INVALID: 'COLUMN_INVALID',
+  COLUMN_INVALID_FORMAT: 'COLUMN_INVALID_FORMAT',
   COLUMN_NAME_IS_RESERVED: 'COLUMN_NAME_IS_RESERVED',
   MULTIPLE_AUTO_INCREMENT: 'MULTIPLE_AUTO_INCREMENT',
   AUTO_INCREMENT_INVALID: 'AUTO_INCREMENT_INVALID',
@@ -28,6 +28,7 @@ export const ERROR_CODES = {
   INDEX_COLUMN_SEQ_ERROR: 'INDEX_COLUMN_SEQ_ERROR',
   INDEX_COLUMN_SORT_DIR_INVALID: 'INDEX_COLUMN_SORT_DIR_INVALID',
   CONSTRAINT_NAME_NOT_UNIQUE: 'CONSTRAINT_NAME_NOT_UNIQUE',
+  CONSTRAINT_NULLABLE_CHANGE_NOT_ALLOWED: 'CONSTRAINT_NULLABLE_CHANGE_NOT_ALLOWED',
   CONSTRAINT_COLUMN_REQUIRED: 'CONSTRAINT_COLUMN_REQUIRED',
   CONSTRAINT_COLUMN_NOT_EXIST: 'CONSTRAINT_COLUMN_NOT_EXIST',
   CONSTRAINT_COLUMN_NOT_UNIQUE: 'CONSTRAINT_COLUMN_NOT_UNIQUE',
@@ -109,8 +110,8 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
     messageTemplate: "Schema with ID '{0}' does not exist",
     createDetails: (schemaId: string) => ({ schemaId }),
   },
-  SCHEMA_NAME_INVALID: {
-    code: ERROR_CODES.SCHEMA_NAME_INVALID,
+  SCHEMA_INVALID: {
+    code: ERROR_CODES.SCHEMA_INVALID,
     messageTemplate: "Schema name '{0}' is invalid. Name must be between {1} and {2} characters",
     createDetails: (name: string, minLength = 3, maxLength = 20) => ({
       name,
@@ -197,8 +198,8 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
       dataType,
     }),
   },
-  COLUMN_NAME_INVALID: {
-    code: ERROR_CODES.COLUMN_NAME_INVALID,
+  COLUMN_INVALID: {
+    code: ERROR_CODES.COLUMN_INVALID,
     messageTemplate: "Column name '{0}' is invalid. Name must be between {1} and {2} characters.",
     createDetails: (name: string, minLength = 3, maxLength = 40) => ({
       name,
@@ -207,8 +208,8 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
       actualLength: name.length,
     }),
   },
-  COLUMN_NAME_INVALID_FORMAT: {
-    code: ERROR_CODES.COLUMN_NAME_INVALID_FORMAT,
+  COLUMN_INVALID_FORMAT: {
+    code: ERROR_CODES.COLUMN_INVALID_FORMAT,
     messageTemplate:
       "Column name '{0}' has an invalid format. It must start with a letter and contain only letters, numbers, and underscores.",
     createDetails: (name: string) => ({ name }),
@@ -294,6 +295,11 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
     messageTemplate:
       "Constraint name '{0}' already exists in the schema. Constraint names must be unique within a schema.",
     createDetails: (name: string, schemaId: string) => ({ name, schemaId }),
+  },
+  CONSTRAINT_NULLABLE_CHANGE_NOT_ALLOWED: {
+    code: ERROR_CODES.CONSTRAINT_NULLABLE_CHANGE_NOT_ALLOWED,
+    messageTemplate: "Constraint '{0}' cannot be changed to nullable.",
+    createDetails: (constraintId: string) => ({ constraintId }),
   },
   CONSTRAINT_COLUMN_REQUIRED: {
     code: ERROR_CODES.CONSTRAINT_COLUMN_REQUIRED,
@@ -546,7 +552,7 @@ export const DatabaseEmptySchemaError = createErrorClass(
 );
 
 export const SchemaNotExistError = createErrorClass('SchemaNotExist', ERROR_DEFINITIONS.SCHEMA_NOT_EXIST);
-export const SchemaNameInvalidError = createErrorClass('SchemaNameInvalid', ERROR_DEFINITIONS.SCHEMA_NAME_INVALID);
+export const SchemaNameInvalidError = createErrorClass('SchemaNameInvalid', ERROR_DEFINITIONS.SCHEMA_INVALID);
 export const SchemaNameNotUniqueError = createErrorClass(
   'SchemaNameNotUnique',
   ERROR_DEFINITIONS.SCHEMA_NAME_NOT_UNIQUE
@@ -582,10 +588,10 @@ export const ColumnPrecisionRequiredError = createErrorClass(
   'ColumnPrecisionRequired',
   ERROR_DEFINITIONS.COLUMN_PRECISION_REQUIRED
 );
-export const ColumnNameInvalidError = createErrorClass('ColumnNameInvalid', ERROR_DEFINITIONS.COLUMN_NAME_INVALID);
+export const ColumnInvalidError = createErrorClass('ColumnNameInvalid', ERROR_DEFINITIONS.COLUMN_INVALID);
 export const ColumnNameInvalidFormatError = createErrorClass(
   'ColumnNameInvalidFormat',
-  ERROR_DEFINITIONS.COLUMN_NAME_INVALID_FORMAT
+  ERROR_DEFINITIONS.COLUMN_INVALID_FORMAT
 );
 export const ColumnNameIsReservedKeywordError = createErrorClass(
   'ColumnNameIsReservedKeyword',
@@ -627,6 +633,10 @@ export const IndexColumnSortDirInvalidError = createErrorClass(
 export const ConstraintNameNotUniqueError = createErrorClass(
   'ConstraintNameNotUnique',
   ERROR_DEFINITIONS.CONSTRAINT_NAME_NOT_UNIQUE
+);
+export const ConstraintNullableChangeNotAllowedError = createErrorClass(
+  'ConstraintNullableChangeNotAllowed',
+  ERROR_DEFINITIONS.CONSTRAINT_NULLABLE_CHANGE_NOT_ALLOWED
 );
 export const ConstraintColumnRequiredError = createErrorClass(
   'ConstraintColumnRequired',
