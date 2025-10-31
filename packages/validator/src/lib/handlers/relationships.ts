@@ -61,11 +61,11 @@ export const relationshipHandlers: RelationshipHandlers = {
       throw new RelationshipCyclicReferenceError(relationship.tgtTableId, relationship.srcTableId);
     }
 
-    const duplicateRelationship = targetTable.relationships.find((r) => r.name === relationship.name);
+    const duplicateRelationship = sourceTable.relationships.find((r) => r.name === relationship.name);
     if (duplicateRelationship) throw new RelationshipNameNotUniqueError(relationship.name);
 
     const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === relationship.tgtTableId
+      t.id === relationship.srcTableId
         ? {
             ...t,
             isAffected: true,

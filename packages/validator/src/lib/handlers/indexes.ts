@@ -54,7 +54,7 @@ export const indexHandlers: IndexHandlers = {
     const indexNotUnique = table.indexes.find((i) => i.name === index.name);
     if (indexNotUnique) throw new IndexNameNotUniqueError(index.name);
 
-    const indexParse = INDEX.safeParse(index);
+    const indexParse = INDEX.shape.name.safeParse(index.name);
     if (!indexParse.success) {
       throw new IndexParseInvalidError(indexParse.error.message);
     }

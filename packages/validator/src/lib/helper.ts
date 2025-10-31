@@ -184,7 +184,7 @@ export const propagateNewPrimaryKey = (
       if (rel.kind === 'IDENTIFYING') {
         updatedSchema = propagateNewPrimaryKey(
           structuredClone(updatedSchema),
-          rel.tgtTableId,
+          rel.srcTableId,
           newFkColumn,
           new Set(visited)
         );
@@ -208,7 +208,7 @@ export const deleteCascadingForeignKeys = (
 
   for (const table of updatedSchema.tables) {
     for (const rel of table.relationships) {
-      if (rel.srcTableId !== parentTableId) continue;
+      if (rel.tgtTableId !== parentTableId) continue;
 
       const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
 
@@ -298,7 +298,7 @@ export const propagateKeysToChildren = (
 
   for (const table of updatedSchema.tables) {
     for (const rel of table.relationships) {
-      if (rel.srcTableId !== parentTableId) continue;
+      if (rel.tgtTableId !== parentTableId) continue;
 
       const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
       if (!childTable) continue;
@@ -351,10 +351,16 @@ export const propagateKeysToChildren = (
           columns: [...rel.columns, newRelColumn],
         };
 
-        updatedChildTable = {
-          ...updatedChildTable,
+        const updatedRelHolderTable: Table = {
+          ...table,
           isAffected: true,
-          relationships: updatedChildTable.relationships.map((r) => (r.id === rel.id ? updatedRel : r)),
+          relationships: table.relationships.map((r) => (r.id === rel.id ? updatedRel : r)),
+        };
+
+        updatedSchema = {
+          ...updatedSchema,
+          isAffected: true,
+          tables: updatedSchema.tables.map((t) => (t.id === updatedRelHolderTable.id ? updatedRelHolderTable : t)),
         };
       }
 
@@ -404,7 +410,7 @@ export const propagateKeysToChildren = (
         tables: updatedSchema.tables.map((t) => (t.id === childTable.id ? updatedChildTable : t)),
       };
 
-      updatedSchema = propagateKeysToChildren(structuredClone(updatedSchema), rel.tgtTableId, new Set(visited));
+      updatedSchema = propagateKeysToChildren(structuredClone(updatedSchema), rel.srcTableId, new Set(visited));
     }
   }
 

@@ -33,7 +33,7 @@ describe('Table validation', () => {
   test('테이블 이름 변경 시, 같은 스키마 내에 중복된 이름이 있으면 에러를 발생시킨다', () => {
     const schemaId = 'schema-1';
     const table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'> = {
-      id: 'table-1',
+      id: 'table-2',
       name: 'users',
       columns: [],
       constraints: [],

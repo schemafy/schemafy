@@ -2,7 +2,7 @@ import {
   ColumnDataTypeInvalidError,
   ColumnLengthRequiredError,
   ColumnInvalidError,
-  ColumnNameInvalidFormatError,
+  ColumnInvalidFormatError,
   ColumnNameIsReservedKeywordError,
   ColumnNameNotUniqueError,
   ColumnNotExistError,
@@ -55,8 +55,10 @@ export const columnHandlers: ColumnHandlers = {
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
 
-    const result = COLUMN.safeParse(column);
-    if (!result.success) throw new ColumnInvalidError(column);
+    const result = COLUMN.shape.name.safeParse(column.name);
+    if (!result.success) {
+      throw new ColumnInvalidError(column.id);
+    }
 
     if (column.isAutoIncrement) {
       const autoIncrementColumn = table.columns.find((c) => c.isAutoIncrement);
@@ -80,7 +82,7 @@ export const columnHandlers: ColumnHandlers = {
       if (!vendorValid) throw new ColumnDataTypeInvalidError(column.dataType);
     }
 
-    if (!helper.isValidColumnName(column.name)) throw new ColumnNameInvalidFormatError(column.name);
+    if (!helper.isValidColumnName(column.name)) throw new ColumnInvalidFormatError(column.name);
 
     const newColumn: Column = {
       ...column,

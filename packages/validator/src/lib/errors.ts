@@ -200,7 +200,7 @@ const ERROR_DEFINITIONS: Record<keyof typeof ERROR_CODES, ErrorDefinition> = {
   },
   COLUMN_INVALID: {
     code: ERROR_CODES.COLUMN_INVALID,
-    messageTemplate: "Column name '{0}' is invalid. Name must be between {1} and {2} characters.",
+    messageTemplate: "Column parsing '{0}' is invalid. Name must be between {1} and {2} characters.",
     createDetails: (name: string, minLength = 3, maxLength = 40) => ({
       name,
       minLength,
@@ -589,7 +589,7 @@ export const ColumnPrecisionRequiredError = createErrorClass(
   ERROR_DEFINITIONS.COLUMN_PRECISION_REQUIRED
 );
 export const ColumnInvalidError = createErrorClass('ColumnNameInvalid', ERROR_DEFINITIONS.COLUMN_INVALID);
-export const ColumnNameInvalidFormatError = createErrorClass(
+export const ColumnInvalidFormatError = createErrorClass(
   'ColumnNameInvalidFormat',
   ERROR_DEFINITIONS.COLUMN_INVALID_FORMAT
 );

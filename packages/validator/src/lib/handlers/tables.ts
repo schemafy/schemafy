@@ -31,7 +31,7 @@ export const tableHandlers: TableHandlers = {
     const tableNotUnique = schema.tables.find((t) => t.name === table.name);
     if (tableNotUnique) throw new TableNameNotUniqueError(table.name);
 
-    const isValidTable = TABLE.safeParse(table);
+    const isValidTable = TABLE.shape.name.safeParse(table.name);
     if (!isValidTable.success) throw new TableNameNotInvalidError(table.name, isValidTable.error.message);
 
     return {

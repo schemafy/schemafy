@@ -3,10 +3,10 @@ import {
   ColumnDataTypeInvalidError,
   ColumnDataTypeRequiredError,
   ColumnLengthRequiredError,
-  ColumnNameInvalidError,
-  ColumnNameInvalidFormatError,
+  ColumnInvalidFormatError,
   ColumnNameIsReservedKeywordError,
   ColumnNameNotUniqueError,
+  ColumnInvalidError,
   ColumnPrecisionRequiredError,
   MultipleAutoIncrementColumnsError,
 } from '../src/lib/errors';
@@ -134,7 +134,7 @@ describe('Column validation', () => {
 
     const column = createColumnBuilder().withName(name).build();
 
-    expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(ColumnNameInvalidError);
+    expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(ColumnInvalidError);
   });
 
   test.each([
@@ -154,9 +154,7 @@ describe('Column validation', () => {
 
     const column = createColumnBuilder().withName(name).build();
 
-    expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(
-      ColumnNameInvalidFormatError
-    );
+    expect(() => ERD_VALIDATOR.createColumn(baseDatabase, schemaId, tableId, column)).toThrow(ColumnInvalidFormatError);
   });
 
   test.each([
@@ -378,7 +376,7 @@ describe('Column validation', () => {
       .build();
 
     expect(() => ERD_VALIDATOR.changeColumnName(database, 'schema-1', 'table-1', 'name-col', 'x')).toThrow(
-      ColumnNameInvalidError
+      ColumnInvalidError
     );
   });
 });

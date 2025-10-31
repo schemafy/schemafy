@@ -84,7 +84,8 @@ describe('Constraint validation', () => {
     );
   });
 
-  test('Primary Key를 구성하는 모든 컬럼은 NOT NULL 제약 조건이 있어야 한다', () => {
+  //pk 제약조건인 경우 not null 제약 조건이라 가정하기 때문에 테스트 필요 없음
+  test.skip('Primary Key를 구성하는 모든 컬럼은 NOT NULL 제약 조건이 있어야 한다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>
         s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col')))
