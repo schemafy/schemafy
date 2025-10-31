@@ -4,6 +4,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.lang.Nullable;
 
 import com.schemafy.core.common.type.BaseEntity;
+import com.schemafy.core.ulid.generator.UlidGenerator;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,7 +17,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
 @Table("db_columns")
 public class Column extends BaseEntity {
 
@@ -49,12 +49,24 @@ public class Column extends BaseEntity {
     private String collation;
 
     @Nullable
-    @Builder.Default
     @org.springframework.data.relational.core.mapping.Column("nullable")
     private boolean nullable = true;
 
     @Nullable
     @org.springframework.data.relational.core.mapping.Column("comment")
     private String comment;
+
+    @Builder(builderMethodName = "builder", buildMethodName = "build")
+    private static Column newColumn(String tableId, String name,
+            int ordinalPosition,
+            String dataType, String lengthScale, boolean isAutoIncrement,
+            String charset, String collation, boolean nullable,
+            String comment) {
+        Column column = new Column(tableId, name, ordinalPosition, dataType,
+                lengthScale, isAutoIncrement, charset, collation, nullable,
+                comment);
+        column.setId(UlidGenerator.generate());
+        return column;
+    }
 
 }

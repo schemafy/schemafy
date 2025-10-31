@@ -5,6 +5,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.lang.Nullable;
 
 import com.schemafy.core.common.type.BaseEntity;
+import com.schemafy.core.ulid.generator.UlidGenerator;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -15,7 +16,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Builder
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_constraints")
@@ -37,5 +37,15 @@ public class Constraint extends BaseEntity {
     @Nullable
     @Column("default_expr")
     private String defaultExpr;
+
+    @Builder(builderMethodName = "builder", buildMethodName = "build")
+    private static Constraint newConstraint(String tableId, String name,
+            String kind,
+            String checkExpr, String defaultExpr) {
+        Constraint constraint = new Constraint(tableId, name, kind, checkExpr,
+                defaultExpr);
+        constraint.setId(UlidGenerator.generate());
+        return constraint;
+    }
 
 }

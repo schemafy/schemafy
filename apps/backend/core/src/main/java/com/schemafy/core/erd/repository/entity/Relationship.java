@@ -4,6 +4,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.common.type.BaseEntity;
+import com.schemafy.core.ulid.generator.UlidGenerator;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -14,11 +15,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Builder
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_relationships")
 public class Relationship extends BaseEntity {
+
     @Column("src_table_id")
     private String srcTableId;
 
@@ -42,4 +43,17 @@ public class Relationship extends BaseEntity {
 
     @Column("extra")
     private String extra;
+
+    @Builder(builderMethodName = "builder", buildMethodName = "build")
+    private static Relationship newRelationship(String srcTableId,
+            String tgtTableId,
+            String name, String kind, String cardinality, String onDelete,
+            String onUpdate, String extra) {
+        Relationship relationship = new Relationship(srcTableId, tgtTableId,
+                name,
+                kind, cardinality, onDelete, onUpdate, extra);
+        relationship.setId(UlidGenerator.generate());
+        return relationship;
+    }
+
 }
