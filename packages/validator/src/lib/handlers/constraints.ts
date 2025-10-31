@@ -1,4 +1,3 @@
-import { ulid } from 'ulid';
 import {
   ConstraintColumnNotExistError,
   ConstraintColumnNotUniqueError,
@@ -10,17 +9,7 @@ import {
   TableNotExistError,
   UniqueSameAsPrimaryKeyError,
 } from '../errors';
-import {
-  Column,
-  Constraint,
-  ConstraintColumn,
-  Database,
-  Index,
-  Relationship,
-  RelationshipColumn,
-  Schema,
-  Table,
-} from '../types';
+import { Column, Constraint, ConstraintColumn, Database, Schema, Table } from '../types';
 import * as helper from '../helper';
 
 export interface ConstraintHandlers {
