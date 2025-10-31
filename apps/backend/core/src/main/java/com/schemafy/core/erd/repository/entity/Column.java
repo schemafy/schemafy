@@ -49,10 +49,6 @@ public class Column extends BaseEntity {
     private String collation;
 
     @Nullable
-    @org.springframework.data.relational.core.mapping.Column("nullable")
-    private boolean nullable = true;
-
-    @Nullable
     @org.springframework.data.relational.core.mapping.Column("comment")
     private String comment;
 
@@ -60,11 +56,9 @@ public class Column extends BaseEntity {
     private static Column newColumn(String tableId, String name,
             int ordinalPosition,
             String dataType, String lengthScale, boolean isAutoIncrement,
-            String charset, String collation, boolean nullable,
-            String comment) {
+            String charset, String collation, String comment) {
         Column column = new Column(tableId, name, ordinalPosition, dataType,
-                lengthScale, isAutoIncrement, charset, collation, nullable,
-                comment);
+                lengthScale, isAutoIncrement, charset, collation, comment);
         column.setId(UlidGenerator.generate());
         return column;
     }

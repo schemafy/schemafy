@@ -115,9 +115,11 @@ class RelationshipServiceTest {
                 .addSchemas(Validation.Schema.newBuilder()
                         .setId("schema-1")
                         .setName("test-schema")
+                        .setIsAffected(true)
                         .addTables(Validation.Table.newBuilder()
                                 .setId("table-1")
                                 .setName("parent-table")
+                                .setIsAffected(true)
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId("be-relationship-id")
@@ -184,6 +186,8 @@ class RelationshipServiceTest {
                         .name("fk_test")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
+                        .onDelete("NO_ACTION")
+                        .onUpdate("NO_ACTION")
                         .extra("extra-data")
                         .build())
                 .block();
@@ -208,15 +212,18 @@ class RelationshipServiceTest {
         Relationship r1 = Relationship.builder()
                 .srcTableId("table-A").tgtTableId("table-B")
                 .name("fk_a_b").kind("NON_IDENTIFYING")
-                .cardinality("ONE_TO_MANY").build();
+                .cardinality("ONE_TO_MANY").onDelete("NO_ACTION")
+                .onUpdate("NO_ACTION").extra("").build();
         Relationship r2 = Relationship.builder()
                 .srcTableId("table-A").tgtTableId("table-C")
                 .name("fk_a_c").kind("IDENTIFYING")
-                .cardinality("ONE_TO_ONE").build();
+                .cardinality("ONE_TO_ONE").onDelete("NO_ACTION")
+                .onUpdate("NO_ACTION").extra("").build();
         Relationship rOther = Relationship.builder()
                 .srcTableId("table-B").tgtTableId("table-C")
                 .name("fk_b_c").kind("NON_IDENTIFYING")
-                .cardinality("ONE_TO_MANY").build();
+                .cardinality("ONE_TO_MANY").onDelete("NO_ACTION")
+                .onUpdate("NO_ACTION").extra("").build();
 
         relationshipRepository.save(r1)
                 .then(relationshipRepository.save(r2))
@@ -246,6 +253,9 @@ class RelationshipServiceTest {
                         .name("old_name")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
+                        .onDelete("NO_ACTION")
+                        .onUpdate("NO_ACTION")
+                        .extra("")
                         .build())
                 .block();
 
@@ -291,6 +301,9 @@ class RelationshipServiceTest {
                         .name("fk_test")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
+                        .onDelete("NO_ACTION")
+                        .onUpdate("NO_ACTION")
+                        .extra("")
                         .build())
                 .block();
 
@@ -337,8 +350,7 @@ class RelationshipServiceTest {
         // then
         StepVerifier.create(result)
                 .assertNext(relationshipColumn -> {
-                    assertThat(relationshipColumn.getId())
-                            .isEqualTo("relationship-column-1");
+                    assertThat(relationshipColumn.getId()).isNotNull(); // 자동 생성된 ID
                     assertThat(relationshipColumn.getRelationshipId())
                             .isEqualTo("relationship-1");
                     assertThat(relationshipColumn.getSrcColumnId())
@@ -349,11 +361,12 @@ class RelationshipServiceTest {
                 })
                 .verifyComplete();
 
-        // DB 반영 확인
+        // DB 반영 확인 - 자동 생성된 ID 사용
         StepVerifier
-                .create(relationshipColumnRepository
-                        .findById("relationship-column-1"))
-                .assertNext(found -> {
+                .create(relationshipColumnRepository.findAll().collectList())
+                .assertNext(list -> {
+                    assertThat(list).hasSize(1);
+                    RelationshipColumn found = list.get(0);
                     assertThat(found.getRelationshipId())
                             .isEqualTo("relationship-1");
                     assertThat(found.getSrcColumnId())
@@ -399,6 +412,9 @@ class RelationshipServiceTest {
                         .name("to_delete")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
+                        .onDelete("NO_ACTION")
+                        .onUpdate("NO_ACTION")
+                        .extra("")
                         .build())
                 .block();
 

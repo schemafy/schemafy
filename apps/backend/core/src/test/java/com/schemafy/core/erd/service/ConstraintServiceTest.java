@@ -265,8 +265,7 @@ class ConstraintServiceTest {
         // then
         StepVerifier.create(result)
                 .assertNext(constraintColumn -> {
-                    assertThat(constraintColumn.getId())
-                            .isEqualTo("constraint-column-1");
+                    assertThat(constraintColumn.getId()).isNotNull(); // 자동 생성된 ID
                     assertThat(constraintColumn.getConstraintId())
                             .isEqualTo("constraint-1");
                     assertThat(constraintColumn.getColumnId())
@@ -275,11 +274,12 @@ class ConstraintServiceTest {
                 })
                 .verifyComplete();
 
-        // DB 반영 확인
+        // DB 반영 확인 - 자동 생성된 ID 사용
         StepVerifier
-                .create(constraintColumnRepository
-                        .findById("constraint-column-1"))
-                .assertNext(found -> {
+                .create(constraintColumnRepository.findAll().collectList())
+                .assertNext(list -> {
+                    assertThat(list).hasSize(1);
+                    ConstraintColumn found = list.get(0);
                     assertThat(found.getConstraintId())
                             .isEqualTo("constraint-1");
                     assertThat(found.getColumnId()).isEqualTo("column-1");

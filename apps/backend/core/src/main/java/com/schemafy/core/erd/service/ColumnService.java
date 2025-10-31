@@ -80,19 +80,6 @@ public class ColumnService {
                 .flatMap(columnRepository::save);
     }
 
-    public Mono<Column> updateColumnNullable(
-            validation.Validation.ChangeColumnNullableRequest request) {
-        return columnRepository
-                .findByIdAndDeletedAtIsNull(request.getColumnId())
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_COLUMN_NOT_FOUND)))
-                .delayUntil(
-                        ignore -> validationClient
-                                .changeColumnNullable(request))
-                .doOnNext(column -> column.setNullable(request.getNullable()))
-                .flatMap(columnRepository::save);
-    }
-
     public Mono<Void> deleteColumn(DeleteColumnRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())

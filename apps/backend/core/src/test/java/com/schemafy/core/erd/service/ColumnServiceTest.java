@@ -148,7 +148,6 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("test_column")
                         .dataType("VARCHAR(255)")
-                        .nullable(true)
                         .comment("테스트 컬럼")
                         .ordinalPosition(1)
                         .build())
@@ -169,12 +168,12 @@ class ColumnServiceTest {
     @DisplayName("getColumnsByTableId: 테이블 기준으로 컬럼 목록을 조회한다")
     void getColumnsByTableId_success() {
         Column c1 = Column.builder().tableId("table-A").name("column_a")
-                .dataType("INT").nullable(false).ordinalPosition(1).build();
+                .dataType("INT").ordinalPosition(1).build();
         Column c2 = Column.builder().tableId("table-A").name("column_b")
-                .dataType("VARCHAR(100)").nullable(true).ordinalPosition(2)
+                .dataType("VARCHAR(100)").ordinalPosition(2)
                 .build();
         Column cOther = Column.builder().tableId("table-B").name("column_c")
-                .dataType("TEXT").nullable(true).ordinalPosition(1).build();
+                .dataType("TEXT").ordinalPosition(1).build();
 
         columnRepository.save(c1)
                 .then(columnRepository.save(c2))
@@ -200,7 +199,6 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("old_name")
                         .dataType("VARCHAR(255)")
-                        .nullable(true)
                         .ordinalPosition(1)
                         .build())
                 .block();
@@ -245,7 +243,6 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("test_column")
                         .dataType("VARCHAR(255)")
-                        .nullable(true)
                         .ordinalPosition(1)
                         .build())
                 .block();
@@ -276,7 +273,6 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("test_column")
                         .dataType("VARCHAR(255)")
-                        .nullable(true)
                         .ordinalPosition(1)
                         .build())
                 .block();
@@ -307,7 +303,6 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("to_delete")
                         .dataType("VARCHAR(255)")
-                        .nullable(true)
                         .ordinalPosition(1)
                         .build())
                 .block();

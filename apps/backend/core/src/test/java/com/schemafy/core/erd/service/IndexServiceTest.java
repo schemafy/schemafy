@@ -97,14 +97,17 @@ class IndexServiceTest {
                 .addSchemas(Validation.Schema.newBuilder()
                         .setId("schema-1")
                         .setName("test-schema")
+                        .setIsAffected(true)
                         .addTables(Validation.Table.newBuilder()
                                 .setId("table-1")
                                 .setName("test-table")
+                                .setIsAffected(true)
                                 .addIndexes(Validation.Index.newBuilder()
                                         .setId("be-index-id")
                                         .setTableId("table-1")
                                         .setName("idx_test")
                                         .setType(Validation.IndexType.BTREE)
+                                        .setComment("")
                                         .setIsAffected(true)
                                         .build())
                                 .build())
@@ -149,6 +152,7 @@ class IndexServiceTest {
                         .tableId("table-1")
                         .name("idx_test")
                         .type("BTREE")
+                        .comment("")
                         .build())
                 .block();
 
@@ -167,11 +171,11 @@ class IndexServiceTest {
     @DisplayName("getIndexesByTableId: 테이블 기준으로 인덱스 목록을 조회한다")
     void getIndexesByTableId_success() {
         Index i1 = Index.builder().tableId("table-A").name("idx_a")
-                .type("BTREE").build();
+                .type("BTREE").comment("").build();
         Index i2 = Index.builder().tableId("table-A").name("idx_b")
-                .type("HASH").build();
+                .type("HASH").comment("").build();
         Index iOther = Index.builder().tableId("table-B").name("idx_c")
-                .type("BTREE").build();
+                .type("BTREE").comment("").build();
 
         indexRepository.save(i1)
                 .then(indexRepository.save(i2))
@@ -197,6 +201,7 @@ class IndexServiceTest {
                         .tableId("table-1")
                         .name("old_name")
                         .type("BTREE")
+                        .comment("")
                         .build())
                 .block();
 
@@ -253,7 +258,7 @@ class IndexServiceTest {
         // then
         StepVerifier.create(result)
                 .assertNext(indexColumn -> {
-                    assertThat(indexColumn.getId()).isEqualTo("index-column-1");
+                    assertThat(indexColumn.getId()).isNotNull(); // 자동 생성된 ID
                     assertThat(indexColumn.getIndexId()).isEqualTo("index-1");
                     assertThat(indexColumn.getColumnId()).isEqualTo("column-1");
                     assertThat(indexColumn.getSeqNo()).isEqualTo(1);
@@ -261,9 +266,11 @@ class IndexServiceTest {
                 })
                 .verifyComplete();
 
-        // DB 반영 확인
-        StepVerifier.create(indexColumnRepository.findById("index-column-1"))
-                .assertNext(found -> {
+        // DB 반영 확인 - 자동 생성된 ID 사용
+        StepVerifier.create(indexColumnRepository.findAll().collectList())
+                .assertNext(list -> {
+                    assertThat(list).hasSize(1);
+                    IndexColumn found = list.get(0);
                     assertThat(found.getIndexId()).isEqualTo("index-1");
                     assertThat(found.getColumnId()).isEqualTo("column-1");
                 })
@@ -302,6 +309,7 @@ class IndexServiceTest {
                         .tableId("table-1")
                         .name("to_delete")
                         .type("BTREE")
+                        .comment("")
                         .build())
                 .block();
 
