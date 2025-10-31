@@ -286,9 +286,8 @@ export const constraintHandlers: ConstraintHandlers = {
     );
 
     if (constraint.kind === 'PRIMARY_KEY') {
-      const column = table.columns.find((c) => c.id === constraintColumn.columnId)!;
       let schema = changeSchemas.find((s) => s.id === schemaId)!;
-      schema = helper.propagateNewPrimaryKey(structuredClone(schema), tableId, column);
+      schema = helper.deleteCascadingForeignKeys(structuredClone(schema), tableId, constraintColumn.columnId);
       changeSchemas = database.schemas.map((s) => (s.id === schemaId ? { ...schema, isAffected: true } : s));
     }
 
