@@ -4,22 +4,26 @@ import {
   TableNotExistError,
   TableNameNotInvalidError,
   TableNameChangeSameError,
-} from '../errors';
-import { Database, Schema, TABLE, Table } from '../types';
-import { relationshipHandlers } from './relationships';
+} from "../errors";
+import { Database, Schema, TABLE, Table } from "../types";
+import { relationshipHandlers } from "./relationships";
 
 export interface TableHandlers {
   createTable: (
     database: Database,
-    schemaId: Schema['id'],
-    table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'>
+    schemaId: Schema["id"],
+    table: Omit<Table, "schemaId" | "createdAt" | "updatedAt">,
   ) => Database;
-  deleteTable: (database: Database, schemaId: Schema['id'], tableId: Table['id']) => Database;
+  deleteTable: (
+    database: Database,
+    schemaId: Schema["id"],
+    tableId: Table["id"],
+  ) => Database;
   changeTableName: (
     database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    newName: Table['name']
+    schemaId: Schema["id"],
+    tableId: Table["id"],
+    newName: Table["name"],
   ) => Database;
 }
 
@@ -32,7 +36,11 @@ export const tableHandlers: TableHandlers = {
     if (tableNotUnique) throw new TableNameNotUniqueError(table.name);
 
     const isValidTable = TABLE.shape.name.safeParse(table.name);
-    if (!isValidTable.success) throw new TableNameNotInvalidError(table.name, isValidTable.error.message);
+    if (!isValidTable.success)
+      throw new TableNameNotInvalidError(
+        table.name,
+        isValidTable.error.message,
+      );
 
     return {
       ...database,
@@ -50,7 +58,7 @@ export const tableHandlers: TableHandlers = {
                 },
               ],
             }
-          : s
+          : s,
       ),
     };
   },
@@ -66,17 +74,26 @@ export const tableHandlers: TableHandlers = {
 
     for (const table of schema.tables) {
       for (const relationship of table.relationships) {
-        if (relationship.srcTableId === tableId || relationship.tgtTableId === tableId) {
+        if (
+          relationship.srcTableId === tableId ||
+          relationship.tgtTableId === tableId
+        ) {
           relationshipsToDelete.add(relationship.id);
         }
       }
     }
 
     for (const relationshipId of relationshipsToDelete) {
-      currentDatabase = relationshipHandlers.deleteRelationship(currentDatabase, schemaId, relationshipId);
+      currentDatabase = relationshipHandlers.deleteRelationship(
+        currentDatabase,
+        schemaId,
+        relationshipId,
+      );
     }
 
-    const updatedSchema = currentDatabase.schemas.find((s) => s.id === schemaId)!;
+    const updatedSchema = currentDatabase.schemas.find(
+      (s) => s.id === schemaId,
+    )!;
     const finalSchema = {
       ...updatedSchema,
       tables: updatedSchema.tables.filter((t) => t.id !== tableId),
@@ -84,7 +101,9 @@ export const tableHandlers: TableHandlers = {
 
     return {
       ...currentDatabase,
-      schemas: currentDatabase.schemas.map((s) => (s.id === schemaId ? finalSchema : s)),
+      schemas: currentDatabase.schemas.map((s) =>
+        s.id === schemaId ? finalSchema : s,
+      ),
     };
   },
   changeTableName: (database, schemaId, tableId, newName) => {
@@ -92,9 +111,15 @@ export const tableHandlers: TableHandlers = {
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const isValidTableName = TABLE.shape.name.safeParse(newName);
-    if (!isValidTableName.success) throw new TableNameNotInvalidError(newName, isValidTableName.error.message);
+    if (!isValidTableName.success)
+      throw new TableNameNotInvalidError(
+        newName,
+        isValidTableName.error.message,
+      );
 
-    const tableNotUnique = schema.tables.find((t) => t.name === newName && t.id !== tableId);
+    const tableNotUnique = schema.tables.find(
+      (t) => t.name === newName && t.id !== tableId,
+    );
     if (tableNotUnique) throw new TableNameNotUniqueError(newName);
 
     const table = schema.tables.find((t) => t.id === tableId);
@@ -108,9 +133,13 @@ export const tableHandlers: TableHandlers = {
         s.id === schemaId
           ? {
               ...s,
-              tables: s.tables.map((t) => (t.id === tableId ? { ...t, updatedAt: new Date(), name: newName } : t)),
+              tables: s.tables.map((t) =>
+                t.id === tableId
+                  ? { ...t, updatedAt: new Date(), name: newName }
+                  : t,
+              ),
             }
-          : s
+          : s,
       ),
     };
   },
