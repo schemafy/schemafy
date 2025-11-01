@@ -22,6 +22,8 @@ import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
+import java.util.List;
+
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
@@ -172,6 +174,260 @@ class RelationshipServiceTest {
                     assertThat(response.constraints()).isEmpty();
                     assertThat(response.constraintColumns()).isEmpty();
                     assertThat(response.relationshipColumns()).isEmpty();
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("createRelationship: 식별 관계 생성 시 하위 테이블로 전파가 올바르게 반영된다")
+    void createRelationship_propagation_success() {
+        // given
+        // 부모 테이블에 PK 제약조건이 있고, 자식 테이블에 식별 관계를 생성하는 상황
+        Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
+                .newBuilder()
+                .setRelationship(Validation.Relationship.newBuilder()
+                        .setId("fe-relationship-id")
+                        .setSrcTableId("child-table")
+                        .setTgtTableId("parent-table")
+                        .setName("fk_child_parent")
+                        .setKind(Validation.RelationshipKind.IDENTIFYING)
+                        .setCardinality(
+                                Validation.RelationshipCardinality.ONE_TO_MANY)
+                        .addColumns(Validation.RelationshipColumn.newBuilder()
+                                .setId("fe-relationship-col-1")
+                                .setRelationshipId("fe-relationship-id")
+                                .setFkColumnId("fe-fk-column-id") // 자식 테이블에 생성될 FK 컬럼 ID
+                                .setRefColumnId("parent-id-col") // 부모 테이블의 PK 컬럼 ID
+                                .setSeqNo(1)
+                                .build())
+                        .build())
+                .setDatabase(Validation.Database.newBuilder()
+                        .setId("proj-1")
+                        .addSchemas(Validation.Schema.newBuilder()
+                                .setId("schema-1")
+                                .setName("test-schema")
+                                .addTables(Validation.Table.newBuilder()
+                                        .setId("parent-table")
+                                        .setName("parent")
+                                        .addColumns(Validation.Column.newBuilder()
+                                                .setId("parent-id-col")
+                                                .setName("id")
+                                                .setDataType("INT")
+                                                .build())
+                                        .addConstraints(Validation.Constraint.newBuilder()
+                                                .setId("parent-pk-constraint")
+                                                .setTableId("parent-table")
+                                                .setName("pk_parent")
+                                                .setKind(Validation.ConstraintKind.PRIMARY_KEY)
+                                                .addColumns(Validation.ConstraintColumn.newBuilder()
+                                                        .setId("parent-constraint-col-1")
+                                                        .setConstraintId("parent-pk-constraint")
+                                                        .setColumnId("parent-id-col")
+                                                        .setSeqNo(1)
+                                                        .build())
+                                                .build())
+                                        .build())
+                                .addTables(Validation.Table.newBuilder()
+                                        .setId("child-table")
+                                        .setName("child")
+                                        .addColumns(Validation.Column.newBuilder()
+                                                .setId("child-id-col")
+                                                .setName("id")
+                                                .setDataType("INT")
+                                                .build())
+                                        .addConstraints(Validation.Constraint.newBuilder()
+                                                .setId("child-pk-constraint")
+                                                .setTableId("child-table")
+                                                .setName("pk_child")
+                                                .setKind(Validation.ConstraintKind.PRIMARY_KEY)
+                                                .addColumns(Validation.ConstraintColumn.newBuilder()
+                                                        .setId("child-constraint-col-1")
+                                                        .setConstraintId("child-pk-constraint")
+                                                        .setColumnId("child-id-col")
+                                                        .setSeqNo(1)
+                                                        .build())
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
+                request, "extra-data");
+
+        // ValidationClient 응답: 식별 관계 생성 후 전파된 컬럼과 제약조건 컬럼이 포함됨
+        Validation.Database mockResponse = Validation.Database.newBuilder()
+                .setId("proj-1")
+                .setIsAffected(true)
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("test-schema")
+                        .setIsAffected(true)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("parent-table")
+                                .setName("parent")
+                                .setIsAffected(false)
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId("parent-id-col")
+                                        .setName("id")
+                                        .setDataType("INT")
+                                        .setIsAffected(false)
+                                        .build())
+                                .addConstraints(Validation.Constraint.newBuilder()
+                                        .setId("parent-pk-constraint")
+                                        .setTableId("parent-table")
+                                        .setName("pk_parent")
+                                        .setKind(Validation.ConstraintKind.PRIMARY_KEY)
+                                        .setIsAffected(false)
+                                        .addColumns(Validation.ConstraintColumn.newBuilder()
+                                                .setId("parent-constraint-col-1")
+                                                .setConstraintId("parent-pk-constraint")
+                                                .setColumnId("parent-id-col")
+                                                .setSeqNo(1)
+                                                .setIsAffected(false)
+                                                .build())
+                                        .build())
+                                .build())
+                        // 전파된 엔티티들: 자식 테이블에 FK 컬럼이 생성되고 PK 제약조건에 추가됨
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setName("child")
+                                .setIsAffected(true)
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId("child-id-col")
+                                        .setName("id")
+                                        .setDataType("INT")
+                                        .setIsAffected(false)
+                                        .build())
+                                // 전파된 컬럼: 부모 테이블의 PK 컬럼이 자식 테이블로 전파
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId("be-fk-column-id")
+                                        .setName("parent_id")
+                                        .setDataType("INT")
+                                        .setIsAffected(true) // 전파된 컬럼
+                                        .build())
+                                .addConstraints(Validation.Constraint.newBuilder()
+                                        .setId("child-pk-constraint")
+                                        .setTableId("child-table")
+                                        .setName("pk_child")
+                                        .setKind(Validation.ConstraintKind.PRIMARY_KEY)
+                                        .setIsAffected(true)
+                                        .addColumns(Validation.ConstraintColumn.newBuilder()
+                                                .setId("child-constraint-col-1")
+                                                .setConstraintId("child-pk-constraint")
+                                                .setColumnId("child-id-col")
+                                                .setSeqNo(1)
+                                                .setIsAffected(false)
+                                                .build())
+                                        // 전파된 제약조건 컬럼: 전파된 FK 컬럼이 자식 PK에 추가됨
+                                        .addColumns(Validation.ConstraintColumn.newBuilder()
+                                                .setId("propagated-constraint-col")
+                                                .setConstraintId("child-pk-constraint")
+                                                .setColumnId("be-fk-column-id")
+                                                .setSeqNo(2)
+                                                .setIsAffected(true) // 전파된 제약조건 컬럼
+                                                .build())
+                                        .build())
+                                .addRelationships(Validation.Relationship.newBuilder()
+                                        .setId("be-relationship-id")
+                                        .setSrcTableId("child-table")
+                                        .setTgtTableId("parent-table")
+                                        .setName("fk_child_parent")
+                                        .setKind(Validation.RelationshipKind.IDENTIFYING)
+                                        .setCardinality(
+                                                Validation.RelationshipCardinality.ONE_TO_MANY)
+                                        .setIsAffected(true)
+                                        .addColumns(Validation.RelationshipColumn.newBuilder()
+                                                .setId("be-relationship-col-1")
+                                                .setRelationshipId("be-relationship-id")
+                                                .setFkColumnId("be-fk-column-id")
+                                                .setRefColumnId("parent-id-col")
+                                                .setSeqNo(1)
+                                                .setIsAffected(true)
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        // 전파된 엔티티 정보 모킹
+        AffectedMappingResponse.PropagatedEntities propagatedEntities =
+                new AffectedMappingResponse.PropagatedEntities(
+                        List.of(
+                                // 전파된 컬럼
+                                new AffectedMappingResponse.PropagatedColumn(
+                                        "be-fk-column-id",
+                                        "child-table",
+                                        "RELATIONSHIP",
+                                        "be-relationship-id",
+                                        "parent-id-col" // 원본 컬럼 ID
+                                )),
+                        List.of(
+                                // 전파된 제약조건 컬럼
+                                new AffectedMappingResponse.PropagatedConstraintColumn(
+                                        "propagated-constraint-col",
+                                        "child-pk-constraint",
+                                        "be-fk-column-id",
+                                        "RELATIONSHIP",
+                                        "be-relationship-id"
+                                )),
+                        List.of() // 전파된 인덱스 컬럼 없음
+                );
+
+        given(validationClient.createRelationship(
+                any(Validation.CreateRelationshipRequest.class)))
+                .willReturn(Mono.just(mockResponse));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
+                any(), any()))
+                .willReturn(Mono.just(propagatedEntities));
+
+        // when
+        Mono<AffectedMappingResponse> result = relationshipService
+                .createRelationship(requestWithExtra);
+
+        // then
+        StepVerifier.create(result)
+                .assertNext(response -> {
+                    // 원본 관계 매핑 확인
+                    assertThat(response.relationships()).hasSize(1);
+                    assertThat(response.relationships().get("child-table"))
+                            .containsEntry("fe-relationship-id",
+                                    "be-relationship-id");
+
+                    // 전파된 엔티티 정보 확인
+                    assertThat(response.propagated()).isNotNull();
+                    assertThat(response.propagated().columns()).hasSize(1);
+                    AffectedMappingResponse.PropagatedColumn propagatedColumn =
+                            response.propagated().columns().get(0);
+                    assertThat(propagatedColumn.columnId())
+                            .isEqualTo("be-fk-column-id");
+                    assertThat(propagatedColumn.tableId())
+                            .isEqualTo("child-table");
+                    assertThat(propagatedColumn.sourceType())
+                            .isEqualTo("RELATIONSHIP");
+                    assertThat(propagatedColumn.sourceId())
+                            .isEqualTo("be-relationship-id");
+                    assertThat(propagatedColumn.sourceColumnId())
+                            .isEqualTo("parent-id-col");
+
+                    assertThat(response.propagated().constraintColumns())
+                            .hasSize(1);
+                    AffectedMappingResponse.PropagatedConstraintColumn propagatedConstraintColumn =
+                            response.propagated().constraintColumns().get(0);
+                    assertThat(propagatedConstraintColumn.constraintColumnId())
+                            .isEqualTo("propagated-constraint-col");
+                    assertThat(propagatedConstraintColumn.constraintId())
+                            .isEqualTo("child-pk-constraint");
+                    assertThat(propagatedConstraintColumn.columnId())
+                            .isEqualTo("be-fk-column-id");
+                    assertThat(propagatedConstraintColumn.sourceType())
+                            .isEqualTo("RELATIONSHIP");
+                    assertThat(propagatedConstraintColumn.sourceId())
+                            .isEqualTo("be-relationship-id");
+
+                    // 전파된 인덱스 컬럼은 없음
+                    assertThat(response.propagated().indexColumns())
+                            .isEmpty();
                 })
                 .verifyComplete();
     }
