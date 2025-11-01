@@ -1,18 +1,26 @@
-import { ulid } from 'ulid';
-import { Column, Constraint, Index, Relationship, RelationshipColumn, Schema, Table } from '..';
+import { ulid } from "ulid";
+import {
+  Column,
+  Constraint,
+  Index,
+  Relationship,
+  RelationshipColumn,
+  Schema,
+  Table,
+} from "..";
 
 export const detectCircularReference = (
   schema: Schema,
-  fromTableId: Table['id'],
-  toTableId: Table['id'],
-  visited: Set<Table['id']> = new Set()
+  fromTableId: Table["id"],
+  toTableId: Table["id"],
+  visited: Set<Table["id"]> = new Set(),
 ): boolean => {
   if (visited.has(fromTableId)) return true;
   if (fromTableId === toTableId) return true;
 
   visited.add(fromTableId);
 
-  const referencedTables = new Set<Table['id']>();
+  const referencedTables = new Set<Table["id"]>();
   schema.tables.forEach((table) => {
     table.relationships.forEach((rel) => {
       if (rel.srcTableId === fromTableId) {
@@ -22,7 +30,14 @@ export const detectCircularReference = (
   });
 
   for (const referencedTableId of referencedTables) {
-    if (detectCircularReference(schema, referencedTableId, toTableId, new Set(visited))) {
+    if (
+      detectCircularReference(
+        schema,
+        referencedTableId,
+        toTableId,
+        new Set(visited),
+      )
+    ) {
       return true;
     }
   }
@@ -50,59 +65,59 @@ export const isValidColumnName = (str: string): boolean => {
   return true;
 };
 
-export const precisionRequired = ['DECIMAL', 'NUMERIC'];
-export const lengthScaleRequired = ['VARCHAR', 'CHAR'];
+export const precisionRequired = ["DECIMAL", "NUMERIC"];
+export const lengthScaleRequired = ["VARCHAR", "CHAR"];
 
 export const categorizedMysqlDataTypes = [
-  'TINYINT',
-  'SMALLINT',
-  'MEDIUMINT',
-  'INT',
-  'INTEGER',
-  'BIGINT',
-  'FLOAT',
-  'DOUBLE',
-  'REAL',
-  'DECIMAL',
-  'NUMERIC',
-  'BIT',
-  'BOOL',
-  'BOOLEAN',
-  'CHAR',
-  'VARCHAR',
-  'TINYTEXT',
-  'TEXT',
-  'MEDIUMTEXT',
-  'LONGTEXT',
-  'BINARY',
-  'VARBINARY',
-  'BLOB',
-  'TINYBLOB',
-  'MEDIUMBLOB',
-  'LONGBLOB',
-  'ENUM',
-  'SET',
-  'DATE',
-  'TIME',
-  'DATETIME',
-  'TIMESTAMP',
-  'YEAR',
-  'GEOMETRY',
-  'POINT',
-  'LINESTRING',
-  'POLYGON',
-  'MULTIPOINT',
-  'MULTILINESTRING',
-  'MULTIPOLYGON',
-  'GEOMETRYCOLLECTION',
-  'JSON',
+  "TINYINT",
+  "SMALLINT",
+  "MEDIUMINT",
+  "INT",
+  "INTEGER",
+  "BIGINT",
+  "FLOAT",
+  "DOUBLE",
+  "REAL",
+  "DECIMAL",
+  "NUMERIC",
+  "BIT",
+  "BOOL",
+  "BOOLEAN",
+  "CHAR",
+  "VARCHAR",
+  "TINYTEXT",
+  "TEXT",
+  "MEDIUMTEXT",
+  "LONGTEXT",
+  "BINARY",
+  "VARBINARY",
+  "BLOB",
+  "TINYBLOB",
+  "MEDIUMBLOB",
+  "LONGBLOB",
+  "ENUM",
+  "SET",
+  "DATE",
+  "TIME",
+  "DATETIME",
+  "TIMESTAMP",
+  "YEAR",
+  "GEOMETRY",
+  "POINT",
+  "LINESTRING",
+  "POLYGON",
+  "MULTIPOINT",
+  "MULTILINESTRING",
+  "MULTIPOLYGON",
+  "GEOMETRYCOLLECTION",
+  "JSON",
 ];
 
 export const propagateNewPrimaryKey = (
   currentSchema: Schema,
-  parentTableId: Table['id'],
+  parentTableId: Table["id"],
   newPkColumn: Column,
-  visited: Set<string> = new Set()
+  visited: Set<string> = new Set(),
 ): Schema => {
   if (visited.has(parentTableId)) return currentSchema;
   visited.add(parentTableId);
@@ -113,11 +128,17 @@ export const propagateNewPrimaryKey = (
     for (const rel of table.relationships) {
       if (rel.tgtTableId !== parentTableId) continue;
 
-      const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
+      const childTable = updatedSchema.tables.find(
+        (t) => t.id === rel.srcTableId,
+      );
       if (!childTable) continue;
 
-      const parentTable = updatedSchema.tables.find((t) => t.id === parentTableId)!;
-      const existingColumn = childTable.columns.find((c) => c.id.startsWith(`col_${parentTable.id}_${newPkColumn.id}`));
+      const parentTable = updatedSchema.tables.find(
+        (t) => t.id === parentTableId,
+      )!;
+      const existingColumn = childTable.columns.find((c) =>
+        c.id.startsWith(`col_${parentTable.id}_${newPkColumn.id}`),
+      );
 
       if (existingColumn) continue;
 
@@ -145,11 +166,11 @@ export const propagateNewPrimaryKey = (
                 isAffected: true,
                 columns: [...t.columns, newFkColumn],
               }
-            : t
+            : t,
         ),
       };
 
-      if (rel.kind === 'IDENTIFYING') {
+      if (rel.kind === "IDENTIFYING") {
         const newPkConstraintId = `constraint_${parentTable.id}_${newPkColumn.id}_${ulid()}`;
 
         const childPkConstraint: Constraint = {
@@ -165,7 +186,7 @@ export const propagateNewPrimaryKey = (
             },
           ],
           tableId: childTable.id,
-          kind: 'PRIMARY_KEY',
+          kind: "PRIMARY_KEY",
           isAffected: true,
         };
 
@@ -173,7 +194,9 @@ export const propagateNewPrimaryKey = (
           ...updatedSchema,
           isAffected: true,
           tables: updatedSchema.tables.map((t) =>
-            t.id === childTable.id ? { ...t, constraints: [...t.constraints, childPkConstraint] } : t
+            t.id === childTable.id
+              ? { ...t, constraints: [...t.constraints, childPkConstraint] }
+              : t,
           ),
         };
       }
@@ -187,14 +210,15 @@ export const propagateNewPrimaryKey = (
         isAffected: true,
       };
 
-      const updateRelationships: Relationship[] = parentTable.relationships.map((r) =>
-        r.id === rel.id
-          ? {
-              ...r,
-              isAffected: true,
-              columns: [...r.columns, newRelColumn],
-            }
-          : r
+      const updateRelationships: Relationship[] = parentTable.relationships.map(
+        (r) =>
+          r.id === rel.id
+            ? {
+                ...r,
+                isAffected: true,
+                columns: [...r.columns, newRelColumn],
+              }
+            : r,
       );
 
       const updateTables: Table[] = updatedSchema.tables.map((t) =>
@@ -204,7 +228,7 @@ export const propagateNewPrimaryKey = (
               isAffected: true,
               relationships: updateRelationships,
             }
-          : t
+          : t,
       );
 
       updatedSchema = {
@@ -213,12 +237,12 @@ export const propagateNewPrimaryKey = (
         tables: updateTables,
       };
 
-      if (rel.kind === 'IDENTIFYING') {
+      if (rel.kind === "IDENTIFYING") {
         updatedSchema = propagateNewPrimaryKey(
           structuredClone(updatedSchema),
           rel.srcTableId,
           newFkColumn,
-          new Set(visited)
+          new Set(visited),
         );
       }
     }
@@ -229,9 +253,9 @@ export const propagateNewPrimaryKey = (
 
 export const deleteCascadingForeignKeys = (
   currentSchema: Schema,
-  parentTableId: Table['id'],
-  deletedPkColumnId: Column['id'],
-  visited: Set<string> = new Set()
+  parentTableId: Table["id"],
+  deletedPkColumnId: Column["id"],
+  visited: Set<string> = new Set(),
 ): Schema => {
   if (visited.has(parentTableId)) return currentSchema;
   visited.add(parentTableId);
@@ -242,7 +266,9 @@ export const deleteCascadingForeignKeys = (
     for (const rel of table.relationships) {
       if (rel.tgtTableId !== parentTableId) continue;
 
-      const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
+      const childTable = updatedSchema.tables.find(
+        (t) => t.id === rel.srcTableId,
+      );
 
       if (!childTable) continue;
 
@@ -254,37 +280,55 @@ export const deleteCascadingForeignKeys = (
 
       const updateIndexes: Index[] = childTable.indexes.map((idx) => ({
         ...idx,
-        isAffected: idx.columns.some((ic) => fkColumnsToDelete.includes(ic.columnId)),
-        columns: idx.columns.filter((ic) => !fkColumnsToDelete.includes(ic.columnId)),
-      }));
-
-      const updateConstraints: Constraint[] = childTable.constraints.map((constraint) => ({
-        ...constraint,
-        isAffected: constraint.columns.some((cc) => fkColumnsToDelete.includes(cc.columnId)),
-        columns: constraint.columns.filter((cc) => !fkColumnsToDelete.includes(cc.columnId)),
-      }));
-
-      const updateRelationships: Relationship[] = childTable.relationships.map((relationship) => ({
-        ...relationship,
-        isAffected: relationship.columns.some(
-          (rc) => fkColumnsToDelete.includes(rc.fkColumnId) || fkColumnsToDelete.includes(rc.refColumnId)
+        isAffected: idx.columns.some((ic) =>
+          fkColumnsToDelete.includes(ic.columnId),
         ),
-        columns: relationship.columns.filter(
-          (rc) => !fkColumnsToDelete.includes(rc.fkColumnId) && !fkColumnsToDelete.includes(rc.refColumnId)
+        columns: idx.columns.filter(
+          (ic) => !fkColumnsToDelete.includes(ic.columnId),
         ),
       }));
+
+      const updateConstraints: Constraint[] = childTable.constraints.map(
+        (constraint) => ({
+          ...constraint,
+          isAffected: constraint.columns.some((cc) =>
+            fkColumnsToDelete.includes(cc.columnId),
+          ),
+          columns: constraint.columns.filter(
+            (cc) => !fkColumnsToDelete.includes(cc.columnId),
+          ),
+        }),
+      );
+
+      const updateRelationships: Relationship[] = childTable.relationships.map(
+        (relationship) => ({
+          ...relationship,
+          isAffected: relationship.columns.some(
+            (rc) =>
+              fkColumnsToDelete.includes(rc.fkColumnId) ||
+              fkColumnsToDelete.includes(rc.refColumnId),
+          ),
+          columns: relationship.columns.filter(
+            (rc) =>
+              !fkColumnsToDelete.includes(rc.fkColumnId) &&
+              !fkColumnsToDelete.includes(rc.refColumnId),
+          ),
+        }),
+      );
 
       const updateTables: Table[] = updatedSchema.tables.map((t) =>
         t.id === childTable.id
           ? {
               ...t,
               isAffected: true,
-              columns: t.columns.filter((col) => !fkColumnsToDelete.includes(col.id)),
+              columns: t.columns.filter(
+                (col) => !fkColumnsToDelete.includes(col.id),
+              ),
               indexes: updateIndexes,
               constraints: updateConstraints,
               relationships: updateRelationships,
             }
-          : t
+          : t,
       );
 
       updatedSchema = {
@@ -293,13 +337,13 @@ export const deleteCascadingForeignKeys = (
         tables: updateTables,
       };
 
-      if (rel.kind === 'IDENTIFYING') {
+      if (rel.kind === "IDENTIFYING") {
         for (const fkColumnId of fkColumnsToDelete) {
           updatedSchema = deleteCascadingForeignKeys(
             structuredClone(updatedSchema),
             rel.tgtTableId,
             fkColumnId,
-            new Set(visited)
+            new Set(visited),
           );
         }
       }
@@ -311,8 +355,8 @@ export const deleteCascadingForeignKeys = (
 
 export const propagateKeysToChildren = (
   currentSchema: Schema,
-  parentTableId: Table['id'],
-  visited: Set<Table['id']> = new Set()
+  parentTableId: Table["id"],
+  visited: Set<Table["id"]> = new Set(),
 ): Schema => {
   if (visited.has(parentTableId)) return currentSchema;
   visited.add(parentTableId);
@@ -320,11 +364,15 @@ export const propagateKeysToChildren = (
   const parentTable = currentSchema.tables.find((t) => t.id === parentTableId);
   if (!parentTable) return currentSchema;
 
-  const pkConstraint = parentTable.constraints.find((c) => c.kind === 'PRIMARY_KEY');
+  const pkConstraint = parentTable.constraints.find(
+    (c) => c.kind === "PRIMARY_KEY",
+  );
   if (!pkConstraint) return currentSchema;
 
   const pkColumnIds = pkConstraint.columns.map((cc) => cc.columnId);
-  const pkColumns = parentTable.columns.filter((col) => pkColumnIds.includes(col.id));
+  const pkColumns = parentTable.columns.filter((col) =>
+    pkColumnIds.includes(col.id),
+  );
 
   let updatedSchema = currentSchema;
 
@@ -332,17 +380,23 @@ export const propagateKeysToChildren = (
     for (const rel of table.relationships) {
       if (rel.tgtTableId !== parentTableId) continue;
 
-      const childTable = updatedSchema.tables.find((t) => t.id === rel.srcTableId);
+      const childTable = updatedSchema.tables.find(
+        (t) => t.id === rel.srcTableId,
+      );
       if (!childTable) continue;
 
       let updatedChildTable = childTable;
       const newlyCreatedFkColumns = [];
 
       for (const pkColumn of pkColumns) {
-        const relColumn = rel.columns.find((rc) => rc.refColumnId === pkColumn.id);
+        const relColumn = rel.columns.find(
+          (rc) => rc.refColumnId === pkColumn.id,
+        );
 
         if (relColumn && relColumn.fkColumnId) {
-          const existingColumn = childTable.columns.find((c) => c.id === relColumn.fkColumnId);
+          const existingColumn = childTable.columns.find(
+            (c) => c.id === relColumn.fkColumnId,
+          );
           if (existingColumn) continue;
         }
 
@@ -386,25 +440,33 @@ export const propagateKeysToChildren = (
         const updatedRelHolderTable: Table = {
           ...table,
           isAffected: true,
-          relationships: table.relationships.map((r) => (r.id === rel.id ? updatedRel : r)),
+          relationships: table.relationships.map((r) =>
+            r.id === rel.id ? updatedRel : r,
+          ),
         };
 
         updatedSchema = {
           ...updatedSchema,
           isAffected: true,
-          tables: updatedSchema.tables.map((t) => (t.id === updatedRelHolderTable.id ? updatedRelHolderTable : t)),
+          tables: updatedSchema.tables.map((t) =>
+            t.id === updatedRelHolderTable.id ? updatedRelHolderTable : t,
+          ),
         };
       }
 
       updatedSchema = {
         ...updatedSchema,
         isAffected: true,
-        tables: updatedSchema.tables.map((t) => (t.id === childTable.id ? updatedChildTable : t)),
+        tables: updatedSchema.tables.map((t) =>
+          t.id === childTable.id ? updatedChildTable : t,
+        ),
       };
 
-      if (rel.kind === 'NON_IDENTIFYING') continue;
+      if (rel.kind === "NON_IDENTIFYING") continue;
 
-      const childPkConstraint = updatedChildTable.constraints.find((c) => c.kind === 'PRIMARY_KEY');
+      const childPkConstraint = updatedChildTable.constraints.find(
+        (c) => c.kind === "PRIMARY_KEY",
+      );
 
       if (!childPkConstraint || newlyCreatedFkColumns.length <= 0) continue;
 
@@ -432,17 +494,23 @@ export const propagateKeysToChildren = (
         ...updatedChildTable,
         isAffected: true,
         constraints: updatedChildTable.constraints.map((c) =>
-          c.id === childPkConstraint.id ? updatedPkConstraint : c
+          c.id === childPkConstraint.id ? updatedPkConstraint : c,
         ),
       };
 
       updatedSchema = {
         ...updatedSchema,
         isAffected: true,
-        tables: updatedSchema.tables.map((t) => (t.id === childTable.id ? updatedChildTable : t)),
+        tables: updatedSchema.tables.map((t) =>
+          t.id === childTable.id ? updatedChildTable : t,
+        ),
       };
 
-      updatedSchema = propagateKeysToChildren(structuredClone(updatedSchema), rel.srcTableId, new Set(visited));
+      updatedSchema = propagateKeysToChildren(
+        structuredClone(updatedSchema),
+        rel.srcTableId,
+        new Set(visited),
+      );
     }
   }
 
@@ -452,7 +520,7 @@ export const propagateKeysToChildren = (
 export const deleteRelatedColumns = (
   currentSchema: Schema,
   relationshipToDelete: Relationship,
-  visited: Set<string> = new Set()
+  visited: Set<string> = new Set(),
 ): Schema => {
   const relationshipKey = relationshipToDelete.id;
   if (visited.has(relationshipKey)) return currentSchema;
@@ -473,20 +541,32 @@ export const deleteRelatedColumns = (
         const isAffected =
           table.relationships.some((r) => r.id === relationshipToDelete.id) ||
           table.columns.some((col) => fkColumnsToDelete.has(col.id)) ||
-          table.indexes.some((idx) => idx.columns.some((ic) => fkColumnsToDelete.has(ic.columnId))) ||
-          table.constraints.some((constraint) => constraint.columns.some((cc) => fkColumnsToDelete.has(cc.columnId)));
+          table.indexes.some((idx) =>
+            idx.columns.some((ic) => fkColumnsToDelete.has(ic.columnId)),
+          ) ||
+          table.constraints.some((constraint) =>
+            constraint.columns.some((cc) => fkColumnsToDelete.has(cc.columnId)),
+          );
         return {
           ...table,
           isAffected,
-          relationships: table.relationships.filter((r) => r.id !== relationshipToDelete.id),
-          columns: table.columns.filter((col) => !fkColumnsToDelete.has(col.id)),
+          relationships: table.relationships.filter(
+            (r) => r.id !== relationshipToDelete.id,
+          ),
+          columns: table.columns.filter(
+            (col) => !fkColumnsToDelete.has(col.id),
+          ),
           indexes: table.indexes.map((idx) => ({
             ...idx,
-            columns: idx.columns.filter((ic) => !fkColumnsToDelete.has(ic.columnId)),
+            columns: idx.columns.filter(
+              (ic) => !fkColumnsToDelete.has(ic.columnId),
+            ),
           })),
           constraints: table.constraints.map((constraint) => ({
             ...constraint,
-            columns: constraint.columns.filter((cc) => !fkColumnsToDelete.has(cc.columnId)),
+            columns: constraint.columns.filter(
+              (cc) => !fkColumnsToDelete.has(cc.columnId),
+            ),
           })),
         };
       }
@@ -494,15 +574,21 @@ export const deleteRelatedColumns = (
     }),
   };
 
-  if (relationshipToDelete.kind === 'IDENTIFYING') {
+  if (relationshipToDelete.kind === "IDENTIFYING") {
     for (const table of updatedSchema.tables) {
       const relationshipsToDelete = table.relationships.filter((rel) => {
-        return rel.columns.some((relCol) => fkColumnsToDelete.has(relCol.refColumnId));
+        return rel.columns.some((relCol) =>
+          fkColumnsToDelete.has(relCol.refColumnId),
+        );
       });
 
       for (const relToDelete of relationshipsToDelete) {
         if (!visited.has(relToDelete.id)) {
-          updatedSchema = deleteRelatedColumns(structuredClone(updatedSchema), relToDelete, new Set(visited));
+          updatedSchema = deleteRelatedColumns(
+            structuredClone(updatedSchema),
+            relToDelete,
+            new Set(visited),
+          );
         }
       }
     }
