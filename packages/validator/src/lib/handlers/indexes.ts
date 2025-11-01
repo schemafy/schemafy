@@ -3,13 +3,15 @@ import {
   IndexColumnNotExistError,
   IndexColumnNotUniqueError,
   IndexColumnSortDirInvalidError,
+  IndexNameChangeSameError,
   IndexNameNotUniqueError,
   IndexNotExistError,
+  IndexParseInvalidError,
   IndexTypeInvalidError,
   SchemaNotExistError,
   TableNotExistError,
 } from "../errors";
-import { Database, Index, IndexColumn, Schema, Table } from "../types";
+import { Database, INDEX, Index, IndexColumn, Schema, Table } from "../types";
 
 export interface IndexHandlers {
   createIndex: (
@@ -58,6 +60,11 @@ export const indexHandlers: IndexHandlers = {
     const indexNotUnique = table.indexes.find((i) => i.name === index.name);
     if (indexNotUnique) throw new IndexNameNotUniqueError(index.name);
 
+    const indexParse = INDEX.shape.name.safeParse(index.name);
+    if (!indexParse.success) {
+      throw new IndexParseInvalidError(indexParse.error.message);
+    }
+
     if (
       table.indexes.find((i) => {
         const existingIndexDef = i.columns
@@ -88,30 +95,23 @@ export const indexHandlers: IndexHandlers = {
       }
     }
 
-    return {
-      ...database,
+    const changeTable: Table = {
+      ...table,
       isAffected: true,
-      schemas: database.schemas.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              isAffected: true,
-              tables: s.tables.map((t) =>
-                t.id === tableId
-                  ? {
-                      ...t,
-                      isAffected: true,
-                      indexes: [
-                        ...t.indexes,
-                        { ...index, isAffected: true, tableId },
-                      ],
-                    }
-                  : t,
-              ),
-            }
-          : s,
-      ),
+      indexes: [...table.indexes, { ...index, isAffected: true, tableId }],
     };
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: s.tables.map((t) => (t.id === tableId ? changeTable : t)),
+          }
+        : s,
+    );
+
+    return { ...database, isAffected: true, schemas: changeSchemas };
   },
   deleteIndex: (database, schemaId, tableId, indexId) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
@@ -123,27 +123,23 @@ export const indexHandlers: IndexHandlers = {
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
 
-    return {
-      ...database,
+    const changeTable: Table = {
+      ...table,
       isAffected: true,
-      schemas: database.schemas.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              isAffected: true,
-              tables: s.tables.map((t) =>
-                t.id === tableId
-                  ? {
-                      ...t,
-                      isAffected: t.indexes.some((i) => i.id === indexId),
-                      indexes: t.indexes.filter((i) => i.id !== indexId),
-                    }
-                  : t,
-              ),
-            }
-          : s,
-      ),
+      indexes: table.indexes.filter((i) => i.id !== indexId),
     };
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: s.tables.map((t) => (t.id === tableId ? changeTable : t)),
+          }
+        : s,
+    );
+
+    return { ...database, isAffected: true, schemas: changeSchemas };
   },
   changeIndexName: (database, schemaId, tableId, indexId, newName) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
@@ -155,33 +151,35 @@ export const indexHandlers: IndexHandlers = {
     const index = table.indexes.find((i) => i.id === indexId);
     if (!index) throw new IndexNotExistError(indexId);
 
-    const indexNotUnique = table.indexes.find((i) => i.name === newName);
+    if (index.name === newName) throw new IndexNameChangeSameError(indexId);
+
+    const indexNotUnique = table.indexes.find(
+      (i) => i.name === newName && i.id !== indexId,
+    );
     if (indexNotUnique) throw new IndexNameNotUniqueError(newName);
+
+    const changeTable: Table = {
+      ...table,
+      isAffected: true,
+      indexes: table.indexes.map((i) =>
+        i.id === indexId ? { ...i, name: newName, isAffected: true } : i,
+      ),
+    };
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: s.tables.map((t) => (t.id === tableId ? changeTable : t)),
+          }
+        : s,
+    );
 
     return {
       ...database,
       isAffected: true,
-      schemas: database.schemas.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              isAffected: true,
-              tables: s.tables.map((t) =>
-                t.id === tableId
-                  ? {
-                      ...t,
-                      isAffected: true,
-                      indexes: t.indexes.map((i) =>
-                        i.id === indexId
-                          ? { ...i, name: newName, isAffected: true }
-                          : i,
-                      ),
-                    }
-                  : t,
-              ),
-            }
-          : s,
-      ),
+      schemas: changeSchemas,
     };
   },
   addColumnToIndex: (database, schemaId, tableId, indexId, indexColumn) => {
@@ -200,38 +198,33 @@ export const indexHandlers: IndexHandlers = {
     if (indexColumnNotUnique)
       throw new IndexColumnNotUniqueError(indexColumn.columnId);
 
-    return {
-      ...database,
+    const changeTable: Table = {
+      ...table,
       isAffected: true,
-      schemas: database.schemas.map((s) =>
-        s.id === schemaId
+      indexes: table.indexes.map((i) =>
+        i.id === indexId
           ? {
-              ...s,
+              ...i,
               isAffected: true,
-              tables: s.tables.map((t) =>
-                t.id === tableId
-                  ? {
-                      ...t,
-                      isAffected: true,
-                      indexes: t.indexes.map((i) =>
-                        i.id === indexId
-                          ? {
-                              ...i,
-                              isAffected: true,
-                              columns: [
-                                ...i.columns,
-                                { ...indexColumn, indexId, isAffected: true },
-                              ],
-                            }
-                          : i,
-                      ),
-                    }
-                  : t,
-              ),
+              columns: [
+                ...i.columns,
+                { ...indexColumn, indexId, isAffected: true },
+              ],
             }
-          : s,
+          : i,
       ),
     };
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: s.tables.map((t) => (t.id === tableId ? changeTable : t)),
+          }
+        : s,
+    );
+    return { ...database, isAffected: true, schemas: changeSchemas };
   },
   removeColumnFromIndex: (
     database,
@@ -252,40 +245,38 @@ export const indexHandlers: IndexHandlers = {
     const indexColumn = index.columns.find((ic) => ic.id === indexColumnId);
     if (!indexColumn) throw new IndexColumnNotExistError(indexColumnId);
 
-    return {
-      ...database,
+    const indexColumnRemoved = index.columns.filter(
+      (ic) => ic.id !== indexColumnId,
+    );
+    if (indexColumnRemoved.length === 0)
+      throw new IndexColumnNotExistError(indexColumnId);
+
+    const changeTable: Table = {
+      ...table,
       isAffected: true,
-      schemas: database.schemas.map((s) =>
-        s.id === schemaId
-          ? {
-              ...s,
-              isAffected: true,
-              tables: s.tables.map((t) =>
-                t.id === tableId
-                  ? {
-                      ...t,
-                      isAffected: true,
-                      indexes: t.indexes
-                        .map((i) =>
-                          i.id === indexId
-                            ? {
-                                ...i,
-                                isAffected: i.columns.some(
-                                  (ic) => ic.id === indexColumnId,
-                                ),
-                                columns: i.columns.filter(
-                                  (ic) => ic.id !== indexColumnId,
-                                ),
-                              }
-                            : i,
-                        )
-                        .filter((i) => i.columns.length > 0),
-                    }
-                  : t,
-              ),
-            }
-          : s,
-      ),
+      indexes: table.indexes
+        .map((i) =>
+          i.id === indexId
+            ? {
+                ...i,
+                isAffected: i.columns.some((ic) => ic.id === indexColumnId),
+                columns: i.columns.filter((ic) => ic.id !== indexColumnId),
+              }
+            : i,
+        )
+        .filter((i) => i.columns.length > 0),
     };
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: s.tables.map((t) => (t.id === tableId ? changeTable : t)),
+          }
+        : s,
+    );
+
+    return { ...database, isAffected: true, schemas: changeSchemas };
   },
 };

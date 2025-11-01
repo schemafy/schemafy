@@ -2,8 +2,10 @@ import {
   SchemaNotExistError,
   TableNameNotUniqueError,
   TableNotExistError,
+  TableNameNotInvalidError,
+  TableNameChangeSameError,
 } from "../errors";
-import { Database, Schema, Table } from "../types";
+import { Database, Schema, TABLE, Table } from "../types";
 import { relationshipHandlers } from "./relationships";
 
 export interface TableHandlers {
@@ -33,6 +35,13 @@ export const tableHandlers: TableHandlers = {
     const tableNotUnique = schema.tables.find((t) => t.name === table.name);
     if (tableNotUnique) throw new TableNameNotUniqueError(table.name);
 
+    const isValidTable = TABLE.shape.name.safeParse(table.name);
+    if (!isValidTable.success)
+      throw new TableNameNotInvalidError(
+        table.name,
+        isValidTable.error.message,
+      );
+
     return {
       ...database,
       schemas: database.schemas.map((s) =>
@@ -61,7 +70,7 @@ export const tableHandlers: TableHandlers = {
     if (!tableToDelete) throw new TableNotExistError(tableId);
 
     let currentDatabase = structuredClone(database);
-    const relationshipsToDelete: string[] = [];
+    const relationshipsToDelete: Set<string> = new Set();
 
     for (const table of schema.tables) {
       for (const relationship of table.relationships) {
@@ -69,7 +78,7 @@ export const tableHandlers: TableHandlers = {
           relationship.srcTableId === tableId ||
           relationship.tgtTableId === tableId
         ) {
-          relationshipsToDelete.push(relationship.id);
+          relationshipsToDelete.add(relationship.id);
         }
       }
     }
@@ -101,11 +110,22 @@ export const tableHandlers: TableHandlers = {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
-    const tableNotUnique = schema.tables.find((t) => t.name === newName);
+    const isValidTableName = TABLE.shape.name.safeParse(newName);
+    if (!isValidTableName.success)
+      throw new TableNameNotInvalidError(
+        newName,
+        isValidTableName.error.message,
+      );
+
+    const tableNotUnique = schema.tables.find(
+      (t) => t.name === newName && t.id !== tableId,
+    );
     if (tableNotUnique) throw new TableNameNotUniqueError(newName);
 
     const table = schema.tables.find((t) => t.id === tableId);
     if (!table) throw new TableNotExistError(tableId);
+
+    if (newName === table.name) throw new TableNameChangeSameError(tableId);
 
     return {
       ...database,

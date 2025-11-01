@@ -18,7 +18,7 @@ import {
   SchemaNameNotUniqueError,
   TableNameNotInvalidError,
   TableNameNotUniqueError,
-  ColumnNameInvalidError,
+  ColumnInvalidError,
   ColumnNameNotUniqueError,
   ColumnDataTypeRequiredError,
   ColumnNameIsReservedKeywordError,
@@ -89,7 +89,7 @@ export const ERD_VALIDATOR: ERDValidator = {
 
         for (const column of table.columns) {
           if (column.name.length < 3 || column.name.length > 40) {
-            throw new ColumnNameInvalidError(column.name);
+            throw new ColumnInvalidError(column.name);
           }
 
           if (columnNames.has(column.name)) {

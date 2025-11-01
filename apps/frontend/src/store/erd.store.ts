@@ -188,23 +188,6 @@ export class ErdStore {
     );
   }
 
-  changeColumnNullable(
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    columnId: Column['id'],
-    nullable: boolean,
-  ) {
-    this.update((db) =>
-      ERD_VALIDATOR.changeColumnNullable(
-        db,
-        schemaId,
-        tableId,
-        columnId,
-        nullable,
-      ),
-    );
-  }
-
   // indexes
   createIndex(
     schemaId: Schema['id'],
