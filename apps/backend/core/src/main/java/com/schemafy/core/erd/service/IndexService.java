@@ -6,6 +6,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.IndexColumnRepository;
 import com.schemafy.core.erd.repository.IndexRepository;
 import com.schemafy.core.erd.repository.entity.Index;
@@ -15,7 +16,7 @@ import com.schemafy.core.validation.client.ValidationClient;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import validation.Validation.CreateIndexRequest;
+import validation.Validation;
 
 @Service
 @RequiredArgsConstructor
@@ -26,14 +27,20 @@ public class IndexService {
     private final IndexColumnRepository indexColumnRepository;
 
     public Mono<AffectedMappingResponse> createIndex(
-            CreateIndexRequest request) {
+            Validation.CreateIndexRequest request) {
         return validationClient.createIndex(request)
-                .delayUntil(database -> indexRepository
-                        .save(ErdMapper.toEntity(request.getIndex())))
-                .map(database -> AffectedMappingResponse.of(
-                        request,
-                        request.getDatabase(),
-                        database));
+                .flatMap(database -> indexRepository
+                        .save(ErdMapper.toEntity(request.getIndex()))
+                        .map(savedIndex -> AffectedMappingResponse.of(
+                                request,
+                                request.getDatabase(),
+                                AffectedMappingResponse.updateEntityIdInDatabase(
+                                        database,
+                                        EntityType.INDEX,
+                                        request.getIndex().getId(),
+                                        savedIndex.getId()
+                                )
+                        )));
     }
 
     public Mono<Index> getIndex(String id) {
@@ -45,7 +52,7 @@ public class IndexService {
     }
 
     public Mono<Index> updateIndexName(
-            validation.Validation.ChangeIndexNameRequest request) {
+            Validation.ChangeIndexNameRequest request) {
         return indexRepository
                 .findById(request.getIndexId())
                 .switchIfEmpty(Mono.error(
@@ -56,14 +63,14 @@ public class IndexService {
     }
 
     public Mono<IndexColumn> addColumnToIndex(
-            validation.Validation.AddColumnToIndexRequest request) {
+            Validation.AddColumnToIndexRequest request) {
         return validationClient.addColumnToIndex(request)
                 .then(indexColumnRepository
                         .save(ErdMapper.toEntity(request.getIndexColumn())));
     }
 
     public Mono<Void> removeColumnFromIndex(
-            validation.Validation.RemoveColumnFromIndexRequest request) {
+            Validation.RemoveColumnFromIndexRequest request) {
         return indexColumnRepository
                 .findById(request.getIndexColumnId())
                 .switchIfEmpty(Mono.error(
@@ -76,7 +83,7 @@ public class IndexService {
     }
 
     public Mono<Void> deleteIndex(
-            validation.Validation.DeleteIndexRequest request) {
+            Validation.DeleteIndexRequest request) {
         return indexRepository.findById(request.getIndexId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))

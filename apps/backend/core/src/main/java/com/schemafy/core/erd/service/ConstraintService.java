@@ -6,6 +6,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
 import com.schemafy.core.erd.repository.entity.Constraint;
@@ -15,7 +16,7 @@ import com.schemafy.core.validation.client.ValidationClient;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import validation.Validation.CreateConstraintRequest;
+import validation.Validation;
 
 @Service
 @RequiredArgsConstructor
@@ -27,31 +28,33 @@ public class ConstraintService {
     private final AffectedEntitiesSaver affectedEntitiesSaver;
 
     public Mono<AffectedMappingResponse> createConstraint(
-            CreateConstraintRequest request) {
+            Validation.CreateConstraintRequest request) {
         return validationClient.createConstraint(request)
-                .flatMap(database -> {
-                    String constraintId = request.getConstraint().getId();
+                .flatMap(database -> constraintRepository
+                        .save(ErdMapper.toEntity(request.getConstraint()))
+                        .flatMap(savedConstraint -> {
+                            Validation.Database updatedDatabase = AffectedMappingResponse
+                                    .updateEntityIdInDatabase(
+                                            database,
+                                            EntityType.CONSTRAINT,
+                                            request.getConstraint().getId(),
+                                            savedConstraint.getId()
+                                    );
 
-                    // 요청한 Constraint 저장
-                    Mono<Constraint> saveConstraint = constraintRepository
-                            .save(ErdMapper.toEntity(request.getConstraint()));
-
-                    // 영향받은 엔티티 저장 + 전파 정보 수집
-                    // PK 제약조건인 경우 하위 식별 관계 전파
-                    return saveConstraint
-                            .then(affectedEntitiesSaver.saveAffectedEntities(
-                                    request.getDatabase(),
-                                    database,
-                                    constraintId,
-                                    constraintId,      // sourceId
-                                    "CONSTRAINT"       // sourceType
-                    ))
-                            .map(propagated -> AffectedMappingResponse.of(
-                                    request,
-                                    request.getDatabase(),
-                                    database,
-                                    propagated));
-                });
+                            return affectedEntitiesSaver
+                                    .saveAffectedEntities(
+                                            request.getDatabase(),
+                                            updatedDatabase,
+                                            savedConstraint.getId(),
+                                            savedConstraint.getId(),
+                                            "CONSTRAINT"
+                                    )
+                                    .map(propagated -> AffectedMappingResponse.of(
+                                            request,
+                                            request.getDatabase(),
+                                            updatedDatabase,
+                                            propagated));
+                        }));
     }
 
     public Mono<Constraint> getConstraint(String id) {
@@ -63,7 +66,7 @@ public class ConstraintService {
     }
 
     public Mono<Constraint> updateConstraintName(
-            validation.Validation.ChangeConstraintNameRequest request) {
+            Validation.ChangeConstraintNameRequest request) {
         return constraintRepository.findById(request.getConstraintId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
@@ -76,7 +79,7 @@ public class ConstraintService {
     }
 
     public Mono<ConstraintColumn> addColumnToConstraint(
-            validation.Validation.AddColumnToConstraintRequest request) {
+            Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
                 .then(constraintColumnRepository
                         .save(ErdMapper
@@ -84,7 +87,7 @@ public class ConstraintService {
     }
 
     public Mono<Void> removeColumnFromConstraint(
-            validation.Validation.RemoveColumnFromConstraintRequest request) {
+            Validation.RemoveColumnFromConstraintRequest request) {
         return constraintColumnRepository
                 .findById(request.getConstraintColumnId())
                 .switchIfEmpty(Mono.error(
@@ -98,7 +101,7 @@ public class ConstraintService {
     }
 
     public Mono<Void> deleteConstraint(
-            validation.Validation.DeleteConstraintRequest request) {
+            Validation.DeleteConstraintRequest request) {
         return constraintRepository.findById(request.getConstraintId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(

@@ -6,6 +6,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Schema;
 import com.schemafy.core.validation.client.ValidationClient;
@@ -13,9 +14,7 @@ import com.schemafy.core.validation.client.ValidationClient;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import validation.Validation.ChangeSchemaNameRequest;
-import validation.Validation.CreateSchemaRequest;
-import validation.Validation.DeleteSchemaRequest;
+import validation.Validation;
 
 @Service
 @RequiredArgsConstructor
@@ -25,14 +24,20 @@ public class SchemaService {
     private final SchemaRepository schemaRepository;
 
     public Mono<AffectedMappingResponse> createSchema(
-            CreateSchemaRequest request) {
+            Validation.CreateSchemaRequest request) {
         return validationClient.createSchema(request)
-                .delayUntil(database -> schemaRepository
-                        .save(ErdMapper.toEntity(request.getSchema())))
-                .map(database -> AffectedMappingResponse.of(
-                        request,
-                        request.getDatabase(),
-                        database));
+                .flatMap(database -> schemaRepository
+                        .save(ErdMapper.toEntity(request.getSchema()))
+                        .map(savedSchema -> AffectedMappingResponse.of(
+                                request,
+                                request.getDatabase(),
+                                AffectedMappingResponse.updateEntityIdInDatabase(
+                                        database,
+                                        EntityType.SCHEMA,
+                                        request.getSchema().getId(),
+                                        savedSchema.getId()
+                                )
+                        )));
     }
 
     public Mono<Schema> getSchema(String id) {
@@ -43,7 +48,8 @@ public class SchemaService {
         return schemaRepository.findByProjectIdAndDeletedAtIsNull(projectId);
     }
 
-    public Mono<Schema> updateSchemaName(ChangeSchemaNameRequest request) {
+    public Mono<Schema> updateSchemaName(
+            Validation.ChangeSchemaNameRequest request) {
         return schemaRepository
                 .findByIdAndDeletedAtIsNull(request.getSchemaId())
                 .switchIfEmpty(Mono.error(
@@ -54,7 +60,7 @@ public class SchemaService {
                 .flatMap(schemaRepository::save);
     }
 
-    public Mono<Void> deleteSchema(DeleteSchemaRequest request) {
+    public Mono<Void> deleteSchema(Validation.DeleteSchemaRequest request) {
         return schemaRepository
                 .findByIdAndDeletedAtIsNull(request.getSchemaId())
                 .switchIfEmpty(Mono.error(

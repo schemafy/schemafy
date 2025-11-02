@@ -1,7 +1,5 @@
 package com.schemafy.core.erd.repository.entity;
 
-import java.time.Instant;
-
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.lang.Nullable;

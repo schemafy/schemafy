@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.schemafy.core.erd.model.EntityType;
+
 import validation.Validation;
 
 /**
@@ -285,6 +288,221 @@ public record AffectedMappingResponse(
      */
 
     /**
+     * Validation 결과의 Database에서 특정 엔티티 ID를 실제 DB ID로 교체
+     * 
+     * @param database Validation 결과 Database
+     * @param entityType 엔티티 타입
+     * @param feId 프론트엔드에서 보낸 임시 ID
+     * @param beId DB에서 생성된 실제 ID
+     * @return 업데이트된 Database
+     */
+    public static Validation.Database updateEntityIdInDatabase(
+            Validation.Database database,
+            EntityType entityType,
+            String feId,
+            String beId) {
+        return switch (entityType) {
+        case SCHEMA -> updateSchemaId(database, feId, beId);
+        case TABLE -> updateTableId(database, feId, beId);
+        case COLUMN -> updateColumnId(database, feId, beId);
+        case INDEX -> updateIndexId(database, feId, beId);
+        case CONSTRAINT -> updateConstraintId(database, feId, beId);
+        case RELATIONSHIP -> updateRelationshipId(database, feId, beId);
+        };
+    }
+
+    private static Validation.Database updateSchemaId(
+            Validation.Database database, String feId, String beId) {
+        Validation.Database.Builder dbBuilder = database.toBuilder();
+        dbBuilder.clearSchemas();
+
+        for (Validation.Schema schema : database.getSchemasList()) {
+            if (schema.getId().equals(feId)) {
+                dbBuilder.addSchemas(schema.toBuilder().setId(beId).build());
+            } else {
+                dbBuilder.addSchemas(schema);
+            }
+        }
+        return dbBuilder.build();
+    }
+
+    private static Validation.Database updateTableId(
+            Validation.Database database, String feId, String beId) {
+        Validation.Database.Builder dbBuilder = database.toBuilder();
+        dbBuilder.clearSchemas();
+
+        for (Validation.Schema schema : database.getSchemasList()) {
+            Validation.Schema.Builder schemaBuilder = schema.toBuilder();
+            schemaBuilder.clearTables();
+
+            for (Validation.Table table : schema.getTablesList()) {
+                if (table.getId().equals(feId)) {
+                    // 테이블 ID를 실제 DB ID로 변경하고 하위 엔티티도 업데이트
+                    Validation.Table.Builder tableBuilder = table.toBuilder()
+                            .setId(beId);
+
+                    // Columns의 tableId 업데이트
+                    tableBuilder.clearColumns();
+                    for (Validation.Column column : table.getColumnsList()) {
+                        tableBuilder.addColumns(column.toBuilder()
+                                .setTableId(beId).build());
+                    }
+
+                    // Indexes의 tableId 업데이트
+                    tableBuilder.clearIndexes();
+                    for (Validation.Index index : table.getIndexesList()) {
+                        tableBuilder.addIndexes(index.toBuilder()
+                                .setTableId(beId).build());
+                    }
+
+                    // Constraints의 tableId 업데이트
+                    tableBuilder.clearConstraints();
+                    for (Validation.Constraint constraint : table
+                            .getConstraintsList()) {
+                        tableBuilder.addConstraints(constraint.toBuilder()
+                                .setTableId(beId).build());
+                    }
+
+                    // Relationships의 srcTableId/tgtTableId 업데이트
+                    tableBuilder.clearRelationships();
+                    for (Validation.Relationship relationship : table
+                            .getRelationshipsList()) {
+                        Validation.Relationship.Builder relBuilder = relationship
+                                .toBuilder();
+                        if (relationship.getSrcTableId().equals(feId)) {
+                            relBuilder.setSrcTableId(beId);
+                        }
+                        if (relationship.getTgtTableId().equals(feId)) {
+                            relBuilder.setTgtTableId(beId);
+                        }
+                        tableBuilder.addRelationships(relBuilder.build());
+                    }
+
+                    schemaBuilder.addTables(tableBuilder.build());
+                } else {
+                    schemaBuilder.addTables(table);
+                }
+            }
+            dbBuilder.addSchemas(schemaBuilder.build());
+        }
+        return dbBuilder.build();
+    }
+
+    private static Validation.Database updateColumnId(
+            Validation.Database database, String feId, String beId) {
+        Validation.Database.Builder dbBuilder = database.toBuilder();
+        dbBuilder.clearSchemas();
+
+        for (Validation.Schema schema : database.getSchemasList()) {
+            Validation.Schema.Builder schemaBuilder = schema.toBuilder();
+            schemaBuilder.clearTables();
+
+            for (Validation.Table table : schema.getTablesList()) {
+                Validation.Table.Builder tableBuilder = table.toBuilder();
+                tableBuilder.clearColumns();
+
+                for (Validation.Column column : table.getColumnsList()) {
+                    if (column.getId().equals(feId)) {
+                        tableBuilder.addColumns(column.toBuilder()
+                                .setId(beId).build());
+                    } else {
+                        tableBuilder.addColumns(column);
+                    }
+                }
+                schemaBuilder.addTables(tableBuilder.build());
+            }
+            dbBuilder.addSchemas(schemaBuilder.build());
+        }
+        return dbBuilder.build();
+    }
+
+    private static Validation.Database updateIndexId(
+            Validation.Database database, String feId, String beId) {
+        Validation.Database.Builder dbBuilder = database.toBuilder();
+        dbBuilder.clearSchemas();
+
+        for (Validation.Schema schema : database.getSchemasList()) {
+            Validation.Schema.Builder schemaBuilder = schema.toBuilder();
+            schemaBuilder.clearTables();
+
+            for (Validation.Table table : schema.getTablesList()) {
+                Validation.Table.Builder tableBuilder = table.toBuilder();
+                tableBuilder.clearIndexes();
+
+                for (Validation.Index index : table.getIndexesList()) {
+                    if (index.getId().equals(feId)) {
+                        tableBuilder.addIndexes(index.toBuilder()
+                                .setId(beId).build());
+                    } else {
+                        tableBuilder.addIndexes(index);
+                    }
+                }
+                schemaBuilder.addTables(tableBuilder.build());
+            }
+            dbBuilder.addSchemas(schemaBuilder.build());
+        }
+        return dbBuilder.build();
+    }
+
+    private static Validation.Database updateConstraintId(
+            Validation.Database database, String feId, String beId) {
+        Validation.Database.Builder dbBuilder = database.toBuilder();
+        dbBuilder.clearSchemas();
+
+        for (Validation.Schema schema : database.getSchemasList()) {
+            Validation.Schema.Builder schemaBuilder = schema.toBuilder();
+            schemaBuilder.clearTables();
+
+            for (Validation.Table table : schema.getTablesList()) {
+                Validation.Table.Builder tableBuilder = table.toBuilder();
+                tableBuilder.clearConstraints();
+
+                for (Validation.Constraint constraint : table
+                        .getConstraintsList()) {
+                    if (constraint.getId().equals(feId)) {
+                        tableBuilder.addConstraints(constraint.toBuilder()
+                                .setId(beId).build());
+                    } else {
+                        tableBuilder.addConstraints(constraint);
+                    }
+                }
+                schemaBuilder.addTables(tableBuilder.build());
+            }
+            dbBuilder.addSchemas(schemaBuilder.build());
+        }
+        return dbBuilder.build();
+    }
+
+    private static Validation.Database updateRelationshipId(
+            Validation.Database database, String feId, String beId) {
+        Validation.Database.Builder dbBuilder = database.toBuilder();
+        dbBuilder.clearSchemas();
+
+        for (Validation.Schema schema : database.getSchemasList()) {
+            Validation.Schema.Builder schemaBuilder = schema.toBuilder();
+            schemaBuilder.clearTables();
+
+            for (Validation.Table table : schema.getTablesList()) {
+                Validation.Table.Builder tableBuilder = table.toBuilder();
+                tableBuilder.clearRelationships();
+
+                for (Validation.Relationship relationship : table
+                        .getRelationshipsList()) {
+                    if (relationship.getId().equals(feId)) {
+                        tableBuilder.addRelationships(relationship.toBuilder()
+                                .setId(beId).build());
+                    } else {
+                        tableBuilder.addRelationships(relationship);
+                    }
+                }
+                schemaBuilder.addTables(tableBuilder.build());
+            }
+            dbBuilder.addSchemas(schemaBuilder.build());
+        }
+        return dbBuilder.build();
+    }
+
+    /**
      * 요청 객체에서 추출한 프론트엔드 ID를 엔티티 타입별로 관리하는 컨테이너
      */
     private static class RequestIdMaps {
@@ -328,6 +546,8 @@ public record AffectedMappingResponse(
         }
 
         // 기존 엔티티와 새 엔티티 매핑 (beforeMapById가 비어있지 않은 경우)
+        // 비즈니스 키(이름 등)로 매칭하여 기존 엔티티의 FE-ID와 새 엔티티의 BE-ID를 매핑
+        // isAffected가 없거나 false인 경우도 false와 같이 처리되므로 체크 불필요
         if (!beforeMapById.isEmpty() && !newAfterEntities.isEmpty()) {
             Map<String, T> tempFeMapByKey = beforeMapById.values().stream()
                     .collect(Collectors.toMap(businessKeyExtractor,
@@ -336,29 +556,44 @@ public record AffectedMappingResponse(
             for (T newAfterEntity : newAfterEntities) {
                 T tempFeEntity = tempFeMapByKey
                         .get(businessKeyExtractor.apply(newAfterEntity));
-                if (tempFeEntity != null
-                        && isAffectedExtractor.apply(newAfterEntity)) {
+                if (tempFeEntity != null) {
+                    // isAffected가 true인 경우에만 하위 엔티티 재귀 매핑 수행
+                    // 하지만 ID 매핑은 항상 수행 (isAffected와 무관)
                     idMappingConsumer.accept(
                             idExtractor.apply(tempFeEntity),
                             idExtractor.apply(newAfterEntity));
-                    recursiveMapper.accept(tempFeEntity, newAfterEntity);
+                    if (Boolean.TRUE.equals(
+                            isAffectedExtractor.apply(newAfterEntity))) {
+                        recursiveMapper.accept(tempFeEntity, newAfterEntity);
+                    }
                 }
             }
         }
 
         // 새로 생성된 엔티티들을 요청 ID 맵과 매핑
+        // newAfterEntities는 before에 없고 after에만 있는 엔티티들
+        // requestIdMap에 있는 엔티티는 요청에 포함된 것이므로 isAffected와 관계없이 매핑
+        // requestIdMap에 없고 isAffected가 true인 엔티티는 전파로 생성된 것이므로 매핑 (하위 엔티티만)
         if (!newAfterEntities.isEmpty()) {
             for (T newAfterEntity : newAfterEntities) {
-                if (isAffectedExtractor.apply(newAfterEntity)) {
-                    String afterId = idExtractor.apply(newAfterEntity);
-                    String businessKey = businessKeyExtractor
-                            .apply(newAfterEntity);
+                String afterId = idExtractor.apply(newAfterEntity);
+                String businessKey = businessKeyExtractor
+                        .apply(newAfterEntity);
 
-                    // 요청 ID 맵에서 비즈니스 키로 매칭되는 FE-ID를 찾아서 매핑
-                    String feId = requestIdMap.get(businessKey);
-                    if (feId != null) {
-                        idMappingConsumer.accept(feId, afterId);
-                    }
+                // 요청 ID 맵에서 비즈니스 키로 매칭되는 FE-ID를 찾아서 매핑
+                String feId = requestIdMap.get(businessKey);
+                if (feId != null) {
+                    // 요청에 포함된 엔티티이므로 무조건 매핑
+                    idMappingConsumer.accept(feId, afterId);
+                    // 하위 엔티티도 재귀적으로 매핑
+                    // 새로 생성된 엔티티의 경우 beforeEntity가 null이므로,
+                    // recursiveMapper를 호출할 때 null을 beforeEntity로 전달
+                    recursiveMapper.accept(null, newAfterEntity);
+                } else if (Boolean.TRUE
+                        .equals(isAffectedExtractor.apply(newAfterEntity))) {
+                    // requestIdMap에 없지만 isAffected가 true인 경우
+                    // 전파로 생성된 엔티티이므로 하위 엔티티만 재귀적으로 매핑
+                    recursiveMapper.accept(null, newAfterEntity);
                 }
             }
         }
@@ -377,9 +612,14 @@ public record AffectedMappingResponse(
                 Validation.Schema::getName,
                 Validation.Schema::getIsAffected,
                 (feId, beId) -> builder.schemas.put(feId, beId),
-                (beforeSchema, afterSchema) -> mapTablesWithMaps(builder,
-                        beforeSchema,
-                        afterSchema, requestIdMaps),
+                (beforeSchema, afterSchema) -> {
+                    // beforeSchema가 null인 경우 (새로 생성된 스키마) 빈 스키마로 처리
+                    Validation.Schema beforeSchemaSafe = beforeSchema != null
+                            ? beforeSchema
+                            : Validation.Schema.getDefaultInstance();
+                    mapTablesWithMaps(builder, beforeSchemaSafe, afterSchema,
+                            requestIdMaps);
+                },
                 requestIdMaps.schemas);
     }
 
@@ -401,13 +641,18 @@ public record AffectedMappingResponse(
                 (feId, beId) -> builder.tables.put(feId, beId),
                 (beforeTable, afterTable) -> {
                     // 모든 하위 엔티티에 requestIdMaps 전달
-                    mapColumnsWithMaps(builder, beforeTable, afterTable,
+                    // beforeTable이 null인 경우 (새로 생성된 테이블) 빈 테이블로 처리
+                    Validation.Table beforeTableSafe = beforeTable != null
+                            ? beforeTable
+                            : Validation.Table.getDefaultInstance();
+                    mapColumnsWithMaps(builder, beforeTableSafe, afterTable,
                             requestIdMaps);
-                    mapIndexesWithMaps(builder, beforeTable, afterTable,
+                    mapIndexesWithMaps(builder, beforeTableSafe, afterTable,
                             requestIdMaps);
-                    mapConstraintsWithMaps(builder, beforeTable, afterTable,
+                    mapConstraintsWithMaps(builder, beforeTableSafe, afterTable,
                             requestIdMaps);
-                    mapRelationshipsWithMaps(builder, beforeTable, afterTable,
+                    mapRelationshipsWithMaps(builder, beforeTableSafe,
+                            afterTable,
                             requestIdMaps);
                 },
                 requestIdMaps.tables);
@@ -469,8 +714,13 @@ public record AffectedMappingResponse(
             Validation.Index beforeIndex,
             Validation.Index afterIndex,
             RequestIdMaps requestIdMaps) {
+        // beforeIndex가 null인 경우 (새로 생성된 인덱스) 빈 인덱스로 처리
+        Validation.Index beforeIndexSafe = beforeIndex != null
+                ? beforeIndex
+                : Validation.Index.getDefaultInstance();
+
         mapEntities(
-                beforeIndex.getColumnsList(),
+                beforeIndexSafe.getColumnsList(),
                 afterIndex.getColumnsList(),
                 Validation.IndexColumn::getId,
                 Validation.IndexColumn::getColumnId,
@@ -518,8 +768,13 @@ public record AffectedMappingResponse(
             Validation.Constraint beforeConstraint,
             Validation.Constraint afterConstraint,
             RequestIdMaps requestIdMaps) {
+        // beforeConstraint가 null인 경우 (새로 생성된 제약조건) 빈 제약조건으로 처리
+        Validation.Constraint beforeConstraintSafe = beforeConstraint != null
+                ? beforeConstraint
+                : Validation.Constraint.getDefaultInstance();
+
         mapEntities(
-                beforeConstraint.getColumnsList(),
+                beforeConstraintSafe.getColumnsList(),
                 afterConstraint.getColumnsList(),
                 Validation.ConstraintColumn::getId,
                 Validation.ConstraintColumn::getColumnId,
@@ -568,8 +823,13 @@ public record AffectedMappingResponse(
             Validation.Relationship beforeRelationship,
             Validation.Relationship afterRelationship,
             RequestIdMaps requestIdMaps) {
+        // beforeRelationship이 null인 경우 (새로 생성된 관계) 빈 관계로 처리
+        Validation.Relationship beforeRelationshipSafe = beforeRelationship != null
+                ? beforeRelationship
+                : Validation.Relationship.getDefaultInstance();
+
         mapEntities(
-                beforeRelationship.getColumnsList(),
+                beforeRelationshipSafe.getColumnsList(),
                 afterRelationship.getColumnsList(),
                 Validation.RelationshipColumn::getId,
                 c -> c.getFkColumnId() + ":" + c.getRefColumnId(),

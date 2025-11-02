@@ -6,6 +6,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.entity.Column;
 import com.schemafy.core.validation.client.ValidationClient;
@@ -13,9 +14,7 @@ import com.schemafy.core.validation.client.ValidationClient;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import validation.Validation.ChangeColumnNameRequest;
-import validation.Validation.CreateColumnRequest;
-import validation.Validation.DeleteColumnRequest;
+import validation.Validation;
 
 @Service
 @RequiredArgsConstructor
@@ -25,14 +24,20 @@ public class ColumnService {
     private final ColumnRepository columnRepository;
 
     public Mono<AffectedMappingResponse> createColumn(
-            CreateColumnRequest request) {
+            Validation.CreateColumnRequest request) {
         return validationClient.createColumn(request)
-                .delayUntil(database -> columnRepository
-                        .save(ErdMapper.toEntity(request.getColumn())))
-                .map(database -> AffectedMappingResponse.of(
-                        request,
-                        request.getDatabase(),
-                        database));
+                .flatMap(database -> columnRepository
+                        .save(ErdMapper.toEntity(request.getColumn()))
+                        .map(savedColumn -> AffectedMappingResponse.of(
+                                request,
+                                request.getDatabase(),
+                                AffectedMappingResponse.updateEntityIdInDatabase(
+                                        database,
+                                        EntityType.COLUMN,
+                                        request.getColumn().getId(),
+                                        savedColumn.getId()
+                                )
+                        )));
     }
 
     public Mono<Column> getColumn(String id) {
@@ -43,7 +48,8 @@ public class ColumnService {
         return columnRepository.findByTableIdAndDeletedAtIsNull(tableId);
     }
 
-    public Mono<Column> updateColumnName(ChangeColumnNameRequest request) {
+    public Mono<Column> updateColumnName(
+            Validation.ChangeColumnNameRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
                 .switchIfEmpty(Mono.error(
@@ -55,7 +61,7 @@ public class ColumnService {
     }
 
     public Mono<Column> updateColumnType(
-            validation.Validation.ChangeColumnTypeRequest request) {
+            Validation.ChangeColumnTypeRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
                 .switchIfEmpty(Mono.error(
@@ -67,7 +73,7 @@ public class ColumnService {
     }
 
     public Mono<Column> updateColumnPosition(
-            validation.Validation.ChangeColumnPositionRequest request) {
+            Validation.ChangeColumnPositionRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
                 .switchIfEmpty(Mono.error(
@@ -80,7 +86,7 @@ public class ColumnService {
                 .flatMap(columnRepository::save);
     }
 
-    public Mono<Void> deleteColumn(DeleteColumnRequest request) {
+    public Mono<Void> deleteColumn(Validation.DeleteColumnRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
                 .switchIfEmpty(Mono.error(

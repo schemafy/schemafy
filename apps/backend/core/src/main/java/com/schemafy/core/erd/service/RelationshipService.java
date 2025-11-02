@@ -7,6 +7,7 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
 import com.schemafy.core.erd.repository.entity.Relationship;
@@ -16,6 +17,7 @@ import com.schemafy.core.validation.client.ValidationClient;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import validation.Validation;
 
 @Service
 @RequiredArgsConstructor
@@ -29,32 +31,33 @@ public class RelationshipService {
     public Mono<AffectedMappingResponse> createRelationship(
             CreateRelationshipRequestWithExtra request) {
         return validationClient.createRelationship(request.request())
-                .flatMap(database -> {
-                    String relationshipId = request.request().getRelationship()
-                            .getId();
+                .flatMap(database -> relationshipRepository
+                        .save(ErdMapper.toEntity(
+                                request.request().getRelationship(),
+                                request.extra()))
+                        .flatMap(savedRelationship -> {
+                            Validation.Database updatedDatabase = AffectedMappingResponse
+                                    .updateEntityIdInDatabase(
+                                            database,
+                                            EntityType.RELATIONSHIP,
+                                            request.request().getRelationship().getId(),
+                                            savedRelationship.getId()
+                                    );
 
-                    // 요청한 Relationship 저장 (extra 포함)
-                    Mono<Relationship> saveRelationship = relationshipRepository
-                            .save(ErdMapper.toEntity(
-                                    request.request().getRelationship(),
-                                    request.extra()));
-
-                    // 영향받은 엔티티 저장 + 전파 정보 수집
-                    // 식별 관계인 경우 자식 테이블 전파
-                    return saveRelationship
-                            .then(affectedEntitiesSaver.saveAffectedEntities(
-                                    request.request().getDatabase(),
-                                    database,
-                                    relationshipId,
-                                    relationshipId,    // sourceId
-                                    "RELATIONSHIP"     // sourceType
-                    ))
-                            .map(propagated -> AffectedMappingResponse.of(
-                                    request.request(),
-                                    request.request().getDatabase(),
-                                    database,
-                                    propagated));
-                });
+                            return affectedEntitiesSaver
+                                    .saveAffectedEntities(
+                                            request.request().getDatabase(),
+                                            updatedDatabase,
+                                            savedRelationship.getId(),
+                                            savedRelationship.getId(),
+                                            "RELATIONSHIP"
+                                    )
+                                    .map(propagated -> AffectedMappingResponse.of(
+                                            request.request(),
+                                            request.request().getDatabase(),
+                                            updatedDatabase,
+                                            propagated));
+                        }));
     }
 
     public Mono<Relationship> getRelationship(String id) {
@@ -66,7 +69,7 @@ public class RelationshipService {
     }
 
     public Mono<Relationship> updateRelationshipName(
-            validation.Validation.ChangeRelationshipNameRequest request) {
+            Validation.ChangeRelationshipNameRequest request) {
         return relationshipRepository.findById(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
@@ -79,7 +82,7 @@ public class RelationshipService {
     }
 
     public Mono<Relationship> updateRelationshipCardinality(
-            validation.Validation.ChangeRelationshipCardinalityRequest request) {
+            Validation.ChangeRelationshipCardinalityRequest request) {
         return relationshipRepository
                 .findById(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
@@ -93,7 +96,7 @@ public class RelationshipService {
     }
 
     public Mono<RelationshipColumn> addColumnToRelationship(
-            validation.Validation.AddColumnToRelationshipRequest request) {
+            Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
                 .then(relationshipColumnRepository
                         .save(ErdMapper
@@ -101,7 +104,7 @@ public class RelationshipService {
     }
 
     public Mono<Void> removeColumnFromRelationship(
-            validation.Validation.RemoveColumnFromRelationshipRequest request) {
+            Validation.RemoveColumnFromRelationshipRequest request) {
         return relationshipColumnRepository
                 .findById(request.getRelationshipColumnId())
                 .switchIfEmpty(Mono.error(
@@ -115,7 +118,7 @@ public class RelationshipService {
     }
 
     public Mono<Void> deleteRelationship(
-            validation.Validation.DeleteRelationshipRequest request) {
+            Validation.DeleteRelationshipRequest request) {
         return relationshipRepository.findById(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(

@@ -10,7 +10,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.domain.Persistable;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.Instant;
 
@@ -37,6 +37,7 @@ public abstract class BaseEntity implements Persistable<String> {
     }
 
     @Override
+    @JsonIgnore
     public boolean isNew() {
         return this.createdAt == null;
     }
@@ -45,6 +46,7 @@ public abstract class BaseEntity implements Persistable<String> {
         this.deletedAt = Instant.now();
     }
 
+    @JsonIgnore
     public boolean isDeleted() {
         return deletedAt != null;
     }

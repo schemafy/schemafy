@@ -7,6 +7,7 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.TableRepository;
 import com.schemafy.core.erd.repository.entity.Table;
 import com.schemafy.core.validation.client.ValidationClient;
@@ -14,8 +15,7 @@ import com.schemafy.core.validation.client.ValidationClient;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import validation.Validation.ChangeTableNameRequest;
-import validation.Validation.DeleteTableRequest;
+import validation.Validation;
 
 @Service
 @RequiredArgsConstructor
@@ -27,12 +27,18 @@ public class TableService {
     public Mono<AffectedMappingResponse> createTable(
             CreateTableRequestWithExtra request) {
         return validationClient.createTable(request.request())
-                .delayUntil(database -> tableRepository.save(ErdMapper.toEntity(
-                        request.request().getTable(), request.extra())))
-                .map(database -> AffectedMappingResponse.of(
-                        request.request(),
-                        request.request().getDatabase(),
-                        database));
+                .flatMap(database -> tableRepository.save(ErdMapper.toEntity(
+                        request.request().getTable(), request.extra()))
+                        .map(savedTable -> AffectedMappingResponse.of(
+                                request.request(),
+                                request.request().getDatabase(),
+                                AffectedMappingResponse.updateEntityIdInDatabase(
+                                        database,
+                                        EntityType.TABLE,
+                                        request.request().getTable().getId(),
+                                        savedTable.getId()
+                                )
+                        )));
     }
 
     public Mono<Table> getTable(String id) {
@@ -43,7 +49,8 @@ public class TableService {
         return tableRepository.findBySchemaIdAndDeletedAtIsNull(schemaId);
     }
 
-    public Mono<Table> updateTableName(ChangeTableNameRequest request) {
+    public Mono<Table> updateTableName(
+            Validation.ChangeTableNameRequest request) {
         return tableRepository
                 .findByIdAndDeletedAtIsNull(request.getTableId())
                 .switchIfEmpty(Mono.error(
@@ -53,7 +60,7 @@ public class TableService {
                 .flatMap(tableRepository::save);
     }
 
-    public Mono<Void> deleteTable(DeleteTableRequest request) {
+    public Mono<Void> deleteTable(Validation.DeleteTableRequest request) {
         return tableRepository
                 .findByIdAndDeletedAtIsNull(request.getTableId())
                 .switchIfEmpty(Mono.error(
