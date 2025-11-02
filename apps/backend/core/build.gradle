@@ -100,6 +100,12 @@ tasks.named('asciidoctor') {
 	attributes 'snippets': snippetsDir
 }
 
+tasks.named('processResources') {
+	from('sql/ddl') {
+		into 'ddl'
+	}
+}
+
 spotbugs {
 	toolVersion = '4.8.6'
 	effort = 'max'
