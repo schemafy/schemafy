@@ -1,4 +1,4 @@
-import { makeAutoObservable, observable } from 'mobx';
+import { makeAutoObservable, observable, runInAction } from 'mobx';
 import {
   ERD_VALIDATOR,
   type Database,
@@ -122,7 +122,9 @@ export class ErdStore {
     }
     try {
       const next = updater(this.erdState.database);
-      this.erdState = { state: 'loaded', database: next };
+      runInAction(() => {
+        this.erdState = { state: 'loaded', database: next };
+      });
     } catch (e) {
       console.error(e);
       throw e;
