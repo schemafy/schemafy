@@ -100,6 +100,29 @@ tasks.named('asciidoctor') {
 	attributes 'snippets': snippetsDir
 }
 
+// DDL 복사 스펙 정의
+def ddlSpec = copySpec {
+    from("$projectDir/sql/ddl")
+    into('ddl')
+}
+
+// 테스트 환경: 항상 DDL 포함
+tasks.named('processTestResources') {
+    with ddlSpec
+}
+
+// 개발 환경: bootRun 실행 시 원본 DDL 디렉토리를 classpath에 직접 추가
+// 복사하지 않으므로 build 디렉토리와 충돌 X
+tasks.named('bootRun') {
+    // projectDir 사용 (멀티 프로젝트 환경에서 rootDir은 최상위 루트를 가리킴)
+    classpath = sourceSets.main.runtimeClasspath + files("$projectDir/sql")
+}
+
+// Production 빌드: DDL 포함 X
+tasks.named('bootJar') {
+    exclude('ddl/**')
+}
+
 spotbugs {
 	toolVersion = '4.8.6'
 	effort = 'max'
@@ -121,12 +144,12 @@ tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
 	reports {
 		html {
 			required = true
-			outputLocation = file("$buildDir/reports/spotbugs/main.html")
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.html')
 			stylesheet = 'fancy-hist.xsl'
 		}
 		xml {
 			required = true
-			outputLocation = file("$buildDir/reports/spotbugs/main.xml")
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.xml')
 		}
 	}
 }
