@@ -10,6 +10,7 @@ import {
     UniqueSameAsPrimaryKeyError,
 } from "../errors";
 import type { Database, Schema, Table, Constraint, ConstraintColumn } from "../types";
+import { propagatePrimaryKeysToChildren } from "../helper";
 
 export interface ConstraintHandlers {
     createConstraint: (
@@ -250,7 +251,7 @@ export const constraintHandlers: ConstraintHandlers = {
         const constraint = table.constraints.find((c) => c.id === constraintId);
         if (!constraint) throw new ConstraintNotExistError(constraintId);
 
-        return {
+        let updatedDatabase = {
             ...database,
             schemas: database.schemas.map((s) =>
                 s.id === schemaId
@@ -275,6 +276,25 @@ export const constraintHandlers: ConstraintHandlers = {
                     : s,
             ),
         };
+
+        if (constraint.kind === "PRIMARY_KEY") {
+            const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId);
+            if (!updatedSchema) return updatedDatabase;
+
+            const pkColumn = table.columns.find((col) => col.id === constraintColumn.columnId);
+            if (!pkColumn) return updatedDatabase;
+
+            const propagatedSchema = propagatePrimaryKeysToChildren(structuredClone(updatedSchema), tableId, [
+                pkColumn,
+            ]);
+
+            updatedDatabase = {
+                ...updatedDatabase,
+                schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? propagatedSchema : s)),
+            };
+        }
+
+        return updatedDatabase;
     },
     removeColumnFromConstraint: (database, schemaId, tableId, constraintId, constraintColumnId) => {
         const schema = database.schemas.find((s) => s.id === schemaId);
