@@ -125,6 +125,7 @@ export class ErdStore {
       runInAction(() => {
         this.erdState = { state: 'loaded', database: next };
       });
+      console.log(this.erdState.database);
     } catch (e) {
       console.error(e);
       throw e;

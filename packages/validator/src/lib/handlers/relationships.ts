@@ -89,10 +89,11 @@ export const relationshipHandlers: RelationshipHandlers = {
                         if (!childTable) continue;
 
                         let updatedChildTable = childTable;
+                        let currentRel = rel;
                         const newlyCreatedFkColumns = [];
 
                         for (const pkColumn of pkColumns) {
-                            const relColumn = rel.columns.find((rc) => rc.refColumnId === pkColumn.id);
+                            const relColumn = currentRel.columns.find((rc) => rc.refColumnId === pkColumn.id);
 
                             if (relColumn && relColumn.fkColumnId) {
                                 const existingColumn = childTable.columns.find((c) => c.id === relColumn.fkColumnId);
@@ -107,7 +108,7 @@ export const relationshipHandlers: RelationshipHandlers = {
                                 id: newColumnId,
                                 tableId: childTable.id,
                                 name: columnName,
-                                ordinalPosition: childTable.columns.length + 1,
+                                ordinalPosition: updatedChildTable.columns.length + 1,
                                 createdAt: new Date(),
                                 updatedAt: new Date(),
                             };
@@ -120,13 +121,14 @@ export const relationshipHandlers: RelationshipHandlers = {
                             newlyCreatedFkColumns.push(newColumn);
 
                             if (relColumn) {
-                                // relColumn이 있으면 기존 relColumn의 fkColumnId만 업데이트
                                 const updatedRel = {
-                                    ...rel,
-                                    columns: rel.columns.map((rc) =>
+                                    ...currentRel,
+                                    columns: currentRel.columns.map((rc) =>
                                         rc.id === relColumn.id ? { ...rc, fkColumnId: newColumnId } : rc,
                                     ),
                                 };
+
+                                currentRel = updatedRel;
 
                                 updatedChildTable = {
                                     ...updatedChildTable,
@@ -135,19 +137,20 @@ export const relationshipHandlers: RelationshipHandlers = {
                                     ),
                                 };
                             } else {
-                                // relColumn이 없으면 새 relColumn 생성
                                 const newRelColumn = {
                                     id: `rel_col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                                     relationshipId: rel.id,
                                     fkColumnId: newColumnId,
                                     refColumnId: pkColumn.id,
-                                    seqNo: rel.columns.length + 1,
+                                    seqNo: currentRel.columns.length + 1,
                                 };
 
                                 const updatedRel = {
-                                    ...rel,
-                                    columns: [...rel.columns, newRelColumn],
+                                    ...currentRel,
+                                    columns: [...currentRel.columns, newRelColumn],
                                 };
+
+                                currentRel = updatedRel;
 
                                 updatedChildTable = {
                                     ...updatedChildTable,
@@ -203,7 +206,7 @@ export const relationshipHandlers: RelationshipHandlers = {
 
                             updatedSchema = propagateKeysToChildren(
                                 structuredClone(updatedSchema),
-                                rel.tgtTableId,
+                                rel.srcTableId,
                                 new Set(visited),
                             );
                         }

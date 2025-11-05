@@ -1,6 +1,7 @@
 import { ulid } from 'ulid';
 import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType, ConstraintKind } from '../types';
+import type { Constraint, ConstraintColumn } from '@schemafy/validator';
 
 export const saveColumnName = (
   erdStore: ErdStore,
@@ -20,6 +21,86 @@ export const saveColumnType = (
   dataType: string,
 ) => {
   erdStore.changeColumnType(schemaId, tableId, columnId, dataType);
+};
+
+const CONSTRAINT_PREFIX_MAP: Record<ConstraintKind, string> = {
+  PRIMARY_KEY: 'pk',
+  NOT_NULL: 'nn',
+  UNIQUE: 'uq',
+};
+
+const createConstraintColumn = (columnId: string, seqNo: number) => ({
+  id: ulid(),
+  columnId,
+  seqNo,
+  constraintId: '',
+});
+
+const addPrimaryKeyConstraint = (
+  erdStore: ErdStore,
+  schemaId: string,
+  tableId: string,
+  columnId: string,
+  table: { name: string; constraints: Constraint[] },
+) => {
+  const existingPk = table.constraints.find((c) => c.kind === 'PRIMARY_KEY');
+
+  if (existingPk) {
+    erdStore.addColumnToConstraint(
+      schemaId,
+      tableId,
+      existingPk.id,
+      createConstraintColumn(columnId, existingPk.columns.length),
+    );
+
+    const hasNotNull = table.constraints.some(
+      (c) => c.kind === 'NOT_NULL' && c.columns.some((cc) => cc.columnId === columnId),
+    );
+    if (!hasNotNull) {
+      erdStore.createConstraint(schemaId, tableId, {
+        id: ulid(),
+        name: `nn_${columnId}`,
+        kind: 'NOT_NULL',
+        columns: [createConstraintColumn(columnId, 0)],
+      });
+    }
+  } else {
+    erdStore.createConstraint(schemaId, tableId, {
+      id: ulid(),
+      name: `pk_${table.name}`,
+      kind: 'PRIMARY_KEY',
+      columns: [createConstraintColumn(columnId, 0)],
+    });
+  }
+};
+
+const addSingleColumnConstraint = (
+  erdStore: ErdStore,
+  schemaId: string,
+  tableId: string,
+  columnId: string,
+  constraintKind: ConstraintKind,
+) => {
+  const prefix = CONSTRAINT_PREFIX_MAP[constraintKind];
+  erdStore.createConstraint(schemaId, tableId, {
+    id: ulid(),
+    name: `${prefix}_${columnId}`,
+    kind: constraintKind,
+    columns: [createConstraintColumn(columnId, 0)],
+  });
+};
+
+const removePrimaryKeyConstraint = (
+  erdStore: ErdStore,
+  schemaId: string,
+  tableId: string,
+  existingConstraint: Constraint,
+  columnId: string,
+) => {
+  const pkColumn = existingConstraint.columns.find((cc: ConstraintColumn) => cc.columnId === columnId);
+  if (pkColumn) {
+    erdStore.removeColumnFromConstraint(schemaId, tableId, existingConstraint.id, pkColumn.id);
+  }
 };
 
 const saveColumnConstraint = (
@@ -45,21 +126,17 @@ const saveColumnConstraint = (
   );
 
   if (enabled && !existingConstraint) {
-    const prefixMap: Record<ConstraintKind, string> = {
-      PRIMARY_KEY: 'pk',
-      NOT_NULL: 'nn',
-      UNIQUE: 'uq',
-    };
-    const prefix = prefixMap[constraintKind];
-
-    erdStore.createConstraint(schemaId, tableId, {
-      id: ulid(),
-      name: `${prefix}_${columnId}`,
-      kind: constraintKind,
-      columns: [{ id: ulid(), columnId, seqNo: 0, constraintId: '' }],
-    });
+    if (constraintKind === 'PRIMARY_KEY') {
+      addPrimaryKeyConstraint(erdStore, schemaId, tableId, columnId, table);
+    } else {
+      addSingleColumnConstraint(erdStore, schemaId, tableId, columnId, constraintKind);
+    }
   } else if (!enabled && existingConstraint) {
-    erdStore.deleteConstraint(schemaId, tableId, existingConstraint.id);
+    if (constraintKind === 'PRIMARY_KEY') {
+      removePrimaryKeyConstraint(erdStore, schemaId, tableId, existingConstraint, columnId);
+    } else {
+      erdStore.deleteConstraint(schemaId, tableId, existingConstraint.id);
+    }
   }
 };
 
@@ -71,10 +148,6 @@ export const saveColumnPrimaryKey = (
   isPrimaryKey: boolean,
 ) => {
   saveColumnConstraint(erdStore, schemaId, tableId, columnId, 'PRIMARY_KEY', isPrimaryKey);
-
-  if (isPrimaryKey) {
-    saveColumnConstraint(erdStore, schemaId, tableId, columnId, 'NOT_NULL', true);
-  }
 };
 
 export const saveColumnNotNull = (

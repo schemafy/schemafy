@@ -1,7 +1,7 @@
 import type { Connection, Edge, EdgeChange } from '@xyflow/react';
 import { useState, useRef, useEffect } from 'react';
 import { applyEdgeChanges } from '@xyflow/react';
-import { reaction } from 'mobx';
+import { autorun } from 'mobx';
 import { ErdStore } from '@/store';
 import type { RelationshipConfig } from '../types';
 import { RELATIONSHIP_TYPES } from '../types';
@@ -56,15 +56,12 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const [relationships, setRelationships] = useState<Edge[]>(() => getRelationships());
 
   useEffect(() => {
-    const dispose = reaction(
-      () => ({
-        schema: erdStore.selectedSchema,
-        schemaId: erdStore.selectedSchemaId,
-      }),
-      () => {
+    const dispose = autorun(() => {
+      const state = erdStore.erdState;
+      if (state.state === 'loaded') {
         setRelationships(getRelationships());
-      },
-    );
+      }
+    });
 
     return () => dispose();
   }, []);

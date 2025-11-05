@@ -47,12 +47,13 @@ export const createRelationshipFromConnection = ({
   }
 
   const targetPk = targetTable.constraints.find((c) => c.kind === 'PRIMARY_KEY');
-  const targetPkColId = targetPk?.columns[0]?.columnId;
 
-  if (!targetPkColId) {
+  if (!targetPk || targetPk.columns.length === 0) {
     console.error('Target table must have a primary key to create a relationship');
     return null;
   }
+
+  const targetPkColumnIds = targetPk.columns.map((c) => c.columnId);
 
   const relId = ulid();
   const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
@@ -68,15 +69,13 @@ export const createRelationshipFromConnection = ({
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
     fkEnforced: false,
-    columns: [
-      {
-        id: ulid(),
-        relationshipId: relId,
-        fkColumnId: '',
-        refColumnId: targetPkColId,
-        seqNo: 1,
-      },
-    ],
+    columns: targetPkColumnIds.map((pkColId, index) => ({
+      id: ulid(),
+      relationshipId: relId,
+      fkColumnId: '',
+      refColumnId: pkColId,
+      seqNo: index + 1,
+    })),
     extra: {
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
@@ -101,10 +100,7 @@ export const shouldRecreateRelationship = (
   return currentRelationship.kind !== newKind || currentRelationship.cardinality !== newCardinality;
 };
 
-export const mergeRelationshipExtra = (
-  current: RelationshipExtra,
-  config: RelationshipConfig,
-): RelationshipExtra => {
+export const mergeRelationshipExtra = (current: RelationshipExtra, config: RelationshipConfig): RelationshipExtra => {
   return {
     ...current,
     controlPointX: config.controlPointX,

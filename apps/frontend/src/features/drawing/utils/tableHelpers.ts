@@ -7,9 +7,13 @@ type TableExtra = {
 };
 
 export const hasConstraint = (constraints: Constraint[], columnId: string, kind: ConstraintKind): boolean => {
-  return constraints.some(
-    (c) => c.kind === kind && c.columns.length === 1 && c.columns.some((cc) => cc.columnId === columnId),
-  );
+  const checkSingleColumn = kind !== 'PRIMARY_KEY';
+
+  return constraints.some((c) => {
+    if (c.kind !== kind) return false;
+    if (checkSingleColumn && c.columns.length !== 1) return false;
+    return c.columns.some((cc) => cc.columnId === columnId);
+  });
 };
 
 export const transformColumn = (col: Column, constraints: Constraint[]): ColumnType => {
