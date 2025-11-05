@@ -46,13 +46,25 @@ public class RelationshipService {
                                                     .getId(),
                                             savedRelationship.getId());
 
-                            return affectedEntitiesSaver
-                                    .saveAffectedEntities(
-                                            request.request().getDatabase(),
-                                            updatedDatabase,
-                                            savedRelationship.getId(),
-                                            savedRelationship.getId(),
-                                            "RELATIONSHIP")
+                            return Flux
+                                    .fromIterable(request.request()
+                                            .getRelationship().getColumnsList())
+                                    .flatMap(column -> {
+                                        RelationshipColumn entity = ErdMapper
+                                                .toEntity(column);
+                                        entity.setRelationshipId(
+                                                savedRelationship.getId());
+                                        return relationshipColumnRepository
+                                                .save(entity);
+                                    })
+                                    .then(affectedEntitiesSaver
+                                            .saveAffectedEntities(
+                                                    request.request()
+                                                            .getDatabase(),
+                                                    updatedDatabase,
+                                                    savedRelationship.getId(),
+                                                    savedRelationship.getId(),
+                                                    "RELATIONSHIP"))
                                     .map(propagated -> AffectedMappingResponse
                                             .of(
                                                     request.request(),
@@ -65,16 +77,21 @@ public class RelationshipService {
 
     public Mono<RelationshipResponse> getRelationship(String id) {
         return relationshipRepository.findById(id)
-                .flatMap(relationship -> relationshipColumnRepository.findByRelationshipId(id)
+                .flatMap(relationship -> relationshipColumnRepository
+                        .findByRelationshipId(id)
                         .collectList()
-                        .map(columns -> RelationshipResponse.from(relationship, columns)));
+                        .map(columns -> RelationshipResponse.from(relationship,
+                                columns)));
     }
 
-    public Flux<RelationshipResponse> getRelationshipsByTableId(String tableId) {
+    public Flux<RelationshipResponse> getRelationshipsByTableId(
+            String tableId) {
         return relationshipRepository.findByTableId(tableId)
-                .flatMap(relationship -> relationshipColumnRepository.findByRelationshipId(relationship.getId())
+                .flatMap(relationship -> relationshipColumnRepository
+                        .findByRelationshipId(relationship.getId())
                         .collectList()
-                        .map(columns -> RelationshipResponse.from(relationship, columns)));
+                        .map(columns -> RelationshipResponse.from(relationship,
+                                columns)));
     }
 
     public Mono<RelationshipResponse> updateRelationshipName(

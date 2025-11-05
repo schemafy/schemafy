@@ -40,37 +40,51 @@ public class ConstraintService {
                                             database,
                                             EntityType.CONSTRAINT,
                                             request.getConstraint().getId(),
-                                            savedConstraint.getId()
-                                    );
+                                            savedConstraint.getId());
 
-                            return affectedEntitiesSaver
-                                    .saveAffectedEntities(
-                                            request.getDatabase(),
-                                            updatedDatabase,
-                                            savedConstraint.getId(),
-                                            savedConstraint.getId(),
-                                            "CONSTRAINT"
-                                    )
-                                    .map(propagated -> AffectedMappingResponse.of(
-                                            request,
-                                            request.getDatabase(),
-                                            updatedDatabase,
-                                            propagated));
+                            return Flux
+                                    .fromIterable(request.getConstraint()
+                                            .getColumnsList())
+                                    .flatMap(column -> {
+                                        ConstraintColumn entity = ErdMapper
+                                                .toEntity(column);
+                                        entity.setConstraintId(
+                                                savedConstraint.getId());
+                                        return constraintColumnRepository
+                                                .save(entity);
+                                    })
+                                    .then(affectedEntitiesSaver
+                                            .saveAffectedEntities(
+                                                    request.getDatabase(),
+                                                    updatedDatabase,
+                                                    savedConstraint.getId(),
+                                                    savedConstraint.getId(),
+                                                    "CONSTRAINT"))
+                                    .map(propagated -> AffectedMappingResponse
+                                            .of(
+                                                    request,
+                                                    request.getDatabase(),
+                                                    updatedDatabase,
+                                                    propagated));
                         }));
     }
 
     public Mono<ConstraintResponse> getConstraint(String id) {
         return constraintRepository.findById(id)
-                .flatMap(constraint -> constraintColumnRepository.findByConstraintId(id)
+                .flatMap(constraint -> constraintColumnRepository
+                        .findByConstraintId(id)
                         .collectList()
-                        .map(columns -> ConstraintResponse.from(constraint, columns)));
+                        .map(columns -> ConstraintResponse.from(constraint,
+                                columns)));
     }
 
     public Flux<ConstraintResponse> getConstraintsByTableId(String tableId) {
         return constraintRepository.findByTableId(tableId)
-                .flatMap(constraint -> constraintColumnRepository.findByConstraintId(constraint.getId())
+                .flatMap(constraint -> constraintColumnRepository
+                        .findByConstraintId(constraint.getId())
                         .collectList()
-                        .map(columns -> ConstraintResponse.from(constraint, columns)));
+                        .map(columns -> ConstraintResponse.from(constraint,
+                                columns)));
     }
 
     public Mono<ConstraintResponse> updateConstraintName(
