@@ -460,6 +460,21 @@ export const columnHandlers: ColumnHandlers = {
         const column = table.columns.find((c) => c.id === columnId);
         if (!column) throw new ColumnNotExistError(columnId);
 
+        const sortedColumns = [...table.columns].sort((a, b) => a.ordinalPosition - b.ordinalPosition);
+
+        const columnsWithoutTarget = sortedColumns.filter((c) => c.id !== columnId);
+        const reorderedColumns = [
+            ...columnsWithoutTarget.slice(0, newPosition),
+            column,
+            ...columnsWithoutTarget.slice(newPosition),
+        ];
+
+        const updatedColumns = reorderedColumns.map((col, index) => ({
+            ...col,
+            ordinalPosition: index,
+            updatedAt: col.id === columnId ? new Date() : col.updatedAt,
+        }));
+
         return {
             ...database,
             schemas: database.schemas.map((s) =>
@@ -470,11 +485,7 @@ export const columnHandlers: ColumnHandlers = {
                               t.id === tableId
                                   ? {
                                         ...t,
-                                        columns: t.columns.map((c) =>
-                                            c.id === columnId
-                                                ? { ...c, updatedAt: new Date(), ordinalPosition: newPosition }
-                                                : c,
-                                        ),
+                                        columns: updatedColumns,
                                     }
                                   : t,
                           ),

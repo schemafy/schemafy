@@ -3,7 +3,7 @@ import type { ColumnType } from '../types';
 
 interface UseDragAndDropProps {
   items: ColumnType[];
-  onReorder: (newItems: ColumnType[]) => void;
+  onReorder: (newItems: ColumnType[], draggedItemId: string, newIndex: number) => void;
 }
 
 interface UseDragAndDropReturn {
@@ -58,7 +58,7 @@ export const useDragAndDrop = ({ items, onReorder }: UseDragAndDropProps): UseDr
       const [draggedElement] = newItems.splice(draggedIndex, 1);
       newItems.splice(targetIndex, 0, draggedElement);
 
-      onReorder(newItems);
+      onReorder(newItems, draggedItem, targetIndex);
     }
 
     setDraggedItem(null);

@@ -51,10 +51,8 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
 
   const dragAndDrop = useDragAndDrop({
     items: columns,
-    onReorder: (newColumns) => {
-      newColumns.forEach((column, index) => {
-        erdStore.changeColumnPosition(data.schemaId, id, column.id, index);
-      });
+    onReorder: (_newColumns, draggedColumnId, newIndex) => {
+      erdStore.changeColumnPosition(data.schemaId, id, draggedColumnId, newIndex);
     },
   });
 
