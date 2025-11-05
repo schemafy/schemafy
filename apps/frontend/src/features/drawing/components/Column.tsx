@@ -162,13 +162,12 @@ export const ColumnConstraints = ({ column, onUpdateColumn }: ColumnConstraintsP
   const constraints = [
     { key: 'isPrimaryKey', label: 'PK', color: 'text-schemafy-yellow' },
     { key: 'isNotNull', label: 'NOT NULL', color: 'text-schemafy-destructive' },
-    { key: 'isUnique', label: 'UNIQUE', color: 'text-schemafy-blue' },
   ] as const;
 
   return (
     <div className="flex flex-wrap gap-3 text-xs ml-4">
       {constraints.map(({ key, label, color }) => {
-        const isDisabled = column.isPrimaryKey && (key === 'isNotNull' || key === 'isUnique');
+        const isDisabled = column.isPrimaryKey && key === 'isNotNull';
 
         return (
           <label

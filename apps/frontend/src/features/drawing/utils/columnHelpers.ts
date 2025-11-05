@@ -160,16 +160,6 @@ export const saveColumnNotNull = (
   saveColumnConstraint(erdStore, schemaId, tableId, columnId, 'NOT_NULL', isNotNull);
 };
 
-export const saveColumnUnique = (
-  erdStore: ErdStore,
-  schemaId: string,
-  tableId: string,
-  columnId: string,
-  isUnique: boolean,
-) => {
-  saveColumnConstraint(erdStore, schemaId, tableId, columnId, 'UNIQUE', isUnique);
-};
-
 type ColumnFieldSaver = (
   erdStore: ErdStore,
   schemaId: string,
@@ -187,8 +177,6 @@ const COLUMN_FIELD_SAVERS: Partial<Record<keyof ColumnType, ColumnFieldSaver>> =
     saveColumnPrimaryKey(erdStore, schemaId, tableId, columnId, value as boolean),
   isNotNull: (erdStore, schemaId, tableId, columnId, value) =>
     saveColumnNotNull(erdStore, schemaId, tableId, columnId, value as boolean),
-  isUnique: (erdStore, schemaId, tableId, columnId, value) =>
-    saveColumnUnique(erdStore, schemaId, tableId, columnId, value as boolean),
 };
 
 export const saveColumnField = (

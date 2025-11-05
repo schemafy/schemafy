@@ -13,8 +13,7 @@ export const ConstraintSection = ({
   onRemoveColumnFromConstraint,
 }: ConstraintSectionProps) => {
   const filteredConstraints = constraints.filter((constraint) => {
-    if (constraint.kind !== 'UNIQUE') return false;
-    return isEditMode || constraint.columns.length >= 2;
+    return constraint.kind === 'UNIQUE';
   });
 
   if (filteredConstraints.length === 0 && !isEditMode) {
