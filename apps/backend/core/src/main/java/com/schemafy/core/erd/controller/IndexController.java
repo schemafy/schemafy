@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.repository.entity.Index;
-import com.schemafy.core.erd.repository.entity.IndexColumn;
+import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
 import com.schemafy.core.erd.service.IndexService;
 
 import lombok.AllArgsConstructor;
@@ -41,14 +41,14 @@ public class IndexController {
     }
 
     @GetMapping("/indexes/{indexId}")
-    public Mono<BaseResponse<Index>> getIndex(
+    public Mono<BaseResponse<IndexResponse>> getIndex(
             @PathVariable String indexId) {
         return indexService.getIndex(indexId)
                 .map(BaseResponse::success);
     }
 
     @GetMapping("/indexes/table/{tableId}")
-    public Mono<BaseResponse<List<Index>>> getIndexesByTableId(
+    public Mono<BaseResponse<List<IndexResponse>>> getIndexesByTableId(
             @PathVariable String tableId) {
         return indexService.getIndexesByTableId(tableId)
                 .collectList()
@@ -56,7 +56,7 @@ public class IndexController {
     }
 
     @PutMapping("/indexes/{indexId}/name")
-    public Mono<BaseResponse<Index>> updateIndexName(
+    public Mono<BaseResponse<IndexResponse>> updateIndexName(
             @PathVariable String indexId,
             @RequestBody ChangeIndexNameRequest request) {
         return indexService.updateIndexName(request)
@@ -64,7 +64,7 @@ public class IndexController {
     }
 
     @PostMapping("/indexes/{indexId}/columns")
-    public Mono<BaseResponse<IndexColumn>> addColumnToIndex(
+    public Mono<BaseResponse<IndexColumnResponse>> addColumnToIndex(
             @PathVariable String indexId,
             @RequestBody AddColumnToIndexRequest request) {
         return indexService.addColumnToIndex(request)

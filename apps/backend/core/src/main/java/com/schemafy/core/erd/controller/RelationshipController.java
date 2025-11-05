@@ -16,8 +16,8 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.repository.entity.Relationship;
-import com.schemafy.core.erd.repository.entity.RelationshipColumn;
+import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.service.RelationshipService;
 
 import lombok.AllArgsConstructor;
@@ -34,21 +34,21 @@ public class RelationshipController {
     @PostMapping("/relationships")
     public Mono<BaseResponse<AffectedMappingResponse>> createRelationship(
             @RequestBody Validation.CreateRelationshipRequest request,
-            @RequestParam(required = false) String extra) {
+            @RequestParam(required = false, defaultValue = "{}") String extra) {
         CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(request, extra);
         return relationshipService.createRelationship(requestWithExtra)
                 .map(BaseResponse::success);
     }
 
     @GetMapping("/relationships/{relationshipId}")
-    public Mono<BaseResponse<Relationship>> getRelationship(
+    public Mono<BaseResponse<RelationshipResponse>> getRelationship(
             @PathVariable String relationshipId) {
         return relationshipService.getRelationship(relationshipId)
                 .map(BaseResponse::success);
     }
 
     @GetMapping("/relationships/table/{tableId}")
-    public Mono<BaseResponse<List<Relationship>>> getRelationshipsByTableId(
+    public Mono<BaseResponse<List<RelationshipResponse>>> getRelationshipsByTableId(
             @PathVariable String tableId) {
         return relationshipService.getRelationshipsByTableId(tableId)
                 .collectList()
@@ -56,7 +56,7 @@ public class RelationshipController {
     }
 
     @PutMapping("/relationships/{relationshipId}/name")
-    public Mono<BaseResponse<Relationship>> updateRelationshipName(
+    public Mono<BaseResponse<RelationshipResponse>> updateRelationshipName(
             @PathVariable String relationshipId,
             @RequestBody Validation.ChangeRelationshipNameRequest request) {
         return relationshipService.updateRelationshipName(request)
@@ -64,7 +64,7 @@ public class RelationshipController {
     }
 
     @PutMapping("/relationships/{relationshipId}/cardinality")
-    public Mono<BaseResponse<Relationship>> updateRelationshipCardinality(
+    public Mono<BaseResponse<RelationshipResponse>> updateRelationshipCardinality(
             @PathVariable String relationshipId,
             @RequestBody Validation.ChangeRelationshipCardinalityRequest request) {
         return relationshipService.updateRelationshipCardinality(request)
@@ -72,7 +72,7 @@ public class RelationshipController {
     }
 
     @PostMapping("/relationships/{relationshipId}/columns")
-    public Mono<BaseResponse<RelationshipColumn>> addColumnToRelationship(
+    public Mono<BaseResponse<RelationshipColumnResponse>> addColumnToRelationship(
             @PathVariable String relationshipId,
             @RequestBody Validation.AddColumnToRelationshipRequest request) {
         return relationshipService.addColumnToRelationship(request)

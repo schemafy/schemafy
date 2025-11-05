@@ -18,7 +18,7 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.repository.entity.Table;
+import com.schemafy.core.erd.controller.dto.response.TableResponse;
 import com.schemafy.core.erd.service.TableService;
 
 import lombok.AllArgsConstructor;
@@ -48,14 +48,14 @@ public class TableController {
     }
 
     @GetMapping("/tables/{tableId}")
-    public Mono<BaseResponse<Table>> getTable(
+    public Mono<BaseResponse<TableResponse>> getTable(
             @PathVariable String tableId) {
         return tableService.getTable(tableId)
                 .map(BaseResponse::success);
     }
 
     @GetMapping("/tables/schema/{schemaId}")
-    public Mono<BaseResponse<List<Table>>> getTablesBySchemaId(
+    public Mono<BaseResponse<List<TableResponse>>> getTablesBySchemaId(
             @PathVariable String schemaId) {
         return tableService.getTablesBySchemaId(schemaId)
                 .collectList()
@@ -63,7 +63,7 @@ public class TableController {
     }
 
     @PutMapping("/tables/{tableId}/name")
-    public Mono<BaseResponse<Table>> updateTableName(
+    public Mono<BaseResponse<TableResponse>> updateTableName(
             @PathVariable String tableId,
             @RequestBody ChangeTableNameRequest request) {
         if (request.getTableId() != null

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ColumnRepository;
@@ -40,15 +41,17 @@ public class ColumnService {
                         )));
     }
 
-    public Mono<Column> getColumn(String id) {
-        return columnRepository.findByIdAndDeletedAtIsNull(id);
+    public Mono<ColumnResponse> getColumn(String id) {
+        return columnRepository.findByIdAndDeletedAtIsNull(id)
+                .map(ColumnResponse::from);
     }
 
-    public Flux<Column> getColumnsByTableId(String tableId) {
-        return columnRepository.findByTableIdAndDeletedAtIsNull(tableId);
+    public Flux<ColumnResponse> getColumnsByTableId(String tableId) {
+        return columnRepository.findByTableIdAndDeletedAtIsNull(tableId)
+                .map(ColumnResponse::from);
     }
 
-    public Mono<Column> updateColumnName(
+    public Mono<ColumnResponse> updateColumnName(
             Validation.ChangeColumnNameRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
@@ -57,10 +60,11 @@ public class ColumnService {
                 .delayUntil(
                         ignore -> validationClient.changeColumnName(request))
                 .doOnNext(column -> column.setName(request.getNewName()))
-                .flatMap(columnRepository::save);
+                .flatMap(columnRepository::save)
+                .map(ColumnResponse::from);
     }
 
-    public Mono<Column> updateColumnType(
+    public Mono<ColumnResponse> updateColumnType(
             Validation.ChangeColumnTypeRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
@@ -69,10 +73,11 @@ public class ColumnService {
                 .delayUntil(
                         ignore -> validationClient.changeColumnType(request))
                 .doOnNext(column -> column.setDataType(request.getDataType()))
-                .flatMap(columnRepository::save);
+                .flatMap(columnRepository::save)
+                .map(ColumnResponse::from);
     }
 
-    public Mono<Column> updateColumnPosition(
+    public Mono<ColumnResponse> updateColumnPosition(
             Validation.ChangeColumnPositionRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
@@ -83,7 +88,8 @@ public class ColumnService {
                                 .changeColumnPosition(request))
                 .doOnNext(column -> column.setOrdinalPosition(
                         request.getNewPosition()))
-                .flatMap(columnRepository::save);
+                .flatMap(columnRepository::save)
+                .map(ColumnResponse::from);
     }
 
     public Mono<Void> deleteColumn(Validation.DeleteColumnRequest request) {

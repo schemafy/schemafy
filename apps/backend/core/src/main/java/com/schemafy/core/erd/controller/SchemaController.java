@@ -14,7 +14,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.repository.entity.Schema;
+import com.schemafy.core.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.core.erd.service.SchemaService;
 
 import lombok.AllArgsConstructor;
@@ -38,14 +38,14 @@ public class SchemaController {
     }
 
     @GetMapping("/schemas/{schemaId}")
-    public Mono<BaseResponse<Schema>> getSchema(
+    public Mono<BaseResponse<SchemaResponse>> getSchema(
             @PathVariable String schemaId) {
         return schemaService.getSchema(schemaId)
                 .map(BaseResponse::success);
     }
 
     @PutMapping("/schemas/{schemaId}/name")
-    public Mono<BaseResponse<Schema>> updateSchemaName(
+    public Mono<BaseResponse<SchemaResponse>> updateSchemaName(
             @PathVariable String schemaId,
             @RequestBody ChangeSchemaNameRequest request) {
         if (request.getSchemaId() != null

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.repository.entity.Column;
+import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.service.ColumnService;
 
 import lombok.AllArgsConstructor;
@@ -40,14 +40,14 @@ public class ColumnController {
     }
 
     @GetMapping("/columns/{columnId}")
-    public Mono<BaseResponse<Column>> getColumn(
+    public Mono<BaseResponse<ColumnResponse>> getColumn(
             @PathVariable String columnId) {
         return columnService.getColumn(columnId)
                 .map(BaseResponse::success);
     }
 
     @GetMapping("/columns/table/{tableId}")
-    public Mono<BaseResponse<List<Column>>> getColumnsByTableId(
+    public Mono<BaseResponse<List<ColumnResponse>>> getColumnsByTableId(
             @PathVariable String tableId) {
         return columnService.getColumnsByTableId(tableId)
                 .collectList()
@@ -55,7 +55,7 @@ public class ColumnController {
     }
 
     @PutMapping("/columns/{columnId}/name")
-    public Mono<BaseResponse<Column>> updateColumnName(
+    public Mono<BaseResponse<ColumnResponse>> updateColumnName(
             @PathVariable String columnId,
             @RequestBody ChangeColumnNameRequest request) {
         return columnService.updateColumnName(request)
@@ -63,7 +63,7 @@ public class ColumnController {
     }
 
     @PutMapping("/columns/{columnId}/type")
-    public Mono<BaseResponse<Column>> updateColumnType(
+    public Mono<BaseResponse<ColumnResponse>> updateColumnType(
             @PathVariable String columnId,
             @RequestBody ChangeColumnTypeRequest request) {
         return columnService.updateColumnType(request)
@@ -71,7 +71,7 @@ public class ColumnController {
     }
 
     @PutMapping("/columns/{columnId}/position")
-    public Mono<BaseResponse<Column>> updateColumnPosition(
+    public Mono<BaseResponse<ColumnResponse>> updateColumnPosition(
             @PathVariable String columnId,
             @RequestBody ChangeColumnPositionRequest request) {
         return columnService.updateColumnPosition(request)

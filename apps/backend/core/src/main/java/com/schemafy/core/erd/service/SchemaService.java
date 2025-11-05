@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.SchemaRepository;
@@ -40,15 +41,17 @@ public class SchemaService {
                         )));
     }
 
-    public Mono<Schema> getSchema(String id) {
-        return schemaRepository.findByIdAndDeletedAtIsNull(id);
+    public Mono<SchemaResponse> getSchema(String id) {
+        return schemaRepository.findByIdAndDeletedAtIsNull(id)
+                .map(SchemaResponse::from);
     }
 
-    public Flux<Schema> getSchemasByProjectId(String projectId) {
-        return schemaRepository.findByProjectIdAndDeletedAtIsNull(projectId);
+    public Flux<SchemaResponse> getSchemasByProjectId(String projectId) {
+        return schemaRepository.findByProjectIdAndDeletedAtIsNull(projectId)
+                .map(SchemaResponse::from);
     }
 
-    public Mono<Schema> updateSchemaName(
+    public Mono<SchemaResponse> updateSchemaName(
             Validation.ChangeSchemaNameRequest request) {
         return schemaRepository
                 .findByIdAndDeletedAtIsNull(request.getSchemaId())
@@ -57,7 +60,8 @@ public class SchemaService {
                 .delayUntil(
                         ignore -> validationClient.changeSchemaName(request))
                 .doOnNext(schema -> schema.setName(request.getNewName()))
-                .flatMap(schemaRepository::save);
+                .flatMap(schemaRepository::save)
+                .map(SchemaResponse::from);
     }
 
     public Mono<Void> deleteSchema(Validation.DeleteSchemaRequest request) {

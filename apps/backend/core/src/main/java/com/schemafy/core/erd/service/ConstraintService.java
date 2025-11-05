@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
@@ -57,15 +59,17 @@ public class ConstraintService {
                         }));
     }
 
-    public Mono<Constraint> getConstraint(String id) {
-        return constraintRepository.findById(id);
+    public Mono<ConstraintResponse> getConstraint(String id) {
+        return constraintRepository.findById(id)
+                .map(ConstraintResponse::from);
     }
 
-    public Flux<Constraint> getConstraintsByTableId(String tableId) {
-        return constraintRepository.findByTableId(tableId);
+    public Flux<ConstraintResponse> getConstraintsByTableId(String tableId) {
+        return constraintRepository.findByTableId(tableId)
+                .map(ConstraintResponse::from);
     }
 
-    public Mono<Constraint> updateConstraintName(
+    public Mono<ConstraintResponse> updateConstraintName(
             Validation.ChangeConstraintNameRequest request) {
         return constraintRepository.findById(request.getConstraintId())
                 .switchIfEmpty(Mono.error(
@@ -75,15 +79,17 @@ public class ConstraintService {
                         .changeConstraintName(request))
                 .doOnNext(
                         constraint -> constraint.setName(request.getNewName()))
-                .flatMap(constraintRepository::save);
+                .flatMap(constraintRepository::save)
+                .map(ConstraintResponse::from);
     }
 
-    public Mono<ConstraintColumn> addColumnToConstraint(
+    public Mono<ConstraintColumnResponse> addColumnToConstraint(
             Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
                 .then(constraintColumnRepository
                         .save(ErdMapper
-                                .toEntity(request.getConstraintColumn())));
+                                .toEntity(request.getConstraintColumn())))
+                .map(ConstraintColumnResponse::from);
     }
 
     public Mono<Void> removeColumnFromConstraint(

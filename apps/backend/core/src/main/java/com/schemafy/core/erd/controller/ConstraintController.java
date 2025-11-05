@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.repository.entity.Constraint;
-import com.schemafy.core.erd.repository.entity.ConstraintColumn;
+import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.service.ConstraintService;
 
 import lombok.AllArgsConstructor;
@@ -41,14 +41,14 @@ public class ConstraintController {
     }
 
     @GetMapping("/constraints/{constraintId}")
-    public Mono<BaseResponse<Constraint>> getConstraint(
+    public Mono<BaseResponse<ConstraintResponse>> getConstraint(
             @PathVariable String constraintId) {
         return constraintService.getConstraint(constraintId)
                 .map(BaseResponse::success);
     }
 
     @GetMapping("/constraints/table/{tableId}")
-    public Mono<BaseResponse<List<Constraint>>> getConstraintsByTableId(
+    public Mono<BaseResponse<List<ConstraintResponse>>> getConstraintsByTableId(
             @PathVariable String tableId) {
         return constraintService.getConstraintsByTableId(tableId)
                 .collectList()
@@ -56,7 +56,7 @@ public class ConstraintController {
     }
 
     @PutMapping("/constraints/{constraintId}/name")
-    public Mono<BaseResponse<Constraint>> updateConstraintName(
+    public Mono<BaseResponse<ConstraintResponse>> updateConstraintName(
             @PathVariable String constraintId,
             @RequestBody ChangeConstraintNameRequest request) {
         return constraintService.updateConstraintName(request)
@@ -64,7 +64,7 @@ public class ConstraintController {
     }
 
     @PostMapping("/constraints/{constraintId}/columns")
-    public Mono<BaseResponse<ConstraintColumn>> addColumnToConstraint(
+    public Mono<BaseResponse<ConstraintColumnResponse>> addColumnToConstraint(
             @PathVariable String constraintId,
             @RequestBody AddColumnToConstraintRequest request) {
         return constraintService.addColumnToConstraint(request)

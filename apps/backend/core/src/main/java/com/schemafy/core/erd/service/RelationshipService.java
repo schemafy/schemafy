@@ -6,6 +6,8 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
@@ -40,9 +42,9 @@ public class RelationshipService {
                                     .updateEntityIdInDatabase(
                                             database,
                                             EntityType.RELATIONSHIP,
-                                            request.request().getRelationship().getId(),
-                                            savedRelationship.getId()
-                                    );
+                                            request.request().getRelationship()
+                                                    .getId(),
+                                            savedRelationship.getId());
 
                             return affectedEntitiesSaver
                                     .saveAffectedEntities(
@@ -50,25 +52,32 @@ public class RelationshipService {
                                             updatedDatabase,
                                             savedRelationship.getId(),
                                             savedRelationship.getId(),
-                                            "RELATIONSHIP"
-                                    )
-                                    .map(propagated -> AffectedMappingResponse.of(
-                                            request.request(),
-                                            request.request().getDatabase(),
-                                            updatedDatabase,
-                                            propagated));
+                                            "RELATIONSHIP")
+                                    .map(propagated -> AffectedMappingResponse
+                                            .of(
+                                                    request.request(),
+                                                    request.request()
+                                                            .getDatabase(),
+                                                    updatedDatabase,
+                                                    propagated));
                         }));
     }
 
-    public Mono<Relationship> getRelationship(String id) {
-        return relationshipRepository.findById(id);
+    public Mono<RelationshipResponse> getRelationship(String id) {
+        return relationshipRepository.findById(id)
+                .flatMap(relationship -> relationshipColumnRepository.findByRelationshipId(id)
+                        .collectList()
+                        .map(columns -> RelationshipResponse.from(relationship, columns)));
     }
 
-    public Flux<Relationship> getRelationshipsByTableId(String tableId) {
-        return relationshipRepository.findByTableId(tableId);
+    public Flux<RelationshipResponse> getRelationshipsByTableId(String tableId) {
+        return relationshipRepository.findByTableId(tableId)
+                .flatMap(relationship -> relationshipColumnRepository.findByRelationshipId(relationship.getId())
+                        .collectList()
+                        .map(columns -> RelationshipResponse.from(relationship, columns)));
     }
 
-    public Mono<Relationship> updateRelationshipName(
+    public Mono<RelationshipResponse> updateRelationshipName(
             Validation.ChangeRelationshipNameRequest request) {
         return relationshipRepository.findById(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
@@ -78,10 +87,11 @@ public class RelationshipService {
                         .changeRelationshipName(request))
                 .doOnNext(relationship -> relationship
                         .setName(request.getNewName()))
-                .flatMap(relationshipRepository::save);
+                .flatMap(relationshipRepository::save)
+                .map(RelationshipResponse::from);
     }
 
-    public Mono<Relationship> updateRelationshipCardinality(
+    public Mono<RelationshipResponse> updateRelationshipCardinality(
             Validation.ChangeRelationshipCardinalityRequest request) {
         return relationshipRepository
                 .findById(request.getRelationshipId())
@@ -92,15 +102,17 @@ public class RelationshipService {
                         .changeRelationshipCardinality(request))
                 .doOnNext(relationship -> relationship
                         .setCardinality(request.getCardinality().name()))
-                .flatMap(relationshipRepository::save);
+                .flatMap(relationshipRepository::save)
+                .map(RelationshipResponse::from);
     }
 
-    public Mono<RelationshipColumn> addColumnToRelationship(
+    public Mono<RelationshipColumnResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
                 .then(relationshipColumnRepository
                         .save(ErdMapper
-                                .toEntity(request.getRelationshipColumn())));
+                                .toEntity(request.getRelationshipColumn())))
+                .map(RelationshipColumnResponse::from);
     }
 
     public Mono<Void> removeColumnFromRelationship(

@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.IndexColumnRepository;
@@ -43,15 +45,17 @@ public class IndexService {
                         )));
     }
 
-    public Mono<Index> getIndex(String id) {
-        return indexRepository.findById(id);
+    public Mono<IndexResponse> getIndex(String id) {
+        return indexRepository.findById(id)
+                .map(IndexResponse::from);
     }
 
-    public Flux<Index> getIndexesByTableId(String tableId) {
-        return indexRepository.findByTableId(tableId);
+    public Flux<IndexResponse> getIndexesByTableId(String tableId) {
+        return indexRepository.findByTableId(tableId)
+                .map(IndexResponse::from);
     }
 
-    public Mono<Index> updateIndexName(
+    public Mono<IndexResponse> updateIndexName(
             Validation.ChangeIndexNameRequest request) {
         return indexRepository
                 .findById(request.getIndexId())
@@ -59,14 +63,16 @@ public class IndexService {
                         new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
                 .delayUntil(ignore -> validationClient.changeIndexName(request))
                 .doOnNext(index -> index.setName(request.getNewName()))
-                .flatMap(indexRepository::save);
+                .flatMap(indexRepository::save)
+                .map(IndexResponse::from);
     }
 
-    public Mono<IndexColumn> addColumnToIndex(
+    public Mono<IndexColumnResponse> addColumnToIndex(
             Validation.AddColumnToIndexRequest request) {
         return validationClient.addColumnToIndex(request)
                 .then(indexColumnRepository
-                        .save(ErdMapper.toEntity(request.getIndexColumn())));
+                        .save(ErdMapper.toEntity(request.getIndexColumn())))
+                .map(IndexColumnResponse::from);
     }
 
     public Mono<Void> removeColumnFromIndex(
