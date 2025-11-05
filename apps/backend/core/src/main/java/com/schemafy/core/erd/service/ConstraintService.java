@@ -61,12 +61,16 @@ public class ConstraintService {
 
     public Mono<ConstraintResponse> getConstraint(String id) {
         return constraintRepository.findById(id)
-                .map(ConstraintResponse::from);
+                .flatMap(constraint -> constraintColumnRepository.findByConstraintId(id)
+                        .collectList()
+                        .map(columns -> ConstraintResponse.from(constraint, columns)));
     }
 
     public Flux<ConstraintResponse> getConstraintsByTableId(String tableId) {
         return constraintRepository.findByTableId(tableId)
-                .map(ConstraintResponse::from);
+                .flatMap(constraint -> constraintColumnRepository.findByConstraintId(constraint.getId())
+                        .collectList()
+                        .map(columns -> ConstraintResponse.from(constraint, columns)));
     }
 
     public Mono<ConstraintResponse> updateConstraintName(

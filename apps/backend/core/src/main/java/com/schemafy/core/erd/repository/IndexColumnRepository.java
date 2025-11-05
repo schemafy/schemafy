@@ -9,6 +9,6 @@ import reactor.core.publisher.Flux;
 public interface IndexColumnRepository
         extends ReactiveCrudRepository<IndexColumn, String> {
 
-    public Flux<IndexColumn> findByindexId(String indexId);
+    public Flux<IndexColumn> findByIndexId(String indexId);
 
 }

@@ -47,12 +47,16 @@ public class IndexService {
 
     public Mono<IndexResponse> getIndex(String id) {
         return indexRepository.findById(id)
-                .map(IndexResponse::from);
+                .flatMap(index -> indexColumnRepository.findByIndexId(id)
+                        .collectList()
+                        .map(columns -> IndexResponse.from(index, columns)));
     }
 
     public Flux<IndexResponse> getIndexesByTableId(String tableId) {
         return indexRepository.findByTableId(tableId)
-                .map(IndexResponse::from);
+                .flatMap(index -> indexColumnRepository.findByIndexId(index.getId())
+                        .collectList()
+                        .map(columns -> IndexResponse.from(index, columns)));
     }
 
     public Mono<IndexResponse> updateIndexName(
