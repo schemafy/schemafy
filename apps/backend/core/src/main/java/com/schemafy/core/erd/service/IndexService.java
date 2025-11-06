@@ -33,43 +33,53 @@ public class IndexService {
         return validationClient.createIndex(request)
                 .flatMap(database -> indexRepository
                         .save(ErdMapper.toEntity(request.getIndex()))
-                        .flatMap(savedIndex -> Flux.fromIterable(request.getIndex().getColumnsList())
+                        .flatMap(savedIndex -> Flux
+                                .fromIterable(
+                                        request.getIndex().getColumnsList())
                                 .flatMap(column -> {
-                                    IndexColumn entity = ErdMapper.toEntity(column);
+                                    IndexColumn entity = ErdMapper
+                                            .toEntity(column);
                                     entity.setIndexId(savedIndex.getId());
                                     return indexColumnRepository
-                                        .save(entity);
+                                            .save(entity);
                                 })
                                 .then(Mono.just(AffectedMappingResponse.of(
                                         request,
                                         request.getDatabase(),
-                                        AffectedMappingResponse.updateEntityIdInDatabase(
-                                                database,
-                                                EntityType.INDEX,
-                                                request.getIndex().getId(),
-                                                savedIndex.getId()
-                                        )
-                                )))));
+                                        AffectedMappingResponse
+                                                .updateEntityIdInDatabase(
+                                                        database,
+                                                        EntityType.INDEX,
+                                                        request.getIndex()
+                                                                .getId(),
+                                                        savedIndex
+                                                                .getId()))))));
     }
 
     public Mono<IndexResponse> getIndex(String id) {
-        return indexRepository.findById(id)
-                .flatMap(index -> indexColumnRepository.findByIndexId(id)
+        return indexRepository.findByIdAndDeletedAtIsNull(id)
+                .flatMap(index -> indexColumnRepository
+                        .findByIndexIdAndDeletedAtIsNull(id)
                         .collectList()
-                        .map(columns -> IndexResponse.from(index, columns)));
+                        .map(columns -> IndexResponse.from(index, columns)))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)));
     }
 
     public Flux<IndexResponse> getIndexesByTableId(String tableId) {
-        return indexRepository.findByTableId(tableId)
-                .flatMap(index -> indexColumnRepository.findByIndexId(index.getId())
+        return indexRepository.findByTableIdAndDeletedAtIsNull(tableId)
+                .flatMap(index -> indexColumnRepository
+                        .findByIndexIdAndDeletedAtIsNull(index.getId())
                         .collectList()
-                        .map(columns -> IndexResponse.from(index, columns)));
+                        .map(columns -> IndexResponse.from(index, columns)))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)));
     }
 
     public Mono<IndexResponse> updateIndexName(
             Validation.ChangeIndexNameRequest request) {
         return indexRepository
-                .findById(request.getIndexId())
+                .findByIdAndDeletedAtIsNull(request.getIndexId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
                 .delayUntil(ignore -> validationClient.changeIndexName(request))
@@ -89,7 +99,7 @@ public class IndexService {
     public Mono<Void> removeColumnFromIndex(
             Validation.RemoveColumnFromIndexRequest request) {
         return indexColumnRepository
-                .findById(request.getIndexColumnId())
+                .findByIdAndDeletedAtIsNull(request.getIndexColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
                 .delayUntil(ignore -> validationClient
@@ -101,7 +111,7 @@ public class IndexService {
 
     public Mono<Void> deleteIndex(
             Validation.DeleteIndexRequest request) {
-        return indexRepository.findById(request.getIndexId())
+        return indexRepository.findByIdAndDeletedAtIsNull(request.getIndexId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
                 .delayUntil(ignore -> validationClient.deleteIndex(request))

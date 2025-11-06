@@ -76,27 +76,35 @@ public class RelationshipService {
     }
 
     public Mono<RelationshipResponse> getRelationship(String id) {
-        return relationshipRepository.findById(id)
+        return relationshipRepository.findByIdAndDeletedAtIsNull(id)
                 .flatMap(relationship -> relationshipColumnRepository
-                        .findByRelationshipId(id)
+                        .findByRelationshipIdAndDeletedAtIsNull(id)
                         .collectList()
                         .map(columns -> RelationshipResponse.from(relationship,
-                                columns)));
+                                columns)))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)));
     }
 
     public Flux<RelationshipResponse> getRelationshipsByTableId(
             String tableId) {
         return relationshipRepository.findByTableId(tableId)
                 .flatMap(relationship -> relationshipColumnRepository
-                        .findByRelationshipId(relationship.getId())
+                        .findByRelationshipIdAndDeletedAtIsNull(
+                                relationship.getId())
                         .collectList()
                         .map(columns -> RelationshipResponse.from(relationship,
-                                columns)));
+                                columns)))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)));
     }
 
     public Mono<RelationshipResponse> updateRelationshipName(
             Validation.ChangeRelationshipNameRequest request) {
-        return relationshipRepository.findById(request.getRelationshipId())
+        return relationshipRepository
+                .findByIdAndDeletedAtIsNull(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
@@ -111,7 +119,7 @@ public class RelationshipService {
     public Mono<RelationshipResponse> updateRelationshipCardinality(
             Validation.ChangeRelationshipCardinalityRequest request) {
         return relationshipRepository
-                .findById(request.getRelationshipId())
+                .findByIdAndDeletedAtIsNull(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
@@ -123,6 +131,7 @@ public class RelationshipService {
                 .map(RelationshipResponse::from);
     }
 
+    // TODO: 여기도 전파 필요
     public Mono<RelationshipColumnResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
@@ -148,7 +157,8 @@ public class RelationshipService {
 
     public Mono<Void> deleteRelationship(
             Validation.DeleteRelationshipRequest request) {
-        return relationshipRepository.findById(request.getRelationshipId())
+        return relationshipRepository
+                .findByIdAndDeletedAtIsNull(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))

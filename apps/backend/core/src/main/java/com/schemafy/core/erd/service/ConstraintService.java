@@ -101,6 +101,7 @@ public class ConstraintService {
                 .map(ConstraintResponse::from);
     }
 
+    // TODO: 여기도 전파 필요
     public Mono<ConstraintColumnResponse> addColumnToConstraint(
             Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
