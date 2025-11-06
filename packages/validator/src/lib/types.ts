@@ -120,6 +120,7 @@ export const SCHEMA = z.object({
     updatedAt: z.date(),
     deletedAt: z.date().nullable().optional(),
     tables: z.array(TABLE),
+    extra: z.unknown().optional(),
 });
 
 export const DATABASE = z.object({

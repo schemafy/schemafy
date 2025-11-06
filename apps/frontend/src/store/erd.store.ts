@@ -145,6 +145,22 @@ export class ErdStore {
     this.update((db) => ERD_VALIDATOR.deleteSchema(db, schemaId));
   }
 
+  updateSchemaExtra(schemaId: Schema['id'], extra: unknown) {
+    this.update((db) => {
+      return {
+        ...db,
+        schemas: db.schemas.map((schema) => {
+          if (schema.id !== schemaId) return schema;
+
+          return {
+            ...schema,
+            extra,
+          };
+        }),
+      };
+    });
+  }
+
   // tables
   createTable(schemaId: Schema['id'], table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'>) {
     this.update((db) => ERD_VALIDATOR.createTable(db, schemaId, table));

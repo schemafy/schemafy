@@ -16,6 +16,7 @@ import {
   useRelationships,
   useTables,
   useMemos,
+  useViewport,
   TableNode,
   RelationshipMarker,
   Toolbar,
@@ -55,6 +56,8 @@ const CanvasPageComponent = () => {
     flow: { x: number; y: number };
     screen: { x: number; y: number };
   } | null>(null);
+
+  const { handleMoveEnd } = useViewport();
 
   useEffect(() => {
     if (erdStore.erdState.state === 'idle') {
@@ -202,6 +205,7 @@ const CanvasPageComponent = () => {
             onEdgesChange={onRelationshipsChange}
             onPaneClick={handlePaneClick}
             onPaneMouseMove={handleMouseMove}
+            onMoveEnd={handleMoveEnd}
             nodesDraggable={activeTool !== 'hand'}
             elementsSelectable={activeTool !== 'hand'}
             onConnect={onConnect}
