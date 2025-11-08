@@ -1,14 +1,32 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const ULID = z.string().ulid();
-const DB_VENDOR = z.enum(['mysql']);
-const INDEX_TYPE = z.enum(['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER']);
-const INDEX_SORT_DIR = z.enum(['ASC', 'DESC']);
-const CONSTRAINT_KIND = z.enum(['PRIMARY_KEY', 'UNIQUE', 'CHECK', 'DEFAULT', 'NOT_NULL']);
-const RELATIONSHIP_KIND = z.enum(['IDENTIFYING', 'NON_IDENTIFYING']);
-const RELATIONSHIP_CARDINALITY = z.enum(['1:1', '1:N']);
-const RELATIONSHIP_ON_DELETE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
-const RELATIONSHIP_ON_UPDATE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
+const DB_VENDOR = z.enum(["mysql"]);
+const INDEX_TYPE = z.enum(["BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER"]);
+const INDEX_SORT_DIR = z.enum(["ASC", "DESC"]);
+const CONSTRAINT_KIND = z.enum([
+  "PRIMARY_KEY",
+  "UNIQUE",
+  "CHECK",
+  "DEFAULT",
+  "NOT_NULL",
+]);
+const RELATIONSHIP_KIND = z.enum(["IDENTIFYING", "NON_IDENTIFYING"]);
+const RELATIONSHIP_CARDINALITY = z.enum(["1:1", "1:N"]);
+const RELATIONSHIP_ON_DELETE = z.enum([
+  "NO_ACTION",
+  "RESTRICT",
+  "CASCADE",
+  "SET_NULL",
+  "SET_DEFAULT",
+]);
+const RELATIONSHIP_ON_UPDATE = z.enum([
+  "NO_ACTION",
+  "RESTRICT",
+  "CASCADE",
+  "SET_NULL",
+  "SET_DEFAULT",
+]);
 
 export const COLUMN = z.object({
   id: ULID,
@@ -63,10 +81,10 @@ export const CONSTRAINT = z
     isAffected: z.boolean().default(false),
   })
   .refine((data) => {
-    if (data.kind == 'CHECK') {
-      return typeof data.checkExpr === 'string';
-    } else if (data.kind == 'DEFAULT') {
-      return typeof data.defaultExpr === 'string';
+    if (data.kind == "CHECK") {
+      return typeof data.checkExpr === "string";
+    } else if (data.kind == "DEFAULT") {
+      return typeof data.defaultExpr === "string";
     }
 
     return true;

@@ -8,8 +8,16 @@ import { Database, Schema, TABLE, Table } from "../types";
 import { relationshipHandlers } from "./relationships";
 
 export interface TableHandlers {
-  createTable: (database: Database, schemaId: Schema['id'], table: Omit<Table, 'schemaId'>) => Database;
-  deleteTable: (database: Database, schemaId: Schema['id'], tableId: Table['id']) => Database;
+  createTable: (
+    database: Database,
+    schemaId: Schema["id"],
+    table: Omit<Table, "schemaId">,
+  ) => Database;
+  deleteTable: (
+    database: Database,
+    schemaId: Schema["id"],
+    tableId: Table["id"],
+  ) => Database;
   changeTableName: (
     database: Database,
     schemaId: Schema["id"],

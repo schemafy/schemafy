@@ -11,7 +11,7 @@ import {
   RelationshipColumn,
   Schema,
   Table,
-} from './types';
+} from "./types";
 
 const idGenerator = () => Math.random().toString(36).substring(2, 12);
 
@@ -45,11 +45,11 @@ class DatabaseBuilder {
 class SchemaBuilder {
   private id: string = idGenerator();
   private projectId: string;
-  private name: string = 'default_schema';
+  private name: string = "default_schema";
   private tables: TableBuilder[] = [];
-  private dbVendorId: 'mysql' = 'mysql';
-  private charset: string = 'utf8mb4';
-  private collation: string = 'utf8mb4_general_ci';
+  private dbVendorId: "mysql" = "mysql";
+  private charset: string = "utf8mb4";
+  private collation: string = "utf8mb4_general_ci";
 
   constructor(projectId: string) {
     this.projectId = projectId;
@@ -82,7 +82,7 @@ class SchemaBuilder {
       dbVendorId: this.dbVendorId,
       charset: this.charset,
       collation: this.collation,
-      vendorOption: '',
+      vendorOption: "",
       tables: this.tables.map((builder) => builder.build()),
       isAffected: false,
     };
@@ -92,7 +92,7 @@ class SchemaBuilder {
 class TableBuilder {
   private id: string = idGenerator();
   private schemaId: string;
-  private name: string = 'default_table';
+  private name: string = "default_table";
   private columns: ColumnBuilder[] = [];
   private constraints: ConstraintBuilder[] = [];
   private indexes: IndexBuilder[] = [];
@@ -117,7 +117,9 @@ class TableBuilder {
   }
 
   withColumn(modifier?: (builder: ColumnBuilder) => void) {
-    const columnBuilder = new ColumnBuilder().withTableId(this.id).withOrdinalPosition(this.columns.length + 1);
+    const columnBuilder = new ColumnBuilder()
+      .withTableId(this.id)
+      .withOrdinalPosition(this.columns.length + 1);
     if (modifier) {
       modifier(columnBuilder);
     }
@@ -144,7 +146,9 @@ class TableBuilder {
   }
 
   withRelationship(modifier?: (builder: RelationshipBuilder) => void) {
-    const relationshipBuilder = new RelationshipBuilder().withSrcTableId(this.id);
+    const relationshipBuilder = new RelationshipBuilder().withSrcTableId(
+      this.id,
+    );
     if (modifier) {
       modifier(relationshipBuilder);
     }
@@ -172,8 +176,8 @@ class TableBuilder {
       id: this.id,
       schemaId: this.schemaId,
       name: this.name,
-      comment: '',
-      tableOptions: '',
+      comment: "",
+      tableOptions: "",
       columns,
       indexes,
       constraints,
@@ -186,12 +190,12 @@ class TableBuilder {
 class ColumnBuilder {
   private id: string = idGenerator();
   private tableId?: string;
-  private name: string = 'id';
-  private dataType: string = 'INT';
+  private name: string = "id";
+  private dataType: string = "INT";
   private isAutoIncrement: boolean = false;
-  private lengthScale: string = '';
-  private charset: string = 'utf8mb4';
-  private collation: string = 'utf8mb4_general_ci';
+  private lengthScale: string = "";
+  private charset: string = "utf8mb4";
+  private collation: string = "utf8mb4_general_ci";
   private comment: string | null = null;
   private ordinalPosition: number = 1;
 
@@ -252,7 +256,7 @@ class ColumnBuilder {
   }
 }
 
-type ConstraintKind = Constraint['kind'];
+type ConstraintKind = Constraint["kind"];
 
 class ConstraintColumnBuilder {
   private id: string = idGenerator();
@@ -311,8 +315,8 @@ class ConstraintColumnBuilder {
 class ConstraintBuilder {
   private id: string = idGenerator();
   private tableId?: string;
-  private name: string = 'default_constraint';
-  private kind: ConstraintKind = 'PRIMARY_KEY';
+  private name: string = "default_constraint";
+  private kind: ConstraintKind = "PRIMARY_KEY";
   private columns: ConstraintColumnBuilder[] = [];
   private defaultExpr?: string;
   private checkExpr?: string;
@@ -372,8 +376,8 @@ class ConstraintBuilder {
   }
 }
 
-type IndexType = Index['type'];
-type IndexSortDir = IndexColumn['sortDir'];
+type IndexType = Index["type"];
+type IndexSortDir = IndexColumn["sortDir"];
 
 class IndexColumnBuilder {
   private id: string = idGenerator();
@@ -381,7 +385,7 @@ class IndexColumnBuilder {
   private columnName?: string;
   private columnId: string | null = null;
   private seqNo: number = 1;
-  private sortDir: IndexSortDir = 'ASC';
+  private sortDir: IndexSortDir = "ASC";
 
   constructor(indexId: string) {
     this.indexId = indexId;
@@ -437,8 +441,8 @@ class IndexColumnBuilder {
 class IndexBuilder {
   private id: string = idGenerator();
   private tableId?: string;
-  private name: string = 'default_index';
-  private type: IndexType = 'BTREE';
+  private name: string = "default_index";
+  private type: IndexType = "BTREE";
   private columns: IndexColumnBuilder[] = [];
 
   constructor() {}
@@ -490,10 +494,10 @@ class IndexBuilder {
   }
 }
 
-type RelationshipKind = Relationship['kind'];
-type RelationshipCardinality = Relationship['cardinality'];
-type RelationshipOnDelete = Relationship['onDelete'];
-type RelationshipOnUpdate = Relationship['onUpdate'];
+type RelationshipKind = Relationship["kind"];
+type RelationshipCardinality = Relationship["cardinality"];
+type RelationshipOnDelete = Relationship["onDelete"];
+type RelationshipOnUpdate = Relationship["onUpdate"];
 
 class RelationshipColumnBuilder {
   private id: string = idGenerator();
@@ -543,11 +547,11 @@ class RelationshipBuilder {
   private id: string = idGenerator();
   private srcTableId?: string;
   private tgtTableId?: string;
-  private name: string = 'default_relationship';
-  private kind: RelationshipKind = 'NON_IDENTIFYING';
-  private cardinality: RelationshipCardinality = '1:N';
-  private onDelete: RelationshipOnDelete = 'NO_ACTION';
-  private onUpdate: RelationshipOnUpdate = 'NO_ACTION';
+  private name: string = "default_relationship";
+  private kind: RelationshipKind = "NON_IDENTIFYING";
+  private cardinality: RelationshipCardinality = "1:N";
+  private onDelete: RelationshipOnDelete = "NO_ACTION";
+  private onUpdate: RelationshipOnUpdate = "NO_ACTION";
   private fkEnforced: false = false;
   private columns: RelationshipColumnBuilder[] = [];
 
