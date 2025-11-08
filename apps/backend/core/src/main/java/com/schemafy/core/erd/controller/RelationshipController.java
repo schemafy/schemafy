@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
@@ -59,6 +61,10 @@ public class RelationshipController {
     public Mono<BaseResponse<RelationshipResponse>> updateRelationshipName(
             @PathVariable String relationshipId,
             @RequestBody Validation.ChangeRelationshipNameRequest request) {
+        if (!relationshipId.equals(request.getRelationshipId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return relationshipService.updateRelationshipName(request)
                 .map(BaseResponse::success);
     }
@@ -67,6 +73,10 @@ public class RelationshipController {
     public Mono<BaseResponse<RelationshipResponse>> updateRelationshipCardinality(
             @PathVariable String relationshipId,
             @RequestBody Validation.ChangeRelationshipCardinalityRequest request) {
+        if (!relationshipId.equals(request.getRelationshipId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return relationshipService.updateRelationshipCardinality(request)
                 .map(BaseResponse::success);
     }
@@ -75,6 +85,10 @@ public class RelationshipController {
     public Mono<BaseResponse<RelationshipColumnResponse>> addColumnToRelationship(
             @PathVariable String relationshipId,
             @RequestBody Validation.AddColumnToRelationshipRequest request) {
+        if (!relationshipId.equals(request.getRelationshipId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return relationshipService.addColumnToRelationship(request)
                 .map(BaseResponse::success);
     }
@@ -84,6 +98,11 @@ public class RelationshipController {
             @PathVariable String relationshipId,
             @PathVariable String columnId,
             @RequestBody Validation.RemoveColumnFromRelationshipRequest request) {
+        if (!relationshipId.equals(request.getRelationshipId())
+                || !columnId.equals(request.getRelationshipColumnId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return relationshipService.removeColumnFromRelationship(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }
@@ -92,6 +111,10 @@ public class RelationshipController {
     public Mono<BaseResponse<Void>> deleteRelationship(
             @PathVariable String relationshipId,
             @RequestBody Validation.DeleteRelationshipRequest request) {
+        if (!relationshipId.equals(request.getRelationshipId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return relationshipService.deleteRelationship(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }

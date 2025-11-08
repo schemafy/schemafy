@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
@@ -58,6 +60,10 @@ public class ColumnController {
     public Mono<BaseResponse<ColumnResponse>> updateColumnName(
             @PathVariable String columnId,
             @RequestBody ChangeColumnNameRequest request) {
+        if (!columnId.equals(request.getColumnId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return columnService.updateColumnName(request)
                 .map(BaseResponse::success);
     }
@@ -66,6 +72,10 @@ public class ColumnController {
     public Mono<BaseResponse<ColumnResponse>> updateColumnType(
             @PathVariable String columnId,
             @RequestBody ChangeColumnTypeRequest request) {
+        if (!columnId.equals(request.getColumnId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return columnService.updateColumnType(request)
                 .map(BaseResponse::success);
     }
@@ -74,6 +84,10 @@ public class ColumnController {
     public Mono<BaseResponse<ColumnResponse>> updateColumnPosition(
             @PathVariable String columnId,
             @RequestBody ChangeColumnPositionRequest request) {
+        if (!columnId.equals(request.getColumnId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return columnService.updateColumnPosition(request)
                 .map(BaseResponse::success);
     }
@@ -82,6 +96,10 @@ public class ColumnController {
     public Mono<BaseResponse<Void>> deleteColumn(
             @PathVariable String columnId,
             @RequestBody DeleteColumnRequest request) {
+        if (!columnId.equals(request.getColumnId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return columnService.deleteColumn(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }

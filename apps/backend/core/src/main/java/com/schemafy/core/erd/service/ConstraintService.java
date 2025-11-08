@@ -99,8 +99,8 @@ public class ConstraintService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient
-                        .changeConstraintName(request))
+                .delayUntil(
+                        ignore -> validationClient.changeConstraintName(request))
                 .doOnNext(
                         constraint -> constraint.setName(request.getNewName()))
                 .flatMap(constraintRepository::save)
@@ -111,9 +111,8 @@ public class ConstraintService {
     public Mono<ConstraintColumnResponse> addColumnToConstraint(
             Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
-                .then(constraintColumnRepository
-                        .save(ErdMapper
-                                .toEntity(request.getConstraintColumn())))
+                .then(constraintColumnRepository.save(
+                        ErdMapper.toEntity(request.getConstraintColumn())))
                 .map(ConstraintColumnResponse::from);
     }
 

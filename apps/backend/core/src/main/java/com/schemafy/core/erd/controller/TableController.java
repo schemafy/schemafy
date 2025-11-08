@@ -13,8 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
@@ -27,6 +25,8 @@ import reactor.core.publisher.Mono;
 import validation.Validation.ChangeTableNameRequest;
 import validation.Validation.CreateTableRequest;
 import validation.Validation.DeleteTableRequest;
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
 
 @Slf4j
 @RestController
@@ -66,12 +66,10 @@ public class TableController {
     public Mono<BaseResponse<TableResponse>> updateTableName(
             @PathVariable String tableId,
             @RequestBody ChangeTableNameRequest request) {
-        if (request.getTableId() != null
-                && !tableId.equals(request.getTableId())) {
+        if (!tableId.equals(request.getTableId())) {
             return Mono.error(
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
-
         return tableService.updateTableName(request)
                 .map(BaseResponse::success);
     }
@@ -80,12 +78,10 @@ public class TableController {
     public Mono<BaseResponse<Void>> deleteTable(
             @PathVariable String tableId,
             @RequestBody DeleteTableRequest request) {
-        if (request.getTableId() != null
-                && !tableId.equals(request.getTableId())) {
+        if (!tableId.equals(request.getTableId())) {
             return Mono.error(
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
-
         return tableService.deleteTable(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }

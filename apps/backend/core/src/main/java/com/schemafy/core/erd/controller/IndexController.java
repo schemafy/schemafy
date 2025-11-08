@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
@@ -59,6 +61,10 @@ public class IndexController {
     public Mono<BaseResponse<IndexResponse>> updateIndexName(
             @PathVariable String indexId,
             @RequestBody ChangeIndexNameRequest request) {
+        if (!indexId.equals(request.getIndexId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return indexService.updateIndexName(request)
                 .map(BaseResponse::success);
     }
@@ -67,6 +73,10 @@ public class IndexController {
     public Mono<BaseResponse<IndexColumnResponse>> addColumnToIndex(
             @PathVariable String indexId,
             @RequestBody AddColumnToIndexRequest request) {
+        if (!indexId.equals(request.getIndexId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return indexService.addColumnToIndex(request)
                 .map(BaseResponse::success);
     }
@@ -76,6 +86,11 @@ public class IndexController {
             @PathVariable String indexId,
             @PathVariable String columnId,
             @RequestBody RemoveColumnFromIndexRequest request) {
+        if (!indexId.equals(request.getIndexId())
+                || !columnId.equals(request.getIndexColumnId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return indexService.removeColumnFromIndex(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }
@@ -84,6 +99,10 @@ public class IndexController {
     public Mono<BaseResponse<Void>> deleteIndex(
             @PathVariable String indexId,
             @RequestBody DeleteIndexRequest request) {
+        if (!indexId.equals(request.getIndexId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return indexService.deleteIndex(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }

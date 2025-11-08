@@ -90,8 +90,8 @@ public class ColumnService {
                 .delayUntil(
                         ignore -> validationClient
                                 .changeColumnPosition(request))
-                .doOnNext(column -> column.setOrdinalPosition(
-                        request.getNewPosition()))
+                .doOnNext(column -> column
+                        .setOrdinalPosition(request.getNewPosition()))
                 .flatMap(columnRepository::save)
                 .map(ColumnResponse::from);
     }

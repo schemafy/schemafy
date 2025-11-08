@@ -135,9 +135,8 @@ public class RelationshipService {
     public Mono<RelationshipColumnResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
-                .then(relationshipColumnRepository
-                        .save(ErdMapper
-                                .toEntity(request.getRelationshipColumn())))
+                .then(relationshipColumnRepository.save(
+                        ErdMapper.toEntity(request.getRelationshipColumn())))
                 .map(RelationshipColumnResponse::from);
     }
 

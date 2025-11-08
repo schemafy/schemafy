@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
@@ -59,6 +61,10 @@ public class ConstraintController {
     public Mono<BaseResponse<ConstraintResponse>> updateConstraintName(
             @PathVariable String constraintId,
             @RequestBody ChangeConstraintNameRequest request) {
+        if (!constraintId.equals(request.getConstraintId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return constraintService.updateConstraintName(request)
                 .map(BaseResponse::success);
     }
@@ -67,6 +73,10 @@ public class ConstraintController {
     public Mono<BaseResponse<ConstraintColumnResponse>> addColumnToConstraint(
             @PathVariable String constraintId,
             @RequestBody AddColumnToConstraintRequest request) {
+        if (!constraintId.equals(request.getConstraintId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return constraintService.addColumnToConstraint(request)
                 .map(BaseResponse::success);
     }
@@ -76,6 +86,11 @@ public class ConstraintController {
             @PathVariable String constraintId,
             @PathVariable String columnId,
             @RequestBody RemoveColumnFromConstraintRequest request) {
+        if (!constraintId.equals(request.getConstraintId())
+                || !columnId.equals(request.getConstraintColumnId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return constraintService.removeColumnFromConstraint(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }
@@ -84,6 +99,10 @@ public class ConstraintController {
     public Mono<BaseResponse<Void>> deleteConstraint(
             @PathVariable String constraintId,
             @RequestBody DeleteConstraintRequest request) {
+        if (!constraintId.equals(request.getConstraintId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
         return constraintService.deleteConstraint(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }

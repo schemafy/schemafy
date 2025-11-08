@@ -48,12 +48,10 @@ public class SchemaController {
     public Mono<BaseResponse<SchemaResponse>> updateSchemaName(
             @PathVariable String schemaId,
             @RequestBody ChangeSchemaNameRequest request) {
-        if (request.getSchemaId() != null
-                && !schemaId.equals(request.getSchemaId())) {
+        if (!schemaId.equals(request.getSchemaId())) {
             return Mono.error(
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
-
         return schemaService
                 .updateSchemaName(request)
                 .map(BaseResponse::success);
@@ -63,12 +61,10 @@ public class SchemaController {
     public Mono<BaseResponse<Void>> deleteSchema(
             @PathVariable String schemaId,
             @RequestBody DeleteSchemaRequest request) {
-        if (request.getSchemaId() != null
-                && !schemaId.equals(request.getSchemaId())) {
+        if (!schemaId.equals(request.getSchemaId())) {
             return Mono.error(
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
-
         return schemaService.deleteSchema(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }
