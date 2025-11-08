@@ -70,18 +70,19 @@ public class ConstraintService {
     }
 
     public Mono<ConstraintResponse> getConstraint(String id) {
-        return constraintRepository.findById(id)
+        return constraintRepository.findByIdAndDeletedAtIsNull(id)
                 .flatMap(constraint -> constraintColumnRepository
-                        .findByConstraintId(id)
+                        .findByConstraintIdAndDeletedAtIsNull(id)
                         .collectList()
                         .map(columns -> ConstraintResponse.from(constraint,
                                 columns)));
     }
 
     public Flux<ConstraintResponse> getConstraintsByTableId(String tableId) {
-        return constraintRepository.findByTableId(tableId)
+        return constraintRepository.findByTableIdAndDeletedAtIsNull(tableId)
                 .flatMap(constraint -> constraintColumnRepository
-                        .findByConstraintId(constraint.getId())
+                        .findByConstraintIdAndDeletedAtIsNull(
+                                constraint.getId())
                         .collectList()
                         .map(columns -> ConstraintResponse.from(constraint,
                                 columns)));
@@ -89,7 +90,8 @@ public class ConstraintService {
 
     public Mono<ConstraintResponse> updateConstraintName(
             Validation.ChangeConstraintNameRequest request) {
-        return constraintRepository.findById(request.getConstraintId())
+        return constraintRepository
+                .findByIdAndDeletedAtIsNull(request.getConstraintId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
@@ -114,7 +116,7 @@ public class ConstraintService {
     public Mono<Void> removeColumnFromConstraint(
             Validation.RemoveColumnFromConstraintRequest request) {
         return constraintColumnRepository
-                .findById(request.getConstraintColumnId())
+                .findByIdAndDeletedAtIsNull(request.getConstraintColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
@@ -127,7 +129,8 @@ public class ConstraintService {
 
     public Mono<Void> deleteConstraint(
             Validation.DeleteConstraintRequest request) {
-        return constraintRepository.findById(request.getConstraintId())
+        return constraintRepository
+                .findByIdAndDeletedAtIsNull(request.getConstraintId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
