@@ -44,11 +44,15 @@ public class TableService {
 
     public Mono<TableResponse> getTable(String id) {
         return tableRepository.findByIdAndDeletedAtIsNull(id)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_TABLE_NOT_FOUND)))
                 .map(TableResponse::from);
     }
 
     public Flux<TableResponse> getTablesBySchemaId(String schemaId) {
         return tableRepository.findBySchemaIdAndDeletedAtIsNull(schemaId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_TABLE_NOT_FOUND)))
                 .map(TableResponse::from);
     }
 

@@ -43,11 +43,15 @@ public class SchemaService {
 
     public Mono<SchemaResponse> getSchema(String id) {
         return schemaRepository.findByIdAndDeletedAtIsNull(id)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
                 .map(SchemaResponse::from);
     }
 
     public Flux<SchemaResponse> getSchemasByProjectId(String projectId) {
         return schemaRepository.findByProjectIdAndDeletedAtIsNull(projectId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
                 .map(SchemaResponse::from);
     }
 

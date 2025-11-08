@@ -89,7 +89,7 @@ public class RelationshipService {
 
     public Flux<RelationshipResponse> getRelationshipsByTableId(
             String tableId) {
-        return relationshipRepository.findByTableId(tableId)
+        return relationshipRepository.findByTableIdAndDeletedAtIsNull(tableId)
                 .flatMap(relationship -> relationshipColumnRepository
                         .findByRelationshipIdAndDeletedAtIsNull(
                                 relationship.getId())

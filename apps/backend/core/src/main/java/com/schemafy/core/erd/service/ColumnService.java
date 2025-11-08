@@ -43,11 +43,15 @@ public class ColumnService {
 
     public Mono<ColumnResponse> getColumn(String id) {
         return columnRepository.findByIdAndDeletedAtIsNull(id)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_COLUMN_NOT_FOUND)))
                 .map(ColumnResponse::from);
     }
 
     public Flux<ColumnResponse> getColumnsByTableId(String tableId) {
         return columnRepository.findByTableIdAndDeletedAtIsNull(tableId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_COLUMN_NOT_FOUND)))
                 .map(ColumnResponse::from);
     }
 

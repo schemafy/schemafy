@@ -75,7 +75,9 @@ public class ConstraintService {
                         .findByConstraintIdAndDeletedAtIsNull(id)
                         .collectList()
                         .map(columns -> ConstraintResponse.from(constraint,
-                                columns)));
+                                columns)))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_CONSTRAINT_NOT_FOUND)));
     }
 
     public Flux<ConstraintResponse> getConstraintsByTableId(String tableId) {
@@ -85,7 +87,9 @@ public class ConstraintService {
                                 constraint.getId())
                         .collectList()
                         .map(columns -> ConstraintResponse.from(constraint,
-                                columns)));
+                                columns)))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_CONSTRAINT_NOT_FOUND)));
     }
 
     public Mono<ConstraintResponse> updateConstraintName(
