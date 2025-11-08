@@ -11,8 +11,8 @@ import {
   ConstraintHandlers,
   relationshipHandlers,
   RelationshipHandlers,
-} from "./handlers";
-import { Database, DATABASE } from "./types";
+} from './handlers';
+import { Database } from './types';
 import {
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,
@@ -35,7 +35,7 @@ import {
   RelationshipTargetTableNotExistError,
   RelationshipCyclicReferenceError,
   ERDValidationError,
-} from "./errors";
+} from './errors';
 
 interface ERDValidator
   extends SchemaHandlers,
@@ -49,33 +49,21 @@ interface ERDValidator
 
 export const ERD_VALIDATOR: ERDValidator = {
   validate: (database: Database) => {
-    const parseResult = DATABASE.safeParse(database);
-    if (!parseResult.success) {
-      const zodError = parseResult.error.issues[0];
-      throw new ERDValidationError(
-        "SCHEMA_VALIDATION_ERROR" as any,
-        `Schema validation failed: ${zodError.message} at ${zodError.path.join(".")}`,
-      );
-    }
-
     const schemaNames = new Set<string>();
     for (const schema of database.schemas) {
-      if (schema.name.length < 3 || schema.name.length > 20) {
+      if (schema.name.length < 1 || schema.name.length > 20) {
         throw new SchemaNameInvalidError(schema.name);
       }
 
       if (schemaNames.has(schema.name)) {
-        const existingSchemaId =
-          database.schemas.find(
-            (s) => s.name === schema.name && s.id !== schema.id,
-          )?.id || "";
+        const existingSchemaId = database.schemas.find((s) => s.name === schema.name && s.id !== schema.id)?.id || '';
         throw new SchemaNameNotUniqueError(schema.name, existingSchemaId);
       }
       schemaNames.add(schema.name);
 
       const tableNames = new Set<string>();
       for (const table of schema.tables) {
-        if (table.name.length < 3 || table.name.length > 20) {
+        if (table.name.length < 1 || table.name.length > 20) {
           throw new TableNameNotInvalidError(table.name);
         }
 
@@ -88,7 +76,7 @@ export const ERD_VALIDATOR: ERDValidator = {
         let autoIncrementCount = 0;
 
         for (const column of table.columns) {
-          if (column.name.length < 3 || column.name.length > 40) {
+          if (column.name.length < 1 || column.name.length > 40) {
             throw new ColumnInvalidError(column.name);
           }
 
@@ -97,7 +85,7 @@ export const ERD_VALIDATOR: ERDValidator = {
           }
           columnNames.add(column.name);
 
-          if (!column.dataType || column.dataType.trim() === "") {
+          if (!column.dataType || column.dataType.trim() === '') {
             throw new ColumnDataTypeRequiredError(column.name, table.id);
           }
 
@@ -109,22 +97,19 @@ export const ERD_VALIDATOR: ERDValidator = {
           }
 
           const reservedKeywords = [
-            "SELECT",
-            "INSERT",
-            "UPDATE",
-            "DELETE",
-            "FROM",
-            "WHERE",
-            "JOIN",
-            "ORDER",
-            "GROUP",
-            "HAVING",
+            'SELECT',
+            'INSERT',
+            'UPDATE',
+            'DELETE',
+            'FROM',
+            'WHERE',
+            'JOIN',
+            'ORDER',
+            'GROUP',
+            'HAVING',
           ];
           if (reservedKeywords.includes(column.name.toUpperCase())) {
-            throw new ColumnNameIsReservedKeywordError(
-              column.name,
-              schema.dbVendorId,
-            );
+            throw new ColumnNameIsReservedKeywordError(column.name, schema.dbVendorId);
           }
         }
 
@@ -139,14 +124,9 @@ export const ERD_VALIDATOR: ERDValidator = {
           constraintNames.add(fullConstraintName);
 
           for (const constraintColumn of constraint.columns) {
-            const columnExists = table.columns.some(
-              (col) => col.id === constraintColumn.columnId,
-            );
+            const columnExists = table.columns.some((col) => col.id === constraintColumn.columnId);
             if (!columnExists) {
-              throw new ConstraintColumnNotExistError(
-                constraintColumn.columnId,
-                constraint.name,
-              );
+              throw new ConstraintColumnNotExistError(constraintColumn.columnId, constraint.name);
             }
           }
 
@@ -167,10 +147,7 @@ export const ERD_VALIDATOR: ERDValidator = {
               });
               return existingDef === constraintDef && c.id !== constraint.id;
             });
-            throw new DuplicateKeyDefinitionError(
-              constraint.name,
-              existingConstraint?.name || "unknown",
-            );
+            throw new DuplicateKeyDefinitionError(constraint.name, existingConstraint?.name || 'unknown');
           }
           constraintDefinitions.add(constraintDef);
         }
@@ -184,25 +161,16 @@ export const ERD_VALIDATOR: ERDValidator = {
           }
           indexNames.add(index.name);
 
-          const validIndexTypes = [
-            "BTREE",
-            "HASH",
-            "FULLTEXT",
-            "SPATIAL",
-            "OTHER",
-          ];
+          const validIndexTypes = ['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER'];
           if (!validIndexTypes.includes(index.type)) {
             throw new IndexTypeInvalidError(index.type, schema.dbVendorId);
           }
 
           for (const indexColumn of index.columns) {
-            const columnExists = table.columns.some(
-              (col) => col.id === indexColumn.columnId,
-            );
+            const columnExists = table.columns.some((col) => col.id === indexColumn.columnId);
             if (!columnExists) {
               const columnName =
-                table.columns.find((col) => col.id === indexColumn.columnId)
-                  ?.name || indexColumn.columnId;
+                table.columns.find((col) => col.id === indexColumn.columnId)?.name || indexColumn.columnId;
               throw new IndexColumnNotExistError(columnName, index.name);
             }
           }
@@ -210,19 +178,16 @@ export const ERD_VALIDATOR: ERDValidator = {
           const indexDef = index.columns
             .map((ic) => `${ic.columnId}:${ic.sortDir}`)
             .sort()
-            .join(",");
+            .join(',');
           if (indexDefinitions.has(indexDef)) {
             const existingIndex = table.indexes.find(
               (i) =>
                 i.columns
                   .map((ic) => `${ic.columnId}:${ic.sortDir}`)
                   .sort()
-                  .join(",") === indexDef && i.id !== index.id,
+                  .join(',') === indexDef && i.id !== index.id
             );
-            throw new DuplicateIndexDefinitionError(
-              index.name,
-              existingIndex?.name || "unknown",
-            );
+            throw new DuplicateIndexDefinitionError(index.name, existingIndex?.name || 'unknown');
           }
           indexDefinitions.add(indexDef);
         }
@@ -231,10 +196,7 @@ export const ERD_VALIDATOR: ERDValidator = {
 
         for (const relationship of table.relationships) {
           if (relationshipNames.has(relationship.name)) {
-            throw new RelationshipNameNotUniqueError(
-              relationship.name,
-              table.id,
-            );
+            throw new RelationshipNameNotUniqueError(relationship.name, table.id);
           }
           relationshipNames.add(relationship.name);
 
@@ -242,14 +204,9 @@ export const ERD_VALIDATOR: ERDValidator = {
             throw new RelationshipEmptyError(relationship.name);
           }
 
-          const targetTableExists = schema.tables.some(
-            (t) => t.id === relationship.tgtTableId,
-          );
+          const targetTableExists = schema.tables.some((t) => t.id === relationship.tgtTableId);
           if (!targetTableExists) {
-            throw new RelationshipTargetTableNotExistError(
-              relationship.name,
-              relationship.tgtTableId,
-            );
+            throw new RelationshipTargetTableNotExistError(relationship.name, relationship.tgtTableId);
           }
         }
       }
@@ -275,14 +232,9 @@ export const ERD_VALIDATOR: ERDValidator = {
           for (const relationship of table.relationships) {
             if (detectCycle(relationship.tgtTableId)) {
               const srcTableName = table.name;
-              const tgtTable = schema.tables.find(
-                (t) => t.id === relationship.tgtTableId,
-              );
+              const tgtTable = schema.tables.find((t) => t.id === relationship.tgtTableId);
               const tgtTableName = tgtTable?.name || relationship.tgtTableId;
-              throw new RelationshipCyclicReferenceError(
-                srcTableName,
-                tgtTableName,
-              );
+              throw new RelationshipCyclicReferenceError(srcTableName, tgtTableName);
             }
           }
         }
