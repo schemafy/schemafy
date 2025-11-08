@@ -71,9 +71,7 @@ public class IndexService {
                 .flatMap(index -> indexColumnRepository
                         .findByIndexIdAndDeletedAtIsNull(index.getId())
                         .collectList()
-                        .map(columns -> IndexResponse.from(index, columns)))
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)));
+                        .map(columns -> IndexResponse.from(index, columns)));
     }
 
     public Mono<IndexResponse> updateIndexName(

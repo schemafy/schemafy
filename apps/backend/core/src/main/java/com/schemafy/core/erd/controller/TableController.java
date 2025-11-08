@@ -16,6 +16,7 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.TableResponse;
 import com.schemafy.core.erd.service.TableService;
 
@@ -48,7 +49,7 @@ public class TableController {
     }
 
     @GetMapping("/tables/{tableId}")
-    public Mono<BaseResponse<TableResponse>> getTable(
+    public Mono<BaseResponse<TableDetailResponse>> getTable(
             @PathVariable String tableId) {
         return tableService.getTable(tableId)
                 .map(BaseResponse::success);

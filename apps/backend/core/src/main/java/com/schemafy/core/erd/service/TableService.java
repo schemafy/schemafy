@@ -6,6 +6,11 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
+import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.TableResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
@@ -18,12 +23,18 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class TableService {
 
     private final ValidationClient validationClient;
     private final TableRepository tableRepository;
+    private final ColumnService columnService;
+    private final ConstraintService constraintService;
+    private final IndexService indexService;
+    private final RelationshipService relationshipService;
 
     public Mono<AffectedMappingResponse> createTable(
             CreateTableRequestWithExtra request) {
@@ -42,11 +53,30 @@ public class TableService {
                         )));
     }
 
-    public Mono<TableResponse> getTable(String id) {
+    public Mono<TableDetailResponse> getTable(String id) {
         return tableRepository.findByIdAndDeletedAtIsNull(id)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_TABLE_NOT_FOUND)))
-                .map(TableResponse::from);
+                .flatMap(table -> {
+                    Mono<List<ColumnResponse>> columnsMono = columnService
+                            .getColumnsByTableId(id)
+                            .collectList();
+                    Mono<List<ConstraintResponse>> constraintsMono = constraintService
+                            .getConstraintsByTableId(id)
+                            .collectList();
+                    Mono<List<IndexResponse>> indexesMono = indexService
+                            .getIndexesByTableId(id)
+                            .collectList();
+                    Mono<List<RelationshipResponse>> relationshipsMono = relationshipService
+                            .getRelationshipsByTableId(id)
+                            .collectList();
+
+                    return Mono.zip(columnsMono, constraintsMono, indexesMono,
+                            relationshipsMono)
+                            .map(tuple -> TableDetailResponse.from(table,
+                                    tuple.getT1(), tuple.getT2(),
+                                    tuple.getT3(), tuple.getT4()));
+                });
     }
 
     public Flux<TableResponse> getTablesBySchemaId(String schemaId) {

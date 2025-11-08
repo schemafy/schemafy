@@ -95,10 +95,7 @@ public class RelationshipService {
                                 relationship.getId())
                         .collectList()
                         .map(columns -> RelationshipResponse.from(relationship,
-                                columns)))
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(
-                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)));
+                                columns)));
     }
 
     public Mono<RelationshipResponse> updateRelationshipName(

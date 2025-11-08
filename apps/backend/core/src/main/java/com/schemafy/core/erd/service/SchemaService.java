@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.SchemaDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
@@ -23,6 +24,7 @@ public class SchemaService {
 
     private final ValidationClient validationClient;
     private final SchemaRepository schemaRepository;
+    private final TableService tableService;
 
     public Mono<AffectedMappingResponse> createSchema(
             Validation.CreateSchemaRequest request) {
@@ -41,11 +43,13 @@ public class SchemaService {
                         )));
     }
 
-    public Mono<SchemaResponse> getSchema(String id) {
+    public Mono<SchemaDetailResponse> getSchema(String id) {
         return schemaRepository.findByIdAndDeletedAtIsNull(id)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
-                .map(SchemaResponse::from);
+                .flatMap(schema -> tableService.getTablesBySchemaId(id)
+                        .collectList()
+                        .map(tables -> SchemaDetailResponse.from(schema, tables)));
     }
 
     public Flux<SchemaResponse> getSchemasByProjectId(String projectId) {

@@ -87,9 +87,7 @@ public class ConstraintService {
                                 constraint.getId())
                         .collectList()
                         .map(columns -> ConstraintResponse.from(constraint,
-                                columns)))
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_CONSTRAINT_NOT_FOUND)));
+                                columns)));
     }
 
     public Mono<ConstraintResponse> updateConstraintName(

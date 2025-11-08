@@ -50,8 +50,6 @@ public class ColumnService {
 
     public Flux<ColumnResponse> getColumnsByTableId(String tableId) {
         return columnRepository.findByTableIdAndDeletedAtIsNull(tableId)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_COLUMN_NOT_FOUND)))
                 .map(ColumnResponse::from);
     }
 

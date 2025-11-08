@@ -14,6 +14,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.SchemaDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.core.erd.service.SchemaService;
 
@@ -38,7 +39,7 @@ public class SchemaController {
     }
 
     @GetMapping("/schemas/{schemaId}")
-    public Mono<BaseResponse<SchemaResponse>> getSchema(
+    public Mono<BaseResponse<SchemaDetailResponse>> getSchema(
             @PathVariable String schemaId) {
         return schemaService.getSchema(schemaId)
                 .map(BaseResponse::success);
