@@ -6,36 +6,50 @@ import {
   RelationshipNameNotUniqueError,
   RelationshipEmptyError,
   RelationshipCyclicReferenceError,
-} from '../errors';
-import { Database, Schema, Relationship, RelationshipColumn, Table } from '../types';
-import * as helper from '../helper';
+} from "../errors";
+import {
+  Database,
+  Schema,
+  Relationship,
+  RelationshipColumn,
+  Table,
+} from "../types";
+import * as helper from "../helper";
 
 export interface RelationshipHandlers {
-  createRelationship: (database: Database, schemaId: Schema['id'], relationship: Relationship) => Database;
-  deleteRelationship: (database: Database, schemaId: Schema['id'], relationshipId: Relationship['id']) => Database;
+  createRelationship: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationship: Relationship,
+  ) => Database;
+  deleteRelationship: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+  ) => Database;
   changeRelationshipName: (
     database: Database,
-    schemaId: Schema['id'],
-    relationshipId: Relationship['id'],
-    newName: Relationship['name']
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    newName: Relationship["name"],
   ) => Database;
   changeRelationshipCardinality: (
     database: Database,
-    schemaId: Schema['id'],
-    relationshipId: Relationship['id'],
-    cardinality: Relationship['cardinality']
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    cardinality: Relationship["cardinality"],
   ) => Database;
   addColumnToRelationship: (
     database: Database,
-    schemaId: Schema['id'],
-    relationshipId: Relationship['id'],
-    relationshipColumn: Omit<RelationshipColumn, 'relationshipId'>
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    relationshipColumn: Omit<RelationshipColumn, "relationshipId">,
   ) => Database;
   removeColumnFromRelationship: (
     database: Database,
-    schemaId: Schema['id'],
-    relationshipId: Relationship['id'],
-    relationshipColumnId: RelationshipColumn['id']
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    relationshipColumnId: RelationshipColumn["id"],
   ) => Database;
 }
 
@@ -48,30 +62,58 @@ export const relationshipHandlers: RelationshipHandlers = {
       throw new RelationshipEmptyError(relationship.name);
     }
 
-    const sourceTable = schema.tables.find((t) => t.id === relationship.srcTableId);
-    if (!sourceTable) throw new RelationshipTargetTableNotExistError(relationship.name, relationship.srcTableId);
+    const sourceTable = schema.tables.find(
+      (t) => t.id === relationship.srcTableId,
+    );
+    if (!sourceTable)
+      throw new RelationshipTargetTableNotExistError(
+        relationship.name,
+        relationship.srcTableId,
+      );
 
-    const targetTable = schema.tables.find((t) => t.id === relationship.tgtTableId);
-    if (!targetTable) throw new RelationshipTargetTableNotExistError(relationship.name, relationship.tgtTableId);
+    const targetTable = schema.tables.find(
+      (t) => t.id === relationship.tgtTableId,
+    );
+    if (!targetTable)
+      throw new RelationshipTargetTableNotExistError(
+        relationship.name,
+        relationship.tgtTableId,
+      );
 
     if (
-      relationship.kind === 'IDENTIFYING' &&
-      helper.detectCircularReference(schema, relationship.tgtTableId, relationship.srcTableId)
+      relationship.kind === "IDENTIFYING" &&
+      helper.detectCircularReference(
+        schema,
+        relationship.tgtTableId,
+        relationship.srcTableId,
+      )
     ) {
-      throw new RelationshipCyclicReferenceError(relationship.tgtTableId, relationship.srcTableId);
+      throw new RelationshipCyclicReferenceError(
+        relationship.tgtTableId,
+        relationship.srcTableId,
+      );
     }
 
-    const duplicateRelationship = sourceTable.relationships.find((r) => r.name === relationship.name);
-    if (duplicateRelationship) throw new RelationshipNameNotUniqueError(relationship.name, sourceTable.id);
+    const duplicateRelationship = sourceTable.relationships.find(
+      (r) => r.name === relationship.name,
+    );
+    if (duplicateRelationship)
+      throw new RelationshipNameNotUniqueError(
+        relationship.name,
+        sourceTable.id,
+      );
 
     const changeTables: Table[] = schema.tables.map((t) =>
       t.id === relationship.srcTableId
         ? {
             ...t,
             isAffected: true,
-            relationships: [...t.relationships, { ...relationship, isAffected: true }],
+            relationships: [
+              ...t.relationships,
+              { ...relationship, isAffected: true },
+            ],
           }
-        : t
+        : t,
     );
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
@@ -81,7 +123,7 @@ export const relationshipHandlers: RelationshipHandlers = {
             isAffected: true,
             tables: changeTables,
           }
-        : s
+        : s,
     );
 
     let updatedDatabase = {
@@ -91,12 +133,17 @@ export const relationshipHandlers: RelationshipHandlers = {
     };
 
     const updatedSchema = changeSchemas.find((s) => s.id === schemaId)!;
-    const propagatedSchema = helper.propagateKeysToChildren(structuredClone(updatedSchema), relationship.tgtTableId);
+    const propagatedSchema = helper.propagateKeysToChildren(
+      structuredClone(updatedSchema),
+      relationship.tgtTableId,
+    );
 
     updatedDatabase = {
       ...updatedDatabase,
       isAffected: true,
-      schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? { ...propagatedSchema, isAffected: true } : s)),
+      schemas: updatedDatabase.schemas.map((s) =>
+        s.id === schemaId ? { ...propagatedSchema, isAffected: true } : s,
+      ),
     };
 
     return updatedDatabase;
@@ -111,7 +158,10 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
-    const updatedSchema = helper.deleteRelatedColumns(structuredClone(schema), relationship);
+    const updatedSchema = helper.deleteRelatedColumns(
+      structuredClone(schema),
+      relationship,
+    );
 
     const deleteRelationshipSchema: Schema = {
       ...updatedSchema,
@@ -126,7 +176,11 @@ export const relationshipHandlers: RelationshipHandlers = {
     return {
       ...structuredClone(database),
       isAffected: true,
-      schemas: database.schemas.map((s) => (s.id === schemaId ? { ...deleteRelationshipSchema, isAffected: true } : s)),
+      schemas: database.schemas.map((s) =>
+        s.id === schemaId
+          ? { ...deleteRelationshipSchema, isAffected: true }
+          : s,
+      ),
     };
   },
   changeRelationshipName: (database, schemaId, relationshipId, newName) => {
@@ -145,10 +199,12 @@ export const relationshipHandlers: RelationshipHandlers = {
             ...t,
             isAffected: true,
             relationships: t.relationships.map((r) =>
-              r.id === relationshipId ? { ...r, name: newName, isAffected: true } : r
+              r.id === relationshipId
+                ? { ...r, name: newName, isAffected: true }
+                : r,
             ),
           }
-        : t
+        : t,
     );
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
@@ -158,7 +214,7 @@ export const relationshipHandlers: RelationshipHandlers = {
             isAffected: true,
             tables: changeTables,
           }
-        : s
+        : s,
     );
 
     return {
@@ -167,7 +223,12 @@ export const relationshipHandlers: RelationshipHandlers = {
       schemas: changeSchemas,
     };
   },
-  changeRelationshipCardinality: (database, schemaId, relationshipId, cardinality) => {
+  changeRelationshipCardinality: (
+    database,
+    schemaId,
+    relationshipId,
+    cardinality,
+  ) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -183,17 +244,26 @@ export const relationshipHandlers: RelationshipHandlers = {
       cardinality,
     };
 
-    let currentDatabase = relationshipHandlers.deleteRelationship(structuredClone(database), schemaId, relationshipId);
+    let currentDatabase = relationshipHandlers.deleteRelationship(
+      structuredClone(database),
+      schemaId,
+      relationshipId,
+    );
 
     currentDatabase = relationshipHandlers.createRelationship(
       structuredClone(currentDatabase),
       schemaId,
-      updatedRelationship
+      updatedRelationship,
     );
 
     return currentDatabase;
   },
-  addColumnToRelationship: (database, schemaId, relationshipId, relationshipColumn) => {
+  addColumnToRelationship: (
+    database,
+    schemaId,
+    relationshipId,
+    relationshipColumn,
+  ) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -205,20 +275,32 @@ export const relationshipHandlers: RelationshipHandlers = {
     const updatedRelationship: Relationship = {
       ...relationship,
       isAffected: true,
-      columns: [...relationship.columns, { ...relationshipColumn, relationshipId, isAffected: true }],
+      columns: [
+        ...relationship.columns,
+        { ...relationshipColumn, relationshipId, isAffected: true },
+      ],
     };
 
-    let currentDatabase = relationshipHandlers.deleteRelationship(structuredClone(database), schemaId, relationshipId);
+    let currentDatabase = relationshipHandlers.deleteRelationship(
+      structuredClone(database),
+      schemaId,
+      relationshipId,
+    );
 
     currentDatabase = relationshipHandlers.createRelationship(
       structuredClone(currentDatabase),
       schemaId,
-      updatedRelationship
+      updatedRelationship,
     );
 
     return currentDatabase;
   },
-  removeColumnFromRelationship: (database, schemaId, relationshipId, relationshipColumnId) => {
+  removeColumnFromRelationship: (
+    database,
+    schemaId,
+    relationshipId,
+    relationshipColumnId,
+  ) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -228,14 +310,26 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
-    const relationshipColumn = relationship.columns.find((rc) => rc.id === relationshipColumnId);
-    if (!relationshipColumn) throw new RelationshipColumnNotExistError(relationshipColumnId, relationshipId);
+    const relationshipColumn = relationship.columns.find(
+      (rc) => rc.id === relationshipColumnId,
+    );
+    if (!relationshipColumn)
+      throw new RelationshipColumnNotExistError(
+        relationshipColumnId,
+        relationshipId,
+      );
 
-    const nextColumns = relationship.columns.filter((rc) => rc.id !== relationshipColumnId);
+    const nextColumns = relationship.columns.filter(
+      (rc) => rc.id !== relationshipColumnId,
+    );
 
     // 마지막 컬럼 제거 시 관계 자체를 삭제
     if (nextColumns.length === 0) {
-      return relationshipHandlers.deleteRelationship(structuredClone(database), schemaId, relationshipId);
+      return relationshipHandlers.deleteRelationship(
+        structuredClone(database),
+        schemaId,
+        relationshipId,
+      );
     }
 
     const updatedRelationship: Relationship = {
@@ -244,12 +338,16 @@ export const relationshipHandlers: RelationshipHandlers = {
       columns: nextColumns,
     };
 
-    let currentDatabase = relationshipHandlers.deleteRelationship(structuredClone(database), schemaId, relationshipId);
+    let currentDatabase = relationshipHandlers.deleteRelationship(
+      structuredClone(database),
+      schemaId,
+      relationshipId,
+    );
 
     currentDatabase = relationshipHandlers.createRelationship(
       structuredClone(currentDatabase),
       schemaId,
-      updatedRelationship
+      updatedRelationship,
     );
 
     return currentDatabase;
