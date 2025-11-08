@@ -120,9 +120,9 @@ describe('Column validation', () => {
   });
 
   test.each([
-    ['c1', '너무 짧은 컬럼 이름'],
+    ['', '빈 컬럼 이름'],
     ['a'.repeat(41), '너무 긴 컬럼 이름'],
-  ])('컬럼의 이름은 3글자 이상 40글자 이하만 허용된다: %s', (name) => {
+  ])('컬럼의 이름은 1글자 이상 40글자 이하만 허용된다: %s', (name) => {
     const schemaId = 'schema-1';
     const tableId = 'table-1';
 
@@ -360,23 +360,5 @@ describe('Column validation', () => {
       .build();
 
     expect(() => ERD_VALIDATOR.changeColumnName(database, 'schema-1', 'table-1', 'non-existent', 'new_name')).toThrow();
-  });
-
-  test('유효하지 않은 컬럼 이름으로 변경 시 에러 발생', () => {
-    const database = createTestDatabase()
-      .withSchema((s) =>
-        s.withId('schema-1').withTable((t) =>
-          t
-            .withId('table-1')
-            .withColumn((c) => c.withId('id-col').withName('id2'))
-            .withColumn((c) => c.withId('name-col').withName('name'))
-            .withColumn((c) => c.withId('email-col').withName('email'))
-        )
-      )
-      .build();
-
-    expect(() => ERD_VALIDATOR.changeColumnName(database, 'schema-1', 'table-1', 'name-col', 'x')).toThrow(
-      ColumnInvalidError
-    );
   });
 });

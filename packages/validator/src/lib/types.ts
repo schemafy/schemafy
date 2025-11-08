@@ -1,37 +1,19 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 const ULID = z.string().ulid();
-const DB_VENDOR = z.enum(["mysql"]);
-const INDEX_TYPE = z.enum(["BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER"]);
-const INDEX_SORT_DIR = z.enum(["ASC", "DESC"]);
-const CONSTRAINT_KIND = z.enum([
-  "PRIMARY_KEY",
-  "UNIQUE",
-  "CHECK",
-  "DEFAULT",
-  "NOT_NULL",
-]);
-const RELATIONSHIP_KIND = z.enum(["IDENTIFYING", "NON_IDENTIFYING"]);
-const RELATIONSHIP_CARDINALITY = z.enum(["1:1", "1:N"]);
-const RELATIONSHIP_ON_DELETE = z.enum([
-  "NO_ACTION",
-  "RESTRICT",
-  "CASCADE",
-  "SET_NULL",
-  "SET_DEFAULT",
-]);
-const RELATIONSHIP_ON_UPDATE = z.enum([
-  "NO_ACTION",
-  "RESTRICT",
-  "CASCADE",
-  "SET_NULL",
-  "SET_DEFAULT",
-]);
+const DB_VENDOR = z.enum(['mysql']);
+const INDEX_TYPE = z.enum(['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER']);
+const INDEX_SORT_DIR = z.enum(['ASC', 'DESC']);
+const CONSTRAINT_KIND = z.enum(['PRIMARY_KEY', 'UNIQUE', 'CHECK', 'DEFAULT', 'NOT_NULL']);
+const RELATIONSHIP_KIND = z.enum(['IDENTIFYING', 'NON_IDENTIFYING']);
+const RELATIONSHIP_CARDINALITY = z.enum(['1:1', '1:N']);
+const RELATIONSHIP_ON_DELETE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
+const RELATIONSHIP_ON_UPDATE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
 
 export const COLUMN = z.object({
   id: ULID,
   tableId: ULID,
-  name: z.string().min(3).max(40),
+  name: z.string().min(1).max(40),
   ordinalPosition: z.number().positive(),
   dataType: z.string().nullable().optional(),
   lengthScale: z.string(),
@@ -39,9 +21,6 @@ export const COLUMN = z.object({
   charset: z.string(),
   collation: z.string(),
   comment: z.string().nullable().optional(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
   isAffected: z.boolean().default(false),
 });
 
@@ -84,10 +63,10 @@ export const CONSTRAINT = z
     isAffected: z.boolean().default(false),
   })
   .refine((data) => {
-    if (data.kind == "CHECK") {
-      return typeof data.checkExpr === "string";
-    } else if (data.kind == "DEFAULT") {
-      return typeof data.defaultExpr === "string";
+    if (data.kind == 'CHECK') {
+      return typeof data.checkExpr === 'string';
+    } else if (data.kind == 'DEFAULT') {
+      return typeof data.defaultExpr === 'string';
     }
 
     return true;
@@ -119,12 +98,9 @@ export const RELATIONSHIP = z.object({
 export const TABLE = z.object({
   id: ULID,
   schemaId: ULID,
-  name: z.string().min(3).max(20),
+  name: z.string().min(1).max(20),
   comment: z.string().nullable().optional(),
   tableOptions: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
   columns: z.array(COLUMN),
   indexes: z.array(INDEX),
   constraints: z.array(CONSTRAINT),
@@ -136,13 +112,10 @@ export const SCHEMA = z.object({
   id: ULID,
   projectId: ULID,
   dbVendorId: DB_VENDOR,
-  name: z.string().min(3).max(20),
+  name: z.string().min(1).max(20),
   charset: z.string(),
   collation: z.string(),
   vendorOption: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
   tables: z.array(TABLE),
   isAffected: z.boolean().default(false),
 });
