@@ -75,7 +75,10 @@ export const constraintHandlers: ConstraintHandlers = {
         (col) => col.id === constraintColumn.columnId,
       );
       if (!columnExists) {
-        throw new ConstraintColumnNotExistError(constraintColumn.columnId, constraint.name);
+        throw new ConstraintColumnNotExistError(
+          constraintColumn.columnId,
+          constraint.name,
+        );
       }
 
       if (constraintColumnIds.has(constraintColumn.columnId)) {
