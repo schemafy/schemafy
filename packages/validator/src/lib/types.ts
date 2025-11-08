@@ -42,6 +42,7 @@ export const COLUMN = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   deletedAt: z.date().nullable().optional(),
+  isAffected: z.boolean().default(false),
 });
 
 export const INDEX_COLUMN = z.object({
@@ -50,6 +51,7 @@ export const INDEX_COLUMN = z.object({
   columnId: ULID,
   seqNo: z.number().positive(),
   sortDir: INDEX_SORT_DIR,
+  isAffected: z.boolean().default(false),
 });
 
 export const INDEX = z.object({
@@ -59,6 +61,7 @@ export const INDEX = z.object({
   type: INDEX_TYPE,
   comment: z.string().nullable().optional(),
   columns: z.array(INDEX_COLUMN),
+  isAffected: z.boolean().default(false),
 });
 
 export const CONSTRAINT_COLUMN = z.object({
@@ -66,6 +69,7 @@ export const CONSTRAINT_COLUMN = z.object({
   constraintId: ULID,
   columnId: ULID,
   seqNo: z.number().positive(),
+  isAffected: z.boolean().default(false),
 });
 
 export const CONSTRAINT = z
@@ -77,6 +81,7 @@ export const CONSTRAINT = z
     checkExpr: z.string().nullable().optional(),
     defaultExpr: z.string().nullable().optional(),
     columns: z.array(CONSTRAINT_COLUMN),
+    isAffected: z.boolean().default(false),
   })
   .refine((data) => {
     if (data.kind == "CHECK") {
@@ -94,6 +99,7 @@ export const RELATIONSHIP_COLUMN = z.object({
   fkColumnId: ULID,
   refColumnId: ULID,
   seqNo: z.number().positive(),
+  isAffected: z.boolean().default(false),
 });
 
 export const RELATIONSHIP = z.object({
@@ -107,6 +113,7 @@ export const RELATIONSHIP = z.object({
   onUpdate: RELATIONSHIP_ON_UPDATE,
   fkEnforced: z.literal(false),
   columns: z.array(RELATIONSHIP_COLUMN),
+  isAffected: z.boolean().default(false),
 });
 
 export const TABLE = z.object({
@@ -122,6 +129,7 @@ export const TABLE = z.object({
   indexes: z.array(INDEX),
   constraints: z.array(CONSTRAINT),
   relationships: z.array(RELATIONSHIP),
+  isAffected: z.boolean().default(false),
 });
 
 export const SCHEMA = z.object({
@@ -136,11 +144,13 @@ export const SCHEMA = z.object({
   updatedAt: z.date(),
   deletedAt: z.date().nullable().optional(),
   tables: z.array(TABLE),
+  isAffected: z.boolean().default(false),
 });
 
 export const DATABASE = z.object({
   id: ULID,
   schemas: z.array(SCHEMA),
+  isAffected: z.boolean().default(false),
 });
 
 export type Schema = z.infer<typeof SCHEMA>;

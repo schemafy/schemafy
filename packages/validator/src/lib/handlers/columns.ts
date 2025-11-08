@@ -1,19 +1,27 @@
 import {
-  SchemaNotExistError,
-  TableNotExistError,
-  ColumnNotExistError,
-  ColumnNameNotUniqueError,
-  ColumnNameInvalidError,
-  TableEmptyColumnError,
-  MultipleAutoIncrementColumnsError,
-  ColumnNameIsReservedKeywordError,
-  ColumnNameInvalidFormatError,
-  ColumnPrecisionRequiredError,
-  ColumnLengthRequiredError,
   ColumnDataTypeInvalidError,
+  ColumnLengthRequiredError,
+  ColumnNameInvalidError,
+  ColumnNameInvalidFormatError,
+  ColumnNameIsReservedKeywordError,
+  ColumnNameNotUniqueError,
+  ColumnNotExistError,
+  ColumnPrecisionRequiredError,
+  MultipleAutoIncrementColumnsError,
+  SchemaNotExistError,
+  TableEmptyColumnError,
+  TableNotExistError,
 } from "../errors";
-import { Database, Schema, Table, Column, Constraint, COLUMN } from "../types";
 import * as helper from "../helper";
+import {
+  Column,
+  COLUMN,
+  Constraint,
+  Database,
+  RelationshipColumn,
+  Schema,
+  Table,
+} from "../types";
 
 export interface ColumnHandlers {
   createColumn: (
@@ -81,11 +89,11 @@ export const columnHandlers: ColumnHandlers = {
       throw new ColumnNameIsReservedKeywordError(column.name);
 
     if (column.dataType) {
-      const presisionRequired = ["DECIMAL", "NUMERIC"];
-      if (presisionRequired.includes(column.dataType) && !column.lengthScale)
+      const precisionRequired = ["DECIMAL", "NUMERIC"]; // NOTE: 이 내용 외부에서 요청받아서 처리하도록 수정 필요할듯.
+      if (precisionRequired.includes(column.dataType) && !column.lengthScale)
         throw new ColumnPrecisionRequiredError(column.dataType);
 
-      const lengthScaleRequired = ["VARCHAR", "CHAR"];
+      const lengthScaleRequired = ["VARCHAR", "CHAR"]; // NOTE: 이 내용 외부에서 요청받아서 처리하도록 수정 필요할듯.
       if (lengthScaleRequired.includes(column.dataType) && !column.lengthScale)
         throw new ColumnLengthRequiredError(column.dataType);
 
@@ -98,26 +106,30 @@ export const columnHandlers: ColumnHandlers = {
     if (!helper.isValidColumnName(column.name))
       throw new ColumnNameInvalidFormatError(column.name);
 
-    const newColumn = {
+    const newColumn: Column = {
       ...column,
       tableId,
       createdAt: new Date(),
       updatedAt: new Date(),
+      isAffected: true,
     };
 
     const columnNotUnique = table.columns.find((c) => c.name === column.name);
     if (columnNotUnique) throw new ColumnNameNotUniqueError(column.name);
 
-    let updatedDatabase = {
+    let updatedDatabase: Database = {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       columns: [...t.columns, newColumn],
                     }
                   : t,
@@ -164,8 +176,9 @@ export const columnHandlers: ColumnHandlers = {
                 const newFkColumnId = `col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 const columnName = `${parentTable.name}_${newPkColumn.name}`;
 
-                const newFkColumn = {
+                const newFkColumn: Column = {
                   ...newPkColumn,
+                  isAffected: true,
                   id: newFkColumnId,
                   tableId: childTable.id,
                   name: columnName,
@@ -176,34 +189,40 @@ export const columnHandlers: ColumnHandlers = {
 
                 updatedSchema = {
                   ...updatedSchema,
+                  isAffected: true,
                   tables: updatedSchema.tables.map((t) =>
                     t.id === childTable.id
                       ? {
                           ...t,
+                          isAffected: true,
                           columns: [...t.columns, newFkColumn],
                         }
                       : t,
                   ),
                 };
 
-                const newRelColumn = {
+                const newRelColumn: RelationshipColumn = {
                   id: `rel_col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, //id 어떻게 하지....
                   relationshipId: rel.id,
                   fkColumnId: newFkColumnId,
                   refColumnId: newPkColumn.id,
                   seqNo: rel.columns.length + 1,
+                  isAffected: true,
                 };
 
                 updatedSchema = {
                   ...updatedSchema,
+                  isAffected: true,
                   tables: updatedSchema.tables.map((t) =>
                     t.id === parentTableId
                       ? {
                           ...t,
+                          isAffected: true,
                           relationships: t.relationships.map((r) =>
                             r.id === rel.id
                               ? {
                                   ...r,
+                                  isAffected: true,
                                   columns: [...r.columns, newRelColumn],
                                 }
                               : r,
@@ -240,8 +259,9 @@ export const columnHandlers: ColumnHandlers = {
 
       updatedDatabase = {
         ...updatedDatabase,
+        isAffected: true,
         schemas: updatedDatabase.schemas.map((s) =>
-          s.id === schemaId ? propagatedSchema : s,
+          s.id === schemaId ? { ...propagatedSchema, isAffected: true } : s,
         ),
       };
     }
@@ -249,6 +269,9 @@ export const columnHandlers: ColumnHandlers = {
     return updatedDatabase;
   },
   deleteColumn: (database, schemaId, tableId, columnId) => {
+    // NOTE: 코드 전반으로 index, constraint, relationship에서 컬럼이 없을 때, 해당 인덱스, 컨스트레인트, 릴레이션쉽을 삭제하도록 구현되어 있음.
+    //       이 부분에 참고하여서, 외부에서 아이디 매핑시에, 특정 아이디를 찾을 떄 못 찾을 수도 있음. (해당 부분 고려 필요)
+
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -266,20 +289,26 @@ export const columnHandlers: ColumnHandlers = {
         constraint.columns.some((cc) => cc.columnId === columnId),
     );
 
-    let updatedDatabase = {
+    let updatedDatabase: Database = {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) => {
                 if (t.id === tableId) {
                   return {
                     ...t,
+                    isAffected: true,
                     columns: t.columns.filter((c) => c.id !== columnId),
                     indexes: t.indexes
                       .map((idx) => ({
                         ...idx,
+                        isAffected: idx.columns.some(
+                          (ic) => ic.columnId === columnId,
+                        ),
                         columns: idx.columns.filter(
                           (ic) => ic.columnId !== columnId,
                         ),
@@ -288,6 +317,9 @@ export const columnHandlers: ColumnHandlers = {
                     constraints: t.constraints
                       .map((constraint) => ({
                         ...constraint,
+                        isAffected: constraint.columns.some(
+                          (cc) => cc.columnId === columnId,
+                        ),
                         columns: constraint.columns.filter(
                           (cc) => cc.columnId !== columnId,
                         ),
@@ -296,6 +328,11 @@ export const columnHandlers: ColumnHandlers = {
                     relationships: t.relationships
                       .map((rel) => ({
                         ...rel,
+                        isAffected: rel.columns.some(
+                          (rc) =>
+                            rc.fkColumnId === columnId ||
+                            rc.refColumnId === columnId,
+                        ),
                         columns: rel.columns.filter(
                           (rc) =>
                             rc.fkColumnId !== columnId &&
@@ -339,16 +376,23 @@ export const columnHandlers: ColumnHandlers = {
               if (fkColumnsToDelete.length > 0) {
                 updatedSchema = {
                   ...updatedSchema,
+                  isAffected: true,
                   tables: updatedSchema.tables.map((t) =>
                     t.id === childTable.id
                       ? {
                           ...t,
+                          isAffected: t.columns.some((c) =>
+                            fkColumnsToDelete.includes(c.id),
+                          ),
                           columns: t.columns.filter(
                             (col) => !fkColumnsToDelete.includes(col.id),
                           ),
                           indexes: t.indexes
                             .map((idx) => ({
                               ...idx,
+                              isAffected: idx.columns.some((ic) =>
+                                fkColumnsToDelete.includes(ic.columnId),
+                              ),
                               columns: idx.columns.filter(
                                 (ic) =>
                                   !fkColumnsToDelete.includes(ic.columnId),
@@ -358,6 +402,9 @@ export const columnHandlers: ColumnHandlers = {
                           constraints: t.constraints
                             .map((constraint) => ({
                               ...constraint,
+                              isAffected: constraint.columns.some((cc) =>
+                                fkColumnsToDelete.includes(cc.columnId),
+                              ),
                               columns: constraint.columns.filter(
                                 (cc) =>
                                   !fkColumnsToDelete.includes(cc.columnId),
@@ -369,6 +416,11 @@ export const columnHandlers: ColumnHandlers = {
                           relationships: t.relationships
                             .map((relationship) => ({
                               ...relationship,
+                              isAffected: relationship.columns.some(
+                                (rc) =>
+                                  fkColumnsToDelete.includes(rc.fkColumnId) ||
+                                  fkColumnsToDelete.includes(rc.refColumnId),
+                              ),
                               columns: relationship.columns.filter(
                                 (rc) =>
                                   !fkColumnsToDelete.includes(rc.fkColumnId) &&
@@ -412,8 +464,9 @@ export const columnHandlers: ColumnHandlers = {
 
       updatedDatabase = {
         ...updatedDatabase,
+        isAffected: true,
         schemas: updatedDatabase.schemas.map((s) =>
-          s.id === schemaId ? cascadedSchema : s,
+          s.id === schemaId ? { ...cascadedSchema, isAffected: true } : s,
         ),
       };
     }
@@ -421,6 +474,8 @@ export const columnHandlers: ColumnHandlers = {
     return updatedDatabase;
   },
   changeColumnName: (database, schemaId, tableId, columnId, newName) => {
+    // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
+
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -438,16 +493,21 @@ export const columnHandlers: ColumnHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       columns: t.columns.map((c) =>
-                        c.id === columnId ? { ...c, name: newName } : c,
+                        c.id === columnId
+                          ? { ...c, name: newName, isAffected: true }
+                          : c,
                       ),
                     }
                   : t,
@@ -465,6 +525,8 @@ export const columnHandlers: ColumnHandlers = {
     dataType,
     lengthScale,
   ) => {
+    // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
+
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -476,18 +538,22 @@ export const columnHandlers: ColumnHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       columns: t.columns.map((c) =>
                         c.id === columnId
                           ? {
                               ...c,
+                              isAffected: true,
                               dataType,
                               lengthScale: lengthScale || c.lengthScale,
                             }
@@ -508,6 +574,8 @@ export const columnHandlers: ColumnHandlers = {
     columnId,
     newPosition,
   ) => {
+    // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
+
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -519,18 +587,22 @@ export const columnHandlers: ColumnHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       columns: t.columns.map((c) =>
                         c.id === columnId
                           ? {
                               ...c,
+                              isAffected: true,
                               updatedAt: new Date(),
                               ordinalPosition: newPosition,
                             }
@@ -545,6 +617,9 @@ export const columnHandlers: ColumnHandlers = {
     };
   },
   changeColumnNullable: (database, schemaId, tableId, columnId, nullable) => {
+    // NOTE: 변경에 의해서도 이전과 이후가 같은 상황에 대해선 고려가 필요없는지?
+    // NOTE: 컬럼에서 nullable 변경이 있는게 맞는지? constraint에서 해당 부분을 처리하는게 옳아보이는데
+
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
@@ -557,8 +632,9 @@ export const columnHandlers: ColumnHandlers = {
     const currentNullable = helper.isColumnNullable(table, columnId);
     if (currentNullable === nullable) return database;
 
-    const updatedColumn = {
+    const updatedColumn: Column = {
       ...column,
+      isAffected: true,
     };
 
     let currentDatabase = columnHandlers.deleteColumn(
@@ -602,20 +678,25 @@ export const columnHandlers: ColumnHandlers = {
               constraintId: newConstraintId,
               columnId,
               seqNo: 1,
+              isAffected: true,
             },
           ],
+          isAffected: true,
         };
 
         currentDatabase = {
           ...currentDatabase,
+          isAffected: true,
           schemas: currentDatabase.schemas.map((s) =>
             s.id === schemaId
               ? {
                   ...s,
+                  isAffected: true,
                   tables: s.tables.map((t) =>
                     t.id === tableId
                       ? {
                           ...t,
+                          isAffected: true,
                           constraints: [...t.constraints, newConstraint],
                         }
                       : t,

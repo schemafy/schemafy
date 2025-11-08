@@ -15,6 +15,7 @@ describe('Table validation', () => {
       relationships: [],
       comment: '',
       tableOptions: '',
+      isAffected: false,
     };
 
     const database = createTestDatabase()
@@ -40,6 +41,7 @@ describe('Table validation', () => {
       relationships: [],
       comment: '',
       tableOptions: '',
+      isAffected: false,
     };
 
     const database = createTestDatabase()
@@ -68,6 +70,7 @@ describe('Table validation', () => {
       relationships: [],
       comment: '',
       tableOptions: '',
+      isAffected: false,
     };
 
     const anotherSchemaId = 'schema-2';

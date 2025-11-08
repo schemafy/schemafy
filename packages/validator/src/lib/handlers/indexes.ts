@@ -1,15 +1,15 @@
 import {
+  DuplicateIndexDefinitionError,
+  IndexColumnNotExistError,
+  IndexColumnNotUniqueError,
+  IndexColumnSortDirInvalidError,
+  IndexNameNotUniqueError,
+  IndexNotExistError,
+  IndexTypeInvalidError,
   SchemaNotExistError,
   TableNotExistError,
-  IndexNotExistError,
-  IndexColumnNotExistError,
-  IndexNameNotUniqueError,
-  IndexColumnNotUniqueError,
-  IndexTypeInvalidError,
-  DuplicateIndexDefinitionError,
-  IndexColumnSortDirInvalidError,
 } from "../errors";
-import { Database, Schema, Table, Index, IndexColumn } from "../types";
+import { Database, Index, IndexColumn, Schema, Table } from "../types";
 
 export interface IndexHandlers {
   createIndex: (
@@ -90,15 +90,21 @@ export const indexHandlers: IndexHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
-                      indexes: [...t.indexes, { ...index, tableId }],
+                      isAffected: true,
+                      indexes: [
+                        ...t.indexes,
+                        { ...index, isAffected: true, tableId },
+                      ],
                     }
                   : t,
               ),
@@ -119,14 +125,17 @@ export const indexHandlers: IndexHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: t.indexes.some((i) => i.id === indexId),
                       indexes: t.indexes.filter((i) => i.id !== indexId),
                     }
                   : t,
@@ -151,16 +160,21 @@ export const indexHandlers: IndexHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       indexes: t.indexes.map((i) =>
-                        i.id === indexId ? { ...i, name: newName } : i,
+                        i.id === indexId
+                          ? { ...i, name: newName, isAffected: true }
+                          : i,
                       ),
                     }
                   : t,
@@ -188,21 +202,25 @@ export const indexHandlers: IndexHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       indexes: t.indexes.map((i) =>
                         i.id === indexId
                           ? {
                               ...i,
+                              isAffected: true,
                               columns: [
                                 ...i.columns,
-                                { ...indexColumn, indexId },
+                                { ...indexColumn, indexId, isAffected: true },
                               ],
                             }
                           : i,
@@ -236,19 +254,25 @@ export const indexHandlers: IndexHandlers = {
 
     return {
       ...database,
+      isAffected: true,
       schemas: database.schemas.map((s) =>
         s.id === schemaId
           ? {
               ...s,
+              isAffected: true,
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? {
                       ...t,
+                      isAffected: true,
                       indexes: t.indexes
                         .map((i) =>
                           i.id === indexId
                             ? {
                                 ...i,
+                                isAffected: i.columns.some(
+                                  (ic) => ic.id === indexColumnId,
+                                ),
                                 columns: i.columns.filter(
                                   (ic) => ic.id !== indexColumnId,
                                 ),

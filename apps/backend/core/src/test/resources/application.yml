@@ -10,7 +10,7 @@ spring:
 
   sql:
     init:
-      schema-locations: classpath:sql/ddl/schema-mariadb.sql
+      schema-locations: classpath:ddl/schema-mariadb.sql
       mode: always
 
 jwt:

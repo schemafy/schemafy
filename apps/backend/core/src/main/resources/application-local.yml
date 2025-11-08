@@ -6,17 +6,18 @@ spring:
       on-profile: local
 
   r2dbc:
-    # 메모리 DB: 애플리케이션 생애주기 동안 유지 (DB_CLOSE_DELAY=-1)
-    # MySQL 호환 모드: MODE=MySQL  (MariaDB 쿼리와 최대한 비슷하게)
-    url: r2dbc:h2:mem:///schemafy;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password:
+    url: 'r2dbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:schemafy}'
+    username: '${DB_USER:schemafy}'
+    password: '${DB_PASSWORD:schemafy}'
     pool:
       enabled: true
       initial-size: 5
       max-size: 20
-    initialization:
-      enabled: true
+
+  sql:
+    init:
+      schema-locations: classpath:ddl/schema-mariadb.sql
+      mode: always
 
 cache:
   type: CAFFEINE
