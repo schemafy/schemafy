@@ -86,7 +86,7 @@ export class ErdStore {
   }
 
   // schemas
-  createSchema(schema: Omit<Schema, 'createdAt' | 'updatedAt'>) {
+  createSchema(schema: Schema) {
     this.update((db) => ERD_VALIDATOR.createSchema(db, schema));
   }
 
@@ -99,10 +99,7 @@ export class ErdStore {
   }
 
   // tables
-  createTable(
-    schemaId: Schema['id'],
-    table: Omit<Table, 'schemaId' | 'createdAt' | 'updatedAt'>,
-  ) {
+  createTable(schemaId: Schema['id'], table: Omit<Table, 'schemaId'>) {
     this.update((db) => ERD_VALIDATOR.createTable(db, schemaId, table));
   }
 
@@ -124,7 +121,7 @@ export class ErdStore {
   createColumn(
     schemaId: Schema['id'],
     tableId: Table['id'],
-    column: Omit<Column, 'tableId' | 'createdAt' | 'updatedAt'>,
+    column: Omit<Column, 'tableId'>,
   ) {
     this.update((db) =>
       ERD_VALIDATOR.createColumn(db, schemaId, tableId, column),
@@ -184,23 +181,6 @@ export class ErdStore {
         tableId,
         columnId,
         newPosition,
-      ),
-    );
-  }
-
-  changeColumnNullable(
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    columnId: Column['id'],
-    nullable: boolean,
-  ) {
-    this.update((db) =>
-      ERD_VALIDATOR.changeColumnNullable(
-        db,
-        schemaId,
-        tableId,
-        columnId,
-        nullable,
       ),
     );
   }

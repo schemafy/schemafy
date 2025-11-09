@@ -31,7 +31,7 @@ const RELATIONSHIP_ON_UPDATE = z.enum([
 export const COLUMN = z.object({
   id: ULID,
   tableId: ULID,
-  name: z.string().min(3).max(40),
+  name: z.string().min(1).max(40),
   ordinalPosition: z.number().positive(),
   dataType: z.string().nullable().optional(),
   lengthScale: z.string(),
@@ -39,9 +39,6 @@ export const COLUMN = z.object({
   charset: z.string(),
   collation: z.string(),
   comment: z.string().nullable().optional(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
   isAffected: z.boolean().default(false),
 });
 
@@ -119,12 +116,9 @@ export const RELATIONSHIP = z.object({
 export const TABLE = z.object({
   id: ULID,
   schemaId: ULID,
-  name: z.string().min(3).max(20),
+  name: z.string().min(1).max(20),
   comment: z.string().nullable().optional(),
   tableOptions: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
   columns: z.array(COLUMN),
   indexes: z.array(INDEX),
   constraints: z.array(CONSTRAINT),
@@ -136,13 +130,10 @@ export const SCHEMA = z.object({
   id: ULID,
   projectId: ULID,
   dbVendorId: DB_VENDOR,
-  name: z.string().min(3).max(20),
+  name: z.string().min(1).max(20),
   charset: z.string(),
   collation: z.string(),
   vendorOption: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
   tables: z.array(TABLE),
   isAffected: z.boolean().default(false),
 });

@@ -2,15 +2,16 @@ import {
   SchemaNotExistError,
   TableNameNotUniqueError,
   TableNotExistError,
+  TableNameNotInvalidError,
 } from "../errors";
-import { Database, Schema, Table } from "../types";
+import { Database, Schema, TABLE, Table } from "../types";
 import { relationshipHandlers } from "./relationships";
 
 export interface TableHandlers {
   createTable: (
     database: Database,
     schemaId: Schema["id"],
-    table: Omit<Table, "schemaId" | "createdAt" | "updatedAt">,
+    table: Omit<Table, "schemaId">,
   ) => Database;
   deleteTable: (
     database: Database,
@@ -31,7 +32,11 @@ export const tableHandlers: TableHandlers = {
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const tableNotUnique = schema.tables.find((t) => t.name === table.name);
-    if (tableNotUnique) throw new TableNameNotUniqueError(table.name);
+    if (tableNotUnique)
+      throw new TableNameNotUniqueError(table.name, schema.id);
+
+    const isValidTable = TABLE.shape.name.safeParse(table.name);
+    if (!isValidTable.success) throw new TableNameNotInvalidError(table.name);
 
     return {
       ...database,
@@ -43,8 +48,6 @@ export const tableHandlers: TableHandlers = {
                 ...s.tables,
                 {
                   ...table,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
                   schemaId,
                 },
               ],
@@ -58,10 +61,10 @@ export const tableHandlers: TableHandlers = {
     if (!schema) throw new SchemaNotExistError(schemaId);
 
     const tableToDelete = schema.tables.find((t) => t.id === tableId);
-    if (!tableToDelete) throw new TableNotExistError(tableId);
+    if (!tableToDelete) throw new TableNotExistError(tableId, schemaId);
 
     let currentDatabase = structuredClone(database);
-    const relationshipsToDelete: string[] = [];
+    const relationshipsToDelete: Set<string> = new Set();
 
     for (const table of schema.tables) {
       for (const relationship of table.relationships) {
@@ -69,7 +72,7 @@ export const tableHandlers: TableHandlers = {
           relationship.srcTableId === tableId ||
           relationship.tgtTableId === tableId
         ) {
-          relationshipsToDelete.push(relationship.id);
+          relationshipsToDelete.add(relationship.id);
         }
       }
     }
@@ -101,11 +104,16 @@ export const tableHandlers: TableHandlers = {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
 
-    const tableNotUnique = schema.tables.find((t) => t.name === newName);
-    if (tableNotUnique) throw new TableNameNotUniqueError(newName);
+    const isValidTableName = TABLE.shape.name.safeParse(newName);
+    if (!isValidTableName.success) throw new TableNameNotInvalidError(newName);
+
+    const tableNotUnique = schema.tables.find(
+      (t) => t.name === newName && t.id !== tableId,
+    );
+    if (tableNotUnique) throw new TableNameNotUniqueError(newName, schema.id);
 
     const table = schema.tables.find((t) => t.id === tableId);
-    if (!table) throw new TableNotExistError(tableId);
+    if (!table) throw new TableNotExistError(tableId, schemaId);
 
     return {
       ...database,

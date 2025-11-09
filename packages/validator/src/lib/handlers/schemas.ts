@@ -12,10 +12,7 @@ export interface SchemaHandlers {
     schemaId: Schema["id"],
     newName: Schema["name"],
   ) => Database;
-  createSchema: (
-    database: Database,
-    schema: Omit<Schema, "createdAt" | "updatedAt">,
-  ) => Database;
+  createSchema: (database: Database, schema: Schema) => Database;
   deleteSchema: (database: Database, schemaId: Schema["id"]) => Database;
 }
 
@@ -44,7 +41,7 @@ export const schemaHandlers: SchemaHandlers = {
     };
   },
   createSchema: (database, schema) => {
-    const result = SCHEMA.safeParse(schema);
+    const result = SCHEMA.shape.name.safeParse(schema.name);
     if (!result.success) throw new SchemaNameInvalidError(schema.name);
 
     const existingSchema = database.schemas.find((s) => s.name === schema.name);
@@ -59,8 +56,6 @@ export const schemaHandlers: SchemaHandlers = {
         {
           ...schema,
           isAffected: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       ],
     };

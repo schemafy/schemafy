@@ -83,9 +83,6 @@ class SchemaBuilder {
       charset: this.charset,
       collation: this.collation,
       vendorOption: "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      deletedAt: null,
       tables: this.tables.map((builder) => builder.build()),
       isAffected: false,
     };
@@ -181,9 +178,6 @@ class TableBuilder {
       name: this.name,
       comment: "",
       tableOptions: "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      deletedAt: null,
       columns,
       indexes,
       constraints,
@@ -257,9 +251,6 @@ class ColumnBuilder {
       charset: this.charset,
       collation: this.collation,
       comment: this.comment,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      deletedAt: null,
       isAffected: false,
     };
   }

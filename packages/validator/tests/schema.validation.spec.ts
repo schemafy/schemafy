@@ -24,9 +24,9 @@ describe('Schema validation', () => {
     }).toThrow(SchemaNotExistError);
   });
 
-  test('스키마 이름은 3글자 이상 20글자 이하만 허용된다.', () => {
+  test('스키마 이름은 1글자 이상 20글자 이하만 허용된다.', () => {
     expect(() => {
-      ERD_VALIDATOR.changeSchemaName(database, 'schema-2', 'ab'); // 너무 짧음
+      ERD_VALIDATOR.changeSchemaName(database, 'schema-2', ''); // 너무 짧음
     }).toThrow(SchemaNameInvalidError);
   });
 

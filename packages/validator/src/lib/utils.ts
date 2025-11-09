@@ -12,13 +12,13 @@ import {
   relationshipHandlers,
   RelationshipHandlers,
 } from "./handlers";
-import { Database, DATABASE } from "./types";
+import { Database } from "./types";
 import {
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,
   TableNameNotInvalidError,
   TableNameNotUniqueError,
-  ColumnNameInvalidError,
+  ColumnInvalidError,
   ColumnNameNotUniqueError,
   ColumnDataTypeRequiredError,
   ColumnNameIsReservedKeywordError,
@@ -34,7 +34,6 @@ import {
   RelationshipEmptyError,
   RelationshipTargetTableNotExistError,
   RelationshipCyclicReferenceError,
-  ERDValidationError,
 } from "./errors";
 
 interface ERDValidator
@@ -49,18 +48,9 @@ interface ERDValidator
 
 export const ERD_VALIDATOR: ERDValidator = {
   validate: (database: Database) => {
-    const parseResult = DATABASE.safeParse(database);
-    if (!parseResult.success) {
-      const zodError = parseResult.error.issues[0];
-      throw new ERDValidationError(
-        "SCHEMA_VALIDATION_ERROR" as any,
-        `Schema validation failed: ${zodError.message} at ${zodError.path.join(".")}`,
-      );
-    }
-
     const schemaNames = new Set<string>();
     for (const schema of database.schemas) {
-      if (schema.name.length < 3 || schema.name.length > 20) {
+      if (schema.name.length < 1 || schema.name.length > 20) {
         throw new SchemaNameInvalidError(schema.name);
       }
 
@@ -75,7 +65,7 @@ export const ERD_VALIDATOR: ERDValidator = {
 
       const tableNames = new Set<string>();
       for (const table of schema.tables) {
-        if (table.name.length < 3 || table.name.length > 20) {
+        if (table.name.length < 1 || table.name.length > 20) {
           throw new TableNameNotInvalidError(table.name);
         }
 
@@ -88,8 +78,8 @@ export const ERD_VALIDATOR: ERDValidator = {
         let autoIncrementCount = 0;
 
         for (const column of table.columns) {
-          if (column.name.length < 3 || column.name.length > 40) {
-            throw new ColumnNameInvalidError(column.name);
+          if (column.name.length < 1 || column.name.length > 40) {
+            throw new ColumnInvalidError(column.name);
           }
 
           if (columnNames.has(column.name)) {
