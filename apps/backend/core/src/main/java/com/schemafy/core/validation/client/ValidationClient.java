@@ -26,7 +26,6 @@ import validation.Validation.AddColumnToConstraintRequest;
 import validation.Validation.AddColumnToIndexRequest;
 import validation.Validation.AddColumnToRelationshipRequest;
 import validation.Validation.ChangeColumnNameRequest;
-import validation.Validation.ChangeColumnNullableRequest;
 import validation.Validation.ChangeColumnPositionRequest;
 import validation.Validation.ChangeColumnTypeRequest;
 import validation.Validation.ChangeConstraintNameRequest;
@@ -98,13 +97,6 @@ public class ValidationClient {
         return executeValidation(
                 () -> withDeadline().changeColumnPosition(request),
                 "changeColumnPosition");
-    }
-
-    public Mono<Database> changeColumnNullable(
-            ChangeColumnNullableRequest request) {
-        return executeValidation(
-                () -> withDeadline().changeColumnNullable(request),
-                "changeColumnNullable");
     }
 
     public Mono<Database> createConstraint(
