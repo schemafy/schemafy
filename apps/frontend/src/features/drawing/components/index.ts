@@ -13,3 +13,4 @@ export * from './ConstraintRow';
 export * from './ConstraintSection';
 export * from './Memo';
 export * from './TempMemoPreview';
+export * from './EditableRowBase';

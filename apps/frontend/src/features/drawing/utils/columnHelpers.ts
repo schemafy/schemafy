@@ -3,6 +3,10 @@ import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType, ConstraintKind } from '../types';
 import type { Constraint, ConstraintColumn } from '@schemafy/validator';
 
+export const getColumnName = (columns: Array<{ id: string; name: string }>, columnId: string): string => {
+  return columns.find((col) => col.id === columnId)?.name || 'Unknown';
+};
+
 export const saveColumnName = (
   erdStore: ErdStore,
   schemaId: string,
