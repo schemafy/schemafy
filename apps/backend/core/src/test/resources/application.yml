@@ -4,7 +4,7 @@ spring:
 
   sql:
     init:
-      schema-locations: classpath:db/schema/h2/**/*.sql
+      schema-locations: classpath:ddl/h2/**/*.sql
       mode: always
 
   r2dbc:
