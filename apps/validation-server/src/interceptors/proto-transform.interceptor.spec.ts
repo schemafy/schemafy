@@ -29,7 +29,9 @@ describe('ProtoTransformInterceptor', () => {
         deletedAt: '',
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
+      );
 
       interceptor.intercept(mockExecutionContext, mockCallHandler);
 
@@ -43,7 +45,9 @@ describe('ProtoTransformInterceptor', () => {
         comment: '',
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
+      );
 
       interceptor.intercept(mockExecutionContext, mockCallHandler);
 
@@ -62,7 +66,9 @@ describe('ProtoTransformInterceptor', () => {
         cardinality: 'ONE_TO_ONE',
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
+      );
 
       interceptor.intercept(mockExecutionContext, mockCallHandler);
 
@@ -80,9 +86,13 @@ describe('ProtoTransformInterceptor', () => {
         fkEnforced: true,
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
+      );
 
-      expect(() => interceptor.intercept(mockExecutionContext, mockCallHandler)).toThrow('fkEnforced must be false');
+      expect(() =>
+        interceptor.intercept(mockExecutionContext, mockCallHandler),
+      ).toThrow('fkEnforced must be false');
     });
   });
 
@@ -95,7 +105,9 @@ describe('ProtoTransformInterceptor', () => {
         },
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
+      );
 
       interceptor.intercept(mockExecutionContext, mockCallHandler);
 
@@ -105,10 +117,15 @@ describe('ProtoTransformInterceptor', () => {
 
     it('should transform arrays', () => {
       const data = {
-        columns: [{ createdAt: '2025-10-08T10:30:00.000Z' }, { createdAt: '2025-10-08T10:30:00.000Z' }],
+        columns: [
+          { createdAt: '2025-10-08T10:30:00.000Z' },
+          { createdAt: '2025-10-08T10:30:00.000Z' },
+        ],
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
+      );
 
       interceptor.intercept(mockExecutionContext, mockCallHandler);
 
@@ -167,7 +184,9 @@ describe('ProtoTransformInterceptor', () => {
         },
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
+      );
 
       interceptor.intercept(mockExecutionContext, mockCallHandler);
 
@@ -200,11 +219,13 @@ describe('ProtoTransformInterceptor', () => {
         },
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
-
-      expect(() => interceptor.intercept(mockExecutionContext, mockCallHandler)).toThrow(
-        "Error transforming field 'schema.dbVendorId'",
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
       );
+
+      expect(() =>
+        interceptor.intercept(mockExecutionContext, mockCallHandler),
+      ).toThrow("Error transforming field 'schema.dbVendorId'");
     });
 
     it('should include array indices in error paths', () => {
@@ -212,11 +233,13 @@ describe('ProtoTransformInterceptor', () => {
         columns: [{ createdAt: 'invalid-date' }],
       };
 
-      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(data);
-
-      expect(() => interceptor.intercept(mockExecutionContext, mockCallHandler)).toThrow(
-        "Error transforming field 'columns[0].createdAt'",
+      (mockExecutionContext.switchToRpc().getData as jest.Mock).mockReturnValue(
+        data,
       );
+
+      expect(() =>
+        interceptor.intercept(mockExecutionContext, mockCallHandler),
+      ).toThrow("Error transforming field 'columns[0].createdAt'");
     });
   });
 });

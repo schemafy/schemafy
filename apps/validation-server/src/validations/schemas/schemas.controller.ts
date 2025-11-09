@@ -3,7 +3,11 @@ import { GrpcMethod } from '@nestjs/microservices';
 
 import { SchemasService } from './schemas.service';
 
-import type { ChangeSchemaNameDto, CreateSchemaDto, DeleteSchemaDto } from './dto';
+import type {
+  ChangeSchemaNameDto,
+  CreateSchemaDto,
+  DeleteSchemaDto,
+} from './dto';
 import type { ValidateResult } from '../common';
 
 @Controller()

@@ -2,6 +2,7 @@ package com.schemafy.core.common.config;
 
 import com.schemafy.core.common.config.codec.ProtobufJsonDecoder;
 import com.schemafy.core.common.resolver.ApiVersionArgumentResolver;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.http.codec.protobuf.ProtobufDecoder;
@@ -22,11 +23,8 @@ public class WebFluxConfig implements WebFluxConfigurer {
     @Override
     public void configureHttpMessageCodecs(
             @NonNull ServerCodecConfigurer configurer) {
-        // Binary protobuf 지원 (application/x-protobuf)
         configurer.customCodecs().register(new ProtobufDecoder());
         configurer.customCodecs().register(new ProtobufEncoder());
-        
-        // JSON protobuf 지원 (application/json)
         configurer.customCodecs().register(new ProtobufJsonDecoder());
     }
 

@@ -3,8 +3,10 @@ plugins {
 	id 'org.springframework.boot' version '3.5.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
+	id 'com.github.spotbugs' version '6.0.26'
 	id 'org.ec4j.editorconfig' version '0.1.0'
 	id 'com.google.protobuf' version '0.9.4'
+	id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'com.schemafy'
@@ -46,6 +48,9 @@ dependencies {
 
     // security
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -88,6 +93,10 @@ dependencies {
     testImplementation "io.grpc:grpc-testing:${grpcVersion}"
 
     implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
+
+    // spotbugs
+    spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -102,17 +111,90 @@ tasks.named('test') {
 tasks.named('asciidoctor') {
 	inputs.dir snippetsDir
 	dependsOn test
-	
+
 	attributes 'snippets': snippetsDir
 }
 
+// DDL 복사 스펙 정의
+def ddlSpec = copySpec {
+    from("$projectDir/sql/ddl")
+    into('ddl')
+}
+
+// 테스트 환경: 항상 DDL 포함
+tasks.named('processTestResources') {
+    with ddlSpec
+}
+
+// 개발 환경: bootRun 실행 시 원본 DDL 디렉토리를 classpath에 직접 추가
+// 복사하지 않으므로 build 디렉토리와 충돌 X
+tasks.named('bootRun') {
+    // projectDir 사용 (멀티 프로젝트 환경에서 rootDir은 최상위 루트를 가리킴)
+    classpath = sourceSets.main.runtimeClasspath + files("$projectDir/sql")
+}
+
+// Production 빌드: DDL 포함 X
+tasks.named('bootJar') {
+    exclude('ddl/**')
+}
+
+spotbugs {
+	toolVersion = '4.8.6'
+	effort = 'max'
+	reportLevel = 'medium'
+	ignoreFailures = true
+	excludeFilter = file("$rootDir/src/main/resources/spotbugs/spotbugs-exclude.xml")
+	omitVisitors = ['FindReturnRef']
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
+	classes = classes.filter {
+		!it.path.contains('/lombok/')
+	}
+
+	// Missing classes 경고 무시
+	jvmArgs = ['-Dspotbugs.sf.comment=true']
+	maxHeapSize = '512m'
+
+	reports {
+		html {
+			required = true
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.html')
+			stylesheet = 'fancy-hist.xsl'
+		}
+		xml {
+			required = true
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.xml')
+		}
+	}
+}
+
 editorconfig {
-	includes = ['src/**/*.java']
-	excludes = ['build/**', '.gradle/**']
+    includes = ['src/**/*.java']
+    excludes = ['build/**', '.gradle/**']
+}
+
+spotless {
+	java {
+		target 'src/**/*.java'
+		eclipse().configFile('java-formatter.xml')
+		removeUnusedImports()
+		importOrder(
+			'java',
+			'jakarta',
+			'org.springframework',
+			'org',
+			'com',
+			'',
+			'\\#'
+		)
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
 }
 
 tasks.named('check') {
-	dependsOn 'editorconfigCheck'
+	dependsOn 'spotlessCheck'
 }
 
 // Protobuf configuration

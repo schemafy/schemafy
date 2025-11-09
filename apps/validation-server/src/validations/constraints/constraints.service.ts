@@ -4,7 +4,13 @@ import { ERD_VALIDATOR } from '@schemafy/validator';
 import { toErrorDetails } from '../common/error-mapper';
 
 import type { ValidateResult } from '../common';
-import type { Database, Constraint, Schema, Table, ConstraintColumn } from '@schemafy/validator';
+import type {
+  Database,
+  Constraint,
+  Schema,
+  Table,
+  ConstraintColumn,
+} from '@schemafy/validator';
 
 @Injectable()
 export class ConstraintsService {

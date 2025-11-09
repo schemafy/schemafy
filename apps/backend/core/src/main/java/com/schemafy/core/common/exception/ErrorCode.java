@@ -1,8 +1,9 @@
 package com.schemafy.core.common.exception;
 
+import org.springframework.http.HttpStatus;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
@@ -17,6 +18,21 @@ public enum ErrorCode {
             "API 버전이 누락되었습니다."),
     COMMON_API_VERSION_INVALID(HttpStatus.BAD_REQUEST, "C004",
             "유효하지 않은 API 버전 형식입니다. (예: v1.0, v2.1)"),
+
+    // Authentication & Authorization
+    AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "A001",
+            "인증이 필요합니다. 유효한 토큰을 제공해주세요."),
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "A002", "접근 권한이 없습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A003",
+            "유효하지 않은 리프레시 토큰입니다."),
+    INVALID_TOKEN_TYPE(HttpStatus.UNAUTHORIZED, "A004", "유효하지 않은 토큰 타입입니다."),
+    MISSING_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A005", "리프레시 토큰이 없습니다."),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "A006", "만료된 토큰입니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A007", "유효하지 않은 토큰입니다."),
+    INVALID_ACCESS_TOKEN_TYPE(HttpStatus.BAD_REQUEST, "A008", "액세스 토큰이 아닙니다."),
+    MALFORMED_TOKEN(HttpStatus.UNAUTHORIZED, "A009", "위조되거나 손상된 토큰입니다."),
+    TOKEN_VALIDATION_ERROR(HttpStatus.UNAUTHORIZED, "A010",
+            "토큰 검증 중 오류가 발생했습니다."),
 
     // USER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "회원을 찾을 수 없습니다."),

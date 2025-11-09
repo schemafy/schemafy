@@ -31,10 +31,11 @@ const EDGE_TYPES = {
 };
 
 export const CanvasPage = () => {
-  const [relationshipConfig, setRelationshipConfig] = useState<RelationshipConfig>({
-    type: 'one-to-many',
-    isDashed: false,
-  });
+  const [relationshipConfig, setRelationshipConfig] =
+    useState<RelationshipConfig>({
+      type: 'one-to-many',
+      isDashed: false,
+    });
   const [activeTool, setActiveTool] = useState<string>('pointer');
   const [mousePosition, setMousePosition] = useState<{
     x: number;
@@ -122,7 +123,9 @@ export const CanvasPage = () => {
             <CustomControls />
             <Background variant={BackgroundVariant.Dots} />
 
-            {activeTool === 'table' && <TablePreview mousePosition={mousePosition} />}
+            {activeTool === 'table' && (
+              <TablePreview mousePosition={mousePosition} />
+            )}
           </ReactFlow>
 
           {selectedEdge && (

@@ -2,6 +2,7 @@ package com.schemafy.core.common.type;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

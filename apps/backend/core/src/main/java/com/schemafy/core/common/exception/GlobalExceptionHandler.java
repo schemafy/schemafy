@@ -39,6 +39,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<BaseResponse<Object>> handleBusinessException(
             BusinessException e) {
+    public ResponseEntity<BaseResponse<Object>> handleBusinessException(
+            BusinessException e) {
         ErrorCode errorCode = e.getErrorCode();
         log.warn("[BusinessException] BusinessException occurred: {}",
                 errorCode.getMessage(), e);
@@ -46,9 +48,13 @@ public class GlobalExceptionHandler {
                 .status(errorCode.getStatus())
                 .body(BaseResponse.error(errorCode.getCode(),
                         errorCode.getMessage()));
+                .body(BaseResponse.error(errorCode.getCode(),
+                        errorCode.getMessage()));
     }
 
     @ExceptionHandler(WebExchangeBindException.class)
+    public ResponseEntity<BaseResponse<Object>> handleValidationException(
+            WebExchangeBindException e) {
     public ResponseEntity<BaseResponse<Object>> handleValidationException(
             WebExchangeBindException e) {
         ErrorCode errorCode = ErrorCode.COMMON_INVALID_PARAMETER;

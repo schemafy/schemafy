@@ -1,4 +1,9 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 
 import {
@@ -11,12 +16,20 @@ import {
   toZodRelationshipCardinality,
   toZodRelationshipKind,
 } from '../transformers/enum-transformers';
-import { emptyStringToNull, parseIsoDate } from '../transformers/value-normalizers';
+import {
+  emptyStringToNull,
+  parseIsoDate,
+} from '../transformers/value-normalizers';
 
 @Injectable()
 export class ProtoTransformInterceptor implements NestInterceptor {
   private readonly DATE_KEYS = new Set(['createdAt', 'updatedAt', 'deletedAt']);
-  private readonly NULLABLE_STRING_KEYS = new Set(['dataType', 'comment', 'checkExpr', 'defaultExpr']);
+  private readonly NULLABLE_STRING_KEYS = new Set([
+    'dataType',
+    'comment',
+    'checkExpr',
+    'defaultExpr',
+  ]);
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const rpc = context.switchToRpc();

@@ -1,4 +1,9 @@
-import type { Database, Relationship, RelationshipColumn, Schema } from '@schemafy/validator';
+import type {
+  Database,
+  Relationship,
+  RelationshipColumn,
+  Schema,
+} from '@schemafy/validator';
 
 export interface AddColumnToRelationshipDto {
   database: Database;

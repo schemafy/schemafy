@@ -10,11 +10,18 @@ import type {
   CreateRelationshipDto,
   DeleteRelationshipDto,
   RemoveColumnFromRelationshipDto,
+  AddColumnToRelationshipDto,
+  ChangeRelationshipCardinalityDto,
+  ChangeRelationshipNameDto,
+  CreateRelationshipDto,
+  DeleteRelationshipDto,
+  RemoveColumnFromRelationshipDto,
 } from './dto';
 import type { ValidateResult } from '../common';
 
 @Controller()
 export class RelationshipsController {
+  constructor(private readonly service: RelationshipsService) {}
   constructor(private readonly service: RelationshipsService) {}
 
   @GrpcMethod('ValidationService', 'CreateRelationship')
@@ -22,7 +29,17 @@ export class RelationshipsController {
     const { database, schemaId, relationship } = req;
     return this.service.createRelationship(database, schemaId, relationship);
   }
+  @GrpcMethod('ValidationService', 'CreateRelationship')
+  createRelationship(req: CreateRelationshipDto): ValidateResult {
+    const { database, schemaId, relationship } = req;
+    return this.service.createRelationship(database, schemaId, relationship);
+  }
 
+  @GrpcMethod('ValidationService', 'DeleteRelationship')
+  deleteRelationship(req: DeleteRelationshipDto): ValidateResult {
+    const { database, schemaId, relationshipId } = req;
+    return this.service.deleteRelationship(database, schemaId, relationshipId);
+  }
   @GrpcMethod('ValidationService', 'DeleteRelationship')
   deleteRelationship(req: DeleteRelationshipDto): ValidateResult {
     const { database, schemaId, relationshipId } = req;

@@ -5,6 +5,8 @@ export const parseIsoDate = (value: string | null | undefined): Date | null => {
   return d;
 };
 
-export const emptyStringToNull = (value: string | null | undefined): string | null | undefined => {
+export const emptyStringToNull = (
+  value: string | null | undefined,
+): string | null | undefined => {
   return value === '' ? null : value;
 };

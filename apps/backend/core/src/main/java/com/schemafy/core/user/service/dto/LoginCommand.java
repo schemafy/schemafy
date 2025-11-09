@@ -1,3 +1,4 @@
 package com.schemafy.core.user.service.dto;
 
-public record LoginCommand(String email, String password) {}
+public record LoginCommand(String email, String password) {
+}

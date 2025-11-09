@@ -1,9 +1,19 @@
 export type ZodDbVendor = 'mysql';
-export type ZodOnAction = 'NO_ACTION' | 'RESTRICT' | 'CASCADE' | 'SET_NULL' | 'SET_DEFAULT';
+export type ZodOnAction =
+  | 'NO_ACTION'
+  | 'RESTRICT'
+  | 'CASCADE'
+  | 'SET_NULL'
+  | 'SET_DEFAULT';
 export type ZodRelationshipCardinality = '1:1' | '1:N';
 export type ZodIndexType = 'BTREE' | 'HASH' | 'FULLTEXT' | 'SPATIAL' | 'OTHER';
 export type ZodIndexSortDir = 'ASC' | 'DESC';
-export type ZodConstraintKind = 'PRIMARY_KEY' | 'UNIQUE' | 'CHECK' | 'DEFAULT' | 'NOT_NULL';
+export type ZodConstraintKind =
+  | 'PRIMARY_KEY'
+  | 'UNIQUE'
+  | 'CHECK'
+  | 'DEFAULT'
+  | 'NOT_NULL';
 export type ZodRelationshipKind = 'IDENTIFYING' | 'NON_IDENTIFYING';
 
 const createValidator = <T extends string>(
@@ -48,27 +58,40 @@ const ZodOnUpdateValidator = createValidator(
   },
 );
 
-const ZodRelationshipCardinalityValidator = createValidator(['1:1', '1:N'] as const, 'RelationshipCardinality', {
-  to: (value, allowedSet) => {
-    if (/^ONE_TO_(ONE|MANY)$/.test(value)) {
-      const rhs = value.endsWith('ONE') ? '1' : 'N';
-      const result = `1:${rhs}` as ZodRelationshipCardinality;
-      if (allowedSet.has(result)) return result;
-    }
-    throw new Error(`Unsupported RelationshipCardinality: ${value}`);
+const ZodRelationshipCardinalityValidator = createValidator(
+  ['1:1', '1:N'] as const,
+  'RelationshipCardinality',
+  {
+    to: (value, allowedSet) => {
+      if (/^ONE_TO_(ONE|MANY)$/.test(value)) {
+        const rhs = value.endsWith('ONE') ? '1' : 'N';
+        const result = `1:${rhs}` as ZodRelationshipCardinality;
+        if (allowedSet.has(result)) return result;
+      }
+      throw new Error(`Unsupported RelationshipCardinality: ${value}`);
+    },
   },
-});
+);
 
-const ZodIndexTypeValidator = createValidator(['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER'] as const, 'IndexType');
+const ZodIndexTypeValidator = createValidator(
+  ['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER'] as const,
+  'IndexType',
+);
 
-const ZodIndexSortDirValidator = createValidator(['ASC', 'DESC'] as const, 'IndexSortDir');
+const ZodIndexSortDirValidator = createValidator(
+  ['ASC', 'DESC'] as const,
+  'IndexSortDir',
+);
 
 const ZodConstraintKindValidator = createValidator(
   ['PRIMARY_KEY', 'UNIQUE', 'CHECK', 'DEFAULT', 'NOT_NULL'] as const,
   'ConstraintKind',
 );
 
-const ZodRelationshipKindValidator = createValidator(['IDENTIFYING', 'NON_IDENTIFYING'] as const, 'RelationshipKind');
+const ZodRelationshipKindValidator = createValidator(
+  ['IDENTIFYING', 'NON_IDENTIFYING'] as const,
+  'RelationshipKind',
+);
 
 const ZodDbVendorValidator = createValidator(['mysql'] as const, 'DbVendor', {
   to: (value, allowedSet) => {
@@ -84,7 +107,8 @@ export const toZodOnDelete = ZodOnActionValidator.to;
 
 export const normalizeOnUpdate = ZodOnUpdateValidator.to;
 
-export const toZodRelationshipCardinality = ZodRelationshipCardinalityValidator.to;
+export const toZodRelationshipCardinality =
+  ZodRelationshipCardinalityValidator.to;
 
 export const toZodIndexType = ZodIndexTypeValidator.to;
 

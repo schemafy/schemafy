@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { BaseEdge, EdgeLabelRenderer, useReactFlow, Position, type EdgeProps } from '@xyflow/react';
+import {
+  BaseEdge,
+  EdgeLabelRenderer,
+  useReactFlow,
+  Position,
+  type EdgeProps,
+} from '@xyflow/react';
 import { Move } from 'lucide-react';
 
 export const CustomSmoothStepEdge = ({
@@ -19,16 +25,21 @@ export const CustomSmoothStepEdge = ({
   const { setEdges, screenToFlowPosition } = useReactFlow();
   const [isDragging, setIsDragging] = useState(false);
 
-  const isHorizontal = sourcePosition === Position.Left || sourcePosition === Position.Right;
+  const isHorizontal =
+    sourcePosition === Position.Left || sourcePosition === Position.Right;
 
   const { controlPointX, controlPointY, path, handlePosition } = (() => {
     const defaultControlPointX = (sourceX + targetX) / 2;
     const defaultControlPointY = (sourceY + targetY) / 2;
 
     const currentControlPointX: number =
-      typeof data?.controlPointX === 'number' ? data.controlPointX : defaultControlPointX;
+      typeof data?.controlPointX === 'number'
+        ? data.controlPointX
+        : defaultControlPointX;
     const currentControlPointY: number =
-      typeof data?.controlPointY === 'number' ? data.controlPointY : defaultControlPointY;
+      typeof data?.controlPointY === 'number'
+        ? data.controlPointY
+        : defaultControlPointY;
 
     let edgePath = '';
     if (isHorizontal) {
@@ -37,8 +48,12 @@ export const CustomSmoothStepEdge = ({
       edgePath = `M ${sourceX},${sourceY} L ${sourceX},${currentControlPointY} L ${targetX},${currentControlPointY} L ${targetX},${targetY}`;
     }
 
-    const handleX = isHorizontal ? currentControlPointX : (sourceX + targetX) / 2;
-    const handleY = isHorizontal ? (sourceY + targetY) / 2 : currentControlPointY;
+    const handleX = isHorizontal
+      ? currentControlPointX
+      : (sourceX + targetX) / 2;
+    const handleY = isHorizontal
+      ? (sourceY + targetY) / 2
+      : currentControlPointY;
 
     return {
       controlPointX: currentControlPointX,
@@ -67,8 +82,12 @@ export const CustomSmoothStepEdge = ({
         edges.map((edge) => {
           if (edge.id !== id) return edge;
 
-          const newControlPointX = isHorizontal ? flowPosition.x : controlPointX;
-          const newControlPointY = isHorizontal ? controlPointY : flowPosition.y;
+          const newControlPointX = isHorizontal
+            ? flowPosition.x
+            : controlPointX;
+          const newControlPointY = isHorizontal
+            ? controlPointY
+            : flowPosition.y;
 
           return {
             ...edge,
@@ -93,11 +112,24 @@ export const CustomSmoothStepEdge = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, id, setEdges, screenToFlowPosition, isHorizontal, controlPointX, controlPointY]);
+  }, [
+    isDragging,
+    id,
+    setEdges,
+    screenToFlowPosition,
+    isHorizontal,
+    controlPointX,
+    controlPointY,
+  ]);
 
   return (
     <>
-      <BaseEdge path={path} markerEnd={markerEnd} markerStart={markerStart} style={style} />
+      <BaseEdge
+        path={path}
+        markerEnd={markerEnd}
+        markerStart={markerStart}
+        style={style}
+      />
 
       {label && (
         <EdgeLabelRenderer>
@@ -145,7 +177,12 @@ export const CustomSmoothStepEdge = ({
               justifyContent: 'center',
             }}
           >
-            <Move size={10} className={isDragging ? 'text-blue-500' : 'text-schemafy-dark-gray'} />
+            <Move
+              size={10}
+              className={
+                isDragging ? 'text-blue-500' : 'text-schemafy-dark-gray'
+              }
+            />
           </div>
         </div>
       </EdgeLabelRenderer>

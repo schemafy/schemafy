@@ -39,7 +39,9 @@ describe('enum-transformers', () => {
     });
 
     it('should throw error for invalid direction', () => {
-      expect(() => toZodIndexSortDir('INVALID')).toThrow('Unsupported IndexSortDir');
+      expect(() => toZodIndexSortDir('INVALID')).toThrow(
+        'Unsupported IndexSortDir',
+      );
     });
   });
 
@@ -50,7 +52,9 @@ describe('enum-transformers', () => {
     });
 
     it('should throw error for invalid kind', () => {
-      expect(() => toZodConstraintKind('FOREIGN_KEY')).toThrow('Unsupported ConstraintKind');
+      expect(() => toZodConstraintKind('FOREIGN_KEY')).toThrow(
+        'Unsupported ConstraintKind',
+      );
     });
   });
 
@@ -61,7 +65,9 @@ describe('enum-transformers', () => {
     });
 
     it('should throw error for invalid kind', () => {
-      expect(() => toZodRelationshipKind('INVALID')).toThrow('Unsupported RelationshipKind');
+      expect(() => toZodRelationshipKind('INVALID')).toThrow(
+        'Unsupported RelationshipKind',
+      );
     });
   });
 
@@ -83,7 +89,9 @@ describe('enum-transformers', () => {
     });
 
     it('should throw error for invalid action', () => {
-      expect(() => normalizeOnUpdate('INVALID_UPDATE')).toThrow('Unsupported OnAction');
+      expect(() => normalizeOnUpdate('INVALID_UPDATE')).toThrow(
+        'Unsupported OnAction',
+      );
     });
   });
 
@@ -94,7 +102,9 @@ describe('enum-transformers', () => {
     });
 
     it('should throw error for invalid cardinality', () => {
-      expect(() => toZodRelationshipCardinality('MANY_TO_MANY')).toThrow('Unsupported RelationshipCardinality');
+      expect(() => toZodRelationshipCardinality('MANY_TO_MANY')).toThrow(
+        'Unsupported RelationshipCardinality',
+      );
     });
   });
 });

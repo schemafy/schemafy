@@ -15,7 +15,18 @@ interface InputFieldProps {
 }
 
 export const InputField = memo(
-  ({ label, type, name, value, placeholder, required, disabled, error, onChange, onBlur }: InputFieldProps) => {
+  ({
+    label,
+    type,
+    name,
+    value,
+    placeholder,
+    required,
+    disabled,
+    error,
+    onChange,
+    onBlur,
+  }: InputFieldProps) => {
     const inputId = useId();
 
     return (

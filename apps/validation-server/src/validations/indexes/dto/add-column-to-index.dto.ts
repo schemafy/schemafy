@@ -1,4 +1,10 @@
-import type { Database, Index, IndexColumn, Schema, Table } from '@schemafy/validator';
+import type {
+  Database,
+  Index,
+  IndexColumn,
+  Schema,
+  Table,
+} from '@schemafy/validator';
 
 export interface AddColumnToIndexDto {
   database: Database;

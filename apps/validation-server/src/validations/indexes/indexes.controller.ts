@@ -9,11 +9,17 @@ import type {
   CreateIndexDto,
   DeleteIndexDto,
   RemoveColumnFromIndexDto,
+  AddColumnToIndexDto,
+  ChangeIndexNameDto,
+  CreateIndexDto,
+  DeleteIndexDto,
+  RemoveColumnFromIndexDto,
 } from './dto';
 import type { ValidateResult } from '../common';
 
 @Controller()
 export class IndexesController {
+  constructor(private readonly service: IndexesService) {}
   constructor(private readonly service: IndexesService) {}
 
   @GrpcMethod('ValidationService', 'CreateIndex')
@@ -21,7 +27,17 @@ export class IndexesController {
     const { database, schemaId, tableId, index } = req;
     return this.service.createIndex(database, schemaId, tableId, index);
   }
+  @GrpcMethod('ValidationService', 'CreateIndex')
+  createIndex(req: CreateIndexDto): ValidateResult {
+    const { database, schemaId, tableId, index } = req;
+    return this.service.createIndex(database, schemaId, tableId, index);
+  }
 
+  @GrpcMethod('ValidationService', 'DeleteIndex')
+  deleteIndex(req: DeleteIndexDto): ValidateResult {
+    const { database, schemaId, tableId, indexId } = req;
+    return this.service.deleteIndex(database, schemaId, tableId, indexId);
+  }
   @GrpcMethod('ValidationService', 'DeleteIndex')
   deleteIndex(req: DeleteIndexDto): ValidateResult {
     const { database, schemaId, tableId, indexId } = req;
