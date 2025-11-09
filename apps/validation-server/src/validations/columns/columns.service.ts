@@ -17,7 +17,12 @@ export class ColumnsService {
     column: Omit<Column, 'tableId' | 'createdAt' | 'updatedAt'>,
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.createColumn(database, schemaId, tableId, column);
+      const updated = ERD_VALIDATOR.createColumn(
+        database,
+        schemaId,
+        tableId,
+        column,
+      );
       this.logger.log(
         `CreateColumn request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, column: ${JSON.stringify(column)}`,
       );
@@ -38,7 +43,12 @@ export class ColumnsService {
     columnId: Column['id'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.deleteColumn(database, schemaId, tableId, columnId);
+      const updated = ERD_VALIDATOR.deleteColumn(
+        database,
+        schemaId,
+        tableId,
+        columnId,
+      );
       this.logger.log(
         `DeleteColumn request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}`,
       );
@@ -60,7 +70,13 @@ export class ColumnsService {
     newName: Column['name'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.changeColumnName(database, schemaId, tableId, columnId, newName);
+      const updated = ERD_VALIDATOR.changeColumnName(
+        database,
+        schemaId,
+        tableId,
+        columnId,
+        newName,
+      );
       this.logger.log(
         `ChangeColumnName request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, newName: ${newName}`,
       );
@@ -83,7 +99,14 @@ export class ColumnsService {
     lengthScale?: Column['lengthScale'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.changeColumnType(database, schemaId, tableId, columnId, dataType, lengthScale);
+      const updated = ERD_VALIDATOR.changeColumnType(
+        database,
+        schemaId,
+        tableId,
+        columnId,
+        dataType,
+        lengthScale,
+      );
       this.logger.log(
         `ChangeColumnType request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, dataType: ${dataType}, lengthScale: ${JSON.stringify(
           lengthScale,
@@ -109,7 +132,13 @@ export class ColumnsService {
     newPosition: Column['ordinalPosition'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.changeColumnPosition(database, schemaId, tableId, columnId, newPosition);
+      const updated = ERD_VALIDATOR.changeColumnPosition(
+        database,
+        schemaId,
+        tableId,
+        columnId,
+        newPosition,
+      );
       this.logger.log(
         `ChangeColumnPosition request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, newPosition: ${newPosition}`,
       );
@@ -117,28 +146,6 @@ export class ColumnsService {
     } catch (err) {
       this.logger.error(
         `ChangeColumnPosition request failed, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, newPosition: ${newPosition}`,
-        err,
-      );
-      return { failure: { errors: toErrorDetails(err) } };
-    }
-  }
-
-  changeColumnNullable(
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    columnId: Column['id'],
-    nullable: boolean,
-  ): ValidateResult {
-    try {
-      const updated = ERD_VALIDATOR.changeColumnNullable(database, schemaId, tableId, columnId, nullable);
-      this.logger.log(
-        `ChangeColumnNullable request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, nullable: ${nullable}`,
-      );
-      return { success: { database: updated } };
-    } catch (err) {
-      this.logger.error(
-        `ChangeColumnNullable request failed, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, nullable: ${nullable}`,
         err,
       );
       return { failure: { errors: toErrorDetails(err) } };

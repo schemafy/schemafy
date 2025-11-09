@@ -3,23 +3,17 @@ import { GrpcMethod } from '@nestjs/microservices';
 
 import { ConstraintsService } from './constraints.service';
 
+import type { ValidateResult } from '../common';
 import type {
   AddColumnToConstraintDto,
   ChangeConstraintNameDto,
   CreateConstraintDto,
   DeleteConstraintDto,
   RemoveColumnFromConstraintDto,
-  AddColumnToConstraintDto,
-  ChangeConstraintNameDto,
-  CreateConstraintDto,
-  DeleteConstraintDto,
-  RemoveColumnFromConstraintDto,
 } from './dto';
-import type { ValidateResult } from '../common';
 
 @Controller()
 export class ConstraintsController {
-  constructor(private readonly service: ConstraintsService) {}
   constructor(private readonly service: ConstraintsService) {}
 
   @GrpcMethod('ValidationService', 'CreateConstraint')

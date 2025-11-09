@@ -84,10 +84,7 @@ message Column {
     optional string charset = 8;
     optional string collation = 9;
     optional string comment = 10;
-    string createdAt = 11;
-    string updatedAt = 12;
-    optional string deletedAt = 13;
-    bool isAffected = 14;
+    bool isAffected = 11;
 }
 
 message IndexColumn {
@@ -157,14 +154,11 @@ message Table {
     string name = 3;
     optional string comment = 4; // optional/nullable
     optional string tableOptions = 5;
-    string createdAt = 6;
-    string updatedAt = 7;
-    optional string deletedAt = 8; // optional/nullable
-    repeated Column columns = 9;
-    repeated Index indexes = 10;
-    repeated Constraint constraints = 11;
-    repeated Relationship relationships = 12;
-    bool isAffected = 13;
+    repeated Column columns = 6;
+    repeated Index indexes = 7;
+    repeated Constraint constraints = 8;
+    repeated Relationship relationships = 9;
+    bool isAffected = 10;
 }
 
 message Schema {
@@ -175,11 +169,8 @@ message Schema {
     optional string charset = 5;
     optional string collation = 6;
     optional string vendorOption = 7;
-    string createdAt = 8;
-    string updatedAt = 9;
-    optional string deletedAt = 10; // optional/nullable
-    repeated Table tables = 11;
-    bool isAffected = 12;
+    repeated Table tables = 8;
+    bool isAffected = 9;
 }
 
 message Database {
@@ -415,7 +406,6 @@ service ValidationService {
     rpc ChangeColumnName (ChangeColumnNameRequest) returns (ValidateResult);
     rpc ChangeColumnType (ChangeColumnTypeRequest) returns (ValidateResult);
     rpc ChangeColumnPosition (ChangeColumnPositionRequest) returns (ValidateResult);
-    rpc ChangeColumnNullable (ChangeColumnNullableRequest) returns (ValidateResult);
 
     // Constraint
     rpc CreateConstraint (CreateConstraintRequest) returns (ValidateResult);

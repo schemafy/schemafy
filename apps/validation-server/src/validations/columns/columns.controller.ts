@@ -10,36 +10,19 @@ import type {
   ChangeColumnTypeDto,
   CreateColumnDto,
   DeleteColumnDto,
-  ChangeColumnNameDto,
-  ChangeColumnNullableDto,
-  ChangeColumnPositionDto,
-  ChangeColumnTypeDto,
-  CreateColumnDto,
-  DeleteColumnDto,
 } from './dto';
 import type { ValidateResult } from '../common';
 
 @Controller()
 export class ColumnsController {
   constructor(private readonly service: ColumnsService) {}
-  constructor(private readonly service: ColumnsService) {}
 
   @GrpcMethod('ValidationService', 'CreateColumn')
   createColumn(req: CreateColumnDto): ValidateResult {
     const { database, schemaId, tableId, column } = req;
     return this.service.createColumn(database, schemaId, tableId, column);
   }
-  @GrpcMethod('ValidationService', 'CreateColumn')
-  createColumn(req: CreateColumnDto): ValidateResult {
-    const { database, schemaId, tableId, column } = req;
-    return this.service.createColumn(database, schemaId, tableId, column);
-  }
 
-  @GrpcMethod('ValidationService', 'DeleteColumn')
-  deleteColumn(req: DeleteColumnDto): ValidateResult {
-    const { database, schemaId, tableId, columnId } = req;
-    return this.service.deleteColumn(database, schemaId, tableId, columnId);
-  }
   @GrpcMethod('ValidationService', 'DeleteColumn')
   deleteColumn(req: DeleteColumnDto): ValidateResult {
     const { database, schemaId, tableId, columnId } = req;
@@ -81,18 +64,6 @@ export class ColumnsController {
       tableId,
       columnId,
       newPosition,
-    );
-  }
-
-  @GrpcMethod('ValidationService', 'ChangeColumnNullable')
-  changeColumnNullable(req: ChangeColumnNullableDto): ValidateResult {
-    const { database, schemaId, tableId, columnId, nullable } = req;
-    return this.service.changeColumnNullable(
-      database,
-      schemaId,
-      tableId,
-      columnId,
-      nullable,
     );
   }
 }
