@@ -6,7 +6,6 @@ interface SchemaListItemProps {
     id: string;
     name: string;
     tables: unknown[];
-    updatedAt: Date;
   };
   isEditing: boolean;
   editingName: string;
@@ -45,7 +44,6 @@ export const SchemaListItem = ({
       <ListItem
         name={schema.name}
         count={schema.tables.length}
-        date={schema.updatedAt}
         onChange={() => onStartEdit(schema.id, schema.name)}
         onDelete={() => onDelete(schema.id)}
       />

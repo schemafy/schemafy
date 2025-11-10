@@ -1,4 +1,4 @@
-export * from './TableNode';
+export * from './TableNode/index';
 export * from './RelationshipMarker';
 export * from './Toolbar';
 export * from './RelationshipEditor';

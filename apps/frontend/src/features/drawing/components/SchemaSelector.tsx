@@ -44,6 +44,7 @@ export const SchemaSelector = observer(() => {
       id: schemaId,
       name: trimmedName,
       tables: [],
+      isAffected: false,
       ...defaultValues,
     };
 

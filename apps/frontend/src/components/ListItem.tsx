@@ -12,7 +12,7 @@ export const ListItem = ({
   name: string;
   count: number;
   description?: string;
-  date: Date;
+  date?: Date;
   onChange?: () => void;
   onDelete?: () => void;
 }) => {
@@ -32,13 +32,18 @@ export const ListItem = ({
         <p className="font-overline-sm text-schemafy-text flex gap-1 items-center">
           {name}
           <Edit size={12} onClick={handleEditClick} cursor="pointer" />
-          <Trash size={12} color="var(--color-schemafy-destructive)" onClick={handleDeleteClick} cursor="pointer" />
+          <Trash
+            size={12}
+            color="var(--color-schemafy-destructive)"
+            onClick={handleDeleteClick}
+            cursor="pointer"
+          />
         </p>
         <Tag count={count} isEntity={!!description} />
       </div>
       <div className="flex w-full justify-between items-center font-body-xs text-schemafy-dark-gray">
         <p>{description}</p>
-        <p>Last Updated: {formatDate(date)}</p>
+        {date && <p>Last Updated: {formatDate(date)}</p>}
       </div>
     </li>
   );
