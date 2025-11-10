@@ -265,6 +265,7 @@ public class ValidationClient {
             ListenableFuture<T> listenableFuture) {
         CompletableFuture<T> completableFuture = new CompletableFuture<>();
         Futures.addCallback(listenableFuture, new FutureCallback<>() {
+
             @Override
             public void onSuccess(T result) {
                 completableFuture.complete(result);
@@ -274,6 +275,7 @@ public class ValidationClient {
             public void onFailure(Throwable t) {
                 completableFuture.completeExceptionally(t);
             }
+
         }, MoreExecutors.directExecutor());
         return completableFuture;
     }
@@ -312,6 +314,9 @@ public class ValidationClient {
 
     @FunctionalInterface
     private interface ValidationCall {
+
         ListenableFuture<ValidateResult> execute();
+
     }
+
 }

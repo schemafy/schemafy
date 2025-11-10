@@ -1,22 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -28,6 +11,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
@@ -36,6 +25,17 @@ import com.schemafy.core.erd.service.ColumnService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -151,7 +151,7 @@ class ColumnControllerTest {
 
         given(columnService
                 .createColumn(any(Validation.CreateColumnRequest.class)))
-                        .willReturn(Mono.just(mockResponse));
+                .willReturn(Mono.just(mockResponse));
 
         // when & then
         webTestClient.post()
@@ -190,11 +190,11 @@ class ColumnControllerTest {
                                                 "컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
                                 fieldWithPath(
                                         "result.columns.06D6W8HDY79QFZX39RMX62KSX4")
-                                                .description("테이블별 컬럼 ID 매핑"),
+                                        .description("테이블별 컬럼 ID 매핑"),
                                 fieldWithPath(
                                         "result.columns.06D6W8HDY79QFZX39RMX62KSX4.01ARZ3NDEKTSV4RRFFQ69G5FAV")
-                                                .description(
-                                                        "백엔드에서 생성된 컬럼 ID (06D6W90RSE1VPFRMM4XPKYGM9M)"),
+                                        .description(
+                                                "백엔드에서 생성된 컬럼 ID (06D6W90RSE1VPFRMM4XPKYGM9M)"),
                                 fieldWithPath("result.indexes")
                                         .description("인덱스 ID 매핑"),
                                 fieldWithPath("result.indexColumns")
@@ -213,7 +213,7 @@ class ColumnControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -480,7 +480,8 @@ class ColumnControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
-                .jsonPath("$.result.tableId").isEqualTo("06D6W8HDY79QFZX39RMX62KSX4")
+                .jsonPath("$.result.tableId")
+                .isEqualTo("06D6W8HDY79QFZX39RMX62KSX4")
                 .jsonPath("$.result.name").isEqualTo("uid")
                 .jsonPath("$.result.dataType").isEqualTo("BIGINT")
                 .consumeWith(document("column-update-name",

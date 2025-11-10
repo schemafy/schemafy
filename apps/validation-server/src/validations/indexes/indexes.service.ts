@@ -22,7 +22,12 @@ export class IndexesService {
     index: Omit<Index, 'tableId'>,
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.createIndex(database, schemaId, tableId, index);
+      const updated = ERD_VALIDATOR.createIndex(
+        database,
+        schemaId,
+        tableId,
+        index,
+      );
       this.logger.log(
         `CreateIndex request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, index: ${JSON.stringify(
           index,
@@ -38,9 +43,19 @@ export class IndexesService {
     }
   }
 
-  deleteIndex(database: Database, schemaId: Schema['id'], tableId: Table['id'], indexId: Index['id']): ValidateResult {
+  deleteIndex(
+    database: Database,
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+  ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.deleteIndex(database, schemaId, tableId, indexId);
+      const updated = ERD_VALIDATOR.deleteIndex(
+        database,
+        schemaId,
+        tableId,
+        indexId,
+      );
       this.logger.log(
         `DeleteIndex request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}`,
       );
@@ -62,7 +77,13 @@ export class IndexesService {
     newName: Index['name'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.changeIndexName(database, schemaId, tableId, indexId, newName);
+      const updated = ERD_VALIDATOR.changeIndexName(
+        database,
+        schemaId,
+        tableId,
+        indexId,
+        newName,
+      );
       this.logger.log(
         `ChangeIndexName request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, newName: ${newName}`,
       );
@@ -84,7 +105,13 @@ export class IndexesService {
     indexColumn: Omit<IndexColumn, 'indexId'>,
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.addColumnToIndex(database, schemaId, tableId, indexId, indexColumn);
+      const updated = ERD_VALIDATOR.addColumnToIndex(
+        database,
+        schemaId,
+        tableId,
+        indexId,
+        indexColumn,
+      );
       this.logger.log(
         `AddColumnToIndex request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, indexColumn: ${JSON.stringify(
           indexColumn,
@@ -110,7 +137,13 @@ export class IndexesService {
     indexColumnId: IndexColumn['id'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.removeColumnFromIndex(database, schemaId, tableId, indexId, indexColumnId);
+      const updated = ERD_VALIDATOR.removeColumnFromIndex(
+        database,
+        schemaId,
+        tableId,
+        indexId,
+        indexColumnId,
+      );
       this.logger.log(
         `RemoveColumnFromIndex request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, indexColumnId: ${indexColumnId}`,
       );

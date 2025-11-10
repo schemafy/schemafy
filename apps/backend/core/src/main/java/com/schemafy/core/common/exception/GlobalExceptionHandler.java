@@ -94,4 +94,5 @@ public class GlobalExceptionHandler {
                 .body(BaseResponse.error(errorCode.getCode(),
                         errorCode.getMessage()));
     }
+
 }

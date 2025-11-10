@@ -219,4 +219,5 @@ class JwtAuthenticationFilterTest {
                 .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
+
 }

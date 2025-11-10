@@ -1,17 +1,13 @@
 package com.schemafy.core.erd.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -26,6 +22,11 @@ import com.schemafy.core.validation.client.ValidationClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -44,17 +45,22 @@ class TableServiceTest {
     @BeforeEach
     void setUp() {
         tableRepository.deleteAll().block();
-        given(validationClient.changeTableName(any(Validation.ChangeTableNameRequest.class)))
-                .willReturn(Mono.just(validation.Validation.Database.newBuilder().build()));
-        given(validationClient.deleteTable(any(Validation.DeleteTableRequest.class)))
-                .willReturn(Mono.just(validation.Validation.Database.newBuilder().build()));
+        given(validationClient
+                .changeTableName(any(Validation.ChangeTableNameRequest.class)))
+                .willReturn(Mono.just(
+                        validation.Validation.Database.newBuilder().build()));
+        given(validationClient
+                .deleteTable(any(Validation.DeleteTableRequest.class)))
+                .willReturn(Mono.just(
+                        validation.Validation.Database.newBuilder().build()));
     }
 
     @Test
     @DisplayName("createTable: 테이블 생성 시 매핑 정보가 올바르게 반환된다")
     void createTable_mappingResponse_success() {
         // given
-        Validation.CreateTableRequest request = Validation.CreateTableRequest.newBuilder()
+        Validation.CreateTableRequest request = Validation.CreateTableRequest
+                .newBuilder()
                 .setTable(validation.Validation.Table.newBuilder()
                         .setId("fe-table-id")
                         .setSchemaId("schema-1")
@@ -94,7 +100,8 @@ class TableServiceTest {
                         .build())
                 .build();
 
-        given(validationClient.createTable(any(Validation.CreateTableRequest.class)))
+        given(validationClient
+                .createTable(any(Validation.CreateTableRequest.class)))
                 .willReturn(Mono.just(mockResponse));
 
         // when
@@ -165,7 +172,8 @@ class TableServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(TableResponse::getName).toList())
+                    assertThat(
+                            list.stream().map(TableResponse::getName).toList())
                             .containsExactlyInAnyOrder("table-a", "table-b");
                 })
                 .verifyComplete();
@@ -186,10 +194,11 @@ class TableServiceTest {
 
         StepVerifier
                 .create(tableService
-                        .updateTableName(Validation.ChangeTableNameRequest.newBuilder()
-                                .setTableId(saved.getId())
-                                .setNewName("new-name")
-                                .build()))
+                        .updateTableName(
+                                Validation.ChangeTableNameRequest.newBuilder()
+                                        .setTableId(saved.getId())
+                                        .setNewName("new-name")
+                                        .build()))
                 .assertNext(updated -> {
                     assertThat(updated.getId()).isEqualTo(saved.getId());
                     assertThat(updated.getName()).isEqualTo("new-name");
@@ -209,11 +218,12 @@ class TableServiceTest {
     void updateTableName_notFound() {
         StepVerifier
                 .create(tableService
-                        .updateTableName(Validation.ChangeTableNameRequest.newBuilder()
-                                .setTableId("non-existent")
-                                .setSchemaId("schema-1")
-                                .setNewName("new-name")
-                                .build()))
+                        .updateTableName(
+                                Validation.ChangeTableNameRequest.newBuilder()
+                                        .setTableId("non-existent")
+                                        .setSchemaId("schema-1")
+                                        .setNewName("new-name")
+                                        .build()))
                 .expectErrorMatches(e -> e instanceof BusinessException
                         && ((BusinessException) e)
                                 .getErrorCode() == ErrorCode.ERD_TABLE_NOT_FOUND)
@@ -234,10 +244,11 @@ class TableServiceTest {
                 .block();
 
         StepVerifier
-                .create(tableService.deleteTable(Validation.DeleteTableRequest.newBuilder()
-                        .setTableId(saved.getId())
-                        .setSchemaId("schema-1")
-                        .build()))
+                .create(tableService
+                        .deleteTable(Validation.DeleteTableRequest.newBuilder()
+                                .setTableId(saved.getId())
+                                .setSchemaId("schema-1")
+                                .build()))
                 .verifyComplete();
 
         // 삭제 플래그 확인 (deletedAt not null)

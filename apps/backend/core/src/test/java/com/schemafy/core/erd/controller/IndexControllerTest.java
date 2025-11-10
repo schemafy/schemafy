@@ -1,5 +1,31 @@
 package com.schemafy.core.erd.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
+import com.schemafy.core.erd.service.IndexService;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import validation.Validation;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
@@ -7,35 +33,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import org.springframework.restdocs.payload.JsonFieldType;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.reactive.server.WebTestClient;
-
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.IndexResponse;
-import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
-import com.schemafy.core.erd.service.IndexService;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import validation.Validation;
 
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -184,9 +184,11 @@ class IndexControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.indexes['06D6W8HDY79QFZX39RMX62KSX4']['06D5KGSC0HJ9CPPYGMGYDA2PAG']")
+                .jsonPath(
+                        "$.result.indexes['06D6W8HDY79QFZX39RMX62KSX4']['06D5KGSC0HJ9CPPYGMGYDA2PAG']")
                 .isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
-                .jsonPath("$.result.indexColumns['06D6WNJS8XWZT41HWZ226ZS904']['06D6W90RSE1VPFRMM4XPKYGM9M']")
+                .jsonPath(
+                        "$.result.indexColumns['06D6WNJS8XWZT41HWZ226ZS904']['06D6W90RSE1VPFRMM4XPKYGM9M']")
                 .isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
                 .consumeWith(document("index-create",
                         requestHeaders(
@@ -211,19 +213,21 @@ class IndexControllerTest {
                                         .description("컬럼 ID 매핑"),
                                 fieldWithPath("result.indexes").description(
                                         "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.indexes.06D6W8HDY79QFZX39RMX62KSX4")
+                                fieldWithPath(
+                                        "result.indexes.06D6W8HDY79QFZX39RMX62KSX4")
                                         .description("테이블별 인덱스 ID 매핑"),
                                 fieldWithPath(
                                         "result.indexes.06D6W8HDY79QFZX39RMX62KSX4.06D5KGSC0HJ9CPPYGMGYDA2PAG")
-                                                .description(
-                                                        "백엔드에서 생성된 인덱스 ID"),
+                                        .description(
+                                                "백엔드에서 생성된 인덱스 ID"),
                                 fieldWithPath("result.indexColumns")
                                         .description("인덱스 컬럼 ID 매핑"),
-                                fieldWithPath("result.indexColumns.06D6WNJS8XWZT41HWZ226ZS904")
+                                fieldWithPath(
+                                        "result.indexColumns.06D6WNJS8XWZT41HWZ226ZS904")
                                         .description("인덱스별 컬럼 ID 매핑"),
                                 fieldWithPath(
                                         "result.indexColumns.06D6WNJS8XWZT41HWZ226ZS904.06D6W90RSE1VPFRMM4XPKYGM9M")
-                                                .description("백엔드에서 생성된 인덱스 컬럼 ID"),
+                                        .description("백엔드에서 생성된 인덱스 컬럼 ID"),
                                 fieldWithPath("result.constraints")
                                         .description("제약조건 ID 매핑"),
                                 fieldWithPath("result.constraintColumns")
@@ -238,7 +242,7 @@ class IndexControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -267,12 +271,12 @@ class IndexControllerTest {
                 """;
 
         when(indexService.getIndex("06D6WNJS8XWZT41HWZ226ZS904"))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         IndexResponse.class)));
 
         // when & then
         webTestClient.get()
-                .uri(API_BASE_PATH + "/indexes/{indexId}", 
+                .uri(API_BASE_PATH + "/indexes/{indexId}",
                         "06D6WNJS8XWZT41HWZ226ZS904")
                 .header("Accept", "application/json")
                 .exchange()
@@ -281,7 +285,8 @@ class IndexControllerTest {
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
                 .jsonPath("$.result.name").isEqualTo("IDX")
-                .jsonPath("$.result.columns[0].id").isEqualTo("06D6WNJSBMS6AWBM1ZD7EDJP4M")
+                .jsonPath("$.result.columns[0].id")
+                .isEqualTo("06D6WNJSBMS6AWBM1ZD7EDJP4M")
                 .consumeWith(document("index-get",
                         pathParameters(
                                 parameterWithName("indexId")
@@ -345,12 +350,13 @@ class IndexControllerTest {
                 """;
 
         when(indexService.getIndexesByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
-                .thenReturn(Flux.fromArray(objectMapper.readValue(mockResponseJson, 
-                        IndexResponse[].class)));
+                .thenReturn(
+                        Flux.fromArray(objectMapper.readValue(mockResponseJson,
+                                IndexResponse[].class)));
 
         // when & then
         webTestClient.get()
-                .uri(API_BASE_PATH + "/indexes/table/{tableId}", 
+                .uri(API_BASE_PATH + "/indexes/table/{tableId}",
                         "06D6W8HDY79QFZX39RMX62KSX4")
                 .header("Accept", "application/json")
                 .exchange()
@@ -359,7 +365,8 @@ class IndexControllerTest {
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result").isArray()
                 .jsonPath("$.result.length()").isEqualTo(1)
-                .jsonPath("$.result[0].id").isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
+                .jsonPath("$.result[0].id")
+                .isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
                 .jsonPath("$.result[0].name").isEqualTo("IDX")
                 .consumeWith(document("index-get-by-table",
                         pathParameters(
@@ -497,12 +504,12 @@ class IndexControllerTest {
 
         when(indexService
                 .updateIndexName(any(Validation.ChangeIndexNameRequest.class)))
-                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
-                                IndexResponse.class)));
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        IndexResponse.class)));
 
         // when & then
         webTestClient.put()
-                .uri(API_BASE_PATH + "/indexes/{indexId}/name", 
+                .uri(API_BASE_PATH + "/indexes/{indexId}/name",
                         "06D6WNJS8XWZT41HWZ226ZS904")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
@@ -647,12 +654,12 @@ class IndexControllerTest {
 
         when(indexService.addColumnToIndex(
                 any(Validation.AddColumnToIndexRequest.class)))
-                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
-                                IndexColumnResponse.class)));
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        IndexColumnResponse.class)));
 
         // when & then
         webTestClient.post()
-                .uri(API_BASE_PATH + "/indexes/{indexId}/columns", 
+                .uri(API_BASE_PATH + "/indexes/{indexId}/columns",
                         "06D6WNJS8XWZT41HWZ226ZS904")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
@@ -662,7 +669,8 @@ class IndexControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo("06D6WPTT2EJ7S1CJATWGEYPNS4")
-                .jsonPath("$.result.indexId").isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
+                .jsonPath("$.result.indexId")
+                .isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
                 .jsonPath("$.result.seqNo").isEqualTo(2)
                 .consumeWith(document("index-add-column",
                         pathParameters(
@@ -787,12 +795,13 @@ class IndexControllerTest {
 
         when(indexService.removeColumnFromIndex(
                 any(Validation.RemoveColumnFromIndexRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/indexes/{indexId}/columns/{columnId}",
-                        "06D6WNJS8XWZT41HWZ226ZS904", "06D6WPTT2EJ7S1CJATWGEYPNS4")
+                        "06D6WNJS8XWZT41HWZ226ZS904",
+                        "06D6WPTT2EJ7S1CJATWGEYPNS4")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -909,7 +918,8 @@ class IndexControllerTest {
 
         // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
-                .uri(API_BASE_PATH + "/indexes/{indexId}", "06D6WNJS8XWZT41HWZ226ZS904")
+                .uri(API_BASE_PATH + "/indexes/{indexId}",
+                        "06D6WNJS8XWZT41HWZ226ZS904")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")

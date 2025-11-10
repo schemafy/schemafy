@@ -112,4 +112,5 @@ public class JwtProvider {
         return extractClaim(token,
                 claims -> claims.get(CLAIM_TYPE, String.class));
     }
+
 }

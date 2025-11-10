@@ -1,5 +1,31 @@
 package com.schemafy.core.erd.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
+import com.schemafy.core.erd.service.RelationshipService;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import validation.Validation;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
@@ -7,35 +33,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import org.springframework.restdocs.payload.JsonFieldType;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.reactive.server.WebTestClient;
-
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
-import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
-import com.schemafy.core.erd.service.RelationshipService;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import validation.Validation;
 
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -179,9 +179,11 @@ class RelationshipControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.relationships['06D6W8HDY79QFZX39RMX62KSX4']['01ARZ3NDEKTSV4RRFFQ69G5FAV']")
+                .jsonPath(
+                        "$.result.relationships['06D6W8HDY79QFZX39RMX62KSX4']['01ARZ3NDEKTSV4RRFFQ69G5FAV']")
                 .isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
-                .jsonPath("$.result.relationshipColumns['06D6WCH677C3FCC2Q9SD5M1Y5W']['06D4YK995770K0J8539XGNHNW0']")
+                .jsonPath(
+                        "$.result.relationshipColumns['06D6WCH677C3FCC2Q9SD5M1Y5W']['06D4YK995770K0J8539XGNHNW0']")
                 .isEqualTo("06D4YK995770K0J8539XGNHNW0")
                 .consumeWith(document("relationship-create",
                         requestHeaders(
@@ -217,19 +219,19 @@ class RelationshipControllerTest {
                                                 "관계 ID 매핑 (Source Table BE ID -> { FE ID -> BE ID })"),
                                 fieldWithPath(
                                         "result.relationships.06D6W8HDY79QFZX39RMX62KSX4")
-                                                .description(
-                                                        "소스 테이블별 관계 ID 매핑"),
+                                        .description(
+                                                "소스 테이블별 관계 ID 매핑"),
                                 fieldWithPath(
                                         "result.relationships.06D6W8HDY79QFZX39RMX62KSX4.01ARZ3NDEKTSV4RRFFQ69G5FAV")
-                                                .description("백엔드에서 생성된 관계 ID"),
+                                        .description("백엔드에서 생성된 관계 ID"),
                                 fieldWithPath("result.relationshipColumns")
                                         .description("관계 컬럼 ID 매핑"),
                                 fieldWithPath(
                                         "result.relationshipColumns.06D6WCH677C3FCC2Q9SD5M1Y5W")
-                                                .description("관계 컬럼 ID 매핑"),
+                                        .description("관계 컬럼 ID 매핑"),
                                 fieldWithPath(
                                         "result.relationshipColumns.06D6WCH677C3FCC2Q9SD5M1Y5W.06D4YK995770K0J8539XGNHNW0")
-                                                .description("백엔드에서 생성된 관계 컬럼 ID"),
+                                        .description("백엔드에서 생성된 관계 컬럼 ID"),
                                 fieldWithPath("result.propagated")
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
@@ -237,7 +239,7 @@ class RelationshipControllerTest {
                                                 "전파된 컬럼 목록 (식별 관계 시 자식 테이블로 전파)"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -270,7 +272,7 @@ class RelationshipControllerTest {
                 """;
 
         when(relationshipService.getRelationship("06D6WCH677C3FCC2Q9SD5M1Y5W"))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         RelationshipResponse.class)));
 
         // when & then
@@ -285,7 +287,8 @@ class RelationshipControllerTest {
                 .jsonPath("$.result.id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
                 .jsonPath("$.result.name").isEqualTo("FK_recommend_user")
                 .jsonPath("$.result.kind").isEqualTo("NON_IDENTIFYING")
-                .jsonPath("$.result.columns[0].id").isEqualTo("06D6WCH68V89ZSPWVZ8WMBQWW8")
+                .jsonPath("$.result.columns[0].id")
+                .isEqualTo("06D6WCH68V89ZSPWVZ8WMBQWW8")
                 .consumeWith(document("relationship-get",
                         pathParameters(
                                 parameterWithName("relationshipId")
@@ -359,9 +362,11 @@ class RelationshipControllerTest {
                 ]
                 """;
 
-        when(relationshipService.getRelationshipsByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
-                .thenReturn(Flux.fromArray(objectMapper.readValue(mockResponseJson, 
-                        RelationshipResponse[].class)));
+        when(relationshipService
+                .getRelationshipsByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
+                .thenReturn(
+                        Flux.fromArray(objectMapper.readValue(mockResponseJson,
+                                RelationshipResponse[].class)));
 
         // when & then
         webTestClient.get()
@@ -374,7 +379,8 @@ class RelationshipControllerTest {
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result").isArray()
                 .jsonPath("$.result.length()").isEqualTo(1)
-                .jsonPath("$.result[0].id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .jsonPath("$.result[0].id")
+                .isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
                 .jsonPath("$.result[0].name").isEqualTo("FK_recommend_user")
                 .consumeWith(document("relationship-get-by-table",
                         pathParameters(
@@ -411,7 +417,8 @@ class RelationshipControllerTest {
                                         .description("관계 컬럼 목록"),
                                 fieldWithPath("result[].columns[].id")
                                         .description("관계 컬럼 ID"),
-                                fieldWithPath("result[].columns[].relationshipId")
+                                fieldWithPath(
+                                        "result[].columns[].relationshipId")
                                         .description("관계 ID"),
                                 fieldWithPath("result[].columns[].srcColumnId")
                                         .description("소스 컬럼 ID (FK 컬럼)"),
@@ -518,8 +525,8 @@ class RelationshipControllerTest {
 
         when(relationshipService.updateRelationshipName(
                 any(Validation.ChangeRelationshipNameRequest.class)))
-                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
-                                RelationshipResponse.class)));
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        RelationshipResponse.class)));
 
         // when & then
         webTestClient.put()
@@ -650,7 +657,8 @@ class RelationshipControllerTest {
                         }
                         """,
                         builder);
-        Validation.ChangeRelationshipCardinalityRequest request = builder.build();
+        Validation.ChangeRelationshipCardinalityRequest request = builder
+                .build();
 
         String mockResponseJson = """
                 {
@@ -669,8 +677,8 @@ class RelationshipControllerTest {
 
         when(relationshipService.updateRelationshipCardinality(
                 any(Validation.ChangeRelationshipCardinalityRequest.class)))
-                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
-                                RelationshipResponse.class)));
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        RelationshipResponse.class)));
 
         // when & then
         webTestClient.put()
@@ -830,8 +838,8 @@ class RelationshipControllerTest {
 
         when(relationshipService.addColumnToRelationship(
                 any(Validation.AddColumnToRelationshipRequest.class)))
-                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
-                                RelationshipColumnResponse.class)));
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        RelationshipColumnResponse.class)));
 
         // when & then
         webTestClient.post()
@@ -845,7 +853,8 @@ class RelationshipControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo("06D6WGN2ZWCGM2SVWRW2GEP8WW")
-                .jsonPath("$.result.relationshipId").isEqualTo("06D590QBYGE6K2TQ8JK514GGP4")
+                .jsonPath("$.result.relationshipId")
+                .isEqualTo("06D590QBYGE6K2TQ8JK514GGP4")
                 .jsonPath("$.result.seqNo").isEqualTo(2)
                 .consumeWith(document("relationship-add-column",
                         pathParameters(
@@ -968,17 +977,19 @@ class RelationshipControllerTest {
                         }
                         """,
                         builder);
-        Validation.RemoveColumnFromRelationshipRequest request = builder.build();
+        Validation.RemoveColumnFromRelationshipRequest request = builder
+                .build();
 
         when(relationshipService.removeColumnFromRelationship(
                 any(Validation.RemoveColumnFromRelationshipRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH
                         + "/relationships/{relationshipId}/columns/{columnId}",
-                        "06D6WCH677C3FCC2Q9SD5M1Y5W", "06D6WH7CC5YVNWKVB888ZB42EM")
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                        "06D6WH7CC5YVNWKVB888ZB42EM")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -1098,7 +1109,7 @@ class RelationshipControllerTest {
 
         when(relationshipService.deleteRelationship(
                 any(Validation.DeleteRelationshipRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)

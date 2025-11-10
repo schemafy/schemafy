@@ -40,6 +40,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureRestDocs
 @DisplayName("MemberController 통합 테스트")
 class UserControllerTest {
+
     private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
             "v1.0");
 
@@ -123,16 +124,16 @@ class UserControllerTest {
     static Stream<Arguments> invalidSignUpRequests() {
         return Stream.of(
                 Arguments.of(new SignUpRequest("", "Test User", "password")), // empty
-                                                                              // email
+                // email
                 Arguments.of(new SignUpRequest("invalid-email", "Test User",
                         "password")), // invalid
-                                      // email
+                // email
                 Arguments.of(
                         new SignUpRequest("test@example.com", "", "password")), // empty
-                                                                                // name
+                // name
                 Arguments.of(
                         new SignUpRequest("test@example.com", "Test User", "")) // empty
-                                                                                // password
+                                                                                            // password
         );
     }
 
@@ -241,9 +242,9 @@ class UserControllerTest {
         return Stream.of(
                 Arguments.of(new LoginRequest("", "password")), // empty email
                 Arguments.of(new LoginRequest("invalid-email", "password")), // invalid
-                                                                             // email
+                // email
                 Arguments.of(new LoginRequest("test@example.com", "")) // empty
-                                                                       // password
+                                                                      // password
         );
     }
 
@@ -366,4 +367,5 @@ class UserControllerTest {
                 .jsonPath("$.error.code")
                 .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
     }
+
 }

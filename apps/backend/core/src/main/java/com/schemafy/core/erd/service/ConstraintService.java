@@ -77,7 +77,8 @@ public class ConstraintService {
                         .map(columns -> ConstraintResponse.from(constraint,
                                 columns)))
                 .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_CONSTRAINT_NOT_FOUND)));
+                        new BusinessException(
+                                ErrorCode.ERD_CONSTRAINT_NOT_FOUND)));
     }
 
     public Flux<ConstraintResponse> getConstraintsByTableId(String tableId) {
@@ -98,7 +99,8 @@ public class ConstraintService {
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
                 .delayUntil(
-                        ignore -> validationClient.changeConstraintName(request))
+                        ignore -> validationClient
+                                .changeConstraintName(request))
                 .doOnNext(
                         constraint -> constraint.setName(request.getNewName()))
                 .flatMap(constraintRepository::save)

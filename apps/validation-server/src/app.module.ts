@@ -23,6 +23,9 @@ import { ValidationModule } from './validations/validation/validation.module';
     ValidationModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_INTERCEPTOR, useClass: ProtoTransformInterceptor }],
+  providers: [
+    AppService,
+    { provide: APP_INTERCEPTOR, useClass: ProtoTransformInterceptor },
+  ],
 })
 export class AppModule {}

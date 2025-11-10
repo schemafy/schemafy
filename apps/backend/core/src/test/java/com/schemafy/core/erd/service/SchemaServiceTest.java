@@ -1,16 +1,13 @@
 package com.schemafy.core.erd.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -24,6 +21,10 @@ import com.schemafy.core.validation.client.ValidationClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -43,10 +44,12 @@ class SchemaServiceTest {
     void setUp() {
         schemaRepository.deleteAll().block();
         given(validationClient
-                .changeSchemaName(any(Validation.ChangeSchemaNameRequest.class)))
-                        .willReturn(Mono.just(validation.Validation.Database
-                                .newBuilder().build()));
-        given(validationClient.deleteSchema(any(Validation.DeleteSchemaRequest.class)))
+                .changeSchemaName(
+                        any(Validation.ChangeSchemaNameRequest.class)))
+                .willReturn(Mono.just(validation.Validation.Database
+                        .newBuilder().build()));
+        given(validationClient
+                .deleteSchema(any(Validation.DeleteSchemaRequest.class)))
                 .willReturn(Mono.just(
                         validation.Validation.Database.newBuilder().build()));
     }
@@ -62,7 +65,8 @@ class SchemaServiceTest {
                         .build())
                 .block();
 
-        Mono<SchemaDetailResponse> result = schemaService.getSchema(saved.getId());
+        Mono<SchemaDetailResponse> result = schemaService
+                .getSchema(saved.getId());
 
         StepVerifier.create(result)
                 .assertNext(found -> {
@@ -89,7 +93,8 @@ class SchemaServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(SchemaResponse::getName).toList())
+                    assertThat(
+                            list.stream().map(SchemaResponse::getName).toList())
                             .containsExactlyInAnyOrder("a", "b");
                 })
                 .verifyComplete();
@@ -108,10 +113,11 @@ class SchemaServiceTest {
 
         StepVerifier
                 .create(schemaService
-                        .updateSchemaName(Validation.ChangeSchemaNameRequest.newBuilder()
-                                .setSchemaId(saved.getId())
-                                .setNewName("new")
-                                .build()))
+                        .updateSchemaName(
+                                Validation.ChangeSchemaNameRequest.newBuilder()
+                                        .setSchemaId(saved.getId())
+                                        .setNewName("new")
+                                        .build()))
                 .assertNext(updated -> {
                     assertThat(updated.getId()).isEqualTo(saved.getId());
                     assertThat(updated.getName()).isEqualTo("new");
@@ -130,10 +136,11 @@ class SchemaServiceTest {
     void updateSchemaName_notFound() {
         StepVerifier
                 .create(schemaService
-                        .updateSchemaName(Validation.ChangeSchemaNameRequest.newBuilder()
-                                .setSchemaId("non-existent")
-                                .setNewName("new")
-                                .build()))
+                        .updateSchemaName(
+                                Validation.ChangeSchemaNameRequest.newBuilder()
+                                        .setSchemaId("non-existent")
+                                        .setNewName("new")
+                                        .build()))
                 .expectErrorMatches(e -> e instanceof BusinessException
                         && ((BusinessException) e)
                                 .getErrorCode() == ErrorCode.ERD_SCHEMA_NOT_FOUND)
@@ -153,9 +160,10 @@ class SchemaServiceTest {
 
         StepVerifier
                 .create(schemaService
-                        .deleteSchema(Validation.DeleteSchemaRequest.newBuilder()
-                                .setSchemaId(saved.getId())
-                                .build()))
+                        .deleteSchema(
+                                Validation.DeleteSchemaRequest.newBuilder()
+                                        .setSchemaId(saved.getId())
+                                        .build()))
                 .verifyComplete();
 
         // 삭제 플래그 확인 (deletedAt not null)
@@ -168,7 +176,8 @@ class SchemaServiceTest {
     @DisplayName("createSchema: 스키마 생성 시 매핑 정보가 올바르게 반환된다")
     void createSchema_mappingResponse_success() {
         // given
-        Validation.CreateSchemaRequest request = Validation.CreateSchemaRequest.newBuilder()
+        Validation.CreateSchemaRequest request = Validation.CreateSchemaRequest
+                .newBuilder()
                 .setSchema(validation.Validation.Schema.newBuilder()
                         .setId("fe-schema-id")
                         .setProjectId("proj-1")
@@ -199,7 +208,8 @@ class SchemaServiceTest {
                         .build())
                 .build();
 
-        given(validationClient.createSchema(any(Validation.CreateSchemaRequest.class)))
+        given(validationClient
+                .createSchema(any(Validation.CreateSchemaRequest.class)))
                 .willReturn(Mono.just(mockResponse));
 
         // when

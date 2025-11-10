@@ -87,4 +87,5 @@ class SecurityConfigTest {
                 .exchange()
                 .expectStatus().isOk();
     }
+
 }

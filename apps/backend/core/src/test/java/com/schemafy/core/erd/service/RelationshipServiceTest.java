@@ -1,19 +1,15 @@
 package com.schemafy.core.erd.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -30,6 +26,11 @@ import com.schemafy.core.validation.client.ValidationClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -58,24 +59,24 @@ class RelationshipServiceTest {
 
         given(validationClient.changeRelationshipName(
                 any(Validation.ChangeRelationshipNameRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.changeRelationshipCardinality(
                 any(Validation.ChangeRelationshipCardinalityRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.addColumnToRelationship(
                 any(Validation.AddColumnToRelationshipRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.removeColumnFromRelationship(
                 any(Validation.RemoveColumnFromRelationshipRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.deleteRelationship(
                 any(Validation.DeleteRelationshipRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
     }
 
     @Test
@@ -147,12 +148,12 @@ class RelationshipServiceTest {
 
         given(validationClient.createRelationship(
                 any(Validation.CreateRelationshipRequest.class)))
-                        .willReturn(Mono.just(mockResponse));
+                .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
                 any(), any()))
-                        .willReturn(Mono
-                                .just(AffectedMappingResponse.PropagatedEntities
-                                        .empty()));
+                .willReturn(Mono
+                        .just(AffectedMappingResponse.PropagatedEntities
+                                .empty()));
 
         // when
         Mono<AffectedMappingResponse> result = relationshipService
@@ -212,43 +213,57 @@ class RelationshipServiceTest {
                                 .addTables(Validation.Table.newBuilder()
                                         .setId("parent-table")
                                         .setName("parent")
-                                        .addColumns(Validation.Column.newBuilder()
-                                                .setId("parent-id-col")
-                                                .setName("id")
-                                                .setDataType("INT")
-                                                .build())
-                                        .addConstraints(Validation.Constraint.newBuilder()
+                                        .addColumns(
+                                                Validation.Column.newBuilder()
+                                                        .setId("parent-id-col")
+                                                        .setName("id")
+                                                        .setDataType("INT")
+                                                        .build())
+                                        .addConstraints(Validation.Constraint
+                                                .newBuilder()
                                                 .setId("parent-pk-constraint")
                                                 .setTableId("parent-table")
                                                 .setName("pk_parent")
-                                                .setKind(Validation.ConstraintKind.PRIMARY_KEY)
-                                                .addColumns(Validation.ConstraintColumn.newBuilder()
-                                                        .setId("parent-constraint-col-1")
-                                                        .setConstraintId("parent-pk-constraint")
-                                                        .setColumnId("parent-id-col")
-                                                        .setSeqNo(1)
-                                                        .build())
+                                                .setKind(
+                                                        Validation.ConstraintKind.PRIMARY_KEY)
+                                                .addColumns(
+                                                        Validation.ConstraintColumn
+                                                                .newBuilder()
+                                                                .setId("parent-constraint-col-1")
+                                                                .setConstraintId(
+                                                                        "parent-pk-constraint")
+                                                                .setColumnId(
+                                                                        "parent-id-col")
+                                                                .setSeqNo(1)
+                                                                .build())
                                                 .build())
                                         .build())
                                 .addTables(Validation.Table.newBuilder()
                                         .setId("child-table")
                                         .setName("child")
-                                        .addColumns(Validation.Column.newBuilder()
-                                                .setId("child-id-col")
-                                                .setName("id")
-                                                .setDataType("INT")
-                                                .build())
-                                        .addConstraints(Validation.Constraint.newBuilder()
+                                        .addColumns(
+                                                Validation.Column.newBuilder()
+                                                        .setId("child-id-col")
+                                                        .setName("id")
+                                                        .setDataType("INT")
+                                                        .build())
+                                        .addConstraints(Validation.Constraint
+                                                .newBuilder()
                                                 .setId("child-pk-constraint")
                                                 .setTableId("child-table")
                                                 .setName("pk_child")
-                                                .setKind(Validation.ConstraintKind.PRIMARY_KEY)
-                                                .addColumns(Validation.ConstraintColumn.newBuilder()
-                                                        .setId("child-constraint-col-1")
-                                                        .setConstraintId("child-pk-constraint")
-                                                        .setColumnId("child-id-col")
-                                                        .setSeqNo(1)
-                                                        .build())
+                                                .setKind(
+                                                        Validation.ConstraintKind.PRIMARY_KEY)
+                                                .addColumns(
+                                                        Validation.ConstraintColumn
+                                                                .newBuilder()
+                                                                .setId("child-constraint-col-1")
+                                                                .setConstraintId(
+                                                                        "child-pk-constraint")
+                                                                .setColumnId(
+                                                                        "child-id-col")
+                                                                .setSeqNo(1)
+                                                                .build())
                                                 .build())
                                         .build())
                                 .build())
@@ -276,15 +291,19 @@ class RelationshipServiceTest {
                                         .setDataType("INT")
                                         .setIsAffected(false)
                                         .build())
-                                .addConstraints(Validation.Constraint.newBuilder()
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
                                         .setId("parent-pk-constraint")
                                         .setTableId("parent-table")
                                         .setName("pk_parent")
-                                        .setKind(Validation.ConstraintKind.PRIMARY_KEY)
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
                                         .setIsAffected(false)
-                                        .addColumns(Validation.ConstraintColumn.newBuilder()
+                                        .addColumns(Validation.ConstraintColumn
+                                                .newBuilder()
                                                 .setId("parent-constraint-col-1")
-                                                .setConstraintId("parent-pk-constraint")
+                                                .setConstraintId(
+                                                        "parent-pk-constraint")
                                                 .setColumnId("parent-id-col")
                                                 .setSeqNo(1)
                                                 .setIsAffected(false)
@@ -309,73 +328,84 @@ class RelationshipServiceTest {
                                         .setDataType("INT")
                                         .setIsAffected(true) // 전파된 컬럼
                                         .build())
-                                .addConstraints(Validation.Constraint.newBuilder()
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
                                         .setId("child-pk-constraint")
                                         .setTableId("child-table")
                                         .setName("pk_child")
-                                        .setKind(Validation.ConstraintKind.PRIMARY_KEY)
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
                                         .setIsAffected(true)
-                                        .addColumns(Validation.ConstraintColumn.newBuilder()
+                                        .addColumns(Validation.ConstraintColumn
+                                                .newBuilder()
                                                 .setId("child-constraint-col-1")
-                                                .setConstraintId("child-pk-constraint")
+                                                .setConstraintId(
+                                                        "child-pk-constraint")
                                                 .setColumnId("child-id-col")
                                                 .setSeqNo(1)
                                                 .setIsAffected(false)
                                                 .build())
                                         // 전파된 제약조건 컬럼: 전파된 FK 컬럼이 자식 PK에 추가됨
-                                        .addColumns(Validation.ConstraintColumn.newBuilder()
+                                        .addColumns(Validation.ConstraintColumn
+                                                .newBuilder()
                                                 .setId("propagated-constraint-col")
-                                                .setConstraintId("child-pk-constraint")
+                                                .setConstraintId(
+                                                        "child-pk-constraint")
                                                 .setColumnId("be-fk-column-id")
                                                 .setSeqNo(2)
                                                 .setIsAffected(true) // 전파된 제약조건 컬럼
                                                 .build())
                                         .build())
-                                .addRelationships(Validation.Relationship.newBuilder()
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
                                         .setId("be-relationship-id")
                                         .setSrcTableId("child-table")
                                         .setTgtTableId("parent-table")
                                         .setName("fk_child_parent")
-                                        .setKind(Validation.RelationshipKind.IDENTIFYING)
+                                        .setKind(
+                                                Validation.RelationshipKind.IDENTIFYING)
                                         .setCardinality(
                                                 Validation.RelationshipCardinality.ONE_TO_MANY)
                                         .setIsAffected(true)
-                                        .addColumns(Validation.RelationshipColumn.newBuilder()
-                                                .setId("be-relationship-col-1")
-                                                .setRelationshipId("be-relationship-id")
-                                                .setFkColumnId("be-fk-column-id")
-                                                .setRefColumnId("parent-id-col")
-                                                .setSeqNo(1)
-                                                .setIsAffected(true)
-                                                .build())
+                                        .addColumns(
+                                                Validation.RelationshipColumn
+                                                        .newBuilder()
+                                                        .setId("be-relationship-col-1")
+                                                        .setRelationshipId(
+                                                                "be-relationship-id")
+                                                        .setFkColumnId(
+                                                                "be-fk-column-id")
+                                                        .setRefColumnId(
+                                                                "parent-id-col")
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
                                         .build())
                                 .build())
                         .build())
                 .build();
 
         // 전파된 엔티티 정보 모킹
-        AffectedMappingResponse.PropagatedEntities propagatedEntities =
-                new AffectedMappingResponse.PropagatedEntities(
-                        List.of(
-                                // 전파된 컬럼
-                                new AffectedMappingResponse.PropagatedColumn(
-                                        "be-fk-column-id",
-                                        "child-table",
-                                        "RELATIONSHIP",
-                                        "be-relationship-id",
-                                        "parent-id-col" // 원본 컬럼 ID
-                                )),
-                        List.of(
-                                // 전파된 제약조건 컬럼
-                                new AffectedMappingResponse.PropagatedConstraintColumn(
-                                        "propagated-constraint-col",
-                                        "child-pk-constraint",
-                                        "be-fk-column-id",
-                                        "RELATIONSHIP",
-                                        "be-relationship-id"
-                                )),
-                        List.of() // 전파된 인덱스 컬럼 없음
-                );
+        AffectedMappingResponse.PropagatedEntities propagatedEntities = new AffectedMappingResponse.PropagatedEntities(
+                List.of(
+                        // 전파된 컬럼
+                        new AffectedMappingResponse.PropagatedColumn(
+                                "be-fk-column-id",
+                                "child-table",
+                                "RELATIONSHIP",
+                                "be-relationship-id",
+                                "parent-id-col" // 원본 컬럼 ID
+                        )),
+                List.of(
+                        // 전파된 제약조건 컬럼
+                        new AffectedMappingResponse.PropagatedConstraintColumn(
+                                "propagated-constraint-col",
+                                "child-pk-constraint",
+                                "be-fk-column-id",
+                                "RELATIONSHIP",
+                                "be-relationship-id")),
+                List.of() // 전파된 인덱스 컬럼 없음
+        );
 
         given(validationClient.createRelationship(
                 any(Validation.CreateRelationshipRequest.class)))
@@ -400,8 +430,8 @@ class RelationshipServiceTest {
                     // 전파된 엔티티 정보 확인
                     assertThat(response.propagated()).isNotNull();
                     assertThat(response.propagated().columns()).hasSize(1);
-                    AffectedMappingResponse.PropagatedColumn propagatedColumn =
-                            response.propagated().columns().get(0);
+                    AffectedMappingResponse.PropagatedColumn propagatedColumn = response
+                            .propagated().columns().get(0);
                     assertThat(propagatedColumn.columnId())
                             .isEqualTo("be-fk-column-id");
                     assertThat(propagatedColumn.tableId())
@@ -415,8 +445,8 @@ class RelationshipServiceTest {
 
                     assertThat(response.propagated().constraintColumns())
                             .hasSize(1);
-                    AffectedMappingResponse.PropagatedConstraintColumn propagatedConstraintColumn =
-                            response.propagated().constraintColumns().get(0);
+                    AffectedMappingResponse.PropagatedConstraintColumn propagatedConstraintColumn = response
+                            .propagated().constraintColumns().get(0);
                     assertThat(propagatedConstraintColumn.constraintColumnId())
                             .isEqualTo("propagated-constraint-col");
                     assertThat(propagatedConstraintColumn.constraintId())
@@ -495,9 +525,10 @@ class RelationshipServiceTest {
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
                     assertThat(
-                            list.stream().map(RelationshipResponse::getName).toList())
-                                    .containsExactlyInAnyOrder("fk_a_b",
-                                            "fk_a_c");
+                            list.stream().map(RelationshipResponse::getName)
+                                    .toList())
+                            .containsExactlyInAnyOrder("fk_a_b",
+                                    "fk_a_c");
                 })
                 .verifyComplete();
     }

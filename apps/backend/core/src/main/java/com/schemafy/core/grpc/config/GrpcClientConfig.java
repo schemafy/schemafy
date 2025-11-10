@@ -1,15 +1,17 @@
 package com.schemafy.core.grpc.config;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import java.util.concurrent.TimeUnit;
+
 import jakarta.annotation.PreDestroy;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import validation.ValidationServiceGrpc;
 
-import java.util.concurrent.TimeUnit;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import lombok.extern.slf4j.Slf4j;
+import validation.ValidationServiceGrpc;
 
 @Slf4j
 @Configuration
@@ -67,4 +69,5 @@ public class GrpcClientConfig {
             }
         }
     }
+
 }

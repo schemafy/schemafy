@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
@@ -26,8 +28,6 @@ import reactor.core.publisher.Mono;
 import validation.Validation.ChangeTableNameRequest;
 import validation.Validation.CreateTableRequest;
 import validation.Validation.DeleteTableRequest;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 
 @Slf4j
 @RestController

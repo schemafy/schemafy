@@ -30,4 +30,5 @@ public class UlidController {
                 .map(BaseResponse::success)
                 .map(ResponseEntity::ok);
     }
+
 }

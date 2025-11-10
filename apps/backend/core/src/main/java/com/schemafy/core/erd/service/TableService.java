@@ -1,5 +1,7 @@
 package com.schemafy.core.erd.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.exception.BusinessException;
@@ -23,8 +25,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class TableService {
@@ -44,13 +44,13 @@ public class TableService {
                         .map(savedTable -> AffectedMappingResponse.of(
                                 request.request(),
                                 request.request().getDatabase(),
-                                AffectedMappingResponse.updateEntityIdInDatabase(
-                                        database,
-                                        EntityType.TABLE,
-                                        request.request().getTable().getId(),
-                                        savedTable.getId()
-                                )
-                        )));
+                                AffectedMappingResponse
+                                        .updateEntityIdInDatabase(
+                                                database,
+                                                EntityType.TABLE,
+                                                request.request().getTable()
+                                                        .getId(),
+                                                savedTable.getId()))));
     }
 
     public Mono<TableDetailResponse> getTable(String id) {

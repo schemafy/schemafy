@@ -36,16 +36,13 @@ public abstract class BaseEntity implements Persistable<String> {
 
     @Override
     @JsonIgnore
-    public boolean isNew() {
-        return this.createdAt == null;
-    }
+    public boolean isNew() { return this.createdAt == null; }
 
     public void delete() {
         this.deletedAt = Instant.now();
     }
 
     @JsonIgnore
-    public boolean isDeleted() {
-        return deletedAt != null;
-    }
+    public boolean isDeleted() { return deletedAt != null; }
+
 }

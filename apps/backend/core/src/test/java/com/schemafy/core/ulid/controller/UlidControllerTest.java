@@ -27,6 +27,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
+
     private static final String API_BASE_PATH = ApiPath.AUTH_API.replace(
             "{version}",
             "v1.0");
@@ -65,4 +66,5 @@ class UlidControllerTest {
                         generateUlidResponseHeaders(),
                         generateUlidResponse()));
     }
+
 }

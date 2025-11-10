@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 
 public interface RelationshipRepository
         extends ReactiveCrudRepository<Relationship, String> {
-            
+
     public Mono<Relationship> findByIdAndDeletedAtIsNull(String id);
 
     @Query("SELECT * FROM db_relationships WHERE deleted_at IS NULL AND src_table_id = :tableId OR tgt_table_id = :tableId")

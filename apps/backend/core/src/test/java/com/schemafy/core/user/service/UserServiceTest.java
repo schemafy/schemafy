@@ -195,4 +195,5 @@ class UserServiceTest {
                                         .getErrorCode() == ErrorCode.LOGIN_FAILED)
                 .verify();
     }
+
 }

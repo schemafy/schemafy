@@ -289,7 +289,7 @@ public record AffectedMappingResponse(
 
     /**
      * Validation 결과의 Database에서 특정 엔티티 ID를 실제 DB ID로 교체
-     * 
+     *
      * @param database Validation 결과 Database
      * @param entityType 엔티티 타입
      * @param feId 프론트엔드에서 보낸 임시 ID

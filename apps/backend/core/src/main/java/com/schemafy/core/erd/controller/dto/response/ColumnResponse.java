@@ -39,4 +39,5 @@ public class ColumnResponse {
                 .comment(column.getComment())
                 .build();
     }
+
 }

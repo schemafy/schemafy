@@ -29,4 +29,5 @@ public class IndexColumnResponse {
                 .sortDir(indexColumn.getSortDir())
                 .build();
     }
+
 }

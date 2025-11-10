@@ -1,5 +1,36 @@
 package com.schemafy.core.erd.controller;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.core.erd.service.ConstraintService;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import validation.Validation;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
@@ -7,39 +38,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import org.springframework.restdocs.payload.JsonFieldType;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.reactive.server.WebTestClient;
-
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
-import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
-import com.schemafy.core.erd.service.ConstraintService;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import validation.Validation;
 
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -155,16 +156,18 @@ class ConstraintControllerTest {
                 Collections.emptyMap(),
                 Collections.emptyMap(),
                 Map.of("06D6W8HDY79QFZX39RMX62KSX4",
-                        Map.of("06D5XSF8RRRKMCHVNX68TDX1K4", "06D6WWYRQCEXN1ACZ4ZJ12DFTG")),
+                        Map.of("06D5XSF8RRRKMCHVNX68TDX1K4",
+                                "06D6WWYRQCEXN1ACZ4ZJ12DFTG")),
                 Map.of("06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                        Map.of("06D5XST4N38Z9QANKMEDMCXAYG", "06D5XST4N38Z9QANKMEDMCXAYG")),
+                        Map.of("06D5XST4N38Z9QANKMEDMCXAYG",
+                                "06D5XST4N38Z9QANKMEDMCXAYG")),
                 Collections.emptyMap(),
                 Collections.emptyMap(),
                 AffectedMappingResponse.PropagatedEntities.empty());
 
         when(constraintService.createConstraint(
                 any(Validation.CreateConstraintRequest.class)))
-                        .thenReturn(Mono.just(mockResponse));
+                .thenReturn(Mono.just(mockResponse));
 
         // when & then
         webTestClient.post()
@@ -210,21 +213,23 @@ class ConstraintControllerTest {
                                                 "인덱스 컬럼 ID 매핑 (Index BE ID -> { FE ID -> BE ID })"),
                                 fieldWithPath("result.constraints").description(
                                         "제약조건 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.constraints.06D6W8HDY79QFZX39RMX62KSX4")
+                                fieldWithPath(
+                                        "result.constraints.06D6W8HDY79QFZX39RMX62KSX4")
                                         .description("테이블별 제약조건 ID 매핑"),
                                 fieldWithPath(
                                         "result.constraints.06D6W8HDY79QFZX39RMX62KSX4.06D5XSF8RRRKMCHVNX68TDX1K4")
-                                                .description(
-                                                        "백엔드에서 생성된 제약조건 ID"),
+                                        .description(
+                                                "백엔드에서 생성된 제약조건 ID"),
                                 fieldWithPath("result.constraintColumns")
                                         .description(
                                                 "제약조건 컬럼 ID 매핑 (Constraint BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG")
+                                fieldWithPath(
+                                        "result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG")
                                         .description("제약조건별 컬럼 ID 매핑"),
                                 fieldWithPath(
                                         "result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG.06D5XST4N38Z9QANKMEDMCXAYG")
-                                                .description(
-                                                        "백엔드에서 생성된 제약조건 컬럼 ID"),
+                                        .description(
+                                                "백엔드에서 생성된 제약조건 컬럼 ID"),
                                 fieldWithPath("result.relationships")
                                         .description(
                                                 "관계 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
@@ -237,7 +242,7 @@ class ConstraintControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -264,7 +269,7 @@ class ConstraintControllerTest {
                 """;
 
         when(constraintService.getConstraint("06D6WWYRQCEXN1ACZ4ZJ12DFTG"))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         ConstraintResponse.class)));
 
         // when & then
@@ -334,13 +339,16 @@ class ConstraintControllerTest {
                 ]
                 """;
 
-        when(constraintService.getConstraintsByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
-                .thenReturn(Flux.fromIterable(objectMapper.readValue(mockResponseJson, 
-                        new TypeReference<List<ConstraintResponse>>() {})));
+        when(constraintService
+                .getConstraintsByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
+                .thenReturn(Flux
+                        .fromIterable(objectMapper.readValue(mockResponseJson,
+                                new TypeReference<List<ConstraintResponse>>() {
+                                })));
 
         // when & then
         webTestClient.get()
-                .uri(API_BASE_PATH + "/constraints/table/{tableId}", 
+                .uri(API_BASE_PATH + "/constraints/table/{tableId}",
                         "06D6W8HDY79QFZX39RMX62KSX4")
                 .header("Accept", "application/json")
                 .exchange()
@@ -481,8 +489,8 @@ class ConstraintControllerTest {
 
         when(constraintService.updateConstraintName(
                 any(Validation.ChangeConstraintNameRequest.class)))
-                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
-                                ConstraintResponse.class)));
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        ConstraintResponse.class)));
 
         // when & then
         webTestClient.put()
@@ -628,8 +636,8 @@ class ConstraintControllerTest {
 
         when(constraintService.addColumnToConstraint(
                 any(Validation.AddColumnToConstraintRequest.class)))
-                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
-                                ConstraintColumnResponse.class)));
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        ConstraintColumnResponse.class)));
 
         // when & then
         webTestClient.post()
@@ -643,7 +651,8 @@ class ConstraintControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo("06D6X2345678901BCDEFGHIJKL")
-                .jsonPath("$.result.constraintId").isEqualTo("06D6WWYRQCEXN1ACZ4ZJ12DFTG")
+                .jsonPath("$.result.constraintId")
+                .isEqualTo("06D6WWYRQCEXN1ACZ4ZJ12DFTG")
                 .jsonPath("$.result.seqNo").isEqualTo(2)
                 .consumeWith(document("constraint-add-column",
                         pathParameters(
@@ -766,13 +775,14 @@ class ConstraintControllerTest {
 
         when(constraintService.removeColumnFromConstraint(
                 any(Validation.RemoveColumnFromConstraintRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH
                         + "/constraints/{constraintId}/columns/{columnId}",
-                        "06D6WWYRQCEXN1ACZ4ZJ12DFTG", "06D6X2345678901BCDEFGHIJKL")
+                        "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
+                        "06D6X2345678901BCDEFGHIJKL")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -875,7 +885,7 @@ class ConstraintControllerTest {
 
         when(constraintService.deleteConstraint(
                 any(Validation.DeleteConstraintRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)

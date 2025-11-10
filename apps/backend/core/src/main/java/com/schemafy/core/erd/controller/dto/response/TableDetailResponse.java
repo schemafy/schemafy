@@ -31,7 +31,8 @@ public class TableDetailResponse {
     private List<IndexResponse> indexes;
     private List<RelationshipResponse> relationships;
 
-    public static TableDetailResponse from(Table table, List<ColumnResponse> columns,
+    public static TableDetailResponse from(Table table,
+            List<ColumnResponse> columns,
             List<ConstraintResponse> constraints, List<IndexResponse> indexes,
             List<RelationshipResponse> relationships) {
         return TableDetailResponse.builder()
@@ -50,4 +51,5 @@ public class TableDetailResponse {
                 .relationships(relationships)
                 .build();
     }
+
 }

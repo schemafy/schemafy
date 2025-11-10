@@ -20,7 +20,8 @@ public class RelationshipColumnResponse {
     private String tgtColumnId;
     private Integer seqNo;
 
-    public static RelationshipColumnResponse from(RelationshipColumn relationshipColumn) {
+    public static RelationshipColumnResponse from(
+            RelationshipColumn relationshipColumn) {
         return RelationshipColumnResponse.builder()
                 .id(relationshipColumn.getId())
                 .relationshipId(relationshipColumn.getRelationshipId())
@@ -29,4 +30,5 @@ public class RelationshipColumnResponse {
                 .seqNo(relationshipColumn.getSeqNo())
                 .build();
     }
+
 }

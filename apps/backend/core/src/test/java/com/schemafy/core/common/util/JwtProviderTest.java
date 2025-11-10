@@ -244,4 +244,5 @@ class JwtProviderTest {
         assertThat(jwtProvider.getTokenType(refreshToken))
                 .isEqualTo(JwtProvider.REFRESH_TOKEN);
     }
+
 }

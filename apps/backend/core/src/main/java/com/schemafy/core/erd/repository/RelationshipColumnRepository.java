@@ -12,6 +12,7 @@ public interface RelationshipColumnRepository
 
     public Mono<RelationshipColumn> findByIdAndDeletedAtIsNull(String id);
 
-    public Flux<RelationshipColumn> findByRelationshipIdAndDeletedAtIsNull(String relationshipId);
+    public Flux<RelationshipColumn> findByRelationshipIdAndDeletedAtIsNull(
+            String relationshipId);
 
 }

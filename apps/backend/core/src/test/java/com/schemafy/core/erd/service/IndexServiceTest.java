@@ -1,17 +1,13 @@
 package com.schemafy.core.erd.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -27,6 +23,11 @@ import com.schemafy.core.validation.client.ValidationClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -52,20 +53,20 @@ class IndexServiceTest {
 
         given(validationClient
                 .changeIndexName(any(Validation.ChangeIndexNameRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.addColumnToIndex(
                 any(Validation.AddColumnToIndexRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.removeColumnFromIndex(
                 any(Validation.RemoveColumnFromIndexRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient
                 .deleteIndex(any(Validation.DeleteIndexRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
     }
 
     @Test
@@ -119,7 +120,7 @@ class IndexServiceTest {
 
         given(validationClient
                 .createIndex(any(Validation.CreateIndexRequest.class)))
-                        .willReturn(Mono.just(mockResponse));
+                .willReturn(Mono.just(mockResponse));
 
         // when
         Mono<AffectedMappingResponse> result = indexService
@@ -190,7 +191,8 @@ class IndexServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(IndexResponse::getName).toList())
+                    assertThat(
+                            list.stream().map(IndexResponse::getName).toList())
                             .containsExactlyInAnyOrder("idx_a", "idx_b");
                 })
                 .verifyComplete();
@@ -256,7 +258,8 @@ class IndexServiceTest {
                 .build();
 
         // when
-        Mono<IndexColumnResponse> result = indexService.addColumnToIndex(request);
+        Mono<IndexColumnResponse> result = indexService
+                .addColumnToIndex(request);
 
         // then
         StepVerifier.create(result)

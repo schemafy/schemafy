@@ -37,7 +37,8 @@ public class RelationshipController {
     public Mono<BaseResponse<AffectedMappingResponse>> createRelationship(
             @RequestBody Validation.CreateRelationshipRequest request,
             @RequestParam(required = false, defaultValue = "{}") String extra) {
-        CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(request, extra);
+        CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
+                request, extra);
         return relationshipService.createRelationship(requestWithExtra)
                 .map(BaseResponse::success);
     }

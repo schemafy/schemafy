@@ -30,7 +30,8 @@ public class SchemaDetailResponse {
     private Instant deletedAt;
     private List<TableResponse> tables;
 
-    public static SchemaDetailResponse from(Schema schema, List<TableResponse> tables) {
+    public static SchemaDetailResponse from(Schema schema,
+            List<TableResponse> tables) {
         return SchemaDetailResponse.builder()
                 .id(schema.getId())
                 .projectId(schema.getProjectId())
@@ -46,4 +47,5 @@ public class SchemaDetailResponse {
                 .tables(tables)
                 .build();
     }
+
 }

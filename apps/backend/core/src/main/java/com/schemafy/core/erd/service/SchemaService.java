@@ -34,13 +34,12 @@ public class SchemaService {
                         .map(savedSchema -> AffectedMappingResponse.of(
                                 request,
                                 request.getDatabase(),
-                                AffectedMappingResponse.updateEntityIdInDatabase(
-                                        database,
-                                        EntityType.SCHEMA,
-                                        request.getSchema().getId(),
-                                        savedSchema.getId()
-                                )
-                        )));
+                                AffectedMappingResponse
+                                        .updateEntityIdInDatabase(
+                                                database,
+                                                EntityType.SCHEMA,
+                                                request.getSchema().getId(),
+                                                savedSchema.getId()))));
     }
 
     public Mono<SchemaDetailResponse> getSchema(String id) {
@@ -49,7 +48,8 @@ public class SchemaService {
                         new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
                 .flatMap(schema -> tableService.getTablesBySchemaId(id)
                         .collectList()
-                        .map(tables -> SchemaDetailResponse.from(schema, tables)));
+                        .map(tables -> SchemaDetailResponse.from(schema,
+                                tables)));
     }
 
     public Flux<SchemaResponse> getSchemasByProjectId(String projectId) {

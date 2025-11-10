@@ -43,13 +43,13 @@ class DatabaseBuilder {
 }
 
 class SchemaBuilder {
-    private id: string = idGenerator();
-    private projectId: string;
-    private name: string = "default_schema";
-    private tables: TableBuilder[] = [];
-    private dbVendorId: Schema['dbVendorId'] = "MYSQL";
-    private charset: string = "utf8mb4";
-    private collation: string = "utf8mb4_general_ci";
+  private id: string = idGenerator();
+  private projectId: string;
+  private name: string = "default_schema";
+  private tables: TableBuilder[] = [];
+  private dbVendorId: Schema["dbVendorId"] = "MYSQL";
+  private charset: string = "utf8mb4";
+  private collation: string = "utf8mb4_general_ci";
 
   constructor(projectId: string) {
     this.projectId = projectId;

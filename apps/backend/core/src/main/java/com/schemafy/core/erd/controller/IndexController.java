@@ -106,4 +106,5 @@ public class IndexController {
         return indexService.deleteIndex(request)
                 .then(Mono.just(BaseResponse.success(null)));
     }
+
 }

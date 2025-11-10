@@ -1,5 +1,32 @@
 package com.schemafy.core.erd.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
+import com.schemafy.core.erd.controller.dto.response.TableResponse;
+import com.schemafy.core.erd.service.TableService;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import validation.Validation;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
@@ -10,37 +37,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-import java.util.Collections;
-import java.util.Map;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.test.web.reactive.server.WebTestClient;
-
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
-import com.schemafy.core.erd.controller.dto.response.TableResponse;
-import com.schemafy.core.erd.repository.entity.Table;
-import com.schemafy.core.erd.service.TableService;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import validation.Validation;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -156,9 +152,11 @@ class TableControllerTest {
                 .consumeWith(document("table-create",
                         requestHeaders(
                                 headerWithName("Content-Type")
-                                        .description("요청 본문 타입 (application/json)"),
+                                        .description(
+                                                "요청 본문 타입 (application/json)"),
                                 headerWithName("Accept")
-                                        .description("응답 포맷 (application/json)")),
+                                        .description(
+                                                "응답 포맷 (application/json)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -169,9 +167,12 @@ class TableControllerTest {
                                 fieldWithPath("result.schemas")
                                         .description("스키마 ID 매핑"),
                                 fieldWithPath("result.tables")
-                                        .description("테이블 ID 매핑 (FE ID -> BE ID)"),
-                                fieldWithPath("result.tables.01ARZ3NDEKTSV4RRFFQ69G5FAV")
-                                        .description("백엔드에서 생성된 테이블 ID (06D6W1GAHD51T5NJPK29Q6BCR8)"),
+                                        .description(
+                                                "테이블 ID 매핑 (FE ID -> BE ID)"),
+                                fieldWithPath(
+                                        "result.tables.01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                                        .description(
+                                                "백엔드에서 생성된 테이블 ID (06D6W1GAHD51T5NJPK29Q6BCR8)"),
                                 fieldWithPath("result.columns")
                                         .description("컬럼 ID 매핑"),
                                 fieldWithPath("result.indexes")
@@ -190,7 +191,8 @@ class TableControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
-                                fieldWithPath("result.propagated.constraintColumns")
+                                fieldWithPath(
+                                        "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
@@ -201,7 +203,7 @@ class TableControllerTest {
     void getTablesBySchemaId() throws Exception {
         // given
         String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
-        
+
         TableResponse tableResponse = objectMapper.treeToValue(
                 objectMapper
                         .readTree(
@@ -233,8 +235,10 @@ class TableControllerTest {
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result").isArray()
                 .jsonPath("$.result.length()").isEqualTo(1)
-                .jsonPath("$.result[0].id").isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
-                .jsonPath("$.result[0].schemaId").isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
+                .jsonPath("$.result[0].id")
+                .isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
+                .jsonPath("$.result[0].schemaId")
+                .isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
                 .jsonPath("$.result[0].name").isEqualTo("users")
                 .jsonPath("$.result[0].comment").isEqualTo("사용자 테이블")
                 .jsonPath("$.result[0].tableOptions")
@@ -245,7 +249,8 @@ class TableControllerTest {
                                         .description("조회할 스키마의 ID")),
                         requestHeaders(
                                 headerWithName("Accept")
-                                        .description("응답 포맷 (application/json)")),
+                                        .description(
+                                                "응답 포맷 (application/json)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -279,7 +284,7 @@ class TableControllerTest {
     void getTable() throws Exception {
         // given
         String tableId = "06D6W1GAHD51T5NJPK29Q6BCR8";
-        
+
         TableDetailResponse tableDetailResponse = objectMapper.treeToValue(
                 objectMapper
                         .readTree(
@@ -318,7 +323,8 @@ class TableControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
-                .jsonPath("$.result.schemaId").isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
+                .jsonPath("$.result.schemaId")
+                .isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
                 .jsonPath("$.result.name").isEqualTo("users")
                 .jsonPath("$.result.comment").isEqualTo("사용자 테이블")
                 .jsonPath("$.result.tableOptions")
@@ -329,7 +335,8 @@ class TableControllerTest {
                                         .description("조회할 테이블의 ID")),
                         requestHeaders(
                                 headerWithName("Accept")
-                                        .description("응답 포맷 (application/json)")),
+                                        .description(
+                                                "응답 포맷 (application/json)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -448,7 +455,8 @@ class TableControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
-                .jsonPath("$.result.schemaId").isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
+                .jsonPath("$.result.schemaId")
+                .isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
                 .jsonPath("$.result.name").isEqualTo("user")
                 .jsonPath("$.result.comment").isEqualTo("사용자 테이블")
                 .jsonPath("$.result.tableOptions")
@@ -459,16 +467,19 @@ class TableControllerTest {
                                         .description("테이블 ID")),
                         requestHeaders(
                                 headerWithName("Content-Type")
-                                        .description("요청 본문 타입 (application/json)"),
+                                        .description(
+                                                "요청 본문 타입 (application/json)"),
                                 headerWithName("Accept")
-                                        .description("응답 포맷 (application/json)")),
+                                        .description(
+                                                "응답 포맷 (application/json)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
                         responseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
-                                fieldWithPath("result").description("수정된 테이블 정보"),
+                                fieldWithPath("result")
+                                        .description("수정된 테이블 정보"),
                                 fieldWithPath("result.id")
                                         .description("테이블 ID"),
                                 fieldWithPath("result.schemaId")
@@ -553,9 +564,11 @@ class TableControllerTest {
                                         .description("삭제할 테이블의 ID")),
                         requestHeaders(
                                 headerWithName("Content-Type")
-                                        .description("요청 본문 타입 (application/json)"),
+                                        .description(
+                                                "요청 본문 타입 (application/json)"),
                                 headerWithName("Accept")
-                                        .description("응답 포맷 (application/json)")),
+                                        .description(
+                                                "응답 포맷 (application/json)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -570,4 +583,3 @@ class TableControllerTest {
     }
 
 }
-

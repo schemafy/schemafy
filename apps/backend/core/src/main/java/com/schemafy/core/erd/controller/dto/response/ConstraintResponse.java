@@ -34,7 +34,8 @@ public class ConstraintResponse {
                 .build();
     }
 
-    public static ConstraintResponse from(Constraint constraint, List<ConstraintColumn> columns) {
+    public static ConstraintResponse from(Constraint constraint,
+            List<ConstraintColumn> columns) {
         return ConstraintResponse.builder()
                 .id(constraint.getId())
                 .tableId(constraint.getTableId())
@@ -45,4 +46,5 @@ public class ConstraintResponse {
                         .toList())
                 .build();
     }
+
 }

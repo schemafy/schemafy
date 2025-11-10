@@ -9,4 +9,5 @@ public class GrpcConnectionException extends BusinessException {
         super(ErrorCode.VALIDATION_SERVICE_UNAVAILABLE);
         initCause(cause);
     }
+
 }

@@ -12,6 +12,7 @@ public interface ConstraintColumnRepository
 
     public Mono<ConstraintColumn> findByIdAndDeletedAtIsNull(String id);
 
-    public Flux<ConstraintColumn> findByConstraintIdAndDeletedAtIsNull(String constraintId);
+    public Flux<ConstraintColumn> findByConstraintIdAndDeletedAtIsNull(
+            String constraintId);
 
 }

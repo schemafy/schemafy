@@ -1,10 +1,11 @@
 package com.schemafy.core.validation.exception;
 
+import java.util.List;
+
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
-import lombok.Getter;
 
-import java.util.List;
+import lombok.Getter;
 
 @Getter
 public class ValidationFailedException extends BusinessException {
@@ -18,4 +19,5 @@ public class ValidationFailedException extends BusinessException {
 
     public record ValidationError(String code, String message) {
     }
+
 }

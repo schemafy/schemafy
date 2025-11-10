@@ -1,18 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -23,6 +10,9 @@ import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Message;
@@ -35,6 +25,17 @@ import com.schemafy.core.erd.service.SchemaService;
 
 import reactor.core.publisher.Mono;
 import validation.Validation;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -117,7 +118,7 @@ class SchemaControllerTest {
 
         given(schemaService
                 .createSchema(any(Validation.CreateSchemaRequest.class)))
-                        .willReturn(Mono.just(mockResponse));
+                .willReturn(Mono.just(mockResponse));
 
         // when & then
         webTestClient.post()
@@ -151,8 +152,8 @@ class SchemaControllerTest {
                                                 "스키마 ID 매핑 (FE ID -> BE ID)"),
                                 fieldWithPath(
                                         "result.schemas.06D4K6XMCJ1NWKNV13HFZ8CVC0")
-                                                .description(
-                                                        "백엔드에서 생성된 스키마 ID"),
+                                        .description(
+                                                "백엔드에서 생성된 스키마 ID"),
                                 fieldWithPath("result.tables")
                                         .description("테이블 ID 매핑"),
                                 fieldWithPath("result.columns")
@@ -175,7 +176,7 @@ class SchemaControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -440,7 +441,7 @@ class SchemaControllerTest {
                         """,
                         builder);
         Validation.DeleteSchemaRequest request = builder.build();
-        
+
         given(schemaService.deleteSchema(request)).willReturn(Mono.empty());
 
         // when & then

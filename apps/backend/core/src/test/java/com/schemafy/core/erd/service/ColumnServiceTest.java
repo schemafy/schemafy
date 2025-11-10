@@ -1,17 +1,13 @@
 package com.schemafy.core.erd.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -24,6 +20,11 @@ import com.schemafy.core.validation.client.ValidationClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -44,20 +45,20 @@ class ColumnServiceTest {
         columnRepository.deleteAll().block();
         given(validationClient.changeColumnName(
                 any(Validation.ChangeColumnNameRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.changeColumnType(
                 any(Validation.ChangeColumnTypeRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.changeColumnPosition(
                 any(Validation.ChangeColumnPositionRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient
                 .deleteColumn(any(Validation.DeleteColumnRequest.class)))
-                        .willReturn(Mono.just(
-                                Validation.Database.newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
     }
 
     @Test
@@ -114,7 +115,7 @@ class ColumnServiceTest {
 
         given(validationClient
                 .createColumn(any(Validation.CreateColumnRequest.class)))
-                        .willReturn(Mono.just(mockResponse));
+                .willReturn(Mono.just(mockResponse));
 
         // when
         Mono<AffectedMappingResponse> result = columnService
@@ -187,7 +188,8 @@ class ColumnServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(ColumnResponse::getName).toList())
+                    assertThat(
+                            list.stream().map(ColumnResponse::getName).toList())
                             .containsExactlyInAnyOrder("column_a", "column_b");
                 })
                 .verifyComplete();

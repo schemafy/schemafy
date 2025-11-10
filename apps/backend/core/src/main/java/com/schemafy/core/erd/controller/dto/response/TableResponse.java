@@ -39,4 +39,5 @@ public class TableResponse {
                 .deletedAt(table.getDeletedAt())
                 .build();
     }
+
 }

@@ -19,7 +19,8 @@ public class ConstraintColumnResponse {
     private String columnId;
     private Integer seqNo;
 
-    public static ConstraintColumnResponse from(ConstraintColumn constraintColumn) {
+    public static ConstraintColumnResponse from(
+            ConstraintColumn constraintColumn) {
         return ConstraintColumnResponse.builder()
                 .id(constraintColumn.getId())
                 .constraintId(constraintColumn.getConstraintId())
@@ -27,4 +28,5 @@ public class ConstraintColumnResponse {
                 .seqNo(constraintColumn.getSeqNo())
                 .build();
     }
+
 }

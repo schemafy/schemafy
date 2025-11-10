@@ -14,9 +14,17 @@ import type {
 @Injectable()
 export class RelationshipsService {
   private readonly logger = new Logger(RelationshipsService.name);
-  createRelationship(database: Database, schemaId: Schema['id'], relationship: Relationship): ValidateResult {
+  createRelationship(
+    database: Database,
+    schemaId: Schema['id'],
+    relationship: Relationship,
+  ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.createRelationship(database, schemaId, relationship);
+      const updated = ERD_VALIDATOR.createRelationship(
+        database,
+        schemaId,
+        relationship,
+      );
       this.logger.log(
         `CreateRelationship request successfully validated, schemaId: ${schemaId}, relationship: ${JSON.stringify(
           relationship,
@@ -32,9 +40,17 @@ export class RelationshipsService {
     }
   }
 
-  deleteRelationship(database: Database, schemaId: Schema['id'], relationshipId: Relationship['id']): ValidateResult {
+  deleteRelationship(
+    database: Database,
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+  ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.deleteRelationship(database, schemaId, relationshipId);
+      const updated = ERD_VALIDATOR.deleteRelationship(
+        database,
+        schemaId,
+        relationshipId,
+      );
       this.logger.log(
         `DeleteRelationship request successfully validated, schemaId: ${schemaId}, relationshipId: ${relationshipId}`,
       );
@@ -55,7 +71,12 @@ export class RelationshipsService {
     newName: Relationship['name'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.changeRelationshipName(database, schemaId, relationshipId, newName);
+      const updated = ERD_VALIDATOR.changeRelationshipName(
+        database,
+        schemaId,
+        relationshipId,
+        newName,
+      );
       this.logger.log(
         `ChangeRelationshipName request successfully validated, schemaId: ${schemaId}, relationshipId: ${relationshipId}, newName: ${newName}`,
       );
@@ -76,7 +97,12 @@ export class RelationshipsService {
     cardinality: Relationship['cardinality'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.changeRelationshipCardinality(database, schemaId, relationshipId, cardinality);
+      const updated = ERD_VALIDATOR.changeRelationshipCardinality(
+        database,
+        schemaId,
+        relationshipId,
+        cardinality,
+      );
       this.logger.log(
         `ChangeRelationshipCardinality request successfully validated, schemaId: ${schemaId}, relationshipId: ${relationshipId}, cardinality: ${cardinality}`,
       );
@@ -97,7 +123,12 @@ export class RelationshipsService {
     relationshipColumn: Omit<RelationshipColumn, 'relationshipId'>,
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.addColumnToRelationship(database, schemaId, relationshipId, relationshipColumn);
+      const updated = ERD_VALIDATOR.addColumnToRelationship(
+        database,
+        schemaId,
+        relationshipId,
+        relationshipColumn,
+      );
       this.logger.log(
         `AddColumnToRelationship request successfully validated, schemaId: ${schemaId}, relationshipId: ${relationshipId}, relationshipColumn: ${JSON.stringify(
           relationshipColumn,

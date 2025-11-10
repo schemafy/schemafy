@@ -22,7 +22,12 @@ export class ConstraintsService {
     constraint: Constraint,
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.createConstraint(database, schemaId, tableId, constraint);
+      const updated = ERD_VALIDATOR.createConstraint(
+        database,
+        schemaId,
+        tableId,
+        constraint,
+      );
       this.logger.log(
         `CreateConstraint request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraint: ${JSON.stringify(
           constraint,
@@ -47,7 +52,12 @@ export class ConstraintsService {
     constraintId: Constraint['id'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.deleteConstraint(database, schemaId, tableId, constraintId);
+      const updated = ERD_VALIDATOR.deleteConstraint(
+        database,
+        schemaId,
+        tableId,
+        constraintId,
+      );
       this.logger.log(
         `DeleteConstraint request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}`,
       );
@@ -69,7 +79,13 @@ export class ConstraintsService {
     newName: Constraint['name'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.changeConstraintName(database, schemaId, tableId, constraintId, newName);
+      const updated = ERD_VALIDATOR.changeConstraintName(
+        database,
+        schemaId,
+        tableId,
+        constraintId,
+        newName,
+      );
       this.logger.log(
         `ChangeConstraintName request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}, newName: ${newName}`,
       );
@@ -91,7 +107,13 @@ export class ConstraintsService {
     constraintColumn: ConstraintColumn,
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.addColumnToConstraint(database, schemaId, tableId, constraintId, constraintColumn);
+      const updated = ERD_VALIDATOR.addColumnToConstraint(
+        database,
+        schemaId,
+        tableId,
+        constraintId,
+        constraintColumn,
+      );
       this.logger.log(
         `AddColumnToConstraint request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}, constraintColumn: ${JSON.stringify(
           constraintColumn,

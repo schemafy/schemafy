@@ -27,11 +27,11 @@ import validation.Validation;
 
 /**
  * ValidationClient가 반환한 Database 객체에서 영향받은 엔티티들을 저장하는 유틸리티
- * 
+ *
  * <p>isAffected=true인 모든 엔티티를 데이터베이스에 저장합니다.
  * 주로 PK Constraint 생성이나 식별 관계(Identifying Relationship) 생성 시
  * 하위 테이블로 전파된 엔티티들을 저장하는 데 사용됩니다.
- * 
+ *
  * <p>저장 순서 (계층 구조 따름):
  * <ol>
  *   <li>Schemas</li>
@@ -44,7 +44,7 @@ import validation.Validation;
  *   <li>Relationships</li>
  *   <li>Relationship Columns</li>
  * </ol>
- * 
+ *
  * @see com.schemafy.core.erd.mapper.ErdMapper
  */
 @Component
@@ -63,10 +63,10 @@ public class AffectedEntitiesSaver {
 
     /**
      * Before와 After Database를 비교하여 새롭게 생성된 엔티티만 데이터베이스에 저장합니다.
-     * 
+     *
      * <p>생성 작업에서 전파로 인해 새롭게 추가된 엔티티들을 저장합니다.
      * isAffected=true이지만 Before에도 존재하는 엔티티는 제외합니다 (기존 데이터 보존).
-     * 
+     *
      * @param before 작업 이전의 Database 상태
      * @param after 작업 이후의 Database 상태 (ValidationClient 반환)
      * @return 모든 저장 작업이 완료되면 완료되는 Mono
@@ -80,7 +80,7 @@ public class AffectedEntitiesSaver {
     /**
      * Before와 After Database를 비교하여 새롭게 생성된 엔티티만 데이터베이스에 저장합니다.
      * 요청한 엔티티는 Service에서 이미 저장하므로 제외합니다.
-     * 
+     *
      * @param before 작업 이전의 Database 상태
      * @param after 작업 이후의 Database 상태 (ValidationClient 반환)
      * @param excludeEntityId Service에서 이미 저장한 엔티티 ID (중복 저장 방지)
@@ -278,7 +278,7 @@ public class AffectedEntitiesSaver {
     /**
      * Database에 포함된 모든 엔티티의 ID를 수집합니다.
      * Before Database와 비교하여 새로운 엔티티를 찾는 데 사용됩니다.
-     * 
+     *
      * @param database ID를 수집할 Database 객체
      * @return 모든 엔티티 ID의 Set
      */

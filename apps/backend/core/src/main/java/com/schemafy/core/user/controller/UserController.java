@@ -25,6 +25,7 @@ import reactor.core.publisher.Mono;
 @RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class UserController {
+
     private final UserService userService;
     private final JwtTokenIssuer jwtTokenIssuer;
 
@@ -70,4 +71,5 @@ public class UserController {
                 .map(BaseResponse::success)
                 .map(ResponseEntity::ok);
     }
+
 }

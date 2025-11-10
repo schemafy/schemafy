@@ -21,18 +21,30 @@ export class TablesService {
       );
       return { success: { database: updated } };
     } catch (err) {
-      this.logger.error(`CreateTable request failed, schemaId: ${schemaId}, table: ${JSON.stringify(table)}`, err);
+      this.logger.error(
+        `CreateTable request failed, schemaId: ${schemaId}, table: ${JSON.stringify(table)}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
 
-  deleteTable(database: Database, schemaId: Schema['id'], tableId: Table['id']): ValidateResult {
+  deleteTable(
+    database: Database,
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+  ): ValidateResult {
     try {
       const updated = ERD_VALIDATOR.deleteTable(database, schemaId, tableId);
-      this.logger.log(`DeleteTable request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}`);
+      this.logger.log(
+        `DeleteTable request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
-      this.logger.error(`DeleteTable request failed, schemaId: ${schemaId}, tableId: ${tableId}`, err);
+      this.logger.error(
+        `DeleteTable request failed, schemaId: ${schemaId}, tableId: ${tableId}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -44,7 +56,12 @@ export class TablesService {
     newName: Table['name'],
   ): ValidateResult {
     try {
-      const updated = ERD_VALIDATOR.changeTableName(database, schemaId, tableId, newName);
+      const updated = ERD_VALIDATOR.changeTableName(
+        database,
+        schemaId,
+        tableId,
+        newName,
+      );
       this.logger.log(
         `ChangeTableName request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, newName: ${newName}`,
       );

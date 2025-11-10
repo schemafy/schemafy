@@ -32,13 +32,12 @@ public class ColumnService {
                         .map(savedColumn -> AffectedMappingResponse.of(
                                 request,
                                 request.getDatabase(),
-                                AffectedMappingResponse.updateEntityIdInDatabase(
-                                        database,
-                                        EntityType.COLUMN,
-                                        request.getColumn().getId(),
-                                        savedColumn.getId()
-                                )
-                        )));
+                                AffectedMappingResponse
+                                        .updateEntityIdInDatabase(
+                                                database,
+                                                EntityType.COLUMN,
+                                                request.getColumn().getId(),
+                                                savedColumn.getId()))));
     }
 
     public Mono<ColumnResponse> getColumn(String id) {

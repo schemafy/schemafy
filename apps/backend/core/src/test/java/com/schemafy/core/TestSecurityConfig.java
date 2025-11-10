@@ -19,4 +19,5 @@ public class TestSecurityConfig {
                         exchanges -> exchanges.anyExchange().permitAll())
                 .build();
     }
+
 }
