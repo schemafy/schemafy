@@ -291,14 +291,26 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId, tableId);
 
-    const changeColumns: Column[] = table.columns.map((c) =>
-      c.id === columnId
-        ? { ...c, isAffected: true, ordinalPosition: newPosition }
-        : c
+    const sortedColumns = [...table.columns].sort(
+      (a, b) => a.ordinalPosition - b.ordinalPosition
     );
 
+    const columnsWithoutTarget = sortedColumns.filter((c) => c.id !== columnId);
+
+    const reorderedColumns = [
+      ...columnsWithoutTarget.slice(0, newPosition),
+      column,
+      ...columnsWithoutTarget.slice(newPosition),
+    ];
+
+    const updatedColumns = reorderedColumns.map((col, index) => ({
+      ...col,
+      ordinalPosition: index,
+      isAffected: true,
+    }));
+
     const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === tableId ? { ...t, isAffected: true, columns: changeColumns } : t
+      t.id === tableId ? { ...t, isAffected: true, columns: updatedColumns } : t
     );
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
