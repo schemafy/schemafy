@@ -110,25 +110,4 @@ export class ColumnsService {
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
-
-  changeColumnNullable(
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    columnId: Column['id'],
-    nullable: boolean,
-  ): ValidateResult {
-    try {
-      const updated = ERD_VALIDATOR.changeColumnNullable(
-        database,
-        schemaId,
-        tableId,
-        columnId,
-        nullable,
-      );
-      return { success: { database: updated } };
-    } catch (err) {
-      return { failure: { errors: toErrorDetails(err) } };
-    }
-  }
 }
