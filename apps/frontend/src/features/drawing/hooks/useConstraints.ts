@@ -13,7 +13,13 @@ interface UseConstraintsProps {
   constraints: Constraint[];
 }
 
-export const useConstraints = ({ erdStore, schemaId, tableId, tableName, constraints }: UseConstraintsProps) => {
+export const useConstraints = ({
+  erdStore,
+  schemaId,
+  tableId,
+  tableName,
+  constraints,
+}: UseConstraintsProps) => {
   const createConstraint = (kind: CompositeConstraintKind = 'UNIQUE') => {
     const existingConstraintNames = constraints.map((c) => c.name);
     const prefixMap: Record<CompositeConstraintKind, string> = {
@@ -24,9 +30,13 @@ export const useConstraints = ({ erdStore, schemaId, tableId, tableName, constra
 
     erdStore.createConstraint(schemaId, tableId, {
       id: ulid(),
-      name: generateUniqueName(existingConstraintNames, `${prefix}_${tableName}_`),
+      name: generateUniqueName(
+        existingConstraintNames,
+        `${prefix}_${tableName}_`,
+      ),
       kind,
       columns: [],
+      isAffected: false,
     });
   };
 
@@ -45,12 +55,21 @@ export const useConstraints = ({ erdStore, schemaId, tableId, tableName, constra
         id: ulid(),
         columnId,
         seqNo: constraint.columns.length,
+        isAffected: false,
       });
     }
   };
 
-  const removeColumnFromConstraint = (constraintId: string, constraintColumnId: string) => {
-    erdStore.removeColumnFromConstraint(schemaId, tableId, constraintId, constraintColumnId);
+  const removeColumnFromConstraint = (
+    constraintId: string,
+    constraintColumnId: string,
+  ) => {
+    erdStore.removeColumnFromConstraint(
+      schemaId,
+      tableId,
+      constraintId,
+      constraintColumnId,
+    );
   };
 
   return {

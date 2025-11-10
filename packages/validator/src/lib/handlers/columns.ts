@@ -12,9 +12,9 @@ import {
   TableNotExistError,
 } from "../errors";
 import * as helper from "../helper";
-import {
+import { COLUMN } from "../types";
+import type {
   Column,
-  COLUMN,
   Constraint,
   Database,
   Index,

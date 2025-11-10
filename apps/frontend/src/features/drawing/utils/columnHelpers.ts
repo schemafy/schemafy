@@ -3,7 +3,10 @@ import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType, ConstraintKind } from '../types';
 import type { Constraint, ConstraintColumn } from '@schemafy/validator';
 
-export const getColumnName = (columns: Array<{ id: string; name: string }>, columnId: string): string => {
+export const getColumnName = (
+  columns: Array<{ id: string; name: string }>,
+  columnId: string,
+): string => {
   return columns.find((col) => col.id === columnId)?.name || 'Unknown';
 };
 
@@ -38,6 +41,7 @@ const createConstraintColumn = (columnId: string, seqNo: number) => ({
   columnId,
   seqNo,
   constraintId: '',
+  isAffected: false,
 });
 
 const addPrimaryKeyConstraint = (
@@ -62,6 +66,7 @@ const addPrimaryKeyConstraint = (
       id: ulid(),
       name: `pk_${table.name}`,
       kind: 'PRIMARY_KEY',
+      isAffected: false,
       columns: [createConstraintColumn(columnId, 0)],
     });
   }
@@ -79,6 +84,7 @@ const addSingleColumnConstraint = (
     id: ulid(),
     name: `${prefix}_${columnId}`,
     kind: constraintKind,
+    isAffected: false,
     columns: [createConstraintColumn(columnId, 0)],
   });
 };
@@ -90,9 +96,16 @@ const removePrimaryKeyConstraint = (
   existingConstraint: Constraint,
   columnId: string,
 ) => {
-  const pkColumn = existingConstraint.columns.find((cc: ConstraintColumn) => cc.columnId === columnId);
+  const pkColumn = existingConstraint.columns.find(
+    (cc: ConstraintColumn) => cc.columnId === columnId,
+  );
   if (pkColumn) {
-    erdStore.removeColumnFromConstraint(schemaId, tableId, existingConstraint.id, pkColumn.id);
+    erdStore.removeColumnFromConstraint(
+      schemaId,
+      tableId,
+      existingConstraint.id,
+      pkColumn.id,
+    );
   }
 };
 
@@ -108,25 +121,41 @@ const saveColumnConstraint = (
     throw new Error('ERD state not loaded');
   }
 
-  const table = erdStore.erdState.database.schemas.find((s) => s.id === schemaId)?.tables.find((t) => t.id === tableId);
+  const table = erdStore.erdState.database.schemas
+    .find((s) => s.id === schemaId)
+    ?.tables.find((t) => t.id === tableId);
 
   if (!table) {
     throw new Error('Table not found');
   }
 
   const existingConstraint = table.constraints.find(
-    (c) => c.kind === constraintKind && c.columns.some((cc) => cc.columnId === columnId),
+    (c) =>
+      c.kind === constraintKind &&
+      c.columns.some((cc) => cc.columnId === columnId),
   );
 
   if (enabled && !existingConstraint) {
     if (constraintKind === 'PRIMARY_KEY') {
       addPrimaryKeyConstraint(erdStore, schemaId, tableId, columnId, table);
     } else {
-      addSingleColumnConstraint(erdStore, schemaId, tableId, columnId, constraintKind);
+      addSingleColumnConstraint(
+        erdStore,
+        schemaId,
+        tableId,
+        columnId,
+        constraintKind,
+      );
     }
   } else if (!enabled && existingConstraint) {
     if (constraintKind === 'PRIMARY_KEY') {
-      removePrimaryKeyConstraint(erdStore, schemaId, tableId, existingConstraint, columnId);
+      removePrimaryKeyConstraint(
+        erdStore,
+        schemaId,
+        tableId,
+        existingConstraint,
+        columnId,
+      );
     } else {
       erdStore.deleteConstraint(schemaId, tableId, existingConstraint.id);
     }
@@ -140,7 +169,14 @@ export const saveColumnPrimaryKey = (
   columnId: string,
   isPrimaryKey: boolean,
 ) => {
-  saveColumnConstraint(erdStore, schemaId, tableId, columnId, 'PRIMARY_KEY', isPrimaryKey);
+  saveColumnConstraint(
+    erdStore,
+    schemaId,
+    tableId,
+    columnId,
+    'PRIMARY_KEY',
+    isPrimaryKey,
+  );
 };
 
 export const saveColumnNotNull = (
@@ -150,7 +186,14 @@ export const saveColumnNotNull = (
   columnId: string,
   isNotNull: boolean,
 ) => {
-  saveColumnConstraint(erdStore, schemaId, tableId, columnId, 'NOT_NULL', isNotNull);
+  saveColumnConstraint(
+    erdStore,
+    schemaId,
+    tableId,
+    columnId,
+    'NOT_NULL',
+    isNotNull,
+  );
 };
 
 type ColumnFieldSaver = (
@@ -161,16 +204,29 @@ type ColumnFieldSaver = (
   value: string | boolean,
 ) => void;
 
-const COLUMN_FIELD_SAVERS: Partial<Record<keyof ColumnType, ColumnFieldSaver>> = {
-  name: (erdStore, schemaId, tableId, columnId, value) =>
-    saveColumnName(erdStore, schemaId, tableId, columnId, value as string),
-  type: (erdStore, schemaId, tableId, columnId, value) =>
-    saveColumnType(erdStore, schemaId, tableId, columnId, value as string),
-  isPrimaryKey: (erdStore, schemaId, tableId, columnId, value) =>
-    saveColumnPrimaryKey(erdStore, schemaId, tableId, columnId, value as boolean),
-  isNotNull: (erdStore, schemaId, tableId, columnId, value) =>
-    saveColumnNotNull(erdStore, schemaId, tableId, columnId, value as boolean),
-};
+const COLUMN_FIELD_SAVERS: Partial<Record<keyof ColumnType, ColumnFieldSaver>> =
+  {
+    name: (erdStore, schemaId, tableId, columnId, value) =>
+      saveColumnName(erdStore, schemaId, tableId, columnId, value as string),
+    type: (erdStore, schemaId, tableId, columnId, value) =>
+      saveColumnType(erdStore, schemaId, tableId, columnId, value as string),
+    isPrimaryKey: (erdStore, schemaId, tableId, columnId, value) =>
+      saveColumnPrimaryKey(
+        erdStore,
+        schemaId,
+        tableId,
+        columnId,
+        value as boolean,
+      ),
+    isNotNull: (erdStore, schemaId, tableId, columnId, value) =>
+      saveColumnNotNull(
+        erdStore,
+        schemaId,
+        tableId,
+        columnId,
+        value as boolean,
+      ),
+  };
 
 export const saveColumnField = (
   erdStore: ErdStore,

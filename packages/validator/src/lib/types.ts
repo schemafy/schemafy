@@ -111,6 +111,7 @@ export const RELATIONSHIP = z.object({
   fkEnforced: z.literal(false),
   columns: z.array(RELATIONSHIP_COLUMN),
   isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const TABLE = z.object({
@@ -124,6 +125,7 @@ export const TABLE = z.object({
   constraints: z.array(CONSTRAINT),
   relationships: z.array(RELATIONSHIP),
   isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const SCHEMA = z.object({
@@ -136,12 +138,14 @@ export const SCHEMA = z.object({
   vendorOption: z.string(),
   tables: z.array(TABLE),
   isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const DATABASE = z.object({
   id: ULID,
   schemas: z.array(SCHEMA),
   isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export type Schema = z.infer<typeof SCHEMA>;

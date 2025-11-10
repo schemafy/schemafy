@@ -12,7 +12,13 @@ interface UseIndexesProps {
   indexes: Index[];
 }
 
-export const useIndexes = ({ erdStore, schemaId, tableId, tableName, indexes }: UseIndexesProps) => {
+export const useIndexes = ({
+  erdStore,
+  schemaId,
+  tableId,
+  tableName,
+  indexes,
+}: UseIndexesProps) => {
   const createIndex = () => {
     const existingIndexNames = indexes.map((idx) => idx.name);
 
@@ -22,6 +28,7 @@ export const useIndexes = ({ erdStore, schemaId, tableId, tableName, indexes }: 
       type: 'BTREE' as IndexType,
       comment: null,
       columns: [],
+      isAffected: false,
     });
   };
 
@@ -52,6 +59,7 @@ export const useIndexes = ({ erdStore, schemaId, tableId, tableName, indexes }: 
         columnId,
         seqNo: index.columns.length + 1,
         sortDir: 'ASC' as IndexSortDir,
+        isAffected: false,
       });
     }
   };
@@ -60,7 +68,11 @@ export const useIndexes = ({ erdStore, schemaId, tableId, tableName, indexes }: 
     erdStore.removeColumnFromIndex(schemaId, tableId, indexId, indexColumnId);
   };
 
-  const changeSortDir = (indexId: string, indexColumnId: string, sortDir: IndexSortDir) => {
+  const changeSortDir = (
+    indexId: string,
+    indexColumnId: string,
+    sortDir: IndexSortDir,
+  ) => {
     const index = indexes.find((idx) => idx.id === indexId);
     if (!index) return;
 
@@ -70,7 +82,9 @@ export const useIndexes = ({ erdStore, schemaId, tableId, tableName, indexes }: 
     erdStore.deleteIndex(schemaId, tableId, indexId);
     erdStore.createIndex(schemaId, tableId, {
       ...index,
-      columns: index.columns.map((col) => (col.id === indexColumnId ? { ...col, sortDir } : col)),
+      columns: index.columns.map((col) =>
+        col.id === indexColumnId ? { ...col, sortDir } : col,
+      ),
     });
   };
 

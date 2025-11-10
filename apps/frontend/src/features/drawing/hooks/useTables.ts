@@ -14,7 +14,9 @@ export const useTables = () => {
 
     if (!selectedSchema) return [];
 
-    return selectedSchema.tables.map((table) => transformTableToNode(table, selectedSchema.id));
+    return selectedSchema.tables.map((table) =>
+      transformTableToNode(table, selectedSchema.id),
+    );
   };
 
   const [tables, setTables] = useState<Node<TableData>[]>(getTablesFromStore());
@@ -43,12 +45,21 @@ export const useTables = () => {
       relationships: [],
       tableOptions: '',
       extra: { position },
+      isAffected: false,
     });
   };
 
-  const handlePositionChanges = (changes: NodeChange[], nodes: Node<TableData>[]) => {
+  const handlePositionChanges = (
+    changes: NodeChange[],
+    nodes: Node<TableData>[],
+  ) => {
     changes
-      .filter((change) => change.type === 'position' && change.dragging === false && change.position)
+      .filter(
+        (change) =>
+          change.type === 'position' &&
+          change.dragging === false &&
+          change.position,
+      )
       .forEach((change) => {
         if (change.type !== 'position' || !change.position) return;
 
@@ -61,7 +72,10 @@ export const useTables = () => {
       });
   };
 
-  const handleRemoveChanges = (changes: NodeChange[], nodes: Node<TableData>[]) => {
+  const handleRemoveChanges = (
+    changes: NodeChange[],
+    nodes: Node<TableData>[],
+  ) => {
     changes
       .filter((change) => change.type === 'remove')
       .forEach((change) => {

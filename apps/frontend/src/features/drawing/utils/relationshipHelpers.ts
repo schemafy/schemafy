@@ -1,19 +1,31 @@
 import type { Connection, Edge } from '@xyflow/react';
 import { ulid } from 'ulid';
 import type { Relationship, Schema } from '@schemafy/validator';
-import { RELATIONSHIP_TYPES, RELATIONSHIP_STYLE_TYPES, type RelationshipConfig, type RelationshipType } from '../types';
+import {
+  RELATIONSHIP_TYPES,
+  RELATIONSHIP_STYLE_TYPES,
+  type RelationshipConfig,
+  type RelationshipType,
+} from '../types';
 
 export const getRelationshipType = (cardinality: string): RelationshipType => {
   return cardinality === '1:N' ? 'one-to-many' : 'one-to-one';
 };
 
 export const getRelationshipStyle = (isNonIdentifying: boolean) => {
-  return isNonIdentifying ? RELATIONSHIP_STYLE_TYPES.dashed : RELATIONSHIP_STYLE_TYPES.solid;
+  return isNonIdentifying
+    ? RELATIONSHIP_STYLE_TYPES.dashed
+    : RELATIONSHIP_STYLE_TYPES.solid;
 };
 
-export const findRelationshipInSchema = (schema: Schema, relationshipId: string): Relationship | undefined => {
+export const findRelationshipInSchema = (
+  schema: Schema,
+  relationshipId: string,
+): Relationship | undefined => {
   for (const table of schema.tables) {
-    const relationship = table.relationships.find((r) => r.id === relationshipId);
+    const relationship = table.relationships.find(
+      (r) => r.id === relationshipId,
+    );
     if (relationship) return relationship;
   }
   return undefined;
@@ -46,10 +58,14 @@ export const createRelationshipFromConnection = ({
     return null;
   }
 
-  const targetPk = targetTable.constraints.find((c) => c.kind === 'PRIMARY_KEY');
+  const targetPk = targetTable.constraints.find(
+    (c) => c.kind === 'PRIMARY_KEY',
+  );
 
   if (!targetPk || targetPk.columns.length === 0) {
-    console.error('Target table must have a primary key to create a relationship');
+    console.error(
+      'Target table must have a primary key to create a relationship',
+    );
     return null;
   }
 
@@ -57,7 +73,20 @@ export const createRelationshipFromConnection = ({
 
   const relId = ulid();
   const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
-  const kind = relationshipConfig.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
+  const kind = relationshipConfig.isNonIdentifying
+    ? 'NON_IDENTIFYING'
+    : 'IDENTIFYING';
+
+  const relationshipColumns = targetPkColumnIds.map((pkColId, index) => {
+    return {
+      id: ulid(),
+      relationshipId: relId,
+      fkColumnId: ulid(),
+      refColumnId: pkColId,
+      seqNo: index + 1,
+      isAffected: false,
+    };
+  });
 
   return {
     id: relId,
@@ -69,13 +98,8 @@ export const createRelationshipFromConnection = ({
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
     fkEnforced: false,
-    columns: targetPkColumnIds.map((pkColId, index) => ({
-      id: ulid(),
-      relationshipId: relId,
-      fkColumnId: '',
-      refColumnId: pkColId,
-      seqNo: index + 1,
-    })),
+    columns: relationshipColumns,
+    isAffected: false,
     extra: {
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
@@ -97,10 +121,16 @@ export const shouldRecreateRelationship = (
   newKind: string,
   newCardinality: string,
 ): boolean => {
-  return currentRelationship.kind !== newKind || currentRelationship.cardinality !== newCardinality;
+  return (
+    currentRelationship.kind !== newKind ||
+    currentRelationship.cardinality !== newCardinality
+  );
 };
 
-export const mergeRelationshipExtra = (current: RelationshipExtra, config: RelationshipConfig): RelationshipExtra => {
+export const mergeRelationshipExtra = (
+  current: RelationshipExtra,
+  config: RelationshipConfig,
+): RelationshipExtra => {
   return {
     ...current,
     controlPointX: config.controlPointX,
@@ -108,7 +138,10 @@ export const mergeRelationshipExtra = (current: RelationshipExtra, config: Relat
   };
 };
 
-export const hasExtraChanged = (current: RelationshipExtra, updated: RelationshipExtra): boolean => {
+export const hasExtraChanged = (
+  current: RelationshipExtra,
+  updated: RelationshipExtra,
+): boolean => {
   return JSON.stringify(current) !== JSON.stringify(updated);
 };
 

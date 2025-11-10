@@ -10,7 +10,12 @@ interface UseColumnsProps {
   columns: ColumnType[];
 }
 
-export const useColumns = ({ erdStore, schemaId, tableId, columns }: UseColumnsProps) => {
+export const useColumns = ({
+  erdStore,
+  schemaId,
+  tableId,
+  columns,
+}: UseColumnsProps) => {
   const addColumn = () => {
     const existingColumnNames = columns.map((col) => col.name);
 
@@ -23,6 +28,7 @@ export const useColumns = ({ erdStore, schemaId, tableId, columns }: UseColumnsP
       isAutoIncrement: false,
       charset: 'utf8mb4',
       collation: 'utf8mb4_general_ci',
+      isAffected: false,
     });
   };
 

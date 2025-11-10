@@ -6,7 +6,7 @@ import { Button } from '@/components';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { SchemaInput } from './SchemaInput';
 import { SchemaListItem } from './SchemaListItem';
-import { useSchemaEditor } from '../hooks/useSchemaEditor';
+import { useSchemaEditor } from '../hooks';
 import { validateSchemaName } from '../constants/schema.constants';
 
 export const SchemaSelector = observer(() => {
@@ -14,7 +14,13 @@ export const SchemaSelector = observer(() => {
   const [isAdding, setIsAdding] = useState(false);
   const [newSchemaName, setNewSchemaName] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
-  const { editingSchemaId, editingSchemaName, startEdit, updateEditingName, cancelEdit } = useSchemaEditor();
+  const {
+    editingSchemaId,
+    editingSchemaName,
+    startEdit,
+    updateEditingName,
+    cancelEdit,
+  } = useSchemaEditor();
 
   if (erdStore.erdState.state !== 'loaded') {
     return null;
@@ -22,7 +28,9 @@ export const SchemaSelector = observer(() => {
 
   const { database } = erdStore.erdState;
   const selectedSchemaId = erdStore.selectedSchemaId;
-  const selectedSchemaName = database.schemas.find((schema) => schema.id === selectedSchemaId)?.name || '';
+  const selectedSchemaName =
+    database.schemas.find((schema) => schema.id === selectedSchemaId)?.name ||
+    '';
 
   const handleSchemaChange = (value: string) => {
     erdStore.selectSchema(value);
@@ -108,7 +116,9 @@ export const SchemaSelector = observer(() => {
       </div>
       <div
         className={`flex flex-col gap-2 transition-all duration-300 ${
-          isExpanded ? 'mt-4 h-auto opacity-100' : 'h-0 opacity-0 overflow-hidden'
+          isExpanded
+            ? 'mt-4 h-auto opacity-100'
+            : 'h-0 opacity-0 overflow-hidden'
         }`}
       >
         {database.schemas.map((schema) => (

@@ -8,3 +8,4 @@ export * from './useColumns';
 export * from './useIndexes';
 export * from './useConstraints';
 export * from './useViewport';
+export * from './useSchemaEditor';
