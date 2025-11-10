@@ -36,6 +36,11 @@ export interface RelationshipConfig {
   controlPointY?: number;
 }
 
-export const isRelationshipType = (value: unknown): value is RelationshipType => {
-  return typeof value === 'string' && (Object.keys(RELATIONSHIP_TYPES) as string[]).includes(value);
+export const isRelationshipType = (
+  value: unknown,
+): value is RelationshipType => {
+  return (
+    typeof value === 'string' &&
+    (Object.keys(RELATIONSHIP_TYPES) as string[]).includes(value)
+  );
 };

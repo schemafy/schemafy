@@ -1,362 +1,355 @@
 import {
-    SchemaNotExistError,
-    RelationshipNotExistError,
-    RelationshipTargetTableNotExistError,
-    RelationshipColumnNotExistError,
-    RelationshipNameNotUniqueError,
-    RelationshipEmptyError,
-    RelationshipCyclicReferenceError,
+  SchemaNotExistError,
+  RelationshipNotExistError,
+  RelationshipTargetTableNotExistError,
+  RelationshipColumnNotExistError,
+  RelationshipNameNotUniqueError,
+  RelationshipEmptyError,
+  RelationshipCyclicReferenceError,
 } from "../errors";
-import type { Database, Schema, Relationship, RelationshipColumn } from "../types";
+import {
+  Database,
+  Schema,
+  Relationship,
+  RelationshipColumn,
+  Table,
+} from "../types";
 import * as helper from "../helper";
 
 export interface RelationshipHandlers {
-    createRelationship: (database: Database, schemaId: Schema["id"], relationship: Relationship) => Database;
-    deleteRelationship: (database: Database, schemaId: Schema["id"], relationshipId: Relationship["id"]) => Database;
-    changeRelationshipName: (
-        database: Database,
-        schemaId: Schema["id"],
-        relationshipId: Relationship["id"],
-        newName: Relationship["name"],
-    ) => Database;
-    changeRelationshipCardinality: (
-        database: Database,
-        schemaId: Schema["id"],
-        relationshipId: Relationship["id"],
-        cardinality: Relationship["cardinality"],
-    ) => Database;
-    addColumnToRelationship: (
-        database: Database,
-        schemaId: Schema["id"],
-        relationshipId: Relationship["id"],
-        relationshipColumn: Omit<RelationshipColumn, "relationshipId">,
-    ) => Database;
-    removeColumnFromRelationship: (
-        database: Database,
-        schemaId: Schema["id"],
-        relationshipId: Relationship["id"],
-        relationshipColumnId: RelationshipColumn["id"],
-    ) => Database;
+  createRelationship: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationship: Relationship
+  ) => Database;
+  deleteRelationship: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"]
+  ) => Database;
+  changeRelationshipName: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    newName: Relationship["name"]
+  ) => Database;
+  changeRelationshipCardinality: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    cardinality: Relationship["cardinality"]
+  ) => Database;
+  addColumnToRelationship: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    relationshipColumn: Omit<RelationshipColumn, "relationshipId">
+  ) => Database;
+  removeColumnFromRelationship: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    relationshipColumnId: RelationshipColumn["id"]
+  ) => Database;
 }
 
 export const relationshipHandlers: RelationshipHandlers = {
-    createRelationship: (database, schemaId, relationship) => {
-        const schema = database.schemas.find((s) => s.id === schemaId);
-        if (!schema) throw new SchemaNotExistError(schemaId);
+  createRelationship: (database, schemaId, relationship) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
 
-        if (!relationship.columns || relationship.columns.length === 0) {
-            throw new RelationshipEmptyError(relationship.name);
-        }
+    if (!relationship.columns || relationship.columns.length === 0) {
+      throw new RelationshipEmptyError(relationship.name);
+    }
 
-        const sourceTable = schema.tables.find((t) => t.id === relationship.srcTableId);
-        if (!sourceTable) throw new RelationshipTargetTableNotExistError(relationship.srcTableId, schemaId);
+    const sourceTable = schema.tables.find(
+      (t) => t.id === relationship.srcTableId
+    );
+    if (!sourceTable)
+      throw new RelationshipTargetTableNotExistError(
+        relationship.name,
+        relationship.srcTableId
+      );
 
-        const targetTable = schema.tables.find((t) => t.id === relationship.tgtTableId);
-        if (!targetTable) throw new RelationshipTargetTableNotExistError(relationship.tgtTableId, schemaId);
+    const targetTable = schema.tables.find(
+      (t) => t.id === relationship.tgtTableId
+    );
+    if (!targetTable)
+      throw new RelationshipTargetTableNotExistError(
+        relationship.name,
+        relationship.tgtTableId
+      );
 
-        if (
-            relationship.kind === "IDENTIFYING" &&
-            helper.detectCircularReference(schema, relationship.tgtTableId, relationship.srcTableId)
-        )
-            throw new RelationshipCyclicReferenceError(relationship.tgtTableId, relationship.srcTableId);
+    if (
+      relationship.kind === "IDENTIFYING" &&
+      helper.detectCircularReference(
+        schema,
+        relationship.tgtTableId,
+        relationship.srcTableId
+      )
+    ) {
+      throw new RelationshipCyclicReferenceError(
+        relationship.tgtTableId,
+        relationship.srcTableId
+      );
+    }
 
-        const duplicateRelationship = sourceTable.relationships.find((r) => r.name === relationship.name);
-        if (duplicateRelationship) throw new RelationshipNameNotUniqueError(relationship.name);
+    const duplicateRelationship = sourceTable.relationships.find(
+      (r) => r.name === relationship.name
+    );
+    if (duplicateRelationship)
+      throw new RelationshipNameNotUniqueError(
+        relationship.name,
+        sourceTable.id
+      );
 
-        let updatedDatabase = {
-            ...database,
-            schemas: database.schemas.map((s) =>
-                s.id === schemaId
-                    ? {
-                          ...s,
-                          tables: s.tables.map((t) =>
-                              t.id === relationship.srcTableId
-                                  ? {
-                                        ...t,
-                                        relationships: [...t.relationships, relationship],
-                                    }
-                                  : t,
-                          ),
-                      }
-                    : s,
+    const changeTables: Table[] = schema.tables.map((t) =>
+      t.id === relationship.srcTableId
+        ? {
+            ...t,
+            isAffected: true,
+            relationships: [
+              ...t.relationships,
+              { ...relationship, isAffected: true },
+            ],
+          }
+        : t
+    );
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: changeTables,
+          }
+        : s
+    );
+
+    let updatedDatabase = {
+      ...database,
+      isAffected: true,
+      schemas: changeSchemas,
+    };
+
+    const updatedSchema = changeSchemas.find((s) => s.id === schemaId)!;
+    const propagatedSchema = helper.propagateKeysToChildren(
+      structuredClone(updatedSchema),
+      relationship.tgtTableId
+    );
+
+    updatedDatabase = {
+      ...updatedDatabase,
+      isAffected: true,
+      schemas: updatedDatabase.schemas.map((s) =>
+        s.id === schemaId ? { ...propagatedSchema, isAffected: true } : s
+      ),
+    };
+
+    return updatedDatabase;
+  },
+  deleteRelationship: (database, schemaId, relationshipId) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
+
+    const relationship: Relationship | undefined = schema.tables
+      .find((t) => t.relationships.some((r) => r.id === relationshipId))
+      ?.relationships.find((r) => r.id === relationshipId);
+
+    if (!relationship) throw new RelationshipNotExistError(relationshipId);
+
+    const updatedSchema = helper.deleteRelatedColumns(
+      structuredClone(schema),
+      relationship
+    );
+
+    const deleteRelationshipSchema: Schema = {
+      ...updatedSchema,
+      isAffected: true,
+      tables: schema.tables.map((t) => ({
+        ...t,
+        isAffected: t.relationships.some((r) => r.id === relationshipId),
+        relationships: t.relationships.filter((r) => r.id !== relationshipId),
+      })),
+    };
+
+    return {
+      ...structuredClone(database),
+      isAffected: true,
+      schemas: database.schemas.map((s) =>
+        s.id === schemaId
+          ? { ...deleteRelationshipSchema, isAffected: true }
+          : s
+      ),
+    };
+  },
+  changeRelationshipName: (database, schemaId, relationshipId, newName) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
+
+    const relationship: Relationship | undefined = schema.tables
+      .find((t) => t.relationships.some((r) => r.id === relationshipId))
+      ?.relationships.find((r) => r.id === relationshipId);
+
+    if (!relationship) throw new RelationshipNotExistError(relationshipId);
+
+    const changeTables: Table[] = schema.tables.map((t) =>
+      t.id === relationship.srcTableId || t.id === relationship.tgtTableId
+        ? {
+            ...t,
+            isAffected: true,
+            relationships: t.relationships.map((r) =>
+              r.id === relationshipId
+                ? { ...r, name: newName, isAffected: true }
+                : r
             ),
-        };
+          }
+        : t
+    );
 
-        const updatedSchema = updatedDatabase.schemas.find((s) => s.id === schemaId)!;
-        const pkConstraint = targetTable.constraints.find((c) => c.kind === "PRIMARY_KEY");
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: changeTables,
+          }
+        : s
+    );
 
-        if (pkConstraint) {
-            const pkColumnIds = pkConstraint.columns.map((cc) => cc.columnId);
-            const pkColumns = targetTable.columns.filter((col) => pkColumnIds.includes(col.id));
+    return {
+      ...database,
+      isAffected: true,
+      schemas: changeSchemas,
+    };
+  },
+  changeRelationshipCardinality: (
+    database,
+    schemaId,
+    relationshipId,
+    cardinality
+  ) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
 
-            const propagatedSchema = helper.propagatePrimaryKeysToChildren(
-                structuredClone(updatedSchema),
-                relationship.tgtTableId,
-                pkColumns,
-            );
+    const relationship: Relationship | undefined = schema.tables
+      .find((t) => t.relationships.some((r) => r.id === relationshipId))
+      ?.relationships.find((r) => r.id === relationshipId);
 
-            updatedDatabase = {
-                ...updatedDatabase,
-                schemas: updatedDatabase.schemas.map((s) => (s.id === schemaId ? propagatedSchema : s)),
-            };
-        }
+    if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
-        return updatedDatabase;
-    },
-    deleteRelationship: (database, schemaId, relationshipId) => {
-        const schema = database.schemas.find((s) => s.id === schemaId);
-        if (!schema) throw new SchemaNotExistError(schemaId);
+    const updatedRelationship: Relationship = {
+      ...relationship,
+      isAffected: true,
+      cardinality,
+    };
 
-        let foundRelationship = null;
-        for (const table of schema.tables) {
-            const relationship = table.relationships.find((r) => r.id === relationshipId);
-            if (relationship) {
-                foundRelationship = relationship;
-                break;
-            }
-        }
+    let currentDatabase = relationshipHandlers.deleteRelationship(
+      structuredClone(database),
+      schemaId,
+      relationshipId
+    );
 
-        if (!foundRelationship) throw new RelationshipNotExistError(relationshipId);
+    currentDatabase = relationshipHandlers.createRelationship(
+      structuredClone(currentDatabase),
+      schemaId,
+      updatedRelationship
+    );
 
-        const deleteRelatedColumns = (
-            currentSchema: Schema,
-            relationshipToDelete: Relationship,
-            visited: Set<string> = new Set(),
-        ): Schema => {
-            const relationshipKey = relationshipToDelete.id;
-            if (visited.has(relationshipKey)) return currentSchema;
-            visited.add(relationshipKey);
+    return currentDatabase;
+  },
+  addColumnToRelationship: (
+    database,
+    schemaId,
+    relationshipId,
+    relationshipColumn
+  ) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
 
-            let updatedSchema = currentSchema;
+    const relationship: Relationship | undefined = schema.tables
+      .find((t) => t.relationships.some((r) => r.id === relationshipId))
+      ?.relationships.find((r) => r.id === relationshipId);
+    if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
-            const fkColumnsToDelete = new Set<string>();
-            relationshipToDelete.columns.forEach((relCol) => {
-                fkColumnsToDelete.add(relCol.fkColumnId);
-            });
+    const updatedRelationship: Relationship = {
+      ...relationship,
+      isAffected: true,
+      columns: [
+        ...relationship.columns,
+        { ...relationshipColumn, relationshipId, isAffected: true },
+      ],
+    };
 
-            updatedSchema = {
-                ...updatedSchema,
-                tables: updatedSchema.tables.map((table) => {
-                    if (table.id === relationshipToDelete.srcTableId) {
-                        return {
-                            ...table,
-                            relationships: table.relationships.filter((r) => r.id !== relationshipToDelete.id),
-                            columns: table.columns.filter((col) => !fkColumnsToDelete.has(col.id)),
-                            indexes: table.indexes
-                                .map((idx) => ({
-                                    ...idx,
-                                    columns: idx.columns.filter((ic) => !fkColumnsToDelete.has(ic.columnId)),
-                                }))
-                                .filter((idx) => idx.columns.length > 0),
-                            constraints: table.constraints
-                                .map((constraint) => ({
-                                    ...constraint,
-                                    columns: constraint.columns.filter((cc) => !fkColumnsToDelete.has(cc.columnId)),
-                                }))
-                                .filter((constraint) => constraint.columns.length > 0),
-                        };
-                    }
-                    return table;
-                }),
-            };
+    let currentDatabase = relationshipHandlers.deleteRelationship(
+      structuredClone(database),
+      schemaId,
+      relationshipId
+    );
 
-            if (relationshipToDelete.kind === "IDENTIFYING") {
-                for (const table of updatedSchema.tables) {
-                    const relationshipsToDelete = table.relationships.filter((rel) => {
-                        return rel.columns.some((relCol) => fkColumnsToDelete.has(relCol.refColumnId));
-                    });
+    currentDatabase = relationshipHandlers.createRelationship(
+      structuredClone(currentDatabase),
+      schemaId,
+      updatedRelationship
+    );
 
-                    for (const relToDelete of relationshipsToDelete) {
-                        if (!visited.has(relToDelete.id)) {
-                            updatedSchema = deleteRelatedColumns(
-                                structuredClone(updatedSchema),
-                                relToDelete,
-                                new Set(visited),
-                            );
-                        }
-                    }
-                }
-            }
+    return currentDatabase;
+  },
+  removeColumnFromRelationship: (
+    database,
+    schemaId,
+    relationshipId,
+    relationshipColumnId
+  ) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
 
-            return updatedSchema;
-        };
+    const relationship: Relationship | undefined = schema.tables
+      .find((t) => t.relationships.some((r) => r.id === relationshipId))
+      ?.relationships.find((r) => r.id === relationshipId);
 
-        const updatedSchema = deleteRelatedColumns(structuredClone(schema), foundRelationship);
+    if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
-        return {
-            ...database,
-            schemas: database.schemas.map((s) => (s.id === schemaId ? updatedSchema : s)),
-        };
-    },
-    changeRelationshipName: (database, schemaId, relationshipId, newName) => {
-        const schema = database.schemas.find((s) => s.id === schemaId);
-        if (!schema) throw new SchemaNotExistError(schemaId);
+    const relationshipColumn = relationship.columns.find(
+      (rc) => rc.id === relationshipColumnId
+    );
+    if (!relationshipColumn)
+      throw new RelationshipColumnNotExistError(
+        relationshipColumnId,
+        relationshipId
+      );
 
-        let foundRelationship = null;
-        let sourceTableId = null;
-        for (const table of schema.tables) {
-            const relationshipNotUnique = table.relationships.find((r) => r.name === newName);
-            if (relationshipNotUnique) throw new RelationshipNameNotUniqueError(newName);
+    const nextColumns = relationship.columns.filter(
+      (rc) => rc.id !== relationshipColumnId
+    );
 
-            const relationship = table.relationships.find((r) => r.id === relationshipId);
-            if (relationship) {
-                foundRelationship = relationship;
-                sourceTableId = table.id;
-                break;
-            }
-        }
+    // 마지막 컬럼 제거 시 관계 자체를 삭제
+    if (nextColumns.length === 0) {
+      return relationshipHandlers.deleteRelationship(
+        structuredClone(database),
+        schemaId,
+        relationshipId
+      );
+    }
 
-        if (!foundRelationship) throw new RelationshipNotExistError(relationshipId);
+    const updatedRelationship: Relationship = {
+      ...relationship,
+      isAffected: true,
+      columns: nextColumns,
+    };
 
-        return {
-            ...database,
-            schemas: database.schemas.map((s) =>
-                s.id === schemaId
-                    ? {
-                          ...s,
-                          tables: s.tables.map((t) =>
-                              t.id === sourceTableId
-                                  ? {
-                                        ...t,
-                                        relationships: t.relationships.map((r) =>
-                                            r.id === relationshipId ? { ...r, name: newName } : r,
-                                        ),
-                                    }
-                                  : t,
-                          ),
-                      }
-                    : s,
-            ),
-        };
-    },
-    changeRelationshipCardinality: (database, schemaId, relationshipId, cardinality) => {
-        const schema = database.schemas.find((s) => s.id === schemaId);
-        if (!schema) throw new SchemaNotExistError(schemaId);
+    let currentDatabase = relationshipHandlers.deleteRelationship(
+      structuredClone(database),
+      schemaId,
+      relationshipId
+    );
 
-        let foundRelationship = null;
-        for (const table of schema.tables) {
-            const relationship = table.relationships.find((r) => r.id === relationshipId);
-            if (relationship) {
-                foundRelationship = relationship;
-                break;
-            }
-        }
+    currentDatabase = relationshipHandlers.createRelationship(
+      structuredClone(currentDatabase),
+      schemaId,
+      updatedRelationship
+    );
 
-        if (!foundRelationship) throw new RelationshipNotExistError(relationshipId);
-
-        const updatedRelationship = {
-            ...foundRelationship,
-            cardinality,
-        };
-
-        let currentDatabase = relationshipHandlers.deleteRelationship(
-            structuredClone(database),
-            schemaId,
-            relationshipId,
-        );
-
-        currentDatabase = relationshipHandlers.createRelationship(
-            structuredClone(currentDatabase),
-            schemaId,
-            updatedRelationship,
-        );
-
-        return currentDatabase;
-    },
-    addColumnToRelationship: (database, schemaId, relationshipId, relationshipColumn) => {
-        const schema = database.schemas.find((s) => s.id === schemaId);
-        if (!schema) throw new SchemaNotExistError(schemaId);
-
-        let foundRelationship = null;
-        let sourceTableId = null;
-        for (const table of schema.tables) {
-            const relationship = table.relationships.find((r) => r.id === relationshipId);
-            if (relationship) {
-                foundRelationship = relationship;
-                sourceTableId = table.id;
-                break;
-            }
-        }
-
-        if (!foundRelationship) throw new RelationshipNotExistError(relationshipId);
-
-        return {
-            ...database,
-            schemas: database.schemas.map((s) =>
-                s.id === schemaId
-                    ? {
-                          ...s,
-                          tables: s.tables.map((t) =>
-                              t.id === sourceTableId
-                                  ? {
-                                        ...t,
-                                        relationships: t.relationships.map((r) =>
-                                            r.id === relationshipId
-                                                ? {
-                                                      ...r,
-                                                      columns: [
-                                                          ...r.columns,
-                                                          { ...relationshipColumn, relationshipId },
-                                                      ],
-                                                  }
-                                                : r,
-                                        ),
-                                    }
-                                  : t,
-                          ),
-                      }
-                    : s,
-            ),
-        };
-    },
-    removeColumnFromRelationship: (database, schemaId, relationshipId, relationshipColumnId) => {
-        const schema = database.schemas.find((s) => s.id === schemaId);
-        if (!schema) throw new SchemaNotExistError(schemaId);
-
-        let foundRelationship = null;
-        let sourceTableId = null;
-        for (const table of schema.tables) {
-            const relationship = table.relationships.find((r) => r.id === relationshipId);
-            if (relationship) {
-                foundRelationship = relationship;
-                sourceTableId = table.id;
-                break;
-            }
-        }
-
-        if (!foundRelationship) throw new RelationshipNotExistError(relationshipId);
-
-        const relationshipColumn = foundRelationship.columns.find((rc) => rc.id === relationshipColumnId);
-        if (!relationshipColumn) throw new RelationshipColumnNotExistError(relationshipColumnId);
-
-        return {
-            ...database,
-            schemas: database.schemas.map((s) =>
-                s.id === schemaId
-                    ? {
-                          ...s,
-                          tables: s.tables.map((t) =>
-                              t.id === sourceTableId
-                                  ? {
-                                        ...t,
-                                        relationships: t.relationships
-                                            .map((r) =>
-                                                r.id === relationshipId
-                                                    ? {
-                                                          ...r,
-                                                          columns: r.columns.filter(
-                                                              (rc) => rc.id !== relationshipColumnId,
-                                                          ),
-                                                      }
-                                                    : r,
-                                            )
-                                            .filter((r) => r.columns.length > 0),
-                                    }
-                                  : t,
-                          ),
-                      }
-                    : s,
-            ),
-        };
-    },
+    return currentDatabase;
+  },
 };

@@ -11,7 +11,14 @@ export const Layout = ({ children }: PropsWithChildren) => {
   return (
     <div className="layout flex flex-col min-h-screen bg-schemafy-bg w-full items-center">
       <Header isCanvasPage={isCanvasPage} />
-      <main className={cn('flex-grow w-full flex ', !isCanvasPage && 'max-w-[960px]')}>{children}</main>
+      <main
+        className={cn(
+          'flex-grow w-full flex ',
+          !isCanvasPage && 'max-w-[960px]',
+        )}
+      >
+        {children}
+      </main>
       {!isCanvasPage && <Footer />}
     </div>
   );

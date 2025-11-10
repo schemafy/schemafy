@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -22,17 +23,18 @@ import reactor.core.publisher.Mono;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtProvider jwtProvider;
 
-    public Mono<UserInfoResponse> signUp(SignUpCommand request) {
+    public Mono<User> signUp(SignUpCommand request) {
         return checkEmailUniqueness(request.email())
-                .then(createNewUser(request))
-                .map(UserInfoResponse::from);
+                .then(createNewUser(request));
     }
 
     private Mono<Void> checkEmailUniqueness(String email) {
         return userRepository.existsByEmail(email)
                 .flatMap(exists -> exists
-                        ? Mono.error(new BusinessException(ErrorCode.USER_ALREADY_EXISTS))
+                        ? Mono.error(new BusinessException(
+                                ErrorCode.USER_ALREADY_EXISTS))
                         : Mono.empty());
     }
 
@@ -40,30 +42,52 @@ public class UserService {
         return User.signUp(request.toUserInfo(), passwordEncoder)
                 .flatMap(userRepository::save)
                 .onErrorMap(DuplicateKeyException.class,
-                        e -> new BusinessException(ErrorCode.USER_ALREADY_EXISTS));
+                        e -> new BusinessException(
+                                ErrorCode.USER_ALREADY_EXISTS));
     }
 
     public Mono<UserInfoResponse> getUserById(String userId) {
         return userRepository.findById(userId)
                 .map(UserInfoResponse::from)
-                .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)));
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.USER_NOT_FOUND)));
     }
 
-    public Mono<UserInfoResponse> login(LoginCommand command) {
+    public Mono<User> login(LoginCommand command) {
         return findUserByEmail(command.email())
-                .flatMap(user -> getUserByPasswordMatch(user, command.password()))
-                .map(UserInfoResponse::from);
+                .flatMap(user -> getUserByPasswordMatch(user,
+                        command.password()));
     }
 
     private Mono<User> findUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)));
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.USER_NOT_FOUND)));
     }
 
     private Mono<User> getUserByPasswordMatch(User user, String password) {
         return user.matchesPassword(password, passwordEncoder)
                 .filter(Boolean::booleanValue)
                 .map(matches -> user)
-                .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.LOGIN_FAILED)));
+                .switchIfEmpty(Mono
+                        .error(new BusinessException(ErrorCode.LOGIN_FAILED)));
+    }
+
+    public Mono<String> getUserIdFromRefreshToken(String refreshToken) {
+        return Mono.fromCallable(() -> {
+            String userId = jwtProvider.extractUserId(refreshToken);
+            String tokenType = jwtProvider.getTokenType(refreshToken);
+
+            if (!JwtProvider.REFRESH_TOKEN.equals(tokenType)) {
+                throw new BusinessException(ErrorCode.INVALID_TOKEN_TYPE);
+            }
+
+            if (!jwtProvider.validateToken(refreshToken, userId)) {
+                throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+            }
+
+            return userId;
+        }).onErrorMap(e -> !(e instanceof BusinessException),
+                e -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
     }
 }

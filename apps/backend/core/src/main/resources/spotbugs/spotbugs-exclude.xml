@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Lombok generated code -->
+    <Match>
+        <Class name="~.*\$.*"/>
+    </Match>
+
+    <!-- Record classes -->
+    <Match>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+        </Or>
+        <Class name="~.*Record$"/>
+    </Match>
+
+    <!-- Spring Boot Configuration Properties -->
+    <Match>
+        <Class name="~.*Properties$"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+
+    <!-- Missing classes from compilation (synthetic methods) -->
+    <Match>
+        <Bug pattern="UNKNOWN"/>
+    </Match>
+</FindBugsFilter>

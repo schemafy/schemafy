@@ -1,4 +1,7 @@
 spring:
+  profiles:
+    active: local
+
   application:
     name: core
 
@@ -10,6 +13,11 @@ spring:
       enabled: true
       initial-size: 5
       max-size: 20
+
+  sql:
+    init:
+      schema-locations: classpath:ddl/schema-mariadb.sql
+      mode: always
 
 cache:
   type: CAFFEINE

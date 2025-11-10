@@ -1,11 +1,18 @@
-import { type RelationshipConfig, type RelationshipType, RELATIONSHIP_TYPES } from '../types';
+import {
+  type RelationshipConfig,
+  type RelationshipType,
+  RELATIONSHIP_TYPES,
+} from '../types';
 
 interface RelationshipSelectorProps {
   config: RelationshipConfig;
   onChange: (config: RelationshipConfig) => void;
 }
 
-export const RelationshipSelector = ({ config, onChange }: RelationshipSelectorProps) => {
+export const RelationshipSelector = ({
+  config,
+  onChange,
+}: RelationshipSelectorProps) => {
   const handleTypeChange = (type: RelationshipType) => {
     onChange({ ...config, type });
   };
@@ -16,7 +23,9 @@ export const RelationshipSelector = ({ config, onChange }: RelationshipSelectorP
 
   return (
     <div className="bg-schemafy-bg border border-schemafy-light-gray rounded-lg p-3 min-w-48">
-      <div className="text-xs font-medium text-schemafy-text mb-3">Relationship Type</div>
+      <div className="text-xs font-medium text-schemafy-text mb-3">
+        Relationship Type
+      </div>
 
       <div className="space-y-2 mb-3">
         {Object.entries(RELATIONSHIP_TYPES).map(([key, typeInfo]) => (

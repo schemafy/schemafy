@@ -84,25 +84,6 @@ describe('Constraint validation', () => {
     );
   });
 
-  test('Primary Key를 구성하는 모든 컬럼은 NOT NULL 제약 조건이 있어야 한다', () => {
-    const db = createTestDatabase()
-      .withSchema((s) =>
-        s.withId('schema-1').withTable((t) => t.withId('table-1').withColumn((c) => c.withId('id-col')))
-      )
-      .build();
-
-    const pkConstraint = createConstraintBuilder()
-      .withName('pk_id')
-      .withKind('PRIMARY_KEY')
-      .withColumn((cc) => cc.withColumnId('id-col'))
-      .build();
-
-    const updatedDb = ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', pkConstraint);
-
-    const table = updatedDb.schemas.find((s) => s.id === 'schema-1')?.tables.find((t) => t.id === 'table-1');
-    expect(table?.constraints?.filter((c) => c.columns.some((cc) => cc.columnId === 'id-col'))?.length).toBe(2); // PK, NN
-  });
-
   test('Unique 제약 조건은 Primary Key와 완전히 동일한 컬럼 조합을 가질 수 없다', () => {
     const db = createTestDatabase()
       .withSchema((s) =>

@@ -46,12 +46,16 @@ const CanvasPageComponent = () => {
   const erdStore = ErdStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
 
-  const [relationshipConfig, setRelationshipConfig] = useState<RelationshipConfig>({
-    type: 'one-to-many',
-    isNonIdentifying: false,
-  });
+  const [relationshipConfig, setRelationshipConfig] =
+    useState<RelationshipConfig>({
+      type: 'one-to-many',
+      isNonIdentifying: false,
+    });
   const [activeTool, setActiveTool] = useState('pointer');
-  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [mousePosition, setMousePosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [tempMemoPosition, setTempMemoPosition] = useState<{
     flow: { x: number; y: number };
     screen: { x: number; y: number };
@@ -241,8 +245,12 @@ const CanvasPageComponent = () => {
             <CustomControls />
             <Background variant={BackgroundVariant.Dots} />
 
-            {activeTool === 'table' && <TablePreview mousePosition={mousePosition} />}
-            {activeTool === 'memo' && <MemoPrivew mousePosition={mousePosition} />}
+            {activeTool === 'table' && (
+              <TablePreview mousePosition={mousePosition} />
+            )}
+            {activeTool === 'memo' && (
+              <MemoPrivew mousePosition={mousePosition} />
+            )}
           </ReactFlow>
 
           {selectedRelationship && (

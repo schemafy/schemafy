@@ -12,7 +12,14 @@ import {
   DialogTitle,
   ListItem,
 } from '@/components';
-import { Search, Table, MessageCircleMore, Spline, MousePointer2, Hand } from 'lucide-react';
+import {
+  Search,
+  Table,
+  MessageCircleMore,
+  Spline,
+  MousePointer2,
+  Hand,
+} from 'lucide-react';
 
 interface ToolbarProps {
   setActiveTool: (toolId: string) => void;
@@ -100,11 +107,15 @@ export const Toolbar = ({
           />
         ))}
 
-        {activeTool && TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2">
-            <RelationshipSelector config={relationshipConfig} onChange={onRelationshipConfigChange} />
-          </div>
-        )}
+        {activeTool &&
+          TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2">
+              <RelationshipSelector
+                config={relationshipConfig}
+                onChange={onRelationshipConfigChange}
+              />
+            </div>
+          )}
       </div>
 
       <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
@@ -124,10 +135,30 @@ export const Toolbar = ({
             <Search size={16} color="var(--color-schemafy-dark-gray)" />
           </div>
           <ul className="flex flex-col w-full max-h-[12.5rem] gap-2.5 overflow-y-scroll overflow-x-hidden pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-schemafy-light-gray [&::-webkit-scrollbar-track]:bg-transparent">
-            <ListItem count={6} name="User" description={'사용자 정보'} date={new Date()} />
-            <ListItem count={6} name="User" description={'사용자 정보'} date={new Date()} />
-            <ListItem count={6} name="User" description={'사용자 정보'} date={new Date()} />
-            <ListItem count={6} name="User" description={'사용자 정보'} date={new Date()} />
+            <ListItem
+              count={6}
+              name="User"
+              description={'사용자 정보'}
+              date={new Date()}
+            />
+            <ListItem
+              count={6}
+              name="User"
+              description={'사용자 정보'}
+              date={new Date()}
+            />
+            <ListItem
+              count={6}
+              name="User"
+              description={'사용자 정보'}
+              date={new Date()}
+            />
+            <ListItem
+              count={6}
+              name="User"
+              description={'사용자 정보'}
+              date={new Date()}
+            />
           </ul>
         </DialogContent>
       </Dialog>
@@ -146,7 +177,9 @@ const Tool = ({
   name: string;
   isActive: boolean;
 }) => {
-  const color = isActive ? 'var(--color-schemafy-text)' : 'var(--color-schemafy-tools)';
+  const color = isActive
+    ? 'var(--color-schemafy-text)'
+    : 'var(--color-schemafy-tools)';
 
   return (
     <Tooltip>

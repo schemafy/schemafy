@@ -1,14 +1,5 @@
 package com.schemafy.core.ulid.controller;
 
-import static org.mockito.Mockito.when;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -17,19 +8,34 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import org.junit.jupiter.api.Test;
+
 import com.schemafy.core.TestSecurityConfig;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 import com.schemafy.core.ulid.service.UlidService;
 
 import reactor.core.publisher.Mono;
+
+import static com.schemafy.core.ulid.docs.UlidApiSnippets.*;
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @WebFluxTest(controllers = UlidController.class)
 @AutoConfigureRestDocs
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
-    private static final String API_BASE_PATH = ApiPath.AUTH_API.replace("{version}",
+    private static final String API_BASE_PATH = ApiPath.AUTH_API.replace(
+            "{version}",
             "v1.0");
+
+    @MockitoBean
+    WebExchangeErrorWriter errorResponseWriter;
+
+    @MockitoBean
+    JwtProvider jwtProvider;
 
     @Autowired
     private WebTestClient webTestClient;
@@ -41,7 +47,8 @@ class UlidControllerTest {
     void generateTemporaryUlid() {
         // Given
         String mockUlid = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        when(ulidService.generateTemporaryUlid()).thenReturn(Mono.just(mockUlid));
+        when(ulidService.generateTemporaryUlid())
+                .thenReturn(Mono.just(mockUlid));
 
         // When & Then
         webTestClient
@@ -54,18 +61,8 @@ class UlidControllerTest {
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.ulid").isEqualTo(mockUlid)
                 .consumeWith(document("ulid-generate",
-                        requestHeaders(
-                                headerWithName("Accept")
-                                        .description("요청 응답 포맷(Accept 헤더)")),
-                        responseHeaders(
-                                headerWithName("Content-Type")
-                                        .description("응답 컨텐츠 타입")),
-                        responseFields(
-                                fieldWithPath("success").description("요청 성공 여부")
-                                        .type("boolean"),
-                                fieldWithPath("result").description("응답 데이터")
-                                        .type("object"),
-                                fieldWithPath("result.ulid").description("생성된 ULID 문자열")
-                                        .type("string"))));
+                        generateUlidRequestHeaders(),
+                        generateUlidResponseHeaders(),
+                        generateUlidResponse()));
     }
 }

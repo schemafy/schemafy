@@ -1,4 +1,9 @@
-import { type ButtonHTMLAttributes, type ComponentType, type ReactNode, type Ref } from 'react';
+import {
+  type ButtonHTMLAttributes,
+  type ComponentType,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib';
 import { Link } from 'react-router-dom';
@@ -34,7 +39,9 @@ const buttonVariants = cva(
   },
 );
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+interface ButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   children?: ReactNode;
   to?: string;
 }
@@ -57,7 +64,9 @@ export const Button = ((
     return (
       <Link to={to}>
         <button
-          className={cn(buttonVariants({ variant, size, fullWidth, round, className }))}
+          className={cn(
+            buttonVariants({ variant, size, fullWidth, round, className }),
+          )}
           disabled={disabled}
           ref={ref}
           {...props}
@@ -70,7 +79,9 @@ export const Button = ((
 
   return (
     <button
-      className={cn(buttonVariants({ variant, size, fullWidth, round, className }))}
+      className={cn(
+        buttonVariants({ variant, size, fullWidth, round, className }),
+      )}
       disabled={disabled}
       ref={ref}
       {...props}
