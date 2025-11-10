@@ -27,7 +27,9 @@ export const ConstraintSection = ({
   return (
     <div className="border-t-2 border-schemafy-button-bg">
       <div className="bg-schemafy-dark-gray-40 p-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-schemafy-text">CONSTRAINTS</span>
+        <span className="text-xs font-medium text-schemafy-text">
+          CONSTRAINTS
+        </span>
         {isEditMode && (
           <button
             onClick={handleCreateConstraint}
@@ -41,7 +43,9 @@ export const ConstraintSection = ({
 
       <div>
         {filteredConstraints.length === 0 ? (
-          <div className="p-2 text-center text-schemafy-dark-gray text-xs">No constraints defined</div>
+          <div className="p-2 text-center text-schemafy-dark-gray text-xs">
+            No constraints defined
+          </div>
         ) : (
           filteredConstraints.map((constraint) => (
             <ConstraintRow

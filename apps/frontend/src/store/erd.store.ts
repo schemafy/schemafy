@@ -74,7 +74,9 @@ export class ErdStore {
   get selectedSchemaId(): string | null {
     if (this.erdState.state !== 'loaded') return null;
 
-    const extra = this.erdState.database.extra as { selectedSchemaId?: string } | undefined;
+    const extra = this.erdState.database.extra as
+      | { selectedSchemaId?: string }
+      | undefined;
     return extra?.selectedSchemaId || null;
   }
 
@@ -84,7 +86,10 @@ export class ErdStore {
     const selectedSchemaId = this.selectedSchemaId;
     if (!selectedSchemaId) return null;
 
-    return this.erdState.database.schemas.find((s) => s.id === selectedSchemaId) || null;
+    return (
+      this.erdState.database.schemas.find((s) => s.id === selectedSchemaId) ||
+      null
+    );
   }
 
   get database(): Database | null {
@@ -180,7 +185,11 @@ export class ErdStore {
     );
   }
 
-  updateTableExtra(schemaId: Schema['id'], tableId: Table['id'], extra: unknown) {
+  updateTableExtra(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    extra: unknown,
+  ) {
     this.update((db) => {
       return {
         ...db,
@@ -459,7 +468,11 @@ export class ErdStore {
     );
   }
 
-  updateRelationshipExtra(schemaId: Schema['id'], relationshipId: Relationship['id'], extra: unknown) {
+  updateRelationshipExtra(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    extra: unknown,
+  ) {
     this.update((db) => {
       return {
         ...db,

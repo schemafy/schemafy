@@ -2,12 +2,19 @@ import { useState, useEffect } from 'react';
 import type { Edge } from '@xyflow/react';
 import { Button } from '@/components';
 import { RelationshipSelector } from './RelationshipSelector';
-import { type RelationshipConfig, type RelationshipType, isRelationshipType } from '../types';
+import {
+  type RelationshipConfig,
+  type RelationshipType,
+  isRelationshipType,
+} from '../types';
 
 interface EdgeSelectorProps {
   selectedRelationship: string;
   relationships: Edge[];
-  onRelationshipChange: (relationshipId: string, config: RelationshipConfig) => void;
+  onRelationshipChange: (
+    relationshipId: string,
+    config: RelationshipConfig,
+  ) => void;
   onRelationshipNameChange: (relationshipId: string, newName: string) => void;
   onRelationshipDelete: (relationshipId: string) => void;
   onClose: () => void;
@@ -29,17 +36,26 @@ const DEFAULT_RELATIONSHIP_DATA: RelationshipData = {
   controlPointY: undefined,
 };
 
-const extractRelationshipData = (relationship: Edge | undefined): RelationshipData => {
+const extractRelationshipData = (
+  relationship: Edge | undefined,
+): RelationshipData => {
   if (!relationship) return DEFAULT_RELATIONSHIP_DATA;
 
   const data = relationship.data || {};
 
   return {
     name: (relationship.label as string) || '',
-    type: isRelationshipType(data.relationshipType) ? data.relationshipType : 'one-to-many',
-    isNonIdentifying: typeof data.isNonIdentifying === 'boolean' ? data.isNonIdentifying : false,
-    controlPointX: typeof data.controlPointX === 'number' ? data.controlPointX : undefined,
-    controlPointY: typeof data.controlPointY === 'number' ? data.controlPointY : undefined,
+    type: isRelationshipType(data.relationshipType)
+      ? data.relationshipType
+      : 'one-to-many',
+    isNonIdentifying:
+      typeof data.isNonIdentifying === 'boolean'
+        ? data.isNonIdentifying
+        : false,
+    controlPointX:
+      typeof data.controlPointX === 'number' ? data.controlPointX : undefined,
+    controlPointY:
+      typeof data.controlPointY === 'number' ? data.controlPointY : undefined,
   };
 };
 
@@ -62,7 +78,9 @@ export const RelationshipEditor = ({
   const originalData = extractRelationshipData(relationship);
 
   const [localName, setLocalName] = useState(originalData.name);
-  const [localConfig, setLocalConfig] = useState<RelationshipConfig>(createConfig(originalData));
+  const [localConfig, setLocalConfig] = useState<RelationshipConfig>(
+    createConfig(originalData),
+  );
 
   useEffect(() => {
     const newData = extractRelationshipData(relationship);
@@ -79,7 +97,10 @@ export const RelationshipEditor = ({
     if (localName !== originalData.name) {
       onRelationshipNameChange(selectedRelationship, localName);
     }
-    if (localConfig.type !== originalData.type || localConfig.isNonIdentifying !== originalData.isNonIdentifying) {
+    if (
+      localConfig.type !== originalData.type ||
+      localConfig.isNonIdentifying !== originalData.isNonIdentifying
+    ) {
       onRelationshipChange(selectedRelationship, localConfig);
     }
     onClose();
@@ -91,7 +112,9 @@ export const RelationshipEditor = ({
 
   return (
     <div className="absolute top-4 left-4 z-10 bg-schemafy-bg p-3 rounded-lg shadow-md border border-schemafy-light-gray space-y-3">
-      <div className="text-sm font-medium text-schemafy-text">Edit Relationship</div>
+      <div className="text-sm font-medium text-schemafy-text">
+        Edit Relationship
+      </div>
 
       <div className="space-y-2">
         <label className="text-xs text-schemafy-text">Name</label>

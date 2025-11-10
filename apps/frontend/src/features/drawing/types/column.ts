@@ -20,7 +20,11 @@ export interface ColumnRowProps {
   onDragLeave: (e: DragEvent) => void;
   onDrop: (e: DragEvent, columnId: string) => void;
   onDragEnd: () => void;
-  onUpdateColumn: (columnId: string, key: keyof ColumnType, value: string | boolean) => void;
+  onUpdateColumn: (
+    columnId: string,
+    key: keyof ColumnType,
+    value: string | boolean,
+  ) => void;
   onRemoveColumn: (columnId: string) => void;
 }
 
@@ -29,7 +33,11 @@ export interface EditModeColumnProps {
   isLastColumn: boolean;
   onDragStart: (e: DragEvent, columnId: string) => void;
   onDragEnd: () => void;
-  onUpdateColumn: (columnId: string, key: keyof ColumnType, value: string | boolean) => void;
+  onUpdateColumn: (
+    columnId: string,
+    key: keyof ColumnType,
+    value: string | boolean,
+  ) => void;
   onRemoveColumn: (columnId: string) => void;
 }
 
@@ -50,7 +58,11 @@ export interface TypeSelectorProps {
 
 export interface ColumnConstraintsProps {
   column: ColumnType;
-  onUpdateColumn: (columnId: string, key: keyof ColumnType, value: boolean) => void;
+  onUpdateColumn: (
+    columnId: string,
+    key: keyof ColumnType,
+    value: boolean,
+  ) => void;
 }
 
 export interface ColumnBadgesProps {

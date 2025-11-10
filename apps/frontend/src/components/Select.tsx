@@ -43,7 +43,10 @@ const SelectScrollUpButton = ({
 }) => (
   <SelectPrimitive.ScrollUpButton
     ref={ref}
-    className={cn('flex cursor-default items-center justify-center py-1', className)}
+    className={cn(
+      'flex cursor-default items-center justify-center py-1',
+      className,
+    )}
     {...props}
   >
     <ChevronUp className="h-4 w-4" />
@@ -60,7 +63,10 @@ const SelectScrollDownButton = ({
 }) => (
   <SelectPrimitive.ScrollDownButton
     ref={ref}
-    className={cn('flex cursor-default items-center justify-center py-1', className)}
+    className={cn(
+      'flex cursor-default items-center justify-center py-1',
+      className,
+    )}
     {...props}
   >
     <ChevronDown className="h-4 w-4" />
@@ -112,7 +118,11 @@ const SelectLabel = ({
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label> & {
   ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Label>>;
 }) => (
-  <SelectPrimitive.Label ref={ref} className={cn('py-1.5 pl-8 pr-2 text-sm font-semibold', className)} {...props} />
+  <SelectPrimitive.Label
+    ref={ref}
+    className={cn('py-1.5 pl-8 pr-2 text-sm font-semibold', className)}
+    {...props}
+  />
 );
 SelectLabel.displayName = 'SelectLabel';
 
@@ -149,7 +159,13 @@ const SelectSeparator = ({
   ...props
 }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator> & {
   ref?: React.Ref<React.ElementRef<typeof SelectPrimitive.Separator>>;
-}) => <SelectPrimitive.Separator ref={ref} className={cn('-mx-1 my-1 h-px bg-muted', className)} {...props} />;
+}) => (
+  <SelectPrimitive.Separator
+    ref={ref}
+    className={cn('-mx-1 my-1 h-px bg-muted', className)}
+    {...props}
+  />
+);
 SelectSeparator.displayName = 'SelectSeparator';
 
 export {

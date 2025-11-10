@@ -28,20 +28,20 @@ export interface ColumnHandlers {
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
-    column: Omit<Column, "tableId">
+    column: Omit<Column, "tableId">,
   ) => Database;
   deleteColumn: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
-    columnId: Column["id"]
+    columnId: Column["id"],
   ) => Database;
   changeColumnName: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
     columnId: Column["id"],
-    newName: Column["name"]
+    newName: Column["name"],
   ) => Database;
   changeColumnType: (
     database: Database,
@@ -49,14 +49,14 @@ export interface ColumnHandlers {
     tableId: Table["id"],
     columnId: Column["id"],
     dataType: Column["dataType"],
-    lengthScale?: Column["lengthScale"]
+    lengthScale?: Column["lengthScale"],
   ) => Database;
   changeColumnPosition: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
     columnId: Column["id"],
-    newPosition: Column["ordinalPosition"]
+    newPosition: Column["ordinalPosition"],
   ) => Database;
 }
 
@@ -83,7 +83,7 @@ export const columnHandlers: ColumnHandlers = {
     if (reservedKeywords.some((keyword) => column.name.includes(keyword)))
       throw new ColumnNameIsReservedKeywordError(
         column.name,
-        schema.dbVendorId
+        schema.dbVendorId,
       );
 
     if (column.dataType) {
@@ -100,12 +100,12 @@ export const columnHandlers: ColumnHandlers = {
         throw new ColumnLengthRequiredError(column.name, column.dataType);
 
       const vendorValid = helper.categorizedMysqlDataTypes.includes(
-        column.dataType
+        column.dataType,
       );
       if (!vendorValid)
         throw new ColumnDataTypeInvalidError(
           column.dataType,
-          schema.dbVendorId
+          schema.dbVendorId,
         );
     }
 
@@ -125,11 +125,11 @@ export const columnHandlers: ColumnHandlers = {
     const changeTables: Table[] = schema.tables.map((t) =>
       t.id === tableId
         ? { ...t, isAffected: true, columns: [...t.columns, newColumn] }
-        : { ...t, isAffected: true }
+        : { ...t, isAffected: true },
     );
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
-      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s
+      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
     );
 
     return {
@@ -159,19 +159,19 @@ export const columnHandlers: ColumnHandlers = {
         ...constraint,
         isAffected: constraint.columns.some((cc) => cc.columnId === columnId),
         columns: constraint.columns.filter((cc) => cc.columnId !== columnId),
-      })
+      }),
     );
 
     const updateRelationships: Relationship[] = table.relationships.map(
       (rel) => ({
         ...rel,
         isAffected: rel.columns.some(
-          (rc) => rc.fkColumnId === columnId || rc.refColumnId === columnId
+          (rc) => rc.fkColumnId === columnId || rc.refColumnId === columnId,
         ),
         columns: rel.columns.filter(
-          (rc) => rc.fkColumnId !== columnId && rc.refColumnId !== columnId
+          (rc) => rc.fkColumnId !== columnId && rc.refColumnId !== columnId,
         ),
-      })
+      }),
     );
 
     const changeTables: Table[] = schema.tables.map((t) =>
@@ -184,11 +184,11 @@ export const columnHandlers: ColumnHandlers = {
             constraints: updateConstraints,
             relationships: updateRelationships,
           }
-        : { ...t, isAffected: true }
+        : { ...t, isAffected: true },
     );
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
-      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s
+      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
     );
 
     return {
@@ -208,7 +208,7 @@ export const columnHandlers: ColumnHandlers = {
     if (!column) throw new ColumnNotExistError(columnId, tableId);
 
     const columnNotUnique = table.columns.find(
-      (c) => c.name === newName && c.id !== columnId
+      (c) => c.name === newName && c.id !== columnId,
     );
     if (columnNotUnique) throw new ColumnNameNotUniqueError(newName, tableId);
 
@@ -221,14 +221,14 @@ export const columnHandlers: ColumnHandlers = {
             ...t,
             isAffected: true,
             columns: t.columns.map((c) =>
-              c.id === columnId ? { ...c, name: newName, isAffected: true } : c
+              c.id === columnId ? { ...c, name: newName, isAffected: true } : c,
             ),
           }
-        : t
+        : t,
     );
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
-      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s
+      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
     );
 
     return {
@@ -243,7 +243,7 @@ export const columnHandlers: ColumnHandlers = {
     tableId,
     columnId,
     dataType,
-    lengthScale
+    lengthScale,
   ) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
@@ -262,15 +262,15 @@ export const columnHandlers: ColumnHandlers = {
             dataType,
             lengthScale: lengthScale || c.lengthScale,
           }
-        : c
+        : c,
     );
 
     const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === tableId ? { ...t, isAffected: true, columns: changeColumns } : t
+      t.id === tableId ? { ...t, isAffected: true, columns: changeColumns } : t,
     );
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
-      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s
+      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
     );
 
     return { ...database, isAffected: true, schemas: changeSchemas };
@@ -280,7 +280,7 @@ export const columnHandlers: ColumnHandlers = {
     schemaId,
     tableId,
     columnId,
-    newPosition
+    newPosition,
   ) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
@@ -292,7 +292,7 @@ export const columnHandlers: ColumnHandlers = {
     if (!column) throw new ColumnNotExistError(columnId, tableId);
 
     const sortedColumns = [...table.columns].sort(
-      (a, b) => a.ordinalPosition - b.ordinalPosition
+      (a, b) => a.ordinalPosition - b.ordinalPosition,
     );
 
     const columnsWithoutTarget = sortedColumns.filter((c) => c.id !== columnId);
@@ -310,11 +310,13 @@ export const columnHandlers: ColumnHandlers = {
     }));
 
     const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === tableId ? { ...t, isAffected: true, columns: updatedColumns } : t
+      t.id === tableId
+        ? { ...t, isAffected: true, columns: updatedColumns }
+        : t,
     );
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
-      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s
+      s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
     );
 
     return { ...database, isAffected: true, schemas: changeSchemas };

@@ -1,5 +1,8 @@
 import { Button } from '@/components';
-import { SCHEMA_NAME_MAX_LENGTH, validateSchemaName } from '../constants/schema.constants';
+import {
+  SCHEMA_NAME_MAX_LENGTH,
+  validateSchemaName,
+} from '../constants/schema.constants';
 
 interface SchemaInputProps {
   value: string;

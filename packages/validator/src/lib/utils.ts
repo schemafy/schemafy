@@ -57,7 +57,7 @@ export const ERD_VALIDATOR: ERDValidator = {
       if (schemaNames.has(schema.name)) {
         const existingSchemaId =
           database.schemas.find(
-            (s) => s.name === schema.name && s.id !== schema.id
+            (s) => s.name === schema.name && s.id !== schema.id,
           )?.id || "";
         throw new SchemaNameNotUniqueError(schema.name, existingSchemaId);
       }
@@ -113,7 +113,7 @@ export const ERD_VALIDATOR: ERDValidator = {
           if (reservedKeywords.includes(column.name.toUpperCase())) {
             throw new ColumnNameIsReservedKeywordError(
               column.name,
-              schema.dbVendorId
+              schema.dbVendorId,
             );
           }
         }
@@ -130,12 +130,12 @@ export const ERD_VALIDATOR: ERDValidator = {
 
           for (const constraintColumn of constraint.columns) {
             const columnExists = table.columns.some(
-              (col) => col.id === constraintColumn.columnId
+              (col) => col.id === constraintColumn.columnId,
             );
             if (!columnExists) {
               throw new ConstraintColumnNotExistError(
                 constraintColumn.columnId,
-                constraint.name
+                constraint.name,
               );
             }
           }
@@ -159,7 +159,7 @@ export const ERD_VALIDATOR: ERDValidator = {
             });
             throw new DuplicateKeyDefinitionError(
               constraint.name,
-              existingConstraint?.name || "unknown"
+              existingConstraint?.name || "unknown",
             );
           }
           constraintDefinitions.add(constraintDef);
@@ -187,7 +187,7 @@ export const ERD_VALIDATOR: ERDValidator = {
 
           for (const indexColumn of index.columns) {
             const columnExists = table.columns.some(
-              (col) => col.id === indexColumn.columnId
+              (col) => col.id === indexColumn.columnId,
             );
             if (!columnExists) {
               const columnName =
@@ -207,11 +207,11 @@ export const ERD_VALIDATOR: ERDValidator = {
                 i.columns
                   .map((ic) => `${ic.columnId}:${ic.sortDir}`)
                   .sort()
-                  .join(",") === indexDef && i.id !== index.id
+                  .join(",") === indexDef && i.id !== index.id,
             );
             throw new DuplicateIndexDefinitionError(
               index.name,
-              existingIndex?.name || "unknown"
+              existingIndex?.name || "unknown",
             );
           }
           indexDefinitions.add(indexDef);
@@ -223,7 +223,7 @@ export const ERD_VALIDATOR: ERDValidator = {
           if (relationshipNames.has(relationship.name)) {
             throw new RelationshipNameNotUniqueError(
               relationship.name,
-              table.id
+              table.id,
             );
           }
           relationshipNames.add(relationship.name);
@@ -233,12 +233,12 @@ export const ERD_VALIDATOR: ERDValidator = {
           }
 
           const targetTableExists = schema.tables.some(
-            (t) => t.id === relationship.tgtTableId
+            (t) => t.id === relationship.tgtTableId,
           );
           if (!targetTableExists) {
             throw new RelationshipTargetTableNotExistError(
               relationship.name,
-              relationship.tgtTableId
+              relationship.tgtTableId,
             );
           }
         }
@@ -266,12 +266,12 @@ export const ERD_VALIDATOR: ERDValidator = {
             if (detectCycle(relationship.tgtTableId)) {
               const srcTableName = table.name;
               const tgtTable = schema.tables.find(
-                (t) => t.id === relationship.tgtTableId
+                (t) => t.id === relationship.tgtTableId,
               );
               const tgtTableName = tgtTable?.name || relationship.tgtTableId;
               throw new RelationshipCyclicReferenceError(
                 srcTableName,
-                tgtTableName
+                tgtTableName,
               );
             }
           }

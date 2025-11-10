@@ -11,12 +11,19 @@ const TooltipTrigger = TooltipPrimitive.Trigger;
 
 type Direction = 'top' | 'bottom' | 'left' | 'right';
 
-interface TooltipContentProps extends React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> {
+interface TooltipContentProps
+  extends React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> {
   ref?: React.Ref<React.ElementRef<typeof TooltipPrimitive.Content>>;
   direction?: Direction;
 }
 
-const TooltipContent = ({ className, sideOffset = 16, ref, direction = 'top', ...props }: TooltipContentProps) => {
+const TooltipContent = ({
+  className,
+  sideOffset = 16,
+  ref,
+  direction = 'top',
+  ...props
+}: TooltipContentProps) => {
   const arrowStyles = {
     top: 'before:absolute before:left-1/2 before:-translate-x-1/2 before:-bottom-1 before:border-l-[6px] before:border-l-transparent before:border-r-[6px] before:border-r-transparent before:border-t-[6px] before:border-t-schemafy-bg before:drop-shadow-md',
     bottom:

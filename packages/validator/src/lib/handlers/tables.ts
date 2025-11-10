@@ -11,18 +11,18 @@ export interface TableHandlers {
   createTable: (
     database: Database,
     schemaId: Schema["id"],
-    table: Omit<Table, "schemaId">
+    table: Omit<Table, "schemaId">,
   ) => Database;
   deleteTable: (
     database: Database,
     schemaId: Schema["id"],
-    tableId: Table["id"]
+    tableId: Table["id"],
   ) => Database;
   changeTableName: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
-    newName: Table["name"]
+    newName: Table["name"],
   ) => Database;
 }
 
@@ -52,7 +52,7 @@ export const tableHandlers: TableHandlers = {
                 },
               ],
             }
-          : s
+          : s,
       ),
     };
   },
@@ -81,12 +81,12 @@ export const tableHandlers: TableHandlers = {
       currentDatabase = relationshipHandlers.deleteRelationship(
         currentDatabase,
         schemaId,
-        relationshipId
+        relationshipId,
       );
     }
 
     const updatedSchema = currentDatabase.schemas.find(
-      (s) => s.id === schemaId
+      (s) => s.id === schemaId,
     )!;
     const finalSchema = {
       ...updatedSchema,
@@ -96,7 +96,7 @@ export const tableHandlers: TableHandlers = {
     return {
       ...currentDatabase,
       schemas: currentDatabase.schemas.map((s) =>
-        s.id === schemaId ? finalSchema : s
+        s.id === schemaId ? finalSchema : s,
       ),
     };
   },
@@ -108,7 +108,7 @@ export const tableHandlers: TableHandlers = {
     if (!isValidTableName.success) throw new TableNameNotInvalidError(newName);
 
     const tableNotUnique = schema.tables.find(
-      (t) => t.name === newName && t.id !== tableId
+      (t) => t.name === newName && t.id !== tableId,
     );
     if (tableNotUnique) throw new TableNameNotUniqueError(newName, schema.id);
 
@@ -124,10 +124,10 @@ export const tableHandlers: TableHandlers = {
               tables: s.tables.map((t) =>
                 t.id === tableId
                   ? { ...t, updatedAt: new Date(), name: newName }
-                  : t
+                  : t,
               ),
             }
-          : s
+          : s,
       ),
     };
   },

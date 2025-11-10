@@ -2,10 +2,21 @@ import { useState, useContext } from 'react';
 import { Avatar } from '../Avatar';
 import { Button } from '../Button';
 import { RadioGroup, RadioGroupItem } from '../RadioGroup';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../DropDown';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '../DropDown';
 import { FilePlus, Link } from 'lucide-react';
 import { ThemeProviderContext, type Theme } from '@/lib/config';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../Select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../Select';
 
 export const LandingContents = () => {
   return (
@@ -76,7 +87,12 @@ const ImportContents = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="flex flex-col gap-2.5">
         <div>
-          <input type="file" id="file-upload" className="hidden" onChange={() => {}} />
+          <input
+            type="file"
+            id="file-upload"
+            className="hidden"
+            onChange={() => {}}
+          />
           <label
             htmlFor="file-upload"
             className="flex flex-col gap-2 px-2.5 py-4 items-center justify-center w-full border border-dashed border-schemafy-dark-gray font-caption-sm text-schemafy-dark-gray rounded-lg cursor-pointer hover:bg-schemafy-secondary transition-opacity"
@@ -122,7 +138,10 @@ const ShareContents = () => {
           Share
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="flex flex-col gap-2.5 font-body-xs">
+      <DropdownMenuContent
+        align="end"
+        className="flex flex-col gap-2.5 font-body-xs"
+      >
         <div className="flex gap-4">
           <input
             type="email"
@@ -133,14 +152,21 @@ const ShareContents = () => {
         </div>
         <div className="flex gap-1 justify-end items-center hover:text-blue-500">
           <Link size={10} />
-          <Button variant={'none'} size={'none'} className="text-schemafy-dark-gray font-body-xs">
+          <Button
+            variant={'none'}
+            size={'none'}
+            className="text-schemafy-dark-gray font-body-xs"
+          >
             Copy Link
           </Button>
         </div>
         <p className="text-schemafy-dark-gray">Who has access</p>
         <div className="flex justify-between items-center">
           <div className="flex gap-2.5 items-center">
-            <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
+            <Avatar
+              size={'dropdown'}
+              src="https://picsum.photos/200/300?random=1"
+            />
             <p>name</p>
           </div>
           <Select>
@@ -169,13 +195,21 @@ const VersionsContents = () => {
           Versions
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="flex flex-col gap-2.5 font-body-xs">
+      <DropdownMenuContent
+        align="end"
+        className="flex flex-col gap-2.5 font-body-xs"
+      >
         <div className="flex flex-col gap-1.5">
           <div className="flex gap-2.5 items-center">
-            <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
+            <Avatar
+              size={'dropdown'}
+              src="https://picsum.photos/200/300?random=1"
+            />
             <p>user1 updates schema [User]</p>
           </div>
-          <span className="font-caption-sm text-schemafy-dark-gray">2025.08.25. 01:35</span>
+          <span className="font-caption-sm text-schemafy-dark-gray">
+            2025.08.25. 01:35
+          </span>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -192,7 +226,10 @@ const SettingsContents = () => {
           Settings
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="flex flex-col gap-2.5 font-body-xs">
+      <DropdownMenuContent
+        align="end"
+        className="flex flex-col gap-2.5 font-body-xs"
+      >
         <div className="flex justify-between gap-4 items-center">
           <label className="font-overline-xs">Name</label>
           <input
@@ -213,7 +250,11 @@ const SettingsContents = () => {
         </div>
         <div className="flex gap-4 items-center">
           <label className="font-overline-xs">Theme</label>
-          <RadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)} className="flex-row">
+          <RadioGroup
+            value={theme}
+            onValueChange={(value) => setTheme(value as Theme)}
+            className="flex-row"
+          >
             <RadioGroupItem value={'light'}>Light</RadioGroupItem>
             <RadioGroupItem value={'dark'}>Dark</RadioGroupItem>
             <RadioGroupItem value={'system'}>System</RadioGroupItem>

@@ -13,7 +13,9 @@ export const FloatingButtons = () => {
       >
         <div
           className={`flex flex-col-reverse gap-2 transition-all duration-300 ${
-            isExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+            isExpanded
+              ? 'max-h-40 opacity-100'
+              : 'max-h-0 opacity-0 overflow-hidden'
           }`}
         >
           <button className="flex items-center justify-center p-4 rounded-full hover:bg-schemafy-secondary transition-colors">

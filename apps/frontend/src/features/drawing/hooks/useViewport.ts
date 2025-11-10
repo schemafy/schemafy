@@ -16,7 +16,10 @@ export const useViewport = () => {
     const sessionData = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (sessionData) {
       try {
-        const viewportData = JSON.parse(sessionData) as Record<string, Viewport>;
+        const viewportData = JSON.parse(sessionData) as Record<
+          string,
+          Viewport
+        >;
         const viewport = viewportData[selectedSchemaId];
         if (viewport) {
           setViewport(viewport, { duration: 0 });
@@ -62,7 +65,10 @@ export const useViewport = () => {
       if (!sessionData) return;
 
       try {
-        const viewportData = JSON.parse(sessionData) as Record<string, Viewport>;
+        const viewportData = JSON.parse(sessionData) as Record<
+          string,
+          Viewport
+        >;
         const viewport = viewportData[schemaId];
         if (!viewport) return;
 
@@ -72,7 +78,8 @@ export const useViewport = () => {
             : null;
 
         if (schema) {
-          const currentExtra = (schema.extra as { viewport?: Viewport } | undefined) || {};
+          const currentExtra =
+            (schema.extra as { viewport?: Viewport } | undefined) || {};
           erdStore.updateSchemaExtra(schemaId, {
             ...currentExtra,
             viewport,

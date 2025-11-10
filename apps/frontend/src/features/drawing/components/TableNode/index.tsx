@@ -5,7 +5,14 @@ import { ColumnRow } from '../Column';
 import { TableHeader } from '../TableHeader';
 import { IndexSection } from '../IndexSection';
 import { ConstraintSection } from '../ConstraintSection';
-import { useDragAndDrop, useColumn, useTable, useColumns, useIndexes, useConstraints } from '../../hooks';
+import {
+  useDragAndDrop,
+  useColumn,
+  useTable,
+  useColumns,
+  useIndexes,
+  useConstraints,
+} from '../../hooks';
 import { ErdStore } from '@/store/erd.store';
 import { ConnectionHandles } from './ConnectionHandles';
 
@@ -17,7 +24,11 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const indexes = data.indexes || [];
   const constraints = data.constraints || [];
 
-  const { updateColumn, saveAllPendingChanges } = useColumn(erdStore, data.schemaId, id);
+  const { updateColumn, saveAllPendingChanges } = useColumn(
+    erdStore,
+    data.schemaId,
+    id,
+  );
 
   const tableActions = useTable({
     erdStore,
@@ -52,7 +63,12 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const dragAndDrop = useDragAndDrop({
     items: columns,
     onReorder: (_newColumns, draggedColumnId, newIndex) => {
-      erdStore.changeColumnPosition(data.schemaId, id, draggedColumnId, newIndex);
+      erdStore.changeColumnPosition(
+        data.schemaId,
+        id,
+        draggedColumnId,
+        newIndex,
+      );
     },
   });
 
@@ -103,7 +119,9 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         ))}
       </div>
       {columns.length === 0 && (
-        <div className="p-4 text-center text-schemafy-dark-gray text-sm">Click + to add a column.</div>
+        <div className="p-4 text-center text-schemafy-dark-gray text-sm">
+          Click + to add a column.
+        </div>
       )}
       <IndexSection
         schemaId={data.schemaId}
@@ -129,7 +147,9 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         onDeleteConstraint={constraintActions.deleteConstraint}
         onChangeConstraintName={constraintActions.changeConstraintName}
         onAddColumnToConstraint={constraintActions.addColumnToConstraint}
-        onRemoveColumnFromConstraint={constraintActions.removeColumnFromConstraint}
+        onRemoveColumnFromConstraint={
+          constraintActions.removeColumnFromConstraint
+        }
       />
     </div>
   );

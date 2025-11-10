@@ -1,5 +1,15 @@
-import type { ConstraintRowProps, ViewModeConstraintProps, EditModeConstraintProps } from '../types';
-import { EditableRowBase, EditableNameInput, DeleteButton, ColumnItem, AddColumnSelector } from './EditableRowBase';
+import type {
+  ConstraintRowProps,
+  ViewModeConstraintProps,
+  EditModeConstraintProps,
+} from '../types';
+import {
+  EditableRowBase,
+  EditableNameInput,
+  DeleteButton,
+  ColumnItem,
+  AddColumnSelector,
+} from './EditableRowBase';
 import { getColumnName } from '../utils/columnHelpers';
 
 export const ConstraintRow = ({
@@ -16,7 +26,9 @@ export const ConstraintRow = ({
       item={constraint}
       tableColumns={tableColumns}
       isEditMode={isEditMode}
-      renderViewMode={(item, cols) => <ViewModeConstraint constraint={item} tableColumns={cols} />}
+      renderViewMode={(item, cols) => (
+        <ViewModeConstraint constraint={item} tableColumns={cols} />
+      )}
       renderEditMode={(item, cols) => (
         <EditModeConstraint
           constraint={item}
@@ -31,7 +43,10 @@ export const ConstraintRow = ({
   );
 };
 
-export const ViewModeConstraint = ({ constraint, tableColumns }: ViewModeConstraintProps) => {
+export const ViewModeConstraint = ({
+  constraint,
+  tableColumns,
+}: ViewModeConstraintProps) => {
   const columnsStr = constraint.columns
     .sort((a, b) => a.seqNo - b.seqNo)
     .map((col) => getColumnName(tableColumns, col.columnId))
@@ -42,7 +57,9 @@ export const ViewModeConstraint = ({ constraint, tableColumns }: ViewModeConstra
   return (
     <div className="p-2">
       <div className="text-xs text-schemafy-dark-gray font-mono">
-        <span className="text-schemafy-text font-medium">{constraint.name}</span>{' '}
+        <span className="text-schemafy-text font-medium">
+          {constraint.name}
+        </span>{' '}
         <span className="text-schemafy-purple">{kindLabel}</span>
         {columnsStr && (
           <>
@@ -63,7 +80,9 @@ export const EditModeConstraint = ({
   onAddColumnToConstraint,
   onRemoveColumnFromConstraint,
 }: EditModeConstraintProps) => {
-  const availableColumns = tableColumns.filter((col) => !constraint.columns.some((cCol) => cCol.columnId === col.id));
+  const availableColumns = tableColumns.filter(
+    (col) => !constraint.columns.some((cCol) => cCol.columnId === col.id),
+  );
 
   const kindLabel = constraint.kind === 'PRIMARY_KEY' ? 'PK' : 'UNIQUE';
 
@@ -73,11 +92,18 @@ export const EditModeConstraint = ({
         <EditableNameInput
           name={constraint.name}
           placeholder="Constraint name"
-          onNameChange={(newName) => onChangeConstraintName(constraint.id, newName)}
+          onNameChange={(newName) =>
+            onChangeConstraintName(constraint.id, newName)
+          }
         />
-        <span className="text-xs font-mono text-schemafy-dark-gray">{kindLabel}</span>
+        <span className="text-xs font-mono text-schemafy-dark-gray">
+          {kindLabel}
+        </span>
 
-        <DeleteButton onDelete={() => onDeleteConstraint(constraint.id)} title="Remove Constraint" />
+        <DeleteButton
+          onDelete={() => onDeleteConstraint(constraint.id)}
+          title="Remove Constraint"
+        />
       </div>
 
       <div className="ml-4 space-y-1">
@@ -86,14 +112,21 @@ export const EditModeConstraint = ({
           .map((constraintColumn) => (
             <ColumnItem
               key={constraintColumn.id}
-              columnName={getColumnName(tableColumns, constraintColumn.columnId)}
-              onRemove={() => onRemoveColumnFromConstraint(constraint.id, constraintColumn.id)}
+              columnName={getColumnName(
+                tableColumns,
+                constraintColumn.columnId,
+              )}
+              onRemove={() =>
+                onRemoveColumnFromConstraint(constraint.id, constraintColumn.id)
+              }
             />
           ))}
 
         <AddColumnSelector
           availableColumns={availableColumns}
-          onAddColumn={(columnId) => onAddColumnToConstraint(constraint.id, columnId)}
+          onAddColumn={(columnId) =>
+            onAddColumnToConstraint(constraint.id, columnId)
+          }
         />
       </div>
     </div>

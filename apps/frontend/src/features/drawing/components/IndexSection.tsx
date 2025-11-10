@@ -35,7 +35,9 @@ export const IndexSection = ({
 
       <div>
         {indexes.length === 0 ? (
-          <div className="p-2 text-center text-schemafy-dark-gray text-xs">No indexes defined</div>
+          <div className="p-2 text-center text-schemafy-dark-gray text-xs">
+            No indexes defined
+          </div>
         ) : (
           indexes.map((index) => (
             <IndexRow

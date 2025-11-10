@@ -8,7 +8,12 @@ interface UseTableProps {
   tableName: string;
 }
 
-export const useTable = ({ erdStore, schemaId, tableId, tableName }: UseTableProps) => {
+export const useTable = ({
+  erdStore,
+  schemaId,
+  tableId,
+  tableName,
+}: UseTableProps) => {
   const [isEditingTableName, setIsEditingTableName] = useState(false);
   const [editingTableName, setEditingTableName] = useState(tableName);
 

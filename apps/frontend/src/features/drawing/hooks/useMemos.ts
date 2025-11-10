@@ -27,35 +27,43 @@ export const useMemos = () => {
     setMemos(memosData.map(transformMemoToNode));
   }, [memosData]);
 
-  const addMemo = useCallback((position: { x: number; y: number }, content = '') => {
-    const now = new Date();
-    const memoId = ulid();
-    const newMemo: Memo = {
-      id: memoId,
-      schemaId: 'schema-id', // TODO: 나중에 실제 schemaId 사용
-      elementType: 'SCHEMA',
-      elementId: 'schema-id',
-      userId: 'temp-user-id', // TODO: 나중에 실제 userId 사용
-      content,
-      parentMemoId: null,
-      resolvedAt: null,
-      createdAt: now,
-      updatedAt: now,
-      extra: {
-        position,
-      },
-    };
+  const addMemo = useCallback(
+    (position: { x: number; y: number }, content = '') => {
+      const now = new Date();
+      const memoId = ulid();
+      const newMemo: Memo = {
+        id: memoId,
+        schemaId: 'schema-id', // TODO: 나중에 실제 schemaId 사용
+        elementType: 'SCHEMA',
+        elementId: 'schema-id',
+        userId: 'temp-user-id', // TODO: 나중에 실제 userId 사용
+        content,
+        parentMemoId: null,
+        resolvedAt: null,
+        createdAt: now,
+        updatedAt: now,
+        extra: {
+          position,
+        },
+      };
 
-    setMemosData((prev) => [...prev, newMemo]);
-    return memoId;
-  }, []);
+      setMemosData((prev) => [...prev, newMemo]);
+      return memoId;
+    },
+    [],
+  );
 
   const onMemosChange = useCallback((changes: NodeChange[]) => {
     setMemos((nds) => {
       const updatedMemos = applyNodeChanges(changes, nds) as Node<MemoData>[];
 
       changes
-        .filter((change) => change.type === 'position' && change.dragging === false && change.position)
+        .filter(
+          (change) =>
+            change.type === 'position' &&
+            change.dragging === false &&
+            change.position,
+        )
         .forEach((change) => {
           if (change.type !== 'position' || !change.position) return;
 

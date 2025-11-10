@@ -23,7 +23,9 @@ const ReplyItem = ({ memo }: { memo: MemoType }) => {
       <div>
         <div className="flex items-center gap-2">
           <span className="font-overline-sm">{memo.userId}</span>
-          <span className="font-body-xs text-schemafy-dark-gray">{formatDate(memo.updatedAt)}</span>
+          <span className="font-body-xs text-schemafy-dark-gray">
+            {formatDate(memo.updatedAt)}
+          </span>
         </div>
         <p className="font-body-sm mt-1">{memo.content}</p>
       </div>
@@ -89,7 +91,10 @@ export const Memo = ({ data, id }: MemoProps) => {
         )}
         onClick={handleIconClick}
       >
-        <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
+        <Avatar
+          size={'dropdown'}
+          src="https://picsum.photos/200/300?random=1"
+        />
       </div>
 
       {showThread && (
@@ -109,7 +114,10 @@ export const Memo = ({ data, id }: MemoProps) => {
                 onClick={() => {}}
                 className="text-schemafy-dark-gray hover:text-schemafy-text cursor-pointer transition-colors duration-200 hover:bg-schemafy-light-gray rounded-sm p-1"
               >
-                <CircleCheck size={14} color="var(--color-schemafy-dark-gray)" />
+                <CircleCheck
+                  size={14}
+                  color="var(--color-schemafy-dark-gray)"
+                />
               </button>
               <button
                 onClick={() => setShowThread(false)}
@@ -127,7 +135,10 @@ export const Memo = ({ data, id }: MemoProps) => {
           </ul>
 
           <div className="flex gap-2 items-center justify-between">
-            <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
+            <Avatar
+              size={'dropdown'}
+              src="https://picsum.photos/200/300?random=1"
+            />
             <input
               type="text"
               value={replyInput}

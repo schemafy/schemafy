@@ -6,7 +6,11 @@ type TableExtra = {
   position?: { x: number; y: number };
 };
 
-export const hasConstraint = (constraints: Constraint[], columnId: string, kind: ConstraintKind): boolean => {
+export const hasConstraint = (
+  constraints: Constraint[],
+  columnId: string,
+  kind: ConstraintKind,
+): boolean => {
   const checkSingleColumn = kind !== 'PRIMARY_KEY';
 
   return constraints.some((c) => {
@@ -16,7 +20,10 @@ export const hasConstraint = (constraints: Constraint[], columnId: string, kind:
   });
 };
 
-export const transformColumn = (col: Column, constraints: Constraint[]): ColumnType => {
+export const transformColumn = (
+  col: Column,
+  constraints: Constraint[],
+): ColumnType => {
   const isPrimaryKey = hasConstraint(constraints, col.id, 'PRIMARY_KEY');
   const isNotNull = hasConstraint(constraints, col.id, 'NOT_NULL');
   const isUnique = isPrimaryKey || hasConstraint(constraints, col.id, 'UNIQUE');
@@ -31,10 +38,15 @@ export const transformColumn = (col: Column, constraints: Constraint[]): ColumnT
   };
 };
 
-export const transformTableToNode = (table: Table, schemaId: string): Node<TableData> => {
+export const transformTableToNode = (
+  table: Table,
+  schemaId: string,
+): Node<TableData> => {
   const extra = (table.extra || {}) as TableExtra;
   const position = extra.position || { x: 0, y: 0 };
-  const columns = table.columns.map((col) => transformColumn(col, table.constraints));
+  const columns = table.columns.map((col) =>
+    transformColumn(col, table.constraints),
+  );
 
   return {
     id: table.id,

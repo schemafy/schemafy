@@ -48,14 +48,21 @@ export const TableHeader = ({
               onKeyDown={handleKeyDown}
               autoFocus
             />
-            <button onClick={onSaveEdit} className="p-1 hover:bg-schemafy-dark-gray rounded">
+            <button
+              onClick={onSaveEdit}
+              className="p-1 hover:bg-schemafy-dark-gray rounded"
+            >
               <Check size={14} />
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2 flex-1">
             <span className="font-medium">{tableName}</span>
-            <button onClick={onStartEdit} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Edit Table Name">
+            <button
+              onClick={onStartEdit}
+              className="p-1 hover:bg-schemafy-dark-gray rounded"
+              title="Edit Table Name"
+            >
               <Edit size={14} />
             </button>
           </div>
@@ -80,10 +87,18 @@ export const TableHeader = ({
             <Settings size={14} />
           </button>
         )}
-        <button onClick={onAddColumn} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Add Column">
+        <button
+          onClick={onAddColumn}
+          className="p-1 hover:bg-schemafy-dark-gray rounded"
+          title="Add Column"
+        >
           <Plus size={14} />
         </button>
-        <button onClick={onDeleteTable} className="p-1 hover:bg-schemafy-dark-gray rounded" title="Delete Table">
+        <button
+          onClick={onDeleteTable}
+          className="p-1 hover:bg-schemafy-dark-gray rounded"
+          title="Delete Table"
+        >
           <Trash size={14} />
         </button>
       </div>

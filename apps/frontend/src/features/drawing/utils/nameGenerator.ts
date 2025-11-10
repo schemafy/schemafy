@@ -1,9 +1,15 @@
-export const generateUniqueName = (existingNames: string[], prefix: string, suffix: string = ''): string => {
+export const generateUniqueName = (
+  existingNames: string[],
+  prefix: string,
+  suffix: string = '',
+): string => {
   if (existingNames.length === 0) {
     return `${prefix}1${suffix}`;
   }
 
-  const pattern = new RegExp(`^${escapeRegExp(prefix)}(\\d+)${escapeRegExp(suffix)}$`);
+  const pattern = new RegExp(
+    `^${escapeRegExp(prefix)}(\\d+)${escapeRegExp(suffix)}$`,
+  );
   const numbers = existingNames
     .map((name) => {
       const match = name.match(pattern);

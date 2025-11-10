@@ -9,7 +9,13 @@ interface RadioGroupProps {
   name?: string;
 }
 
-export const RadioGroup = ({ value, onValueChange, children, className, name = 'radio-group' }: RadioGroupProps) => {
+export const RadioGroup = ({
+  value,
+  onValueChange,
+  children,
+  className,
+  name = 'radio-group',
+}: RadioGroupProps) => {
   return (
     <div className={cn('flex flex-col gap-1', className)} role="radiogroup">
       {React.Children.map(children, (child) => {

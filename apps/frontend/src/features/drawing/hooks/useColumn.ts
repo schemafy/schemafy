@@ -4,10 +4,20 @@ import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType } from '../types';
 import { saveColumnField } from '../utils/columnHelpers';
 
-export const useColumn = (erdStore: ErdStore, schemaId: string, tableId: string) => {
-  const debouncedSaveRef = useRef<Map<string, ReturnType<typeof debounce>>>(new Map());
+export const useColumn = (
+  erdStore: ErdStore,
+  schemaId: string,
+  tableId: string,
+) => {
+  const debouncedSaveRef = useRef<Map<string, ReturnType<typeof debounce>>>(
+    new Map(),
+  );
 
-  const updateColumn = (columnId: string, key: keyof ColumnType, value: string | boolean) => {
+  const updateColumn = (
+    columnId: string,
+    key: keyof ColumnType,
+    value: string | boolean,
+  ) => {
     if (typeof value === 'boolean' || key === 'type') {
       if (erdStore.erdState.state !== 'loaded') return;
 
@@ -24,16 +34,19 @@ export const useColumn = (erdStore: ErdStore, schemaId: string, tableId: string)
 
     let debouncedSave = debouncedSaveRef.current.get(operationKey);
     if (!debouncedSave) {
-      debouncedSave = debounce((col: string, k: keyof ColumnType, val: string | boolean) => {
-        if (erdStore.erdState.state !== 'loaded') return;
+      debouncedSave = debounce(
+        (col: string, k: keyof ColumnType, val: string | boolean) => {
+          if (erdStore.erdState.state !== 'loaded') return;
 
-        try {
-          saveColumnField(erdStore, schemaId, tableId, col, k, val);
-        } catch (error) {
-          console.error('Failed to save column change:', error);
-          // TODO: 토스트 메시지 표시
-        }
-      }, 300);
+          try {
+            saveColumnField(erdStore, schemaId, tableId, col, k, val);
+          } catch (error) {
+            console.error('Failed to save column change:', error);
+            // TODO: 토스트 메시지 표시
+          }
+        },
+        300,
+      );
 
       debouncedSaveRef.current.set(operationKey, debouncedSave);
     }

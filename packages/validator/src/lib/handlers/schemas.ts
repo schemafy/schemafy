@@ -10,7 +10,7 @@ export interface SchemaHandlers {
   changeSchemaName: (
     database: Database,
     schemaId: Schema["id"],
-    newName: Schema["name"]
+    newName: Schema["name"],
   ) => Database;
   createSchema: (database: Database, schema: Schema) => Database;
   deleteSchema: (database: Database, schemaId: Schema["id"]) => Database;
@@ -25,7 +25,7 @@ export const schemaHandlers: SchemaHandlers = {
     if (!result.success) throw new SchemaNameInvalidError(newName);
 
     const existingSchema = database.schemas.find(
-      (schema) => schema.name === newName && schema.id !== schemaId
+      (schema) => schema.name === newName && schema.id !== schemaId,
     );
     if (existingSchema)
       throw new SchemaNameNotUniqueError(newName, existingSchema.id);
@@ -36,7 +36,7 @@ export const schemaHandlers: SchemaHandlers = {
       schemas: database.schemas.map((schema) =>
         schema.id === schemaId
           ? { ...schema, name: newName, isAffected: true }
-          : schema
+          : schema,
       ),
     };
   },

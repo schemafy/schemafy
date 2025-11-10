@@ -46,4 +46,10 @@ const DropdownMenuSeparator = ({
 );
 DropdownMenuSeparator.displayName = 'DropdownMenuSeparator';
 
-export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuSeparator, DropdownMenuGroup };
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
+};

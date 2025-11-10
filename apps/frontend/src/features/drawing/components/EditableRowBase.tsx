@@ -1,6 +1,13 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { Trash2, X } from 'lucide-react';
-import { Select, SelectGroup, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components';
+import {
+  Select,
+  SelectGroup,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components';
 
 export interface BaseItem {
   id: string;
@@ -12,8 +19,14 @@ export interface EditableRowBaseProps<T extends BaseItem> {
   item: T;
   tableColumns: Array<{ id: string; name: string }>;
   isEditMode: boolean;
-  renderViewMode: (item: T, tableColumns: Array<{ id: string; name: string }>) => ReactNode;
-  renderEditMode: (item: T, tableColumns: Array<{ id: string; name: string }>) => ReactNode;
+  renderViewMode: (
+    item: T,
+    tableColumns: Array<{ id: string; name: string }>,
+  ) => ReactNode;
+  renderEditMode: (
+    item: T,
+    tableColumns: Array<{ id: string; name: string }>,
+  ) => ReactNode;
 }
 
 export function EditableRowBase<T extends BaseItem>({
@@ -25,7 +38,9 @@ export function EditableRowBase<T extends BaseItem>({
 }: EditableRowBaseProps<T>) {
   return (
     <div className="border-b border-schemafy-light-gray last:border-b-0">
-      {isEditMode ? renderEditMode(item, tableColumns) : renderViewMode(item, tableColumns)}
+      {isEditMode
+        ? renderEditMode(item, tableColumns)
+        : renderViewMode(item, tableColumns)}
     </div>
   );
 }
@@ -36,7 +51,11 @@ export interface EditableNameInputProps {
   onNameChange: (newName: string) => void;
 }
 
-export const EditableNameInput = ({ name, placeholder, onNameChange }: EditableNameInputProps) => {
+export const EditableNameInput = ({
+  name,
+  placeholder,
+  onNameChange,
+}: EditableNameInputProps) => {
   const [localName, setLocalName] = useState(name);
 
   useEffect(() => {
@@ -82,12 +101,20 @@ export interface ColumnItemProps {
   additionalControls?: ReactNode;
 }
 
-export const ColumnItem = ({ columnName, onRemove, additionalControls }: ColumnItemProps) => {
+export const ColumnItem = ({
+  columnName,
+  onRemove,
+  additionalControls,
+}: ColumnItemProps) => {
   return (
     <div className="flex items-center gap-2 text-xs">
       <span className="text-schemafy-blue font-medium">{columnName}</span>
       {additionalControls}
-      <button onClick={onRemove} className="p-0.5 rounded" title="Remove column">
+      <button
+        onClick={onRemove}
+        className="p-0.5 rounded"
+        title="Remove column"
+      >
         <X size={12} />
       </button>
     </div>
@@ -99,7 +126,10 @@ export interface AddColumnSelectorProps {
   onAddColumn: (columnId: string) => void;
 }
 
-export const AddColumnSelector = ({ availableColumns, onAddColumn }: AddColumnSelectorProps) => {
+export const AddColumnSelector = ({
+  availableColumns,
+  onAddColumn,
+}: AddColumnSelectorProps) => {
   if (availableColumns.length === 0) return null;
 
   return (

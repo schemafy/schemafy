@@ -17,16 +17,25 @@ import {
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const erdStore = ErdStore.getInstance();
-  const [selectedRelationship, setSelectedRelationship] = useState<string | null>(null);
+  const [selectedRelationship, setSelectedRelationship] = useState<
+    string | null
+  >(null);
   const relationshipReconnectSuccessful = useRef(true);
 
-  const updateRelationshipControlPoint = (relationshipId: string, controlPointX: number, controlPointY: number) => {
+  const updateRelationshipControlPoint = (
+    relationshipId: string,
+    controlPointX: number,
+    controlPointY: number,
+  ) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
     const selectedSchema = erdStore.selectedSchema;
 
     if (!selectedSchemaId || !selectedSchema) return;
 
-    const currentRelationship = findRelationshipInSchema(selectedSchema, relationshipId);
+    const currentRelationship = findRelationshipInSchema(
+      selectedSchema,
+      relationshipId,
+    );
     if (!currentRelationship) return;
 
     const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
@@ -53,7 +62,9 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     }));
   };
 
-  const [relationships, setRelationships] = useState<Edge[]>(() => getRelationships());
+  const [relationships, setRelationships] = useState<Edge[]>(() =>
+    getRelationships(),
+  );
 
   useEffect(() => {
     const dispose = autorun(() => {
@@ -70,7 +81,12 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
     const selectedSchema = erdStore.selectedSchema;
 
-    if (!selectedSchemaId || !selectedSchema || !params.source || !params.target) {
+    if (
+      !selectedSchemaId ||
+      !selectedSchema ||
+      !params.source ||
+      !params.target
+    ) {
       return;
     }
 
@@ -138,7 +154,10 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipReconnectSuccessful.current = true;
   };
 
-  const updateRelationshipConfig = (relationshipId: string, config: RelationshipConfig) => {
+  const updateRelationshipConfig = (
+    relationshipId: string,
+    config: RelationshipConfig,
+  ) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
     const selectedSchema = erdStore.selectedSchema;
 
@@ -147,7 +166,10 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       return;
     }
 
-    const currentRelationship = findRelationshipInSchema(selectedSchema, relationshipId);
+    const currentRelationship = findRelationshipInSchema(
+      selectedSchema,
+      relationshipId,
+    );
     if (!currentRelationship) {
       console.error('Relationship not found');
       return;
@@ -157,7 +179,13 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
     const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
 
-    if (shouldRecreateRelationship(currentRelationship, newKind, typeConfig.cardinality)) {
+    if (
+      shouldRecreateRelationship(
+        currentRelationship,
+        newKind,
+        typeConfig.cardinality,
+      )
+    ) {
       erdStore.deleteRelationship(selectedSchemaId, relationshipId);
       erdStore.createRelationship(selectedSchemaId, {
         ...currentRelationship,
@@ -169,7 +197,11 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       const newExtra = mergeRelationshipExtra(currentExtra, config);
 
       if (hasExtraChanged(currentExtra, newExtra)) {
-        erdStore.updateRelationshipExtra(selectedSchemaId, relationshipId, newExtra);
+        erdStore.updateRelationshipExtra(
+          selectedSchemaId,
+          relationshipId,
+          newExtra,
+        );
       }
     }
   };

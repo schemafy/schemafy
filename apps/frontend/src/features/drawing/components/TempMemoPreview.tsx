@@ -8,7 +8,11 @@ interface TempMemoPreviewProps {
   onCancel: () => void;
 }
 
-export const TempMemoPreview = ({ position, onConfirm, onCancel }: TempMemoPreviewProps) => {
+export const TempMemoPreview = ({
+  position,
+  onConfirm,
+  onCancel,
+}: TempMemoPreviewProps) => {
   const [content, setContent] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +61,10 @@ export const TempMemoPreview = ({ position, onConfirm, onCancel }: TempMemoPrevi
       onKeyDown={handleKeyDown}
     >
       <div className="memo-icon w-[32px] h-[32px] rounded-t-full rounded-br-full bg-schemafy-bg flex justify-center items-center shadow-md">
-        <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
+        <Avatar
+          size={'dropdown'}
+          src="https://picsum.photos/200/300?random=1"
+        />
       </div>
 
       <input
