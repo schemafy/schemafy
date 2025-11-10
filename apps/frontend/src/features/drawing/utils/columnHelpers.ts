@@ -50,24 +50,13 @@ const addPrimaryKeyConstraint = (
   const existingPk = table.constraints.find((c) => c.kind === 'PRIMARY_KEY');
 
   if (existingPk) {
+    // TODO: validator에서 복합 pk에 대한 nn 추가 로직 필요
     erdStore.addColumnToConstraint(
       schemaId,
       tableId,
       existingPk.id,
       createConstraintColumn(columnId, existingPk.columns.length),
     );
-
-    const hasNotNull = table.constraints.some(
-      (c) => c.kind === 'NOT_NULL' && c.columns.some((cc) => cc.columnId === columnId),
-    );
-    if (!hasNotNull) {
-      erdStore.createConstraint(schemaId, tableId, {
-        id: ulid(),
-        name: `nn_${columnId}`,
-        kind: 'NOT_NULL',
-        columns: [createConstraintColumn(columnId, 0)],
-      });
-    }
   } else {
     erdStore.createConstraint(schemaId, tableId, {
       id: ulid(),
