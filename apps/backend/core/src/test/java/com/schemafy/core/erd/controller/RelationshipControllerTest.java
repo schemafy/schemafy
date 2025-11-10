@@ -12,10 +12,9 @@ import static org.springframework.restdocs.request.RequestDocumentation.paramete
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
-import java.util.Collections;
-import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,13 +25,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.repository.entity.Relationship;
-import com.schemafy.core.erd.repository.entity.RelationshipColumn;
+import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.core.erd.service.RelationshipService;
 
 import reactor.core.publisher.Flux;
@@ -48,6 +46,8 @@ class RelationshipControllerTest {
 
     private static final String API_BASE_PATH = ApiPath.AUTH_API
             .replace("{version}", "v1.0");
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .findAndRegisterModules();
 
     @Autowired
     private WebTestClient webTestClient;
@@ -63,65 +63,113 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계 생성 API 문서화")
     void createRelationship() throws Exception {
-        // Given
-        Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
-                .newBuilder()
-                .setRelationship(Validation.Relationship.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
-                        .setSrcTableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                        .setTgtTableId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                        .setName("FK_users_roles")
-                        .setKind(Validation.RelationshipKind.IDENTIFYING)
-                        .setCardinality(
-                                Validation.RelationshipCardinality.ONE_TO_MANY)
-                        .setOnDelete(Validation.RelationshipOnDelete.CASCADE)
-                        .setOnUpdate(
-                                Validation.RelationshipOnUpdate.CASCADE_UPDATE)
-                        .build())
-                .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FA2")
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("01ARZ3NDEKTSV4RRFFQ69G5FA2")
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                        .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FA2")
-                                        .setName("users")
-                                        .setComment("사용자 테이블")
-                                        .build())
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                                        .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FA2")
-                                        .setName("roles")
-                                        .setComment("역할 테이블")
-                                        .build())
-                                .build())
-                        .build())
-                .build();
+        // given
+        Validation.CreateRelationshipRequest.Builder builder = Validation.CreateRelationshipRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "vendorOption": "",
+                                        "canvasViewport": null,
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "user_id",
+                                                        "dataType": "BIGINT",
+                                                        "ordinalPosition": 1,
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "isAutoIncrement": false
+                                                    }
+                                                ],
+                                                "indexes": [],
+                                                "constraints": [],
+                                                "relationships": []
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "relationship": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                "name": "FK_recommend_user",
+                                "kind": "NON_IDENTIFYING",
+                                "cardinality": "ONE_TO_MANY",
+                                "onDelete": "CASCADE",
+                                "onUpdate": "CASCADE_UPDATE",
+                                "fkEnforced": false,
+                                "columns": [{
+                                    "id": "06D4YK995770K0J8539XGNHNW0",
+                                    "relationshipId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                    "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                    "refColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                    "seqNo": 1
+                                }]
+                            }
+                        }
+                        """,
+                        builder);
+        Validation.CreateRelationshipRequest request = builder.build();
 
-        AffectedMappingResponse mockResponse = new AffectedMappingResponse(
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Map.of("01ARZ3NDEKTSV4RRFFQ69G5FAW", Map.of("01ARZ3NDEKTSV4RRFFQ69G5FAV", "01ARZ3NDEKTSV4RRFFQ69G5FAY")),
-                Collections.emptyMap(),
-                AffectedMappingResponse.PropagatedEntities.empty());
+        String mockResponseJson = """
+                {
+                    "schemas": {},
+                    "tables": {},
+                    "columns": {},
+                    "indexes": {},
+                    "indexColumns": {},
+                    "constraints": {},
+                    "constraintColumns": {},
+                    "relationships": {
+                        "06D6W8HDY79QFZX39RMX62KSX4": {
+                            "01ARZ3NDEKTSV4RRFFQ69G5FAV": "06D6WCH677C3FCC2Q9SD5M1Y5W"
+                        }
+                    },
+                    "relationshipColumns": {
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W": {
+                            "06D4YK995770K0J8539XGNHNW0": "06D4YK995770K0J8539XGNHNW0"
+                        }
+                    },
+                    "propagated": {
+                        "columns": [],
+                        "constraintColumns": [],
+                        "indexColumns": []
+                    }
+                }
+                """;
+        AffectedMappingResponse mockResponse = objectMapper.readValue(
+                mockResponseJson, AffectedMappingResponse.class);
 
         when(relationshipService.createRelationship(any()))
-                        .thenReturn(Mono.just(mockResponse));
+                .thenReturn(Mono.just(mockResponse));
 
         String requestJson = toJson(request);
 
-        // When & Then
+        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/relationships")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -131,8 +179,10 @@ class RelationshipControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.relationships['01ARZ3NDEKTSV4RRFFQ69G5FAW']['01ARZ3NDEKTSV4RRFFQ69G5FAV']")
-                .isEqualTo("01ARZ3NDEKTSV4RRFFQ69G5FAY")
+                .jsonPath("$.result.relationships['06D6W8HDY79QFZX39RMX62KSX4']['01ARZ3NDEKTSV4RRFFQ69G5FAV']")
+                .isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .jsonPath("$.result.relationshipColumns['06D6WCH677C3FCC2Q9SD5M1Y5W']['06D4YK995770K0J8539XGNHNW0']")
+                .isEqualTo("06D4YK995770K0J8539XGNHNW0")
                 .consumeWith(document("relationship-create",
                         requestHeaders(
                                 headerWithName("Content-Type")
@@ -166,14 +216,20 @@ class RelationshipControllerTest {
                                         .description(
                                                 "관계 ID 매핑 (Source Table BE ID -> { FE ID -> BE ID })"),
                                 fieldWithPath(
-                                        "result.relationships.01ARZ3NDEKTSV4RRFFQ69G5FAW")
+                                        "result.relationships.06D6W8HDY79QFZX39RMX62KSX4")
                                                 .description(
                                                         "소스 테이블별 관계 ID 매핑"),
                                 fieldWithPath(
-                                        "result.relationships.01ARZ3NDEKTSV4RRFFQ69G5FAW.01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                                        "result.relationships.06D6W8HDY79QFZX39RMX62KSX4.01ARZ3NDEKTSV4RRFFQ69G5FAV")
                                                 .description("백엔드에서 생성된 관계 ID"),
                                 fieldWithPath("result.relationshipColumns")
                                         .description("관계 컬럼 ID 매핑"),
+                                fieldWithPath(
+                                        "result.relationshipColumns.06D6WCH677C3FCC2Q9SD5M1Y5W")
+                                                .description("관계 컬럼 ID 매핑"),
+                                fieldWithPath(
+                                        "result.relationshipColumns.06D6WCH677C3FCC2Q9SD5M1Y5W.06D4YK995770K0J8539XGNHNW0")
+                                                .description("백엔드에서 생성된 관계 컬럼 ID"),
                                 fieldWithPath("result.propagated")
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
@@ -189,34 +245,47 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계 단건 조회 API 문서화")
     void getRelationship() throws Exception {
-        // Given
-        String relationshipId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Relationship relationship = Relationship.builder()
-                .srcTableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                .tgtTableId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                .name("FK_users_roles")
-                .kind("IDENTIFYING")
-                .cardinality("ONE_TO_MANY")
-                .onDelete("CASCADE")
-                .onUpdate("CASCADE")
-                .extra("사용자와 역할 간의 식별 관계")
-                .build();
-        ReflectionTestUtils.setField(relationship, "id", relationshipId);
+        // given
+        String mockResponseJson = """
+                {
+                    "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                    "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "name": "FK_recommend_user",
+                    "kind": "NON_IDENTIFYING",
+                    "cardinality": "ONE_TO_MANY",
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE_UPDATE",
+                    "extra": "{}",
+                    "columns": [
+                        {
+                            "id": "06D6WCH68V89ZSPWVZ8WMBQWW8",
+                            "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                            "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                            "seqNo": 1
+                        }
+                    ]
+                }
+                """;
 
-        when(relationshipService.getRelationship(relationshipId))
-                .thenReturn(Mono.just(relationship));
+        when(relationshipService.getRelationship("06D6WCH677C3FCC2Q9SD5M1Y5W"))
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                        RelationshipResponse.class)));
 
-        // When & Then
+        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}",
-                        relationshipId)
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W")
                 .header("Accept", "application/json")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.id").isEqualTo(relationshipId)
-                .jsonPath("$.result.name").isEqualTo("FK_users_roles")
+                .jsonPath("$.result.id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .jsonPath("$.result.name").isEqualTo("FK_recommend_user")
+                .jsonPath("$.result.kind").isEqualTo("NON_IDENTIFYING")
+                .jsonPath("$.result.columns[0].id").isEqualTo("06D6WCH68V89ZSPWVZ8WMBQWW8")
                 .consumeWith(document("relationship-get",
                         pathParameters(
                                 parameterWithName("relationshipId")
@@ -246,58 +315,67 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.onUpdate").description(
                                         "UPDATE 시 액션 (CASCADE, SET_NULL, RESTRICT, NO_ACTION)"),
                                 fieldWithPath("result.extra")
-                                        .optional()
                                         .description("추가 정보 (JSON 형식)"),
-                                fieldWithPath("result.createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .optional()
-                                        .description("삭제 일시 (Soft Delete)"))));
+                                fieldWithPath("result.columns")
+                                        .description("관계 컬럼 목록"),
+                                fieldWithPath("result.columns[].id")
+                                        .description("관계 컬럼 ID"),
+                                fieldWithPath("result.columns[].relationshipId")
+                                        .description("관계 ID"),
+                                fieldWithPath("result.columns[].srcColumnId")
+                                        .description("소스 컬럼 ID (FK 컬럼)"),
+                                fieldWithPath("result.columns[].tgtColumnId")
+                                        .description("타겟 컬럼 ID (참조되는 컬럼)"),
+                                fieldWithPath("result.columns[].seqNo")
+                                        .description("순서 번호"))));
     }
 
     @Test
     @DisplayName("테이블별 관계 목록 조회 API 문서화")
     void getRelationshipsByTableId() throws Exception {
-        // Given
-        String tableId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Relationship relationship1 = Relationship.builder()
-                .srcTableId(tableId)
-                .tgtTableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                .name("FK_users_roles")
-                .kind("IDENTIFYING")
-                .cardinality("ONE_TO_MANY")
-                .onDelete("CASCADE")
-                .onUpdate("CASCADE")
-                .extra("사용자-역할 다대다 관계")
-                .build();
-        Relationship relationship2 = Relationship.builder()
-                .srcTableId(tableId)
-                .tgtTableId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                .name("FK_users_departments")
-                .kind("NON_IDENTIFYING")
-                .cardinality("MANY_TO_ONE")
-                .onDelete("SET_NULL")
-                .onUpdate("CASCADE")
-                .extra("사용자-부서 다대일 관계")
-                .build();
-        ReflectionTestUtils.setField(relationship1, "id", "01ARZ3NDEKTSV4RRFFQ69G5FAY");
-        ReflectionTestUtils.setField(relationship2, "id", "01ARZ3NDEKTSV4RRFFQ69G5FAZ");
+        // given
+        String mockResponseJson = """
+                [
+                    {
+                        "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                        "name": "FK_recommend_user",
+                        "kind": "NON_IDENTIFYING",
+                        "cardinality": "ONE_TO_MANY",
+                        "onDelete": "CASCADE",
+                        "onUpdate": "CASCADE_UPDATE",
+                        "extra": "{}",
+                        "columns": [
+                            {
+                                "id": "06D6WCH68V89ZSPWVZ8WMBQWW8",
+                                "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                "seqNo": 1
+                            }
+                        ]
+                    }
+                ]
+                """;
 
-        when(relationshipService.getRelationshipsByTableId(tableId))
-                .thenReturn(Flux.just(relationship1, relationship2));
+        when(relationshipService.getRelationshipsByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
+                .thenReturn(Flux.fromArray(objectMapper.readValue(mockResponseJson, 
+                        RelationshipResponse[].class)));
 
-        // When & Then
+        // when & then
         webTestClient.get()
-                .uri(API_BASE_PATH + "/relationships/table/{tableId}", tableId)
+                .uri(API_BASE_PATH + "/relationships/table/{tableId}",
+                        "06D6W8HDY79QFZX39RMX62KSX4")
                 .header("Accept", "application/json")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result").isArray()
-                .jsonPath("$.result.length()").isEqualTo(2)
+                .jsonPath("$.result.length()").isEqualTo(1)
+                .jsonPath("$.result[0].id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .jsonPath("$.result[0].name").isEqualTo("FK_recommend_user")
                 .consumeWith(document("relationship-get-by-table",
                         pathParameters(
                                 parameterWithName("tableId")
@@ -328,81 +406,125 @@ class RelationshipControllerTest {
                                 fieldWithPath("result[].onUpdate")
                                         .description("UPDATE 액션"),
                                 fieldWithPath("result[].extra")
-                                        .optional()
                                         .description("추가 정보"),
-                                fieldWithPath("result[].createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result[].updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result[].deletedAt")
-                                        .optional()
-                                        .description("삭제 일시"))));
+                                fieldWithPath("result[].columns")
+                                        .description("관계 컬럼 목록"),
+                                fieldWithPath("result[].columns[].id")
+                                        .description("관계 컬럼 ID"),
+                                fieldWithPath("result[].columns[].relationshipId")
+                                        .description("관계 ID"),
+                                fieldWithPath("result[].columns[].srcColumnId")
+                                        .description("소스 컬럼 ID (FK 컬럼)"),
+                                fieldWithPath("result[].columns[].tgtColumnId")
+                                        .description("타겟 컬럼 ID (참조되는 컬럼)"),
+                                fieldWithPath("result[].columns[].seqNo")
+                                        .description("순서 번호"))));
     }
 
     @Test
     @DisplayName("관계 이름 변경 API 문서화")
     void updateRelationshipName() throws Exception {
-        // Given
-        String relationshipId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        String schemaId = "01ARZ3NDEKTSV4RRFFQ69G5FA2";
-        Validation.ChangeRelationshipNameRequest request = Validation.ChangeRelationshipNameRequest
-                .newBuilder()
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId(schemaId)
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                        .setSchemaId(schemaId)
-                                        .setName("users")
-                                        .setComment("사용자 테이블")
-                                        .addRelationships(Validation.Relationship.newBuilder()
-                                                .setId(relationshipId)
-                                                .setSrcTableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                                .setTgtTableId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                                                .setName("FK_users_roles")
-                                                .setKind(Validation.RelationshipKind.IDENTIFYING)
-                                                .setCardinality(Validation.RelationshipCardinality.ONE_TO_MANY)
-                                                .build())
-                                        .build())
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                                        .setSchemaId(schemaId)
-                                        .setName("roles")
-                                        .setComment("역할 테이블")
-                                        .build())
-                                .build())
-                        .build())
-                .setSchemaId(schemaId)
-                .setRelationshipId(relationshipId)
-                .setNewName("FK_users_roles_new")
-                .build();
+        // given
+        Validation.ChangeRelationshipNameRequest.Builder builder = Validation.ChangeRelationshipNameRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "vendorOption": "",
+                                        "canvasViewport": null,
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "user_id",
+                                                        "dataType": "BIGINT",
+                                                        "ordinalPosition": 1,
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "isAutoIncrement": false
+                                                    }
+                                                ],
+                                                "indexes": [],
+                                                "constraints": [],
+                                                "relationships": [
+                                                    {
+                                                        "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "FK_recommend_user",
+                                                        "kind": "NON_IDENTIFYING",
+                                                        "cardinality": "ONE_TO_MANY",
+                                                        "onDelete": "CASCADE",
+                                                        "onUpdate": "CASCADE_UPDATE",
+                                                        "fkEnforced": false,
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D4YK995770K0J8539XGNHNW0",
+                                                                "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                                "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "refColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "newName": "FK_recommend_other_user"
+                        }
+                        """,
+                        builder);
+        Validation.ChangeRelationshipNameRequest request = builder.build();
 
-        Relationship updatedRelationship = Relationship.builder()
-                .srcTableId("src-table-id")
-                .tgtTableId("tgt-table-id")
-                .name("FK_users_roles_new")
-                .kind("IDENTIFYING")
-                .cardinality("ONE_TO_MANY")
-                .onDelete("CASCADE")
-                .onUpdate("CASCADE")
-                .extra(null)
-                .build();
-        ReflectionTestUtils.setField(updatedRelationship, "id", relationshipId);
+        String mockResponseJson = """
+                {
+                    "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                    "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "name": "FK_recommend_other_user",
+                    "kind": "NON_IDENTIFYING",
+                    "cardinality": "ONE_TO_MANY",
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE_UPDATE",
+                    "extra": "{}",
+                    "columns": []
+                }
+                """;
 
         when(relationshipService.updateRelationshipName(
                 any(Validation.ChangeRelationshipNameRequest.class)))
-                        .thenReturn(Mono.just(updatedRelationship));
+                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                                RelationshipResponse.class)));
 
-        // When & Then
+        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/name",
-                        relationshipId)
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -410,7 +532,9 @@ class RelationshipControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.name").isEqualTo("FK_users_roles_new")
+                .jsonPath("$.result.id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .jsonPath("$.result.name").isEqualTo("FK_recommend_other_user")
+                .jsonPath("$.result.kind").isEqualTo("NON_IDENTIFYING")
                 .consumeWith(document("relationship-update-name",
                         pathParameters(
                                 parameterWithName("relationshipId")
@@ -443,82 +567,116 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.onUpdate")
                                         .description("UPDATE 액션"),
                                 fieldWithPath("result.extra")
-                                        .optional()
                                         .description("추가 정보"),
-                                fieldWithPath("result.createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .optional()
-                                        .description("삭제 일시"))));
+                                fieldWithPath("result.columns")
+                                        .description("관계 컬럼 목록"))));
     }
 
     @Test
     @DisplayName("관계 카디널리티 변경 API 문서화")
     void updateRelationshipCardinality() throws Exception {
-        // Given
-        String relationshipId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        String schemaId = "01ARZ3NDEKTSV4RRFFQ69G5FA2";
-        Validation.ChangeRelationshipCardinalityRequest request = Validation.ChangeRelationshipCardinalityRequest
-                .newBuilder()
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId(schemaId)
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                        .setSchemaId(schemaId)
-                                        .setName("users")
-                                        .setComment("사용자 테이블")
-                                        .addRelationships(Validation.Relationship.newBuilder()
-                                                .setId(relationshipId)
-                                                .setSrcTableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                                .setTgtTableId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                                                .setName("FK_users_roles")
-                                                .setKind(Validation.RelationshipKind.IDENTIFYING)
-                                                .setCardinality(Validation.RelationshipCardinality.ONE_TO_MANY)
-                                                .build())
-                                        .build())
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                                        .setSchemaId(schemaId)
-                                        .setName("roles")
-                                        .setComment("역할 테이블")
-                                        .build())
-                                .build())
-                        .build())
-                .setSchemaId(schemaId)
-                .setRelationshipId(relationshipId)
-                .setCardinality(Validation.RelationshipCardinality.ONE_TO_ONE)
-                .build();
+        // given
+        Validation.ChangeRelationshipCardinalityRequest.Builder builder = Validation.ChangeRelationshipCardinalityRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "vendorOption": "",
+                                        "canvasViewport": null,
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "user_id",
+                                                        "dataType": "BIGINT",
+                                                        "ordinalPosition": 1,
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "isAutoIncrement": false
+                                                    }
+                                                ],
+                                                "indexes": [],
+                                                "constraints": [],
+                                                "relationships": [
+                                                    {
+                                                        "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "FK_recommend_other_user",
+                                                        "kind": "NON_IDENTIFYING",
+                                                        "cardinality": "ONE_TO_MANY",
+                                                        "onDelete": "CASCADE",
+                                                        "onUpdate": "CASCADE_UPDATE",
+                                                        "fkEnforced": false,
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D4YK995770K0J8539XGNHNW0",
+                                                                "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                                "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "refColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "cardinality": "ONE_TO_ONE"
+                        }
+                        """,
+                        builder);
+        Validation.ChangeRelationshipCardinalityRequest request = builder.build();
 
-        Relationship updatedRelationship = Relationship.builder()
-                .srcTableId("src-table-id")
-                .tgtTableId("tgt-table-id")
-                .name("FK_users_roles")
-                .kind("IDENTIFYING")
-                .cardinality("ONE_TO_ONE")
-                .onDelete("CASCADE")
-                .onUpdate("CASCADE")
-                .extra(null)
-                .build();
-        ReflectionTestUtils.setField(updatedRelationship, "id", relationshipId);
+        String mockResponseJson = """
+                {
+                    "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                    "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "name": "FK_recommend_other_user",
+                    "kind": "NON_IDENTIFYING",
+                    "cardinality": "ONE_TO_ONE",
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE_UPDATE",
+                    "extra": "{}",
+                    "columns": []
+                }
+                """;
 
         when(relationshipService.updateRelationshipCardinality(
                 any(Validation.ChangeRelationshipCardinalityRequest.class)))
-                        .thenReturn(Mono.just(updatedRelationship));
+                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                                RelationshipResponse.class)));
 
-        // When & Then
+        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH
                         + "/relationships/{relationshipId}/cardinality",
-                        relationshipId)
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -526,7 +684,9 @@ class RelationshipControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
                 .jsonPath("$.result.cardinality").isEqualTo("ONE_TO_ONE")
+                .jsonPath("$.result.name").isEqualTo("FK_recommend_other_user")
                 .consumeWith(document("relationship-update-cardinality",
                         pathParameters(
                                 parameterWithName("relationshipId")
@@ -559,50 +719,124 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.onUpdate")
                                         .description("UPDATE 액션"),
                                 fieldWithPath("result.extra")
-                                        .optional()
                                         .description("추가 정보"),
-                                fieldWithPath("result.createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .optional()
-                                        .description("삭제 일시"))));
+                                fieldWithPath("result.columns")
+                                        .description("관계 컬럼 목록"))));
     }
 
     @Test
     @DisplayName("관계에 컬럼 추가 API 문서화")
     void addColumnToRelationship() throws Exception {
-        // Given
-        String relationshipId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Validation.AddColumnToRelationshipRequest request = Validation.AddColumnToRelationshipRequest
-                .newBuilder()
-                .setRelationshipColumn(
-                        Validation.RelationshipColumn.newBuilder()
-                                .setId("rc-fe-id")
-                                .setRelationshipId(relationshipId)
-                                .setFkColumnId("fk-column-id")
-                                .setRefColumnId("ref-column-id")
-                                .setSeqNo(1)
-                                .build())
-                .build();
+        // given
+        Validation.AddColumnToRelationshipRequest.Builder builder = Validation.AddColumnToRelationshipRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "uid",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "autoIncrement": false
+                                                    },
+                                                    {
+                                                        "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "visit_count",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "방문 횟수",
+                                                        "autoIncrement": false
+                                                    }
+                                                ],
+                                                "relationships": [
+                                                    {
+                                                        "id": "06D590QBYGE6K2TQ8JK514GGP4",
+                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "FK_recommend_users",
+                                                        "kind": "NON_IDENTIFYING",
+                                                        "cardinality": "ONE_TO_ONE",
+                                                        "onDelete": "CASCADE",
+                                                        "onUpdate": "CASCADE_UPDATE",
+                                                        "extra": "{}",
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D590QC452PA8W5NQ2BDXNEDG",
+                                                                "relationshipId": "06D590QBYGE6K2TQ8JK514GGP4",
+                                                                "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "relationshipId": "06D590QBYGE6K2TQ8JK514GGP4",
+                            "relationshipColumn": {
+                                "id": "06D5JGQY03RKQPMC9CJ3B0EGM8",
+                                "relationshipId": "06D590QBYGE6K2TQ8JK514GGP4",
+                                "fkColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                "refColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                "seqNo": 2
+                            }
+                        }
+                        """,
+                        builder);
+        Validation.AddColumnToRelationshipRequest request = builder.build();
 
-        RelationshipColumn relationshipColumn = RelationshipColumn.builder()
-                .relationshipId(relationshipId)
-                .srcColumnId("fk-column-id")
-                .tgtColumnId("ref-column-id")
-                .seqNo(1)
-                .build();
-        ReflectionTestUtils.setField(relationshipColumn, "id", "rc-be-id");
+        String mockResponseJson = """
+                {
+                    "id": "06D6WGN2ZWCGM2SVWRW2GEP8WW",
+                    "relationshipId": "06D590QBYGE6K2TQ8JK514GGP4",
+                    "srcColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                    "tgtColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                    "seqNo": 2
+                }
+                """;
 
         when(relationshipService.addColumnToRelationship(
                 any(Validation.AddColumnToRelationshipRequest.class)))
-                        .thenReturn(Mono.just(relationshipColumn));
+                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                                RelationshipColumnResponse.class)));
 
-        // When & Then
+        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/columns",
-                        relationshipId)
+                        "06D590QBYGE6K2TQ8JK514GGP4")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -610,7 +844,9 @@ class RelationshipControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.relationshipId").isEqualTo(relationshipId)
+                .jsonPath("$.result.id").isEqualTo("06D6WGN2ZWCGM2SVWRW2GEP8WW")
+                .jsonPath("$.result.relationshipId").isEqualTo("06D590QBYGE6K2TQ8JK514GGP4")
+                .jsonPath("$.result.seqNo").isEqualTo(2)
                 .consumeWith(document("relationship-add-column",
                         pathParameters(
                                 parameterWithName("relationshipId")
@@ -636,36 +872,113 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.tgtColumnId")
                                         .description("타겟(참조) 컬럼 ID"),
                                 fieldWithPath("result.seqNo")
-                                        .description("순서 번호"),
-                                fieldWithPath("result.createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .optional()
-                                        .description("삭제 일시"))));
+                                        .description("순서 번호"))));
     }
 
     @Test
     @DisplayName("관계에서 컬럼 제거 API 문서화")
     void removeColumnFromRelationship() throws Exception {
-        // Given
-        String relationshipId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        String columnId = "01ARZ3NDEKTSV4RRFFQ69G5FAW";
-        Validation.RemoveColumnFromRelationshipRequest request = Validation.RemoveColumnFromRelationshipRequest
-                .newBuilder()
-                .setRelationshipColumnId("rc-id-123")
-                .build();
+        // given
+        Validation.RemoveColumnFromRelationshipRequest.Builder builder = Validation.RemoveColumnFromRelationshipRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "uid",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "autoIncrement": false
+                                                    },
+                                                    {
+                                                        "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "visit_count",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "방문 횟수",
+                                                        "autoIncrement": false
+                                                    }
+                                                ],
+                                                "relationships": [
+                                                    {
+                                                        "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "FK_recommend_users",
+                                                        "kind": "NON_IDENTIFYING",
+                                                        "cardinality": "ONE_TO_ONE",
+                                                        "onDelete": "CASCADE",
+                                                        "onUpdate": "CASCADE_UPDATE",
+                                                        "extra": "{}",
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D6WCH68V89ZSPWVZ8WMBQWW8",
+                                                                "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                                "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1
+                                                            },
+                                                            {
+                                                                "id": "06D6WH7CC5YVNWKVB888ZB42EM",
+                                                                "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                                "srcColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                                "tgtColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                                "seqNo": 2
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "relationshipColumnId": "06D6WH7CC5YVNWKVB888ZB42EM"
+                        }
+                        """,
+                        builder);
+        Validation.RemoveColumnFromRelationshipRequest request = builder.build();
 
         when(relationshipService.removeColumnFromRelationship(
                 any(Validation.RemoveColumnFromRelationshipRequest.class)))
                         .thenReturn(Mono.empty());
 
-        // When & Then
+        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH
                         + "/relationships/{relationshipId}/columns/{columnId}",
-                        relationshipId, columnId)
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W", "06D6WH7CC5YVNWKVB888ZB42EM")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -699,54 +1012,98 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계 삭제 API 문서화")
     void deleteRelationship() throws Exception {
-        // Given
-        String relationshipId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        String schemaId = "01ARZ3NDEKTSV4RRFFQ69G5FA2";
-        Validation.DeleteRelationshipRequest request = Validation.DeleteRelationshipRequest
-                .newBuilder()
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId(schemaId)
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                        .setSchemaId(schemaId)
-                                        .setName("users")
-                                        .setComment("사용자 테이블")
-                                        .addRelationships(Validation.Relationship.newBuilder()
-                                                .setId(relationshipId)
-                                                .setSrcTableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                                .setTgtTableId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                                                .setName("FK_users_roles")
-                                                .setKind(Validation.RelationshipKind.IDENTIFYING)
-                                                .setCardinality(Validation.RelationshipCardinality.ONE_TO_MANY)
-                                                .build())
-                                        .build())
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAX")
-                                        .setSchemaId(schemaId)
-                                        .setName("roles")
-                                        .setComment("역할 테이블")
-                                        .build())
-                                .build())
-                        .build())
-                .setSchemaId(schemaId)
-                .setRelationshipId(relationshipId)
-                .build();
+        // given
+        Validation.DeleteRelationshipRequest.Builder builder = Validation.DeleteRelationshipRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "uid",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "autoIncrement": false
+                                                    },
+                                                    {
+                                                        "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "visit_count",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "방문 횟수",
+                                                        "autoIncrement": false
+                                                    }
+                                                ],
+                                                "relationships": [
+                                                    {
+                                                        "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "FK_recommend_users",
+                                                        "kind": "NON_IDENTIFYING",
+                                                        "cardinality": "ONE_TO_ONE",
+                                                        "onDelete": "CASCADE",
+                                                        "onUpdate": "CASCADE_UPDATE",
+                                                        "extra": "{}",
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D6WCH68V89ZSPWVZ8WMBQWW8",
+                                                                "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                                                "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W"
+                        }
+                        """,
+                        builder);
+        Validation.DeleteRelationshipRequest request = builder.build();
 
         when(relationshipService.deleteRelationship(
                 any(Validation.DeleteRelationshipRequest.class)))
                         .thenReturn(Mono.empty());
 
-        // When & Then
+        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}",
-                        relationshipId)
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")

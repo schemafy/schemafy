@@ -1,8 +1,11 @@
 package com.schemafy.core.erd.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,13 +19,13 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
 import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
-
-import java.util.List;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -448,7 +451,7 @@ class RelationshipServiceTest {
                         .build())
                 .block();
 
-        Mono<Relationship> result = relationshipService
+        Mono<RelationshipResponse> result = relationshipService
                 .getRelationship(saved.getId());
 
         StepVerifier.create(result)
@@ -492,7 +495,7 @@ class RelationshipServiceTest {
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
                     assertThat(
-                            list.stream().map(Relationship::getName).toList())
+                            list.stream().map(RelationshipResponse::getName).toList())
                                     .containsExactlyInAnyOrder("fk_a_b",
                                             "fk_a_c");
                 })
@@ -600,7 +603,7 @@ class RelationshipServiceTest {
                 .build();
 
         // when
-        Mono<RelationshipColumn> result = relationshipService
+        Mono<RelationshipColumnResponse> result = relationshipService
                 .addColumnToRelationship(request);
 
         // then

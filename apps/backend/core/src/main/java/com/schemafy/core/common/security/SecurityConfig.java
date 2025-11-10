@@ -41,9 +41,6 @@ public class SecurityConfig {
         API_BASE_PATH + "/users/refresh",
         "/actuator/health",
         "/actuator/info",
-        "/webjars/**",
-        "/v3/api-docs/**",
-        "/swagger-ui/**"
     };
 
     @Bean

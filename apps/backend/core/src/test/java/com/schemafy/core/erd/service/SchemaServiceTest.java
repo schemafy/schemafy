@@ -15,6 +15,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.SchemaDetailResponse;
+import com.schemafy.core.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Schema;
 import com.schemafy.core.validation.client.ValidationClient;
@@ -60,7 +62,7 @@ class SchemaServiceTest {
                         .build())
                 .block();
 
-        Mono<Schema> result = schemaService.getSchema(saved.getId());
+        Mono<SchemaDetailResponse> result = schemaService.getSchema(saved.getId());
 
         StepVerifier.create(result)
                 .assertNext(found -> {
@@ -87,7 +89,7 @@ class SchemaServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(Schema::getName).toList())
+                    assertThat(list.stream().map(SchemaResponse::getName).toList())
                             .containsExactlyInAnyOrder("a", "b");
                 })
                 .verifyComplete();

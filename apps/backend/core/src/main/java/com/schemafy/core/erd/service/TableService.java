@@ -81,8 +81,6 @@ public class TableService {
 
     public Flux<TableResponse> getTablesBySchemaId(String schemaId) {
         return tableRepository.findBySchemaIdAndDeletedAtIsNull(schemaId)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_TABLE_NOT_FOUND)))
                 .map(TableResponse::from);
     }
 

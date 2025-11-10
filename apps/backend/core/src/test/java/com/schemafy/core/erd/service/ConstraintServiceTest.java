@@ -1,8 +1,11 @@
 package com.schemafy.core.erd.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,13 +18,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
 import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.ConstraintColumn;
 import com.schemafy.core.validation.client.ValidationClient;
-
-import java.util.List;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -397,7 +400,7 @@ class ConstraintServiceTest {
                         .build())
                 .block();
 
-        Mono<Constraint> result = constraintService
+        Mono<ConstraintResponse> result = constraintService
                 .getConstraint(saved.getId());
 
         StepVerifier.create(result)
@@ -429,7 +432,7 @@ class ConstraintServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(Constraint::getName).toList())
+                    assertThat(list.stream().map(ConstraintResponse::getName).toList())
                             .containsExactlyInAnyOrder("pk_a", "uk_a");
                 })
                 .verifyComplete();
@@ -493,7 +496,7 @@ class ConstraintServiceTest {
                 .build();
 
         // when
-        Mono<ConstraintColumn> result = constraintService
+        Mono<ConstraintColumnResponse> result = constraintService
                 .addColumnToConstraint(request);
 
         // then

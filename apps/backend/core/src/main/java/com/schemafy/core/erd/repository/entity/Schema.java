@@ -42,12 +42,17 @@ public class Schema extends BaseEntity {
     @Column("vendor_option")
     private String vendorOption;
 
+    @Nullable
+    @Column("canvas_viewport")
+    private String canvasViewport;
+
     @Builder(builderMethodName = "builder", buildMethodName = "build")
     private static Schema newSchema(String projectId, String dbVendorId,
             String name,
-            String charset, String collation, String vendorOption) {
+            String charset, String collation, String vendorOption,
+            String canvasViewport) {
         Schema schema = new Schema(projectId, dbVendorId, name, charset,
-                collation, vendorOption);
+                collation, vendorOption, canvasViewport);
         schema.setId(UlidGenerator.generate());
         return schema;
     }

@@ -11,6 +11,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.paramete
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import java.util.Collections;
@@ -32,6 +33,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
+import com.schemafy.core.erd.controller.dto.response.TableResponse;
 import com.schemafy.core.erd.repository.entity.Table;
 import com.schemafy.core.erd.service.TableService;
 
@@ -45,6 +48,9 @@ import validation.Validation;
 @AutoConfigureRestDocs
 @DisplayName("TableController 통합 테스트")
 class TableControllerTest {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .findAndRegisterModules();
 
     private static final String API_BASE_PATH = ApiPath.AUTH_API
             .replace("{version}", "v1.0");
@@ -63,46 +69,79 @@ class TableControllerTest {
     @Test
     @DisplayName("테이블 생성 API 문서화")
     void createTable() throws Exception {
-        // Given
-        Validation.CreateTableRequest request = Validation.CreateTableRequest
-                .newBuilder()
-                .setTable(Validation.Table.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
-                        .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                        .setName("users")
-                        .setComment("사용자 테이블")
-                        .setTableOptions("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
-                        .build())
-                .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .build())
-                        .build())
-                .build();
+        // given
+        Validation.CreateTableRequest.Builder builder = Validation.CreateTableRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "vendorOption": "",
+                                        "canvasViewport": null,
+                                        "tables": []
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "table": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                "name": "users",
+                                "comment": "사용자 테이블",
+                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                "columns": [],
+                                "indexes": [],
+                                "constraints": [],
+                                "relationships": []
+                            }
+                        }
+                        """,
+                        builder);
+        Validation.CreateTableRequest request = builder.build();
 
-        AffectedMappingResponse mockResponse = new AffectedMappingResponse(
-                Collections.emptyMap(),
-                Map.of("01ARZ3NDEKTSV4RRFFQ69G5FAV", "01ARZ3NDEKTSV4RRFFQ69G5FAX"),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                AffectedMappingResponse.PropagatedEntities.empty());
+        AffectedMappingResponse mockResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "success": true,
+                                            "result": {
+                                                "schemas": {},
+                                                "tables": {
+                                                    "01ARZ3NDEKTSV4RRFFQ69G5FAV": "06D6W1GAHD51T5NJPK29Q6BCR8"
+                                                },
+                                                "columns": {},
+                                                "indexes": {},
+                                                "indexColumns": {},
+                                                "constraints": {},
+                                                "constraintColumns": {},
+                                                "relationships": {},
+                                                "relationshipColumns": {},
+                                                "propagated": {
+                                                    "columns": [],
+                                                    "constraintColumns": [],
+                                                    "indexColumns": []
+                                                }
+                                            }
+                                        }
+                                        """)
+                        .get("result"),
+                AffectedMappingResponse.class);
 
         given(tableService.createTable(any()))
                 .willReturn(Mono.just(mockResponse));
 
-        // When & Then
+        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/tables")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -112,7 +151,8 @@ class TableControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.tables.01ARZ3NDEKTSV4RRFFQ69G5FAV").isEqualTo("01ARZ3NDEKTSV4RRFFQ69G5FAX")
+                .jsonPath("$.result.tables.01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
                 .consumeWith(document("table-create",
                         requestHeaders(
                                 headerWithName("Content-Type")
@@ -131,7 +171,7 @@ class TableControllerTest {
                                 fieldWithPath("result.tables")
                                         .description("테이블 ID 매핑 (FE ID -> BE ID)"),
                                 fieldWithPath("result.tables.01ARZ3NDEKTSV4RRFFQ69G5FAV")
-                                        .description("백엔드에서 생성된 테이블 ID"),
+                                        .description("백엔드에서 생성된 테이블 ID (06D6W1GAHD51T5NJPK29Q6BCR8)"),
                                 fieldWithPath("result.columns")
                                         .description("컬럼 ID 매핑"),
                                 fieldWithPath("result.indexes")
@@ -159,31 +199,31 @@ class TableControllerTest {
     @Test
     @DisplayName("스키마별 테이블 목록 조회 API 문서화")
     void getTablesBySchemaId() throws Exception {
-        // Given
-        String schemaId = "01ARZ3NDEKTSV4RRFFQ69G5FAW";
+        // given
+        String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
         
-        Table table1 = Table.builder()
-                .schemaId(schemaId)
-                .name("users")
-                .comment("사용자 테이블")
-                .tableOptions("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")
-                .extra("{}")
-                .build();
-        ReflectionTestUtils.setField(table1, "id", "01ARZ3NDEKTSV4RRFFQ69G5FAV");
-        
-        Table table2 = Table.builder()
-                .schemaId(schemaId)
-                .name("orders")
-                .comment("주문 테이블")
-                .tableOptions("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")
-                .extra("{}")
-                .build();
-        ReflectionTestUtils.setField(table2, "id", "01ARZ3NDEKTSV4RRFFQ69G5FAX");
+        TableResponse tableResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                            "name": "users",
+                                            "comment": "사용자 테이블",
+                                            "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                            "extra": "{}",
+                                            "createdAt": "2025-11-10T13:48:01Z",
+                                            "updatedAt": "2025-11-10T13:48:01Z",
+                                            "deletedAt": null
+                                        }
+                                        """),
+                TableResponse.class);
 
         given(tableService.getTablesBySchemaId(schemaId))
-                .willReturn(Flux.just(table1, table2));
+                .willReturn(Flux.just(tableResponse));
 
-        // When & Then
+        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/tables/schema/{schemaId}", schemaId)
                 .header("Accept", "application/json")
@@ -192,9 +232,13 @@ class TableControllerTest {
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result").isArray()
-                .jsonPath("$.result.length()").isEqualTo(2)
+                .jsonPath("$.result.length()").isEqualTo(1)
+                .jsonPath("$.result[0].id").isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
+                .jsonPath("$.result[0].schemaId").isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
                 .jsonPath("$.result[0].name").isEqualTo("users")
-                .jsonPath("$.result[1].name").isEqualTo("orders")
+                .jsonPath("$.result[0].comment").isEqualTo("사용자 테이블")
+                .jsonPath("$.result[0].tableOptions")
+                .isEqualTo("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
                 .consumeWith(document("table-list-by-schema",
                         pathParameters(
                                 parameterWithName("schemaId")
@@ -233,21 +277,39 @@ class TableControllerTest {
     @Test
     @DisplayName("테이블 단건 조회 API 문서화")
     void getTable() throws Exception {
-        // Given
-        String tableId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Table table = Table.builder()
-                .schemaId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                .name("users")
-                .comment("사용자 테이블")
-                .tableOptions("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")
-                .extra("생성일: 2024-01-01")
-                .build();
-        ReflectionTestUtils.setField(table, "id", tableId);
+        // given
+        String tableId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+        
+        TableDetailResponse tableDetailResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "success": true,
+                                            "result": {
+                                                "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "extra": "{}",
+                                                "createdAt": "2025-11-10T13:48:01Z",
+                                                "updatedAt": "2025-11-10T13:48:01Z",
+                                                "deletedAt": null,
+                                                "columns": [],
+                                                "constraints": [],
+                                                "indexes": [],
+                                                "relationships": []
+                                            }
+                                        }
+                                        """)
+                        .get("result"),
+                TableDetailResponse.class);
 
         given(tableService.getTable(tableId))
-                .willReturn(Mono.just(table));
+                .willReturn(Mono.just(tableDetailResponse));
 
-        // When & Then
+        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/tables/{tableId}", tableId)
                 .header("Accept", "application/json")
@@ -255,7 +317,12 @@ class TableControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
+                .jsonPath("$.result.schemaId").isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
                 .jsonPath("$.result.name").isEqualTo("users")
+                .jsonPath("$.result.comment").isEqualTo("사용자 테이블")
+                .jsonPath("$.result.tableOptions")
+                .isEqualTo("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
                 .consumeWith(document("table-get",
                         pathParameters(
                                 parameterWithName("tableId")
@@ -287,52 +354,92 @@ class TableControllerTest {
                                 fieldWithPath("result.updatedAt")
                                         .description("수정 일시"),
                                 fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"))));
+                                        .description("삭제 일시 (Soft Delete)"),
+                                fieldWithPath("result.columns")
+                                        .description("컬럼 목록"),
+                                fieldWithPath("result.constraints")
+                                        .description("제약조건 목록"),
+                                fieldWithPath("result.indexes")
+                                        .description("인덱스 목록"),
+                                fieldWithPath("result.relationships")
+                                        .description("관계 목록"))));
     }
 
     @Test
     @DisplayName("테이블 이름 변경 API 문서화")
     void updateTableName() throws Exception {
-        // Given
-        String tableId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Validation.ChangeTableNameRequest request = Validation.ChangeTableNameRequest
-                .newBuilder()
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId(tableId)
-                                        .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                        .setName("users")
-                                        .setComment("사용자 테이블")
-                                        .build())
-                                .build())
-                        .build())
-                .setTableId(tableId)
-                .setNewName("members")
-                .build();
+        // given
+        Validation.ChangeTableNameRequest.Builder builder = Validation.ChangeTableNameRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "vendorOption": "",
+                                        "canvasViewport": null,
+                                        "tables": [
+                                            {
+                                                "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [],
+                                                "indexes": [],
+                                                "constraints": [],
+                                                "relationships": []
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "tableId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "newName": "user"
+                        }
+                        """,
+                        builder);
+        Validation.ChangeTableNameRequest request = builder.build();
 
-        Table updated = Table.builder()
-                .schemaId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                .name("members")
-                .comment("회원 테이블")
-                .tableOptions("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")
-                .extra("변경일: 2024-06-15")
-                .build();
-        ReflectionTestUtils.setField(updated, "id", tableId);
+        TableResponse mockResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "success": true,
+                                            "result": {
+                                                "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "user",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "extra": "{}",
+                                                "createdAt": "2025-11-10T13:48:01Z",
+                                                "updatedAt": "2025-11-10T14:15:08.399530Z",
+                                                "deletedAt": null
+                                            }
+                                        }
+                                        """)
+                        .get("result"),
+                TableResponse.class);
 
         given(tableService.updateTableName(request))
-                .willReturn(Mono.just(updated));
+                .willReturn(Mono.just(mockResponse));
 
-        // When & Then
+        // when & then
         webTestClient.put()
-                .uri(API_BASE_PATH + "/tables/{tableId}/name", tableId)
+                .uri(API_BASE_PATH + "/tables/{tableId}/name",
+                        "06D6W1GAHD51T5NJPK29Q6BCR8")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -340,7 +447,12 @@ class TableControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.name").isEqualTo("members")
+                .jsonPath("$.result.id").isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
+                .jsonPath("$.result.schemaId").isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
+                .jsonPath("$.result.name").isEqualTo("user")
+                .jsonPath("$.result.comment").isEqualTo("사용자 테이블")
+                .jsonPath("$.result.tableOptions")
+                .isEqualTo("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
                 .consumeWith(document("table-update-name",
                         pathParameters(
                                 parameterWithName("tableId")
@@ -380,35 +492,54 @@ class TableControllerTest {
     @Test
     @DisplayName("테이블 삭제 API 문서화")
     void deleteTable() throws Exception {
-        // Given
-        String tableId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Validation.DeleteTableRequest request = Validation.DeleteTableRequest
-                .newBuilder()
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId(tableId)
-                                        .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                        .setName("temp_table")
-                                        .setComment("임시 테이블")
-                                        .build())
-                                .build())
-                        .build())
-                .setTableId(tableId)
-                .build();
+        // given
+        Validation.DeleteTableRequest.Builder builder = Validation.DeleteTableRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "vendorOption": "",
+                                        "canvasViewport": null,
+                                        "tables": [
+                                            {
+                                                "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [],
+                                                "indexes": [],
+                                                "constraints": [],
+                                                "relationships": []
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "tableId": "06D6W1GAHD51T5NJPK29Q6BCR8"
+                        }
+                        """,
+                        builder);
+        Validation.DeleteTableRequest request = builder.build();
 
         given(tableService.deleteTable(request)).willReturn(Mono.empty());
 
-        // When & Then
+        // when & then
         webTestClient.method(HttpMethod.DELETE)
-                .uri(API_BASE_PATH + "/tables/{tableId}", tableId)
+                .uri(API_BASE_PATH + "/tables/{tableId}",
+                        "06D6W1GAHD51T5NJPK29Q6BCR8")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")

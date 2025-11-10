@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -15,6 +16,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
 import com.schemafy.core.erd.repository.IndexColumnRepository;
 import com.schemafy.core.erd.repository.IndexRepository;
 import com.schemafy.core.erd.repository.entity.Index;
@@ -156,7 +159,7 @@ class IndexServiceTest {
                         .build())
                 .block();
 
-        Mono<Index> result = indexService.getIndex(saved.getId());
+        Mono<IndexResponse> result = indexService.getIndex(saved.getId());
 
         StepVerifier.create(result)
                 .assertNext(found -> {
@@ -187,7 +190,7 @@ class IndexServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(Index::getName).toList())
+                    assertThat(list.stream().map(IndexResponse::getName).toList())
                             .containsExactlyInAnyOrder("idx_a", "idx_b");
                 })
                 .verifyComplete();
@@ -253,7 +256,7 @@ class IndexServiceTest {
                 .build();
 
         // when
-        Mono<IndexColumn> result = indexService.addColumnToIndex(request);
+        Mono<IndexColumnResponse> result = indexService.addColumnToIndex(request);
 
         // then
         StepVerifier.create(result)

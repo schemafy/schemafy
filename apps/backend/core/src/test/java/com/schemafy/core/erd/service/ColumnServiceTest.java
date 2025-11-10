@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -15,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.entity.Column;
 import com.schemafy.core.validation.client.ValidationClient;
@@ -153,7 +155,7 @@ class ColumnServiceTest {
                         .build())
                 .block();
 
-        Mono<Column> result = columnService.getColumn(saved.getId());
+        Mono<ColumnResponse> result = columnService.getColumn(saved.getId());
 
         StepVerifier.create(result)
                 .assertNext(found -> {
@@ -185,7 +187,7 @@ class ColumnServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(Column::getName).toList())
+                    assertThat(list.stream().map(ColumnResponse::getName).toList())
                             .containsExactlyInAnyOrder("column_a", "column_b");
                 })
                 .verifyComplete();

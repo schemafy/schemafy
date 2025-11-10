@@ -12,10 +12,9 @@ import static org.springframework.restdocs.request.RequestDocumentation.paramete
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
-import java.util.Collections;
-import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,13 +25,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.repository.entity.Index;
-import com.schemafy.core.erd.repository.entity.IndexColumn;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.service.IndexService;
 
 import reactor.core.publisher.Flux;
@@ -48,6 +46,8 @@ class IndexControllerTest {
 
     private static final String API_BASE_PATH = ApiPath.AUTH_API
             .replace("{version}", "v1.0");
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .findAndRegisterModules();
 
     @Autowired
     private WebTestClient webTestClient;
@@ -63,52 +63,118 @@ class IndexControllerTest {
     @Test
     @DisplayName("인덱스 생성 API 문서화")
     void createIndex() throws Exception {
-        // Given
-        Validation.CreateIndexRequest request = Validation.CreateIndexRequest
-                .newBuilder()
-                .setIndex(Validation.Index.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
-                        .setTableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                        .setName("IDX_users_email")
-                        .setType(Validation.IndexType.BTREE)
-                        .setComment("이메일 인덱스")
-                        .build())
-                .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FA2")
-                .setTableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("01ARZ3NDEKTSV4RRFFQ69G5FA2")
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                                        .setSchemaId("01ARZ3NDEKTSV4RRFFQ69G5FA2")
-                                        .setName("users")
-                                        .build())
-                                .build())
-                        .build())
-                .build();
+        // given
+        Validation.CreateIndexRequest.Builder builder = Validation.CreateIndexRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "uid",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "autoIncrement": false
+                                                    },
+                                                    {
+                                                        "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "visit_count",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "방문 횟수",
+                                                        "autoIncrement": false
+                                                    }
+                                                ],
+                                                "relationships": []
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "index": {
+                                "id": "06D5KGSC0HJ9CPPYGMGYDA2PAG",
+                                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                "name": "IDX",
+                                "type": "BTREE",
+                                "comment": "",
+                                "columns": [
+                                    {
+                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                        "indexId": "06D5KGSC0HJ9CPPYGMGYDA2PAG",
+                                        "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                        "seqNo": 1,
+                                        "sortDir": "ASC"
+                                    }
+                                ]
+                            }
+                        }
+                        """,
+                        builder);
+        Validation.CreateIndexRequest request = builder.build();
 
-        AffectedMappingResponse mockResponse = new AffectedMappingResponse(
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Map.of("01ARZ3NDEKTSV4RRFFQ69G5FAW", Map.of("01ARZ3NDEKTSV4RRFFQ69G5FAV", "01ARZ3NDEKTSV4RRFFQ69G5FAX")),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                Collections.emptyMap(),
-                AffectedMappingResponse.PropagatedEntities.empty());
+        String mockResponseJson = """
+                {
+                    "schemas": {},
+                    "tables": {},
+                    "columns": {},
+                                "indexes": {
+                                    "06D6W8HDY79QFZX39RMX62KSX4": {
+                            "06D5KGSC0HJ9CPPYGMGYDA2PAG": "06D6WNJS8XWZT41HWZ226ZS904"
+                        }
+                    },
+                    "indexColumns": {
+                        "06D6WNJS8XWZT41HWZ226ZS904": {
+                            "06D6W90RSE1VPFRMM4XPKYGM9M": "06D6W90RSE1VPFRMM4XPKYGM9M"
+                        }
+                    },
+                    "constraints": {},
+                    "constraintColumns": {},
+                    "relationships": {},
+                    "relationshipColumns": {},
+                    "propagated": {
+                        "columns": [],
+                        "constraintColumns": [],
+                        "indexColumns": []
+                    }
+                }
+                """;
+        AffectedMappingResponse mockResponse = objectMapper.readValue(
+                mockResponseJson, AffectedMappingResponse.class);
 
         when(indexService.createIndex(any(Validation.CreateIndexRequest.class)))
                 .thenReturn(Mono.just(mockResponse));
 
-        // When & Then
+        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/indexes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -118,8 +184,10 @@ class IndexControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.indexes['01ARZ3NDEKTSV4RRFFQ69G5FAW']['01ARZ3NDEKTSV4RRFFQ69G5FAV']")
-                .isEqualTo("01ARZ3NDEKTSV4RRFFQ69G5FAX")
+                .jsonPath("$.result.indexes['06D6W8HDY79QFZX39RMX62KSX4']['06D5KGSC0HJ9CPPYGMGYDA2PAG']")
+                .isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
+                .jsonPath("$.result.indexColumns['06D6WNJS8XWZT41HWZ226ZS904']['06D6W90RSE1VPFRMM4XPKYGM9M']")
+                .isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
                 .consumeWith(document("index-create",
                         requestHeaders(
                                 headerWithName("Content-Type")
@@ -143,14 +211,19 @@ class IndexControllerTest {
                                         .description("컬럼 ID 매핑"),
                                 fieldWithPath("result.indexes").description(
                                         "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.indexes.01ARZ3NDEKTSV4RRFFQ69G5FAW")
+                                fieldWithPath("result.indexes.06D6W8HDY79QFZX39RMX62KSX4")
                                         .description("테이블별 인덱스 ID 매핑"),
                                 fieldWithPath(
-                                        "result.indexes.01ARZ3NDEKTSV4RRFFQ69G5FAW.01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                                        "result.indexes.06D6W8HDY79QFZX39RMX62KSX4.06D5KGSC0HJ9CPPYGMGYDA2PAG")
                                                 .description(
                                                         "백엔드에서 생성된 인덱스 ID"),
                                 fieldWithPath("result.indexColumns")
                                         .description("인덱스 컬럼 ID 매핑"),
+                                fieldWithPath("result.indexColumns.06D6WNJS8XWZT41HWZ226ZS904")
+                                        .description("인덱스별 컬럼 ID 매핑"),
+                                fieldWithPath(
+                                        "result.indexColumns.06D6WNJS8XWZT41HWZ226ZS904.06D6W90RSE1VPFRMM4XPKYGM9M")
+                                                .description("백엔드에서 생성된 인덱스 컬럼 ID"),
                                 fieldWithPath("result.constraints")
                                         .description("제약조건 ID 매핑"),
                                 fieldWithPath("result.constraintColumns")
@@ -173,29 +246,42 @@ class IndexControllerTest {
     @Test
     @DisplayName("인덱스 단건 조회 API 문서화")
     void getIndex() throws Exception {
-        // Given
-        String indexId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Index index = Index.builder()
-                .tableId("01ARZ3NDEKTSV4RRFFQ69G5FAW")
-                .name("IDX_users_email")
-                .type("BTREE")
-                .comment("이메일 검색을 위한 B-Tree 인덱스")
-                .build();
-        ReflectionTestUtils.setField(index, "id", indexId);
+        // given
+        String mockResponseJson = """
+                {
+                    "id": "06D6WNJS8XWZT41HWZ226ZS904",
+                    "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "name": "IDX",
+                    "type": "BTREE",
+                    "comment": "",
+                    "columns": [
+                        {
+                            "id": "06D6WNJSBMS6AWBM1ZD7EDJP4M",
+                            "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                            "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                            "seqNo": 1,
+                            "sortDir": "ASC"
+                        }
+                    ]
+                }
+                """;
 
-        when(indexService.getIndex(indexId))
-                .thenReturn(Mono.just(index));
+        when(indexService.getIndex("06D6WNJS8XWZT41HWZ226ZS904"))
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                        IndexResponse.class)));
 
-        // When & Then
+        // when & then
         webTestClient.get()
-                .uri(API_BASE_PATH + "/indexes/{indexId}", indexId)
+                .uri(API_BASE_PATH + "/indexes/{indexId}", 
+                        "06D6WNJS8XWZT41HWZ226ZS904")
                 .header("Accept", "application/json")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.id").isEqualTo(indexId)
-                .jsonPath("$.result.name").isEqualTo("IDX_users_email")
+                .jsonPath("$.result.id").isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
+                .jsonPath("$.result.name").isEqualTo("IDX")
+                .jsonPath("$.result.columns[0].id").isEqualTo("06D6WNJSBMS6AWBM1ZD7EDJP4M")
                 .consumeWith(document("index-get",
                         pathParameters(
                                 parameterWithName("indexId")
@@ -218,50 +304,63 @@ class IndexControllerTest {
                                 fieldWithPath("result.type").description(
                                         "인덱스 타입 (BTREE, HASH, FULLTEXT 등)"),
                                 fieldWithPath("result.comment")
-                                        .optional()
                                         .description("인덱스 설명"),
-                                fieldWithPath("result.createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .optional()
-                                        .description("삭제 일시 (Soft Delete)"))));
+                                fieldWithPath("result.columns")
+                                        .description("인덱스 컬럼 목록"),
+                                fieldWithPath("result.columns[].id")
+                                        .description("인덱스 컬럼 ID"),
+                                fieldWithPath("result.columns[].indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("result.columns[].columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("result.columns[].seqNo")
+                                        .description("순서 번호"),
+                                fieldWithPath("result.columns[].sortDir")
+                                        .description("정렬 방향 (ASC/DESC)"))));
     }
 
     @Test
     @DisplayName("테이블별 인덱스 목록 조회 API 문서화")
     void getIndexesByTableId() throws Exception {
-        // Given
-        String tableId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Index index1 = Index.builder()
-                .tableId(tableId)
-                .name("IDX_users_email")
-                .type("BTREE")
-                .comment("User email index")
-                .build();
-        Index index2 = Index.builder()
-                .tableId(tableId)
-                .name("IDX_users_name")
-                .type("BTREE")
-                .comment("User name index")
-                .build();
-        ReflectionTestUtils.setField(index1, "id", "index-1");
-        ReflectionTestUtils.setField(index2, "id", "index-2");
+        // given
+        String mockResponseJson = """
+                [
+                    {
+                        "id": "06D6WNJS8XWZT41HWZ226ZS904",
+                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                        "name": "IDX",
+                        "type": "BTREE",
+                        "comment": "",
+                        "columns": [
+                            {
+                                "id": "06D6WNJSBMS6AWBM1ZD7EDJP4M",
+                                "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                "seqNo": 1,
+                                "sortDir": "ASC"
+                            }
+                        ]
+                    }
+                ]
+                """;
 
-        when(indexService.getIndexesByTableId(tableId))
-                .thenReturn(Flux.just(index1, index2));
+        when(indexService.getIndexesByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
+                .thenReturn(Flux.fromArray(objectMapper.readValue(mockResponseJson, 
+                        IndexResponse[].class)));
 
-        // When & Then
+        // when & then
         webTestClient.get()
-                .uri(API_BASE_PATH + "/indexes/table/{tableId}", tableId)
+                .uri(API_BASE_PATH + "/indexes/table/{tableId}", 
+                        "06D6W8HDY79QFZX39RMX62KSX4")
                 .header("Accept", "application/json")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result").isArray()
-                .jsonPath("$.result.length()").isEqualTo(2)
+                .jsonPath("$.result.length()").isEqualTo(1)
+                .jsonPath("$.result[0].id").isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
+                .jsonPath("$.result[0].name").isEqualTo("IDX")
                 .consumeWith(document("index-get-by-table",
                         pathParameters(
                                 parameterWithName("tableId")
@@ -284,70 +383,127 @@ class IndexControllerTest {
                                 fieldWithPath("result[].type")
                                         .description("인덱스 타입"),
                                 fieldWithPath("result[].comment")
-                                        .optional()
                                         .description("인덱스 설명"),
-                                fieldWithPath("result[].createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result[].updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result[].deletedAt")
-                                        .optional()
-                                        .description("삭제 일시"))));
+                                fieldWithPath("result[].columns")
+                                        .description("인덱스 컬럼 목록"),
+                                fieldWithPath("result[].columns[].id")
+                                        .description("인덱스 컬럼 ID"),
+                                fieldWithPath("result[].columns[].indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("result[].columns[].columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("result[].columns[].seqNo")
+                                        .description("순서 번호"),
+                                fieldWithPath("result[].columns[].sortDir")
+                                        .description("정렬 방향 (ASC/DESC)"))));
     }
 
     @Test
     @DisplayName("인덱스 이름 변경 API 문서화")
     void updateIndexName() throws Exception {
-        // Given
-        String indexId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        String schemaId = "01ARZ3NDEKTSV4RRFFQ69G5FA2";
-        String tableId = "01ARZ3NDEKTSV4RRFFQ69G5FAW";
-        Validation.ChangeIndexNameRequest request = Validation.ChangeIndexNameRequest
-                .newBuilder()
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId(schemaId)
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId(tableId)
-                                        .setSchemaId(schemaId)
-                                        .setName("users")
-                                        .setComment("사용자 테이블")
-                                        .addIndexes(Validation.Index.newBuilder()
-                                                .setId(indexId)
-                                                .setTableId(tableId)
-                                                .setName("IDX_users_email")
-                                                .setType(Validation.IndexType.BTREE)
-                                                .build())
-                                        .build())
-                                .build())
-                        .build())
-                .setSchemaId(schemaId)
-                .setTableId(tableId)
-                .setIndexId(indexId)
-                .setNewName("IDX_users_email_new")
-                .build();
+        // given
+        Validation.ChangeIndexNameRequest.Builder builder = Validation.ChangeIndexNameRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "uid",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "autoIncrement": false
+                                                    },
+                                                    {
+                                                        "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "visit_count",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "방문 횟수",
+                                                        "autoIncrement": false
+                                                    }
+                                                ],
+                                                "relationships": [],
+                                                "indexes": [
+                                                    {
+                                                        "id": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "IDX_UID",
+                                                        "type": "BTREE",
+                                                        "comment": "",
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D6WNJSBMS6AWBM1ZD7EDJP4M",
+                                                                "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1,
+                                                                "sortDir": "ASC"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                            "newName": "IDX1"
+                        }
+                        """,
+                        builder);
+        Validation.ChangeIndexNameRequest request = builder.build();
 
-        Index updatedIndex = Index.builder()
-                .tableId("table-id")
-                .name("IDX_users_email_new")
-                .type("BTREE")
-                .comment("Updated email index")
-                .build();
-        ReflectionTestUtils.setField(updatedIndex, "id", indexId);
+        String mockResponseJson = """
+                {
+                    "id": "06D6WNJS8XWZT41HWZ226ZS904",
+                    "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "name": "IDX1",
+                    "type": "BTREE",
+                    "comment": "",
+                    "columns": []
+                }
+                """;
 
         when(indexService
                 .updateIndexName(any(Validation.ChangeIndexNameRequest.class)))
-                        .thenReturn(Mono.just(updatedIndex));
+                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                                IndexResponse.class)));
 
-        // When & Then
+        // when & then
         webTestClient.put()
-                .uri(API_BASE_PATH + "/indexes/{indexId}/name", indexId)
+                .uri(API_BASE_PATH + "/indexes/{indexId}/name", 
+                        "06D6WNJS8XWZT41HWZ226ZS904")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -355,7 +511,8 @@ class IndexControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.name").isEqualTo("IDX_users_email_new")
+                .jsonPath("$.result.id").isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
+                .jsonPath("$.result.name").isEqualTo("IDX1")
                 .consumeWith(document("index-update-name",
                         pathParameters(
                                 parameterWithName("indexId")
@@ -381,47 +538,122 @@ class IndexControllerTest {
                                 fieldWithPath("result.type")
                                         .description("인덱스 타입"),
                                 fieldWithPath("result.comment")
-                                        .optional()
                                         .description("인덱스 설명"),
-                                fieldWithPath("result.createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시"))));
+                                fieldWithPath("result.columns")
+                                        .description("인덱스 컬럼 목록"))));
     }
 
     @Test
     @DisplayName("인덱스에 컬럼 추가 API 문서화")
     void addColumnToIndex() throws Exception {
-        // Given
-        String indexId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Validation.AddColumnToIndexRequest request = Validation.AddColumnToIndexRequest
-                .newBuilder()
-                .setIndexColumn(Validation.IndexColumn.newBuilder()
-                        .setId("ic-fe-id")
-                        .setIndexId(indexId)
-                        .setColumnId("column-id")
-                        .setSeqNo(1)
-                        .setSortDir(Validation.IndexSortDir.ASC)
-                        .build())
-                .build();
+        // given
+        Validation.AddColumnToIndexRequest.Builder builder = Validation.AddColumnToIndexRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "uid",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "autoIncrement": false
+                                                    },
+                                                    {
+                                                        "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "visit_count",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "방문 횟수",
+                                                        "autoIncrement": false
+                                                    }
+                                                ],
+                                                "relationships": [],
+                                                "indexes": [
+                                                    {
+                                                        "id": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "IDX1",
+                                                        "type": "BTREE",
+                                                        "comment": "",
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D6WNJSBMS6AWBM1ZD7EDJP4M",
+                                                                "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1,
+                                                                "sortDir": "ASC"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                            "indexColumn": {
+                                "id": "06D5KR6B9S11TWPG1PFNQYSD6C",
+                                "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                                "columnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                "seqNo": 2,
+                                "sortDir": "ASC"
+                            }
+                        }
+                        """,
+                        builder);
+        Validation.AddColumnToIndexRequest request = builder.build();
 
-        IndexColumn indexColumn = IndexColumn.builder()
-                .indexId(indexId)
-                .columnId("column-id")
-                .seqNo(1)
-                .sortDir("ASC")
-                .build();
-        ReflectionTestUtils.setField(indexColumn, "id", "ic-be-id");
+        String mockResponseJson = """
+                {
+                    "id": "06D6WPTT2EJ7S1CJATWGEYPNS4",
+                    "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                    "columnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                    "seqNo": 2,
+                    "sortDir": "ASC"
+                }
+                """;
 
         when(indexService.addColumnToIndex(
                 any(Validation.AddColumnToIndexRequest.class)))
-                        .thenReturn(Mono.just(indexColumn));
+                        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson, 
+                                IndexColumnResponse.class)));
 
-        // When & Then
+        // when & then
         webTestClient.post()
-                .uri(API_BASE_PATH + "/indexes/{indexId}/columns", indexId)
+                .uri(API_BASE_PATH + "/indexes/{indexId}/columns", 
+                        "06D6WNJS8XWZT41HWZ226ZS904")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -429,7 +661,9 @@ class IndexControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.indexId").isEqualTo(indexId)
+                .jsonPath("$.result.id").isEqualTo("06D6WPTT2EJ7S1CJATWGEYPNS4")
+                .jsonPath("$.result.indexId").isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
+                .jsonPath("$.result.seqNo").isEqualTo(2)
                 .consumeWith(document("index-add-column",
                         pathParameters(
                                 parameterWithName("indexId")
@@ -455,34 +689,110 @@ class IndexControllerTest {
                                 fieldWithPath("result.seqNo")
                                         .description("순서 번호"),
                                 fieldWithPath("result.sortDir")
-                                        .description("정렬 방향 (ASC, DESC)"),
-                                fieldWithPath("result.createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시"))));
+                                        .description("정렬 방향 (ASC, DESC)"))));
     }
 
     @Test
     @DisplayName("인덱스에서 컬럼 제거 API 문서화")
     void removeColumnFromIndex() throws Exception {
-        // Given
-        String indexId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        String columnId = "01ARZ3NDEKTSV4RRFFQ69G5FAW";
-        Validation.RemoveColumnFromIndexRequest request = Validation.RemoveColumnFromIndexRequest
-                .newBuilder()
-                .setIndexColumnId("ic-id-123")
-                .build();
+        // given
+        Validation.RemoveColumnFromIndexRequest.Builder builder = Validation.RemoveColumnFromIndexRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "uid",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "autoIncrement": false
+                                                    },
+                                                    {
+                                                        "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "visit_count",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "방문 횟수",
+                                                        "autoIncrement": false
+                                                    }
+                                                ],
+                                                "relationships": [],
+                                                "indexes": [
+                                                    {
+                                                        "id": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "IDX1",
+                                                        "type": "BTREE",
+                                                        "comment": "",
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D6WNJSBMS6AWBM1ZD7EDJP4M",
+                                                                "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1,
+                                                                "sortDir": "ASC"
+                                                            },
+                                                            {
+                                                                "id": "06D6WPTT2EJ7S1CJATWGEYPNS4",
+                                                                "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                                "columnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                                "seqNo": 2,
+                                                                "sortDir": "ASC"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                            "indexColumnId": "06D6WPTT2EJ7S1CJATWGEYPNS4"
+                        }
+                        """,
+                        builder);
+        Validation.RemoveColumnFromIndexRequest request = builder.build();
 
         when(indexService.removeColumnFromIndex(
                 any(Validation.RemoveColumnFromIndexRequest.class)))
                         .thenReturn(Mono.empty());
 
-        // When & Then
+        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/indexes/{indexId}/columns/{columnId}",
-                        indexId, columnId)
+                        "06D6WNJS8XWZT41HWZ226ZS904", "06D6WPTT2EJ7S1CJATWGEYPNS4")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -495,7 +805,7 @@ class IndexControllerTest {
                                 parameterWithName("indexId")
                                         .description("인덱스 ID"),
                                 parameterWithName("columnId")
-                                        .description("컬럼 ID")),
+                                        .description("인덱스 컬럼 ID")),
                         requestHeaders(
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
@@ -506,56 +816,100 @@ class IndexControllerTest {
                         responseFields(
                                 fieldWithPath("success")
                                         .type(JsonFieldType.BOOLEAN)
-                                        .description("요청 성공 여부"),
-                                fieldWithPath("result")
-                                        .type(JsonFieldType.NULL)
-                                        .optional()
-                                        .description("응답 데이터 (null)"))));
+                                        .description("요청 성공 여부"))));
     }
 
     @Test
     @DisplayName("인덱스 삭제 API 문서화")
     void deleteIndex() throws Exception {
-        // Given
-        String indexId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        String schemaId = "01ARZ3NDEKTSV4RRFFQ69G5FA2";
-        String tableId = "01ARZ3NDEKTSV4RRFFQ69G5FAW";
-        Validation.DeleteIndexRequest request = Validation.DeleteIndexRequest
-                .newBuilder()
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("01ARZ3NDEKTSV4RRFFQ69G5FA0")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId(schemaId)
-                                .setProjectId("01ARZ3NDEKTSV4RRFFQ69G5FA1")
-                                .setDbVendorId(Validation.DbVendor.MYSQL)
-                                .setName("my_database")
-                                .setCharset("utf8mb4")
-                                .setCollation("utf8mb4_unicode_ci")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId(tableId)
-                                        .setSchemaId(schemaId)
-                                        .setName("users")
-                                        .setComment("사용자 테이블")
-                                        .addIndexes(Validation.Index.newBuilder()
-                                                .setId(indexId)
-                                                .setTableId(tableId)
-                                                .setName("IDX_users_email")
-                                                .setType(Validation.IndexType.BTREE)
-                                                .build())
-                                        .build())
-                                .build())
-                        .build())
-                .setSchemaId(schemaId)
-                .setTableId(tableId)
-                .setIndexId(indexId)
-                .build();
+        // given
+        Validation.DeleteIndexRequest.Builder builder = Validation.DeleteIndexRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [
+                                                    {
+                                                        "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "uid",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "사용자 ID",
+                                                        "autoIncrement": false
+                                                    },
+                                                    {
+                                                        "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "visit_count",
+                                                        "ordinalPosition": 1,
+                                                        "dataType": "INTEGER",
+                                                        "lengthScale": "20",
+                                                        "charset": "utf8mb4",
+                                                        "collation": "utf8mb4_unicode_ci",
+                                                        "comment": "방문 횟수",
+                                                        "autoIncrement": false
+                                                    }
+                                                ],
+                                                "relationships": [],
+                                                "indexes": [
+                                                    {
+                                                        "id": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "name": "IDX1",
+                                                        "type": "BTREE",
+                                                        "comment": "",
+                                                        "columns": [
+                                                            {
+                                                                "id": "06D6WNJSBMS6AWBM1ZD7EDJP4M",
+                                                                "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                                                                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "seqNo": 1,
+                                                                "sortDir": "ASC"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "indexId": "06D6WNJS8XWZT41HWZ226ZS904"
+                        }
+                        """,
+                        builder);
+        Validation.DeleteIndexRequest request = builder.build();
 
         when(indexService.deleteIndex(any(Validation.DeleteIndexRequest.class)))
                 .thenReturn(Mono.empty());
 
-        // When & Then
+        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
-                .uri(API_BASE_PATH + "/indexes/{indexId}", indexId)
+                .uri(API_BASE_PATH + "/indexes/{indexId}", "06D6WNJS8XWZT41HWZ226ZS904")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(toJson(request))
                 .header("Accept", "application/json")
@@ -577,11 +931,7 @@ class IndexControllerTest {
                         responseFields(
                                 fieldWithPath("success")
                                         .type(JsonFieldType.BOOLEAN)
-                                        .description("요청 성공 여부"),
-                                fieldWithPath("result")
-                                        .type(JsonFieldType.NULL)
-                                        .optional()
-                                        .description("응답 데이터 (null)"))));
+                                        .description("요청 성공 여부"))));
     }
 
 }

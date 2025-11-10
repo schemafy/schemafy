@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -16,6 +17,8 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
+import com.schemafy.core.erd.controller.dto.response.TableResponse;
 import com.schemafy.core.erd.repository.TableRepository;
 import com.schemafy.core.erd.repository.entity.Table;
 import com.schemafy.core.validation.client.ValidationClient;
@@ -131,7 +134,7 @@ class TableServiceTest {
                         .build())
                 .block();
 
-        Mono<Table> result = tableService.getTable(saved.getId());
+        Mono<TableDetailResponse> result = tableService.getTable(saved.getId());
 
         StepVerifier.create(result)
                 .assertNext(found -> {
@@ -162,7 +165,7 @@ class TableServiceTest {
                         .collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.stream().map(Table::getName).toList())
+                    assertThat(list.stream().map(TableResponse::getName).toList())
                             .containsExactlyInAnyOrder("table-a", "table-b");
                 })
                 .verifyComplete();
