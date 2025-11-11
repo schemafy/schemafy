@@ -41,7 +41,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @DisplayName("MemberController 통합 테스트")
 class UserControllerTest {
 
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace("{version}",
             "v1.0");
 
     @Autowired

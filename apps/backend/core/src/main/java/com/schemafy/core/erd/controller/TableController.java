@@ -32,7 +32,7 @@ import validation.Validation.DeleteTableRequest;
 @Slf4j
 @RestController
 @AllArgsConstructor
-@RequestMapping(ApiPath.AUTH_API)
+@RequestMapping(ApiPath.API)
 public class TableController {
 
     private final TableService tableService;

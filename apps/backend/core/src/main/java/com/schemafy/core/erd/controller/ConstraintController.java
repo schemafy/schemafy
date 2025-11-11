@@ -30,7 +30,7 @@ import validation.Validation.RemoveColumnFromConstraintRequest;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping(ApiPath.AUTH_API)
+@RequestMapping(ApiPath.API)
 public class ConstraintController {
 
     private final ConstraintService constraintService;

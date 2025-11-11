@@ -62,7 +62,7 @@ ULID를 생성합니다.
 
 [source]
 ----
-GET /api/auth/v1.0/ulid/generate
+GET /public/api/v1.0/ulid/generate
 ----
 
 [discrete]
@@ -95,7 +95,7 @@ include::{snippets}/ulid-generate/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/schemas
+POST /api/v1.0/schemas
 ----
 
 [discrete]
@@ -125,7 +125,7 @@ include::{snippets}/schema-create/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/schemas/{schemaId}
+GET /api/v1.0/schemas/{schemaId}
 ----
 
 [discrete]
@@ -156,7 +156,7 @@ include::{snippets}/schema-get/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/schemas/{schemaId}/name
+PUT /api/v1.0/schemas/{schemaId}/name
 ----
 
 [discrete]
@@ -187,7 +187,7 @@ include::{snippets}/schema-update-name/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/schemas/{schemaId}
+DELETE /api/v1.0/schemas/{schemaId}
 ----
 
 [discrete]
@@ -220,7 +220,7 @@ include::{snippets}/schema-delete/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/tables
+POST /api/v1.0/tables
 ----
 
 [discrete]
@@ -250,7 +250,7 @@ include::{snippets}/table-create/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/tables/{tableId}
+GET /api/v1.0/tables/{tableId}
 ----
 
 [discrete]
@@ -281,7 +281,7 @@ include::{snippets}/table-get/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/tables/schema/{schemaId}
+GET /api/v1.0/tables/schema/{schemaId}
 ----
 
 [discrete]
@@ -312,7 +312,7 @@ include::{snippets}/table-list-by-schema/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/tables/{tableId}/name
+PUT /api/v1.0/tables/{tableId}/name
 ----
 
 [discrete]
@@ -343,7 +343,7 @@ include::{snippets}/table-update-name/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/tables/{tableId}
+DELETE /api/v1.0/tables/{tableId}
 ----
 
 [discrete]
@@ -376,7 +376,7 @@ include::{snippets}/table-delete/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/columns
+POST /api/v1.0/columns
 ----
 
 [discrete]
@@ -406,7 +406,7 @@ include::{snippets}/column-create/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/columns/{columnId}
+GET /api/v1.0/columns/{columnId}
 ----
 
 [discrete]
@@ -437,7 +437,7 @@ include::{snippets}/column-get/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/columns/table/{tableId}
+GET /api/v1.0/columns/table/{tableId}
 ----
 
 [discrete]
@@ -468,7 +468,7 @@ include::{snippets}/column-list-by-table/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/columns/{columnId}/name
+PUT /api/v1.0/columns/{columnId}/name
 ----
 
 [discrete]
@@ -499,7 +499,7 @@ include::{snippets}/column-update-name/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/columns/{columnId}/type
+PUT /api/v1.0/columns/{columnId}/type
 ----
 
 [discrete]
@@ -530,7 +530,7 @@ include::{snippets}/column-update-type/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/columns/{columnId}/position
+PUT /api/v1.0/columns/{columnId}/position
 ----
 
 [discrete]
@@ -561,7 +561,7 @@ include::{snippets}/column-update-position/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/columns/{columnId}
+DELETE /api/v1.0/columns/{columnId}
 ----
 
 [discrete]
@@ -594,7 +594,7 @@ include::{snippets}/column-delete/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/relationships
+POST /api/v1.0/relationships
 ----
 
 [discrete]
@@ -624,7 +624,7 @@ include::{snippets}/relationship-create/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/relationships/{relationshipId}
+GET /api/v1.0/relationships/{relationshipId}
 ----
 
 [discrete]
@@ -655,7 +655,7 @@ include::{snippets}/relationship-get/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/relationships/table/{tableId}
+GET /api/v1.0/relationships/table/{tableId}
 ----
 
 [discrete]
@@ -686,7 +686,7 @@ include::{snippets}/relationship-get-by-table/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/relationships/{relationshipId}/name
+PUT /api/v1.0/relationships/{relationshipId}/name
 ----
 
 [discrete]
@@ -717,7 +717,7 @@ include::{snippets}/relationship-update-name/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/relationships/{relationshipId}/cardinality
+PUT /api/v1.0/relationships/{relationshipId}/cardinality
 ----
 
 [discrete]
@@ -748,7 +748,7 @@ include::{snippets}/relationship-update-cardinality/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/relationships/{relationshipId}/columns
+POST /api/v1.0/relationships/{relationshipId}/columns
 ----
 
 [discrete]
@@ -779,7 +779,7 @@ include::{snippets}/relationship-add-column/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/relationships/{relationshipId}/columns/{relationshipColumnId}
+DELETE /api/v1.0/relationships/{relationshipId}/columns/{relationshipColumnId}
 ----
 
 [discrete]
@@ -810,7 +810,7 @@ include::{snippets}/relationship-remove-column/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/relationships/{relationshipId}
+DELETE /api/v1.0/relationships/{relationshipId}
 ----
 
 [discrete]
@@ -843,7 +843,7 @@ include::{snippets}/relationship-delete/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/constraints
+POST /api/v1.0/constraints
 ----
 
 [discrete]
@@ -873,7 +873,7 @@ include::{snippets}/constraint-create/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/constraints/{constraintId}
+GET /api/v1.0/constraints/{constraintId}
 ----
 
 [discrete]
@@ -904,7 +904,7 @@ include::{snippets}/constraint-get/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/constraints/table/{tableId}
+GET /api/v1.0/constraints/table/{tableId}
 ----
 
 [discrete]
@@ -935,7 +935,7 @@ include::{snippets}/constraint-get-by-table/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/constraints/{constraintId}/name
+PUT /api/v1.0/constraints/{constraintId}/name
 ----
 
 [discrete]
@@ -966,7 +966,7 @@ include::{snippets}/constraint-update-name/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/constraints/{constraintId}/columns
+POST /api/v1.0/constraints/{constraintId}/columns
 ----
 
 [discrete]
@@ -997,7 +997,7 @@ include::{snippets}/constraint-add-column/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/constraints/{constraintId}/columns/{constraintColumnId}
+DELETE /api/v1.0/constraints/{constraintId}/columns/{constraintColumnId}
 ----
 
 [discrete]
@@ -1028,7 +1028,7 @@ include::{snippets}/constraint-remove-column/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/constraints/{constraintId}
+DELETE /api/v1.0/constraints/{constraintId}
 ----
 
 [discrete]
@@ -1061,7 +1061,7 @@ include::{snippets}/constraint-delete/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/indexes
+POST /api/v1.0/indexes
 ----
 
 [discrete]
@@ -1091,7 +1091,7 @@ include::{snippets}/index-create/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/indexes/{indexId}
+GET /api/v1.0/indexes/{indexId}
 ----
 
 [discrete]
@@ -1122,7 +1122,7 @@ include::{snippets}/index-get/response-fields.adoc[]
 
 [source]
 ----
-GET /api/auth/v1.0/indexes/table/{tableId}
+GET /api/v1.0/indexes/table/{tableId}
 ----
 
 [discrete]
@@ -1153,7 +1153,7 @@ include::{snippets}/index-get-by-table/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/auth/v1.0/indexes/{indexId}/name
+PUT /api/v1.0/indexes/{indexId}/name
 ----
 
 [discrete]
@@ -1184,7 +1184,7 @@ include::{snippets}/index-update-name/response-fields.adoc[]
 
 [source]
 ----
-POST /api/auth/v1.0/indexes/{indexId}/columns
+POST /api/v1.0/indexes/{indexId}/columns
 ----
 
 [discrete]
@@ -1215,7 +1215,7 @@ include::{snippets}/index-add-column/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/indexes/{indexId}/columns/{indexColumnId}
+DELETE /api/v1.0/indexes/{indexId}/columns/{indexColumnId}
 ----
 
 [discrete]
@@ -1246,7 +1246,7 @@ include::{snippets}/index-remove-column/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/auth/v1.0/indexes/{indexId}
+DELETE /api/v1.0/indexes/{indexId}
 ----
 
 [discrete]
@@ -1279,7 +1279,7 @@ include::{snippets}/index-delete/response-fields.adoc[]
 
 [source]
 ----
-POST /api/v1.0/users/signup
+POST /public/api/v1.0/users/signup
 ----
 
 [discrete]
@@ -1303,7 +1303,7 @@ include::{snippets}/user-signup/response-fields.adoc[]
 
 [source]
 ----
-POST /api/v1.0/users/login
+POST /public/api/v1.0/users/login
 ----
 
 [discrete]
@@ -1327,7 +1327,7 @@ include::{snippets}/user-login/response-fields.adoc[]
 
 [source]
 ----
-GET /api/v1.0/users/{userId}
+GET /public/api/v1.0/users/{userId}
 ----
 
 [discrete]
@@ -1352,7 +1352,7 @@ include::{snippets}/user-get/response-fields.adoc[]
 
 [source]
 ----
-POST /api/v1.0/users/refresh
+POST /public/api/v1.0/users/refresh
 ----
 
 [discrete]

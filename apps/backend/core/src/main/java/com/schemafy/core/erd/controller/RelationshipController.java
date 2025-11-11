@@ -28,7 +28,7 @@ import validation.Validation;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping(ApiPath.AUTH_API)
+@RequestMapping(ApiPath.API)
 public class RelationshipController {
 
     private final RelationshipService relationshipService;

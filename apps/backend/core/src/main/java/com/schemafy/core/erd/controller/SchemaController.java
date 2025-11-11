@@ -26,7 +26,7 @@ import validation.Validation.DeleteSchemaRequest;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping(ApiPath.AUTH_API)
+@RequestMapping(ApiPath.API)
 public class SchemaController {
 
     private final SchemaService schemaService;

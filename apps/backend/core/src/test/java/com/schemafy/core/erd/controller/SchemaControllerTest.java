@@ -47,7 +47,7 @@ class SchemaControllerTest {
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .findAndRegisterModules();
 
-    private static final String API_BASE_PATH = ApiPath.AUTH_API
+    private static final String API_BASE_PATH = ApiPath.API
             .replace("{version}", "v1.0");
 
     @Autowired

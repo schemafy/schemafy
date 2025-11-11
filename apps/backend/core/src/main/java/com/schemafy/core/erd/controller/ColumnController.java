@@ -29,7 +29,7 @@ import validation.Validation.DeleteColumnRequest;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping(ApiPath.AUTH_API)
+@RequestMapping(ApiPath.API)
 public class ColumnController {
 
     private final ColumnService columnService;

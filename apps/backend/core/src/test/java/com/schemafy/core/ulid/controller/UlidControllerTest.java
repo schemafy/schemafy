@@ -28,7 +28,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
 
-    private static final String API_BASE_PATH = ApiPath.AUTH_API.replace(
+    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
             "{version}",
             "v1.0");
 

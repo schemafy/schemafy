@@ -44,7 +44,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @DisplayName("IndexController RestDocs 테스트")
 class IndexControllerTest {
 
-    private static final String API_BASE_PATH = ApiPath.AUTH_API
+    private static final String API_BASE_PATH = ApiPath.API
             .replace("{version}", "v1.0");
     private static final ObjectMapper objectMapper = new ObjectMapper()
             .findAndRegisterModules();

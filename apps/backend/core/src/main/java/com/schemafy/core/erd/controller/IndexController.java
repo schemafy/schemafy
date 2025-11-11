@@ -30,7 +30,7 @@ import validation.Validation.RemoveColumnFromIndexRequest;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping(ApiPath.AUTH_API)
+@RequestMapping(ApiPath.API)
 public class IndexController {
 
     private final IndexService indexService;
