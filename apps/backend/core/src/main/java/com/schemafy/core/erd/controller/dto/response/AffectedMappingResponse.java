@@ -129,6 +129,37 @@ public record AffectedMappingResponse(
         return buildResponse(before, after, requestIdMaps, propagated);
     }
 
+    public static AffectedMappingResponse of(
+            Validation.AddColumnToConstraintRequest request,
+            Validation.Database before,
+            Validation.Database after,
+            PropagatedEntities propagated) {
+        RequestIdMaps requestIdMaps = new RequestIdMaps();
+        if (request.hasConstraintColumn()) {
+            requestIdMaps.constraintColumns.put(
+                    request.getConstraintColumn().getColumnId(),
+                    request.getConstraintColumn().getId());
+        }
+        return buildResponse(before, after, requestIdMaps, propagated);
+    }
+
+    public static AffectedMappingResponse of(
+            Validation.AddColumnToRelationshipRequest request,
+            Validation.Database before,
+            Validation.Database after,
+            PropagatedEntities propagated) {
+        RequestIdMaps requestIdMaps = new RequestIdMaps();
+        if (request.hasRelationshipColumn()) {
+            String businessKey = request.getRelationshipColumn()
+                    .getFkColumnId() + ":"
+                    + request.getRelationshipColumn().getRefColumnId();
+            requestIdMaps.relationshipColumns.put(
+                    businessKey,
+                    request.getRelationshipColumn().getId());
+        }
+        return buildResponse(before, after, requestIdMaps, propagated);
+    }
+
     private static AffectedMappingResponse buildResponse(
             Validation.Database before, Validation.Database after,
             RequestIdMaps requestIdMaps, PropagatedEntities propagated) {
@@ -210,7 +241,11 @@ public record AffectedMappingResponse(
         case COLUMN -> updateColumnId(database, feId, beId);
         case INDEX -> updateIndexId(database, feId, beId);
         case CONSTRAINT -> updateConstraintId(database, feId, beId);
+        case CONSTRAINT_COLUMN -> updateConstraintColumnId(database, feId,
+                beId);
         case RELATIONSHIP -> updateRelationshipId(database, feId, beId);
+        case RELATIONSHIP_COLUMN -> updateRelationshipColumnId(database, feId,
+                beId);
         };
     }
 
@@ -392,6 +427,84 @@ public record AffectedMappingResponse(
                     } else {
                         tableBuilder.addRelationships(relationship);
                     }
+                }
+                schemaBuilder.addTables(tableBuilder.build());
+            }
+            dbBuilder.addSchemas(schemaBuilder.build());
+        }
+        return dbBuilder.build();
+    }
+
+    private static Validation.Database updateConstraintColumnId(
+            Validation.Database database, String feId, String beId) {
+        Validation.Database.Builder dbBuilder = database.toBuilder();
+        dbBuilder.clearSchemas();
+
+        for (Validation.Schema schema : database.getSchemasList()) {
+            Validation.Schema.Builder schemaBuilder = schema.toBuilder();
+            schemaBuilder.clearTables();
+
+            for (Validation.Table table : schema.getTablesList()) {
+                Validation.Table.Builder tableBuilder = table.toBuilder();
+                tableBuilder.clearConstraints();
+
+                for (Validation.Constraint constraint : table
+                        .getConstraintsList()) {
+                    Validation.Constraint.Builder constraintBuilder = constraint
+                            .toBuilder();
+                    constraintBuilder.clearColumns();
+
+                    for (Validation.ConstraintColumn constraintColumn : constraint
+                            .getColumnsList()) {
+                        if (constraintColumn.getId().equals(feId)) {
+                            constraintBuilder.addColumns(constraintColumn
+                                    .toBuilder()
+                                    .setId(beId)
+                                    .build());
+                        } else {
+                            constraintBuilder.addColumns(constraintColumn);
+                        }
+                    }
+                    tableBuilder.addConstraints(constraintBuilder.build());
+                }
+                schemaBuilder.addTables(tableBuilder.build());
+            }
+            dbBuilder.addSchemas(schemaBuilder.build());
+        }
+        return dbBuilder.build();
+    }
+
+    private static Validation.Database updateRelationshipColumnId(
+            Validation.Database database, String feId, String beId) {
+        Validation.Database.Builder dbBuilder = database.toBuilder();
+        dbBuilder.clearSchemas();
+
+        for (Validation.Schema schema : database.getSchemasList()) {
+            Validation.Schema.Builder schemaBuilder = schema.toBuilder();
+            schemaBuilder.clearTables();
+
+            for (Validation.Table table : schema.getTablesList()) {
+                Validation.Table.Builder tableBuilder = table.toBuilder();
+                tableBuilder.clearRelationships();
+
+                for (Validation.Relationship relationship : table
+                        .getRelationshipsList()) {
+                    Validation.Relationship.Builder relationshipBuilder = relationship
+                            .toBuilder();
+                    relationshipBuilder.clearColumns();
+
+                    for (Validation.RelationshipColumn relationshipColumn : relationship
+                            .getColumnsList()) {
+                        if (relationshipColumn.getId().equals(feId)) {
+                            relationshipBuilder
+                                    .addColumns(relationshipColumn.toBuilder()
+                                            .setId(beId)
+                                            .build());
+                        } else {
+                            relationshipBuilder.addColumns(relationshipColumn);
+                        }
+                    }
+                    tableBuilder.addRelationships(relationshipBuilder.build());
                 }
                 schemaBuilder.addTables(tableBuilder.build());
             }

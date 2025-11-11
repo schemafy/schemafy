@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
@@ -71,6 +70,14 @@ class ConstraintServiceTest {
                 any(Validation.DeleteConstraintRequest.class)))
                 .willReturn(Mono.just(
                         Validation.Database.newBuilder().build()));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(),
+                any(Validation.Database.class)))
+                .willReturn(Mono.just(
+                        AffectedMappingResponse.PropagatedEntities.empty()));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(),
+                any(Validation.Database.class), any(), any(), any()))
+                .willReturn(Mono.just(
+                        AffectedMappingResponse.PropagatedEntities.empty()));
     }
 
     @Test
@@ -507,43 +514,99 @@ class ConstraintServiceTest {
     }
 
     @Test
-    @DisplayName("addColumnToConstraint: 제약조건에 컬럼을 추가한다")
+    @DisplayName("addColumnToConstraint: 제약조건 컬럼 추가 시 매핑과 전파 정보가 반환된다")
     void addColumnToConstraint_success() {
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .setId("db-1")
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .addConstraints(Validation.Constraint.newBuilder()
+                                        .setId("constraint-1")
+                                        .setIsAffected(true)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
         Validation.AddColumnToConstraintRequest request = Validation.AddColumnToConstraintRequest
                 .newBuilder()
+                .setConstraintId("constraint-1")
+                .setDatabase(beforeDatabase)
                 .setConstraintColumn(Validation.ConstraintColumn.newBuilder()
-                        .setId("constraint-column-1")
+                        .setId("fe-constraint-column-1")
                         .setConstraintId("constraint-1")
                         .setColumnId("column-1")
                         .setSeqNo(1)
                         .build())
                 .build();
 
-        Mono<ConstraintColumnResponse> result = constraintService
+        Validation.Database validationResponse = Validation.Database.newBuilder()
+                .setId("db-1")
+                .setIsAffected(true)
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setIsAffected(true)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setIsAffected(true)
+                                .addConstraints(Validation.Constraint.newBuilder()
+                                        .setId("constraint-1")
+                                        .setIsAffected(true)
+                                        .addColumns(Validation.ConstraintColumn
+                                                .newBuilder()
+                                                .setId("fe-constraint-column-1")
+                                                .setConstraintId("constraint-1")
+                                                .setColumnId("column-1")
+                                                .setSeqNo(1)
+                                                .setIsAffected(true)
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        AffectedMappingResponse.PropagatedEntities propagatedEntities = new AffectedMappingResponse.PropagatedEntities(
+                List.of(),
+                List.of(),
+                List.of());
+
+        given(validationClient.addColumnToConstraint(
+                any(Validation.AddColumnToConstraintRequest.class)))
+                .willReturn(Mono.just(validationResponse));
+        given(affectedEntitiesSaver.saveAffectedEntities(
+                any(Validation.Database.class),
+                any(Validation.Database.class),
+                any(String.class),
+                any(String.class),
+                any(String.class)))
+                .willReturn(Mono.just(propagatedEntities));
+
+        Mono<AffectedMappingResponse> result = constraintService
                 .addColumnToConstraint(request);
 
-        StepVerifier.create(result)
-                .assertNext(constraintColumn -> {
-                    assertThat(constraintColumn.getId()).isNotNull(); // 자동 생성된 ID
-                    assertThat(constraintColumn.getConstraintId())
-                            .isEqualTo("constraint-1");
-                    assertThat(constraintColumn.getColumnId())
-                            .isEqualTo("column-1");
-                    assertThat(constraintColumn.getSeqNo()).isEqualTo(1);
-                })
-                .verifyComplete();
+        AffectedMappingResponse response = result.block();
 
-        // DB 반영 확인 - 자동 생성된 ID 사용
-        StepVerifier
-                .create(constraintColumnRepository.findAll().collectList())
-                .assertNext(list -> {
-                    assertThat(list).hasSize(1);
-                    ConstraintColumn found = list.get(0);
-                    assertThat(found.getConstraintId())
-                            .isEqualTo("constraint-1");
-                    assertThat(found.getColumnId()).isEqualTo("column-1");
-                })
-                .verifyComplete();
+        // 응답 검증
+        assertThat(response).isNotNull();
+        assertThat(response.constraintColumns()).containsKey("constraint-1");
+        assertThat(response.propagated()).isEqualTo(propagatedEntities);
+
+        // DB에 저장되었는지 확인
+        List<ConstraintColumn> savedColumns = constraintColumnRepository
+                .findAll()
+                .collectList()
+                .block();
+        assertThat(savedColumns).isNotNull();
+        assertThat(savedColumns).hasSize(1);
+        ConstraintColumn saved = savedColumns.get(0);
+        assertThat(saved.getConstraintId()).isEqualTo("constraint-1");
+        assertThat(saved.getColumnId()).isEqualTo("column-1");
+
+        // 응답의 매핑 정보 확인
+        assertThat(response.constraintColumns().get("constraint-1"))
+                .containsEntry("fe-constraint-column-1", saved.getId());
     }
 
     @Test

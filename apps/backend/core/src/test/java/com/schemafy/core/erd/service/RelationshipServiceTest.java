@@ -15,7 +15,6 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
@@ -76,6 +75,14 @@ class RelationshipServiceTest {
                 any(Validation.DeleteRelationshipRequest.class)))
                 .willReturn(Mono.just(
                         Validation.Database.newBuilder().build()));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(),
+                any(Validation.Database.class)))
+                .willReturn(Mono.just(
+                        AffectedMappingResponse.PropagatedEntities.empty()));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(),
+                any(Validation.Database.class), any(), any(), any()))
+                .willReturn(Mono.just(
+                        AffectedMappingResponse.PropagatedEntities.empty()));
     }
 
     @Test
@@ -616,13 +623,30 @@ class RelationshipServiceTest {
     }
 
     @Test
-    @DisplayName("addColumnToRelationship: 관계에 컬럼을 추가한다")
+    @DisplayName("addColumnToRelationship: 관계 컬럼 추가 시 매핑과 전파 정보가 반환된다")
     void addColumnToRelationship_success() {
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .setId("db-1")
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
+                                        .setId("relationship-1")
+                                        .setIsAffected(true)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
         Validation.AddColumnToRelationshipRequest request = Validation.AddColumnToRelationshipRequest
                 .newBuilder()
+                .setRelationshipId("relationship-1")
+                .setDatabase(beforeDatabase)
                 .setRelationshipColumn(
                         Validation.RelationshipColumn.newBuilder()
-                                .setId("relationship-column-1")
+                                .setId("fe-relationship-column-1")
                                 .setRelationshipId("relationship-1")
                                 .setFkColumnId("src-column-1")
                                 .setRefColumnId("tgt-column-1")
@@ -630,36 +654,70 @@ class RelationshipServiceTest {
                                 .build())
                 .build();
 
-        Mono<RelationshipColumnResponse> result = relationshipService
+        Validation.Database validationResponse = Validation.Database.newBuilder()
+                .setId("db-1")
+                .setIsAffected(true)
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setIsAffected(true)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setIsAffected(true)
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
+                                        .setId("relationship-1")
+                                        .setIsAffected(true)
+                                        .addColumns(Validation.RelationshipColumn
+                                                .newBuilder()
+                                                .setId(
+                                                        "fe-relationship-column-1")
+                                                .setRelationshipId(
+                                                        "relationship-1")
+                                                .setFkColumnId("src-column-1")
+                                                .setRefColumnId("tgt-column-1")
+                                                .setSeqNo(1)
+                                                .setIsAffected(true)
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        AffectedMappingResponse.PropagatedEntities propagatedEntities = AffectedMappingResponse.PropagatedEntities
+                .empty();
+
+        given(validationClient.addColumnToRelationship(
+                any(Validation.AddColumnToRelationshipRequest.class)))
+                .willReturn(Mono.just(validationResponse));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(),
+                any(Validation.Database.class), any(), any(), any()))
+                .willReturn(Mono.just(propagatedEntities));
+
+        Mono<AffectedMappingResponse> result = relationshipService
                 .addColumnToRelationship(request);
 
-        StepVerifier.create(result)
-                .assertNext(relationshipColumn -> {
-                    assertThat(relationshipColumn.getId()).isNotNull(); // 자동 생성된 ID
-                    assertThat(relationshipColumn.getRelationshipId())
-                            .isEqualTo("relationship-1");
-                    assertThat(relationshipColumn.getSrcColumnId())
-                            .isEqualTo("src-column-1");
-                    assertThat(relationshipColumn.getTgtColumnId())
-                            .isEqualTo("tgt-column-1");
-                    assertThat(relationshipColumn.getSeqNo()).isEqualTo(1);
-                })
-                .verifyComplete();
+        AffectedMappingResponse response = result.block();
 
-        // DB 반영 확인 - 자동 생성된 ID 사용
-        StepVerifier
-                .create(relationshipColumnRepository.findAll().collectList())
-                .assertNext(list -> {
-                    assertThat(list).hasSize(1);
-                    RelationshipColumn found = list.get(0);
-                    assertThat(found.getRelationshipId())
-                            .isEqualTo("relationship-1");
-                    assertThat(found.getSrcColumnId())
-                            .isEqualTo("src-column-1");
-                    assertThat(found.getTgtColumnId())
-                            .isEqualTo("tgt-column-1");
-                })
-                .verifyComplete();
+        // 응답 검증
+        assertThat(response).isNotNull();
+        assertThat(response.relationshipColumns()).containsKey("relationship-1");
+        assertThat(response.propagated()).isEqualTo(propagatedEntities);
+
+        // DB에 저장되었는지 확인
+        List<RelationshipColumn> savedColumns = relationshipColumnRepository
+                .findAll()
+                .collectList()
+                .block();
+        assertThat(savedColumns).isNotNull();
+        assertThat(savedColumns).hasSize(1);
+        RelationshipColumn saved = savedColumns.get(0);
+        assertThat(saved.getRelationshipId()).isEqualTo("relationship-1");
+        assertThat(saved.getSrcColumnId()).isEqualTo("src-column-1");
+        assertThat(saved.getTgtColumnId()).isEqualTo("tgt-column-1");
+
+        // 응답의 매핑 정보 확인
+        assertThat(response.relationshipColumns().get("relationship-1"))
+                .containsEntry("fe-relationship-column-1", saved.getId());
     }
 
     @Test

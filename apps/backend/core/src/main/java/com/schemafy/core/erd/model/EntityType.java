@@ -6,5 +6,7 @@ public enum EntityType {
     COLUMN,
     INDEX,
     CONSTRAINT,
-    RELATIONSHIP
+    CONSTRAINT_COLUMN,
+    RELATIONSHIP,
+    RELATIONSHIP_COLUMN
 }

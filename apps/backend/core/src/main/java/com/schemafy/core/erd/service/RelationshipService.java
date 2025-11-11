@@ -128,13 +128,34 @@ public class RelationshipService {
                 .map(RelationshipResponse::from);
     }
 
-    // TODO: 여기도 전파 필요
-    public Mono<RelationshipColumnResponse> addColumnToRelationship(
+    public Mono<AffectedMappingResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
-                .then(relationshipColumnRepository.save(
-                        ErdMapper.toEntity(request.getRelationshipColumn())))
-                .map(RelationshipColumnResponse::from);
+                .flatMap(database -> relationshipColumnRepository
+                        .save(ErdMapper.toEntity(request.getRelationshipColumn()))
+                        .flatMap(savedRelationshipColumn -> {
+                            Validation.Database updatedDatabase = AffectedMappingResponse
+                                    .updateEntityIdInDatabase(
+                                            database,
+                                            EntityType.RELATIONSHIP_COLUMN,
+                                            request.getRelationshipColumn()
+                                                    .getId(),
+                                            savedRelationshipColumn.getId());
+
+                            return affectedEntitiesSaver
+                                    .saveAffectedEntities(
+                                            request.getDatabase(),
+                                            updatedDatabase,
+                                            savedRelationshipColumn.getId(),
+                                            request.getRelationshipId(),
+                                            "RELATIONSHIP")
+                                    .map(propagated -> AffectedMappingResponse
+                                            .of(
+                                                    request,
+                                                    request.getDatabase(),
+                                                    updatedDatabase,
+                                                    propagated));
+                        }));
     }
 
     public Mono<Void> removeColumnFromRelationship(

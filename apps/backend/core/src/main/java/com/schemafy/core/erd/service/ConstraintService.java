@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
@@ -107,13 +106,35 @@ public class ConstraintService {
                 .map(ConstraintResponse::from);
     }
 
-    // TODO: 여기도 전파 필요
-    public Mono<ConstraintColumnResponse> addColumnToConstraint(
+    public Mono<AffectedMappingResponse> addColumnToConstraint(
             Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
-                .then(constraintColumnRepository.save(
-                        ErdMapper.toEntity(request.getConstraintColumn())))
-                .map(ConstraintColumnResponse::from);
+                .flatMap(database -> constraintColumnRepository
+                        .save(ErdMapper.toEntity(
+                                request.getConstraintColumn()))
+                        .flatMap(savedConstraintColumn -> {
+                            Validation.Database updatedDatabase = AffectedMappingResponse
+                                    .updateEntityIdInDatabase(
+                                            database,
+                                            EntityType.CONSTRAINT_COLUMN,
+                                            request.getConstraintColumn()
+                                                    .getId(),
+                                            savedConstraintColumn.getId());
+
+                            return affectedEntitiesSaver
+                                    .saveAffectedEntities(
+                                            request.getDatabase(),
+                                            updatedDatabase,
+                                            savedConstraintColumn.getId(),
+                                            request.getConstraintId(),
+                                            "CONSTRAINT")
+                                    .map(propagated -> AffectedMappingResponse
+                                            .of(
+                                                    request,
+                                                    request.getDatabase(),
+                                                    updatedDatabase,
+                                                    propagated));
+                        }));
     }
 
     public Mono<Void> removeColumnFromConstraint(

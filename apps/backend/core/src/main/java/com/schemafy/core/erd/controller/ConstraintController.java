@@ -70,7 +70,7 @@ public class ConstraintController {
     }
 
     @PostMapping("/constraints/{constraintId}/columns")
-    public Mono<BaseResponse<ConstraintColumnResponse>> addColumnToConstraint(
+    public Mono<BaseResponse<AffectedMappingResponse>> addColumnToConstraint(
             @PathVariable String constraintId,
             @RequestBody AddColumnToConstraintRequest request) {
         if (!constraintId.equals(request.getConstraintId())) {

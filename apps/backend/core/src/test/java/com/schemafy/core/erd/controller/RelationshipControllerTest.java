@@ -1,5 +1,8 @@
 package com.schemafy.core.erd.controller;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -18,7 +21,6 @@ import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.service.RelationshipService;
 
@@ -815,20 +817,24 @@ class RelationshipControllerTest {
                         builder);
         Validation.AddColumnToRelationshipRequest request = builder.build();
 
-        String mockResponseJson = """
-                {
-                    "id": "06D6WGN2ZWCGM2SVWRW2GEP8WW",
-                    "relationshipId": "06D590QBYGE6K2TQ8JK514GGP4",
-                    "srcColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                    "tgtColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                    "seqNo": 2
-                }
-                """;
-
         when(relationshipService.addColumnToRelationship(
                 any(Validation.AddColumnToRelationshipRequest.class)))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
-                        RelationshipColumnResponse.class)));
+                .thenReturn(Mono.just(new AffectedMappingResponse(
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Map.of("06D590QBYGE6K2TQ8JK514GGP4",
+                                Map.of("06D590QBYGE6K2TQ8JK514GGP4",
+                                        "06D590QBYGE6K2TQ8JK514GGP4")),
+                        Map.of("06D590QBYGE6K2TQ8JK514GGP4",
+                                Map.of(
+                                        "06D6WGN2ZWCGM2SVWRW2GEP8WW",
+                                        "06D6WGN2ZWCGM2SVWRW2GEP8WW")),
+                        AffectedMappingResponse.PropagatedEntities.empty())));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/columns",
@@ -840,10 +846,12 @@ class RelationshipControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.id").isEqualTo("06D6WGN2ZWCGM2SVWRW2GEP8WW")
-                .jsonPath("$.result.relationshipId")
+                .jsonPath(
+                        "$.result.relationships['06D590QBYGE6K2TQ8JK514GGP4']['06D590QBYGE6K2TQ8JK514GGP4']")
                 .isEqualTo("06D590QBYGE6K2TQ8JK514GGP4")
-                .jsonPath("$.result.seqNo").isEqualTo(2)
+                .jsonPath(
+                        "$.result.relationshipColumns['06D590QBYGE6K2TQ8JK514GGP4']['06D6WGN2ZWCGM2SVWRW2GEP8WW']")
+                .isEqualTo("06D6WGN2ZWCGM2SVWRW2GEP8WW")
                 .consumeWith(document("relationship-add-column",
                         pathParameters(
                                 parameterWithName("relationshipId")
@@ -859,17 +867,45 @@ class RelationshipControllerTest {
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result")
-                                        .description("생성된 관계 컬럼 정보"),
-                                fieldWithPath("result.id")
-                                        .description("관계 컬럼 ID"),
-                                fieldWithPath("result.relationshipId")
-                                        .description("관계 ID"),
-                                fieldWithPath("result.srcColumnId")
-                                        .description("소스(FK) 컬럼 ID"),
-                                fieldWithPath("result.tgtColumnId")
-                                        .description("타겟(참조) 컬럼 ID"),
-                                fieldWithPath("result.seqNo")
-                                        .description("순서 번호"))));
+                                        .description("응답 데이터"),
+                                fieldWithPath("result.schemas")
+                                        .description("스키마 ID 매핑 (FE ID -> BE ID)"),
+                                fieldWithPath("result.tables")
+                                        .description("테이블 ID 매핑 (FE ID -> BE ID)"),
+                                fieldWithPath("result.columns")
+                                        .description("컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.indexes")
+                                        .description("인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.indexColumns")
+                                        .description("인덱스 컬럼 ID 매핑 (Index BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.constraints")
+                                        .description("제약조건 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.constraintColumns")
+                                        .description("제약조건 컬럼 ID 매핑 (Constraint BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.relationships")
+                                        .description("관계 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath(
+                                        "result.relationships.06D590QBYGE6K2TQ8JK514GGP4")
+                                        .description("테이블별 관계 ID 매핑"),
+                                fieldWithPath(
+                                        "result.relationships.06D590QBYGE6K2TQ8JK514GGP4.06D590QBYGE6K2TQ8JK514GGP4")
+                                        .description("백엔드에서 생성된 관계 ID"),
+                                fieldWithPath("result.relationshipColumns")
+                                        .description("관계 컬럼 ID 매핑 (Relationship BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath(
+                                        "result.relationshipColumns.06D590QBYGE6K2TQ8JK514GGP4")
+                                        .description("관계별 컬럼 ID 매핑"),
+                                fieldWithPath(
+                                        "result.relationshipColumns.06D590QBYGE6K2TQ8JK514GGP4.06D6WGN2ZWCGM2SVWRW2GEP8WW")
+                                        .description("백엔드에서 생성된 관계 컬럼 ID"),
+                                fieldWithPath("result.propagated")
+                                        .description("전파된 엔티티 정보"),
+                                fieldWithPath("result.propagated.columns")
+                                        .description("전파된 컬럼 목록"),
+                                fieldWithPath("result.propagated.constraintColumns")
+                                        .description("전파된 제약조건 컬럼 목록"),
+                                fieldWithPath("result.propagated.indexColumns")
+                                        .description("전파된 인덱스 컬럼 목록"))));
     }
 
     @Test

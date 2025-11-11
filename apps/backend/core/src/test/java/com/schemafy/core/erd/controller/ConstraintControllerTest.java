@@ -23,7 +23,6 @@ import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.service.ConstraintService;
 
@@ -616,19 +615,23 @@ class ConstraintControllerTest {
                         builder);
         Validation.AddColumnToConstraintRequest request = builder.build();
 
-        String mockResponseJson = """
-                {
-                    "id": "06D6X2345678901BCDEFGHIJKL",
-                    "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                    "columnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                    "seqNo": 2
-                }
-                """;
-
         when(constraintService.addColumnToConstraint(
                 any(Validation.AddColumnToConstraintRequest.class)))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
-                        ConstraintColumnResponse.class)));
+                .thenReturn(Mono.just(new AffectedMappingResponse(
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Map.of("06D6W8HDY79QFZX39RMX62KSX4",
+                                Map.of("06D5XSF8RRRKMCHVNX68TDX1K4",
+                                        "06D6WWYRQCEXN1ACZ4ZJ12DFTG")),
+                        Map.of("06D6WWYRQCEXN1ACZ4ZJ12DFTG",
+                                Map.of("06D6X1234567890ABCDEFGHIJK",
+                                        "06D6X2345678901BCDEFGHIJKL")),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        AffectedMappingResponse.PropagatedEntities.empty())));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/constraints/{constraintId}/columns",
@@ -640,10 +643,12 @@ class ConstraintControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.id").isEqualTo("06D6X2345678901BCDEFGHIJKL")
-                .jsonPath("$.result.constraintId")
+                .jsonPath(
+                        "$.result.constraints['06D6W8HDY79QFZX39RMX62KSX4']['06D5XSF8RRRKMCHVNX68TDX1K4']")
                 .isEqualTo("06D6WWYRQCEXN1ACZ4ZJ12DFTG")
-                .jsonPath("$.result.seqNo").isEqualTo(2)
+                .jsonPath(
+                        "$.result.constraintColumns['06D6WWYRQCEXN1ACZ4ZJ12DFTG']['06D6X1234567890ABCDEFGHIJK']")
+                .isEqualTo("06D6X2345678901BCDEFGHIJKL")
                 .consumeWith(document("constraint-add-column",
                         pathParameters(
                                 parameterWithName("constraintId")
@@ -659,15 +664,45 @@ class ConstraintControllerTest {
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result")
-                                        .description("생성된 제약조건 컬럼 정보"),
-                                fieldWithPath("result.id")
-                                        .description("제약조건 컬럼 ID"),
-                                fieldWithPath("result.constraintId")
-                                        .description("제약조건 ID"),
-                                fieldWithPath("result.columnId")
-                                        .description("컬럼 ID"),
-                                fieldWithPath("result.seqNo")
-                                        .description("순서 번호"))));
+                                        .description("응답 데이터"),
+                                fieldWithPath("result.schemas")
+                                        .description("스키마 ID 매핑 (FE ID -> BE ID)"),
+                                fieldWithPath("result.tables")
+                                        .description("테이블 ID 매핑 (FE ID -> BE ID)"),
+                                fieldWithPath("result.columns")
+                                        .description("컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.indexes")
+                                        .description("인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.indexColumns")
+                                        .description("인덱스 컬럼 ID 매핑 (Index BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.constraints")
+                                        .description("제약조건 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath(
+                                        "result.constraints.06D6W8HDY79QFZX39RMX62KSX4")
+                                        .description("테이블별 제약조건 ID 매핑"),
+                                fieldWithPath(
+                                        "result.constraints.06D6W8HDY79QFZX39RMX62KSX4.06D5XSF8RRRKMCHVNX68TDX1K4")
+                                        .description("백엔드에서 생성된 제약조건 ID"),
+                                fieldWithPath("result.constraintColumns")
+                                        .description("제약조건 컬럼 ID 매핑 (Constraint BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath(
+                                        "result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG")
+                                        .description("제약조건별 컬럼 ID 매핑"),
+                                fieldWithPath(
+                                        "result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG.06D6X1234567890ABCDEFGHIJK")
+                                        .description("백엔드에서 생성된 제약조건 컬럼 ID"),
+                                fieldWithPath("result.relationships")
+                                        .description("관계 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.relationshipColumns")
+                                        .description("관계 컬럼 ID 매핑 (Relationship BE ID -> { FE ID -> BE ID })"),
+                                fieldWithPath("result.propagated")
+                                        .description("전파된 엔티티 정보"),
+                                fieldWithPath("result.propagated.columns")
+                                        .description("전파된 컬럼 목록"),
+                                fieldWithPath("result.propagated.constraintColumns")
+                                        .description("전파된 제약조건 컬럼 목록"),
+                                fieldWithPath("result.propagated.indexColumns")
+                                        .description("전파된 인덱스 컬럼 목록"))));
     }
 
     @Test

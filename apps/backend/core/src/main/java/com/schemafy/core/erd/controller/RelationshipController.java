@@ -83,7 +83,7 @@ public class RelationshipController {
     }
 
     @PostMapping("/relationships/{relationshipId}/columns")
-    public Mono<BaseResponse<RelationshipColumnResponse>> addColumnToRelationship(
+    public Mono<BaseResponse<AffectedMappingResponse>> addColumnToRelationship(
             @PathVariable String relationshipId,
             @RequestBody Validation.AddColumnToRelationshipRequest request) {
         if (!relationshipId.equals(request.getRelationshipId())) {
