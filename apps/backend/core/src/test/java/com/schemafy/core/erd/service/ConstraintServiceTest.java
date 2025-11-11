@@ -522,10 +522,11 @@ class ConstraintServiceTest {
                         .setId("schema-1")
                         .addTables(Validation.Table.newBuilder()
                                 .setId("table-1")
-                                .addConstraints(Validation.Constraint.newBuilder()
-                                        .setId("constraint-1")
-                                        .setIsAffected(true)
-                                        .build())
+                                .addConstraints(
+                                        Validation.Constraint.newBuilder()
+                                                .setId("constraint-1")
+                                                .setIsAffected(true)
+                                                .build())
                                 .build())
                         .build())
                 .build();
@@ -542,7 +543,8 @@ class ConstraintServiceTest {
                         .build())
                 .build();
 
-        Validation.Database validationResponse = Validation.Database.newBuilder()
+        Validation.Database validationResponse = Validation.Database
+                .newBuilder()
                 .setId("db-1")
                 .setIsAffected(true)
                 .addSchemas(Validation.Schema.newBuilder()
@@ -551,7 +553,8 @@ class ConstraintServiceTest {
                         .addTables(Validation.Table.newBuilder()
                                 .setId("table-1")
                                 .setIsAffected(true)
-                                .addConstraints(Validation.Constraint.newBuilder()
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
                                         .setId("constraint-1")
                                         .setIsAffected(true)
                                         .addColumns(Validation.ConstraintColumn

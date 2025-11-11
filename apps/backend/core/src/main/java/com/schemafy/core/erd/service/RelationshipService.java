@@ -6,7 +6,6 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
@@ -132,7 +131,8 @@ public class RelationshipService {
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
                 .flatMap(database -> relationshipColumnRepository
-                        .save(ErdMapper.toEntity(request.getRelationshipColumn()))
+                        .save(ErdMapper
+                                .toEntity(request.getRelationshipColumn()))
                         .flatMap(savedRelationshipColumn -> {
                             Validation.Database updatedDatabase = AffectedMappingResponse
                                     .updateEntityIdInDatabase(

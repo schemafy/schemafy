@@ -654,7 +654,8 @@ class RelationshipServiceTest {
                                 .build())
                 .build();
 
-        Validation.Database validationResponse = Validation.Database.newBuilder()
+        Validation.Database validationResponse = Validation.Database
+                .newBuilder()
                 .setId("db-1")
                 .setIsAffected(true)
                 .addSchemas(Validation.Schema.newBuilder()
@@ -667,17 +668,20 @@ class RelationshipServiceTest {
                                         .newBuilder()
                                         .setId("relationship-1")
                                         .setIsAffected(true)
-                                        .addColumns(Validation.RelationshipColumn
-                                                .newBuilder()
-                                                .setId(
-                                                        "fe-relationship-column-1")
-                                                .setRelationshipId(
-                                                        "relationship-1")
-                                                .setFkColumnId("src-column-1")
-                                                .setRefColumnId("tgt-column-1")
-                                                .setSeqNo(1)
-                                                .setIsAffected(true)
-                                                .build())
+                                        .addColumns(
+                                                Validation.RelationshipColumn
+                                                        .newBuilder()
+                                                        .setId(
+                                                                "fe-relationship-column-1")
+                                                        .setRelationshipId(
+                                                                "relationship-1")
+                                                        .setFkColumnId(
+                                                                "src-column-1")
+                                                        .setRefColumnId(
+                                                                "tgt-column-1")
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
                                         .build())
                                 .build())
                         .build())
@@ -700,7 +704,8 @@ class RelationshipServiceTest {
 
         // 응답 검증
         assertThat(response).isNotNull();
-        assertThat(response.relationshipColumns()).containsKey("relationship-1");
+        assertThat(response.relationshipColumns())
+                .containsKey("relationship-1");
         assertThat(response.propagated()).isEqualTo(propagatedEntities);
 
         // DB에 저장되었는지 확인
