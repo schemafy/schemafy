@@ -25,28 +25,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
-/**
- * ValidationClient가 반환한 Database 객체에서 영향받은 엔티티들을 저장하는 유틸리티
- *
- * <p>isAffected=true인 모든 엔티티를 데이터베이스에 저장합니다.
- * 주로 PK Constraint 생성이나 식별 관계(Identifying Relationship) 생성 시
- * 하위 테이블로 전파된 엔티티들을 저장하는 데 사용됩니다.
- *
- * <p>저장 순서 (계층 구조 따름):
- * <ol>
- *   <li>Schemas</li>
- *   <li>Tables</li>
- *   <li>Columns</li>
- *   <li>Indexes</li>
- *   <li>Index Columns</li>
- *   <li>Constraints</li>
- *   <li>Constraint Columns</li>
- *   <li>Relationships</li>
- *   <li>Relationship Columns</li>
- * </ol>
- *
- * @see com.schemafy.core.erd.mapper.ErdMapper
- */
 @Component
 @RequiredArgsConstructor
 public class AffectedEntitiesSaver {
@@ -61,33 +39,12 @@ public class AffectedEntitiesSaver {
     private final RelationshipRepository relationshipRepository;
     private final RelationshipColumnRepository relationshipColumnRepository;
 
-    /**
-     * Before와 After Database를 비교하여 새롭게 생성된 엔티티만 데이터베이스에 저장합니다.
-     *
-     * <p>생성 작업에서 전파로 인해 새롭게 추가된 엔티티들을 저장합니다.
-     * isAffected=true이지만 Before에도 존재하는 엔티티는 제외합니다 (기존 데이터 보존).
-     *
-     * @param before 작업 이전의 Database 상태
-     * @param after 작업 이후의 Database 상태 (ValidationClient 반환)
-     * @return 모든 저장 작업이 완료되면 완료되는 Mono
-     */
     public Mono<PropagatedEntities> saveAffectedEntities(
             Validation.Database before,
             Validation.Database after) {
         return saveAffectedEntities(before, after, null, null, null);
     }
 
-    /**
-     * Before와 After Database를 비교하여 새롭게 생성된 엔티티만 데이터베이스에 저장합니다.
-     * 요청한 엔티티는 Service에서 이미 저장하므로 제외합니다.
-     *
-     * @param before 작업 이전의 Database 상태
-     * @param after 작업 이후의 Database 상태 (ValidationClient 반환)
-     * @param excludeEntityId Service에서 이미 저장한 엔티티 ID (중복 저장 방지)
-     * @param sourceId 전파 출처 엔티티의 ID (Relationship 또는 Constraint)
-     * @param sourceType 전파 출처 타입 ("RELATIONSHIP" 또는 "CONSTRAINT")
-     * @return 전파된 엔티티 정보를 포함하는 PropagatedEntities
-     */
     public Mono<PropagatedEntities> saveAffectedEntities(
             Validation.Database before,
             Validation.Database after,
@@ -97,15 +54,12 @@ public class AffectedEntitiesSaver {
         return Mono.defer(() -> {
             List<Mono<Void>> saveTasks = new ArrayList<>();
 
-            // 전파된 엔티티 정보 수집용 리스트
             List<PropagatedColumn> propagatedColumns = new ArrayList<>();
             List<PropagatedConstraintColumn> propagatedConstraintColumns = new ArrayList<>();
             List<PropagatedIndexColumn> propagatedIndexColumns = new ArrayList<>();
 
-            // Before의 모든 엔티티 ID를 Set으로 수집 (빠른 조회)
             var beforeIds = collectAllEntityIds(before);
 
-            // Schema 순회
             for (Validation.Schema schema : after.getSchemasList()) {
                 if (schema.getIsAffected()
                         && !beforeIds.contains(schema.getId())
@@ -115,19 +69,16 @@ public class AffectedEntitiesSaver {
                                     .then());
                 }
 
-                // Table 순회
                 for (Validation.Table table : schema.getTablesList()) {
                     if (table.getIsAffected()
                             && !beforeIds.contains(table.getId())
                             && !table.getId().equals(excludeEntityId)) {
-                        // 새로 생성된 Table은 extra가 없음
                         saveTasks.add(
                                 tableRepository
                                         .save(ErdMapper.toEntity(table))
                                         .then());
                     }
 
-                    // Column 순회
                     for (Validation.Column column : table.getColumnsList()) {
                         if (column.getIsAffected()
                                 && !beforeIds.contains(column.getId())
@@ -137,20 +88,18 @@ public class AffectedEntitiesSaver {
                                             .save(ErdMapper.toEntity(column))
                                             .then());
 
-                            // 전파된 컬럼 정보 수집 (sourceId와 sourceType이 있는 경우)
                             if (sourceId != null && sourceType != null) {
                                 propagatedColumns.add(new PropagatedColumn(
                                         column.getId(),
                                         table.getId(),
                                         sourceType,
                                         sourceId,
-                                        column.getId() // sourceColumnId는 현재 컬럼 ID (추후 개선 가능)
+                                        column.getId()
                                 ));
                             }
                         }
                     }
 
-                    // Index 순회
                     for (Validation.Index index : table.getIndexesList()) {
                         if (index.getIsAffected()
                                 && !beforeIds.contains(index.getId())
@@ -161,7 +110,6 @@ public class AffectedEntitiesSaver {
                                             .then());
                         }
 
-                        // Index Columns 순회
                         for (Validation.IndexColumn indexColumn : index
                                 .getColumnsList()) {
                             if (indexColumn.getIsAffected()
@@ -174,7 +122,6 @@ public class AffectedEntitiesSaver {
                                                         .toEntity(indexColumn))
                                                 .then());
 
-                                // 전파된 인덱스 컬럼 정보 수집
                                 if (sourceId != null && sourceType != null) {
                                     propagatedIndexColumns
                                             .add(new PropagatedIndexColumn(
@@ -188,7 +135,6 @@ public class AffectedEntitiesSaver {
                         }
                     }
 
-                    // Constraint 순회
                     for (Validation.Constraint constraint : table
                             .getConstraintsList()) {
                         if (constraint.getIsAffected()
@@ -202,7 +148,6 @@ public class AffectedEntitiesSaver {
                                             .then());
                         }
 
-                        // Constraint Columns 순회
                         for (Validation.ConstraintColumn constraintColumn : constraint
                                 .getColumnsList()) {
                             if (constraintColumn.getIsAffected()
@@ -216,7 +161,6 @@ public class AffectedEntitiesSaver {
                                                         constraintColumn))
                                                 .then());
 
-                                // 전파된 제약조건 컬럼 정보 수집
                                 if (sourceId != null && sourceType != null) {
                                     propagatedConstraintColumns
                                             .add(new PropagatedConstraintColumn(
@@ -231,14 +175,12 @@ public class AffectedEntitiesSaver {
                         }
                     }
 
-                    // Relationship 순회
                     for (Validation.Relationship relationship : table
                             .getRelationshipsList()) {
                         if (relationship.getIsAffected()
                                 && !beforeIds.contains(relationship.getId())
                                 && !relationship.getId()
                                         .equals(excludeEntityId)) {
-                            // 새로 생성된 Relationship은 extra가 없음
                             saveTasks.add(
                                     relationshipRepository
                                             .save(ErdMapper.toEntity(
@@ -246,7 +188,6 @@ public class AffectedEntitiesSaver {
                                             .then());
                         }
 
-                        // Relationship Columns 순회
                         for (Validation.RelationshipColumn relationshipColumn : relationship
                                 .getColumnsList()) {
                             if (relationshipColumn.getIsAffected()
@@ -265,8 +206,6 @@ public class AffectedEntitiesSaver {
                 }
             }
 
-            // 모든 저장 작업을 순차적으로 실행 (Flux.concat)
-            // 계층 구조를 따라 순서대로 저장되므로 FK 제약조건 위반 방지
             return Flux.concat(saveTasks)
                     .then(Mono.just(new PropagatedEntities(
                             propagatedColumns,
@@ -275,13 +214,6 @@ public class AffectedEntitiesSaver {
         });
     }
 
-    /**
-     * Database에 포함된 모든 엔티티의 ID를 수집합니다.
-     * Before Database와 비교하여 새로운 엔티티를 찾는 데 사용됩니다.
-     *
-     * @param database ID를 수집할 Database 객체
-     * @return 모든 엔티티 ID의 Set
-     */
     private java.util.Set<String> collectAllEntityIds(
             Validation.Database database) {
         java.util.Set<String> ids = new java.util.HashSet<>();

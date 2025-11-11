@@ -12,42 +12,6 @@ import com.schemafy.core.erd.model.EntityType;
 
 import validation.Validation;
 
-/**
- * Mapping result between frontend IDs (FE-ID) and backend IDs (BE-ID) with one-level hierarchical grouping.
- *
- * <p>General rules
- * <ul>
- *   <li>Flat maps (schemas, tables): {@code FE-ID -> BE-ID}</li>
- *   <li>Nested maps (others): {@code Parent-BE-ID -> ( FE-ID -> BE-ID )}</li>
- *   <li>"Parent-BE-ID" is the immediate upper-level entity ID for the group (e.g., tableId for columns).</li>
- * </ul>
- *
- * <p>Grouping basis
- * <ul>
- *   <li>columns: grouped by tableId</li>
- *   <li>indexes: grouped by tableId</li>
- *   <li>indexColumns: grouped by indexId</li>
- *   <li>constraints: grouped by tableId</li>
- *   <li>constraintColumns: grouped by constraintId</li>
- *   <li>relationships: grouped by tableId (owner table)</li>
- *   <li>relationshipColumns: grouped by relationshipId</li>
- * </ul>
- *
- * <p>Example
- * <pre>
- * {
- *   schemas:  { fe-schema-1: be-schema-1 },
- *   tables:   { fe-table-1:  be-table-1  },
- *   columns:  { be-table-1:  { fe-col-1:  be-col-1 } },
- *   indexes:  { be-table-1:  { fe-idx-1:  be-idx-1 } },
- *   indexColumns: { be-idx-1: { fe-idxcol-1: be-idxcol-1 } },
- *   constraints: { be-table-1: { fe-const-1: be-const-1 } },
- *   constraintColumns: { be-const-1: { fe-cc-1: be-cc-1 } },
- *   relationships: { be-table-1: { fe-rel-1: be-rel-1 } },
- *   relationshipColumns: { be-rel-1: { fe-rc-1: be-rc-1 } }
- * }
- * </pre>
- */
 public record AffectedMappingResponse(
         Map<String, String> schemas,
         Map<String, String> tables,
@@ -60,9 +24,6 @@ public record AffectedMappingResponse(
         Map<String, Map<String, String>> relationshipColumns,
         PropagatedEntities propagated) {
 
-    /**
-     * 전파로 생성된 엔티티들과 그 출처 정보
-     */
     public record PropagatedEntities(
             List<PropagatedColumn> columns,
             List<PropagatedConstraintColumn> constraintColumns,
@@ -74,15 +35,6 @@ public record AffectedMappingResponse(
 
     }
 
-    /**
-     * 전파된 컬럼 정보
-     *
-     * @param columnId 생성된 컬럼의 BE-ID
-     * @param tableId 컬럼이 추가된 테이블의 BE-ID
-     * @param sourceType 전파 출처 타입 ("RELATIONSHIP" 또는 "CONSTRAINT")
-     * @param sourceId 출처 엔티티의 BE-ID (Relationship 또는 Constraint)
-     * @param sourceColumnId 전파된 원본 컬럼의 BE-ID
-     */
     public record PropagatedColumn(
             String columnId,
             String tableId,
@@ -91,15 +43,6 @@ public record AffectedMappingResponse(
             String sourceColumnId) {
     }
 
-    /**
-     * 전파된 제약조건 컬럼 정보
-     *
-     * @param constraintColumnId 생성된 제약조건 컬럼의 BE-ID
-     * @param constraintId 제약조건 컬럼이 추가된 제약조건의 BE-ID
-     * @param columnId 추가된 컬럼의 BE-ID (위에서 전파된 컬럼)
-     * @param sourceType 전파 출처 타입 ("RELATIONSHIP" 또는 "CONSTRAINT")
-     * @param sourceId 출처 엔티티의 BE-ID
-     */
     public record PropagatedConstraintColumn(
             String constraintColumnId,
             String constraintId,
@@ -108,15 +51,6 @@ public record AffectedMappingResponse(
             String sourceId) {
     }
 
-    /**
-     * 전파된 인덱스 컬럼 정보
-     *
-     * @param indexColumnId 생성된 인덱스 컬럼의 BE-ID
-     * @param indexId 인덱스 컬럼이 추가된 인덱스의 BE-ID
-     * @param columnId 추가된 컬럼의 BE-ID (위에서 전파된 컬럼)
-     * @param sourceType 전파 출처 타입 ("RELATIONSHIP" 또는 "CONSTRAINT")
-     * @param sourceId 출처 엔티티의 BE-ID
-     */
     public record PropagatedIndexColumn(
             String indexColumnId,
             String indexId,
@@ -195,9 +129,6 @@ public record AffectedMappingResponse(
         return buildResponse(before, after, requestIdMaps, propagated);
     }
 
-    /**
-     * 공통 응답 빌드 로직
-     */
     private static AffectedMappingResponse buildResponse(
             Validation.Database before, Validation.Database after,
             RequestIdMaps requestIdMaps, PropagatedEntities propagated) {
@@ -207,9 +138,6 @@ public record AffectedMappingResponse(
         return builder.build();
     }
 
-    /**
-     * 스키마에서 모든 하위 엔티티의 ID를 추출
-     */
     private static void extractSchemaIds(Validation.Schema schema,
             RequestIdMaps maps) {
         maps.schemas.put(schema.getName(), schema.getId());
@@ -218,9 +146,6 @@ public record AffectedMappingResponse(
         }
     }
 
-    /**
-     * 테이블에서 모든 하위 엔티티의 ID를 추출
-     */
     private static void extractTableIds(Validation.Table table,
             RequestIdMaps maps) {
         maps.tables.put(table.getName(), table.getId());
@@ -243,9 +168,6 @@ public record AffectedMappingResponse(
         }
     }
 
-    /**
-     * 인덱스와 인덱스 컬럼의 ID를 추출
-     */
     private static void extractIndexIds(Validation.Index index,
             RequestIdMaps maps) {
         maps.indexes.put(index.getName(), index.getId());
@@ -255,9 +177,6 @@ public record AffectedMappingResponse(
         }
     }
 
-    /**
-     * 제약조건과 제약조건 컬럼의 ID를 추출
-     */
     private static void extractConstraintIds(Validation.Constraint constraint,
             RequestIdMaps maps) {
         maps.constraints.put(constraint.getName(), constraint.getId());
@@ -268,9 +187,6 @@ public record AffectedMappingResponse(
         }
     }
 
-    /**
-     * 관계와 관계 컬럼의 ID를 추출
-     */
     private static void extractRelationshipIds(
             Validation.Relationship relationship, RequestIdMaps maps) {
         maps.relationships.put(relationship.getName(), relationship.getId());
@@ -283,19 +199,6 @@ public record AffectedMappingResponse(
         }
     }
 
-    /**
-     * TODO: 향후 다른 요청 타입들(Update, Delete 등)에 대해서도 동일한 패턴으로 구현 필요
-     */
-
-    /**
-     * Validation 결과의 Database에서 특정 엔티티 ID를 실제 DB ID로 교체
-     *
-     * @param database Validation 결과 Database
-     * @param entityType 엔티티 타입
-     * @param feId 프론트엔드에서 보낸 임시 ID
-     * @param beId DB에서 생성된 실제 ID
-     * @return 업데이트된 Database
-     */
     public static Validation.Database updateEntityIdInDatabase(
             Validation.Database database,
             EntityType entityType,
@@ -337,25 +240,21 @@ public record AffectedMappingResponse(
 
             for (Validation.Table table : schema.getTablesList()) {
                 if (table.getId().equals(feId)) {
-                    // 테이블 ID를 실제 DB ID로 변경하고 하위 엔티티도 업데이트
                     Validation.Table.Builder tableBuilder = table.toBuilder()
                             .setId(beId);
 
-                    // Columns의 tableId 업데이트
                     tableBuilder.clearColumns();
                     for (Validation.Column column : table.getColumnsList()) {
                         tableBuilder.addColumns(column.toBuilder()
                                 .setTableId(beId).build());
                     }
 
-                    // Indexes의 tableId 업데이트
                     tableBuilder.clearIndexes();
                     for (Validation.Index index : table.getIndexesList()) {
                         tableBuilder.addIndexes(index.toBuilder()
                                 .setTableId(beId).build());
                     }
 
-                    // Constraints의 tableId 업데이트
                     tableBuilder.clearConstraints();
                     for (Validation.Constraint constraint : table
                             .getConstraintsList()) {
@@ -363,7 +262,6 @@ public record AffectedMappingResponse(
                                 .setTableId(beId).build());
                     }
 
-                    // Relationships의 srcTableId/tgtTableId 업데이트
                     tableBuilder.clearRelationships();
                     for (Validation.Relationship relationship : table
                             .getRelationshipsList()) {
@@ -502,9 +400,6 @@ public record AffectedMappingResponse(
         return dbBuilder.build();
     }
 
-    /**
-     * 요청 객체에서 추출한 프론트엔드 ID를 엔티티 타입별로 관리하는 컨테이너
-     */
     private static class RequestIdMaps {
 
         final Map<String, String> schemas = new HashMap<>();
@@ -545,9 +440,6 @@ public record AffectedMappingResponse(
             }
         }
 
-        // 기존 엔티티와 새 엔티티 매핑 (beforeMapById가 비어있지 않은 경우)
-        // 비즈니스 키(이름 등)로 매칭하여 기존 엔티티의 FE-ID와 새 엔티티의 BE-ID를 매핑
-        // isAffected가 없거나 false인 경우도 false와 같이 처리되므로 체크 불필요
         if (!beforeMapById.isEmpty() && !newAfterEntities.isEmpty()) {
             Map<String, T> tempFeMapByKey = beforeMapById.values().stream()
                     .collect(Collectors.toMap(businessKeyExtractor,
@@ -557,8 +449,6 @@ public record AffectedMappingResponse(
                 T tempFeEntity = tempFeMapByKey
                         .get(businessKeyExtractor.apply(newAfterEntity));
                 if (tempFeEntity != null) {
-                    // isAffected가 true인 경우에만 하위 엔티티 재귀 매핑 수행
-                    // 하지만 ID 매핑은 항상 수행 (isAffected와 무관)
                     idMappingConsumer.accept(
                             idExtractor.apply(tempFeEntity),
                             idExtractor.apply(newAfterEntity));
@@ -570,38 +460,24 @@ public record AffectedMappingResponse(
             }
         }
 
-        // 새로 생성된 엔티티들을 요청 ID 맵과 매핑
-        // newAfterEntities는 before에 없고 after에만 있는 엔티티들
-        // requestIdMap에 있는 엔티티는 요청에 포함된 것이므로 isAffected와 관계없이 매핑
-        // requestIdMap에 없고 isAffected가 true인 엔티티는 전파로 생성된 것이므로 매핑 (하위 엔티티만)
         if (!newAfterEntities.isEmpty()) {
             for (T newAfterEntity : newAfterEntities) {
                 String afterId = idExtractor.apply(newAfterEntity);
                 String businessKey = businessKeyExtractor
                         .apply(newAfterEntity);
 
-                // 요청 ID 맵에서 비즈니스 키로 매칭되는 FE-ID를 찾아서 매핑
                 String feId = requestIdMap.get(businessKey);
                 if (feId != null) {
-                    // 요청에 포함된 엔티티이므로 무조건 매핑
                     idMappingConsumer.accept(feId, afterId);
-                    // 하위 엔티티도 재귀적으로 매핑
-                    // 새로 생성된 엔티티의 경우 beforeEntity가 null이므로,
-                    // recursiveMapper를 호출할 때 null을 beforeEntity로 전달
                     recursiveMapper.accept(null, newAfterEntity);
                 } else if (Boolean.TRUE
                         .equals(isAffectedExtractor.apply(newAfterEntity))) {
-                    // requestIdMap에 없지만 isAffected가 true인 경우
-                    // 전파로 생성된 엔티티이므로 하위 엔티티만 재귀적으로 매핑
                     recursiveMapper.accept(null, newAfterEntity);
                 }
             }
         }
     }
 
-    /**
-     * 모든 엔티티 타입의 ID를 전파하면서 스키마를 매핑
-     */
     private static void mapSchemasWithMaps(
             AffectedMappingResponseBuilder builder, Validation.Database before,
             Validation.Database after, RequestIdMaps requestIdMaps) {
@@ -613,7 +489,6 @@ public record AffectedMappingResponse(
                 Validation.Schema::getIsAffected,
                 (feId, beId) -> builder.schemas.put(feId, beId),
                 (beforeSchema, afterSchema) -> {
-                    // beforeSchema가 null인 경우 (새로 생성된 스키마) 빈 스키마로 처리
                     Validation.Schema beforeSchemaSafe = beforeSchema != null
                             ? beforeSchema
                             : Validation.Schema.getDefaultInstance();
@@ -623,10 +498,6 @@ public record AffectedMappingResponse(
                 requestIdMaps.schemas);
     }
 
-    /**
-     * 모든 엔티티 타입의 ID를 전파하면서 테이블을 매핑
-     * 컬럼 생성 시 다른 테이블의 컬럼, 제약조건, 관계, 인덱스 등에 영향을 미칠 수 있음
-     */
     private static void mapTablesWithMaps(
             AffectedMappingResponseBuilder builder,
             Validation.Schema beforeSchema,
@@ -640,8 +511,6 @@ public record AffectedMappingResponse(
                 Validation.Table::getIsAffected,
                 (feId, beId) -> builder.tables.put(feId, beId),
                 (beforeTable, afterTable) -> {
-                    // 모든 하위 엔티티에 requestIdMaps 전달
-                    // beforeTable이 null인 경우 (새로 생성된 테이블) 빈 테이블로 처리
                     Validation.Table beforeTableSafe = beforeTable != null
                             ? beforeTable
                             : Validation.Table.getDefaultInstance();
@@ -658,10 +527,6 @@ public record AffectedMappingResponse(
                 requestIdMaps.tables);
     }
 
-    /**
-     * 컬럼 ID를 전파하면서 매핑
-     * 컬럼 생성 시 해당 테이블뿐만 아니라 FK 관계로 인해 다른 테이블의 컬럼도 생성될 수 있음
-     */
     private static void mapColumnsWithMaps(
             AffectedMappingResponseBuilder builder,
             Validation.Table beforeTable,
@@ -682,10 +547,6 @@ public record AffectedMappingResponse(
                 requestIdMaps.columns);
     }
 
-    /**
-     * 인덱스 ID를 전파하면서 매핑
-     * 컬럼 생성 시 PK/UNIQUE 제약조건으로 인해 인덱스가 자동 생성될 수 있음
-     */
     private static void mapIndexesWithMaps(
             AffectedMappingResponseBuilder builder,
             Validation.Table beforeTable,
@@ -706,15 +567,11 @@ public record AffectedMappingResponse(
                 requestIdMaps.indexes);
     }
 
-    /**
-     * 인덱스 컬럼 ID를 전파하면서 매핑
-     */
     private static void mapIndexColumnsWithMaps(
             AffectedMappingResponseBuilder builder,
             Validation.Index beforeIndex,
             Validation.Index afterIndex,
             RequestIdMaps requestIdMaps) {
-        // beforeIndex가 null인 경우 (새로 생성된 인덱스) 빈 인덱스로 처리
         Validation.Index beforeIndexSafe = beforeIndex != null
                 ? beforeIndex
                 : Validation.Index.getDefaultInstance();
@@ -734,10 +591,6 @@ public record AffectedMappingResponse(
                 requestIdMaps.indexColumns);
     }
 
-    /**
-     * 제약조건 ID를 전파하면서 매핑
-     * 컬럼 생성 시 PK/UNIQUE/FK 등의 제약조건이 자동 생성될 수 있음
-     */
     private static void mapConstraintsWithMaps(
             AffectedMappingResponseBuilder builder,
             Validation.Table beforeTable,
@@ -760,15 +613,11 @@ public record AffectedMappingResponse(
                 requestIdMaps.constraints);
     }
 
-    /**
-     * 제약조건 컬럼 ID를 전파하면서 매핑
-     */
     private static void mapConstraintColumnsWithMaps(
             AffectedMappingResponseBuilder builder,
             Validation.Constraint beforeConstraint,
             Validation.Constraint afterConstraint,
             RequestIdMaps requestIdMaps) {
-        // beforeConstraint가 null인 경우 (새로 생성된 제약조건) 빈 제약조건으로 처리
         Validation.Constraint beforeConstraintSafe = beforeConstraint != null
                 ? beforeConstraint
                 : Validation.Constraint.getDefaultInstance();
@@ -788,10 +637,6 @@ public record AffectedMappingResponse(
                 requestIdMaps.constraintColumns);
     }
 
-    /**
-     * 관계 ID를 전파하면서 매핑
-     * 컬럼 생성 시 FK 컬럼이면 관계(Relationship)가 자동 생성될 수 있음
-     */
     private static void mapRelationshipsWithMaps(
             AffectedMappingResponseBuilder builder,
             Validation.Table beforeTable,
@@ -815,15 +660,11 @@ public record AffectedMappingResponse(
                 requestIdMaps.relationships);
     }
 
-    /**
-     * 관계 컬럼 ID를 전파하면서 매핑
-     */
     private static void mapRelationshipColumnsWithMaps(
             AffectedMappingResponseBuilder builder,
             Validation.Relationship beforeRelationship,
             Validation.Relationship afterRelationship,
             RequestIdMaps requestIdMaps) {
-        // beforeRelationship이 null인 경우 (새로 생성된 관계) 빈 관계로 처리
         Validation.Relationship beforeRelationshipSafe = beforeRelationship != null
                 ? beforeRelationship
                 : Validation.Relationship.getDefaultInstance();
