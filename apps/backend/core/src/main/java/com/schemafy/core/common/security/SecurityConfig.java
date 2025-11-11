@@ -2,6 +2,7 @@ package com.schemafy.core.common.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -23,6 +24,7 @@ import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 
+@Profile("!test")
 @Configuration
 @EnableWebFluxSecurity
 @EnableMethodSecurity
