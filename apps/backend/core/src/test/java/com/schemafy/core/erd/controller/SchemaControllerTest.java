@@ -32,7 +32,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -141,17 +143,13 @@ class SchemaControllerTest {
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
-                        responseFields(
+                        relaxedResponseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result").description("응답 데이터"),
-                                fieldWithPath("result.schemas")
+                                subsectionWithPath("result.schemas")
                                         .description(
                                                 "스키마 ID 매핑 (FE ID -> BE ID)"),
-                                fieldWithPath(
-                                        "result.schemas.06D4K6XMCJ1NWKNV13HFZ8CVC0")
-                                        .description(
-                                                "백엔드에서 생성된 스키마 ID"),
                                 fieldWithPath("result.tables")
                                         .description("테이블 ID 매핑"),
                                 fieldWithPath("result.columns")

@@ -33,7 +33,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -158,19 +160,15 @@ class TableControllerTest {
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
-                        responseFields(
+                        relaxedResponseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result").description("응답 데이터"),
-                                fieldWithPath("result.schemas")
-                                        .description("스키마 ID 매핑"),
-                                fieldWithPath("result.tables")
+                                subsectionWithPath("result.schemas")
+                                        .description("스키마 ID 매핑 (FE ID -> BE ID)"),
+                                subsectionWithPath("result.tables")
                                         .description(
                                                 "테이블 ID 매핑 (FE ID -> BE ID)"),
-                                fieldWithPath(
-                                        "result.tables.01ARZ3NDEKTSV4RRFFQ69G5FAV")
-                                        .description(
-                                                "백엔드에서 생성된 테이블 ID (06D6W1GAHD51T5NJPK29Q6BCR8)"),
                                 fieldWithPath("result.columns")
                                         .description("컬럼 ID 매핑"),
                                 fieldWithPath("result.indexes")

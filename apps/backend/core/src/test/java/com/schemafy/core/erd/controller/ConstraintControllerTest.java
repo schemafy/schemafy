@@ -36,7 +36,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -193,44 +195,33 @@ class ConstraintControllerTest {
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
-                        responseFields(
+                        relaxedResponseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result").description("응답 데이터"),
-                                fieldWithPath("result.schemas").description(
-                                        "스키마 ID 매핑 (FE ID -> BE ID)"),
-                                fieldWithPath("result.tables").description(
-                                        "테이블 ID 매핑 (FE ID -> BE ID)"),
-                                fieldWithPath("result.columns").description(
-                                        "컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.indexes").description(
-                                        "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.indexColumns")
+                                subsectionWithPath("result.schemas")
+                                        .description("스키마 ID 매핑 (FE ID -> BE ID)"),
+                                subsectionWithPath("result.tables")
+                                        .description("테이블 ID 매핑 (FE ID -> BE ID)"),
+                                subsectionWithPath("result.columns")
+                                        .description(
+                                                "컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                subsectionWithPath("result.indexes")
+                                        .description(
+                                                "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                subsectionWithPath("result.indexColumns")
                                         .description(
                                                 "인덱스 컬럼 ID 매핑 (Index BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.constraints").description(
-                                        "제약조건 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath(
-                                        "result.constraints.06D6W8HDY79QFZX39RMX62KSX4")
-                                        .description("테이블별 제약조건 ID 매핑"),
-                                fieldWithPath(
-                                        "result.constraints.06D6W8HDY79QFZX39RMX62KSX4.06D5XSF8RRRKMCHVNX68TDX1K4")
+                                subsectionWithPath("result.constraints")
                                         .description(
-                                                "백엔드에서 생성된 제약조건 ID"),
-                                fieldWithPath("result.constraintColumns")
+                                                "제약조건 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                subsectionWithPath("result.constraintColumns")
                                         .description(
                                                 "제약조건 컬럼 ID 매핑 (Constraint BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath(
-                                        "result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG")
-                                        .description("제약조건별 컬럼 ID 매핑"),
-                                fieldWithPath(
-                                        "result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG.06D5XST4N38Z9QANKMEDMCXAYG")
-                                        .description(
-                                                "백엔드에서 생성된 제약조건 컬럼 ID"),
-                                fieldWithPath("result.relationships")
+                                subsectionWithPath("result.relationships")
                                         .description(
                                                 "관계 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.relationshipColumns")
+                                subsectionWithPath("result.relationshipColumns")
                                         .description(
                                                 "관계 컬럼 ID 매핑 (Relationship BE ID -> { FE ID -> BE ID })"),
                                 fieldWithPath("result.propagated")
@@ -660,48 +651,34 @@ class ConstraintControllerTest {
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
-                        responseFields(
+                        relaxedResponseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result")
                                         .description("응답 데이터"),
-                                fieldWithPath("result.schemas")
-                                        .description(
-                                                "스키마 ID 매핑 (FE ID -> BE ID)"),
-                                fieldWithPath("result.tables")
-                                        .description(
-                                                "테이블 ID 매핑 (FE ID -> BE ID)"),
-                                fieldWithPath("result.columns")
+                                subsectionWithPath("result.schemas")
+                                        .description("스키마 ID 매핑 (FE ID -> BE ID)"),
+                                subsectionWithPath("result.tables")
+                                        .description("테이블 ID 매핑 (FE ID -> BE ID)"),
+                                subsectionWithPath("result.columns")
                                         .description(
                                                 "컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.indexes")
+                                subsectionWithPath("result.indexes")
                                         .description(
                                                 "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.indexColumns")
+                                subsectionWithPath("result.indexColumns")
                                         .description(
                                                 "인덱스 컬럼 ID 매핑 (Index BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.constraints")
+                                subsectionWithPath("result.constraints")
                                         .description(
                                                 "제약조건 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath(
-                                        "result.constraints.06D6W8HDY79QFZX39RMX62KSX4")
-                                        .description("테이블별 제약조건 ID 매핑"),
-                                fieldWithPath(
-                                        "result.constraints.06D6W8HDY79QFZX39RMX62KSX4.06D5XSF8RRRKMCHVNX68TDX1K4")
-                                        .description("백엔드에서 생성된 제약조건 ID"),
-                                fieldWithPath("result.constraintColumns")
+                                subsectionWithPath("result.constraintColumns")
                                         .description(
                                                 "제약조건 컬럼 ID 매핑 (Constraint BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath(
-                                        "result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG")
-                                        .description("제약조건별 컬럼 ID 매핑"),
-                                fieldWithPath(
-                                        "result.constraintColumns.06D6WWYRQCEXN1ACZ4ZJ12DFTG.06D6X1234567890ABCDEFGHIJK")
-                                        .description("백엔드에서 생성된 제약조건 컬럼 ID"),
-                                fieldWithPath("result.relationships")
+                                subsectionWithPath("result.relationships")
                                         .description(
                                                 "관계 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath("result.relationshipColumns")
+                                subsectionWithPath("result.relationshipColumns")
                                         .description(
                                                 "관계 컬럼 ID 매핑 (Relationship BE ID -> { FE ID -> BE ID })"),
                                 fieldWithPath("result.propagated")

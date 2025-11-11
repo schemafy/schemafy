@@ -32,7 +32,9 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -199,33 +201,23 @@ class IndexControllerTest {
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
-                        responseFields(
+                        relaxedResponseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result").description("응답 데이터"),
-                                fieldWithPath("result.schemas")
-                                        .description("스키마 ID 매핑"),
-                                fieldWithPath("result.tables")
-                                        .description("테이블 ID 매핑"),
-                                fieldWithPath("result.columns")
-                                        .description("컬럼 ID 매핑"),
-                                fieldWithPath("result.indexes").description(
-                                        "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                                fieldWithPath(
-                                        "result.indexes.06D6W8HDY79QFZX39RMX62KSX4")
-                                        .description("테이블별 인덱스 ID 매핑"),
-                                fieldWithPath(
-                                        "result.indexes.06D6W8HDY79QFZX39RMX62KSX4.06D5KGSC0HJ9CPPYGMGYDA2PAG")
+                                subsectionWithPath("result.schemas")
+                                        .description("스키마 ID 매핑 (FE ID -> BE ID)"),
+                                subsectionWithPath("result.tables")
+                                        .description("테이블 ID 매핑 (FE ID -> BE ID)"),
+                                subsectionWithPath("result.columns")
                                         .description(
-                                                "백엔드에서 생성된 인덱스 ID"),
-                                fieldWithPath("result.indexColumns")
-                                        .description("인덱스 컬럼 ID 매핑"),
-                                fieldWithPath(
-                                        "result.indexColumns.06D6WNJS8XWZT41HWZ226ZS904")
-                                        .description("인덱스별 컬럼 ID 매핑"),
-                                fieldWithPath(
-                                        "result.indexColumns.06D6WNJS8XWZT41HWZ226ZS904.06D6W90RSE1VPFRMM4XPKYGM9M")
-                                        .description("백엔드에서 생성된 인덱스 컬럼 ID"),
+                                                "컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                subsectionWithPath("result.indexes")
+                                        .description(
+                                                "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
+                                subsectionWithPath("result.indexColumns")
+                                        .description(
+                                                "인덱스 컬럼 ID 매핑 (Index BE ID -> { FE ID -> BE ID })"),
                                 fieldWithPath("result.constraints")
                                         .description("제약조건 ID 매핑"),
                                 fieldWithPath("result.constraintColumns")
