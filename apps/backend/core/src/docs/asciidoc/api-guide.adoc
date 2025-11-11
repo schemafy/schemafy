@@ -60,6 +60,11 @@ Schemafy API
 
 ULID를 생성합니다.
 
+[source]
+----
+GET /api/auth/v1.0/ulid/generate
+----
+
 [discrete]
 ==== 요청
 
@@ -88,6 +93,11 @@ include::{snippets}/ulid-generate/response-fields.adoc[]
 
 스키마를 생성합니다.
 
+[source]
+----
+POST /api/auth/v1.0/schemas
+----
+
 [discrete]
 ==== 요청
 
@@ -112,6 +122,11 @@ include::{snippets}/schema-create/response-fields.adoc[]
 === Schema 조회
 
 스키마를 조회합니다.
+
+[source]
+----
+GET /api/auth/v1.0/schemas/{schemaId}
+----
 
 [discrete]
 ==== 요청
@@ -139,6 +154,11 @@ include::{snippets}/schema-get/response-fields.adoc[]
 
 스키마 이름을 변경합니다.
 
+[source]
+----
+PUT /api/auth/v1.0/schemas/{schemaId}/name
+----
+
 [discrete]
 ==== 요청
 
@@ -164,6 +184,11 @@ include::{snippets}/schema-update-name/response-fields.adoc[]
 === Schema 삭제
 
 스키마를 삭제합니다.
+
+[source]
+----
+DELETE /api/auth/v1.0/schemas/{schemaId}
+----
 
 [discrete]
 ==== 요청
@@ -193,6 +218,11 @@ include::{snippets}/schema-delete/response-fields.adoc[]
 
 테이블을 생성합니다.
 
+[source]
+----
+POST /api/auth/v1.0/tables
+----
+
 [discrete]
 ==== 요청
 
@@ -217,6 +247,11 @@ include::{snippets}/table-create/response-fields.adoc[]
 === Table 조회
 
 테이블을 조회합니다.
+
+[source]
+----
+GET /api/auth/v1.0/tables/{tableId}
+----
 
 [discrete]
 ==== 요청
@@ -244,6 +279,11 @@ include::{snippets}/table-get/response-fields.adoc[]
 
 특정 스키마에 속한 테이블 목록을 조회합니다.
 
+[source]
+----
+GET /api/auth/v1.0/tables/schema/{schemaId}
+----
+
 [discrete]
 ==== 요청
 
@@ -270,6 +310,11 @@ include::{snippets}/table-list-by-schema/response-fields.adoc[]
 
 테이블 이름을 변경합니다.
 
+[source]
+----
+PUT /api/auth/v1.0/tables/{tableId}/name
+----
+
 [discrete]
 ==== 요청
 
@@ -295,6 +340,11 @@ include::{snippets}/table-update-name/response-fields.adoc[]
 === Table 삭제
 
 테이블을 삭제합니다.
+
+[source]
+----
+DELETE /api/auth/v1.0/tables/{tableId}
+----
 
 [discrete]
 ==== 요청
@@ -324,6 +374,11 @@ include::{snippets}/table-delete/response-fields.adoc[]
 
 컬럼을 생성합니다.
 
+[source]
+----
+POST /api/auth/v1.0/columns
+----
+
 [discrete]
 ==== 요청
 
@@ -348,6 +403,11 @@ include::{snippets}/column-create/response-fields.adoc[]
 === Column 조회
 
 컬럼을 조회합니다.
+
+[source]
+----
+GET /api/auth/v1.0/columns/{columnId}
+----
 
 [discrete]
 ==== 요청
@@ -375,6 +435,11 @@ include::{snippets}/column-get/response-fields.adoc[]
 
 테이블에 속한 컬럼 목록을 조회합니다.
 
+[source]
+----
+GET /api/auth/v1.0/columns/table/{tableId}
+----
+
 [discrete]
 ==== 요청
 
@@ -400,6 +465,11 @@ include::{snippets}/column-list-by-table/response-fields.adoc[]
 === Column 이름 변경
 
 컬럼 이름을 변경합니다.
+
+[source]
+----
+PUT /api/auth/v1.0/columns/{columnId}/name
+----
 
 [discrete]
 ==== 요청
@@ -427,6 +497,11 @@ include::{snippets}/column-update-name/response-fields.adoc[]
 
 컬럼 타입을 변경합니다.
 
+[source]
+----
+PUT /api/auth/v1.0/columns/{columnId}/type
+----
+
 [discrete]
 ==== 요청
 
@@ -453,6 +528,11 @@ include::{snippets}/column-update-type/response-fields.adoc[]
 
 컬럼 위치를 변경합니다.
 
+[source]
+----
+PUT /api/auth/v1.0/columns/{columnId}/position
+----
+
 [discrete]
 ==== 요청
 
@@ -478,6 +558,11 @@ include::{snippets}/column-update-position/response-fields.adoc[]
 === Column 삭제
 
 컬럼을 삭제합니다.
+
+[source]
+----
+DELETE /api/auth/v1.0/columns/{columnId}
+----
 
 [discrete]
 ==== 요청
@@ -507,6 +592,11 @@ include::{snippets}/column-delete/response-fields.adoc[]
 
 관계를 생성합니다.
 
+[source]
+----
+POST /api/auth/v1.0/relationships
+----
+
 [discrete]
 ==== 요청
 
@@ -531,6 +621,11 @@ include::{snippets}/relationship-create/response-fields.adoc[]
 === Relationship 조회
 
 관계를 조회합니다.
+
+[source]
+----
+GET /api/auth/v1.0/relationships/{relationshipId}
+----
 
 [discrete]
 ==== 요청
@@ -558,6 +653,11 @@ include::{snippets}/relationship-get/response-fields.adoc[]
 
 특정 테이블의 관계 목록을 조회합니다.
 
+[source]
+----
+GET /api/auth/v1.0/relationships/table/{tableId}
+----
+
 [discrete]
 ==== 요청
 
@@ -583,6 +683,11 @@ include::{snippets}/relationship-get-by-table/response-fields.adoc[]
 === Relationship 이름 변경
 
 관계의 이름을 변경합니다.
+
+[source]
+----
+PUT /api/auth/v1.0/relationships/{relationshipId}/name
+----
 
 [discrete]
 ==== 요청
@@ -610,6 +715,11 @@ include::{snippets}/relationship-update-name/response-fields.adoc[]
 
 관계의 카디널리티를 변경합니다.
 
+[source]
+----
+PUT /api/auth/v1.0/relationships/{relationshipId}/cardinality
+----
+
 [discrete]
 ==== 요청
 
@@ -635,6 +745,11 @@ include::{snippets}/relationship-update-cardinality/response-fields.adoc[]
 === Relationship에 컬럼 추가
 
 관계에 컬럼을 추가합니다.
+
+[source]
+----
+POST /api/auth/v1.0/relationships/{relationshipId}/columns
+----
 
 [discrete]
 ==== 요청
@@ -662,6 +777,11 @@ include::{snippets}/relationship-add-column/response-fields.adoc[]
 
 관계에서 컬럼을 제거합니다.
 
+[source]
+----
+DELETE /api/auth/v1.0/relationships/{relationshipId}/columns/{relationshipColumnId}
+----
+
 [discrete]
 ==== 요청
 
@@ -687,6 +807,11 @@ include::{snippets}/relationship-remove-column/response-fields.adoc[]
 === Relationship 삭제
 
 관계를 삭제합니다.
+
+[source]
+----
+DELETE /api/auth/v1.0/relationships/{relationshipId}
+----
 
 [discrete]
 ==== 요청
@@ -716,6 +841,11 @@ include::{snippets}/relationship-delete/response-fields.adoc[]
 
 제약조건을 생성합니다.
 
+[source]
+----
+POST /api/auth/v1.0/constraints
+----
+
 [discrete]
 ==== 요청
 
@@ -740,6 +870,11 @@ include::{snippets}/constraint-create/response-fields.adoc[]
 === Constraint 조회
 
 제약조건을 조회합니다.
+
+[source]
+----
+GET /api/auth/v1.0/constraints/{constraintId}
+----
 
 [discrete]
 ==== 요청
@@ -767,6 +902,11 @@ include::{snippets}/constraint-get/response-fields.adoc[]
 
 특정 테이블의 제약조건 목록을 조회합니다.
 
+[source]
+----
+GET /api/auth/v1.0/constraints/table/{tableId}
+----
+
 [discrete]
 ==== 요청
 
@@ -792,6 +932,11 @@ include::{snippets}/constraint-get-by-table/response-fields.adoc[]
 === Constraint 이름 변경
 
 제약조건의 이름을 변경합니다.
+
+[source]
+----
+PUT /api/auth/v1.0/constraints/{constraintId}/name
+----
 
 [discrete]
 ==== 요청
@@ -819,6 +964,11 @@ include::{snippets}/constraint-update-name/response-fields.adoc[]
 
 제약조건에 컬럼을 추가합니다.
 
+[source]
+----
+POST /api/auth/v1.0/constraints/{constraintId}/columns
+----
+
 [discrete]
 ==== 요청
 
@@ -845,6 +995,11 @@ include::{snippets}/constraint-add-column/response-fields.adoc[]
 
 제약조건에서 컬럼을 제거합니다.
 
+[source]
+----
+DELETE /api/auth/v1.0/constraints/{constraintId}/columns/{constraintColumnId}
+----
+
 [discrete]
 ==== 요청
 
@@ -870,6 +1025,11 @@ include::{snippets}/constraint-remove-column/response-fields.adoc[]
 === Constraint 삭제
 
 제약조건을 삭제합니다.
+
+[source]
+----
+DELETE /api/auth/v1.0/constraints/{constraintId}
+----
 
 [discrete]
 ==== 요청
@@ -899,6 +1059,11 @@ include::{snippets}/constraint-delete/response-fields.adoc[]
 
 인덱스를 생성합니다.
 
+[source]
+----
+POST /api/auth/v1.0/indexes
+----
+
 [discrete]
 ==== 요청
 
@@ -923,6 +1088,11 @@ include::{snippets}/index-create/response-fields.adoc[]
 === Index 조회
 
 인덱스를 조회합니다.
+
+[source]
+----
+GET /api/auth/v1.0/indexes/{indexId}
+----
 
 [discrete]
 ==== 요청
@@ -950,6 +1120,11 @@ include::{snippets}/index-get/response-fields.adoc[]
 
 특정 테이블의 인덱스 목록을 조회합니다.
 
+[source]
+----
+GET /api/auth/v1.0/indexes/table/{tableId}
+----
+
 [discrete]
 ==== 요청
 
@@ -975,6 +1150,11 @@ include::{snippets}/index-get-by-table/response-fields.adoc[]
 === Index 이름 변경
 
 인덱스의 이름을 변경합니다.
+
+[source]
+----
+PUT /api/auth/v1.0/indexes/{indexId}/name
+----
 
 [discrete]
 ==== 요청
@@ -1002,6 +1182,11 @@ include::{snippets}/index-update-name/response-fields.adoc[]
 
 인덱스에 컬럼을 추가합니다.
 
+[source]
+----
+POST /api/auth/v1.0/indexes/{indexId}/columns
+----
+
 [discrete]
 ==== 요청
 
@@ -1027,6 +1212,11 @@ include::{snippets}/index-add-column/response-fields.adoc[]
 === Index에서 컬럼 제거
 
 인덱스에서 컬럼을 제거합니다.
+
+[source]
+----
+DELETE /api/auth/v1.0/indexes/{indexId}/columns/{indexColumnId}
+----
 
 [discrete]
 ==== 요청
@@ -1054,6 +1244,11 @@ include::{snippets}/index-remove-column/response-fields.adoc[]
 
 인덱스를 삭제합니다.
 
+[source]
+----
+DELETE /api/auth/v1.0/indexes/{indexId}
+----
+
 [discrete]
 ==== 요청
 
@@ -1076,9 +1271,16 @@ include::{snippets}/index-delete/response-fields.adoc[]
 
 ---
 
+== User API
+
 === 회원가입
 
 사용자 계정을 생성하고 JWT 토큰을 발급합니다.
+
+[source]
+----
+POST /api/v1.0/users/signup
+----
 
 [discrete]
 ==== 요청
@@ -1093,9 +1295,16 @@ include::{snippets}/user-signup/http-response.adoc[]
 include::{snippets}/user-signup/response-headers.adoc[]
 include::{snippets}/user-signup/response-fields.adoc[]
 
+---
+
 === 로그인
 
 이메일과 비밀번호로 로그인하고 JWT 토큰을 발급합니다.
+
+[source]
+----
+POST /api/v1.0/users/login
+----
 
 [discrete]
 ==== 요청
@@ -1110,9 +1319,16 @@ include::{snippets}/user-login/http-response.adoc[]
 include::{snippets}/user-login/response-headers.adoc[]
 include::{snippets}/user-login/response-fields.adoc[]
 
-=== * 사용자 조회 (스펙 변경 예정)
+---
+
+=== 사용자 조회 (스펙 변경 예정)
 
 사용자 ID로 사용자 정보를 조회합니다. (인증 필요). 요구 사항에 따른 변경 예정
+
+[source]
+----
+GET /api/v1.0/users/{userId}
+----
 
 [discrete]
 ==== 요청
@@ -1128,9 +1344,16 @@ include::{snippets}/user-get/http-response.adoc[]
 include::{snippets}/user-get/response-headers.adoc[]
 include::{snippets}/user-get/response-fields.adoc[]
 
+---
+
 === 토큰 갱신
 
 리프레시 토큰으로 새로운 액세스 토큰을 발급받습니다.
+
+[source]
+----
+POST /api/v1.0/users/refresh
+----
 
 [discrete]
 ==== 요청
@@ -1144,6 +1367,8 @@ include::{snippets}/user-refresh/request-cookies.adoc[]
 include::{snippets}/user-refresh/http-response.adoc[]
 include::{snippets}/user-refresh/response-headers.adoc[]
 include::{snippets}/user-refresh/response-fields.adoc[]
+
+---
 
 == 에러 응답
 
