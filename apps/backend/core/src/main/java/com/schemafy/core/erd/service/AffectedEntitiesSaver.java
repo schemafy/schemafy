@@ -94,8 +94,7 @@ public class AffectedEntitiesSaver {
                                         table.getId(),
                                         sourceType,
                                         sourceId,
-                                        column.getId()
-                                ));
+                                        column.getId()));
                             }
                         }
                     }
