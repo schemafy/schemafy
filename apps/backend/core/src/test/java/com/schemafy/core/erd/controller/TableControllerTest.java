@@ -165,7 +165,8 @@ class TableControllerTest {
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result").description("응답 데이터"),
                                 subsectionWithPath("result.schemas")
-                                        .description("스키마 ID 매핑 (FE ID -> BE ID)"),
+                                        .description(
+                                                "스키마 ID 매핑 (FE ID -> BE ID)"),
                                 subsectionWithPath("result.tables")
                                         .description(
                                                 "테이블 ID 매핑 (FE ID -> BE ID)"),
