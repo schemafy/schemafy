@@ -32,7 +32,8 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final CorsProperties corsProperties;
-    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace("{version}",
+    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
+            "{version}",
             "v1.0");
 
     private static final String[] PUBLIC_ENDPOINTS = {
