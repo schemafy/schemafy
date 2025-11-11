@@ -65,7 +65,6 @@ class TableControllerTest {
     @Test
     @DisplayName("테이블 생성 API 문서화")
     void createTable() throws Exception {
-        // given
         Validation.CreateTableRequest.Builder builder = Validation.CreateTableRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -137,7 +136,6 @@ class TableControllerTest {
         given(tableService.createTable(any()))
                 .willReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/tables")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -201,7 +199,6 @@ class TableControllerTest {
     @Test
     @DisplayName("스키마별 테이블 목록 조회 API 문서화")
     void getTablesBySchemaId() throws Exception {
-        // given
         String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
 
         TableResponse tableResponse = objectMapper.treeToValue(
@@ -225,7 +222,6 @@ class TableControllerTest {
         given(tableService.getTablesBySchemaId(schemaId))
                 .willReturn(Flux.just(tableResponse));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/tables/schema/{schemaId}", schemaId)
                 .header("Accept", "application/json")
@@ -282,7 +278,6 @@ class TableControllerTest {
     @Test
     @DisplayName("테이블 단건 조회 API 문서화")
     void getTable() throws Exception {
-        // given
         String tableId = "06D6W1GAHD51T5NJPK29Q6BCR8";
 
         TableDetailResponse tableDetailResponse = objectMapper.treeToValue(
@@ -314,7 +309,6 @@ class TableControllerTest {
         given(tableService.getTable(tableId))
                 .willReturn(Mono.just(tableDetailResponse));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/tables/{tableId}", tableId)
                 .header("Accept", "application/json")
@@ -375,7 +369,6 @@ class TableControllerTest {
     @Test
     @DisplayName("테이블 이름 변경 API 문서화")
     void updateTableName() throws Exception {
-        // given
         Validation.ChangeTableNameRequest.Builder builder = Validation.ChangeTableNameRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -443,7 +436,6 @@ class TableControllerTest {
         given(tableService.updateTableName(request))
                 .willReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/tables/{tableId}/name",
                         "06D6W1GAHD51T5NJPK29Q6BCR8")
@@ -503,7 +495,6 @@ class TableControllerTest {
     @Test
     @DisplayName("테이블 삭제 API 문서화")
     void deleteTable() throws Exception {
-        // given
         Validation.DeleteTableRequest.Builder builder = Validation.DeleteTableRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -547,7 +538,6 @@ class TableControllerTest {
 
         given(tableService.deleteTable(request)).willReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/tables/{tableId}",
                         "06D6W1GAHD51T5NJPK29Q6BCR8")

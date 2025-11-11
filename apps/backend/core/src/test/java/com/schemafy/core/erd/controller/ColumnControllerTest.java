@@ -64,7 +64,6 @@ class ColumnControllerTest {
     @Test
     @DisplayName("컬럼 생성 API 문서화")
     void createColumn() throws Exception {
-        // given
         Validation.CreateColumnRequest.Builder builder = Validation.CreateColumnRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -153,7 +152,6 @@ class ColumnControllerTest {
                 .createColumn(any(Validation.CreateColumnRequest.class)))
                 .willReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/columns")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -221,7 +219,6 @@ class ColumnControllerTest {
     @Test
     @DisplayName("컬럼 단건 조회 API 문서화")
     void getColumn() throws Exception {
-        // given
         String columnId = "06D6W90RSE1VPFRMM4XPKYGM9M";
 
         ColumnResponse columnResponse = objectMapper.treeToValue(
@@ -250,7 +247,6 @@ class ColumnControllerTest {
         given(columnService.getColumn(columnId))
                 .willReturn(Mono.just(columnResponse));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/columns/{columnId}", columnId)
                 .header("Accept", "application/json")
@@ -304,7 +300,6 @@ class ColumnControllerTest {
     @Test
     @DisplayName("테이블별 컬럼 목록 조회 API 문서화")
     void getColumnsByTableId() throws Exception {
-        // given
         String tableId = "06D6W8HDY79QFZX39RMX62KSX4";
 
         ColumnResponse columnResponse = objectMapper.treeToValue(
@@ -329,7 +324,6 @@ class ColumnControllerTest {
         given(columnService.getColumnsByTableId(tableId))
                 .willReturn(Flux.just(columnResponse));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/columns/table/{tableId}", tableId)
                 .header("Accept", "application/json")
@@ -385,7 +379,6 @@ class ColumnControllerTest {
     @Test
     @DisplayName("컬럼 이름 변경 API 문서화")
     void updateColumnName() throws Exception {
-        // given
         Validation.ChangeColumnNameRequest.Builder builder = Validation.ChangeColumnNameRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -468,7 +461,6 @@ class ColumnControllerTest {
         given(columnService.updateColumnName(request))
                 .willReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/columns/{columnId}/name",
                         "06D6W90RSE1VPFRMM4XPKYGM9M")
@@ -528,7 +520,6 @@ class ColumnControllerTest {
     @Test
     @DisplayName("컬럼 타입 변경 API 문서화")
     void updateColumnType() throws Exception {
-        // given
         Validation.ChangeColumnTypeRequest.Builder builder = Validation.ChangeColumnTypeRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -611,7 +602,6 @@ class ColumnControllerTest {
         given(columnService.updateColumnType(request))
                 .willReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/columns/{columnId}/type",
                         "06D6W90RSE1VPFRMM4XPKYGM9M")
@@ -669,7 +659,6 @@ class ColumnControllerTest {
     @Test
     @DisplayName("컬럼 위치 변경 API 문서화")
     void updateColumnPosition() throws Exception {
-        // given
         Validation.ChangeColumnPositionRequest.Builder builder = Validation.ChangeColumnPositionRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -752,7 +741,6 @@ class ColumnControllerTest {
         given(columnService.updateColumnPosition(request))
                 .willReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/columns/{columnId}/position",
                         "06D6W90RSE1VPFRMM4XPKYGM9M")
@@ -810,7 +798,6 @@ class ColumnControllerTest {
     @Test
     @DisplayName("컬럼 삭제 API 문서화")
     void deleteColumn() throws Exception {
-        // given
         Validation.DeleteColumnRequest.Builder builder = Validation.DeleteColumnRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -868,7 +855,6 @@ class ColumnControllerTest {
 
         given(columnService.deleteColumn(request)).willReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/columns/{columnId}",
                         "06D6W90RSE1VPFRMM4XPKYGM9M")

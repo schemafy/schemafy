@@ -25,7 +25,6 @@ import reactor.test.StepVerifier;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -72,7 +71,6 @@ class IndexServiceTest {
     @Test
     @DisplayName("createIndex: 인덱스 생성 시 매핑 정보가 올바르게 반환된다")
     void createIndex_mappingResponse_success() {
-        // given
         Validation.CreateIndexRequest request = Validation.CreateIndexRequest
                 .newBuilder()
                 .setIndex(Validation.Index.newBuilder()
@@ -245,7 +243,6 @@ class IndexServiceTest {
     @Test
     @DisplayName("addColumnToIndex: 인덱스에 컬럼을 추가한다")
     void addColumnToIndex_success() {
-        // given
         Validation.AddColumnToIndexRequest request = Validation.AddColumnToIndexRequest
                 .newBuilder()
                 .setIndexColumn(Validation.IndexColumn.newBuilder()
@@ -257,11 +254,9 @@ class IndexServiceTest {
                         .build())
                 .build();
 
-        // when
         Mono<IndexColumnResponse> result = indexService
                 .addColumnToIndex(request);
 
-        // then
         StepVerifier.create(result)
                 .assertNext(indexColumn -> {
                     assertThat(indexColumn.getId()).isNotNull(); // 자동 생성된 ID

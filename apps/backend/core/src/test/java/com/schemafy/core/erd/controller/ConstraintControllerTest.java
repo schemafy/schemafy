@@ -68,7 +68,6 @@ class ConstraintControllerTest {
     @Test
     @DisplayName("제약조건 생성 API 문서화")
     void createConstraint() throws Exception {
-        // given
         Validation.CreateConstraintRequest.Builder builder = Validation.CreateConstraintRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -169,7 +168,6 @@ class ConstraintControllerTest {
                 any(Validation.CreateConstraintRequest.class)))
                 .thenReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/constraints")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -250,7 +248,6 @@ class ConstraintControllerTest {
     @Test
     @DisplayName("제약조건 단건 조회 API 문서화")
     void getConstraint() throws Exception {
-        // given
         String mockResponseJson = """
                 {
                     "id": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
@@ -272,7 +269,6 @@ class ConstraintControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         ConstraintResponse.class)));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/constraints/{constraintId}",
                         "06D6WWYRQCEXN1ACZ4ZJ12DFTG")
@@ -319,7 +315,6 @@ class ConstraintControllerTest {
     @Test
     @DisplayName("테이블별 제약조건 목록 조회 API 문서화")
     void getConstraintsByTableId() throws Exception {
-        // given
         String mockResponseJson = """
                 [
                     {
@@ -346,7 +341,6 @@ class ConstraintControllerTest {
                                 new TypeReference<List<ConstraintResponse>>() {
                                 })));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/constraints/table/{tableId}",
                         "06D6W8HDY79QFZX39RMX62KSX4")
@@ -393,7 +387,6 @@ class ConstraintControllerTest {
     @Test
     @DisplayName("제약조건 이름 변경 API 문서화")
     void updateConstraintName() throws Exception {
-        // given
         Validation.ChangeConstraintNameRequest.Builder builder = Validation.ChangeConstraintNameRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -492,7 +485,6 @@ class ConstraintControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         ConstraintResponse.class)));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/constraints/{constraintId}/name",
                         "06D6WWYRQCEXN1ACZ4ZJ12DFTG")
@@ -536,7 +528,6 @@ class ConstraintControllerTest {
     @Test
     @DisplayName("제약조건에 컬럼 추가 API 문서화")
     void addColumnToConstraint() throws Exception {
-        // given
         Validation.AddColumnToConstraintRequest.Builder builder = Validation.AddColumnToConstraintRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -639,7 +630,6 @@ class ConstraintControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         ConstraintColumnResponse.class)));
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/constraints/{constraintId}/columns",
                         "06D6WWYRQCEXN1ACZ4ZJ12DFTG")
@@ -683,7 +673,6 @@ class ConstraintControllerTest {
     @Test
     @DisplayName("제약조건에서 컬럼 제거 API 문서화")
     void removeColumnFromConstraint() throws Exception {
-        // given
         Validation.RemoveColumnFromConstraintRequest.Builder builder = Validation.RemoveColumnFromConstraintRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -777,7 +766,6 @@ class ConstraintControllerTest {
                 any(Validation.RemoveColumnFromConstraintRequest.class)))
                 .thenReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH
                         + "/constraints/{constraintId}/columns/{columnId}",
@@ -812,7 +800,6 @@ class ConstraintControllerTest {
     @Test
     @DisplayName("제약조건 삭제 API 문서화")
     void deleteConstraint() throws Exception {
-        // given
         Validation.DeleteConstraintRequest.Builder builder = Validation.DeleteConstraintRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -887,7 +874,6 @@ class ConstraintControllerTest {
                 any(Validation.DeleteConstraintRequest.class)))
                 .thenReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/constraints/{constraintId}",
                         "06D6WWYRQCEXN1ACZ4ZJ12DFTG")

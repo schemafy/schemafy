@@ -28,7 +28,6 @@ import reactor.test.StepVerifier;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -82,7 +81,6 @@ class RelationshipServiceTest {
     @Test
     @DisplayName("createRelationship: 관계 생성 시 매핑 정보가 올바르게 반환된다")
     void createRelationship_mappingResponse_success() {
-        // given
         Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
                 .newBuilder()
                 .setRelationship(Validation.Relationship.newBuilder()
@@ -620,7 +618,6 @@ class RelationshipServiceTest {
     @Test
     @DisplayName("addColumnToRelationship: 관계에 컬럼을 추가한다")
     void addColumnToRelationship_success() {
-        // given
         Validation.AddColumnToRelationshipRequest request = Validation.AddColumnToRelationshipRequest
                 .newBuilder()
                 .setRelationshipColumn(
@@ -633,11 +630,9 @@ class RelationshipServiceTest {
                                 .build())
                 .build();
 
-        // when
         Mono<RelationshipColumnResponse> result = relationshipService
                 .addColumnToRelationship(request);
 
-        // then
         StepVerifier.create(result)
                 .assertNext(relationshipColumn -> {
                     assertThat(relationshipColumn.getId()).isNotNull(); // 자동 생성된 ID

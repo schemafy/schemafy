@@ -27,7 +27,6 @@ import reactor.test.StepVerifier;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -77,7 +76,6 @@ class ConstraintServiceTest {
     @Test
     @DisplayName("createConstraint: 제약조건 생성 시 매핑 정보가 올바르게 반환된다")
     void createConstraint_mappingResponse_success() {
-        // given
         Validation.CreateConstraintRequest request = Validation.CreateConstraintRequest
                 .newBuilder()
                 .setConstraint(Validation.Constraint.newBuilder()
@@ -511,7 +509,6 @@ class ConstraintServiceTest {
     @Test
     @DisplayName("addColumnToConstraint: 제약조건에 컬럼을 추가한다")
     void addColumnToConstraint_success() {
-        // given
         Validation.AddColumnToConstraintRequest request = Validation.AddColumnToConstraintRequest
                 .newBuilder()
                 .setConstraintColumn(Validation.ConstraintColumn.newBuilder()
@@ -522,11 +519,9 @@ class ConstraintServiceTest {
                         .build())
                 .build();
 
-        // when
         Mono<ConstraintColumnResponse> result = constraintService
                 .addColumnToConstraint(request);
 
-        // then
         StepVerifier.create(result)
                 .assertNext(constraintColumn -> {
                     assertThat(constraintColumn.getId()).isNotNull(); // 자동 생성된 ID

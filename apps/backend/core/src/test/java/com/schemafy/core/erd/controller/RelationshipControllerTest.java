@@ -63,7 +63,6 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계 생성 API 문서화")
     void createRelationship() throws Exception {
-        // given
         Validation.CreateRelationshipRequest.Builder builder = Validation.CreateRelationshipRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -169,7 +168,6 @@ class RelationshipControllerTest {
 
         String requestJson = toJson(request);
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/relationships")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -247,7 +245,6 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계 단건 조회 API 문서화")
     void getRelationship() throws Exception {
-        // given
         String mockResponseJson = """
                 {
                     "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
@@ -275,7 +272,6 @@ class RelationshipControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         RelationshipResponse.class)));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}",
                         "06D6WCH677C3FCC2Q9SD5M1Y5W")
@@ -336,7 +332,6 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("테이블별 관계 목록 조회 API 문서화")
     void getRelationshipsByTableId() throws Exception {
-        // given
         String mockResponseJson = """
                 [
                     {
@@ -368,7 +363,6 @@ class RelationshipControllerTest {
                         Flux.fromArray(objectMapper.readValue(mockResponseJson,
                                 RelationshipResponse[].class)));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/relationships/table/{tableId}",
                         "06D6W8HDY79QFZX39RMX62KSX4")
@@ -431,7 +425,6 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계 이름 변경 API 문서화")
     void updateRelationshipName() throws Exception {
-        // given
         Validation.ChangeRelationshipNameRequest.Builder builder = Validation.ChangeRelationshipNameRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -528,7 +521,6 @@ class RelationshipControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         RelationshipResponse.class)));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/name",
                         "06D6WCH677C3FCC2Q9SD5M1Y5W")
@@ -582,7 +574,6 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계 카디널리티 변경 API 문서화")
     void updateRelationshipCardinality() throws Exception {
-        // given
         Validation.ChangeRelationshipCardinalityRequest.Builder builder = Validation.ChangeRelationshipCardinalityRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -680,7 +671,6 @@ class RelationshipControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         RelationshipResponse.class)));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH
                         + "/relationships/{relationshipId}/cardinality",
@@ -735,7 +725,6 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계에 컬럼 추가 API 문서화")
     void addColumnToRelationship() throws Exception {
-        // given
         Validation.AddColumnToRelationshipRequest.Builder builder = Validation.AddColumnToRelationshipRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -841,7 +830,6 @@ class RelationshipControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         RelationshipColumnResponse.class)));
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/columns",
                         "06D590QBYGE6K2TQ8JK514GGP4")
@@ -887,7 +875,6 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계에서 컬럼 제거 API 문서화")
     void removeColumnFromRelationship() throws Exception {
-        // given
         Validation.RemoveColumnFromRelationshipRequest.Builder builder = Validation.RemoveColumnFromRelationshipRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -984,7 +971,6 @@ class RelationshipControllerTest {
                 any(Validation.RemoveColumnFromRelationshipRequest.class)))
                 .thenReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH
                         + "/relationships/{relationshipId}/columns/{columnId}",
@@ -1023,7 +1009,6 @@ class RelationshipControllerTest {
     @Test
     @DisplayName("관계 삭제 API 문서화")
     void deleteRelationship() throws Exception {
-        // given
         Validation.DeleteRelationshipRequest.Builder builder = Validation.DeleteRelationshipRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -1111,7 +1096,6 @@ class RelationshipControllerTest {
                 any(Validation.DeleteRelationshipRequest.class)))
                 .thenReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}",
                         "06D6WCH677C3FCC2Q9SD5M1Y5W")

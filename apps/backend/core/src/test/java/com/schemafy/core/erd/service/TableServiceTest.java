@@ -24,7 +24,6 @@ import reactor.test.StepVerifier;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -58,7 +57,6 @@ class TableServiceTest {
     @Test
     @DisplayName("createTable: 테이블 생성 시 매핑 정보가 올바르게 반환된다")
     void createTable_mappingResponse_success() {
-        // given
         Validation.CreateTableRequest request = Validation.CreateTableRequest
                 .newBuilder()
                 .setTable(validation.Validation.Table.newBuilder()
@@ -108,7 +106,6 @@ class TableServiceTest {
         Mono<AffectedMappingResponse> result = tableService
                 .createTable(requestWithExtra);
 
-        // then
         StepVerifier.create(result)
                 .assertNext(response -> {
                     // 테이블 매핑 정보 확인 (FE-ID → BE-ID 매핑)

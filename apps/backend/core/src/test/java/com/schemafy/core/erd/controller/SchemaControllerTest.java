@@ -64,7 +64,6 @@ class SchemaControllerTest {
     @Test
     @DisplayName("스키마 생성 API 문서화")
     void createSchema_success() throws Exception {
-        // given
         Validation.CreateSchemaRequest.Builder builder = Validation.CreateSchemaRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -120,7 +119,6 @@ class SchemaControllerTest {
                 .createSchema(any(Validation.CreateSchemaRequest.class)))
                 .willReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/schemas")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -215,7 +213,6 @@ class SchemaControllerTest {
         given(schemaService.getSchema(id))
                 .willReturn(Mono.just(detailResponse));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/schemas/{schemaId}", id)
                 .header("Accept", "application/json")
@@ -274,7 +271,6 @@ class SchemaControllerTest {
     @Test
     @DisplayName("스키마 이름 변경 API 문서화")
     void updateSchemaName_success_returns_ok() throws Exception {
-        // given
         Validation.ChangeSchemaNameRequest.Builder builder = Validation.ChangeSchemaNameRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -330,7 +326,6 @@ class SchemaControllerTest {
         given(schemaService.updateSchemaName(request))
                 .willReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/schemas/{schemaId}/name",
                         "06D6JVZ1NJ81RKSJMT8JWKNJNG")
@@ -414,7 +409,6 @@ class SchemaControllerTest {
     @Test
     @DisplayName("스키마 삭제 API 문서화")
     void deleteSchema_success() throws Exception {
-        // given
         Validation.DeleteSchemaRequest.Builder builder = Validation.DeleteSchemaRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -444,7 +438,6 @@ class SchemaControllerTest {
 
         given(schemaService.deleteSchema(request)).willReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/schemas/{schemaId}",
                         "06D6JVZ1NJ81RKSJMT8JWKNJNG")

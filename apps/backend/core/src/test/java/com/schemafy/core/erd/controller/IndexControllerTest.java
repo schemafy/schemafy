@@ -63,7 +63,6 @@ class IndexControllerTest {
     @Test
     @DisplayName("인덱스 생성 API 문서화")
     void createIndex() throws Exception {
-        // given
         Validation.CreateIndexRequest.Builder builder = Validation.CreateIndexRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -174,7 +173,6 @@ class IndexControllerTest {
         when(indexService.createIndex(any(Validation.CreateIndexRequest.class)))
                 .thenReturn(Mono.just(mockResponse));
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/indexes")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -250,7 +248,6 @@ class IndexControllerTest {
     @Test
     @DisplayName("인덱스 단건 조회 API 문서화")
     void getIndex() throws Exception {
-        // given
         String mockResponseJson = """
                 {
                     "id": "06D6WNJS8XWZT41HWZ226ZS904",
@@ -274,7 +271,6 @@ class IndexControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         IndexResponse.class)));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/indexes/{indexId}",
                         "06D6WNJS8XWZT41HWZ226ZS904")
@@ -327,7 +323,6 @@ class IndexControllerTest {
     @Test
     @DisplayName("테이블별 인덱스 목록 조회 API 문서화")
     void getIndexesByTableId() throws Exception {
-        // given
         String mockResponseJson = """
                 [
                     {
@@ -354,7 +349,6 @@ class IndexControllerTest {
                         Flux.fromArray(objectMapper.readValue(mockResponseJson,
                                 IndexResponse[].class)));
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/indexes/table/{tableId}",
                         "06D6W8HDY79QFZX39RMX62KSX4")
@@ -408,7 +402,6 @@ class IndexControllerTest {
     @Test
     @DisplayName("인덱스 이름 변경 API 문서화")
     void updateIndexName() throws Exception {
-        // given
         Validation.ChangeIndexNameRequest.Builder builder = Validation.ChangeIndexNameRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -507,7 +500,6 @@ class IndexControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         IndexResponse.class)));
 
-        // when & then
         webTestClient.put()
                 .uri(API_BASE_PATH + "/indexes/{indexId}/name",
                         "06D6WNJS8XWZT41HWZ226ZS904")
@@ -553,7 +545,6 @@ class IndexControllerTest {
     @Test
     @DisplayName("인덱스에 컬럼 추가 API 문서화")
     void addColumnToIndex() throws Exception {
-        // given
         Validation.AddColumnToIndexRequest.Builder builder = Validation.AddColumnToIndexRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -657,7 +648,6 @@ class IndexControllerTest {
                 .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
                         IndexColumnResponse.class)));
 
-        // when & then
         webTestClient.post()
                 .uri(API_BASE_PATH + "/indexes/{indexId}/columns",
                         "06D6WNJS8XWZT41HWZ226ZS904")
@@ -703,7 +693,6 @@ class IndexControllerTest {
     @Test
     @DisplayName("인덱스에서 컬럼 제거 API 문서화")
     void removeColumnFromIndex() throws Exception {
-        // given
         Validation.RemoveColumnFromIndexRequest.Builder builder = Validation.RemoveColumnFromIndexRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -797,7 +786,6 @@ class IndexControllerTest {
                 any(Validation.RemoveColumnFromIndexRequest.class)))
                 .thenReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/indexes/{indexId}/columns/{columnId}",
                         "06D6WNJS8XWZT41HWZ226ZS904",
@@ -831,7 +819,6 @@ class IndexControllerTest {
     @Test
     @DisplayName("인덱스 삭제 API 문서화")
     void deleteIndex() throws Exception {
-        // given
         Validation.DeleteIndexRequest.Builder builder = Validation.DeleteIndexRequest
                 .newBuilder();
         JsonFormat.parser()
@@ -916,7 +903,6 @@ class IndexControllerTest {
         when(indexService.deleteIndex(any(Validation.DeleteIndexRequest.class)))
                 .thenReturn(Mono.empty());
 
-        // when & then
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/indexes/{indexId}",
                         "06D6WNJS8XWZT41HWZ226ZS904")

@@ -46,12 +46,10 @@ class UlidControllerTest {
 
     @Test
     void generateTemporaryUlid() {
-        // Given
         String mockUlid = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         when(ulidService.generateTemporaryUlid())
                 .thenReturn(Mono.just(mockUlid));
 
-        // When & Then
         webTestClient
                 .get()
                 .uri(API_BASE_PATH + "/ulid/generate")

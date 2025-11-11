@@ -46,7 +46,6 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("유효한 JWT 토큰으로 인증에 성공한다")
     void authenticateValidToken() {
-        // Given
         String token = "valid-token";
         String userId = "user123";
         MockServerHttpRequest request = MockServerHttpRequest
@@ -60,7 +59,6 @@ class JwtAuthenticationFilterTest {
                 .thenReturn(JwtProvider.ACCESS_TOKEN);
         when(jwtProvider.validateToken(token, userId)).thenReturn(true);
 
-        // When & Then
         StepVerifier
                 .create(jwtAuthenticationFilter.filter(exchange, filterChain)
                         .contextWrite(ctx -> {
@@ -76,7 +74,6 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("Authorization 헤더가 없는 요청을 거부한다")
     void rejectRequestWithoutAuthHeader() {
-        // Given
         when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
 
         MockServerHttpRequest request = MockServerHttpRequest
@@ -84,7 +81,6 @@ class JwtAuthenticationFilterTest {
                 .build();
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        // When & Then
         StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
@@ -92,7 +88,6 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("잘못된 형식의 Authorization 헤더를 거부한다")
     void rejectMalformedAuthHeader() {
-        // Given
         when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
 
         MockServerHttpRequest request = MockServerHttpRequest
@@ -101,7 +96,6 @@ class JwtAuthenticationFilterTest {
                 .build();
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        // When & Then
         StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
@@ -109,7 +103,6 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("만료된 토큰을 거부한다")
     void rejectExpiredToken() {
-        // Given
         String token = "expired-token";
         String userId = "user123";
         MockServerHttpRequest request = MockServerHttpRequest
@@ -123,7 +116,6 @@ class JwtAuthenticationFilterTest {
                 .thenReturn(JwtProvider.ACCESS_TOKEN);
         when(jwtProvider.validateToken(token, userId)).thenReturn(false);
 
-        // When & Then
         StepVerifier
                 .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
@@ -132,7 +124,6 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("REFRESH 토큰 타입을 거부한다")
     void rejectRefreshTokenType() {
-        // Given
         String token = "refresh-token";
         String userId = "user123";
         MockServerHttpRequest request = MockServerHttpRequest
@@ -145,7 +136,6 @@ class JwtAuthenticationFilterTest {
         when(jwtProvider.getTokenType(token))
                 .thenReturn(JwtProvider.REFRESH_TOKEN);
 
-        // When & Then
         StepVerifier
                 .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
@@ -154,7 +144,6 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("토큰 검증 중 발생한 예외를 처리한다")
     void handleTokenValidationException() {
-        // Given
         String token = "invalid-token";
         MockServerHttpRequest request = MockServerHttpRequest
                 .get("/api/test")
@@ -165,7 +154,6 @@ class JwtAuthenticationFilterTest {
         when(jwtProvider.extractUserId(token))
                 .thenThrow(new RuntimeException("Invalid token"));
 
-        // When & Then
         StepVerifier
                 .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
@@ -174,14 +162,12 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("Bearer 접두사 뒤에 빈 토큰을 처리한다")
     void handleEmptyTokenAfterBearer() {
-        // Given
         MockServerHttpRequest request = MockServerHttpRequest
                 .get("/api/test")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer ")
                 .build();
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        // When & Then
         StepVerifier
                 .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
@@ -190,7 +176,6 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("대소문자가 다른 Bearer 접두사를 처리한다")
     void handleBearerPrefixCasing() {
-        // Given
         when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
 
         MockServerHttpRequest request = MockServerHttpRequest
@@ -199,7 +184,6 @@ class JwtAuthenticationFilterTest {
                 .build();
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        // When & Then
         StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();
     }
@@ -207,14 +191,12 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("공백만 있는 토큰을 거부한다")
     void rejectWhitespaceToken() {
-        // Given
         MockServerHttpRequest request = MockServerHttpRequest
                 .get("/api/test")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer    ")
                 .build();
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        // When & Then
         StepVerifier
                 .create(jwtAuthenticationFilter.filter(exchange, filterChain))
                 .verifyComplete();

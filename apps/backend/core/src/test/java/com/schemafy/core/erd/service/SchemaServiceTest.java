@@ -175,7 +175,6 @@ class SchemaServiceTest {
     @Test
     @DisplayName("createSchema: 스키마 생성 시 매핑 정보가 올바르게 반환된다")
     void createSchema_mappingResponse_success() {
-        // given
         Validation.CreateSchemaRequest request = Validation.CreateSchemaRequest
                 .newBuilder()
                 .setSchema(validation.Validation.Schema.newBuilder()
@@ -216,7 +215,6 @@ class SchemaServiceTest {
         Mono<AffectedMappingResponse> result = schemaService
                 .createSchema(request);
 
-        // then
         StepVerifier.create(result)
                 .assertNext(response -> {
                     // 스키마 매핑 정보 확인 (새로 생성된 엔티티는 FE-ID = BE-ID)

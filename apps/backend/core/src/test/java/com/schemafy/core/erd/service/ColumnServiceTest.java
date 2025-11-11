@@ -22,7 +22,6 @@ import reactor.test.StepVerifier;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -64,7 +63,6 @@ class ColumnServiceTest {
     @Test
     @DisplayName("createColumn: 컬럼 생성 시 매핑 정보가 올바르게 반환된다")
     void createColumn_mappingResponse_success() {
-        // given
         Validation.CreateColumnRequest request = Validation.CreateColumnRequest
                 .newBuilder()
                 .setColumn(Validation.Column.newBuilder()
