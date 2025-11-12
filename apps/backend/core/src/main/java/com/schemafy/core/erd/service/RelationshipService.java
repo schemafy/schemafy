@@ -173,7 +173,7 @@ public class RelationshipService extends BaseErdService {
     public Mono<Void> removeColumnFromRelationship(
             Validation.RemoveColumnFromRelationshipRequest request) {
         return relationshipColumnRepository
-                .findById(request.getRelationshipColumnId())
+                .findByIdAndDeletedAtIsNull(request.getRelationshipColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND)))
