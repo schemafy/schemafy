@@ -36,19 +36,23 @@ export default tseslint.config(
       },
     },
     rules: {
+      indent: 'off',
+      'prettier/prettier': [
+        'error',
+        {
+          tabWidth: 2,
+          useTabs: false,
+          singleQuote: true,
+          trailingComma: 'all',
+        },
+      ],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
       'import/order': [
         'error',
         {
-          groups: [
-            ['builtin', 'external'],
-            'internal',
-            ['parent', 'sibling', 'index'],
-            'object',
-            'type',
-          ],
+          groups: [['builtin', 'external'], 'internal', ['parent', 'sibling', 'index'], 'object', 'type'],
           'newlines-between': 'always',
           alphabetize: {
             order: 'asc',

@@ -16,7 +16,7 @@ spring:
 
   sql:
     init:
-      schema-locations: classpath:ddl/schema-mariadb.sql
+      schema-locations: classpath:ddl/mariadb/**/*.sql
       mode: always
 
 cache:

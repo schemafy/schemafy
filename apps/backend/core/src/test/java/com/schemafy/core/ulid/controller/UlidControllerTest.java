@@ -27,7 +27,8 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
-    private static final String API_BASE_PATH = ApiPath.AUTH_API.replace(
+
+    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
             "{version}",
             "v1.0");
 
@@ -45,12 +46,10 @@ class UlidControllerTest {
 
     @Test
     void generateTemporaryUlid() {
-        // Given
         String mockUlid = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         when(ulidService.generateTemporaryUlid())
                 .thenReturn(Mono.just(mockUlid));
 
-        // When & Then
         webTestClient
                 .get()
                 .uri(API_BASE_PATH + "/ulid/generate")
@@ -65,4 +64,5 @@ class UlidControllerTest {
                         generateUlidResponseHeaders(),
                         generateUlidResponse()));
     }
+
 }

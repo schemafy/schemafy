@@ -50,4 +50,5 @@ public class UlidApiSnippets extends RestDocsSnippets {
         return createResponseFieldsSnippet(
                 successResponseFields(ulidResponseFields()));
     }
+
 }

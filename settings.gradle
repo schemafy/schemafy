@@ -1,2 +1,4 @@
 rootProject.name = 'schemafy'
-include ':apps:backend:core'
+
+include ':core'
+project(':core').projectDir = file('apps/backend/core')

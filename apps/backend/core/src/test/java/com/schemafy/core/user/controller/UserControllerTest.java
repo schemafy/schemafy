@@ -40,7 +40,9 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureRestDocs
 @DisplayName("MemberController 통합 테스트")
 class UserControllerTest {
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+
+    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
+            "{version}",
             "v1.0");
 
     @Autowired
@@ -69,11 +71,9 @@ class UserControllerTest {
     @Test
     @DisplayName("회원가입에 성공한다")
     void signUpSuccess() {
-        // given
         SignUpRequest request = new SignUpRequest("test@example.com",
                 "Test User", "password");
 
-        // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
@@ -90,7 +90,6 @@ class UserControllerTest {
                 .jsonPath("$.result.id").isNotEmpty()
                 .jsonPath("$.result.email").isEqualTo("test@example.com");
 
-        // then - db 검증
         StepVerifier.create(userRepository.findByEmail("test@example.com"))
                 .as("user should be persisted with auditing columns")
                 .assertNext(user -> {
@@ -108,7 +107,6 @@ class UserControllerTest {
     @ParameterizedTest
     @MethodSource("invalidSignUpRequests")
     void signUpFail(SignUpRequest request) {
-        // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
@@ -123,23 +121,22 @@ class UserControllerTest {
     static Stream<Arguments> invalidSignUpRequests() {
         return Stream.of(
                 Arguments.of(new SignUpRequest("", "Test User", "password")), // empty
-                                                                              // email
+                // email
                 Arguments.of(new SignUpRequest("invalid-email", "Test User",
                         "password")), // invalid
-                                      // email
+                // email
                 Arguments.of(
                         new SignUpRequest("test@example.com", "", "password")), // empty
-                                                                                // name
+                // name
                 Arguments.of(
                         new SignUpRequest("test@example.com", "Test User", "")) // empty
-                                                                                // password
+                                                                                            // password
         );
     }
 
     @Test
     @DisplayName("ID로 회원 조회에 성공한다")
     void getUserSuccess() {
-        // given
         SignUpRequest signUpRequest = new SignUpRequest("test2@example.com",
                 "Test User 2", "password");
 
@@ -155,7 +152,6 @@ class UserControllerTest {
         String userId = JsonPath.read(responseBody, "$.result.id");
         String accessToken = generateAccessToken(userId);
 
-        // when & then
         webTestClient.get().uri(API_BASE_PATH + "/users/{userId}", userId)
                 .header("Authorization", "Bearer " + accessToken)
                 .exchange()
@@ -174,11 +170,9 @@ class UserControllerTest {
     @Test
     @DisplayName("존재하지 않는 회원은 조회에 실패한다")
     void getUserNotFound() {
-        // given
         String nonExistentUserId = UlidGenerator.generate();
         String accessToken = generateAccessToken(nonExistentUserId);
 
-        // when & then
         webTestClient.get()
                 .uri(API_BASE_PATH + "/users/{userId}", nonExistentUserId)
                 .header("Authorization", "Bearer " + accessToken)
@@ -193,7 +187,6 @@ class UserControllerTest {
     @Test
     @DisplayName("로그인에 성공한다")
     void loginSuccess() {
-        // given
         SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
                 "Test User", "password");
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
@@ -205,7 +198,6 @@ class UserControllerTest {
         LoginRequest loginRequest = new LoginRequest("test@example.com",
                 "password");
 
-        // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
@@ -241,20 +233,18 @@ class UserControllerTest {
         return Stream.of(
                 Arguments.of(new LoginRequest("", "password")), // empty email
                 Arguments.of(new LoginRequest("invalid-email", "password")), // invalid
-                                                                             // email
+                // email
                 Arguments.of(new LoginRequest("test@example.com", "")) // empty
-                                                                       // password
+                                                                      // password
         );
     }
 
     @Test
     @DisplayName("로그인 시 존재하지 않는 이메일이면 실패한다")
     void loginFailEmailNotFound() {
-        // given
         LoginRequest loginRequest = new LoginRequest("nonexistent@example.com",
                 "password");
 
-        // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
@@ -269,7 +259,6 @@ class UserControllerTest {
     @Test
     @DisplayName("로그인 시 비밀번호가 틀리면 실패한다")
     void loginFailPasswordMismatch() {
-        // given
         SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
                 "Test User", "password");
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
@@ -281,7 +270,6 @@ class UserControllerTest {
         LoginRequest loginRequest = new LoginRequest("test@example.com",
                 "wrong_password");
 
-        // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginRequest)
@@ -296,7 +284,6 @@ class UserControllerTest {
     @Test
     @DisplayName("유효한 리프레시 토큰으로 토큰 갱신에 성공한다")
     void refreshTokenSuccess() {
-        // given
         SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
                 "Test User", "password");
         EntityExchangeResult<byte[]> signupResult = webTestClient.post()
@@ -311,7 +298,6 @@ class UserControllerTest {
         String userId = JsonPath.read(responseBody, "$.result.id");
         String refreshToken = generateRefreshToken(userId);
 
-        // when & then - 쿠키로 Refresh Token 전달
         webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
                 .cookie("refreshToken", refreshToken)
                 .exchange()
@@ -329,7 +315,6 @@ class UserControllerTest {
     @Test
     @DisplayName("잘못된 타입의 토큰으로 갱신 시 실패한다")
     void refreshTokenFailWithAccessToken() {
-        // given
         SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
                 "Test User", "password");
         EntityExchangeResult<byte[]> signupResult = webTestClient.post()
@@ -344,7 +329,6 @@ class UserControllerTest {
         String userId = JsonPath.read(responseBody, "$.result.id");
         String accessToken = generateAccessToken(userId);
 
-        // when & then - 쿠키로 Access Token 전달 (잘못된 토큰 타입)
         webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
                 .cookie("refreshToken", accessToken)
                 .exchange()
@@ -357,7 +341,6 @@ class UserControllerTest {
     @Test
     @DisplayName("리프레시 토큰 쿠키가 없으면 갱신 시 실패한다")
     void refreshTokenFailWithoutCookie() {
-        // when & then - 쿠키 없이 요청
         webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
                 .exchange()
                 .expectStatus().isUnauthorized()
@@ -366,4 +349,5 @@ class UserControllerTest {
                 .jsonPath("$.error.code")
                 .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
     }
+
 }

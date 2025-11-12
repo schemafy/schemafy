@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ERD_VALIDATOR } from '@schemafy/validator';
 
 import { toErrorDetails } from '../common/error-mapper';
@@ -14,6 +14,7 @@ import type {
 
 @Injectable()
 export class IndexesService {
+  private readonly logger = new Logger(IndexesService.name);
   createIndex(
     database: Database,
     schemaId: Schema['id'],
@@ -27,8 +28,17 @@ export class IndexesService {
         tableId,
         index,
       );
+      this.logger.log(
+        `CreateIndex request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, index: ${JSON.stringify(
+          index,
+        )}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `CreateIndex request failed, schemaId: ${schemaId}, tableId: ${tableId}, index: ${JSON.stringify(index)}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -46,8 +56,15 @@ export class IndexesService {
         tableId,
         indexId,
       );
+      this.logger.log(
+        `DeleteIndex request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `DeleteIndex request failed, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -67,8 +84,15 @@ export class IndexesService {
         indexId,
         newName,
       );
+      this.logger.log(
+        `ChangeIndexName request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, newName: ${newName}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `ChangeIndexName request failed, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, newName: ${newName}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -88,8 +112,19 @@ export class IndexesService {
         indexId,
         indexColumn,
       );
+      this.logger.log(
+        `AddColumnToIndex request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, indexColumn: ${JSON.stringify(
+          indexColumn,
+        )}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `AddColumnToIndex request failed, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, indexColumn: ${JSON.stringify(
+          indexColumn,
+        )}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -109,8 +144,15 @@ export class IndexesService {
         indexId,
         indexColumnId,
       );
+      this.logger.log(
+        `RemoveColumnFromIndex request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, indexColumnId: ${indexColumnId}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `RemoveColumnFromIndex request failed, schemaId: ${schemaId}, tableId: ${tableId}, indexId: ${indexId}, indexColumnId: ${indexColumnId}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
