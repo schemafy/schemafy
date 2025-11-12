@@ -109,7 +109,8 @@ public class IndexService extends BaseErdService {
         return indexColumnRepository
                 .findByIdAndDeletedAtIsNull(request.getIndexColumnId())
                 .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
+                        new BusinessException(
+                                ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
                 .delayUntil(ignore -> validationClient
                         .removeColumnFromIndex(request))
                 .doOnNext(IndexColumn::delete)

@@ -1,7 +1,5 @@
 package com.schemafy.core.common.config;
 
-import io.r2dbc.spi.ConnectionFactory;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -19,6 +17,8 @@ import org.springframework.data.r2dbc.dialect.MySqlDialect;
 import org.springframework.r2dbc.connection.R2dbcTransactionManager;
 import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
+
+import io.r2dbc.spi.ConnectionFactory;
 
 @Configuration
 @EnableR2dbcAuditing

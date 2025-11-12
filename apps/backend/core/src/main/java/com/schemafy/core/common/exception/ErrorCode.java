@@ -53,11 +53,14 @@ public enum ErrorCode {
     ERD_TABLE_NOT_FOUND(HttpStatus.NOT_FOUND, "E002", "테이블을 찾을 수 없습니다."),
     ERD_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E003", "컬럼을 찾을 수 없습니다."),
     ERD_CONSTRAINT_NOT_FOUND(HttpStatus.NOT_FOUND, "E004", "제약조건을 찾을 수 없습니다."),
-    ERD_CONSTRAINT_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E007", "제약조건 컬럼을 찾을 수 없습니다."),
+    ERD_CONSTRAINT_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E007",
+            "제약조건 컬럼을 찾을 수 없습니다."),
     ERD_INDEX_NOT_FOUND(HttpStatus.NOT_FOUND, "E005", "인덱스를 찾을 수 없습니다."),
-    ERD_INDEX_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E008", "인덱스 컬럼을 찾을 수 없습니다."),
+    ERD_INDEX_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E008",
+            "인덱스 컬럼을 찾을 수 없습니다."),
     ERD_RELATIONSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "E006", "관계를 찾을 수 없습니다."),
-    ERD_RELATIONSHIP_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E009", "관계 컬럼을 찾을 수 없습니다.");
+    ERD_RELATIONSHIP_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E009",
+            "관계 컬럼을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;
