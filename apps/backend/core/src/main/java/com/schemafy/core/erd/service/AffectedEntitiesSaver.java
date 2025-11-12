@@ -205,7 +205,8 @@ public class AffectedEntitiesSaver {
                 }
             }
 
-            return Flux.concat(saveTasks)
+            return Flux.fromIterable(saveTasks)
+                    .flatMap(task -> task)
                     .then(Mono.just(new PropagatedEntities(
                             propagatedColumns,
                             propagatedConstraintColumns,

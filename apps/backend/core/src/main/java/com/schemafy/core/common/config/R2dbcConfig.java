@@ -1,5 +1,7 @@
 package com.schemafy.core.common.config;
 
+import io.r2dbc.spi.ConnectionFactory;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -14,6 +16,9 @@ import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
 import org.springframework.data.r2dbc.convert.R2dbcCustomConversions;
 import org.springframework.data.r2dbc.dialect.MySqlDialect;
+import org.springframework.r2dbc.connection.R2dbcTransactionManager;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 @Configuration
 @EnableR2dbcAuditing
@@ -26,6 +31,18 @@ public class R2dbcConfig {
         converters.add(new LocalDateTimeToInstantConverter());
 
         return R2dbcCustomConversions.of(MySqlDialect.INSTANCE, converters);
+    }
+
+    @Bean
+    public ReactiveTransactionManager transactionManager(
+            ConnectionFactory connectionFactory) {
+        return new R2dbcTransactionManager(connectionFactory);
+    }
+
+    @Bean
+    public TransactionalOperator transactionalOperator(
+            ReactiveTransactionManager transactionManager) {
+        return TransactionalOperator.create(transactionManager);
     }
 
     @WritingConverter

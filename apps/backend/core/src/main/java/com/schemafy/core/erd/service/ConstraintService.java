@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -14,24 +15,35 @@ import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.ConstraintColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-@RequiredArgsConstructor
-public class ConstraintService {
+public class ConstraintService extends BaseErdService {
 
     private final ValidationClient validationClient;
     private final ConstraintRepository constraintRepository;
     private final ConstraintColumnRepository constraintColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
 
+    public ConstraintService(
+            ValidationClient validationClient,
+            ConstraintRepository constraintRepository,
+            ConstraintColumnRepository constraintColumnRepository,
+            AffectedEntitiesSaver affectedEntitiesSaver,
+            TransactionalOperator transactionalOperator) {
+        super(transactionalOperator);
+        this.validationClient = validationClient;
+        this.constraintRepository = constraintRepository;
+        this.constraintColumnRepository = constraintColumnRepository;
+        this.affectedEntitiesSaver = affectedEntitiesSaver;
+    }
+
     public Mono<AffectedMappingResponse> createConstraint(
             Validation.CreateConstraintRequest request) {
         return validationClient.createConstraint(request)
-                .flatMap(database -> constraintRepository
+                .flatMap(database -> transactional(constraintRepository
                         .save(ErdMapper.toEntity(request.getConstraint()))
                         .flatMap(savedConstraint -> {
                             Validation.Database updatedDatabase = AffectedMappingResponse
@@ -65,19 +77,19 @@ public class ConstraintService {
                                                     request.getDatabase(),
                                                     updatedDatabase,
                                                     propagated));
-                        }));
+                        })));
     }
 
     public Mono<ConstraintResponse> getConstraint(String id) {
         return constraintRepository.findByIdAndDeletedAtIsNull(id)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
                 .flatMap(constraint -> constraintColumnRepository
                         .findByConstraintIdAndDeletedAtIsNull(id)
                         .collectList()
                         .map(columns -> ConstraintResponse.from(constraint,
-                                columns)))
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(
-                                ErrorCode.ERD_CONSTRAINT_NOT_FOUND)));
+                                columns)));
     }
 
     public Flux<ConstraintResponse> getConstraintsByTableId(String tableId) {
@@ -109,7 +121,7 @@ public class ConstraintService {
     public Mono<AffectedMappingResponse> addColumnToConstraint(
             Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
-                .flatMap(database -> constraintColumnRepository
+                .flatMap(database -> transactional(constraintColumnRepository
                         .save(ErdMapper.toEntity(
                                 request.getConstraintColumn()))
                         .flatMap(savedConstraintColumn -> {
@@ -134,7 +146,7 @@ public class ConstraintService {
                                                     request.getDatabase(),
                                                     updatedDatabase,
                                                     propagated));
-                        }));
+                        })));
     }
 
     public Mono<Void> removeColumnFromConstraint(
@@ -143,7 +155,7 @@ public class ConstraintService {
                 .findByIdAndDeletedAtIsNull(request.getConstraintColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
-                                ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
+                                ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND)))
                 .delayUntil(ignore -> validationClient
                         .removeColumnFromConstraint(request))
                 .doOnNext(ConstraintColumn::delete)

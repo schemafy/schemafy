@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -15,24 +16,35 @@ import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-@RequiredArgsConstructor
-public class RelationshipService {
+public class RelationshipService extends BaseErdService {
 
     private final ValidationClient validationClient;
     private final RelationshipRepository relationshipRepository;
     private final RelationshipColumnRepository relationshipColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
 
+    public RelationshipService(
+            ValidationClient validationClient,
+            RelationshipRepository relationshipRepository,
+            RelationshipColumnRepository relationshipColumnRepository,
+            AffectedEntitiesSaver affectedEntitiesSaver,
+            TransactionalOperator transactionalOperator) {
+        super(transactionalOperator);
+        this.validationClient = validationClient;
+        this.relationshipRepository = relationshipRepository;
+        this.relationshipColumnRepository = relationshipColumnRepository;
+        this.affectedEntitiesSaver = affectedEntitiesSaver;
+    }
+
     public Mono<AffectedMappingResponse> createRelationship(
             CreateRelationshipRequestWithExtra request) {
         return validationClient.createRelationship(request.request())
-                .flatMap(database -> relationshipRepository
+                .flatMap(database -> transactional(relationshipRepository
                         .save(ErdMapper.toEntity(
                                 request.request().getRelationship(),
                                 request.extra()))
@@ -71,19 +83,19 @@ public class RelationshipService {
                                                             .getDatabase(),
                                                     updatedDatabase,
                                                     propagated));
-                        }));
+                        })));
     }
 
     public Mono<RelationshipResponse> getRelationship(String id) {
         return relationshipRepository.findByIdAndDeletedAtIsNull(id)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
                 .flatMap(relationship -> relationshipColumnRepository
                         .findByRelationshipIdAndDeletedAtIsNull(id)
                         .collectList()
                         .map(columns -> RelationshipResponse.from(relationship,
-                                columns)))
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(
-                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)));
+                                columns)));
     }
 
     public Flux<RelationshipResponse> getRelationshipsByTableId(
@@ -130,7 +142,7 @@ public class RelationshipService {
     public Mono<AffectedMappingResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
-                .flatMap(database -> relationshipColumnRepository
+                .flatMap(database -> transactional(relationshipColumnRepository
                         .save(ErdMapper
                                 .toEntity(request.getRelationshipColumn()))
                         .flatMap(savedRelationshipColumn -> {
@@ -155,7 +167,7 @@ public class RelationshipService {
                                                     request.getDatabase(),
                                                     updatedDatabase,
                                                     propagated));
-                        }));
+                        })));
     }
 
     public Mono<Void> removeColumnFromRelationship(
@@ -164,7 +176,7 @@ public class RelationshipService {
                 .findById(request.getRelationshipColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
-                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
+                                ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND)))
                 .delayUntil(ignore -> validationClient
                         .removeColumnFromRelationship(request))
                 .doOnNext(RelationshipColumn::delete)

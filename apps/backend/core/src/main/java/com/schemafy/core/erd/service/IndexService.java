@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -15,23 +16,32 @@ import com.schemafy.core.erd.repository.entity.Index;
 import com.schemafy.core.erd.repository.entity.IndexColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-@RequiredArgsConstructor
-public class IndexService {
+public class IndexService extends BaseErdService {
 
     private final ValidationClient validationClient;
     private final IndexRepository indexRepository;
     private final IndexColumnRepository indexColumnRepository;
 
+    public IndexService(
+            ValidationClient validationClient,
+            IndexRepository indexRepository,
+            IndexColumnRepository indexColumnRepository,
+            TransactionalOperator transactionalOperator) {
+        super(transactionalOperator);
+        this.validationClient = validationClient;
+        this.indexRepository = indexRepository;
+        this.indexColumnRepository = indexColumnRepository;
+    }
+
     public Mono<AffectedMappingResponse> createIndex(
             Validation.CreateIndexRequest request) {
         return validationClient.createIndex(request)
-                .flatMap(database -> indexRepository
+                .flatMap(database -> transactional(indexRepository
                         .save(ErdMapper.toEntity(request.getIndex()))
                         .flatMap(savedIndex -> Flux
                                 .fromIterable(
@@ -53,17 +63,17 @@ public class IndexService {
                                                         request.getIndex()
                                                                 .getId(),
                                                         savedIndex
-                                                                .getId()))))));
+                                                                .getId())))))));
     }
 
     public Mono<IndexResponse> getIndex(String id) {
         return indexRepository.findByIdAndDeletedAtIsNull(id)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
                 .flatMap(index -> indexColumnRepository
                         .findByIndexIdAndDeletedAtIsNull(id)
                         .collectList()
-                        .map(columns -> IndexResponse.from(index, columns)))
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)));
+                        .map(columns -> IndexResponse.from(index, columns)));
     }
 
     public Flux<IndexResponse> getIndexesByTableId(String tableId) {
@@ -99,7 +109,7 @@ public class IndexService {
         return indexColumnRepository
                 .findByIdAndDeletedAtIsNull(request.getIndexColumnId())
                 .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
+                        new BusinessException(ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
                 .delayUntil(ignore -> validationClient
                         .removeColumnFromIndex(request))
                 .doOnNext(IndexColumn::delete)
