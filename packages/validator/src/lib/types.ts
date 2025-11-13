@@ -137,7 +137,10 @@ export const SCHEMA = z.object({
   id: ULID,
   projectId: ULID,
   dbVendorId: DB_VENDOR,
-  name: z.string().min(SCHEMA_NAME_CONSTRAINTS.MIN_LENGTH).max(SCHEMA_NAME_CONSTRAINTS.MAX_LENGTH),
+  name: z
+    .string()
+    .min(SCHEMA_NAME_CONSTRAINTS.MIN_LENGTH)
+    .max(SCHEMA_NAME_CONSTRAINTS.MAX_LENGTH),
   charset: z.string(),
   collation: z.string(),
   vendorOption: z.string(),
