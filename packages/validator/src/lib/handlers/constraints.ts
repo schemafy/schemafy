@@ -8,7 +8,7 @@ import {
   TableNotExistError,
   UniqueSameAsPrimaryKeyError,
 } from "../errors";
-import {
+import type {
   Column,
   Constraint,
   ConstraintColumn,

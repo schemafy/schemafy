@@ -40,6 +40,21 @@ export const RelationshipMarker = () => {
         </marker>
 
         <marker
+          id="erd-many-start"
+          viewBox="0 0 8 10"
+          markerWidth={8}
+          markerHeight={10}
+          refX={3}
+          refY={5}
+          orient="auto"
+          markerUnits="strokeWidth"
+        >
+          <path d="M1 9L7 5" stroke="currentColor" strokeLinecap="round" />
+          <path d="M1 1L7 5" stroke="currentColor" strokeLinecap="round" />
+          <path d="M7 5L0.5 5" stroke="currentColor" strokeLinecap="round" />
+        </marker>
+
+        <marker
           id="erd-many-end"
           viewBox="0 0 8 10"
           markerWidth={8}
