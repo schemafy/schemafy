@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const SCHEMA_NAME_CONSTRAINTS = {
+  MIN_LENGTH: 1,
+  MAX_LENGTH: 20,
+} as const;
+
 const ULID = z.string().ulid();
 const DB_VENDOR = z.enum(["mysql"]);
 const INDEX_TYPE = z.enum(["BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER"]);
@@ -132,7 +137,7 @@ export const SCHEMA = z.object({
   id: ULID,
   projectId: ULID,
   dbVendorId: DB_VENDOR,
-  name: z.string().min(1).max(20),
+  name: z.string().min(SCHEMA_NAME_CONSTRAINTS.MIN_LENGTH).max(SCHEMA_NAME_CONSTRAINTS.MAX_LENGTH),
   charset: z.string(),
   collation: z.string(),
   vendorOption: z.string(),

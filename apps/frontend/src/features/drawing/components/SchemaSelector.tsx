@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { SchemaInput } from './SchemaInput';
 import { SchemaListItem } from './SchemaListItem';
 import { useSchemaEditor } from '../hooks';
-import { validateSchemaName } from '../constants/schema.constants';
+import { validateSchemaName } from '../utils/validateSchemaName';
 
 export const SchemaSelector = observer(() => {
   const erdStore = ErdStore.getInstance();

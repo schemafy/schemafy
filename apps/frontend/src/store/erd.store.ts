@@ -28,6 +28,16 @@ interface LOADED {
 
 type LoadingState = IDLE | LOADING | LOADED;
 
+type DatabaseExtra = {
+  selectedSchemaId?: string;
+};
+
+type DatabaseExtraOrUndefined = DatabaseExtra | undefined;
+
+const getDatabaseExtra = (extra: unknown): DatabaseExtra => {
+  return (extra || {}) as DatabaseExtra;
+};
+
 export class ErdStore {
   private static instance: ErdStore;
   erdState: LoadingState = { state: 'idle' };
@@ -53,7 +63,7 @@ export class ErdStore {
   load(database: Database) {
     this.erdState = { state: 'loading' };
 
-    const extra = (database.extra || {}) as { selectedSchemaId?: string };
+    const extra = getDatabaseExtra(database.extra);
     if (!extra.selectedSchemaId && database.schemas.length > 0) {
       database = {
         ...database,
@@ -74,9 +84,7 @@ export class ErdStore {
   get selectedSchemaId(): string | null {
     if (this.erdState.state !== 'loaded') return null;
 
-    const extra = this.erdState.database.extra as
-      | { selectedSchemaId?: string }
-      | undefined;
+    const extra = this.erdState.database.extra as DatabaseExtraOrUndefined;
     return extra?.selectedSchemaId || null;
   }
 
@@ -102,10 +110,11 @@ export class ErdStore {
       const schema = db.schemas.find((s) => s.id === schemaId);
       if (!schema) throw new Error(`Schema ${schemaId} not found`);
 
+      const extra = getDatabaseExtra(db.extra);
       return {
         ...db,
         extra: {
-          ...((db.extra as object) || {}),
+          ...extra,
           selectedSchemaId: schemaId,
         },
       };
@@ -134,7 +143,6 @@ export class ErdStore {
       runInAction(() => {
         this.erdState = { state: 'loaded', database: next };
       });
-      console.log(this.erdState.database);
     } catch (e) {
       console.error(e);
       throw e;

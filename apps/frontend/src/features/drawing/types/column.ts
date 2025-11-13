@@ -92,3 +92,8 @@ export const DATA_TYPES = [
 ];
 
 export type ConstraintKind = 'PRIMARY_KEY' | 'NOT_NULL' | 'UNIQUE';
+
+export const CONSTRAINTS = [
+  { key: 'isPrimaryKey', label: 'PK', color: 'text-schemafy-yellow' },
+  { key: 'isNotNull', label: 'NOT NULL', color: 'text-schemafy-destructive' },
+] as const;

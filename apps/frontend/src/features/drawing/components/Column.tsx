@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trash2, GripVertical } from 'lucide-react';
-import { DATA_TYPES } from '../types';
+import { DATA_TYPES, CONSTRAINTS } from '../types';
 import type {
   ColumnRowProps,
   EditModeColumnProps,
@@ -188,14 +188,9 @@ export const ColumnConstraints = ({
   column,
   onUpdateColumn,
 }: ColumnConstraintsProps) => {
-  const constraints = [
-    { key: 'isPrimaryKey', label: 'PK', color: 'text-schemafy-yellow' },
-    { key: 'isNotNull', label: 'NOT NULL', color: 'text-schemafy-destructive' },
-  ] as const;
-
   return (
     <div className="flex flex-wrap gap-3 text-xs ml-4">
-      {constraints.map(({ key, label, color }) => {
+      {CONSTRAINTS.map(({ key, label, color }) => {
         const isDisabled = column.isPrimaryKey && key === 'isNotNull';
 
         return (

@@ -1,8 +1,6 @@
 import { Button } from '@/components';
-import {
-  SCHEMA_NAME_MAX_LENGTH,
-  validateSchemaName,
-} from '../constants/schema.constants';
+import { SCHEMA_NAME_CONSTRAINTS } from '@schemafy/validator';
+import { validateSchemaName } from '../utils/validateSchemaName';
 
 interface SchemaInputProps {
   value: string;
@@ -43,7 +41,7 @@ export const SchemaInput = ({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        maxLength={SCHEMA_NAME_MAX_LENGTH}
+        maxLength={SCHEMA_NAME_CONSTRAINTS.MAX_LENGTH}
         className="p-3 font-body-xs w-full rounded-[8px] bg-schemafy-secondary text-schemafy-text focus:outline-none focus:ring-1 focus:ring-schemafy-primary"
         autoFocus
       />
