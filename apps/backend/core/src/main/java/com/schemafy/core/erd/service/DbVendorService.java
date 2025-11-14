@@ -18,7 +18,8 @@ public class DbVendorService {
     private final DbVendorRepository dbVendorRepository;
 
     public Mono<DbVendor> getVendorByDisplayName(String displayName) {
-        return dbVendorRepository.findByDisplayNameAndDeletedAtIsNull(displayName)
+        return dbVendorRepository
+                .findByDisplayNameAndDeletedAtIsNull(displayName)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_VENDOR_NOT_FOUND)));
     }
@@ -27,7 +28,8 @@ public class DbVendorService {
         return dbVendorRepository.findByDeletedAtIsNull();
     }
 
-    public Mono<DbVendor> getVendorByNameAndVersion(String name, String version) {
+    public Mono<DbVendor> getVendorByNameAndVersion(String name,
+            String version) {
         return dbVendorRepository.findByNameAndVersionAndDeletedAtIsNull(name,
                 version)
                 .switchIfEmpty(Mono.error(
@@ -35,4 +37,3 @@ public class DbVendorService {
     }
 
 }
-

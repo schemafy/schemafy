@@ -43,4 +43,3 @@ public class DbVendor extends BaseEntity {
     }
 
 }
-

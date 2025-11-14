@@ -12,7 +12,8 @@ import reactor.core.publisher.Mono;
 public interface DbVendorRepository
         extends ReactiveCrudRepository<DbVendor, String> {
 
-    public Mono<DbVendor> findByDisplayNameAndDeletedAtIsNull(String displayName);
+    public Mono<DbVendor> findByDisplayNameAndDeletedAtIsNull(
+            String displayName);
 
     public Flux<DbVendor> findByDeletedAtIsNull();
 
@@ -20,4 +21,3 @@ public interface DbVendorRepository
             String version);
 
 }
-
