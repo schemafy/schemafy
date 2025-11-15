@@ -109,4 +109,5 @@ public class UserApiSnippets extends RestDocsSnippets {
         return createResponseFieldsSnippet(
                 successResponseFieldsWithNullResult());
     }
+
 }

@@ -11,6 +11,7 @@ import com.schemafy.core.user.service.dto.SignUpCommand;
 import reactor.core.publisher.Mono;
 
 public class TestFixture {
+
     public static PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public static Mono<User> createTestUser(String email, String name,
@@ -25,4 +26,5 @@ public class TestFixture {
                 defaultPassword);
         return User.signUp(command.toUserInfo(), passwordEncoder);
     }
+
 }

@@ -61,4 +61,5 @@ public class CaffeineCacheService implements CacheService {
                 stats.hitRate(),
                 cache.estimatedSize()));
     }
+
 }

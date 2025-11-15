@@ -3,6 +3,7 @@ import { GrpcMethod } from '@nestjs/microservices';
 
 import { ConstraintsService } from './constraints.service';
 
+import type { ValidateResult } from '../common';
 import type {
   AddColumnToConstraintDto,
   ChangeConstraintNameDto,
@@ -10,7 +11,6 @@ import type {
   DeleteConstraintDto,
   RemoveColumnFromConstraintDto,
 } from './dto';
-import type { ValidateResult } from '../common';
 
 @Controller()
 export class ConstraintsController {

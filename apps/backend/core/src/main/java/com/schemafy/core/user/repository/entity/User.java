@@ -54,4 +54,5 @@ public class User extends BaseEntity {
                 () -> passwordEncoder.matches(rawPassword, this.password))
                 .subscribeOn(Schedulers.boundedElastic());
     }
+
 }

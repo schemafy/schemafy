@@ -21,6 +21,7 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
@@ -90,4 +91,5 @@ public class UserService {
         }).onErrorMap(e -> !(e instanceof BusinessException),
                 e -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
     }
+
 }

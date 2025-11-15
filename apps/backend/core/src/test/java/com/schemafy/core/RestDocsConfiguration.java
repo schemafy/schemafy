@@ -11,10 +11,12 @@ public class RestDocsConfiguration {
     @Bean
     public RestDocsWebTestClientConfigurationCustomizer restDocsWebTestClientConfigurationCustomizer() {
         return new RestDocsWebTestClientConfigurationCustomizer() {
+
             @Override
             public void customize(
-                    WebTestClientRestDocumentationConfigurer configurer) {
-            }
+                    WebTestClientRestDocumentationConfigurer configurer) {}
+
         };
     }
+
 }

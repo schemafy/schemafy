@@ -15,4 +15,5 @@ public interface CacheService {
     Mono<Boolean> exists(String key);
 
     Mono<CacheStatsDto> getStats();
+
 }
