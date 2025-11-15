@@ -1,13 +1,13 @@
 MERGE INTO db_vendors (display_name, name, version, datatype_mappings, created_at, updated_at)
 KEY (display_name)
 VALUES (
-    'H2 2.2',
-    'h2',
-    '2.2',
+    'MySQL 8.0',
+    'mysql',
+    '8.0',
     '{
       "schemaVersion": 1,
-      "vendor": "h2",
-      "versionRange": ">= 2.0",
+      "vendor": "mysql",
+      "versionRange": ">= 8.0",
       "types": [
         {
           "sqlType": "TINYINT",
@@ -22,8 +22,8 @@ VALUES (
           "parameters": []
         },
         {
-          "sqlType": "INTEGER",
-          "displayName": "INTEGER",
+          "sqlType": "MEDIUMINT",
+          "displayName": "MEDIUMINT",
           "category": "numeric_integer",
           "parameters": []
         },
@@ -62,34 +62,6 @@ VALUES (
           ]
         },
         {
-          "sqlType": "NUMERIC",
-          "displayName": "NUMERIC",
-          "category": "numeric_decimal",
-          "sqlDeclarationTemplate": "NUMERIC({1}, {2})",
-          "parameters": [
-            {
-              "name": "precision",
-              "label": "Precision (M)",
-              "valueType": "integer",
-              "required": true,
-              "order": 1
-            },
-            {
-              "name": "scale",
-              "label": "Scale (D)",
-              "valueType": "integer",
-              "required": true,
-              "order": 2
-            }
-          ]
-        },
-        {
-          "sqlType": "REAL",
-          "displayName": "REAL",
-          "category": "numeric_float",
-          "parameters": []
-        },
-        {
           "sqlType": "FLOAT",
           "displayName": "FLOAT",
           "category": "numeric_float",
@@ -99,12 +71,6 @@ VALUES (
           "sqlType": "DOUBLE",
           "displayName": "DOUBLE",
           "category": "numeric_float",
-          "parameters": []
-        },
-        {
-          "sqlType": "BOOLEAN",
-          "displayName": "BOOLEAN",
-          "category": "boolean",
           "parameters": []
         },
         {
@@ -135,15 +101,21 @@ VALUES (
           "parameters": []
         },
         {
+          "sqlType": "DATETIME",
+          "displayName": "DATETIME",
+          "category": "datetime_timestamp",
+          "parameters": []
+        },
+        {
           "sqlType": "TIMESTAMP",
           "displayName": "TIMESTAMP",
           "category": "datetime_timestamp",
           "parameters": []
         },
         {
-          "sqlType": "TIMESTAMP WITH TIME ZONE",
-          "displayName": "TIMESTAMP WITH TIME ZONE",
-          "category": "datetime_timestamp",
+          "sqlType": "YEAR",
+          "displayName": "YEAR",
+          "category": "datetime_year",
           "parameters": []
         },
         {
@@ -166,36 +138,6 @@ VALUES (
           "displayName": "VARCHAR",
           "category": "string_variable",
           "sqlDeclarationTemplate": "VARCHAR({1})",
-          "parameters": [
-            {
-              "name": "length",
-              "label": "Length",
-              "valueType": "integer",
-              "required": true,
-              "order": 1
-            }
-          ]
-        },
-        {
-          "sqlType": "VARCHAR_IGNORECASE",
-          "displayName": "VARCHAR_IGNORECASE",
-          "category": "string_variable",
-          "sqlDeclarationTemplate": "VARCHAR_IGNORECASE({1})",
-          "parameters": [
-            {
-              "name": "length",
-              "label": "Length",
-              "valueType": "integer",
-              "required": true,
-              "order": 1
-            }
-          ]
-        },
-        {
-          "sqlType": "CHARACTER VARYING",
-          "displayName": "CHARACTER VARYING",
-          "category": "string_variable",
-          "sqlDeclarationTemplate": "CHARACTER VARYING({1})",
           "parameters": [
             {
               "name": "length",
@@ -237,8 +179,20 @@ VALUES (
           ]
         },
         {
-          "sqlType": "CLOB",
-          "displayName": "CLOB",
+          "sqlType": "TEXT",
+          "displayName": "TEXT",
+          "category": "string_text",
+          "parameters": []
+        },
+        {
+          "sqlType": "MEDIUMTEXT",
+          "displayName": "MEDIUMTEXT",
+          "category": "string_text",
+          "parameters": []
+        },
+        {
+          "sqlType": "LONGTEXT",
+          "displayName": "LONGTEXT",
           "category": "string_text",
           "parameters": []
         },
@@ -249,17 +203,46 @@ VALUES (
           "parameters": []
         },
         {
-          "sqlType": "UUID",
-          "displayName": "UUID",
-          "category": "uuid",
+          "sqlType": "MEDIUMBLOB",
+          "displayName": "MEDIUMBLOB",
+          "category": "binary_blob",
           "parameters": []
         },
         {
-          "sqlType": "ARRAY",
-          "displayName": "ARRAY",
-          "category": "array",
-          "sqlDeclarationTemplate": "ARRAY",
+          "sqlType": "LONGBLOB",
+          "displayName": "LONGBLOB",
+          "category": "binary_blob",
           "parameters": []
+        },
+        {
+          "sqlType": "ENUM",
+          "displayName": "ENUM",
+          "category": "string_enum",
+          "sqlDeclarationTemplate": "ENUM({1})",
+          "parameters": [
+            {
+              "name": "values",
+              "label": "Values",
+              "valueType": "string_array",
+              "required": true,
+              "order": 1
+            }
+          ]
+        },
+        {
+          "sqlType": "SET",
+          "displayName": "SET",
+          "category": "string_set",
+          "sqlDeclarationTemplate": "SET({1})",
+          "parameters": [
+            {
+              "name": "values",
+              "label": "Values",
+              "valueType": "string_array",
+              "required": true,
+              "order": 1
+            }
+          ]
         },
         {
           "sqlType": "JSON",
