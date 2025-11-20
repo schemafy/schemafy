@@ -1,7 +1,9 @@
 package com.schemafy.core.erd.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
@@ -214,9 +216,9 @@ public class AffectedEntitiesSaver {
         });
     }
 
-    private java.util.Set<String> collectAllEntityIds(
+    private Set<String> collectAllEntityIds(
             Validation.Database database) {
-        java.util.Set<String> ids = new java.util.HashSet<>();
+        Set<String> ids = new HashSet<>();
 
         for (Validation.Schema schema : database.getSchemasList()) {
             ids.add(schema.getId());
