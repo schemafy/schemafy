@@ -166,9 +166,10 @@ export const relationshipHandlers: RelationshipHandlers = {
     const deleteRelationshipSchema: Schema = {
       ...updatedSchema,
       isAffected: true,
-      tables: schema.tables.map((t) => ({
+      tables: updatedSchema.tables.map((t) => ({
         ...t,
-        isAffected: t.relationships.some((r) => r.id === relationshipId),
+        isAffected:
+          t.relationships.some((r) => r.id === relationshipId) || t.isAffected,
         relationships: t.relationships.filter((r) => r.id !== relationshipId),
       })),
     };

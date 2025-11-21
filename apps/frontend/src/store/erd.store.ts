@@ -1,4 +1,4 @@
-import { makeAutoObservable, observable } from 'mobx';
+import { makeAutoObservable, observable, runInAction } from 'mobx';
 import {
   ERD_VALIDATOR,
   type Database,
@@ -28,6 +28,34 @@ interface LOADED {
 
 type LoadingState = IDLE | LOADING | LOADED;
 
+type DatabaseExtra = {
+  selectedSchemaId?: string;
+};
+
+const isDatabaseExtra = (value: unknown): value is DatabaseExtra => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+
+  if ('selectedSchemaId' in obj) {
+    return (
+      obj.selectedSchemaId === undefined ||
+      typeof obj.selectedSchemaId === 'string'
+    );
+  }
+
+  return true;
+};
+
+const getDatabaseExtra = (extra: unknown): DatabaseExtra => {
+  if (isDatabaseExtra(extra)) {
+    return extra;
+  }
+  return {};
+};
+
 export class ErdStore {
   private static instance: ErdStore;
   erdState: LoadingState = { state: 'idle' };
@@ -52,11 +80,63 @@ export class ErdStore {
   // state
   load(database: Database) {
     this.erdState = { state: 'loading' };
+
+    const extra = getDatabaseExtra(database.extra);
+    if (!extra.selectedSchemaId && database.schemas.length > 0) {
+      database = {
+        ...database,
+        extra: {
+          ...extra,
+          selectedSchemaId: database.schemas[0].id,
+        },
+      };
+    }
+
     this.erdState = { state: 'loaded', database };
   }
 
   reset() {
     this.erdState = { state: 'idle' };
+  }
+
+  get selectedSchemaId(): string | null {
+    if (this.erdState.state !== 'loaded') return null;
+
+    const extra = getDatabaseExtra(this.erdState.database.extra);
+    return extra.selectedSchemaId || null;
+  }
+
+  get selectedSchema(): Schema | null {
+    if (this.erdState.state !== 'loaded') return null;
+
+    const selectedSchemaId = this.selectedSchemaId;
+    if (!selectedSchemaId) return null;
+
+    return (
+      this.erdState.database.schemas.find((s) => s.id === selectedSchemaId) ||
+      null
+    );
+  }
+
+  get database(): Database | null {
+    if (this.erdState.state !== 'loaded') return null;
+    return this.erdState.database;
+  }
+
+  selectSchema(schemaId: string) {
+    this.update((db) => {
+      const schema = db.schemas.find((s) => s.id === schemaId);
+      if (!schema) throw new Error(`Schema ${schemaId} not found`);
+
+      const extra = getDatabaseExtra(db.extra);
+      return {
+        ...db,
+        extra: {
+          ...extra,
+          selectedSchemaId: schemaId,
+        },
+      };
+    });
   }
 
   validate() {
@@ -78,7 +158,9 @@ export class ErdStore {
     }
     try {
       const next = updater(this.erdState.database);
-      this.erdState = { state: 'loaded', database: next };
+      runInAction(() => {
+        this.erdState = { state: 'loaded', database: next };
+      });
     } catch (e) {
       console.error(e);
       throw e;
@@ -98,6 +180,22 @@ export class ErdStore {
     this.update((db) => ERD_VALIDATOR.deleteSchema(db, schemaId));
   }
 
+  updateSchemaExtra(schemaId: Schema['id'], extra: unknown) {
+    this.update((db) => {
+      return {
+        ...db,
+        schemas: db.schemas.map((schema) => {
+          if (schema.id !== schemaId) return schema;
+
+          return {
+            ...schema,
+            extra,
+          };
+        }),
+      };
+    });
+  }
+
   // tables
   createTable(schemaId: Schema['id'], table: Omit<Table, 'schemaId'>) {
     this.update((db) => ERD_VALIDATOR.createTable(db, schemaId, table));
@@ -111,6 +209,33 @@ export class ErdStore {
     this.update((db) =>
       ERD_VALIDATOR.changeTableName(db, schemaId, tableId, newName),
     );
+  }
+
+  updateTableExtra(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    extra: unknown,
+  ) {
+    this.update((db) => {
+      return {
+        ...db,
+        schemas: db.schemas.map((schema) => {
+          if (schema.id !== schemaId) return schema;
+
+          return {
+            ...schema,
+            tables: schema.tables.map((table) => {
+              if (table.id !== tableId) return table;
+
+              return {
+                ...table,
+                extra,
+              };
+            }),
+          };
+        }),
+      };
+    });
   }
 
   deleteTable(schemaId: Schema['id'], tableId: Table['id']) {
@@ -367,6 +492,38 @@ export class ErdStore {
         cardinality,
       ),
     );
+  }
+
+  updateRelationshipExtra(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    extra: unknown,
+  ) {
+    this.update((db) => {
+      return {
+        ...db,
+        schemas: db.schemas.map((schema) => {
+          if (schema.id !== schemaId) return schema;
+
+          return {
+            ...schema,
+            tables: schema.tables.map((table) => {
+              return {
+                ...table,
+                relationships: table.relationships.map((relationship) => {
+                  if (relationship.id !== relationshipId) return relationship;
+
+                  return {
+                    ...relationship,
+                    extra,
+                  };
+                }),
+              };
+            }),
+          };
+        }),
+      };
+    });
   }
 
   addColumnToRelationship(
