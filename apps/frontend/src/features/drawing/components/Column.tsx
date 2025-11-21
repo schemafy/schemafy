@@ -190,25 +190,29 @@ export const ColumnConstraints = ({
 }: ColumnConstraintsProps) => {
   return (
     <div className="flex flex-wrap gap-3 text-xs ml-4">
-      {CONSTRAINTS.filter(({ visible }) => visible).map(({ key, label, color }) => {
-        const isDisabled = column.isPrimaryKey && key === 'isNotNull';
+      {CONSTRAINTS.filter(({ visible }) => visible).map(
+        ({ key, label, color }) => {
+          const isDisabled = column.isPrimaryKey && key === 'isNotNull';
 
-        return (
-          <label
-            key={key}
-            className={`flex items-center gap-1 ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-          >
-            <input
-              type="checkbox"
-              checked={column[key]}
-              onChange={(e) => onUpdateColumn(column.id, key, e.target.checked)}
-              disabled={isDisabled}
-              className="w-3 h-3"
-            />
-            <span className={`${color} font-medium`}>{label}</span>
-          </label>
-        );
-      })}
+          return (
+            <label
+              key={key}
+              className={`flex items-center gap-1 ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+            >
+              <input
+                type="checkbox"
+                checked={column[key]}
+                onChange={(e) =>
+                  onUpdateColumn(column.id, key, e.target.checked)
+                }
+                disabled={isDisabled}
+                className="w-3 h-3"
+              />
+              <span className={`${color} font-medium`}>{label}</span>
+            </label>
+          );
+        },
+      )}
     </div>
   );
 };
