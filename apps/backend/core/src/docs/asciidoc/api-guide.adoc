@@ -1321,6 +1321,30 @@ include::{snippets}/user-login/response-fields.adoc[]
 
 ---
 
+=== 내 정보 조회
+
+로그인된 사용자의 정보를 조회합니다. (인증 필요)
+
+[source]
+----
+GET /public/api/v1.0/users
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-get-me/http-request.adoc[]
+include::{snippets}/user-get-me/request-headers.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/user-get-me/http-response.adoc[]
+include::{snippets}/user-get-me/response-headers.adoc[]
+include::{snippets}/user-get-me/response-fields.adoc[]
+
+---
+
 === 사용자 조회 (스펙 변경 예정)
 
 사용자 ID로 사용자 정보를 조회합니다. (인증 필요). 요구 사항에 따른 변경 예정

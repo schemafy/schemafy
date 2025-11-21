@@ -350,4 +350,36 @@ class UserControllerTest {
                 .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
     }
 
+    @Test
+    @DisplayName("내 정보 조회에 성공한다")
+    void getMyInfoSuccess() {
+        SignUpRequest signUpRequest = new SignUpRequest("test-me@example.com",
+                "Test User Me", "password");
+
+        EntityExchangeResult<byte[]> result = webTestClient.post()
+                .uri(API_BASE_PATH + "/users/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(signUpRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class).returnResult();
+
+        String responseBody = new String(result.getResponseBody());
+        String userId = JsonPath.read(responseBody, "$.result.id");
+        String accessToken = generateAccessToken(userId);
+
+        webTestClient.get().uri(API_BASE_PATH + "/users")
+                .header("Authorization", "Bearer " + accessToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(document("user-get-me",
+                        getUserRequestHeaders(),
+                        getUserResponseHeaders(),
+                        getUserResponse()))
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo(userId)
+                .jsonPath("$.result.email").isEqualTo(signUpRequest.email());
+    }
+
 }
