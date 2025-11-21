@@ -2,6 +2,7 @@ import type { Connection, Edge, EdgeChange } from '@xyflow/react';
 import { useState, useRef, useEffect } from 'react';
 import { applyEdgeChanges } from '@xyflow/react';
 import { autorun } from 'mobx';
+import { toast } from 'sonner';
 import { ErdStore } from '@/store';
 import type { RelationshipConfig } from '../types';
 import { RELATIONSHIP_TYPES } from '../types';
@@ -162,7 +163,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const selectedSchema = erdStore.selectedSchema;
 
     if (!selectedSchemaId || !selectedSchema) {
-      console.error('No schema selected or database not loaded');
+      toast.error('No schema selected');
       return;
     }
 
@@ -171,7 +172,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       relationshipId,
     );
     if (!currentRelationship) {
-      console.error('Relationship not found');
+      toast.error('Relationship not found');
       return;
     }
 
@@ -210,7 +211,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
 
     if (!selectedSchemaId) {
-      console.error('No schema selected');
+      toast.error('No schema selected');
       return;
     }
 
@@ -222,7 +223,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
 
     if (!selectedSchemaId) {
-      console.error('No schema selected');
+      toast.error('No schema selected');
       return;
     }
 

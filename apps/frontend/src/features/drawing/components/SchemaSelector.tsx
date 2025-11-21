@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
 import { ulid } from 'ulid';
+import { toast } from 'sonner';
 import { ErdStore } from '@/store/erd.store';
 import { Button } from '@/components';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -76,10 +77,9 @@ export const SchemaSelector = observer(() => {
     setNewSchemaName('');
   };
 
-  // TODO: 토스트 메시지
   const handleDelete = (schemaId: string) => {
     if (database.schemas.length <= 1) {
-      alert('Cannot delete the last schema');
+      toast.error('Cannot delete the last schema');
       return;
     }
 
