@@ -15,6 +15,9 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import com.schemafy.core.common.exception.ErrorCode;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -75,8 +78,10 @@ public class JwtAuthenticationFilter implements WebFilter {
                 return AuthenticationResult.error(ErrorCode.INVALID_TOKEN);
             }
 
+            UserDetails userDetails = new User(userId, "",
+                    Collections.emptyList());
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userId, null, Collections.emptyList());
+                    userDetails, null, userDetails.getAuthorities());
 
             return AuthenticationResult.success(authentication);
 
