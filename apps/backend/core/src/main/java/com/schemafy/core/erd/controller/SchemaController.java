@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +32,7 @@ public class SchemaController {
 
     private final SchemaService schemaService;
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/schemas")
     public Mono<BaseResponse<AffectedMappingResponse>> createSchema(
             @RequestBody CreateSchemaRequest request) {
@@ -38,6 +40,7 @@ public class SchemaController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/schemas/{schemaId}")
     public Mono<BaseResponse<SchemaDetailResponse>> getSchema(
             @PathVariable String schemaId) {
@@ -45,6 +48,7 @@ public class SchemaController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/schemas/{schemaId}/name")
     public Mono<BaseResponse<SchemaResponse>> updateSchemaName(
             @PathVariable String schemaId,
@@ -53,11 +57,11 @@ public class SchemaController {
             return Mono.error(
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
-        return schemaService
-                .updateSchemaName(request)
+        return schemaService.updateSchemaName(request)
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @DeleteMapping("/schemas/{schemaId}")
     public Mono<BaseResponse<Void>> deleteSchema(
             @PathVariable String schemaId,
