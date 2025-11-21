@@ -26,4 +26,5 @@ public class TestSecurityConfig {
                         .anyExchange().permitAll())
                 .build();
     }
+
 }

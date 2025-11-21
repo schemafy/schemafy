@@ -47,7 +47,7 @@ class SchemaBuilder {
   private projectId: string;
   private name: string = "default_schema";
   private tables: TableBuilder[] = [];
-  private dbVendorId: "mysql" = "mysql";
+  private dbVendorId: Schema["dbVendorId"] = "MYSQL";
   private charset: string = "utf8mb4";
   private collation: string = "utf8mb4_general_ci";
 

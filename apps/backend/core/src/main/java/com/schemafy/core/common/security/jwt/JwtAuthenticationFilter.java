@@ -140,5 +140,7 @@ public class JwtAuthenticationFilter implements WebFilter {
             return new AuthenticationResult(false, null, errorCode.getStatus(),
                     errorCode.getCode(), errorCode.getMessage());
         }
+
     }
+
 }

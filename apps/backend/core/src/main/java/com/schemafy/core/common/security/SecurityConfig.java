@@ -2,6 +2,7 @@ package com.schemafy.core.common.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -23,6 +24,7 @@ import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 
+@Profile("!test")
 @Configuration
 @EnableWebFluxSecurity
 @EnableMethodSecurity
@@ -30,7 +32,8 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final CorsProperties corsProperties;
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
+            "{version}",
             "v1.0");
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -41,9 +44,6 @@ public class SecurityConfig {
         API_BASE_PATH + "/users/refresh",
         "/actuator/health",
         "/actuator/info",
-        "/webjars/**",
-        "/v3/api-docs/**",
-        "/swagger-ui/**"
     };
 
     @Bean
@@ -103,4 +103,5 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
 }

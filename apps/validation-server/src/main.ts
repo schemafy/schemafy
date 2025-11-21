@@ -15,6 +15,7 @@ async function bootstrap() {
       url: process.env.GRPC_URL ?? '0.0.0.0:50051',
       loader: {
         enums: String,
+        arrays: true,
       },
     },
   });
