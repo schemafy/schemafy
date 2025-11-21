@@ -190,7 +190,7 @@ export const ColumnConstraints = ({
 }: ColumnConstraintsProps) => {
   return (
     <div className="flex flex-wrap gap-3 text-xs ml-4">
-      {CONSTRAINTS.map(({ key, label, color }) => {
+      {CONSTRAINTS.filter(({ visible }) => visible).map(({ key, label, color }) => {
         const isDisabled = column.isPrimaryKey && key === 'isNotNull';
 
         return (

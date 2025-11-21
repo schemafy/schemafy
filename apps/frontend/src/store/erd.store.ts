@@ -32,10 +32,28 @@ type DatabaseExtra = {
   selectedSchemaId?: string;
 };
 
-type DatabaseExtraOrUndefined = DatabaseExtra | undefined;
+const isDatabaseExtra = (value: unknown): value is DatabaseExtra => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+
+  if ('selectedSchemaId' in obj) {
+    return (
+      obj.selectedSchemaId === undefined ||
+      typeof obj.selectedSchemaId === 'string'
+    );
+  }
+
+  return true;
+};
 
 const getDatabaseExtra = (extra: unknown): DatabaseExtra => {
-  return (extra || {}) as DatabaseExtra;
+  if (isDatabaseExtra(extra)) {
+    return extra;
+  }
+  return {};
 };
 
 export class ErdStore {
@@ -84,8 +102,8 @@ export class ErdStore {
   get selectedSchemaId(): string | null {
     if (this.erdState.state !== 'loaded') return null;
 
-    const extra = this.erdState.database.extra as DatabaseExtraOrUndefined;
-    return extra?.selectedSchemaId || null;
+    const extra = getDatabaseExtra(this.erdState.database.extra);
+    return extra.selectedSchemaId || null;
   }
 
   get selectedSchema(): Schema | null {

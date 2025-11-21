@@ -91,9 +91,28 @@ export const DATA_TYPES = [
   'UUID',
 ];
 
-export type ConstraintKind = 'PRIMARY_KEY' | 'NOT_NULL' | 'UNIQUE';
-
 export const CONSTRAINTS = [
-  { key: 'isPrimaryKey', label: 'PK', color: 'text-schemafy-yellow' },
-  { key: 'isNotNull', label: 'NOT NULL', color: 'text-schemafy-destructive' },
+  {
+    kind: 'PRIMARY_KEY' as const,
+    key: 'isPrimaryKey' as const,
+    label: 'PK',
+    color: 'text-schemafy-yellow',
+    visible: true,
+  },
+  {
+    kind: 'NOT_NULL' as const,
+    key: 'isNotNull' as const,
+    label: 'NOT NULL',
+    color: 'text-schemafy-destructive',
+    visible: true,
+  },
+  {
+    kind: 'UNIQUE' as const,
+    key: 'isUnique' as const,
+    label: 'UNIQUE',
+    color: 'text-schemafy-blue',
+    visible: false,
+  },
 ] as const;
+
+export type ConstraintKind = (typeof CONSTRAINTS)[number]['kind'];
