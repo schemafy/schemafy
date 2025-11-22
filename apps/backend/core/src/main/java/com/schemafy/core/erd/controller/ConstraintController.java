@@ -60,6 +60,7 @@ public class ConstraintController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/constraints/{constraintId}/name")
     public Mono<BaseResponse<ConstraintResponse>> updateConstraintName(
             @PathVariable String constraintId,
