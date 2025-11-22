@@ -18,6 +18,11 @@ public enum ErrorCode {
             "API 버전이 누락되었습니다."),
     COMMON_API_VERSION_INVALID(HttpStatus.BAD_REQUEST, "C004",
             "유효하지 않은 API 버전 형식입니다. (예: v1.0, v2.1)"),
+    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C005", "잘못된 입력값입니다."),
+    NOT_FOUND(HttpStatus.NOT_FOUND, "C006", "리소스를 찾을 수 없습니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C007",
+            "내부 서버 오류가 발생했습니다."),
+    ALREADY_DELETED(HttpStatus.CONFLICT, "C008", "이미 삭제된 리소스입니다."),
 
     // Authentication & Authorization
     AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "A001",

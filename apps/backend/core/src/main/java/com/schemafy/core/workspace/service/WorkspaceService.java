@@ -46,8 +46,8 @@ public class WorkspaceService {
                     workspace.getId(), userId, WorkspaceRole.ADMIN);
 
             return workspaceRepository.save(workspace).flatMap(
-                            savedWorkspace -> workspaceMemberRepository.save(
-                                    ownerMember).thenReturn(savedWorkspace))
+                    savedWorkspace -> workspaceMemberRepository.save(
+                            ownerMember).thenReturn(savedWorkspace))
                     .map(WorkspaceResponse::from);
         });
     }
@@ -58,17 +58,17 @@ public class WorkspaceService {
         return workspaceMemberRepository.findByUserIdAndNotDeleted(userId)
                 .flatMap(member -> workspaceRepository.findByIdAndNotDeleted(
                         member.getWorkspaceId()).flatMap(
-                        workspace -> workspaceMemberRepository
-                                .countByWorkspaceIdAndNotDeleted(
-                                        workspace.getId())
-                                .map(count -> new WorkspaceSummaryResponse(
-                                        workspace.getId(),
-                                        workspace.getName(),
-                                        workspace.getDescription(),
-                                        workspace.getOwnerId(),
-                                        member.getRole(), count,
-                                        workspace.getCreatedAt(),
-                                        workspace.getUpdatedAt()))))
+                                workspace -> workspaceMemberRepository
+                                        .countByWorkspaceIdAndNotDeleted(
+                                                workspace.getId())
+                                        .map(count -> new WorkspaceSummaryResponse(
+                                                workspace.getId(),
+                                                workspace.getName(),
+                                                workspace.getDescription(),
+                                                workspace.getOwnerId(),
+                                                member.getRole(), count,
+                                                workspace.getCreatedAt(),
+                                                workspace.getUpdatedAt()))))
                 .collectList().flatMap(allWorkspaces -> {
                     int offset = page * size;
                     int totalElements = allWorkspaces.size();
@@ -86,7 +86,7 @@ public class WorkspaceService {
     public Mono<WorkspaceResponse> getWorkspace(String workspaceId,
             String userId) {
         return validateMemberAccess(workspaceId, userId).then(
-                        workspaceRepository.findByIdAndNotDeleted(workspaceId))
+                workspaceRepository.findByIdAndNotDeleted(workspaceId))
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
                 .map(WorkspaceResponse::from);
@@ -96,7 +96,7 @@ public class WorkspaceService {
     public Mono<WorkspaceResponse> updateWorkspace(String workspaceId,
             UpdateWorkspaceRequest request, String userId) {
         return validateOwnerAccess(workspaceId, userId).then(
-                        workspaceRepository.findByIdAndNotDeleted(workspaceId))
+                workspaceRepository.findByIdAndNotDeleted(workspaceId))
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
                 .flatMap(workspace -> {
@@ -112,7 +112,7 @@ public class WorkspaceService {
     @Transactional
     public Mono<Void> deleteWorkspace(String workspaceId, String userId) {
         return validateOwnerAccess(workspaceId, userId).then(
-                        workspaceRepository.findByIdAndNotDeleted(workspaceId))
+                workspaceRepository.findByIdAndNotDeleted(workspaceId))
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
                 .flatMap(workspace -> {
@@ -132,8 +132,8 @@ public class WorkspaceService {
     public Mono<PageResponse<WorkspaceMemberResponse>> getMembers(
             String workspaceId, String userId, int page, int size) {
         return validateAdminAccess(workspaceId, userId).then(
-                        workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
-                                workspaceId))
+                workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
+                        workspaceId))
                 .flatMap(totalElements -> {
                     int offset = page * size;
                     return workspaceMemberRepository
