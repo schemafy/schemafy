@@ -17,7 +17,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
-import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
@@ -32,19 +31,6 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final CorsProperties corsProperties;
-    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
-            "{version}",
-            "v1.0");
-
-    private static final String[] PUBLIC_ENDPOINTS = {
-        API_BASE_PATH + "/auth/**",
-        API_BASE_PATH + "/public/**",
-        API_BASE_PATH + "/users/signup",
-        API_BASE_PATH + "/users/login",
-        API_BASE_PATH + "/users/refresh",
-        "/actuator/health",
-        "/actuator/info",
-    };
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -81,7 +67,7 @@ public class SecurityConfig {
                 .addFilterAt(jwtAuthenticationFilter,
                         SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .pathMatchers("/public/api/**").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated())
                 .build();
