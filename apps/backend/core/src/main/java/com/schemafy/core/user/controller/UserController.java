@@ -4,6 +4,9 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
@@ -62,6 +65,17 @@ public class UserController {
             throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
         }
         return refreshTokenCookie.getValue();
+    }
+
+    @GetMapping("/users")
+    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo() {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .map(Authentication::getPrincipal)
+                .cast(String.class)
+                .flatMap(userService::getUserById)
+                .map(BaseResponse::success)
+                .map(ResponseEntity::ok);
     }
 
     @GetMapping("/users/{userId}")
