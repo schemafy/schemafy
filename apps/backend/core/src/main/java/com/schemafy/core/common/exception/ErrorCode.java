@@ -37,7 +37,24 @@ public enum ErrorCode {
     // USER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "회원을 찾을 수 없습니다."),
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "U002", "이미 존재하는 회원입니다."),
-    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "U003", "로그인에 실패했습니다.");
+    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "U003", "로그인에 실패했습니다."),
+
+    // WORKSPACE
+    WORKSPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "W001", "워크스페이스를 찾을 수 없습니다."),
+    WORKSPACE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "W002",
+            "워크스페이스 접근 권한이 없습니다."),
+    WORKSPACE_OWNER_ONLY(HttpStatus.FORBIDDEN, "W003",
+            "워크스페이스 소유자만 수행할 수 있는 작업입니다."),
+    WORKSPACE_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "W004",
+            "워크스페이스 이름은 필수입니다."),
+    WORKSPACE_SETTINGS_INVALID(HttpStatus.BAD_REQUEST, "W005",
+            "워크스페이스 설정 형식이 올바르지 않습니다."),
+    WORKSPACE_SETTINGS_TOO_LARGE(HttpStatus.BAD_REQUEST, "W006",
+            "워크스페이스 설정 크기가 너무 큽니다. (최대 64KB)"),
+    WORKSPACE_ALREADY_DELETED(HttpStatus.CONFLICT, "W007",
+            "이미 삭제된 워크스페이스입니다."),
+    WORKSPACE_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "W008",
+            "관리자 권한이 필요합니다.");
 
     private final HttpStatus status;
     private final String code;

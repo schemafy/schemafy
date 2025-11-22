@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
 
 import lombok.AllArgsConstructor;
@@ -30,18 +29,11 @@ public abstract class BaseEntity implements Persistable<String> {
 
     protected LocalDateTime deletedAt;
 
-    @Transient
-    protected boolean isNew = true;
-
     @Override
     public String getId() { return id; }
 
     @Override
-    public boolean isNew() { return isNew; }
-
-    public void markAsNotNew() {
-        this.isNew = false;
-    }
+    public boolean isNew() { return createdAt == null; }
 
     public void delete() {
         this.deletedAt = LocalDateTime.now();
