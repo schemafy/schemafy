@@ -61,7 +61,10 @@ public enum ErrorCode {
     ERD_RELATIONSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "E006", "관계를 찾을 수 없습니다."),
     ERD_RELATIONSHIP_COLUMN_NOT_FOUND(HttpStatus.NOT_FOUND, "E009",
             "관계 컬럼을 찾을 수 없습니다."),
-    ERD_VENDOR_NOT_FOUND(HttpStatus.NOT_FOUND, "E010", "DB 벤더를 찾을 수 없습니다.");
+    ERD_VENDOR_NOT_FOUND(HttpStatus.NOT_FOUND, "E010", "DB 벤더를 찾을 수 없습니다."),
+    ERD_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "E011", "메모를 찾을 수 없습니다."),
+    ERD_MEMO_COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E012",
+            "메모 댓글을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;
