@@ -17,6 +17,9 @@ import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.service.dto.LoginCommand;
+import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
+import com.schemafy.core.workspace.repository.WorkspaceRepository;
+import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -34,8 +37,16 @@ class UserServiceTest {
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    WorkspaceRepository workspaceRepository;
+
+    @Autowired
+    WorkspaceMemberRepository workspaceMemberRepository;
+
     @BeforeEach
     void setUp() {
+        workspaceMemberRepository.deleteAll().block();
+        workspaceRepository.deleteAll().block();
         userRepository.deleteAll().block();
     }
 
@@ -65,6 +76,47 @@ class UserServiceTest {
                     assertThat(user.getCreatedAt()).isNotNull();
                     assertThat(user.getUpdatedAt()).isNotNull();
                     assertThat(user.getDeletedAt()).isNull();
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("회원가입 시 개인 워크스페이스가 자동으로 생성된다")
+    void signUp_CreatesDefaultWorkspace() {
+        // given
+        SignUpRequest request = new SignUpRequest("test@example.com",
+                "Test User", "password");
+
+        // when
+        User user = userService.signUp(request.toCommand()).block();
+
+        // then - 워크스페이스 생성 검증
+        StepVerifier.create(
+                workspaceRepository.findByOwnerIdAndNotDeleted(user.getId()))
+                .as("default workspace should be created")
+                .assertNext(workspace -> {
+                    assertThat(workspace.getName())
+                            .isEqualTo("Test User's Workspace");
+                    assertThat(workspace.getDescription())
+                            .isEqualTo("Personal workspace for Test User");
+                    assertThat(workspace.getOwnerId()).isEqualTo(user.getId());
+                    assertThat(workspace.getId()).isNotNull();
+                    assertThat(workspace.getCreatedAt()).isNotNull();
+                })
+                .verifyComplete();
+
+        // then - 워크스페이스 멤버 생성 검증 (ADMIN 역할)
+        StepVerifier
+                .create(workspaceMemberRepository
+                        .findByUserIdAndNotDeleted(user.getId()))
+                .as("user should be added as ADMIN to workspace")
+                .assertNext(member -> {
+                    assertThat(member.getUserId()).isEqualTo(user.getId());
+                    assertThat(member.getRole())
+                            .isEqualTo(WorkspaceRole.ADMIN.getValue());
+                    assertThat(member.isAdmin()).isTrue();
+                    assertThat(member.getJoinedAt()).isNotNull();
+                    assertThat(member.getDeletedAt()).isNull();
                 })
                 .verifyComplete();
     }

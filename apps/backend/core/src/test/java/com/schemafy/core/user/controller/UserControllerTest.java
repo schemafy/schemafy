@@ -27,6 +27,9 @@ import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
+import com.schemafy.core.workspace.repository.WorkspaceRepository;
+import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
 
 import reactor.test.StepVerifier;
 
@@ -50,10 +53,18 @@ class UserControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private WorkspaceRepository workspaceRepository;
+
+    @Autowired
+    private WorkspaceMemberRepository workspaceMemberRepository;
+
+    @Autowired
     private JwtProvider jwtProvider;
 
     @BeforeEach
     void setUp() {
+        workspaceMemberRepository.deleteAll().block();
+        workspaceRepository.deleteAll().block();
         userRepository.deleteAll().block();
     }
 
@@ -69,11 +80,9 @@ class UserControllerTest {
     @Test
     @DisplayName("회원가입에 성공한다")
     void signUpSuccess() {
-        // given
         SignUpRequest request = new SignUpRequest("test@example.com",
                 "Test User", "password");
 
-        // when & then
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
@@ -90,7 +99,7 @@ class UserControllerTest {
                 .jsonPath("$.result.id").isNotEmpty()
                 .jsonPath("$.result.email").isEqualTo("test@example.com");
 
-        // then - db 검증
+        // db 검증
         StepVerifier.create(userRepository.findByEmail("test@example.com"))
                 .as("user should be persisted with auditing columns")
                 .assertNext(user -> {
@@ -100,6 +109,50 @@ class UserControllerTest {
                     assertThat(user.getCreatedAt()).isNotNull();
                     assertThat(user.getUpdatedAt()).isNotNull();
                     assertThat(user.getDeletedAt()).isNull();
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("회원가입 시 개인 워크스페이스가 자동으로 생성된다")
+    void signUpCreatesDefaultWorkspace() {
+        SignUpRequest request = new SignUpRequest("test@example.com",
+                "Test User", "password");
+
+        EntityExchangeResult<byte[]> result = webTestClient.post()
+                .uri(API_BASE_PATH + "/users/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class).returnResult();
+
+        String responseBody = new String(result.getResponseBody());
+        String userId = JsonPath.read(responseBody, "$.result.id");
+
+        // 워크스페이스 생성 검증
+        StepVerifier
+                .create(workspaceRepository.findByOwnerIdAndNotDeleted(userId))
+                .as("default workspace should be created")
+                .assertNext(workspace -> {
+                    assertThat(workspace.getName())
+                            .isEqualTo("Test User's Workspace");
+                    assertThat(workspace.getDescription())
+                            .isEqualTo("Personal workspace for Test User");
+                    assertThat(workspace.getOwnerId()).isEqualTo(userId);
+                })
+                .verifyComplete();
+
+        // 워크스페이스 멤버 검증
+        StepVerifier
+                .create(workspaceMemberRepository
+                        .findByUserIdAndNotDeleted(userId))
+                .as("user should be added as ADMIN to workspace")
+                .assertNext(member -> {
+                    assertThat(member.getUserId()).isEqualTo(userId);
+                    assertThat(member.getRole())
+                            .isEqualTo(WorkspaceRole.ADMIN.getValue());
+                    assertThat(member.isAdmin()).isTrue();
                 })
                 .verifyComplete();
     }

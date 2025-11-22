@@ -3,6 +3,7 @@ package com.schemafy.core.user.service;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -12,6 +13,12 @@ import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.service.dto.LoginCommand;
 import com.schemafy.core.user.service.dto.SignUpCommand;
+import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
+import com.schemafy.core.workspace.repository.WorkspaceRepository;
+import com.schemafy.core.workspace.repository.entity.Workspace;
+import com.schemafy.core.workspace.repository.entity.WorkspaceMember;
+import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
+import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +31,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final WorkspaceRepository workspaceRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
+    @Transactional
     public Mono<User> signUp(SignUpCommand request) {
         return checkEmailUniqueness(request.email())
-                .then(createNewUser(request));
+                .then(createNewUser(request))
+                .flatMap(this::createDefaultWorkspace);
     }
 
     private Mono<Void> checkEmailUniqueness(String email) {
@@ -44,6 +55,35 @@ public class UserService {
                 .onErrorMap(DuplicateKeyException.class,
                         e -> new BusinessException(
                                 ErrorCode.USER_ALREADY_EXISTS));
+    }
+
+    private Mono<User> createDefaultWorkspace(User user) {
+        String workspaceName = user.getName() + "'s Workspace";
+        String workspaceDescription = "Personal workspace for "
+                + user.getName();
+        WorkspaceSettings defaultSettings = WorkspaceSettings.defaultSettings();
+
+        Workspace workspace = Workspace.create(
+                user.getId(),
+                workspaceName,
+                workspaceDescription,
+                defaultSettings);
+
+        WorkspaceMember adminMember = WorkspaceMember.create(
+                workspace.getId(),
+                user.getId(),
+                WorkspaceRole.ADMIN);
+
+        return workspaceRepository.save(workspace)
+                .flatMap(savedWorkspace -> workspaceMemberRepository
+                        .save(adminMember)
+                        .thenReturn(user))
+                .doOnSuccess(
+                        u -> log.info("Created default workspace for user: {}",
+                                user.getId()))
+                .doOnError(e -> log.error(
+                        "Failed to create default workspace for user: {}",
+                        user.getId(), e));
     }
 
     public Mono<UserInfoResponse> getUserById(String userId) {
