@@ -67,6 +67,7 @@ public class TableController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/tables/{tableId}/name")
     public Mono<BaseResponse<TableResponse>> updateTableName(
             @PathVariable String tableId,

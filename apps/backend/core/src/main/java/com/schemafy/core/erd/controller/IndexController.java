@@ -61,6 +61,7 @@ public class IndexController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/indexes/{indexId}/name")
     public Mono<BaseResponse<IndexResponse>> updateIndexName(
             @PathVariable String indexId,

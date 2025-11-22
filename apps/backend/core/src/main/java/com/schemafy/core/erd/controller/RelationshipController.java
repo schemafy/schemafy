@@ -52,6 +52,7 @@ public class RelationshipController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/relationships/table/{tableId}")
     public Mono<BaseResponse<List<RelationshipResponse>>> getRelationshipsByTableId(
             @PathVariable String tableId) {
@@ -60,6 +61,7 @@ public class RelationshipController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/relationships/{relationshipId}/name")
     public Mono<BaseResponse<RelationshipResponse>> updateRelationshipName(
             @PathVariable String relationshipId,
