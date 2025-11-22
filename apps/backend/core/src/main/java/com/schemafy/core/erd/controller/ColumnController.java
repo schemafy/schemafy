@@ -59,8 +59,8 @@ public class ColumnController {
                 .collectList()
                 .map(BaseResponse::success);
     }
-
-    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN','ROLE_EDITOR')")
+ 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/columns/{columnId}/name")
     public Mono<BaseResponse<ColumnResponse>> updateColumnName(
             @PathVariable String columnId,
