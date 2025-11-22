@@ -2,6 +2,7 @@ package com.schemafy.core.erd.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +35,7 @@ public class ConstraintController {
 
     private final ConstraintService constraintService;
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/constraints")
     public Mono<BaseResponse<AffectedMappingResponse>> createConstraint(
             @RequestBody CreateConstraintRequest request) {
@@ -41,6 +43,7 @@ public class ConstraintController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/constraints/{constraintId}")
     public Mono<BaseResponse<ConstraintResponse>> getConstraint(
             @PathVariable String constraintId) {
@@ -48,6 +51,7 @@ public class ConstraintController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/constraints/table/{tableId}")
     public Mono<BaseResponse<List<ConstraintResponse>>> getConstraintsByTableId(
             @PathVariable String tableId) {
@@ -68,6 +72,7 @@ public class ConstraintController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/constraints/{constraintId}/columns")
     public Mono<BaseResponse<AffectedMappingResponse>> addColumnToConstraint(
             @PathVariable String constraintId,
@@ -80,6 +85,7 @@ public class ConstraintController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @DeleteMapping("/constraints/{constraintId}/columns/{columnId}")
     public Mono<BaseResponse<Void>> removeColumnFromConstraint(
             @PathVariable String constraintId,
@@ -94,6 +100,7 @@ public class ConstraintController {
                 .then(Mono.just(BaseResponse.success(null)));
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @DeleteMapping("/constraints/{constraintId}")
     public Mono<BaseResponse<Void>> deleteConstraint(
             @PathVariable String constraintId,

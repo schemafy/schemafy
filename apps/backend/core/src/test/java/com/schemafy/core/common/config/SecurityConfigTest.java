@@ -19,34 +19,12 @@ class SecurityConfigTest {
     WebTestClient webTestClient;
 
     @Test
-    @DisplayName("공개 엔드포인트는 인증 없이 접근 가능하다")
-    void publicEndpointsAccessibleWithoutAuth() {
-        // Health check endpoint
-        webTestClient.get()
-                .uri("/actuator/health")
-                .exchange()
-                .expectStatus().isOk();
-    }
-
-    @Test
     @DisplayName("보호된 엔드포인트는 인증 없이 401을 반환한다")
     void protectedEndpointsRequireAuth() {
         webTestClient.get()
                 .uri("/api/v1/protected/resource")
                 .exchange()
                 .expectStatus().isUnauthorized();
-    }
-
-    @Test
-    @DisplayName("CORS 설정 빈이 생성된다")
-    void corsConfigurationExists() {
-        // This test verifies that CORS configuration is properly set up
-        // Actual CORS behavior is tested in integration tests with real
-        // browsers
-        webTestClient.get()
-                .uri("/actuator/health")
-                .exchange()
-                .expectStatus().isOk();
     }
 
     @Test

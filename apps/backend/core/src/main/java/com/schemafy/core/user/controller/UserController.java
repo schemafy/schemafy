@@ -4,15 +4,14 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
@@ -68,12 +67,9 @@ public class UserController {
     }
 
     @GetMapping("/users")
-    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo() {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(SecurityContext::getAuthentication)
-                .map(Authentication::getPrincipal)
-                .cast(String.class)
-                .flatMap(userService::getUserById)
+    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo(
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        return userService.getUserById(user.userId())
                 .map(BaseResponse::success)
                 .map(ResponseEntity::ok);
     }

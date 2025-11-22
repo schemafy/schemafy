@@ -2,6 +2,7 @@ package com.schemafy.core.erd.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +35,7 @@ public class ColumnController {
 
     private final ColumnService columnService;
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/columns")
     public Mono<BaseResponse<AffectedMappingResponse>> createColumn(
             @RequestBody CreateColumnRequest request) {
@@ -41,6 +43,7 @@ public class ColumnController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/columns/{columnId}")
     public Mono<BaseResponse<ColumnResponse>> getColumn(
             @PathVariable String columnId) {
@@ -48,6 +51,7 @@ public class ColumnController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/columns/table/{tableId}")
     public Mono<BaseResponse<List<ColumnResponse>>> getColumnsByTableId(
             @PathVariable String tableId) {
@@ -56,6 +60,7 @@ public class ColumnController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/columns/{columnId}/name")
     public Mono<BaseResponse<ColumnResponse>> updateColumnName(
             @PathVariable String columnId,
@@ -68,6 +73,7 @@ public class ColumnController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/columns/{columnId}/type")
     public Mono<BaseResponse<ColumnResponse>> updateColumnType(
             @PathVariable String columnId,
@@ -80,6 +86,7 @@ public class ColumnController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/columns/{columnId}/position")
     public Mono<BaseResponse<ColumnResponse>> updateColumnPosition(
             @PathVariable String columnId,
@@ -92,6 +99,7 @@ public class ColumnController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @DeleteMapping("/columns/{columnId}")
     public Mono<BaseResponse<Void>> deleteColumn(
             @PathVariable String columnId,

@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -17,7 +17,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
-import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
@@ -27,24 +26,11 @@ import lombok.RequiredArgsConstructor;
 @Profile("!test")
 @Configuration
 @EnableWebFluxSecurity
-@EnableMethodSecurity
+@EnableReactiveMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final CorsProperties corsProperties;
-    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
-            "{version}",
-            "v1.0");
-
-    private static final String[] PUBLIC_ENDPOINTS = {
-        API_BASE_PATH + "/auth/**",
-        API_BASE_PATH + "/public/**",
-        API_BASE_PATH + "/users/signup",
-        API_BASE_PATH + "/users/login",
-        API_BASE_PATH + "/users/refresh",
-        "/actuator/health",
-        "/actuator/info",
-    };
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -81,7 +67,7 @@ public class SecurityConfig {
                 .addFilterAt(jwtAuthenticationFilter,
                         SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .pathMatchers("/public/api/**").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated())
                 .build();

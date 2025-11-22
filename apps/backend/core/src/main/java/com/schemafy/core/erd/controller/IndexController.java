@@ -2,6 +2,7 @@ package com.schemafy.core.erd.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,6 +36,7 @@ public class IndexController {
 
     private final IndexService indexService;
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/indexes")
     public Mono<BaseResponse<AffectedMappingResponse>> createIndex(
             @RequestBody CreateIndexRequest request) {
@@ -42,6 +44,7 @@ public class IndexController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/indexes/{indexId}")
     public Mono<BaseResponse<IndexResponse>> getIndex(
             @PathVariable String indexId) {
@@ -49,6 +52,7 @@ public class IndexController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/indexes/table/{tableId}")
     public Mono<BaseResponse<List<IndexResponse>>> getIndexesByTableId(
             @PathVariable String tableId) {
@@ -69,6 +73,7 @@ public class IndexController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/indexes/{indexId}/columns")
     public Mono<BaseResponse<IndexColumnResponse>> addColumnToIndex(
             @PathVariable String indexId,
@@ -81,6 +86,7 @@ public class IndexController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @DeleteMapping("/indexes/{indexId}/columns/{columnId}")
     public Mono<BaseResponse<Void>> removeColumnFromIndex(
             @PathVariable String indexId,
@@ -95,6 +101,7 @@ public class IndexController {
                 .then(Mono.just(BaseResponse.success(null)));
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @DeleteMapping("/indexes/{indexId}")
     public Mono<BaseResponse<Void>> deleteIndex(
             @PathVariable String indexId,
