@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
@@ -41,9 +42,9 @@ public class MemoController {
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
     @PostMapping("/memos")
     public Mono<BaseResponse<MemoDetailResponse>> createMemo(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal AuthenticatedUser user,
             @Valid @RequestBody CreateMemoRequest request) {
-        return memoService.createMemo(request, userId)
+        return memoService.createMemo(request, user.userId())
                 .map(BaseResponse::success);
     }
 
@@ -67,7 +68,7 @@ public class MemoController {
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
     @PutMapping("/memos/{memoId}")
     public Mono<BaseResponse<MemoResponse>> updateMemo(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId,
             @Valid @RequestBody UpdateMemoRequest request) {
         if (!memoId.equals(request.memoId())) {
@@ -75,26 +76,26 @@ public class MemoController {
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
 
-        return memoService.updateMemo(request, userId)
+        return memoService.updateMemo(request, user.userId())
                 .map(BaseResponse::success);
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
     @DeleteMapping("/memos/{memoId}")
     public Mono<BaseResponse<Void>> deleteMemo(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId) {
-        return memoService.deleteMemo(memoId, userId)
+        return memoService.deleteMemo(memoId, user.userId())
                 .then(Mono.just(BaseResponse.success(null)));
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
     @PostMapping("/memos/{memoId}/comments")
     public Mono<BaseResponse<MemoCommentResponse>> createMemoComment(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId,
             @Valid @RequestBody CreateMemoCommentRequest request) {
-        return memoService.createComment(memoId, request, userId)
+        return memoService.createComment(memoId, request, user.userId())
                 .map(BaseResponse::success);
     }
 
@@ -110,7 +111,7 @@ public class MemoController {
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
     @PutMapping("/memos/{memoId}/comments/{commentId}")
     public Mono<BaseResponse<MemoCommentResponse>> updateMemoComment(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId,
             @PathVariable String commentId,
             @Valid @RequestBody UpdateMemoCommentRequest request) {
@@ -124,17 +125,17 @@ public class MemoController {
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
 
-        return memoService.updateComment(request, userId)
+        return memoService.updateComment(request, user.userId())
                 .map(BaseResponse::success);
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
     @DeleteMapping("/memos/{memoId}/comments/{commentId}")
     public Mono<BaseResponse<Void>> deleteMemoComment(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId,
             @PathVariable String commentId) {
-        return memoService.deleteComment(commentId, userId)
+        return memoService.deleteComment(commentId, user.userId())
                 .then(Mono.just(BaseResponse.success(null)));
     }
 
