@@ -38,8 +38,10 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 @DisplayName("UserController 통합 테스트")
 class UserControllerTest {
 
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}", "v1.0");
-    private static final String PUBLIC_API_BASE_PATH = ApiPath.PUBLIC_API.replace("{version}", "v1.0");
+    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+            "v1.0");
+    private static final String PUBLIC_API_BASE_PATH = ApiPath.PUBLIC_API
+            .replace("{version}", "v1.0");
 
     @Autowired
     private WebTestClient webTestClient;
