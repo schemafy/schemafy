@@ -1,16 +1,7 @@
 package com.schemafy.core.user.controller;
 
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.ulid.generator.UlidGenerator;
-import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import java.util.HashMap;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -20,7 +11,18 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import java.util.HashMap;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.repository.entity.User;
 
 import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -32,8 +34,8 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 @AutoConfigureRestDocs
 @DisplayName("UserController 통합 테스트")
 class UserControllerTest {
-    private static final String API_BASE_PATH = ApiPath.AUTH_API.replace("{version}",
-            "v1.0");
+    private static final String API_BASE_PATH = ApiPath.AUTH_API
+            .replace("{version}", "v1.0");
 
     @Autowired
     private WebTestClient webTestClient;
@@ -67,10 +69,11 @@ class UserControllerTest {
     void getUserSuccess() {
         SignUpRequest request = new SignUpRequest("test@example.com",
                 "Test User", "password");
-        User user = User.signUp(request.toCommand().toUserInfo(), passwordEncoder)
-                        .flatMap(userRepository::save)
-                        .blockOptional()
-                        .orElseThrow();
+        User user = User
+                .signUp(request.toCommand().toUserInfo(), passwordEncoder)
+                .flatMap(userRepository::save)
+                .blockOptional()
+                .orElseThrow();
 
         String userId = user.getId();
         Assertions.assertNotNull(userId);
@@ -117,14 +120,16 @@ class UserControllerTest {
         // 두 명의 사용자 생성
         SignUpRequest userARequest = new SignUpRequest("userA@example.com",
                 "User A", "password");
-        User userA = User.signUp(userARequest.toCommand().toUserInfo(), passwordEncoder)
+        User userA = User
+                .signUp(userARequest.toCommand().toUserInfo(), passwordEncoder)
                 .flatMap(userRepository::save)
                 .blockOptional()
                 .orElseThrow();
 
         SignUpRequest userBRequest = new SignUpRequest("userB@example.com",
                 "User B", "password");
-        User userB = User.signUp(userBRequest.toCommand().toUserInfo(), passwordEncoder)
+        User userB = User
+                .signUp(userBRequest.toCommand().toUserInfo(), passwordEncoder)
                 .flatMap(userRepository::save)
                 .blockOptional()
                 .orElseThrow();
@@ -134,7 +139,6 @@ class UserControllerTest {
         String userAAccessToken = generateAccessToken(userAId);
 
         // userA로 인증했지만 userB의 정보를 조회 시도
-        // 403 Forbidden
         webTestClient
                 .mutateWith(mockUser(userAId))
                 .get()
@@ -149,7 +153,8 @@ class UserControllerTest {
     void getUserFailWhenNotAuthenticated() {
         SignUpRequest request = new SignUpRequest("test@example.com",
                 "Test User", "password");
-        User user = User.signUp(request.toCommand().toUserInfo(), passwordEncoder)
+        User user = User
+                .signUp(request.toCommand().toUserInfo(), passwordEncoder)
                 .flatMap(userRepository::save)
                 .blockOptional()
                 .orElseThrow();
@@ -157,7 +162,6 @@ class UserControllerTest {
         String userId = user.getId();
 
         // 인증 없이 조회 시도
-        // 401 Unauthorized
         webTestClient
                 .get()
                 .uri(API_BASE_PATH + "/users/{userId}", userId)

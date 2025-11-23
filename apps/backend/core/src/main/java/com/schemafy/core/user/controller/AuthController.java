@@ -1,5 +1,11 @@
 package com.schemafy.core.user.controller;
 
+import jakarta.validation.Valid;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.web.bind.annotation.*;
+
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -9,12 +15,9 @@ import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.service.UserService;
-import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -26,8 +29,7 @@ public class AuthController {
     private final JwtTokenIssuer jwtTokenIssuer;
 
     /**
-     * 회원가입 API
-     * 새로운 사용자를 등록하고 JWT 토큰을 발급합니다.
+     * 회원가입 API 새로운 사용자를 등록하고 JWT 토큰을 발급합니다.
      *
      * @param request 회원가입 요청 정보 (이메일, 이름, 비밀번호)
      * @return 생성된 사용자 정보 및 JWT 토큰

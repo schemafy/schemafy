@@ -1,10 +1,5 @@
 package com.schemafy.core.common.security;
 
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
-import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
-import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,6 +15,13 @@ import org.springframework.security.web.server.savedrequest.NoOpServerRequestCac
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
+import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
+import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebFluxSecurity

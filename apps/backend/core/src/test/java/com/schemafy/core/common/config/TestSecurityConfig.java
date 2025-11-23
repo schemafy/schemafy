@@ -1,8 +1,5 @@
 package com.schemafy.core.common.config;
 
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
-import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -13,13 +10,18 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
+import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
+
 @TestConfiguration
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
-@Import({JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class})
+@Import({ JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class })
 public class TestSecurityConfig {
 
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}", "v1.0");
+    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+            "v1.0");
 
     private static final String[] PUBLIC_ENDPOINTS = {
         API_BASE_PATH + "/auth/**",
@@ -37,7 +39,8 @@ public class TestSecurityConfig {
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final JwtAccessDeniedHandler accessDeniedHandler;
 
-    public TestSecurityConfig(JwtAuthenticationEntryPoint authenticationEntryPoint,
+    public TestSecurityConfig(
+            JwtAuthenticationEntryPoint authenticationEntryPoint,
             JwtAccessDeniedHandler accessDeniedHandler) {
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;

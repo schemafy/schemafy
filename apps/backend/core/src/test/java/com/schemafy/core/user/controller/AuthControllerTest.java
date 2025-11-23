@@ -1,18 +1,8 @@
 package com.schemafy.core.user.controller;
 
-import com.jayway.jsonpath.JsonPath;
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.user.controller.dto.request.LoginRequest;
-import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.core.user.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import java.util.HashMap;
+import java.util.stream.Stream;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -22,10 +12,23 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.test.StepVerifier;
 
-import java.util.HashMap;
-import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import com.jayway.jsonpath.JsonPath;
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.user.controller.dto.request.LoginRequest;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.repository.UserRepository;
+
+import reactor.test.StepVerifier;
 
 import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,8 +124,7 @@ class AuthControllerTest {
                 Arguments.of(new SignUpRequest("", "Test User", "password")), // empty
                                                                               // email
                 Arguments.of(new SignUpRequest("invalid-email", "Test User",
-                        "password")), // invalid
-                                      // email
+                        "password")), // invalid email
                 Arguments.of(
                         new SignUpRequest("test@example.com", "", "password")), // empty
                                                                                 // name

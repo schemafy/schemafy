@@ -42,20 +42,18 @@ class UserServiceTest {
     @Test
     @DisplayName("회원가입에 성공한다")
     void signupSuccess() {
-        // given
         SignUpRequest request = new SignUpRequest("test@example.com",
                 "Test User", "password");
 
-        // when
         Mono<User> result = userService.signUp(request.toCommand());
 
-        // then - 응답 검증
+        // 응답 검증
         StepVerifier.create(result)
                 .expectNextMatches(
                         user -> user.getEmail().equals("test@example.com"))
                 .verifyComplete();
 
-        // then - db 검증
+        // db 검증
         StepVerifier.create(userRepository.findByEmail("test@example.com"))
                 .as("user should be persisted with auditing columns")
                 .assertNext(user -> {
@@ -72,7 +70,6 @@ class UserServiceTest {
     @Test
     @DisplayName("회원가입시 이미 존재하는 이메일이면 실패한다")
     void signUpAlreadyExists() {
-        // given
         TestFixture.createTestUser("test@example.com", "Test User", "password")
                 .flatMap(userRepository::save)
                 .block();
@@ -80,10 +77,8 @@ class UserServiceTest {
         SignUpRequest request = new SignUpRequest("test@example.com",
                 "Test User", "password");
 
-        // when
         Mono<User> result = userService.signUp(request.toCommand());
 
-        // then
         StepVerifier.create(result)
                 .expectErrorMatches(
                         throwable -> throwable instanceof BusinessException &&
@@ -95,16 +90,13 @@ class UserServiceTest {
     @Test
     @DisplayName("ID로 회원 조회에 성공한다")
     void getUserByIdSuccess() {
-        // given
         User user = TestFixture
                 .createTestUser("test@example.com", "Test User", "password")
                 .flatMap(userRepository::save)
                 .block();
 
-        // when
         Mono<UserInfoResponse> result = userService.getUserById(user.getId());
 
-        // then
         StepVerifier.create(result)
                 .assertNext(res -> {
                     assertThat(res.id()).isEqualTo(user.getId());
@@ -117,13 +109,10 @@ class UserServiceTest {
     @Test
     @DisplayName("존재하지 않는 회원은 조회에 실패한다")
     void getUserByIdNotFound() {
-        // given
         String id = UlidGenerator.generate();
 
-        // when
         Mono<UserInfoResponse> result = userService.getUserById(id);
 
-        // then
         StepVerifier.create(result)
                 .expectErrorMatches(
                         throwable -> throwable instanceof BusinessException &&
@@ -135,7 +124,6 @@ class UserServiceTest {
     @Test
     @DisplayName("로그인에 성공한다")
     void loginSuccess() {
-        // given
         String rawPassword = "password";
         TestFixture.createTestUser("test@example.com", "Test User", rawPassword)
                 .flatMap(userRepository::save)
@@ -144,10 +132,8 @@ class UserServiceTest {
         LoginCommand command = new LoginCommand("test@example.com",
                 rawPassword);
 
-        // when
         Mono<User> result = userService.login(command);
 
-        // then
         StepVerifier.create(result)
                 .expectNextMatches(
                         user -> user.getEmail().equals("test@example.com"))
@@ -157,14 +143,11 @@ class UserServiceTest {
     @Test
     @DisplayName("로그인 시 존재하지 않는 이메일이면 실패한다")
     void login_fail_email_not_found() {
-        // given
         LoginCommand command = new LoginCommand("nonexistent@example.com",
                 "password");
 
-        // when
         Mono<User> result = userService.login(command);
 
-        // then
         StepVerifier.create(result)
                 .expectErrorMatches(
                         throwable -> throwable instanceof BusinessException &&
@@ -176,7 +159,6 @@ class UserServiceTest {
     @Test
     @DisplayName("로그인 시 비밀번호가 틀리면 실패한다")
     void login_fail_password_mismatch() {
-        // given
         TestFixture.createTestUser("test@example.com", "Test User", "password")
                 .flatMap(userRepository::save)
                 .block();
@@ -184,10 +166,8 @@ class UserServiceTest {
         LoginCommand command = new LoginCommand("test@example.com",
                 "wrong_password");
 
-        // when
         Mono<User> result = userService.login(command);
 
-        // then
         StepVerifier.create(result)
                 .expectErrorMatches(
                         throwable -> throwable instanceof BusinessException &&
