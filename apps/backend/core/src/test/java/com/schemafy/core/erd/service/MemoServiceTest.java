@@ -63,7 +63,7 @@ class MemoServiceTest {
     @DisplayName("createMemo: 스키마가 존재하면 메모와 초기 댓글을 생성한다")
     void createMemo_success() {
         Schema schema = schemaRepository.save(Schema.builder()
-                .projectId("project-1")
+                .projectId("06D4K6TTEWXW8VQR8EZXDPWP3C")
                 .dbVendorId("MYSQL")
                 .name("test-schema")
                 .build()).block();
@@ -72,7 +72,7 @@ class MemoServiceTest {
                 schema.getId(),
                 "{\"x\":100,\"y\":100}",
                 "초기 메모 내용");
-        String authorId = "user-1";
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
         Mono<MemoDetailResponse> result = memoService.createMemo(request, authorId);
 
@@ -92,11 +92,11 @@ class MemoServiceTest {
     @DisplayName("createMemo: 스키마가 없으면 에러를 반환한다")
     void createMemo_schemaNotFound() {
         CreateMemoRequest request = new CreateMemoRequest(
-                "non-existent-schema",
+                "06D6VZBWHSDJBBG0H7D156YZ99",
                 "{\"x\":100,\"y\":100}",
                 "내용");
 
-        StepVerifier.create(memoService.createMemo(request, "user-1"))
+        StepVerifier.create(memoService.createMemo(request, "01ARZ3NDEKTSV4RRFFQ69G5FAV"))
                 .expectErrorMatches(e -> e instanceof BusinessException
                         && ((BusinessException) e).getErrorCode() == ErrorCode.ERD_SCHEMA_NOT_FOUND)
                 .verify();
@@ -106,20 +106,20 @@ class MemoServiceTest {
     @DisplayName("getMemo: 메모 상세 정보를 조회한다")
     void getMemo_success() {
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
-                .authorId("user-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
+                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                 .positions("{}")
                 .build()).block();
 
         memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
-                .authorId("user-1")
+                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                 .body("댓글 1")
                 .build()).block();
 
         memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
-                .authorId("user-2")
+                .authorId("06D6W8HDY79QFZX39RMX62KSX4")
                 .body("댓글 2")
                 .build()).block();
 
@@ -134,20 +134,20 @@ class MemoServiceTest {
     @Test
     @DisplayName("getMemosBySchemaId: 스키마별 메모 목록을 조회한다")
     void getMemosBySchemaId_success() {
-        String schemaId = "schema-1";
+        String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
         memoRepository.save(Memo.builder()
                 .schemaId(schemaId)
-                .authorId("user-1")
+                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                 .positions("{}")
                 .build()).block();
         memoRepository.save(Memo.builder()
                 .schemaId(schemaId)
-                .authorId("user-2")
+                .authorId("06D6W8HDY79QFZX39RMX62KSX4")
                 .positions("{}")
                 .build()).block();
         memoRepository.save(Memo.builder()
-                .schemaId("other-schema")
-                .authorId("user-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ99")
+                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                 .positions("{}")
                 .build()).block();
 
@@ -161,9 +161,9 @@ class MemoServiceTest {
     @Test
     @DisplayName("updateMemo: 작성자 본인이면 메모 위치를 수정한다")
     void updateMemo_success() {
-        String authorId = "user-1";
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
                 .authorId(authorId)
                 .positions("{\"x\":0,\"y\":0}")
                 .build()).block();
@@ -187,14 +187,14 @@ class MemoServiceTest {
     @DisplayName("updateMemo: 작성자가 아니면 권한 에러를 반환한다")
     void updateMemo_accessDenied() {
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
-                .authorId("user-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
+                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                 .positions("{\"x\":0,\"y\":0}")
                 .build()).block();
 
         UpdateMemoRequest request = new UpdateMemoRequest(memo.getId(), "{\"x\":100,\"y\":100}");
 
-        StepVerifier.create(memoService.updateMemo(request, "user-2"))
+        StepVerifier.create(memoService.updateMemo(request, "06D6W8HDY79QFZX39RMX62KSX4"))
                 .expectErrorMatches(e -> e instanceof BusinessException
                         && ((BusinessException) e).getErrorCode() == ErrorCode.ACCESS_DENIED)
                 .verify();
@@ -203,16 +203,16 @@ class MemoServiceTest {
     @Test
     @DisplayName("deleteMemo: 작성자 본인이면 메모와 관련 댓글을 모두 삭제한다 (Soft Delete)")
     void deleteMemo_success() {
-        String authorId = "user-1";
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
                 .authorId(authorId)
                 .positions("{}")
                 .build()).block();
 
         MemoComment comment = memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
-                .authorId("user-2") // 댓글 작성자는 달라도 메모 작성자가 메모 삭제 시 같이 삭제됨
+                .authorId("06D6W8HDY79QFZX39RMX62KSX4") // 댓글 작성자는 달라도 메모 작성자가 메모 삭제 시 같이 삭제됨
                 .body("댓글")
                 .build()).block();
 
@@ -233,14 +233,14 @@ class MemoServiceTest {
     @Test
     @DisplayName("deleteMemo: 관리자(ADMIN)는 다른 사람의 메모를 삭제할 수 있다")
     void deleteMemo_admin_success() {
-        String authorId = "user-1";
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
                 .authorId(authorId)
                 .positions("{}")
                 .build()).block();
 
-        String adminId = "admin-user";
+        String adminId = "06D6WCH677C3FCC2Q9SD5M1Y5X"; // Admin User ID
         AuthenticatedUser adminUser = AuthenticatedUser.withRoles(adminId, Set.of(ProjectRole.ADMIN));
 
         StepVerifier.create(memoService.deleteMemo(memo.getId(), adminUser))
@@ -255,13 +255,13 @@ class MemoServiceTest {
     @DisplayName("createComment: 메모 댓글을 생성한다")
     void createComment_success() {
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
-                .authorId("user-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
+                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                 .positions("{}")
                 .build()).block();
 
         CreateMemoCommentRequest request = new CreateMemoCommentRequest("새 댓글");
-        String authorId = "user-2";
+        String authorId = "06D6W8HDY79QFZX39RMX62KSX4";
 
         StepVerifier.create(memoService.createComment(memo.getId(), request, authorId))
                 .assertNext(response -> {
@@ -275,15 +275,15 @@ class MemoServiceTest {
     @Test
     @DisplayName("updateComment: 작성자 본인이면 댓글을 수정한다")
     void updateComment_success() {
-        String authorId = "user-1";
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         MemoComment comment = memoCommentRepository.save(MemoComment.builder()
-                .memoId("memo-1")
+                .memoId("06D6W1GAHD51T5NJPK29Q6BCR8")
                 .authorId(authorId)
                 .body("이전 내용")
                 .build()).block();
 
         UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
-                "memo-1", comment.getId(), "수정 내용");
+                "06D6W1GAHD51T5NJPK29Q6BCR8", comment.getId(), "수정 내용");
 
         StepVerifier.create(memoService.updateComment(request, authorId))
                 .assertNext(response -> {
@@ -295,10 +295,10 @@ class MemoServiceTest {
     @Test
     @DisplayName("deleteComment: 댓글 삭제 시 마지막 댓글이면 메모도 함께 삭제된다")
     void deleteComment_lastCommentCascading() {
-        String authorId = "user-1";
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
-                .authorId("user-1") // 메모 작성자
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
+                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV") // 메모 작성자
                 .positions("{}")
                 .build()).block();
 
@@ -327,9 +327,9 @@ class MemoServiceTest {
     @Test
     @DisplayName("deleteComment: 관리자(OWNER)는 다른 사람의 댓글을 삭제할 수 있다")
     void deleteComment_admin_success() {
-        String authorId = "user-1";
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
                 .authorId(authorId)
                 .positions("{}")
                 .build()).block();
@@ -340,7 +340,7 @@ class MemoServiceTest {
                 .body("댓글")
                 .build()).block();
 
-        String ownerId = "owner-user";
+        String ownerId = "06D6WCH677C3FCC2Q9SD5M1Y5Y"; // Owner User ID
         AuthenticatedUser ownerUser = AuthenticatedUser.withRoles(ownerId, Set.of(ProjectRole.OWNER));
 
         StepVerifier.create(memoService.deleteComment(comment.getId(), ownerUser))
@@ -354,10 +354,10 @@ class MemoServiceTest {
     @Test
     @DisplayName("deleteComment: 댓글이 남아있으면 메모는 삭제되지 않는다")
     void deleteComment_notLastComment() {
-        String authorId = "user-1";
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
         Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("schema-1")
-                .authorId("user-1")
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
+                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
                 .positions("{}")
                 .build()).block();
 
@@ -369,7 +369,7 @@ class MemoServiceTest {
 
         MemoComment comment2 = memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
-                .authorId("user-2")
+                .authorId("06D6W8HDY79QFZX39RMX62KSX4")
                 .body("댓글 2")
                 .build()).block();
 

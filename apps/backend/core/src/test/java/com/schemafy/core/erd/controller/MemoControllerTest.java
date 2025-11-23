@@ -65,25 +65,25 @@ class MemoControllerTest {
     @DisplayName("메모 생성 API 문서화")
     void createMemo() throws Exception {
         CreateMemoRequest request = new CreateMemoRequest(
-                "schema-1",
+                "06D6VZBWHSDJBBG0H7D156YZ98",
                 "{}",
                 "메모 내용");
 
         MemoDetailResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
-                            "id": "memo-1",
-                            "schemaId": "schema-1",
-                            "authorId": "user-1",
+                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
                             "deletedAt": null,
                             "comments": [
                                 {
-                                    "id": "comment-1",
-                                    "memoId": "memo-1",
-                                    "authorId": "user-1",
+                                    "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                    "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                    "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                                     "body": "메모 내용",
                                     "createdAt": "2025-11-23T10:00:00Z",
                                     "updatedAt": "2025-11-23T10:00:00Z",
@@ -159,23 +159,23 @@ class MemoControllerTest {
     @Test
     @DisplayName("메모 조회 API 문서화")
     void getMemo() throws Exception {
-        String memoId = "memo-1";
+        String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         
         MemoDetailResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
-                            "id": "memo-1",
-                            "schemaId": "schema-1",
-                            "authorId": "user-1",
+                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
                             "deletedAt": null,
                             "comments": [
                                 {
-                                    "id": "comment-1",
-                                    "memoId": "memo-1",
-                                    "authorId": "user-1",
+                                    "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                                    "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                    "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                                     "body": "메모 내용",
                                     "createdAt": "2025-11-23T10:00:00Z",
                                     "updatedAt": "2025-11-23T10:00:00Z",
@@ -245,14 +245,14 @@ class MemoControllerTest {
     @Test
     @DisplayName("스키마별 메모 목록 조회 API 문서화")
     void getMemosBySchemaId() throws Exception {
-        String schemaId = "schema-1";
+        String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
         
         MemoResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
-                            "id": "memo-1",
-                            "schemaId": "schema-1",
-                            "authorId": "user-1",
+                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
@@ -305,15 +305,15 @@ class MemoControllerTest {
     @Test
     @DisplayName("메모 수정 API 문서화")
     void updateMemo() throws Exception {
-        String memoId = "memo-1";
+        String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         UpdateMemoRequest request = new UpdateMemoRequest(memoId, "{}");
         
         MemoResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
-                            "id": "memo-1",
-                            "schemaId": "schema-1",
-                            "authorId": "user-1",
+                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
@@ -373,7 +373,7 @@ class MemoControllerTest {
     @Test
     @DisplayName("메모 삭제 API 문서화")
     void deleteMemo() throws Exception {
-        String memoId = "memo-1";
+        String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
 
         given(memoService.deleteMemo(eq(memoId), any(AuthenticatedUser.class)))
                 .willReturn(Mono.empty());
@@ -408,15 +408,15 @@ class MemoControllerTest {
     @Test
     @DisplayName("메모 댓글 생성 API 문서화")
     void createMemoComment() throws Exception {
-        String memoId = "memo-1";
+        String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         CreateMemoCommentRequest request = new CreateMemoCommentRequest("댓글 내용");
 
         MemoCommentResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
-                            "id": "comment-1",
-                            "memoId": "memo-1",
-                            "authorId": "user-1",
+                            "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "body": "댓글 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
@@ -475,13 +475,13 @@ class MemoControllerTest {
     @Test
     @DisplayName("메모 댓글 목록 조회 API 문서화")
     void getMemoComments() throws Exception {
-        String memoId = "memo-1";
+        String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         MemoCommentResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
-                            "id": "comment-1",
-                            "memoId": "memo-1",
-                            "authorId": "user-1",
+                            "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "body": "댓글 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
@@ -534,16 +534,16 @@ class MemoControllerTest {
     @Test
     @DisplayName("메모 댓글 수정 API 문서화")
     void updateMemoComment() throws Exception {
-        String memoId = "memo-1";
-        String commentId = "comment-1";
+        String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+        String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
         UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(memoId, commentId, "수정된 내용");
 
         MemoCommentResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
-                            "id": "comment-1",
-                            "memoId": "memo-1",
-                            "authorId": "user-1",
+                            "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "body": "수정된 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
@@ -606,8 +606,8 @@ class MemoControllerTest {
     @Test
     @DisplayName("메모 댓글 삭제 API 문서화")
     void deleteMemoComment() throws Exception {
-        String memoId = "memo-1";
-        String commentId = "comment-1";
+        String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+        String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
 
         given(memoService.deleteComment(eq(commentId), any(AuthenticatedUser.class)))
                 .willReturn(Mono.empty());
