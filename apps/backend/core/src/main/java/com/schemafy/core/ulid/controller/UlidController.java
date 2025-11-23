@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
-@RequestMapping(ApiPath.AUTH_API)
+@RequestMapping(ApiPath.PUBLIC_API)
 @RequiredArgsConstructor
 public class UlidController {
 
@@ -30,4 +30,5 @@ public class UlidController {
                 .map(BaseResponse::success)
                 .map(ResponseEntity::ok);
     }
+
 }

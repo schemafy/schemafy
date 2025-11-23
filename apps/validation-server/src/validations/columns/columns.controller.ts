@@ -66,16 +66,4 @@ export class ColumnsController {
       newPosition,
     );
   }
-
-  @GrpcMethod('ValidationService', 'ChangeColumnNullable')
-  changeColumnNullable(req: ChangeColumnNullableDto): ValidateResult {
-    const { database, schemaId, tableId, columnId, nullable } = req;
-    return this.service.changeColumnNullable(
-      database,
-      schemaId,
-      tableId,
-      columnId,
-      nullable,
-    );
-  }
 }

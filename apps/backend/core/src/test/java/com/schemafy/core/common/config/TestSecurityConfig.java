@@ -64,4 +64,5 @@ public class TestSecurityConfig {
                         .anyExchange().authenticated())
                 .build();
     }
+
 }

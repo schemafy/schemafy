@@ -40,7 +40,8 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureRestDocs
 @DisplayName("AuthController 통합 테스트")
 class AuthControllerTest {
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
+
+    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace("{version}",
             "v1.0");
 
     @Autowired
@@ -121,16 +122,13 @@ class AuthControllerTest {
 
     static Stream<Arguments> invalidSignUpRequests() {
         return Stream.of(
-                Arguments.of(new SignUpRequest("", "Test User", "password")), // empty
-                                                                              // email
+                Arguments.of(new SignUpRequest("", "Test User", "password")), // empty email
                 Arguments.of(new SignUpRequest("invalid-email", "Test User",
                         "password")), // invalid email
                 Arguments.of(
-                        new SignUpRequest("test@example.com", "", "password")), // empty
-                                                                                // name
+                        new SignUpRequest("test@example.com", "", "password")), // empty name
                 Arguments.of(
-                        new SignUpRequest("test@example.com", "Test User", "")) // empty
-                                                                                // password
+                        new SignUpRequest("test@example.com", "Test User", "")) // empty password
         );
     }
 
@@ -182,10 +180,8 @@ class AuthControllerTest {
     static Stream<Arguments> invalidLoginRequests() {
         return Stream.of(
                 Arguments.of(new LoginRequest("", "password")), // empty email
-                Arguments.of(new LoginRequest("invalid-email", "password")), // invalid
-                                                                             // email
-                Arguments.of(new LoginRequest("test@example.com", "")) // empty
-                                                                       // password
+                Arguments.of(new LoginRequest("invalid-email", "password")), // invalid email
+                Arguments.of(new LoginRequest("test@example.com", "")) // empty password
         );
     }
 
@@ -302,4 +298,5 @@ class AuthControllerTest {
                 .jsonPath("$.error.code")
                 .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
     }
+
 }

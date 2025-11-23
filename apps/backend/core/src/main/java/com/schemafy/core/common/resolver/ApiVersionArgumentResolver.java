@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 
 public class ApiVersionArgumentResolver
         implements HandlerMethodArgumentResolver {
+
     private static final Pattern VERSION_PATTERN = Pattern
             .compile("^v\\d+\\.\\d+$");
 
@@ -56,4 +57,5 @@ public class ApiVersionArgumentResolver
         return Mono.error(new IllegalArgumentException(
                 "@ApiVersion can only be used with String parameter type"));
     }
+
 }

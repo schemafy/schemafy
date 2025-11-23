@@ -2,12 +2,14 @@ package com.schemafy.core.user.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.service.UserService;
@@ -18,10 +20,19 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
-@RequestMapping(ApiPath.AUTH_API)
+@RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class UserController {
+
     private final UserService userService;
+
+    @GetMapping("/users")
+    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo(
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        return userService.getUserById(user.userId())
+                .map(BaseResponse::success)
+                .map(ResponseEntity::ok);
+    }
 
     /**
      * 인증된 사용자 본인의 정보만 조회 가능합니다.
@@ -36,4 +47,5 @@ public class UserController {
         return userService.getUserById(userId).map(BaseResponse::success)
                 .map(ResponseEntity::ok);
     }
+
 }

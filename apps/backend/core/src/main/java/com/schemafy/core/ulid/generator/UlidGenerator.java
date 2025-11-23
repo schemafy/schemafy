@@ -112,4 +112,5 @@ public class UlidGenerator {
 
         return buffer.array();
     }
+
 }

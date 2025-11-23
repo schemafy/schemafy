@@ -1,7 +1,5 @@
 package com.schemafy.core.common.security.jwt;
 
-import java.util.Collections;
-
 import jakarta.validation.constraints.NotNull;
 
 import org.springframework.http.HttpHeaders;
@@ -9,8 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
@@ -18,6 +14,7 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -77,10 +74,9 @@ public class JwtAuthenticationFilter implements WebFilter {
                 return AuthenticationResult.error(ErrorCode.INVALID_TOKEN);
             }
 
-            UserDetails userDetails = new User(userId, "",
-                    Collections.emptyList());
+            AuthenticatedUser principal = createPrincipal(userId);
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
+                    principal, null, principal.asAuthorities());
 
             return AuthenticationResult.success(authentication);
 
@@ -115,6 +111,12 @@ public class JwtAuthenticationFilter implements WebFilter {
         return handleJwtError(exchange, ErrorCode.TOKEN_VALIDATION_ERROR);
     }
 
+    private AuthenticatedUser createPrincipal(String userId) {
+        // TODO: JWT 클레임 또는 DB 조회를 통해 역할(roles)을 채워 넣는다.
+        // 현재는 모든 프로젝트 롤을 부여해 hasAuthority 기반 접근제어를 통과시키는 임시 구현.
+        return AuthenticatedUser.withAllRoles(userId);
+    }
+
     private String extractToken(ServerHttpRequest request) {
         String bearerToken = request.getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
@@ -144,5 +146,7 @@ public class JwtAuthenticationFilter implements WebFilter {
             return new AuthenticationResult(false, null, errorCode.getStatus(),
                     errorCode.getCode(), errorCode.getMessage());
         }
+
     }
+
 }

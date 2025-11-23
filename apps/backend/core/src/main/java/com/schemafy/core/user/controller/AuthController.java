@@ -22,9 +22,10 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
-@RequestMapping(ApiPath.API)
+@RequestMapping(ApiPath.PUBLIC_API)
 @RequiredArgsConstructor
 public class AuthController {
+
     private final UserService userService;
     private final JwtTokenIssuer jwtTokenIssuer;
 
@@ -83,4 +84,5 @@ public class AuthController {
         }
         return refreshTokenCookie.getValue();
     }
+
 }

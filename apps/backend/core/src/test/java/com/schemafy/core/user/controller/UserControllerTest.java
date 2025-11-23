@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.Assertions;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
@@ -34,8 +37,9 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 @AutoConfigureRestDocs
 @DisplayName("UserController 통합 테스트")
 class UserControllerTest {
-    private static final String API_BASE_PATH = ApiPath.AUTH_API
-            .replace("{version}", "v1.0");
+
+    private static final String API_BASE_PATH = ApiPath.API.replace("{version}", "v1.0");
+    private static final String PUBLIC_API_BASE_PATH = ApiPath.PUBLIC_API.replace("{version}", "v1.0");
 
     @Autowired
     private WebTestClient webTestClient;
@@ -166,6 +170,39 @@ class UserControllerTest {
                 .get()
                 .uri(API_BASE_PATH + "/users/{userId}", userId)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
+
+    @Test
+    @DisplayName("내 정보 조회에 성공한다")
+    void getMyInfoSuccess() {
+        SignUpRequest signUpRequest = new SignUpRequest("test-me@example.com",
+                "Test User Me", "password");
+
+        EntityExchangeResult<byte[]> result = webTestClient.post()
+                .uri(PUBLIC_API_BASE_PATH + "/users/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(signUpRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class).returnResult();
+
+        String responseBody = new String(result.getResponseBody());
+        String userId = JsonPath.read(responseBody, "$.result.id");
+        String accessToken = generateAccessToken(userId);
+
+        webTestClient.get().uri(API_BASE_PATH + "/users")
+                .header("Authorization", "Bearer " + accessToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(document("user-get-me",
+                        getUserRequestHeaders(),
+                        getUserResponseHeaders(),
+                        getUserResponse()))
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo(userId)
+                .jsonPath("$.result.email").isEqualTo(signUpRequest.email());
+    }
+
 }

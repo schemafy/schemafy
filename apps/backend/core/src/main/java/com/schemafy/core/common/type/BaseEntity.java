@@ -1,12 +1,13 @@
 package com.schemafy.core.common.type;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,29 +24,25 @@ public abstract class BaseEntity implements Persistable<String> {
     protected String id;
 
     @CreatedDate
-    protected LocalDateTime createdAt;
+    protected Instant createdAt;
 
     @LastModifiedDate
-    protected LocalDateTime updatedAt;
+    protected Instant updatedAt;
 
-    protected LocalDateTime deletedAt;
-
-    @Transient
-    protected boolean isNew = true;
+    protected Instant deletedAt;
 
     @Override
     public String getId() { return id; }
 
     @Override
-    public boolean isNew() { return isNew; }
-
-    public void markAsNotNew() {
-        this.isNew = false;
-    }
+    @JsonIgnore
+    public boolean isNew() { return this.createdAt == null; }
 
     public void delete() {
-        this.deletedAt = LocalDateTime.now();
+        this.deletedAt = Instant.now();
     }
 
+    @JsonIgnore
     public boolean isDeleted() { return deletedAt != null; }
+
 }
