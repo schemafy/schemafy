@@ -85,7 +85,7 @@ public class MemoController {
     public Mono<BaseResponse<Void>> deleteMemo(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId) {
-        return memoService.deleteMemo(memoId, user.userId())
+        return memoService.deleteMemo(memoId, user)
                 .then(Mono.just(BaseResponse.success(null)));
     }
 
@@ -135,7 +135,7 @@ public class MemoController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId,
             @PathVariable String commentId) {
-        return memoService.deleteComment(commentId, user.userId())
+        return memoService.deleteComment(commentId, user)
                 .then(Mono.just(BaseResponse.success(null)));
     }
 

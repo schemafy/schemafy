@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
+import com.schemafy.core.common.security.principal.ProjectRole;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -39,11 +41,12 @@ public class MemoService {
                         .authorId(authorId)
                         .positions(request.positions())
                         .build()))
-                .flatMap(memo -> memoCommentRepository.save(MemoComment.builder()
-                        .memoId(memo.getId())
-                        .authorId(authorId)
-                        .body(request.body())
-                        .build())
+                .flatMap(memo -> memoCommentRepository
+                        .save(MemoComment.builder()
+                                .memoId(memo.getId())
+                                .authorId(authorId)
+                                .body(request.body())
+                                .build())
                         .map(MemoCommentResponse::from)
                         .map(comment -> MemoDetailResponse.from(memo,
                                 Collections.singletonList(comment))));
@@ -66,7 +69,8 @@ public class MemoService {
                 .map(MemoResponse::from);
     }
 
-    public Mono<MemoResponse> updateMemo(UpdateMemoRequest request, String authorId) {
+    public Mono<MemoResponse> updateMemo(UpdateMemoRequest request,
+            String authorId) {
         return memoRepository.findByIdAndDeletedAtIsNull(request.memoId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
@@ -81,12 +85,13 @@ public class MemoService {
                 .map(MemoResponse::from);
     }
 
-    public Mono<Void> deleteMemo(String memoId, String authorId) {
+    public Mono<Void> deleteMemo(String memoId, AuthenticatedUser user) {
         return memoRepository.findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .flatMap(memo -> {
-                    if (!memo.getAuthorId().equals(authorId)) {
+                    if (!hasPermissionToDelete(user)
+                            && !memo.getAuthorId().equals(user.userId())) {
                         return Mono.error(
                                 new BusinessException(ErrorCode.ACCESS_DENIED));
                     }
@@ -143,14 +148,15 @@ public class MemoService {
     }
 
     public Mono<Void> deleteComment(String commentId,
-            String authorId) {
+            AuthenticatedUser user) {
         return memoCommentRepository
                 .findByIdAndDeletedAtIsNull(commentId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
                 .flatMap(comment -> {
-                    if (!comment.getAuthorId().equals(authorId)) {
+                    if (!hasPermissionToDelete(user)
+                            && !comment.getAuthorId().equals(user.userId())) {
                         return Mono.error(
                                 new BusinessException(ErrorCode.ACCESS_DENIED));
                     }
@@ -184,6 +190,11 @@ public class MemoService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
                 .then();
+    }
+
+    private boolean hasPermissionToDelete(AuthenticatedUser user) {
+        return user.roles().contains(ProjectRole.OWNER)
+                || user.roles().contains(ProjectRole.ADMIN);
     }
 
 }

@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.service;
 
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
+import com.schemafy.core.common.security.principal.ProjectRole;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -213,7 +216,9 @@ class MemoServiceTest {
                 .body("댓글")
                 .build()).block();
 
-        StepVerifier.create(memoService.deleteMemo(memo.getId(), authorId))
+        AuthenticatedUser user = AuthenticatedUser.of(authorId);
+
+        StepVerifier.create(memoService.deleteMemo(memo.getId(), user))
                 .verifyComplete();
 
         StepVerifier.create(memoRepository.findById(memo.getId()))
@@ -222,6 +227,27 @@ class MemoServiceTest {
 
         StepVerifier.create(memoCommentRepository.findById(comment.getId()))
                 .assertNext(c -> assertThat(c.getDeletedAt()).isNotNull())
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("deleteMemo: 관리자(ADMIN)는 다른 사람의 메모를 삭제할 수 있다")
+    void deleteMemo_admin_success() {
+        String authorId = "user-1";
+        Memo memo = memoRepository.save(Memo.builder()
+                .schemaId("schema-1")
+                .authorId(authorId)
+                .positions("{}")
+                .build()).block();
+
+        String adminId = "admin-user";
+        AuthenticatedUser adminUser = AuthenticatedUser.withRoles(adminId, Set.of(ProjectRole.ADMIN));
+
+        StepVerifier.create(memoService.deleteMemo(memo.getId(), adminUser))
+                .verifyComplete();
+
+        StepVerifier.create(memoRepository.findById(memo.getId()))
+                .assertNext(m -> assertThat(m.getDeletedAt()).isNotNull())
                 .verifyComplete();
     }
 
@@ -282,7 +308,9 @@ class MemoServiceTest {
                 .body("유일한 댓글")
                 .build()).block();
 
-        StepVerifier.create(memoService.deleteComment(comment.getId(), authorId))
+        AuthenticatedUser user = AuthenticatedUser.of(authorId);
+
+        StepVerifier.create(memoService.deleteComment(comment.getId(), user))
                 .verifyComplete();
 
         // 댓글 삭제 확인
@@ -293,6 +321,33 @@ class MemoServiceTest {
         // 메모 삭제 확인 (댓글이 하나도 없게 되었으므로)
         StepVerifier.create(memoRepository.findById(memo.getId()))
                 .assertNext(m -> assertThat(m.getDeletedAt()).isNotNull())
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("deleteComment: 관리자(OWNER)는 다른 사람의 댓글을 삭제할 수 있다")
+    void deleteComment_admin_success() {
+        String authorId = "user-1";
+        Memo memo = memoRepository.save(Memo.builder()
+                .schemaId("schema-1")
+                .authorId(authorId)
+                .positions("{}")
+                .build()).block();
+
+        MemoComment comment = memoCommentRepository.save(MemoComment.builder()
+                .memoId(memo.getId())
+                .authorId(authorId)
+                .body("댓글")
+                .build()).block();
+
+        String ownerId = "owner-user";
+        AuthenticatedUser ownerUser = AuthenticatedUser.withRoles(ownerId, Set.of(ProjectRole.OWNER));
+
+        StepVerifier.create(memoService.deleteComment(comment.getId(), ownerUser))
+                .verifyComplete();
+
+        StepVerifier.create(memoCommentRepository.findById(comment.getId()))
+                .assertNext(c -> assertThat(c.getDeletedAt()).isNotNull())
                 .verifyComplete();
     }
 
@@ -318,8 +373,10 @@ class MemoServiceTest {
                 .body("댓글 2")
                 .build()).block();
 
+        AuthenticatedUser user = AuthenticatedUser.of(authorId);
+
         // comment1 삭제
-        StepVerifier.create(memoService.deleteComment(comment1.getId(), authorId))
+        StepVerifier.create(memoService.deleteComment(comment1.getId(), user))
                 .verifyComplete();
 
         // comment1 삭제 확인

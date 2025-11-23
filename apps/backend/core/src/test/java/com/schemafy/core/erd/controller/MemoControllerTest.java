@@ -28,6 +28,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -374,7 +375,7 @@ class MemoControllerTest {
     void deleteMemo() throws Exception {
         String memoId = "memo-1";
 
-        given(memoService.deleteMemo(eq(memoId), any()))
+        given(memoService.deleteMemo(eq(memoId), any(AuthenticatedUser.class)))
                 .willReturn(Mono.empty());
 
         webTestClient.delete()
@@ -608,7 +609,7 @@ class MemoControllerTest {
         String memoId = "memo-1";
         String commentId = "comment-1";
 
-        given(memoService.deleteComment(eq(commentId), any()))
+        given(memoService.deleteComment(eq(commentId), any(AuthenticatedUser.class)))
                 .willReturn(Mono.empty());
 
         webTestClient.delete()
