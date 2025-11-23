@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.schemafy.core.common.security.WithMockCustomUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -46,7 +46,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("TableController 통합 테스트")
-@WithMockUser(roles = "EDITOR")
+@WithMockCustomUser(roles = "EDITOR")
 class TableControllerTest {
 
     private static final ObjectMapper objectMapper = new ObjectMapper()

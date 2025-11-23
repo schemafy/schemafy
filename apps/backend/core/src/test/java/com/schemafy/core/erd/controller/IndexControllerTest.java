@@ -6,7 +6,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.schemafy.core.common.security.WithMockCustomUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -45,7 +45,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureRestDocs
 @ActiveProfiles("test")
 @DisplayName("IndexController RestDocs 테스트")
-@WithMockUser(roles = "EDITOR")
+@WithMockCustomUser(roles = "EDITOR")
 class IndexControllerTest {
 
     private static final String API_BASE_PATH = ApiPath.API
