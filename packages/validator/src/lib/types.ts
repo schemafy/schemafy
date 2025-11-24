@@ -6,7 +6,7 @@ export const SCHEMA_NAME_CONSTRAINTS = {
 } as const;
 
 const ULID = z.string().ulid();
-const DB_VENDOR = z.enum(["mysql"]);
+const DB_VENDOR = z.enum(["MYSQL"]);
 const INDEX_TYPE = z.enum(["BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER"]);
 const INDEX_SORT_DIR = z.enum(["ASC", "DESC"]);
 const CONSTRAINT_KIND = z.enum([

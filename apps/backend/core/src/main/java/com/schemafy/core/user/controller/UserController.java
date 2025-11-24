@@ -4,12 +4,14 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
@@ -22,9 +24,10 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
-@RequestMapping(ApiPath.API)
+@RequestMapping(ApiPath.PUBLIC_API)
 @RequiredArgsConstructor
 public class UserController {
+
     private final UserService userService;
     private final JwtTokenIssuer jwtTokenIssuer;
 
@@ -63,6 +66,14 @@ public class UserController {
         return refreshTokenCookie.getValue();
     }
 
+    @GetMapping("/users")
+    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo(
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        return userService.getUserById(user.userId())
+                .map(BaseResponse::success)
+                .map(ResponseEntity::ok);
+    }
+
     @GetMapping("/users/{userId}")
     public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getUser(
             @PathVariable String userId) {
@@ -70,4 +81,5 @@ public class UserController {
                 .map(BaseResponse::success)
                 .map(ResponseEntity::ok);
     }
+
 }

@@ -26,4 +26,5 @@ public class JwtAccessDeniedHandler implements ServerAccessDeniedHandler {
                 errorCode.getCode(),
                 errorCode.getMessage());
     }
+
 }

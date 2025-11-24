@@ -11,3 +11,4 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT ux_users_email UNIQUE (email),
     CONSTRAINT ck_users_status CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED'))
 );
+

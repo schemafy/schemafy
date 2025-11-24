@@ -11,7 +11,9 @@ public record SignUpRequest(
         @NotBlank(message = "이름은 필수입니다.") String name,
 
         @NotBlank(message = "비밀번호는 필수입니다.") String password) {
+
     public SignUpCommand toCommand() {
         return new SignUpCommand(email, name, password);
     }
+
 }
