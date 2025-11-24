@@ -136,13 +136,22 @@ export const propagateNewPrimaryKey = (
       const parentTable = updatedSchema.tables.find(
         (t) => t.id === parentTableId,
       )!;
-      const existingColumn = childTable.columns.find((c) =>
-        c.id.startsWith(`col_${parentTable.id}_${newPkColumn.id}`),
+
+      const relColumn = rel.columns.find(
+        (rc) => rc.refColumnId === newPkColumn.id,
       );
 
-      if (existingColumn) continue;
+      if (relColumn && relColumn.fkColumnId && relColumn.fkColumnId !== "") {
+        const existingColumn = childTable.columns.find(
+          (c) => c.id === relColumn.fkColumnId,
+        );
+        if (existingColumn) continue;
+      }
 
-      const newFkColumnId = `${ulid()}`;
+      const newFkColumnId =
+        relColumn?.fkColumnId && relColumn.fkColumnId !== ""
+          ? relColumn.fkColumnId
+          : `${ulid()}`;
       const columnName = `${parentTable.name}_${newPkColumn.name}`;
 
       const newFkColumn: Column = {
@@ -169,71 +178,113 @@ export const propagateNewPrimaryKey = (
       };
 
       if (rel.kind === "IDENTIFYING") {
-        const newPkConstraintId = `${ulid()}`;
+        const childPkConstraint = updatedSchema.tables
+          .find((t) => t.id === childTable.id)
+          ?.constraints.find((c) => c.kind === "PRIMARY_KEY");
 
-        const childPkConstraint: Constraint = {
-          id: newPkConstraintId,
-          name: `constraint_${parentTable.name}_${newPkColumn.name}`,
-          columns: [
-            {
-              id: newFkColumnId,
-              isAffected: true,
-              columnId: newFkColumnId,
-              seqNo: 1,
-              constraintId: newPkConstraintId,
-            },
-          ],
-          tableId: childTable.id,
-          kind: "PRIMARY_KEY",
+        if (childPkConstraint) {
+          const newConstraintColumn = {
+            id: `${ulid()}`,
+            isAffected: true,
+            columnId: newFkColumnId,
+            seqNo: childPkConstraint.columns.length + 1,
+            constraintId: childPkConstraint.id,
+          };
+
+          const updatedPkConstraint = {
+            ...childPkConstraint,
+            isAffected: true,
+            columns: [...childPkConstraint.columns, newConstraintColumn],
+          };
+
+          updatedSchema = {
+            ...updatedSchema,
+            isAffected: true,
+            tables: updatedSchema.tables.map((t) =>
+              t.id === childTable.id
+                ? {
+                    ...t,
+                    isAffected: true,
+                    constraints: t.constraints.map((c) =>
+                      c.id === childPkConstraint.id ? updatedPkConstraint : c,
+                    ),
+                  }
+                : t,
+            ),
+          };
+        } else {
+          const newPkConstraintId = `${ulid()}`;
+
+          const childPkConstraint: Constraint = {
+            id: newPkConstraintId,
+            name: `constraint_${parentTable.name}_${newPkColumn.name}`,
+            columns: [
+              {
+                id: `${ulid()}`,
+                isAffected: true,
+                columnId: newFkColumnId,
+                seqNo: 1,
+                constraintId: newPkConstraintId,
+              },
+            ],
+            tableId: childTable.id,
+            kind: "PRIMARY_KEY",
+            isAffected: true,
+          };
+
+          updatedSchema = {
+            ...updatedSchema,
+            isAffected: true,
+            tables: updatedSchema.tables.map((t) =>
+              t.id === childTable.id
+                ? {
+                    ...t,
+                    isAffected: true,
+                    constraints: [...t.constraints, childPkConstraint],
+                  }
+                : t,
+            ),
+          };
+        }
+      }
+
+      if (!relColumn) {
+        const newRelColumn: RelationshipColumn = {
+          id: `${ulid()}`,
+          relationshipId: rel.id,
+          fkColumnId: newFkColumnId,
+          refColumnId: newPkColumn.id,
+          seqNo: rel.columns.length + 1,
           isAffected: true,
         };
+
+        const updateRelationships: Relationship[] = table.relationships.map(
+          (r) =>
+            r.id === rel.id
+              ? {
+                  ...r,
+                  isAffected: true,
+                  columns: [...r.columns, newRelColumn],
+                }
+              : r,
+        );
+
+        const updateTables: Table[] = updatedSchema.tables.map((t) =>
+          t.id === table.id
+            ? {
+                ...t,
+                isAffected: true,
+                relationships: updateRelationships,
+              }
+            : t,
+        );
 
         updatedSchema = {
           ...updatedSchema,
           isAffected: true,
-          tables: updatedSchema.tables.map((t) =>
-            t.id === childTable.id
-              ? { ...t, constraints: [...t.constraints, childPkConstraint] }
-              : t,
-          ),
+          tables: updateTables,
         };
       }
-
-      const newRelColumn: RelationshipColumn = {
-        id: `${ulid()}`,
-        relationshipId: rel.id,
-        fkColumnId: newFkColumnId,
-        refColumnId: newPkColumn.id,
-        seqNo: rel.columns.length + 1,
-        isAffected: true,
-      };
-
-      const updateRelationships: Relationship[] = parentTable.relationships.map(
-        (r) =>
-          r.id === rel.id
-            ? {
-                ...r,
-                isAffected: true,
-                columns: [...r.columns, newRelColumn],
-              }
-            : r,
-      );
-
-      const updateTables: Table[] = updatedSchema.tables.map((t) =>
-        t.id === parentTableId
-          ? {
-              ...t,
-              isAffected: true,
-              relationships: updateRelationships,
-            }
-          : t,
-      );
-
-      updatedSchema = {
-        ...updatedSchema,
-        isAffected: true,
-        tables: updateTables,
-      };
 
       if (rel.kind === "IDENTIFYING") {
         updatedSchema = propagateNewPrimaryKey(
@@ -391,14 +442,17 @@ export const propagateKeysToChildren = (
           (rc) => rc.refColumnId === pkColumn.id,
         );
 
-        if (relColumn && relColumn.fkColumnId) {
+        if (relColumn && relColumn.fkColumnId && relColumn.fkColumnId !== "") {
           const existingColumn = childTable.columns.find(
             (c) => c.id === relColumn.fkColumnId,
           );
           if (existingColumn) continue;
         }
 
-        const newColumnId = `${ulid()}`;
+        const newColumnId =
+          relColumn?.fkColumnId && relColumn.fkColumnId !== ""
+            ? relColumn.fkColumnId
+            : `${ulid()}`;
         const columnName = `${parentTable.name}_${pkColumn.name}`;
 
         const newColumn: Column = {
@@ -418,36 +472,38 @@ export const propagateKeysToChildren = (
 
         newlyCreatedFkColumns.push(newColumn);
 
-        const newRelColumn: RelationshipColumn = {
-          id: `${ulid()}`,
-          relationshipId: rel.id,
-          fkColumnId: newColumnId,
-          refColumnId: pkColumn.id,
-          seqNo: rel.columns.length + 1,
-          isAffected: true,
-        };
+        if (!relColumn) {
+          const newRelColumn: RelationshipColumn = {
+            id: `${ulid()}`,
+            relationshipId: rel.id,
+            fkColumnId: newColumnId,
+            refColumnId: pkColumn.id,
+            seqNo: rel.columns.length + 1,
+            isAffected: true,
+          };
 
-        const updatedRel: Relationship = {
-          ...rel,
-          isAffected: true,
-          columns: [...rel.columns, newRelColumn],
-        };
+          const updatedRel: Relationship = {
+            ...rel,
+            isAffected: true,
+            columns: [...rel.columns, newRelColumn],
+          };
 
-        const updatedRelHolderTable: Table = {
-          ...table,
-          isAffected: true,
-          relationships: table.relationships.map((r) =>
-            r.id === rel.id ? updatedRel : r,
-          ),
-        };
+          const updatedRelHolderTable: Table = {
+            ...table,
+            isAffected: true,
+            relationships: table.relationships.map((r) =>
+              r.id === rel.id ? updatedRel : r,
+            ),
+          };
 
-        updatedSchema = {
-          ...updatedSchema,
-          isAffected: true,
-          tables: updatedSchema.tables.map((t) =>
-            t.id === updatedRelHolderTable.id ? updatedRelHolderTable : t,
-          ),
-        };
+          updatedSchema = {
+            ...updatedSchema,
+            isAffected: true,
+            tables: updatedSchema.tables.map((t) =>
+              t.id === updatedRelHolderTable.id ? updatedRelHolderTable : t,
+            ),
+          };
+        }
       }
 
       updatedSchema = {
@@ -460,47 +516,83 @@ export const propagateKeysToChildren = (
 
       if (rel.kind === "NON_IDENTIFYING") continue;
 
+      if (newlyCreatedFkColumns.length <= 0) continue;
+
       const childPkConstraint = updatedChildTable.constraints.find(
         (c) => c.kind === "PRIMARY_KEY",
       );
 
-      if (!childPkConstraint || newlyCreatedFkColumns.length <= 0) continue;
+      if (childPkConstraint) {
+        const newPkColumns = [];
 
-      const newPkColumns = [];
+        for (const fkColumn of newlyCreatedFkColumns) {
+          newPkColumns.push({
+            id: `${ulid()}`,
+            isAffected: true,
+            constraintId: childPkConstraint.id,
+            columnId: fkColumn.id,
+            seqNo: childPkConstraint.columns.length + newPkColumns.length + 1,
+          });
+        }
 
-      for (const fkColumn of newlyCreatedFkColumns) {
-        newPkColumns.push({
-          id: `constraint_col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        const updatedPkConstraint = {
+          ...childPkConstraint,
           isAffected: true,
-          constraintId: childPkConstraint.id,
-          columnId: fkColumn.id,
-          seqNo: childPkConstraint.columns.length + newPkColumns.length + 1,
-        });
+          columns: [...childPkConstraint.columns, ...newPkColumns],
+        };
+
+        updatedChildTable = {
+          ...updatedChildTable,
+          isAffected: true,
+          constraints: updatedChildTable.constraints.map((c) =>
+            c.id === childPkConstraint.id ? updatedPkConstraint : c,
+          ),
+        };
+
+        updatedSchema = {
+          ...updatedSchema,
+          isAffected: true,
+          tables: updatedSchema.tables.map((t) =>
+            t.id === childTable.id ? updatedChildTable : t,
+          ),
+        };
+      } else {
+        const newPkConstraintId = `${ulid()}`;
+        const newPkColumns = [];
+
+        for (const fkColumn of newlyCreatedFkColumns) {
+          newPkColumns.push({
+            id: `${ulid()}`,
+            isAffected: true,
+            constraintId: newPkConstraintId,
+            columnId: fkColumn.id,
+            seqNo: newPkColumns.length + 1,
+          });
+        }
+
+        const newPkConstraint: Constraint = {
+          id: newPkConstraintId,
+          name: `pk_${childTable.name}`,
+          columns: newPkColumns,
+          tableId: childTable.id,
+          kind: "PRIMARY_KEY",
+          isAffected: true,
+        };
+
+        updatedChildTable = {
+          ...updatedChildTable,
+          isAffected: true,
+          constraints: [...updatedChildTable.constraints, newPkConstraint],
+        };
+
+        updatedSchema = {
+          ...updatedSchema,
+          isAffected: true,
+          tables: updatedSchema.tables.map((t) =>
+            t.id === childTable.id ? updatedChildTable : t,
+          ),
+        };
       }
-
-      if (newPkColumns.length <= 0) continue;
-
-      const updatedPkConstraint = {
-        ...childPkConstraint,
-        isAffected: true,
-        columns: [...childPkConstraint.columns, ...newPkColumns],
-      };
-
-      updatedChildTable = {
-        ...updatedChildTable,
-        isAffected: true,
-        constraints: updatedChildTable.constraints.map((c) =>
-          c.id === childPkConstraint.id ? updatedPkConstraint : c,
-        ),
-      };
-
-      updatedSchema = {
-        ...updatedSchema,
-        isAffected: true,
-        tables: updatedSchema.tables.map((t) =>
-          t.id === childTable.id ? updatedChildTable : t,
-        ),
-      };
 
       updatedSchema = propagateKeysToChildren(
         structuredClone(updatedSchema),

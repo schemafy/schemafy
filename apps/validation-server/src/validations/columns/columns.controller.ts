@@ -5,7 +5,6 @@ import { ColumnsService } from './columns.service';
 
 import type {
   ChangeColumnNameDto,
-  ChangeColumnNullableDto,
   ChangeColumnPositionDto,
   ChangeColumnTypeDto,
   CreateColumnDto,

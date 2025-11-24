@@ -42,6 +42,8 @@
   --color-schemafy-button-text: hsl(var(--schemafy-button-text));
   --color-schemafy-bg-80: hsl(var(--schemafy-bg) / 0.8);
   --color-schemafy-tools: hsl(var(--schemafy-tools));
+  --color-schemafy-yellow: hsl(var(--schemafy-yellow));
+  --color-schemafy-blue: hsl(var(--schemafy-blue));
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -81,6 +83,8 @@
     --schemafy-button-bg: 0 0% 8%;
     --schemafy-button-text: 0 0% 100%;
     --schemafy-tools: 0 0% 46% / 0.8;
+    --schemafy-yellow: 40 96% 40%;
+    --schemafy-blue: 218 70% 50%;
 
     /* Font Sizes - Display */
     --text-display-lg: 48px;
@@ -221,6 +225,8 @@
     --schemafy-button-bg: 240 1% 44%;
     --schemafy-button-text: 0 0% 100%;
     --schemafy-tools: 240 1% 44%;
+    --schemafy-yellow: 40 85% 65%;
+    --schemafy-blue: 218 70% 65%;
   }
 }
 
