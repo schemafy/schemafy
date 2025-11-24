@@ -64,7 +64,9 @@ export const createRelationshipFromConnection = ({
   );
 
   if (!targetPk || targetPk.columns.length === 0) {
-    toast.error('Target table must have a primary key to create a relationship');
+    toast.error(
+      'Target table must have a primary key to create a relationship',
+    );
     return null;
   }
 
