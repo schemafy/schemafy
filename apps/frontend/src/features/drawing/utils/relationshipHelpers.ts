@@ -1,5 +1,6 @@
 import type { Connection, Edge } from '@xyflow/react';
 import { ulid } from 'ulid';
+import { toast } from 'sonner';
 import type { Relationship, Schema } from '@schemafy/validator';
 import {
   RELATIONSHIP_TYPES,
@@ -48,13 +49,13 @@ export const createRelationshipFromConnection = ({
 
   const sourceTable = schema.tables.find((t) => t.id === connection.source);
   if (!sourceTable) {
-    console.error('Source table not found');
+    toast.error('Source table not found');
     return null;
   }
 
   const targetTable = schema.tables.find((t) => t.id === connection.target);
   if (!targetTable) {
-    console.error('Target table not found');
+    toast.error('Target table not found');
     return null;
   }
 
@@ -63,7 +64,7 @@ export const createRelationshipFromConnection = ({
   );
 
   if (!targetPk || targetPk.columns.length === 0) {
-    console.error(
+    toast.error(
       'Target table must have a primary key to create a relationship',
     );
     return null;

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { ErdStore } from '@/store/erd.store';
 
 interface UseTableProps {
@@ -18,8 +19,12 @@ export const useTable = ({
   const [editingTableName, setEditingTableName] = useState(tableName);
 
   const saveTableName = () => {
-    erdStore.changeTableName(schemaId, tableId, editingTableName);
-    setIsEditingTableName(false);
+    try {
+      erdStore.changeTableName(schemaId, tableId, editingTableName);
+      setIsEditingTableName(false);
+    } catch {
+      toast.error('Failed to save table name');
+    }
   };
 
   const deleteTable = () => {

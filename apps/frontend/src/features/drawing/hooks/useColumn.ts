@@ -3,6 +3,7 @@ import { debounce } from 'lodash-es';
 import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType } from '../types';
 import { saveColumnField } from '../utils/columnHelpers';
+import { toast } from 'sonner';
 
 export const useColumn = (
   erdStore: ErdStore,
@@ -23,9 +24,8 @@ export const useColumn = (
 
       try {
         saveColumnField(erdStore, schemaId, tableId, columnId, key, value);
-      } catch (error) {
-        console.error('Failed to save column change:', error);
-        // TODO: 토스트 메시지 표시
+      } catch {
+        toast.error('Failed to save column change');
       }
       return;
     }
@@ -40,9 +40,8 @@ export const useColumn = (
 
           try {
             saveColumnField(erdStore, schemaId, tableId, col, k, val);
-          } catch (error) {
-            console.error('Failed to save column change:', error);
-            // TODO: 토스트 메시지 표시
+          } catch {
+            toast.error('Failed to save column change');
           }
         },
         300,

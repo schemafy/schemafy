@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
+import { toast } from 'sonner';
 import { ErdStore } from '@/store';
 import type { TableData } from '../types';
 import { ulid } from 'ulid';
@@ -30,7 +31,7 @@ export const useTables = () => {
     const selectedSchema = erdStore.selectedSchema;
 
     if (!selectedSchemaId || !selectedSchema) {
-      console.error('No schema selected');
+      toast.error('No schema selected');
       return;
     }
 

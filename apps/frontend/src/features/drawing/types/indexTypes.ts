@@ -7,6 +7,7 @@ export type IndexColumnType = {
   columnId: string;
   seqNo: number;
   sortDir: IndexSortDir;
+  isAffected: boolean;
 };
 
 export type IndexDataType = {
@@ -16,6 +17,7 @@ export type IndexDataType = {
   type: IndexType;
   comment?: string | null;
   columns: IndexColumnType[];
+  isAffected: boolean;
 };
 
 export interface IndexSectionProps {
