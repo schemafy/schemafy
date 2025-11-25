@@ -20,22 +20,6 @@ import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
 @Import({ JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class })
 public class TestSecurityConfig {
 
-    private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
-            "v1.0");
-
-    private static final String[] PUBLIC_ENDPOINTS = {
-        API_BASE_PATH + "/auth/**",
-        API_BASE_PATH + "/public/**",
-        API_BASE_PATH + "/users/signup",
-        API_BASE_PATH + "/users/login",
-        API_BASE_PATH + "/users/refresh",
-        "/actuator/health",
-        "/actuator/info",
-        "/webjars/**",
-        "/v3/api-docs/**",
-        "/swagger-ui/**"
-    };
-
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final JwtAccessDeniedHandler accessDeniedHandler;
 
@@ -59,7 +43,7 @@ public class TestSecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .pathMatchers("/public/api/**").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated())
                 .build();

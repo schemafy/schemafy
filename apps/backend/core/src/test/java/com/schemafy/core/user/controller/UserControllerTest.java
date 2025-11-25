@@ -1,7 +1,17 @@
 package com.schemafy.core.user.controller;
 
-import java.util.HashMap;
-
+import com.jayway.jsonpath.JsonPath;
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.repository.entity.User;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -13,19 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import com.jayway.jsonpath.JsonPath;
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.ulid.generator.UlidGenerator;
-import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
+import java.util.HashMap;
 
 import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -121,8 +119,8 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("타인의 회원 정보 조회 시 권한 없음으로 실패한다")
-    void getUserFailWhenAccessingOtherUser() {
+    @DisplayName("인증된 사용자는 타인의 회원 정보 조회에 성공한다")
+    void getUserSuccessWhenAccessingOtherUser() {
         // 두 명의 사용자 생성
         SignUpRequest userARequest = new SignUpRequest("userA@example.com",
                 "User A", "password");
@@ -144,14 +142,18 @@ class UserControllerTest {
         String userBId = userB.getId();
         String userAAccessToken = generateAccessToken(userAId);
 
-        // userA로 인증했지만 userB의 정보를 조회 시도
+        // userA로 인증하여 userB의 정보를 조회
         webTestClient
                 .mutateWith(mockUser(userAId))
                 .get()
                 .uri(API_BASE_PATH + "/users/{userId}", userBId)
                 .header("Authorization", userAAccessToken)
                 .exchange()
-                .expectStatus().isForbidden();
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo(userBId)
+                .jsonPath("$.result.email").isEqualTo("userB@example.com");
     }
 
     @Test

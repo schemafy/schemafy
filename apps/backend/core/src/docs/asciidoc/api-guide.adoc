@@ -1319,7 +1319,6 @@ include::{snippets}/user-login/http-response.adoc[]
 include::{snippets}/user-login/response-headers.adoc[]
 include::{snippets}/user-login/response-fields.adoc[]
 
-=== 사용자 조회
 ---
 
 === 내 정보 조회
