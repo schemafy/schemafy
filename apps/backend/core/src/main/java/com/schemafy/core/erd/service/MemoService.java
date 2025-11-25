@@ -37,21 +37,22 @@ public class MemoService {
 
     public Mono<MemoDetailResponse> createMemo(CreateMemoRequest request,
             String authorId) {
-        return transactionalOperator.transactional(ensureSchemaExists(request.schemaId())
-                .then(memoRepository.save(Memo.builder()
-                        .schemaId(request.schemaId())
-                        .authorId(authorId)
-                        .positions(request.positions())
-                        .build()))
-                .flatMap(memo -> memoCommentRepository
-                        .save(MemoComment.builder()
-                                .memoId(memo.getId())
+        return transactionalOperator
+                .transactional(ensureSchemaExists(request.schemaId())
+                        .then(memoRepository.save(Memo.builder()
+                                .schemaId(request.schemaId())
                                 .authorId(authorId)
-                                .body(request.body())
-                                .build())
-                        .map(MemoCommentResponse::from)
-                        .map(comment -> MemoDetailResponse.from(memo,
-                                Collections.singletonList(comment)))));
+                                .positions(request.positions())
+                                .build()))
+                        .flatMap(memo -> memoCommentRepository
+                                .save(MemoComment.builder()
+                                        .memoId(memo.getId())
+                                        .authorId(authorId)
+                                        .body(request.body())
+                                        .build())
+                                .map(MemoCommentResponse::from)
+                                .map(comment -> MemoDetailResponse.from(memo,
+                                        Collections.singletonList(comment)))));
     }
 
     public Mono<MemoDetailResponse> getMemo(String memoId) {
@@ -88,7 +89,8 @@ public class MemoService {
     }
 
     public Mono<Void> deleteMemo(String memoId, AuthenticatedUser user) {
-        return transactionalOperator.transactional(memoRepository.findByIdAndDeletedAtIsNull(memoId)
+        return transactionalOperator.transactional(memoRepository
+                .findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .flatMap(memo -> {

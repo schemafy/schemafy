@@ -1,7 +1,6 @@
 package com.schemafy.core.erd.service;
 
 import java.util.Set;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,9 +18,7 @@ import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoRequest;
-import com.schemafy.core.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoDetailResponse;
-import com.schemafy.core.erd.controller.dto.response.MemoResponse;
 import com.schemafy.core.erd.repository.MemoCommentRepository;
 import com.schemafy.core.erd.repository.MemoRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
@@ -29,7 +26,6 @@ import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
 import com.schemafy.core.erd.repository.entity.Schema;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -74,16 +70,21 @@ class MemoServiceTest {
                 "초기 메모 내용");
         String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
-        Mono<MemoDetailResponse> result = memoService.createMemo(request, authorId);
+        Mono<MemoDetailResponse> result = memoService.createMemo(request,
+                authorId);
 
         StepVerifier.create(result)
                 .assertNext(response -> {
-                    assertThat(response.getSchemaId()).isEqualTo(schema.getId());
+                    assertThat(response.getSchemaId())
+                            .isEqualTo(schema.getId());
                     assertThat(response.getAuthorId()).isEqualTo(authorId);
-                    assertThat(response.getPositions()).isEqualTo(request.positions());
+                    assertThat(response.getPositions())
+                            .isEqualTo(request.positions());
                     assertThat(response.getComments()).hasSize(1);
-                    assertThat(response.getComments().get(0).getBody()).isEqualTo(request.body());
-                    assertThat(response.getComments().get(0).getAuthorId()).isEqualTo(authorId);
+                    assertThat(response.getComments().get(0).getBody())
+                            .isEqualTo(request.body());
+                    assertThat(response.getComments().get(0).getAuthorId())
+                            .isEqualTo(authorId);
                 })
                 .verifyComplete();
     }
@@ -96,9 +97,12 @@ class MemoServiceTest {
                 "{\"x\":100,\"y\":100}",
                 "내용");
 
-        StepVerifier.create(memoService.createMemo(request, "01ARZ3NDEKTSV4RRFFQ69G5FAV"))
+        StepVerifier
+                .create(memoService.createMemo(request,
+                        "01ARZ3NDEKTSV4RRFFQ69G5FAV"))
                 .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e).getErrorCode() == ErrorCode.ERD_SCHEMA_NOT_FOUND)
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ERD_SCHEMA_NOT_FOUND)
                 .verify();
     }
 
@@ -151,7 +155,8 @@ class MemoServiceTest {
                 .positions("{}")
                 .build()).block();
 
-        StepVerifier.create(memoService.getMemosBySchemaId(schemaId).collectList())
+        StepVerifier
+                .create(memoService.getMemosBySchemaId(schemaId).collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
                 })
@@ -168,17 +173,20 @@ class MemoServiceTest {
                 .positions("{\"x\":0,\"y\":0}")
                 .build()).block();
 
-        UpdateMemoRequest request = new UpdateMemoRequest(memo.getId(), "{\"x\":100,\"y\":100}");
+        UpdateMemoRequest request = new UpdateMemoRequest(memo.getId(),
+                "{\"x\":100,\"y\":100}");
 
         StepVerifier.create(memoService.updateMemo(request, authorId))
                 .assertNext(response -> {
-                    assertThat(response.getPositions()).isEqualTo(request.positions());
+                    assertThat(response.getPositions())
+                            .isEqualTo(request.positions());
                 })
                 .verifyComplete();
 
         StepVerifier.create(memoRepository.findById(memo.getId()))
                 .assertNext(updated -> {
-                    assertThat(updated.getPositions()).isEqualTo(request.positions());
+                    assertThat(updated.getPositions())
+                            .isEqualTo(request.positions());
                 })
                 .verifyComplete();
     }
@@ -192,11 +200,15 @@ class MemoServiceTest {
                 .positions("{\"x\":0,\"y\":0}")
                 .build()).block();
 
-        UpdateMemoRequest request = new UpdateMemoRequest(memo.getId(), "{\"x\":100,\"y\":100}");
+        UpdateMemoRequest request = new UpdateMemoRequest(memo.getId(),
+                "{\"x\":100,\"y\":100}");
 
-        StepVerifier.create(memoService.updateMemo(request, "06D6W8HDY79QFZX39RMX62KSX4"))
+        StepVerifier
+                .create(memoService.updateMemo(request,
+                        "06D6W8HDY79QFZX39RMX62KSX4"))
                 .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e).getErrorCode() == ErrorCode.ACCESS_DENIED)
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ACCESS_DENIED)
                 .verify();
     }
 
@@ -241,7 +253,8 @@ class MemoServiceTest {
                 .build()).block();
 
         String adminId = "06D6WCH677C3FCC2Q9SD5M1Y5X"; // Admin User ID
-        AuthenticatedUser adminUser = AuthenticatedUser.withRoles(adminId, Set.of(ProjectRole.ADMIN));
+        AuthenticatedUser adminUser = AuthenticatedUser.withRoles(adminId,
+                Set.of(ProjectRole.ADMIN));
 
         StepVerifier.create(memoService.deleteMemo(memo.getId(), adminUser))
                 .verifyComplete();
@@ -263,7 +276,9 @@ class MemoServiceTest {
         CreateMemoCommentRequest request = new CreateMemoCommentRequest("새 댓글");
         String authorId = "06D6W8HDY79QFZX39RMX62KSX4";
 
-        StepVerifier.create(memoService.createComment(memo.getId(), request, authorId))
+        StepVerifier
+                .create(memoService.createComment(memo.getId(), request,
+                        authorId))
                 .assertNext(response -> {
                     assertThat(response.getMemoId()).isEqualTo(memo.getId());
                     assertThat(response.getBody()).isEqualTo("새 댓글");
@@ -341,9 +356,11 @@ class MemoServiceTest {
                 .build()).block();
 
         String ownerId = "06D6WCH677C3FCC2Q9SD5M1Y5Y"; // Owner User ID
-        AuthenticatedUser ownerUser = AuthenticatedUser.withRoles(ownerId, Set.of(ProjectRole.OWNER));
+        AuthenticatedUser ownerUser = AuthenticatedUser.withRoles(ownerId,
+                Set.of(ProjectRole.OWNER));
 
-        StepVerifier.create(memoService.deleteComment(comment.getId(), ownerUser))
+        StepVerifier
+                .create(memoService.deleteComment(comment.getId(), ownerUser))
                 .verifyComplete();
 
         StepVerifier.create(memoCommentRepository.findById(comment.getId()))
@@ -383,7 +400,7 @@ class MemoServiceTest {
         StepVerifier.create(memoCommentRepository.findById(comment1.getId()))
                 .assertNext(c -> assertThat(c.getDeletedAt()).isNotNull())
                 .verifyComplete();
-        
+
         // comment2 생존 확인
         StepVerifier.create(memoCommentRepository.findById(comment2.getId()))
                 .assertNext(c -> assertThat(c.getDeletedAt()).isNull())
@@ -394,4 +411,5 @@ class MemoServiceTest {
                 .assertNext(m -> assertThat(m.getDeletedAt()).isNull())
                 .verifyComplete();
     }
+
 }

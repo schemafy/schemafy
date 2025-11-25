@@ -68,7 +68,9 @@ public class SecurityConfig {
                 .addFilterAt(jwtAuthenticationFilter,
                         SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(ApiPath.PUBLIC_API.replace("{version}", "**")).permitAll()
+                        .pathMatchers(
+                                ApiPath.PUBLIC_API.replace("{version}", "**"))
+                        .permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated())
                 .build();

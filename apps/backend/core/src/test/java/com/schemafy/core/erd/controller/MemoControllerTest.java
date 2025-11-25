@@ -1,20 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -24,6 +9,9 @@ import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
@@ -40,6 +28,19 @@ import com.schemafy.core.erd.service.MemoService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -115,7 +116,8 @@ class MemoControllerTest {
                                                 "응답 포맷 (application/json)")),
                         requestFields(
                                 fieldWithPath("schemaId").description("스키마 ID"),
-                                fieldWithPath("positions").description("메모 위치 (JSON 문자열)"),
+                                fieldWithPath("positions")
+                                        .description("메모 위치 (JSON 문자열)"),
                                 fieldWithPath("body").description("메모 내용")),
                         responseHeaders(
                                 headerWithName("Content-Type")
@@ -123,7 +125,8 @@ class MemoControllerTest {
                         responseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
-                                fieldWithPath("result").description("생성된 메모 정보"),
+                                fieldWithPath("result")
+                                        .description("생성된 메모 정보"),
                                 fieldWithPath("result.id")
                                         .description("메모 ID"),
                                 fieldWithPath("result.schemaId")
@@ -160,7 +163,7 @@ class MemoControllerTest {
     @DisplayName("메모 조회 API 문서화")
     void getMemo() throws Exception {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
-        
+
         MemoDetailResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
@@ -246,7 +249,7 @@ class MemoControllerTest {
     @DisplayName("스키마별 메모 목록 조회 API 문서화")
     void getMemosBySchemaId() throws Exception {
         String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
-        
+
         MemoResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
@@ -307,7 +310,7 @@ class MemoControllerTest {
     void updateMemo() throws Exception {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         UpdateMemoRequest request = new UpdateMemoRequest(memoId, "{}");
-        
+
         MemoResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
                         {
@@ -346,14 +349,16 @@ class MemoControllerTest {
                                                 "응답 포맷 (application/json)")),
                         requestFields(
                                 fieldWithPath("memoId").description("메모 ID"),
-                                fieldWithPath("positions").description("변경할 위치 정보")),
+                                fieldWithPath("positions")
+                                        .description("변경할 위치 정보")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
                         responseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
-                                fieldWithPath("result").description("수정된 메모 정보"),
+                                fieldWithPath("result")
+                                        .description("수정된 메모 정보"),
                                 fieldWithPath("result.id")
                                         .description("메모 ID"),
                                 fieldWithPath("result.schemaId")
@@ -402,14 +407,16 @@ class MemoControllerTest {
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result")
                                         .type(JsonFieldType.NULL)
-                                        .description("응답 데이터 (null)").optional())));
+                                        .description("응답 데이터 (null)")
+                                        .optional())));
     }
 
     @Test
     @DisplayName("메모 댓글 생성 API 문서화")
     void createMemoComment() throws Exception {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
-        CreateMemoCommentRequest request = new CreateMemoCommentRequest("댓글 내용");
+        CreateMemoCommentRequest request = new CreateMemoCommentRequest(
+                "댓글 내용");
 
         MemoCommentResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
@@ -424,7 +431,8 @@ class MemoControllerTest {
                         }
                         """), MemoCommentResponse.class);
 
-        given(memoService.createComment(eq(memoId), any(CreateMemoCommentRequest.class), any()))
+        given(memoService.createComment(eq(memoId),
+                any(CreateMemoCommentRequest.class), any()))
                 .willReturn(Mono.just(response));
 
         webTestClient.post()
@@ -455,7 +463,8 @@ class MemoControllerTest {
                         responseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
-                                fieldWithPath("result").description("생성된 댓글 정보"),
+                                fieldWithPath("result")
+                                        .description("생성된 댓글 정보"),
                                 fieldWithPath("result.id")
                                         .description("댓글 ID"),
                                 fieldWithPath("result.memoId")
@@ -536,7 +545,8 @@ class MemoControllerTest {
     void updateMemoComment() throws Exception {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
-        UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(memoId, commentId, "수정된 내용");
+        UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(memoId,
+                commentId, "수정된 내용");
 
         MemoCommentResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
@@ -551,11 +561,13 @@ class MemoControllerTest {
                         }
                         """), MemoCommentResponse.class);
 
-        given(memoService.updateComment(any(UpdateMemoCommentRequest.class), any()))
+        given(memoService.updateComment(any(UpdateMemoCommentRequest.class),
+                any()))
                 .willReturn(Mono.just(response));
 
         webTestClient.put()
-                .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}", memoId, commentId)
+                .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",
+                        memoId, commentId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(objectMapper.writeValueAsString(request))
                 .header("Accept", "application/json")
@@ -586,7 +598,8 @@ class MemoControllerTest {
                         responseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
-                                fieldWithPath("result").description("수정된 댓글 정보"),
+                                fieldWithPath("result")
+                                        .description("수정된 댓글 정보"),
                                 fieldWithPath("result.id")
                                         .description("댓글 ID"),
                                 fieldWithPath("result.memoId")
@@ -609,11 +622,13 @@ class MemoControllerTest {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
 
-        given(memoService.deleteComment(eq(commentId), any(AuthenticatedUser.class)))
+        given(memoService.deleteComment(eq(commentId),
+                any(AuthenticatedUser.class)))
                 .willReturn(Mono.empty());
 
         webTestClient.delete()
-                .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}", memoId, commentId)
+                .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",
+                        memoId, commentId)
                 .header("Accept", "application/json")
                 .exchange()
                 .expectStatus().isOk()
@@ -638,7 +653,8 @@ class MemoControllerTest {
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result")
                                         .type(JsonFieldType.NULL)
-                                        .description("응답 데이터 (null)").optional())));
+                                        .description("응답 데이터 (null)")
+                                        .optional())));
     }
 
 }
