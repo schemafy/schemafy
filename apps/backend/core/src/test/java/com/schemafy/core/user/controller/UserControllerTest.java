@@ -63,10 +63,6 @@ class UserControllerTest {
                 System.currentTimeMillis());
     }
 
-    private String generateRefreshToken(String userId) {
-        return jwtProvider.generateRefreshToken(userId);
-    }
-
     @Test
     @DisplayName("ID로 회원 조회에 성공한다")
     @WithMockUser(username = "test-user-id")
@@ -167,12 +163,9 @@ class UserControllerTest {
                 .blockOptional()
                 .orElseThrow();
 
-        String userId = user.getId();
-
-        // 인증 없이 조회 시도
         webTestClient
                 .get()
-                .uri(API_BASE_PATH + "/users/{userId}", userId)
+                .uri(API_BASE_PATH + "/users/{userId}", user.getId())
                 .exchange()
                 .expectStatus().isUnauthorized();
     }

@@ -74,8 +74,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("회원가입에 성공한다")
     void signUpSuccess() {
-        SignUpRequest request = new SignUpRequest("test@example.com",
-                "Test User", "password");
+        SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
 
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -123,13 +122,10 @@ class AuthControllerTest {
 
     static Stream<Arguments> invalidSignUpRequests() {
         return Stream.of(
-                Arguments.of(new SignUpRequest("", "Test User", "password")), // empty email
-                Arguments.of(new SignUpRequest("invalid-email", "Test User",
-                        "password")), // invalid email
-                Arguments.of(
-                        new SignUpRequest("test@example.com", "", "password")), // empty name
-                Arguments.of(
-                        new SignUpRequest("test@example.com", "Test User", "")) // empty password
+                Arguments.of(new SignUpRequest("", "Test User", "password")),
+                Arguments.of(new SignUpRequest("invalid-email", "Test User", "password")),
+                Arguments.of(new SignUpRequest("test@example.com", "", "password")),
+                Arguments.of(new SignUpRequest("test@example.com", "Test User", ""))
         );
     }
 
@@ -180,9 +176,9 @@ class AuthControllerTest {
 
     static Stream<Arguments> invalidLoginRequests() {
         return Stream.of(
-                Arguments.of(new LoginRequest("", "password")), // empty email
-                Arguments.of(new LoginRequest("invalid-email", "password")), // invalid email
-                Arguments.of(new LoginRequest("test@example.com", "")) // empty password
+                Arguments.of(new LoginRequest("", "password")),
+                Arguments.of(new LoginRequest("invalid-email", "password")),
+                Arguments.of(new LoginRequest("test@example.com", ""))
         );
     }
 
@@ -245,7 +241,6 @@ class AuthControllerTest {
         String userId = JsonPath.read(responseBody, "$.result.id");
         String refreshToken = generateRefreshToken(userId);
 
-        // 쿠키로 Refresh Token 전달
         webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
                 .cookie("refreshToken", refreshToken)
                 .exchange()
@@ -290,7 +285,6 @@ class AuthControllerTest {
     @Test
     @DisplayName("리프레시 토큰 쿠키가 없으면 갱신 시 실패한다")
     void refreshTokenFailWithoutCookie() {
-        // 쿠키 없이 요청
         webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
                 .exchange()
                 .expectStatus().isUnauthorized()
