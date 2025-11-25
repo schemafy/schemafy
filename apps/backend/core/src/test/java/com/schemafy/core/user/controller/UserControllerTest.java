@@ -174,7 +174,7 @@ class UserControllerTest {
                 .get()
                 .uri(API_BASE_PATH + "/users/{userId}", userId)
                 .exchange()
-                .expectStatus().isForbidden();
+                .expectStatus().isUnauthorized();
     }
 
     @Test
