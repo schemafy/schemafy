@@ -22,7 +22,6 @@ import static com.schemafy.core.ulid.docs.UlidApiSnippets.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
-
 @ActiveProfiles("test")
 @WebFluxTest(controllers = UlidController.class)
 @AutoConfigureRestDocs

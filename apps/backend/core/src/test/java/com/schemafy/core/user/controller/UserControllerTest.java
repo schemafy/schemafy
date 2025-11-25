@@ -1,17 +1,7 @@
 package com.schemafy.core.user.controller;
 
-import com.jayway.jsonpath.JsonPath;
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.ulid.generator.UlidGenerator;
-import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import java.util.HashMap;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -23,7 +13,19 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import java.util.HashMap;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.jayway.jsonpath.JsonPath;
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.repository.entity.User;
 
 import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;

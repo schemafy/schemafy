@@ -1,8 +1,5 @@
 package com.schemafy.core.common.config;
 
-import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
-import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
-import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
@@ -14,11 +11,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 
+import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
+import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
+import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
+
 @Profile("test")
 @Configuration
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
-@Import({ JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class, JwtAuthenticationFilter.class })
+@Import({ JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class,
+    JwtAuthenticationFilter.class })
 public class TestSecurityConfig {
 
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;

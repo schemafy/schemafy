@@ -74,7 +74,8 @@ class AuthControllerTest {
     @Test
     @DisplayName("회원가입에 성공한다")
     void signUpSuccess() {
-        SignUpRequest request = new SignUpRequest("test@example.com", "Test User", "password");
+        SignUpRequest request = new SignUpRequest("test@example.com",
+                "Test User", "password");
 
         webTestClient.post().uri(API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -123,10 +124,12 @@ class AuthControllerTest {
     static Stream<Arguments> invalidSignUpRequests() {
         return Stream.of(
                 Arguments.of(new SignUpRequest("", "Test User", "password")),
-                Arguments.of(new SignUpRequest("invalid-email", "Test User", "password")),
-                Arguments.of(new SignUpRequest("test@example.com", "", "password")),
-                Arguments.of(new SignUpRequest("test@example.com", "Test User", ""))
-        );
+                Arguments.of(new SignUpRequest("invalid-email", "Test User",
+                        "password")),
+                Arguments.of(
+                        new SignUpRequest("test@example.com", "", "password")),
+                Arguments.of(new SignUpRequest("test@example.com", "Test User",
+                        "")));
     }
 
     @Test
@@ -178,8 +181,7 @@ class AuthControllerTest {
         return Stream.of(
                 Arguments.of(new LoginRequest("", "password")),
                 Arguments.of(new LoginRequest("invalid-email", "password")),
-                Arguments.of(new LoginRequest("test@example.com", ""))
-        );
+                Arguments.of(new LoginRequest("test@example.com", "")));
     }
 
     @Test
