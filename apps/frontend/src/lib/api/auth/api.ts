@@ -1,5 +1,5 @@
 import { apiClient } from '../client';
-import { setAccessToken, getAccessToken } from '../token';
+import { setAccessToken } from '../token';
 import type { ApiResponse } from '../types';
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
 
@@ -7,7 +7,7 @@ export const signUp = async (
   data: SignUpRequest,
 ): Promise<ApiResponse<AuthResponse>> => {
   const response = await apiClient.post<ApiResponse<AuthResponse>>(
-    '/api/v1.0/users/signup',
+    '/public/api/v1.0/users/signup',
     data,
   );
 
@@ -24,7 +24,7 @@ export const signIn = async (
   data: SignInRequest,
 ): Promise<ApiResponse<AuthResponse>> => {
   const response = await apiClient.post<ApiResponse<AuthResponse>>(
-    '/api/v1.0/users/login',
+    '/public/api/v1.0/users/login',
     data,
   );
 
@@ -39,7 +39,7 @@ export const signIn = async (
 
 export const refreshToken = async (): Promise<ApiResponse<null>> => {
   const response = await apiClient.post<ApiResponse<null>>(
-    '/api/v1.0/users/refresh',
+    '/public/api/v1.0/users/refresh',
   );
 
   const accessToken = response.headers['authorization'];
@@ -51,18 +51,9 @@ export const refreshToken = async (): Promise<ApiResponse<null>> => {
   return response.data;
 };
 
-export const getUserInfo = async (
-  userId: string,
-): Promise<ApiResponse<AuthResponse>> => {
-  const token = getAccessToken();
-
+export const getMyInfo = async (): Promise<ApiResponse<AuthResponse>> => {
   const response = await apiClient.get<ApiResponse<AuthResponse>>(
-    `/api/v1.0/users/${userId}`,
-    {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : '',
-      },
-    },
+    `/public/api/v1.0/users`,
   );
 
   return response.data;

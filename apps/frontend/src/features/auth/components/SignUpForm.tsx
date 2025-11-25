@@ -3,6 +3,7 @@ import { useFormState } from '../hooks';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signUp } from '@/lib/api';
+import { useAuthStore } from '@/store';
 import type { ValidationRules, SignUpFormValues } from '../types';
 
 const formFields = [
@@ -73,6 +74,7 @@ export const SignUpForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
   const navigate = useNavigate();
+  const setUser = useAuthStore((s) => s.setUser);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -98,8 +100,11 @@ export const SignUpForm = () => {
       });
 
       if (response.success) {
+        if (response.result) {
+          setUser(response.result);
+        }
         resetForm();
-        navigate('/canvas');
+        navigate('/');
       } else {
         setSubmitError(response.error?.message || '회원가입에 실패했습니다.');
       }

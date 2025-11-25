@@ -2,8 +2,13 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib';
 import { logoImg } from '@/assets';
 import { LandingContents, CanvasContents } from './Contents';
+import { UserMenu } from './UserMenu';
+import { useAuthStore } from '@/store';
 
 export const Header = ({ isCanvasPage }: { isCanvasPage: boolean }) => {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const user = useAuthStore((s) => s.user);
+
   return (
     <header className="w-full border-b border-schemafy-light-gray flex justify-center sticky">
       <div
@@ -18,7 +23,13 @@ export const Header = ({ isCanvasPage }: { isCanvasPage: boolean }) => {
             <h1 className="font-heading-md">Schemafy</h1>
           </div>
         </Link>
-        {isCanvasPage ? <CanvasContents /> : <LandingContents />}
+        {isCanvasPage ? (
+          <CanvasContents />
+        ) : accessToken && user ? (
+          <UserMenu />
+        ) : (
+          <LandingContents />
+        )}
       </div>
     </header>
   );
