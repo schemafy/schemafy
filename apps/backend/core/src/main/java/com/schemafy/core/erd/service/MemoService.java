@@ -3,6 +3,7 @@ package com.schemafy.core.erd.service;
 import java.util.Collections;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -32,10 +33,11 @@ public class MemoService {
     private final SchemaRepository schemaRepository;
     private final MemoRepository memoRepository;
     private final MemoCommentRepository memoCommentRepository;
+    private final TransactionalOperator transactionalOperator;
 
     public Mono<MemoDetailResponse> createMemo(CreateMemoRequest request,
             String authorId) {
-        return ensureSchemaExists(request.schemaId())
+        return transactionalOperator.transactional(ensureSchemaExists(request.schemaId())
                 .then(memoRepository.save(Memo.builder()
                         .schemaId(request.schemaId())
                         .authorId(authorId)
@@ -49,7 +51,7 @@ public class MemoService {
                                 .build())
                         .map(MemoCommentResponse::from)
                         .map(comment -> MemoDetailResponse.from(memo,
-                                Collections.singletonList(comment))));
+                                Collections.singletonList(comment)))));
     }
 
     public Mono<MemoDetailResponse> getMemo(String memoId) {
@@ -86,7 +88,7 @@ public class MemoService {
     }
 
     public Mono<Void> deleteMemo(String memoId, AuthenticatedUser user) {
-        return memoRepository.findByIdAndDeletedAtIsNull(memoId)
+        return transactionalOperator.transactional(memoRepository.findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .flatMap(memo -> {
@@ -104,7 +106,7 @@ public class MemoService {
                             comment.delete();
                             return memoCommentRepository.save(comment);
                         })
-                        .then());
+                        .then()));
     }
 
     public Mono<MemoCommentResponse> createComment(String memoId,
@@ -149,7 +151,7 @@ public class MemoService {
 
     public Mono<Void> deleteComment(String commentId,
             AuthenticatedUser user) {
-        return memoCommentRepository
+        return transactionalOperator.transactional(memoCommentRepository
                 .findByIdAndDeletedAtIsNull(commentId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
@@ -165,7 +167,7 @@ public class MemoService {
                             .then(handleMemoDeletionIfNoComments(
                                     comment.getMemoId()));
                 })
-                .then();
+                .then());
     }
 
     private Mono<Void> handleMemoDeletionIfNoComments(String memoId) {

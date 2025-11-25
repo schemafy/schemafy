@@ -21,12 +21,13 @@ import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-public class RelationshipService extends BaseErdService {
+public class RelationshipService {
 
     private final ValidationClient validationClient;
     private final RelationshipRepository relationshipRepository;
     private final RelationshipColumnRepository relationshipColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
+    private final TransactionalOperator transactionalOperator;
 
     public RelationshipService(
             ValidationClient validationClient,
@@ -34,17 +35,17 @@ public class RelationshipService extends BaseErdService {
             RelationshipColumnRepository relationshipColumnRepository,
             AffectedEntitiesSaver affectedEntitiesSaver,
             TransactionalOperator transactionalOperator) {
-        super(transactionalOperator);
         this.validationClient = validationClient;
         this.relationshipRepository = relationshipRepository;
         this.relationshipColumnRepository = relationshipColumnRepository;
         this.affectedEntitiesSaver = affectedEntitiesSaver;
+        this.transactionalOperator = transactionalOperator;
     }
 
     public Mono<AffectedMappingResponse> createRelationship(
             CreateRelationshipRequestWithExtra request) {
         return validationClient.createRelationship(request.request())
-                .flatMap(database -> transactional(relationshipRepository
+                .flatMap(database -> transactionalOperator.transactional(relationshipRepository
                         .save(ErdMapper.toEntity(
                                 request.request().getRelationship(),
                                 request.extra()))
@@ -142,7 +143,7 @@ public class RelationshipService extends BaseErdService {
     public Mono<AffectedMappingResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
-                .flatMap(database -> transactional(relationshipColumnRepository
+                .flatMap(database -> transactionalOperator.transactional(relationshipColumnRepository
                         .save(ErdMapper
                                 .toEntity(request.getRelationshipColumn()))
                         .flatMap(savedRelationshipColumn -> {

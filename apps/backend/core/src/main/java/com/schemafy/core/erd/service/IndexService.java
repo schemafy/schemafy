@@ -21,27 +21,28 @@ import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-public class IndexService extends BaseErdService {
+public class IndexService {
 
     private final ValidationClient validationClient;
     private final IndexRepository indexRepository;
     private final IndexColumnRepository indexColumnRepository;
+    private final TransactionalOperator transactionalOperator;
 
     public IndexService(
             ValidationClient validationClient,
             IndexRepository indexRepository,
             IndexColumnRepository indexColumnRepository,
             TransactionalOperator transactionalOperator) {
-        super(transactionalOperator);
         this.validationClient = validationClient;
         this.indexRepository = indexRepository;
         this.indexColumnRepository = indexColumnRepository;
+        this.transactionalOperator = transactionalOperator;
     }
 
     public Mono<AffectedMappingResponse> createIndex(
             Validation.CreateIndexRequest request) {
         return validationClient.createIndex(request)
-                .flatMap(database -> transactional(indexRepository
+                .flatMap(database -> transactionalOperator.transactional(indexRepository
                         .save(ErdMapper.toEntity(request.getIndex()))
                         .flatMap(savedIndex -> Flux
                                 .fromIterable(

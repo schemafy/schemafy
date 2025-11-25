@@ -20,12 +20,13 @@ import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-public class ConstraintService extends BaseErdService {
+public class ConstraintService {
 
     private final ValidationClient validationClient;
     private final ConstraintRepository constraintRepository;
     private final ConstraintColumnRepository constraintColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
+    private final TransactionalOperator transactionalOperator;
 
     public ConstraintService(
             ValidationClient validationClient,
@@ -33,17 +34,17 @@ public class ConstraintService extends BaseErdService {
             ConstraintColumnRepository constraintColumnRepository,
             AffectedEntitiesSaver affectedEntitiesSaver,
             TransactionalOperator transactionalOperator) {
-        super(transactionalOperator);
         this.validationClient = validationClient;
         this.constraintRepository = constraintRepository;
         this.constraintColumnRepository = constraintColumnRepository;
         this.affectedEntitiesSaver = affectedEntitiesSaver;
+        this.transactionalOperator = transactionalOperator;
     }
 
     public Mono<AffectedMappingResponse> createConstraint(
             Validation.CreateConstraintRequest request) {
         return validationClient.createConstraint(request)
-                .flatMap(database -> transactional(constraintRepository
+                .flatMap(database -> transactionalOperator.transactional(constraintRepository
                         .save(ErdMapper.toEntity(request.getConstraint()))
                         .flatMap(savedConstraint -> {
                             Validation.Database updatedDatabase = AffectedMappingResponse
@@ -121,7 +122,7 @@ public class ConstraintService extends BaseErdService {
     public Mono<AffectedMappingResponse> addColumnToConstraint(
             Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
-                .flatMap(database -> transactional(constraintColumnRepository
+                .flatMap(database -> transactionalOperator.transactional(constraintColumnRepository
                         .save(ErdMapper.toEntity(
                                 request.getConstraintColumn()))
                         .flatMap(savedConstraintColumn -> {
