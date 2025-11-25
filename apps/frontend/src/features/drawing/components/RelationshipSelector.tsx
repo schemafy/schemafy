@@ -17,8 +17,8 @@ export const RelationshipSelector = ({
     onChange({ ...config, type });
   };
 
-  const handleOptionalChange = (isDashed: boolean) => {
-    onChange({ ...config, isDashed });
+  const handleNonIdentifyingChange = (isNonIdentifying: boolean) => {
+    onChange({ ...config, isNonIdentifying });
   };
 
   return (
@@ -28,7 +28,7 @@ export const RelationshipSelector = ({
       </div>
 
       <div className="space-y-2 mb-3">
-        {Object.entries(RELATIONSHIP_TYPES).map(([key, typeConfig]) => (
+        {Object.entries(RELATIONSHIP_TYPES).map(([key, typeInfo]) => (
           <button
             key={key}
             onClick={() => handleTypeChange(key as RelationshipType)}
@@ -37,11 +37,8 @@ export const RelationshipSelector = ({
               ${config.type === key ? 'bg-schemafy-secondary border border-schemafy-light-gray' : ''}
             `}
           >
-            <LinePreview
-              type={key as RelationshipType}
-              isDashed={config.isDashed}
-            />
-            {typeConfig.label}
+            <LinePreview isNonIdentifying={config.isNonIdentifying} />
+            {typeInfo.label}
           </button>
         ))}
       </div>
@@ -51,22 +48,17 @@ export const RelationshipSelector = ({
       <label className="flex items-center gap-2 cursor-pointer text-sm mb-3">
         <input
           type="checkbox"
-          checked={config.isDashed}
-          onChange={(e) => handleOptionalChange(e.target.checked)}
+          checked={config.isNonIdentifying}
+          onChange={(e) => handleNonIdentifyingChange(e.target.checked)}
           className="w-4 h-4 text-schemafy-text rounded focus:ring-schemafy-text"
         />
-        <span className="text-schemafy-text">Dashed</span>
+        <span className="text-schemafy-text">Non-Identifying</span>
       </label>
     </div>
   );
 };
 
-const LinePreview = ({
-  isDashed,
-}: {
-  type: RelationshipType;
-  isDashed: boolean;
-}) => {
+const LinePreview = ({ isNonIdentifying }: { isNonIdentifying: boolean }) => {
   const color = 'var(--color-schemafy-dark-gray)';
 
   return (
@@ -78,7 +70,7 @@ const LinePreview = ({
         y2="2"
         stroke={color}
         strokeWidth="2"
-        strokeDasharray={isDashed ? '5 5' : 'none'}
+        strokeDasharray={isNonIdentifying ? '5 5' : 'none'}
       />
     </svg>
   );

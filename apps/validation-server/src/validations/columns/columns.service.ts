@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ERD_VALIDATOR } from '@schemafy/validator';
 
 import { toErrorDetails } from '../common/error-mapper';
@@ -8,6 +8,8 @@ import type { Database, Column, Schema, Table } from '@schemafy/validator';
 
 @Injectable()
 export class ColumnsService {
+  private readonly logger = new Logger(ColumnsService.name);
+
   createColumn(
     database: Database,
     schemaId: Schema['id'],
@@ -21,8 +23,15 @@ export class ColumnsService {
         tableId,
         column,
       );
+      this.logger.log(
+        `CreateColumn request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, column: ${JSON.stringify(column)}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `CreateColumn request failed, schemaId: ${schemaId}, tableId: ${tableId}, column: ${JSON.stringify(column)}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -40,8 +49,15 @@ export class ColumnsService {
         tableId,
         columnId,
       );
+      this.logger.log(
+        `DeleteColumn request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `DeleteColumn request failed, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -61,8 +77,15 @@ export class ColumnsService {
         columnId,
         newName,
       );
+      this.logger.log(
+        `ChangeColumnName request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, newName: ${newName}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `ChangeColumnName request failed, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, newName: ${newName}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -84,8 +107,19 @@ export class ColumnsService {
         dataType,
         lengthScale,
       );
+      this.logger.log(
+        `ChangeColumnType request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, dataType: ${dataType}, lengthScale: ${JSON.stringify(
+          lengthScale,
+        )}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `ChangeColumnType request failed, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, dataType: ${dataType}, lengthScale: ${JSON.stringify(
+          lengthScale,
+        )}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -105,29 +139,15 @@ export class ColumnsService {
         columnId,
         newPosition,
       );
-      return { success: { database: updated } };
-    } catch (err) {
-      return { failure: { errors: toErrorDetails(err) } };
-    }
-  }
-
-  changeColumnNullable(
-    database: Database,
-    schemaId: Schema['id'],
-    tableId: Table['id'],
-    columnId: Column['id'],
-    nullable: boolean,
-  ): ValidateResult {
-    try {
-      const updated = ERD_VALIDATOR.changeColumnNullable(
-        database,
-        schemaId,
-        tableId,
-        columnId,
-        nullable,
+      this.logger.log(
+        `ChangeColumnPosition request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, newPosition: ${newPosition}`,
       );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `ChangeColumnPosition request failed, schemaId: ${schemaId}, tableId: ${tableId}, columnId: ${columnId}, newPosition: ${newPosition}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }

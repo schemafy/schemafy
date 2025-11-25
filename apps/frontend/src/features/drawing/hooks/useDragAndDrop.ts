@@ -1,28 +1,16 @@
 import { useState, type DragEvent } from 'react';
-import type { FieldType } from '../types';
+import type { ColumnType } from '../types';
 
 interface UseDragAndDropProps {
-  items: FieldType[];
-  onReorder: (newItems: FieldType[]) => void;
+  items: ColumnType[];
+  onReorder: (
+    newItems: ColumnType[],
+    draggedItemId: string,
+    newIndex: number,
+  ) => void;
 }
 
-interface UseDragAndDropReturn {
-  draggedItem: string | null;
-  dragOverItem: string | null;
-  handleDragStart: (e: DragEvent, itemId: string) => void;
-  handleDragOver: (e: DragEvent, itemId: string) => void;
-  handleDragLeave: (e: DragEvent) => void;
-  handleDrop: (e: DragEvent, dropTargetId: string) => void;
-  handleDragEnd: () => void;
-  isDragging: boolean;
-  isDraggedItem: (itemId: string) => boolean;
-  isDragOverItem: (itemId: string) => boolean;
-}
-
-export const useDragAndDrop = ({
-  items,
-  onReorder,
-}: UseDragAndDropProps): UseDragAndDropReturn => {
+export const useDragAndDrop = ({ items, onReorder }: UseDragAndDropProps) => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverItem, setDragOverItem] = useState<string | null>(null);
 
@@ -61,7 +49,7 @@ export const useDragAndDrop = ({
       const [draggedElement] = newItems.splice(draggedIndex, 1);
       newItems.splice(targetIndex, 0, draggedElement);
 
-      onReorder(newItems);
+      onReorder(newItems, draggedItem, targetIndex);
     }
 
     setDraggedItem(null);

@@ -1,7 +1,12 @@
 import { z } from "zod";
 
+export const SCHEMA_NAME_CONSTRAINTS = {
+  MIN_LENGTH: 1,
+  MAX_LENGTH: 20,
+} as const;
+
 const ULID = z.string().ulid();
-const DB_VENDOR = z.enum(["mysql"]);
+const DB_VENDOR = z.enum(["MYSQL"]);
 const INDEX_TYPE = z.enum(["BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER"]);
 const INDEX_SORT_DIR = z.enum(["ASC", "DESC"]);
 const CONSTRAINT_KIND = z.enum([
@@ -111,6 +116,7 @@ export const RELATIONSHIP = z.object({
   fkEnforced: z.literal(false),
   columns: z.array(RELATIONSHIP_COLUMN),
   isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const TABLE = z.object({
@@ -124,24 +130,30 @@ export const TABLE = z.object({
   constraints: z.array(CONSTRAINT),
   relationships: z.array(RELATIONSHIP),
   isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const SCHEMA = z.object({
   id: ULID,
   projectId: ULID,
   dbVendorId: DB_VENDOR,
-  name: z.string().min(1).max(20),
+  name: z
+    .string()
+    .min(SCHEMA_NAME_CONSTRAINTS.MIN_LENGTH)
+    .max(SCHEMA_NAME_CONSTRAINTS.MAX_LENGTH),
   charset: z.string(),
   collation: z.string(),
   vendorOption: z.string(),
   tables: z.array(TABLE),
   isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const DATABASE = z.object({
   id: ULID,
   schemas: z.array(SCHEMA),
   isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export type Schema = z.infer<typeof SCHEMA>;

@@ -1,8 +1,8 @@
 import { useReactFlow } from '@xyflow/react';
-import { Plus, Minus, Maximize } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 
 export const CustomControls = () => {
-  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const { zoomIn, zoomOut } = useReactFlow();
   return (
     <div
       style={{
@@ -12,9 +12,6 @@ export const CustomControls = () => {
     >
       <button onClick={() => zoomIn()}>
         <Plus size={16} color="var(--color-schemafy-dark-gray)" />
-      </button>
-      <button onClick={() => fitView()}>
-        <Maximize size={16} color="var(--color-schemafy-dark-gray)" />
       </button>
       <button onClick={() => zoomOut()}>
         <Minus size={16} color="var(--color-schemafy-dark-gray)" />
