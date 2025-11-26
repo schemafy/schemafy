@@ -4,6 +4,7 @@ import { logoImg } from '@/assets';
 import { LandingContents, CanvasContents } from './Contents';
 import { UserMenu } from './UserMenu';
 import { useAuthStore } from '@/store';
+import type { AuthResponse } from '@/lib/api/auth/types';
 
 export const Header = ({ isCanvasPage }: { isCanvasPage: boolean }) => {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -23,14 +24,28 @@ export const Header = ({ isCanvasPage }: { isCanvasPage: boolean }) => {
             <h1 className="font-heading-md">Schemafy</h1>
           </div>
         </Link>
-        {isCanvasPage ? (
-          <CanvasContents />
-        ) : accessToken && user ? (
-          <UserMenu />
-        ) : (
-          <LandingContents />
-        )}
+        <HeaderContents
+          isCanvasPage={isCanvasPage}
+          accessToken={accessToken}
+          user={user}
+        />
       </div>
     </header>
   );
+};
+
+interface HeaderContentsProps {
+  isCanvasPage: boolean;
+  accessToken: string | null;
+  user: AuthResponse | null;
+}
+
+const HeaderContents = ({
+  isCanvasPage,
+  accessToken,
+  user,
+}: HeaderContentsProps) => {
+  if (isCanvasPage) return <CanvasContents />;
+  if (accessToken && user) return <UserMenu />;
+  return <LandingContents />;
 };

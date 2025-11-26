@@ -1,12 +1,12 @@
-import axios, {
-  type AxiosInstance,
-  type AxiosError,
-  type InternalAxiosRequestConfig,
-} from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../../store/auth.store';
 
-export const apiClient: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8080',
+const BASE_URL: string =
+  (import.meta as unknown as { env?: { VITE_BASE_URL?: string } })?.env
+    ?.VITE_BASE_URL ?? 'http://localhost:8080';
+
+export const apiClient = axios.create({
+  baseURL: BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -14,14 +14,15 @@ export const apiClient: AxiosInstance = axios.create({
   withCredentials: true, // 쿠키 전송을 위해 필요 (refresh token)
 });
 
-const isAuthFreePath = (url?: string | null) => {
-  console.log(url);
-  if (!url) return false;
-  return (
-    url.includes('/public/api/v1.0/users/login') ||
-    url.includes('/public/api/v1.0/users/signup')
-  );
-};
+// 인증이 필요 없는 요청은 별도의 publicClient를 사용하도록 유도한다.
+export const publicClient = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true,
+});
 
 type RequestConfigWithMeta = InternalAxiosRequestConfig & {
   _retry?: boolean;
@@ -29,7 +30,7 @@ type RequestConfigWithMeta = InternalAxiosRequestConfig & {
 };
 
 const refreshClient = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: BASE_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -50,10 +51,10 @@ const refreshAccessToken = async (): Promise<string | null> => {
           useAuthStore.getState().setAccessToken(token);
           return token;
         }
-        useAuthStore.getState().setAccessToken(null);
+        useAuthStore.getState().clearAuth();
         return null;
       } catch {
-        useAuthStore.getState().setAccessToken(null);
+        useAuthStore.getState().clearAuth();
         return null;
       } finally {
         refreshPromise = null;
@@ -64,13 +65,6 @@ const refreshAccessToken = async (): Promise<string | null> => {
 };
 
 apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
-  if (config._skipAuth) return config;
-
-  const url = config.url ?? '';
-  if (isAuthFreePath(url)) {
-    return config;
-  }
-
   const currentToken = useAuthStore.getState().accessToken;
   if (currentToken) {
     config.headers = config.headers ?? {};
@@ -93,9 +87,7 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const responseStatus = error.response?.status;
     const config = error.config as RequestConfigWithMeta | undefined;
-    const url = config?.url ?? '';
-
-    if (!config || config._retry || isAuthFreePath(url)) {
+    if (!config || config._retry) {
       return Promise.reject(error);
     }
 

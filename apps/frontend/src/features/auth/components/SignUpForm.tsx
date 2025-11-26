@@ -83,11 +83,6 @@ export const SignUpForm = () => {
       return;
     }
 
-    if (form.password !== form.confirmPassword) {
-      setSubmitError('비밀번호가 일치하지 않습니다.');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {

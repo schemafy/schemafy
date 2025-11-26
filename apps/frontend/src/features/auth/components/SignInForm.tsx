@@ -55,7 +55,7 @@ export const SignInForm = () => {
     e.preventDefault();
     setSubmitError('');
 
-    const hasErrors = Object.values(errors).some((error) => error);
+    const hasErrors = Object.values(errors).length > 0;
     if (hasErrors) {
       return;
     }
