@@ -10,17 +10,13 @@ import { getMyInfo, refreshToken } from '@/lib/api';
 
 function App() {
   const setUser = useAuthStore((s) => s.setUser);
+  const setAuthLoading = useAuthStore((s) => s.setAuthLoading);
 
   useEffect(() => {
     const bootstrapAuth = async () => {
       try {
+        setAuthLoading(true);
         await refreshToken();
-
-        const token = useAuthStore.getState().accessToken;
-        if (!token) {
-          setUser(null);
-          return;
-        }
 
         const res = await getMyInfo();
         if (res.success && res.result) {
@@ -30,6 +26,8 @@ function App() {
         }
       } catch {
         setUser(null);
+      } finally {
+        setAuthLoading(false);
       }
     };
     bootstrapAuth();
