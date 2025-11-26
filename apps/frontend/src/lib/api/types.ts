@@ -1,12 +1,12 @@
 // 기본 형식
-export interface ApiResponse<T = unknown> {
+export type ApiResponse<T = unknown> = {
   success: boolean;
   result: T | null;
   error: ApiError | null;
-}
+};
 
-export interface ApiError {
+export type ApiError = {
   code?: string;
   message: string;
   details?: Record<string, unknown>;
-}
+};

@@ -1,16 +1,16 @@
-export interface SignUpRequest {
+export type SignUpRequest = {
   email: string;
   name: string;
   password: string;
-}
+};
 
-export interface SignInRequest {
+export type SignInRequest = {
   email: string;
   password: string;
-}
+};
 
-export interface AuthResponse {
+export type AuthResponse = {
   id: string;
   email: string;
   name: string;
-}
+};
