@@ -78,10 +78,9 @@ export const SignUpForm = () => {
     e.preventDefault();
     setSubmitError('');
 
-    const hasErrors =
-      Object.values(errors).filter(
-        (error) => error !== undefined && error !== '',
-      ).length > 0;
+    const hasErrors = Object.values(errors).some(
+      (error) => error !== undefined && error !== '',
+    );
     if (hasErrors) {
       return;
     }

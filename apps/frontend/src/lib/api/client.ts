@@ -52,10 +52,10 @@ const refreshAccessToken = async (): Promise<string | null> => {
           return token;
         }
         useAuthStore.getState().clearAuth();
-        return null;
-      } catch {
+        throw new Error('REFRESH_NO_AUTH_HEADER');
+      } catch (e) {
         useAuthStore.getState().clearAuth();
-        return null;
+        throw e instanceof Error ? e : new Error('REFRESH_FAILED');
       } finally {
         refreshPromise = null;
       }

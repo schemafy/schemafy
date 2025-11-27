@@ -7,9 +7,11 @@ import { LandingPage, SignInPage, SignUpPage, CanvasPage } from '@/pages';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store';
 import { getMyInfo, refreshToken } from '@/lib/api';
+import { RequireAuth } from '@/features/auth';
 
 function App() {
   const setUser = useAuthStore((s) => s.setUser);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
   const setAuthLoading = useAuthStore((s) => s.setAuthLoading);
 
   useEffect(() => {
@@ -22,10 +24,10 @@ function App() {
         if (res.success && res.result) {
           setUser(res.result);
         } else {
-          setUser(null);
+          clearAuth();
         }
       } catch {
-        setUser(null);
+        clearAuth();
       } finally {
         setAuthLoading(false);
       }
@@ -44,7 +46,14 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/signin" element={<SignInPage />} />
-                <Route path="/canvas" element={<CanvasPage />} />
+                <Route
+                  path="/canvas"
+                  element={
+                    <RequireAuth>
+                      <CanvasPage />
+                    </RequireAuth>
+                  }
+                />
               </Routes>
             </Layout>
           </Router>
