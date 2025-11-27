@@ -54,11 +54,7 @@ export const SignInForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitError('');
-    console.log(errors);
-
-    const hasErrors = Object.values(errors).some(
-      (error) => error !== undefined && error !== '',
-    );
+    const hasErrors = Object.keys(errors).length > 0;
     if (hasErrors) {
       return;
     }
