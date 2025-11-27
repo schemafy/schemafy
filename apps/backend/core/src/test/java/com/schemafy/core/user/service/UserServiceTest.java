@@ -47,11 +47,13 @@ class UserServiceTest {
 
         Mono<User> result = userService.signUp(request.toCommand());
 
+        // 응답 검증
         StepVerifier.create(result)
                 .expectNextMatches(
                         user -> user.getEmail().equals("test@example.com"))
                 .verifyComplete();
 
+        // db 검증
         StepVerifier.create(userRepository.findByEmail("test@example.com"))
                 .as("user should be persisted with auditing columns")
                 .assertNext(user -> {
