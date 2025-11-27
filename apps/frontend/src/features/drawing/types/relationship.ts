@@ -32,8 +32,6 @@ export type RelationshipType = keyof typeof RELATIONSHIP_TYPES;
 export interface RelationshipConfig {
   type: RelationshipType;
   isNonIdentifying: boolean;
-  controlPointX?: number;
-  controlPointY?: number;
 }
 
 export const isRelationshipType = (
@@ -44,3 +42,22 @@ export const isRelationshipType = (
     (Object.keys(RELATIONSHIP_TYPES) as string[]).includes(value)
   );
 };
+
+export type Point = { x: number; y: number };
+
+export type CrossDirectionControlPoints = {
+  controlPoint1X: number;
+  controlPoint1Y: number;
+  controlPoint2X: number;
+  controlPoint2Y: number;
+};
+
+export type SameDirectionControlPoints = {
+  controlPoint1X: number;
+  controlPoint1Y: number;
+};
+
+export type RelationshipExtra = {
+  sourceHandle?: string;
+  targetHandle?: string;
+} & Partial<CrossDirectionControlPoints>;

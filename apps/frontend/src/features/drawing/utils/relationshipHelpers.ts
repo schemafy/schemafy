@@ -7,6 +7,7 @@ import {
   RELATIONSHIP_STYLE_TYPES,
   type RelationshipConfig,
   type RelationshipType,
+  type RelationshipExtra,
 } from '../types';
 
 export const getRelationshipType = (cardinality: string): RelationshipType => {
@@ -104,17 +105,8 @@ export const createRelationshipFromConnection = ({
     extra: {
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
-      controlPointX: relationshipConfig.controlPointX,
-      controlPointY: relationshipConfig.controlPointY,
     },
   };
-};
-
-export type RelationshipExtra = {
-  sourceHandle?: string;
-  targetHandle?: string;
-  controlPointX?: number;
-  controlPointY?: number;
 };
 
 export const shouldRecreateRelationship = (
@@ -126,24 +118,6 @@ export const shouldRecreateRelationship = (
     currentRelationship.kind !== newKind ||
     currentRelationship.cardinality !== newCardinality
   );
-};
-
-export const mergeRelationshipExtra = (
-  current: RelationshipExtra,
-  config: RelationshipConfig,
-): RelationshipExtra => {
-  return {
-    ...current,
-    controlPointX: config.controlPointX,
-    controlPointY: config.controlPointY,
-  };
-};
-
-export const hasExtraChanged = (
-  current: RelationshipExtra,
-  updated: RelationshipExtra,
-): boolean => {
-  return JSON.stringify(current) !== JSON.stringify(updated);
 };
 
 export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
@@ -176,8 +150,10 @@ export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
         data: {
           relationshipType,
           isNonIdentifying,
-          controlPointX: extra.controlPointX,
-          controlPointY: extra.controlPointY,
+          controlPoint1X: extra.controlPoint1X,
+          controlPoint1Y: extra.controlPoint1Y,
+          controlPoint2X: extra.controlPoint2X,
+          controlPoint2Y: extra.controlPoint2Y,
           dbRelationship: rel,
         },
       } as Edge;
