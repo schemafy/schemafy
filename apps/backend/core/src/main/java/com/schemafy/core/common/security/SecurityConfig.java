@@ -17,6 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
+import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
@@ -67,7 +68,9 @@ public class SecurityConfig {
                 .addFilterAt(jwtAuthenticationFilter,
                         SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/public/api/**").permitAll()
+                        .pathMatchers(
+                                ApiPath.PUBLIC_API.replace("{version}", "**"))
+                        .permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated())
                 .build();

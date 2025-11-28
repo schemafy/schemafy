@@ -1,7 +1,6 @@
 package com.schemafy.core.erd.controller;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +9,6 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -18,16 +16,15 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.service.ConstraintService;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
@@ -49,7 +46,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureRestDocs
 @ActiveProfiles("test")
 @DisplayName("ConstraintController RestDocs 테스트")
-@WithMockUser(roles = "EDITOR")
+@WithMockCustomUser(roles = "EDITOR")
 class ConstraintControllerTest {
 
     private static final String API_BASE_PATH = ApiPath.API
@@ -307,78 +304,6 @@ class ConstraintControllerTest {
     }
 
     @Test
-    @DisplayName("테이블별 제약조건 목록 조회 API 문서화")
-    void getConstraintsByTableId() throws Exception {
-        String mockResponseJson = """
-                [
-                    {
-                        "id": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                        "name": "PK",
-                        "kind": "CONSTRAINT_KIND_UNSPECIFIED",
-                        "columns": [
-                            {
-                                "id": "06D6WWYRTER122SPQBVSX4T3MR",
-                                "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                "seqNo": 1
-                            }
-                        ]
-                    }
-                ]
-                """;
-
-        when(constraintService
-                .getConstraintsByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
-                .thenReturn(Flux
-                        .fromIterable(objectMapper.readValue(mockResponseJson,
-                                new TypeReference<List<ConstraintResponse>>() {
-                                })));
-
-        webTestClient.get()
-                .uri(API_BASE_PATH + "/constraints/table/{tableId}",
-                        "06D6W8HDY79QFZX39RMX62KSX4")
-                .header("Accept", "application/json")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result").isArray()
-                .jsonPath("$.result.length()").isEqualTo(1)
-                .consumeWith(document("constraint-get-by-table",
-                        pathParameters(
-                                parameterWithName("tableId")
-                                        .description("테이블 ID")),
-                        requestHeaders(
-                                headerWithName("Accept").description("응답 포맷")),
-                        responseHeaders(
-                                headerWithName("Content-Type")
-                                        .description("응답 컨텐츠 타입")),
-                        responseFields(
-                                fieldWithPath("success")
-                                        .description("요청 성공 여부"),
-                                fieldWithPath("result").description("제약조건 목록"),
-                                fieldWithPath("result[].id")
-                                        .description("제약조건 ID"),
-                                fieldWithPath("result[].tableId")
-                                        .description("테이블 ID"),
-                                fieldWithPath("result[].name")
-                                        .description("제약조건 이름"),
-                                fieldWithPath("result[].kind")
-                                        .description("제약조건 종류"),
-                                fieldWithPath("result[].columns")
-                                        .description("제약조건 컬럼 목록"),
-                                fieldWithPath("result[].columns[].id")
-                                        .description("제약조건 컬럼 ID"),
-                                fieldWithPath("result[].columns[].constraintId")
-                                        .description("제약조건 ID"),
-                                fieldWithPath("result[].columns[].columnId")
-                                        .description("컬럼 ID"),
-                                fieldWithPath("result[].columns[].seqNo")
-                                        .description("순서 번호"))));
-    }
-
-    @Test
     @DisplayName("제약조건 이름 변경 API 문서화")
     void updateConstraintName() throws Exception {
         Validation.ChangeConstraintNameRequest.Builder builder = Validation.ChangeConstraintNameRequest
@@ -476,8 +401,9 @@ class ConstraintControllerTest {
 
         when(constraintService.updateConstraintName(
                 any(Validation.ChangeConstraintNameRequest.class)))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
-                        ConstraintResponse.class)));
+                .thenReturn(Mono
+                        .just(objectMapper.readValue(mockResponseJson,
+                                ConstraintResponse.class)));
 
         webTestClient.put()
                 .uri(API_BASE_PATH + "/constraints/{constraintId}/name",
@@ -626,7 +552,8 @@ class ConstraintControllerTest {
                                         "06D6X2345678901BCDEFGHIJKL")),
                         Collections.emptyMap(),
                         Collections.emptyMap(),
-                        AffectedMappingResponse.PropagatedEntities.empty())));
+                        AffectedMappingResponse.PropagatedEntities
+                                .empty())));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/constraints/{constraintId}/columns",
