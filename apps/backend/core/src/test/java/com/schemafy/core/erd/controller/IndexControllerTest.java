@@ -235,7 +235,7 @@ class IndexControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -413,9 +413,9 @@ class IndexControllerTest {
 
         when(indexService
                 .updateIndexName(any(Validation.ChangeIndexNameRequest.class)))
-                        .thenReturn(Mono
-                                .just(objectMapper.readValue(mockResponseJson,
-                                        IndexResponse.class)));
+                .thenReturn(Mono
+                        .just(objectMapper.readValue(mockResponseJson,
+                                IndexResponse.class)));
 
         webTestClient.put()
                 .uri(API_BASE_PATH + "/indexes/{indexId}/name",
@@ -562,9 +562,9 @@ class IndexControllerTest {
 
         when(indexService.addColumnToIndex(
                 any(Validation.AddColumnToIndexRequest.class)))
-                        .thenReturn(Mono
-                                .just(objectMapper.readValue(mockResponseJson,
-                                        IndexColumnResponse.class)));
+                .thenReturn(Mono
+                        .just(objectMapper.readValue(mockResponseJson,
+                                IndexColumnResponse.class)));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/indexes/{indexId}/columns",
@@ -702,7 +702,7 @@ class IndexControllerTest {
 
         when(indexService.removeColumnFromIndex(
                 any(Validation.RemoveColumnFromIndexRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/indexes/{indexId}/columns/{columnId}",

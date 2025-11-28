@@ -132,7 +132,7 @@ class SchemaControllerTest {
 
         given(schemaService
                 .createSchema(any(Validation.CreateSchemaRequest.class)))
-                        .willReturn(Mono.just(mockResponse));
+                .willReturn(Mono.just(mockResponse));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/schemas")
@@ -185,7 +185,7 @@ class SchemaControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }

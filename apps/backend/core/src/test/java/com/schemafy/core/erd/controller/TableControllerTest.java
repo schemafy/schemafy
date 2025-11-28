@@ -212,7 +212,7 @@ class TableControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }

@@ -357,7 +357,7 @@ class MemoControllerTest {
 
         given(memoService.createComment(eq(memoId),
                 any(CreateMemoCommentRequest.class), any()))
-                        .willReturn(Mono.just(response));
+                .willReturn(Mono.just(response));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/memos/{memoId}/comments", memoId)
@@ -481,7 +481,7 @@ class MemoControllerTest {
 
         given(memoService.updateComment(any(UpdateMemoCommentRequest.class),
                 any()))
-                        .willReturn(Mono.just(response));
+                .willReturn(Mono.just(response));
 
         webTestClient.put()
                 .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",
@@ -540,7 +540,7 @@ class MemoControllerTest {
 
         given(memoService.deleteComment(eq(memoId), eq(commentId),
                 any(AuthenticatedUser.class)))
-                        .willReturn(Mono.empty());
+                .willReturn(Mono.empty());
 
         webTestClient.delete()
                 .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",

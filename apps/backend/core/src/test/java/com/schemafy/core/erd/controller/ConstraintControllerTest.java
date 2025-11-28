@@ -166,7 +166,7 @@ class ConstraintControllerTest {
 
         when(constraintService.createConstraint(
                 any(Validation.CreateConstraintRequest.class)))
-                        .thenReturn(Mono.just(mockResponse));
+                .thenReturn(Mono.just(mockResponse));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/constraints")
@@ -231,7 +231,7 @@ class ConstraintControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -401,9 +401,9 @@ class ConstraintControllerTest {
 
         when(constraintService.updateConstraintName(
                 any(Validation.ChangeConstraintNameRequest.class)))
-                        .thenReturn(Mono
-                                .just(objectMapper.readValue(mockResponseJson,
-                                        ConstraintResponse.class)));
+                .thenReturn(Mono
+                        .just(objectMapper.readValue(mockResponseJson,
+                                ConstraintResponse.class)));
 
         webTestClient.put()
                 .uri(API_BASE_PATH + "/constraints/{constraintId}/name",
@@ -538,22 +538,22 @@ class ConstraintControllerTest {
 
         when(constraintService.addColumnToConstraint(
                 any(Validation.AddColumnToConstraintRequest.class)))
-                        .thenReturn(Mono.just(new AffectedMappingResponse(
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Map.of("06D6W8HDY79QFZX39RMX62KSX4",
-                                        Map.of("06D5XSF8RRRKMCHVNX68TDX1K4",
-                                                "06D6WWYRQCEXN1ACZ4ZJ12DFTG")),
-                                Map.of("06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                        Map.of("06D6X1234567890ABCDEFGHIJK",
-                                                "06D6X2345678901BCDEFGHIJKL")),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                AffectedMappingResponse.PropagatedEntities
-                                        .empty())));
+                .thenReturn(Mono.just(new AffectedMappingResponse(
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Map.of("06D6W8HDY79QFZX39RMX62KSX4",
+                                Map.of("06D5XSF8RRRKMCHVNX68TDX1K4",
+                                        "06D6WWYRQCEXN1ACZ4ZJ12DFTG")),
+                        Map.of("06D6WWYRQCEXN1ACZ4ZJ12DFTG",
+                                Map.of("06D6X1234567890ABCDEFGHIJK",
+                                        "06D6X2345678901BCDEFGHIJKL")),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        AffectedMappingResponse.PropagatedEntities
+                                .empty())));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/constraints/{constraintId}/columns",
@@ -620,7 +620,7 @@ class ConstraintControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -719,7 +719,7 @@ class ConstraintControllerTest {
 
         when(constraintService.removeColumnFromConstraint(
                 any(Validation.RemoveColumnFromConstraintRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH
@@ -827,7 +827,7 @@ class ConstraintControllerTest {
 
         when(constraintService.deleteConstraint(
                 any(Validation.DeleteConstraintRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/constraints/{constraintId}",

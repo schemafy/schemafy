@@ -237,7 +237,7 @@ class RelationshipControllerTest {
                                                 "전파된 컬럼 목록 (식별 관계 시 자식 테이블로 전파)"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -425,9 +425,9 @@ class RelationshipControllerTest {
 
         when(relationshipService.updateRelationshipName(
                 any(Validation.ChangeRelationshipNameRequest.class)))
-                        .thenReturn(Mono
-                                .just(objectMapper.readValue(mockResponseJson,
-                                        RelationshipResponse.class)));
+                .thenReturn(Mono
+                        .just(objectMapper.readValue(mockResponseJson,
+                                RelationshipResponse.class)));
 
         webTestClient.put()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/name",
@@ -576,9 +576,9 @@ class RelationshipControllerTest {
 
         when(relationshipService.updateRelationshipCardinality(
                 any(Validation.ChangeRelationshipCardinalityRequest.class)))
-                        .thenReturn(Mono
-                                .just(objectMapper.readValue(mockResponseJson,
-                                        RelationshipResponse.class)));
+                .thenReturn(Mono
+                        .just(objectMapper.readValue(mockResponseJson,
+                                RelationshipResponse.class)));
 
         webTestClient.put()
                 .uri(API_BASE_PATH
@@ -726,23 +726,23 @@ class RelationshipControllerTest {
 
         when(relationshipService.addColumnToRelationship(
                 any(Validation.AddColumnToRelationshipRequest.class)))
-                        .thenReturn(Mono.just(new AffectedMappingResponse(
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
-                                Collections.emptyMap(),
+                .thenReturn(Mono.just(new AffectedMappingResponse(
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Collections.emptyMap(),
+                        Map.of("06D590QBYGE6K2TQ8JK514GGP4",
                                 Map.of("06D590QBYGE6K2TQ8JK514GGP4",
-                                        Map.of("06D590QBYGE6K2TQ8JK514GGP4",
-                                                "06D590QBYGE6K2TQ8JK514GGP4")),
-                                Map.of("06D590QBYGE6K2TQ8JK514GGP4",
-                                        Map.of(
-                                                "06D6WGN2ZWCGM2SVWRW2GEP8WW",
-                                                "06D6WGN2ZWCGM2SVWRW2GEP8WW")),
-                                AffectedMappingResponse.PropagatedEntities
-                                        .empty())));
+                                        "06D590QBYGE6K2TQ8JK514GGP4")),
+                        Map.of("06D590QBYGE6K2TQ8JK514GGP4",
+                                Map.of(
+                                        "06D6WGN2ZWCGM2SVWRW2GEP8WW",
+                                        "06D6WGN2ZWCGM2SVWRW2GEP8WW")),
+                        AffectedMappingResponse.PropagatedEntities
+                                .empty())));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/columns",
@@ -809,7 +809,7 @@ class RelationshipControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                                .description("전파된 제약조건 컬럼 목록"),
+                                        .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -911,7 +911,7 @@ class RelationshipControllerTest {
 
         when(relationshipService.removeColumnFromRelationship(
                 any(Validation.RemoveColumnFromRelationshipRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH
@@ -1036,7 +1036,7 @@ class RelationshipControllerTest {
 
         when(relationshipService.deleteRelationship(
                 any(Validation.DeleteRelationshipRequest.class)))
-                        .thenReturn(Mono.empty());
+                .thenReturn(Mono.empty());
 
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}",
