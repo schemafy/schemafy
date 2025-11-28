@@ -622,7 +622,7 @@ class MemoControllerTest {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
 
-        given(memoService.deleteComment(eq(commentId),
+        given(memoService.deleteComment(eq(memoId), eq(commentId),
                 any(AuthenticatedUser.class)))
                 .willReturn(Mono.empty());
 

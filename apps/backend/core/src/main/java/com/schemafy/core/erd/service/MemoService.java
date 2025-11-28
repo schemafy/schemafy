@@ -36,18 +36,18 @@ public class MemoService {
     private final TransactionalOperator transactionalOperator;
 
     public Mono<MemoDetailResponse> createMemo(CreateMemoRequest request,
-            String authorId) {
+            AuthenticatedUser user) {
         return transactionalOperator
                 .transactional(ensureSchemaExists(request.schemaId())
                         .then(memoRepository.save(Memo.builder()
                                 .schemaId(request.schemaId())
-                                .authorId(authorId)
+                                .authorId(user.userId())
                                 .positions(request.positions())
                                 .build()))
                         .flatMap(memo -> memoCommentRepository
                                 .save(MemoComment.builder()
                                         .memoId(memo.getId())
-                                        .authorId(authorId)
+                                        .authorId(user.userId())
                                         .body(request.body())
                                         .build())
                                 .map(MemoCommentResponse::from)
@@ -60,7 +60,8 @@ public class MemoService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .flatMap(memo -> memoCommentRepository
-                        .findByMemoIdAndDeletedAtIsNull(memoId)
+                        .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
+                                memoId)
                         .map(MemoCommentResponse::from)
                         .collectList()
                         .map(comments -> MemoDetailResponse.from(memo,
@@ -73,12 +74,12 @@ public class MemoService {
     }
 
     public Mono<MemoResponse> updateMemo(UpdateMemoRequest request,
-            String authorId) {
+            AuthenticatedUser user) {
         return memoRepository.findByIdAndDeletedAtIsNull(request.memoId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .flatMap(memo -> {
-                    if (!memo.getAuthorId().equals(authorId)) {
+                    if (!memo.getAuthorId().equals(user.userId())) {
                         return Mono.error(
                                 new BusinessException(ErrorCode.ACCESS_DENIED));
                     }
@@ -89,36 +90,26 @@ public class MemoService {
     }
 
     public Mono<Void> deleteMemo(String memoId, AuthenticatedUser user) {
-        return transactionalOperator.transactional(memoRepository
+        return memoRepository
                 .findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
-                .flatMap(memo -> {
-                    if (!hasPermissionToDelete(user)
-                            && !memo.getAuthorId().equals(user.userId())) {
-                        return Mono.error(
-                                new BusinessException(ErrorCode.ACCESS_DENIED));
-                    }
-                    memo.delete();
-                    return memoRepository.save(memo);
-                })
-                .then(memoCommentRepository
-                        .findByMemoIdAndDeletedAtIsNull(memoId)
-                        .flatMap(comment -> {
-                            comment.delete();
-                            return memoCommentRepository.save(comment);
-                        })
-                        .then()));
+                .flatMap(memo -> checkDeletePermission(user, memo.getAuthorId())
+                        .then(Mono.defer(() -> {
+                            memo.delete();
+                            return memoRepository.save(memo);
+                        })))
+                .then();
     }
 
     public Mono<MemoCommentResponse> createComment(String memoId,
-            CreateMemoCommentRequest request, String authorId) {
+            CreateMemoCommentRequest request, AuthenticatedUser user) {
         return memoRepository.findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .then(memoCommentRepository.save(MemoComment.builder()
                         .memoId(memoId)
-                        .authorId(authorId)
+                        .authorId(user.userId())
                         .body(request.body())
                         .build()))
                 .map(MemoCommentResponse::from);
@@ -129,29 +120,42 @@ public class MemoService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .thenMany(memoCommentRepository
-                        .findByMemoIdAndDeletedAtIsNull(memoId)
+                        .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
+                                memoId)
                         .map(MemoCommentResponse::from));
     }
 
     public Mono<MemoCommentResponse> updateComment(
-            UpdateMemoCommentRequest request, String authorId) {
+            UpdateMemoCommentRequest request, AuthenticatedUser user) {
         return memoCommentRepository
                 .findByIdAndDeletedAtIsNull(request.commentId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
                 .flatMap(comment -> {
-                    if (!comment.getAuthorId().equals(authorId)) {
-                        return Mono.error(
-                                new BusinessException(ErrorCode.ACCESS_DENIED));
+                    if (!comment.getMemoId().equals(request.memoId())) {
+                        return Mono.error(new BusinessException(
+                                ErrorCode.COMMON_INVALID_PARAMETER));
                     }
-                    comment.setBody(request.body());
-                    return memoCommentRepository.save(comment);
+                    return memoRepository
+                            .findByIdAndDeletedAtIsNull(request.memoId())
+                            .switchIfEmpty(Mono.error(
+                                    new BusinessException(
+                                            ErrorCode.ERD_MEMO_NOT_FOUND)))
+                            .then(Mono.defer(() -> {
+                                if (!comment.getAuthorId()
+                                        .equals(user.userId())) {
+                                    return Mono.error(new BusinessException(
+                                            ErrorCode.ACCESS_DENIED));
+                                }
+                                comment.setBody(request.body());
+                                return memoCommentRepository.save(comment);
+                            }));
                 })
                 .map(MemoCommentResponse::from);
     }
 
-    public Mono<Void> deleteComment(String commentId,
+    public Mono<Void> deleteComment(String memoId, String commentId,
             AuthenticatedUser user) {
         return transactionalOperator.transactional(memoCommentRepository
                 .findByIdAndDeletedAtIsNull(commentId)
@@ -159,34 +163,40 @@ public class MemoService {
                         new BusinessException(
                                 ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
                 .flatMap(comment -> {
-                    if (!hasPermissionToDelete(user)
-                            && !comment.getAuthorId().equals(user.userId())) {
+                    if (!comment.getMemoId().equals(memoId)) {
                         return Mono.error(
-                                new BusinessException(ErrorCode.ACCESS_DENIED));
+                                new BusinessException(
+                                        ErrorCode.COMMON_INVALID_PARAMETER));
                     }
-                    comment.delete();
-                    return memoCommentRepository.save(comment)
-                            .then(handleMemoDeletionIfNoComments(
-                                    comment.getMemoId()));
+                    return checkDeletePermission(user, comment.getAuthorId())
+                            .then(memoRepository
+                                    .findByIdAndDeletedAtIsNull(memoId))
+                            .switchIfEmpty(Mono.error(
+                                    new BusinessException(
+                                            ErrorCode.ERD_MEMO_NOT_FOUND)))
+                            .flatMap(memo -> isFirstComment(memoId, commentId)
+                                    .flatMap(isFirstComment -> {
+                                        if (isFirstComment) {
+                                            // 첫 댓글 삭제 시 메모만 삭제 처리
+                                            memo.delete();
+                                            return memoRepository.save(memo)
+                                                    .then();
+                                        }
+                                        comment.delete();
+                                        return memoCommentRepository
+                                                .save(comment)
+                                                .then();
+                                    }));
                 })
                 .then());
     }
 
-    private Mono<Void> handleMemoDeletionIfNoComments(String memoId) {
+    private Mono<Boolean> isFirstComment(String memoId, String commentId) {
         return memoCommentRepository
-                .findByMemoIdAndDeletedAtIsNull(memoId)
-                .hasElements()
-                .flatMap(hasComments -> {
-                    if (hasComments) {
-                        return Mono.empty();
-                    }
-                    return memoRepository.findByIdAndDeletedAtIsNull(memoId)
-                            .flatMap(memo -> {
-                                memo.delete();
-                                return memoRepository.save(memo);
-                            })
-                            .then();
-                });
+                .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(memoId)
+                .next()
+                .map(first -> first.getId().equals(commentId))
+                .defaultIfEmpty(false);
     }
 
     private Mono<Void> ensureSchemaExists(String schemaId) {
@@ -196,9 +206,15 @@ public class MemoService {
                 .then();
     }
 
-    private boolean hasPermissionToDelete(AuthenticatedUser user) {
-        return user.roles().contains(ProjectRole.OWNER)
+    private Mono<Void> checkDeletePermission(AuthenticatedUser user,
+            String authorId) {
+        boolean isAdminOrOwner = user.roles().contains(ProjectRole.OWNER)
                 || user.roles().contains(ProjectRole.ADMIN);
+        if (!isAdminOrOwner && !authorId.equals(user.userId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.ACCESS_DENIED));
+        }
+        return Mono.empty();
     }
 
 }

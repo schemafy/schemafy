@@ -44,7 +44,7 @@ public class MemoController {
     public Mono<BaseResponse<MemoDetailResponse>> createMemo(
             @AuthenticationPrincipal AuthenticatedUser user,
             @Valid @RequestBody CreateMemoRequest request) {
-        return memoService.createMemo(request, user.userId())
+        return memoService.createMemo(request, user)
                 .map(BaseResponse::success);
     }
 
@@ -76,7 +76,7 @@ public class MemoController {
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
 
-        return memoService.updateMemo(request, user.userId())
+        return memoService.updateMemo(request, user)
                 .map(BaseResponse::success);
     }
 
@@ -95,7 +95,7 @@ public class MemoController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId,
             @Valid @RequestBody CreateMemoCommentRequest request) {
-        return memoService.createComment(memoId, request, user.userId())
+        return memoService.createComment(memoId, request, user)
                 .map(BaseResponse::success);
     }
 
@@ -125,7 +125,7 @@ public class MemoController {
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
 
-        return memoService.updateComment(request, user.userId())
+        return memoService.updateComment(request, user)
                 .map(BaseResponse::success);
     }
 
@@ -135,7 +135,7 @@ public class MemoController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId,
             @PathVariable String commentId) {
-        return memoService.deleteComment(commentId, user)
+        return memoService.deleteComment(memoId, commentId, user)
                 .then(Mono.just(BaseResponse.success(null)));
     }
 
