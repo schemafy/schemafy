@@ -202,7 +202,6 @@ class SchemaControllerTest {
                                                             "canvasViewport": null,
                                                             "createdAt": "2025-11-09T16:25:31Z",
                                                             "updatedAt": "2025-11-10T13:16:40Z",
-                                                            "deletedAt": null,
                                                             "tables": []
                                                         }
                                                     }
@@ -262,8 +261,6 @@ class SchemaControllerTest {
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
                                         .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"),
                                 fieldWithPath("result.tables")
                                         .description("테이블 목록"))));
     }
@@ -315,8 +312,7 @@ class SchemaControllerTest {
                                                 "vendorOption": "",
                                                 "canvasViewport": null,
                                                 "createdAt": "2025-11-09T16:25:31Z",
-                                                "updatedAt": "2025-11-10T13:26:24.595812Z",
-                                                "deletedAt": null
+                                                "updatedAt": "2025-11-10T13:26:24.595812Z"
                                             }
                                         }
                                         """)
@@ -381,9 +377,7 @@ class SchemaControllerTest {
                                 fieldWithPath("result.createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"))));
+                                        .description("수정 일시"))));
     }
 
     @Test

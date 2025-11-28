@@ -22,7 +22,6 @@ public class MemoCommentResponse {
     private String body;
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant deletedAt;
 
     public static MemoCommentResponse from(MemoComment memoComment) {
         return MemoCommentResponse.builder()
@@ -32,7 +31,6 @@ public class MemoCommentResponse {
                 .body(memoComment.getBody())
                 .createdAt(memoComment.getCreatedAt())
                 .updatedAt(memoComment.getUpdatedAt())
-                .deletedAt(memoComment.getDeletedAt())
                 .build();
     }
 

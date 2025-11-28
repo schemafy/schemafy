@@ -27,7 +27,6 @@ public class SchemaDetailResponse {
     private String canvasViewport; // NOTE: 추후 제거 예정
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant deletedAt;
     private List<TableResponse> tables;
 
     public static SchemaDetailResponse from(Schema schema,
@@ -43,7 +42,6 @@ public class SchemaDetailResponse {
                 .canvasViewport(schema.getCanvasViewport())
                 .createdAt(schema.getCreatedAt())
                 .updatedAt(schema.getUpdatedAt())
-                .deletedAt(schema.getDeletedAt())
                 .tables(tables)
                 .build();
     }

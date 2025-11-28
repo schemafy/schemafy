@@ -24,7 +24,6 @@ public class TableResponse {
     private String extra;
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant deletedAt;
 
     public static TableResponse from(Table table) {
         return TableResponse.builder()
@@ -36,7 +35,6 @@ public class TableResponse {
                 .extra(table.getExtra())
                 .createdAt(table.getCreatedAt())
                 .updatedAt(table.getUpdatedAt())
-                .deletedAt(table.getDeletedAt())
                 .build();
     }
 

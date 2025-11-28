@@ -22,7 +22,6 @@ public class MemoResponse {
     private String positions;
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant deletedAt;
 
     public static MemoResponse from(Memo memo) {
         return MemoResponse.builder()
@@ -32,7 +31,6 @@ public class MemoResponse {
                 .positions(memo.getPositions())
                 .createdAt(memo.getCreatedAt())
                 .updatedAt(memo.getUpdatedAt())
-                .deletedAt(memo.getDeletedAt())
                 .build();
     }
 

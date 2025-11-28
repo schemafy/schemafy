@@ -214,8 +214,7 @@ class TableControllerTest {
                                             "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
                                             "extra": "{}",
                                             "createdAt": "2025-11-10T13:48:01Z",
-                                            "updatedAt": "2025-11-10T13:48:01Z",
-                                            "deletedAt": null
+                                            "updatedAt": "2025-11-10T13:48:01Z"
                                         }
                                         """),
                 TableResponse.class);
@@ -271,9 +270,7 @@ class TableControllerTest {
                                 fieldWithPath("result[].createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result[].updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result[].deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"))));
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -296,7 +293,6 @@ class TableControllerTest {
                                                 "extra": "{}",
                                                 "createdAt": "2025-11-10T13:48:01Z",
                                                 "updatedAt": "2025-11-10T13:48:01Z",
-                                                "deletedAt": null,
                                                 "columns": [],
                                                 "constraints": [],
                                                 "indexes": [],
@@ -355,10 +351,8 @@ class TableControllerTest {
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
                                         .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"),
                                 fieldWithPath("result.columns")
-                                        .description("컬럼 목록"),
+                                        .description("컨럼 목록"),
                                 fieldWithPath("result.constraints")
                                         .description("제약조건 목록"),
                                 fieldWithPath("result.indexes")
@@ -426,8 +420,7 @@ class TableControllerTest {
                                                 "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
                                                 "extra": "{}",
                                                 "createdAt": "2025-11-10T13:48:01Z",
-                                                "updatedAt": "2025-11-10T14:15:08.399530Z",
-                                                "deletedAt": null
+                                                "updatedAt": "2025-11-10T14:15:08.399530Z"
                                             }
                                         }
                                         """)
@@ -488,9 +481,7 @@ class TableControllerTest {
                                 fieldWithPath("result.createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시"))));
+                                        .description("수정 일시"))));
     }
 
     @Test

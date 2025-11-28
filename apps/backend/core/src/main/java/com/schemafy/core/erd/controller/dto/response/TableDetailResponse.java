@@ -25,7 +25,6 @@ public class TableDetailResponse {
     private String extra;
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant deletedAt;
     private List<ColumnResponse> columns;
     private List<ConstraintResponse> constraints;
     private List<IndexResponse> indexes;
@@ -44,7 +43,6 @@ public class TableDetailResponse {
                 .extra(table.getExtra())
                 .createdAt(table.getCreatedAt())
                 .updatedAt(table.getUpdatedAt())
-                .deletedAt(table.getDeletedAt())
                 .columns(columns)
                 .constraints(constraints)
                 .indexes(indexes)

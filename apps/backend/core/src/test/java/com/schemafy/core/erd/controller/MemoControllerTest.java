@@ -79,7 +79,6 @@ class MemoControllerTest {
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
-                            "deletedAt": null,
                             "comments": [
                                 {
                                     "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
@@ -87,8 +86,7 @@ class MemoControllerTest {
                                     "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                                     "body": "메모 내용",
                                     "createdAt": "2025-11-23T10:00:00Z",
-                                    "updatedAt": "2025-11-23T10:00:00Z",
-                                    "deletedAt": null
+                                    "updatedAt": "2025-11-23T10:00:00Z"
                                 }
                             ]
                         }
@@ -139,8 +137,6 @@ class MemoControllerTest {
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
                                         .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시").optional(),
                                 fieldWithPath("result.comments")
                                         .description("메모 댓글 목록"),
                                 fieldWithPath("result.comments[].id")
@@ -154,9 +150,7 @@ class MemoControllerTest {
                                 fieldWithPath("result.comments[].createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.comments[].updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.comments[].deletedAt")
-                                        .description("삭제 일시").optional())));
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -173,7 +167,6 @@ class MemoControllerTest {
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
-                            "deletedAt": null,
                             "comments": [
                                 {
                                     "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
@@ -181,8 +174,7 @@ class MemoControllerTest {
                                     "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                                     "body": "메모 내용",
                                     "createdAt": "2025-11-23T10:00:00Z",
-                                    "updatedAt": "2025-11-23T10:00:00Z",
-                                    "deletedAt": null
+                                    "updatedAt": "2025-11-23T10:00:00Z"
                                 }
                             ]
                         }
@@ -225,8 +217,6 @@ class MemoControllerTest {
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
                                         .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시").optional(),
                                 fieldWithPath("result.comments")
                                         .description("메모 댓글 목록"),
                                 fieldWithPath("result.comments[].id")
@@ -240,9 +230,7 @@ class MemoControllerTest {
                                 fieldWithPath("result.comments[].createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.comments[].updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.comments[].deletedAt")
-                                        .description("삭제 일시").optional())));
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -258,8 +246,7 @@ class MemoControllerTest {
                             "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
-                            "updatedAt": "2025-11-23T10:00:00Z",
-                            "deletedAt": null
+                            "updatedAt": "2025-11-23T10:00:00Z"
                         }
                         """), MemoResponse.class);
 
@@ -300,9 +287,7 @@ class MemoControllerTest {
                                 fieldWithPath("result[].createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result[].updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result[].deletedAt")
-                                        .description("삭제 일시").optional())));
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -319,8 +304,7 @@ class MemoControllerTest {
                             "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
-                            "updatedAt": "2025-11-23T10:00:00Z",
-                            "deletedAt": null
+                            "updatedAt": "2025-11-23T10:00:00Z"
                         }
                         """), MemoResponse.class);
 
@@ -370,9 +354,7 @@ class MemoControllerTest {
                                 fieldWithPath("result.createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시").optional())));
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -426,8 +408,7 @@ class MemoControllerTest {
                             "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "body": "댓글 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
-                            "updatedAt": "2025-11-23T10:00:00Z",
-                            "deletedAt": null
+                            "updatedAt": "2025-11-23T10:00:00Z"
                         }
                         """), MemoCommentResponse.class);
 
@@ -476,9 +457,7 @@ class MemoControllerTest {
                                 fieldWithPath("result.createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시").optional())));
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -493,8 +472,7 @@ class MemoControllerTest {
                             "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "body": "댓글 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
-                            "updatedAt": "2025-11-23T10:00:00Z",
-                            "deletedAt": null
+                            "updatedAt": "2025-11-23T10:00:00Z"
                         }
                         """), MemoCommentResponse.class);
 
@@ -535,9 +513,7 @@ class MemoControllerTest {
                                 fieldWithPath("result[].createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result[].updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result[].deletedAt")
-                                        .description("삭제 일시").optional())));
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -556,8 +532,7 @@ class MemoControllerTest {
                             "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                             "body": "수정된 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
-                            "updatedAt": "2025-11-23T10:00:00Z",
-                            "deletedAt": null
+                            "updatedAt": "2025-11-23T10:00:00Z"
                         }
                         """), MemoCommentResponse.class);
 
@@ -611,9 +586,7 @@ class MemoControllerTest {
                                 fieldWithPath("result.createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시").optional())));
+                                        .description("수정 일시"))));
     }
 
     @Test

@@ -23,7 +23,6 @@ public class MemoDetailResponse {
     private String positions;
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant deletedAt;
     private List<MemoCommentResponse> comments;
 
     public static MemoDetailResponse from(Memo memo,
@@ -35,7 +34,6 @@ public class MemoDetailResponse {
                 .positions(memo.getPositions())
                 .createdAt(memo.getCreatedAt())
                 .updatedAt(memo.getUpdatedAt())
-                .deletedAt(memo.getDeletedAt())
                 .comments(comments)
                 .build();
     }
