@@ -576,4 +576,110 @@ class MemoServiceTest {
                 .verifyComplete();
     }
 
+    @Test
+    @DisplayName("getMemo: 존재하지 않는 메모를 조회하면 NOT_FOUND를 반환한다")
+    void getMemo_notFound() {
+        StepVerifier
+                .create(memoService.getMemo("06D6W1GAHD51T5NJPK29Q6BCR9"))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ERD_MEMO_NOT_FOUND)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("createComment: 존재하지 않는 메모에 댓글 생성 시 NOT_FOUND를 반환한다")
+    void createComment_memoNotFound() {
+        CreateMemoCommentRequest request = new CreateMemoCommentRequest("댓글");
+        AuthenticatedUser user = AuthenticatedUser
+                .of("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+
+        StepVerifier
+                .create(memoService.createComment(
+                        "06D6W1GAHD51T5NJPK29Q6BCR9", request, user))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ERD_MEMO_NOT_FOUND)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("getComments: 존재하지 않는 메모의 댓글 조회 시 NOT_FOUND를 반환한다")
+    void getComments_memoNotFound() {
+        StepVerifier
+                .create(memoService.getComments("06D6W1GAHD51T5NJPK29Q6BCR9")
+                        .collectList())
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ERD_MEMO_NOT_FOUND)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("updateComment: 작성자가 아니면 ACCESS_DENIED를 반환한다")
+    void updateComment_accessDenied() {
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+        Memo memo = memoRepository.save(Memo.builder()
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
+                .authorId(authorId)
+                .positions("{}")
+                .build()).block();
+
+        MemoComment comment = memoCommentRepository.save(MemoComment.builder()
+                .memoId(memo.getId())
+                .authorId(authorId)
+                .body("원본 내용")
+                .build()).block();
+
+        UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
+                memo.getId(), comment.getId(), "수정 내용");
+        AuthenticatedUser otherUser = AuthenticatedUser
+                .of("06D6W8HDY79QFZX39RMX62KSX4");
+
+        StepVerifier.create(memoService.updateComment(request, otherUser))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ACCESS_DENIED)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("deleteComment: 작성자가 아닌 일반 사용자는 ACCESS_DENIED를 반환한다")
+    void deleteComment_accessDenied() {
+        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+        Memo memo = memoRepository.save(Memo.builder()
+                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
+                .authorId(authorId)
+                .positions("{}")
+                .build()).block();
+
+        // 첫 번째 댓글 (본문)
+        memoCommentRepository.save(MemoComment.builder()
+                .memoId(memo.getId())
+                .authorId(authorId)
+                .body("본문")
+                .build()).block();
+
+        // 두 번째 댓글 (삭제 대상)
+        MemoComment targetComment = memoCommentRepository
+                .save(MemoComment.builder()
+                        .memoId(memo.getId())
+                        .authorId(authorId)
+                        .body("댓글")
+                        .build())
+                .block();
+
+        // 다른 일반 사용자 (OWNER/ADMIN 아님)
+        AuthenticatedUser otherUser = AuthenticatedUser
+                .of("06D6W8HDY79QFZX39RMX62KSX4");
+
+        StepVerifier
+                .create(memoService.deleteComment(memo.getId(),
+                        targetComment.getId(), otherUser))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ACCESS_DENIED)
+                .verify();
+    }
+
 }
