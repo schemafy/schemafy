@@ -1,7 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.List;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,15 +47,6 @@ public class RelationshipController {
     public Mono<BaseResponse<RelationshipResponse>> getRelationship(
             @PathVariable String relationshipId) {
         return relationshipService.getRelationship(relationshipId)
-                .map(BaseResponse::success);
-    }
-
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/relationships/table/{tableId}")
-    public Mono<BaseResponse<List<RelationshipResponse>>> getRelationshipsByTableId(
-            @PathVariable String tableId) {
-        return relationshipService.getRelationshipsByTableId(tableId)
-                .collectList()
                 .map(BaseResponse::success);
     }
 

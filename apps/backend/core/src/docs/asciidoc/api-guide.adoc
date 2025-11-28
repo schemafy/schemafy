@@ -212,6 +212,37 @@ include::{snippets}/schema-delete/response-fields.adoc[]
 
 ---
 
+=== 스키마별 Table 목록 조회
+
+특정 스키마에 속한 테이블 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}/tables
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-list-by-schema/http-request.adoc[]
+include::{snippets}/table-list-by-schema/request-headers.adoc[]
+include::{snippets}/table-list-by-schema/path-parameters.adoc[]
+include::{snippets}/table-list-by-schema/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-list-by-schema/response-headers.adoc[]
+include::{snippets}/table-list-by-schema/response-body.adoc[]
+include::{snippets}/table-list-by-schema/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-list-by-schema/response-fields.adoc[]
+
+---
+
 == Table API
 
 === Table 생성
@@ -272,37 +303,6 @@ include::{snippets}/table-get/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/table-get/response-fields.adoc[]
-
----
-
-=== 스키마별 Table 목록 조회
-
-특정 스키마에 속한 테이블 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/tables/schema/{schemaId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/table-list-by-schema/http-request.adoc[]
-include::{snippets}/table-list-by-schema/request-headers.adoc[]
-include::{snippets}/table-list-by-schema/path-parameters.adoc[]
-include::{snippets}/table-list-by-schema/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/table-list-by-schema/response-headers.adoc[]
-include::{snippets}/table-list-by-schema/response-body.adoc[]
-include::{snippets}/table-list-by-schema/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/table-list-by-schema/response-fields.adoc[]
 
 ---
 
@@ -368,6 +368,130 @@ include::{snippets}/table-delete/response-fields.adoc[]
 
 ---
 
+=== 테이블별 Column 목록 조회
+
+테이블에 속한 컬럼 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/columns
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-list-by-table/http-request.adoc[]
+include::{snippets}/column-list-by-table/request-headers.adoc[]
+include::{snippets}/column-list-by-table/path-parameters.adoc[]
+include::{snippets}/column-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-list-by-table/response-headers.adoc[]
+include::{snippets}/column-list-by-table/response-body.adoc[]
+include::{snippets}/column-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-list-by-table/response-fields.adoc[]
+
+---
+
+=== 테이블별 Relationship 목록 조회
+
+특정 테이블의 관계 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/relationships
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-list-by-table/http-request.adoc[]
+include::{snippets}/relationship-list-by-table/path-parameters.adoc[]
+include::{snippets}/relationship-list-by-table/request-headers.adoc[]
+include::{snippets}/relationship-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-list-by-table/response-headers.adoc[]
+include::{snippets}/relationship-list-by-table/response-body.adoc[]
+include::{snippets}/relationship-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-list-by-table/response-fields.adoc[]
+
+---
+
+=== 테이블별 Index 목록 조회
+
+특정 테이블의 인덱스 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/indexes
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-list-by-table/http-request.adoc[]
+include::{snippets}/index-list-by-table/path-parameters.adoc[]
+include::{snippets}/index-list-by-table/request-headers.adoc[]
+include::{snippets}/index-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-list-by-table/response-headers.adoc[]
+include::{snippets}/index-list-by-table/response-body.adoc[]
+include::{snippets}/index-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-list-by-table/response-fields.adoc[]
+
+---
+
+=== 테이블별 Constraint 목록 조회
+
+특정 테이블의 제약조건 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/constraints
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-list-by-table/http-request.adoc[]
+include::{snippets}/constraint-list-by-table/path-parameters.adoc[]
+include::{snippets}/constraint-list-by-table/request-headers.adoc[]
+include::{snippets}/constraint-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-list-by-table/response-headers.adoc[]
+include::{snippets}/constraint-list-by-table/response-body.adoc[]
+include::{snippets}/constraint-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-list-by-table/response-fields.adoc[]
+
+---
+
 == Column API
 
 === Column 생성
@@ -428,37 +552,6 @@ include::{snippets}/column-get/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/column-get/response-fields.adoc[]
-
----
-
-=== 테이블별 Column 목록 조회
-
-테이블에 속한 컬럼 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/columns/table/{tableId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/column-list-by-table/http-request.adoc[]
-include::{snippets}/column-list-by-table/request-headers.adoc[]
-include::{snippets}/column-list-by-table/path-parameters.adoc[]
-include::{snippets}/column-list-by-table/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/column-list-by-table/response-headers.adoc[]
-include::{snippets}/column-list-by-table/response-body.adoc[]
-include::{snippets}/column-list-by-table/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/column-list-by-table/response-fields.adoc[]
 
 ---
 
@@ -646,37 +739,6 @@ include::{snippets}/relationship-get/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/relationship-get/response-fields.adoc[]
-
----
-
-=== 테이블별 Relationship 목록 조회
-
-특정 테이블의 관계 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/relationships/table/{tableId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/relationship-get-by-table/http-request.adoc[]
-include::{snippets}/relationship-get-by-table/path-parameters.adoc[]
-include::{snippets}/relationship-get-by-table/request-headers.adoc[]
-include::{snippets}/relationship-get-by-table/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/relationship-get-by-table/response-headers.adoc[]
-include::{snippets}/relationship-get-by-table/response-body.adoc[]
-include::{snippets}/relationship-get-by-table/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/relationship-get-by-table/response-fields.adoc[]
 
 ---
 
@@ -898,37 +960,6 @@ include::{snippets}/constraint-get/response-fields.adoc[]
 
 ---
 
-=== 테이블별 Constraint 목록 조회
-
-특정 테이블의 제약조건 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/constraints/table/{tableId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/constraint-get-by-table/http-request.adoc[]
-include::{snippets}/constraint-get-by-table/path-parameters.adoc[]
-include::{snippets}/constraint-get-by-table/request-headers.adoc[]
-include::{snippets}/constraint-get-by-table/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/constraint-get-by-table/response-headers.adoc[]
-include::{snippets}/constraint-get-by-table/response-body.adoc[]
-include::{snippets}/constraint-get-by-table/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/constraint-get-by-table/response-fields.adoc[]
-
----
-
 === Constraint 이름 변경
 
 제약조건의 이름을 변경합니다.
@@ -1113,37 +1144,6 @@ include::{snippets}/index-get/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/index-get/response-fields.adoc[]
-
----
-
-=== 테이블별 Index 목록 조회
-
-특정 테이블의 인덱스 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/indexes/table/{tableId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/index-get-by-table/http-request.adoc[]
-include::{snippets}/index-get-by-table/path-parameters.adoc[]
-include::{snippets}/index-get-by-table/request-headers.adoc[]
-include::{snippets}/index-get-by-table/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/index-get-by-table/response-headers.adoc[]
-include::{snippets}/index-get-by-table/response-body.adoc[]
-include::{snippets}/index-get-by-table/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/index-get-by-table/response-fields.adoc[]
 
 ---
 

@@ -1,7 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.List;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,15 +46,6 @@ public class ConstraintController {
     public Mono<BaseResponse<ConstraintResponse>> getConstraint(
             @PathVariable String constraintId) {
         return constraintService.getConstraint(constraintId)
-                .map(BaseResponse::success);
-    }
-
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/constraints/table/{tableId}")
-    public Mono<BaseResponse<List<ConstraintResponse>>> getConstraintsByTableId(
-            @PathVariable String tableId) {
-        return constraintService.getConstraintsByTableId(tableId)
-                .collectList()
                 .map(BaseResponse::success);
     }
 

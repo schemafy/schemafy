@@ -25,7 +25,6 @@ import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.service.RelationshipService;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
@@ -238,7 +237,7 @@ class RelationshipControllerTest {
                                                 "전파된 컬럼 목록 (식별 관계 시 자식 테이블로 전파)"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                        .description("전파된 제약조건 컬럼 목록"),
+                                                .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -327,99 +326,6 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.columns[].tgtColumnId")
                                         .description("타겟 컬럼 ID (참조되는 컬럼)"),
                                 fieldWithPath("result.columns[].seqNo")
-                                        .description("순서 번호"))));
-    }
-
-    @Test
-    @DisplayName("테이블별 관계 목록 조회 API 문서화")
-    void getRelationshipsByTableId() throws Exception {
-        String mockResponseJson = """
-                [
-                    {
-                        "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                        "name": "FK_recommend_user",
-                        "kind": "NON_IDENTIFYING",
-                        "cardinality": "ONE_TO_MANY",
-                        "onDelete": "CASCADE",
-                        "onUpdate": "CASCADE_UPDATE",
-                        "extra": "{}",
-                        "columns": [
-                            {
-                                "id": "06D6WCH68V89ZSPWVZ8WMBQWW8",
-                                "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                                "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                "seqNo": 1
-                            }
-                        ]
-                    }
-                ]
-                """;
-
-        when(relationshipService
-                .getRelationshipsByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
-                .thenReturn(
-                        Flux.fromArray(objectMapper.readValue(mockResponseJson,
-                                RelationshipResponse[].class)));
-
-        webTestClient.get()
-                .uri(API_BASE_PATH + "/relationships/table/{tableId}",
-                        "06D6W8HDY79QFZX39RMX62KSX4")
-                .header("Accept", "application/json")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result").isArray()
-                .jsonPath("$.result.length()").isEqualTo(1)
-                .jsonPath("$.result[0].id")
-                .isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
-                .jsonPath("$.result[0].name").isEqualTo("FK_recommend_user")
-                .consumeWith(document("relationship-get-by-table",
-                        pathParameters(
-                                parameterWithName("tableId")
-                                        .description("테이블 ID")),
-                        requestHeaders(
-                                headerWithName("Accept").description("응답 포맷")),
-                        responseHeaders(
-                                headerWithName("Content-Type")
-                                        .description("응답 컨텐츠 타입")),
-                        responseFields(
-                                fieldWithPath("success")
-                                        .description("요청 성공 여부"),
-                                fieldWithPath("result").description("관계 목록"),
-                                fieldWithPath("result[].id")
-                                        .description("관계 ID"),
-                                fieldWithPath("result[].srcTableId")
-                                        .description("소스 테이블 ID"),
-                                fieldWithPath("result[].tgtTableId")
-                                        .description("타겟 테이블 ID"),
-                                fieldWithPath("result[].name")
-                                        .description("관계 이름"),
-                                fieldWithPath("result[].kind")
-                                        .description("관계 종류"),
-                                fieldWithPath("result[].cardinality")
-                                        .description("카디널리티"),
-                                fieldWithPath("result[].onDelete")
-                                        .description("DELETE 액션"),
-                                fieldWithPath("result[].onUpdate")
-                                        .description("UPDATE 액션"),
-                                fieldWithPath("result[].extra")
-                                        .description("추가 정보"),
-                                fieldWithPath("result[].columns")
-                                        .description("관계 컬럼 목록"),
-                                fieldWithPath("result[].columns[].id")
-                                        .description("관계 컬럼 ID"),
-                                fieldWithPath(
-                                        "result[].columns[].relationshipId")
-                                        .description("관계 ID"),
-                                fieldWithPath("result[].columns[].srcColumnId")
-                                        .description("소스 컬럼 ID (FK 컬럼)"),
-                                fieldWithPath("result[].columns[].tgtColumnId")
-                                        .description("타겟 컬럼 ID (참조되는 컬럼)"),
-                                fieldWithPath("result[].columns[].seqNo")
                                         .description("순서 번호"))));
     }
 
@@ -519,8 +425,9 @@ class RelationshipControllerTest {
 
         when(relationshipService.updateRelationshipName(
                 any(Validation.ChangeRelationshipNameRequest.class)))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
-                        RelationshipResponse.class)));
+                        .thenReturn(Mono
+                                .just(objectMapper.readValue(mockResponseJson,
+                                        RelationshipResponse.class)));
 
         webTestClient.put()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/name",
@@ -669,8 +576,9 @@ class RelationshipControllerTest {
 
         when(relationshipService.updateRelationshipCardinality(
                 any(Validation.ChangeRelationshipCardinalityRequest.class)))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
-                        RelationshipResponse.class)));
+                        .thenReturn(Mono
+                                .just(objectMapper.readValue(mockResponseJson,
+                                        RelationshipResponse.class)));
 
         webTestClient.put()
                 .uri(API_BASE_PATH
@@ -818,22 +726,23 @@ class RelationshipControllerTest {
 
         when(relationshipService.addColumnToRelationship(
                 any(Validation.AddColumnToRelationshipRequest.class)))
-                .thenReturn(Mono.just(new AffectedMappingResponse(
-                        Collections.emptyMap(),
-                        Collections.emptyMap(),
-                        Collections.emptyMap(),
-                        Collections.emptyMap(),
-                        Collections.emptyMap(),
-                        Collections.emptyMap(),
-                        Collections.emptyMap(),
-                        Map.of("06D590QBYGE6K2TQ8JK514GGP4",
+                        .thenReturn(Mono.just(new AffectedMappingResponse(
+                                Collections.emptyMap(),
+                                Collections.emptyMap(),
+                                Collections.emptyMap(),
+                                Collections.emptyMap(),
+                                Collections.emptyMap(),
+                                Collections.emptyMap(),
+                                Collections.emptyMap(),
                                 Map.of("06D590QBYGE6K2TQ8JK514GGP4",
-                                        "06D590QBYGE6K2TQ8JK514GGP4")),
-                        Map.of("06D590QBYGE6K2TQ8JK514GGP4",
-                                Map.of(
-                                        "06D6WGN2ZWCGM2SVWRW2GEP8WW",
-                                        "06D6WGN2ZWCGM2SVWRW2GEP8WW")),
-                        AffectedMappingResponse.PropagatedEntities.empty())));
+                                        Map.of("06D590QBYGE6K2TQ8JK514GGP4",
+                                                "06D590QBYGE6K2TQ8JK514GGP4")),
+                                Map.of("06D590QBYGE6K2TQ8JK514GGP4",
+                                        Map.of(
+                                                "06D6WGN2ZWCGM2SVWRW2GEP8WW",
+                                                "06D6WGN2ZWCGM2SVWRW2GEP8WW")),
+                                AffectedMappingResponse.PropagatedEntities
+                                        .empty())));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}/columns",
@@ -900,7 +809,7 @@ class RelationshipControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                        .description("전파된 제약조건 컬럼 목록"),
+                                                .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -1002,7 +911,7 @@ class RelationshipControllerTest {
 
         when(relationshipService.removeColumnFromRelationship(
                 any(Validation.RemoveColumnFromRelationshipRequest.class)))
-                .thenReturn(Mono.empty());
+                        .thenReturn(Mono.empty());
 
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH
@@ -1127,7 +1036,7 @@ class RelationshipControllerTest {
 
         when(relationshipService.deleteRelationship(
                 any(Validation.DeleteRelationshipRequest.class)))
-                .thenReturn(Mono.empty());
+                        .thenReturn(Mono.empty());
 
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/relationships/{relationshipId}",

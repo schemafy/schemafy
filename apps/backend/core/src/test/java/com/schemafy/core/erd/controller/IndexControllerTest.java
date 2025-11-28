@@ -23,7 +23,6 @@ import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
 import com.schemafy.core.erd.service.IndexService;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
@@ -236,7 +235,7 @@ class IndexControllerTest {
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
-                                        .description("전파된 제약조건 컬럼 목록"),
+                                                .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
                                         .description("전파된 인덱스 컬럼 목록"))));
     }
@@ -313,85 +312,6 @@ class IndexControllerTest {
                                 fieldWithPath("result.columns[].seqNo")
                                         .description("순서 번호"),
                                 fieldWithPath("result.columns[].sortDir")
-                                        .description("정렬 방향 (ASC/DESC)"))));
-    }
-
-    @Test
-    @DisplayName("테이블별 인덱스 목록 조회 API 문서화")
-    void getIndexesByTableId() throws Exception {
-        String mockResponseJson = """
-                [
-                    {
-                        "id": "06D6WNJS8XWZT41HWZ226ZS904",
-                        "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                        "name": "IDX",
-                        "type": "BTREE",
-                        "comment": "",
-                        "columns": [
-                            {
-                                "id": "06D6WNJSBMS6AWBM1ZD7EDJP4M",
-                                "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
-                                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                "seqNo": 1,
-                                "sortDir": "ASC"
-                            }
-                        ]
-                    }
-                ]
-                """;
-
-        when(indexService.getIndexesByTableId("06D6W8HDY79QFZX39RMX62KSX4"))
-                .thenReturn(
-                        Flux.fromArray(objectMapper.readValue(mockResponseJson,
-                                IndexResponse[].class)));
-
-        webTestClient.get()
-                .uri(API_BASE_PATH + "/indexes/table/{tableId}",
-                        "06D6W8HDY79QFZX39RMX62KSX4")
-                .header("Accept", "application/json")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result").isArray()
-                .jsonPath("$.result.length()").isEqualTo(1)
-                .jsonPath("$.result[0].id")
-                .isEqualTo("06D6WNJS8XWZT41HWZ226ZS904")
-                .jsonPath("$.result[0].name").isEqualTo("IDX")
-                .consumeWith(document("index-get-by-table",
-                        pathParameters(
-                                parameterWithName("tableId")
-                                        .description("테이블 ID")),
-                        requestHeaders(
-                                headerWithName("Accept").description("응답 포맷")),
-                        responseHeaders(
-                                headerWithName("Content-Type")
-                                        .description("응답 컨텐츠 타입")),
-                        responseFields(
-                                fieldWithPath("success")
-                                        .description("요청 성공 여부"),
-                                fieldWithPath("result").description("인덱스 목록"),
-                                fieldWithPath("result[].id")
-                                        .description("인덱스 ID"),
-                                fieldWithPath("result[].tableId")
-                                        .description("테이블 ID"),
-                                fieldWithPath("result[].name")
-                                        .description("인덱스 이름"),
-                                fieldWithPath("result[].type")
-                                        .description("인덱스 타입"),
-                                fieldWithPath("result[].comment")
-                                        .description("인덱스 설명"),
-                                fieldWithPath("result[].columns")
-                                        .description("인덱스 컬럼 목록"),
-                                fieldWithPath("result[].columns[].id")
-                                        .description("인덱스 컬럼 ID"),
-                                fieldWithPath("result[].columns[].indexId")
-                                        .description("인덱스 ID"),
-                                fieldWithPath("result[].columns[].columnId")
-                                        .description("컬럼 ID"),
-                                fieldWithPath("result[].columns[].seqNo")
-                                        .description("순서 번호"),
-                                fieldWithPath("result[].columns[].sortDir")
                                         .description("정렬 방향 (ASC/DESC)"))));
     }
 
@@ -493,8 +413,9 @@ class IndexControllerTest {
 
         when(indexService
                 .updateIndexName(any(Validation.ChangeIndexNameRequest.class)))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
-                        IndexResponse.class)));
+                        .thenReturn(Mono
+                                .just(objectMapper.readValue(mockResponseJson,
+                                        IndexResponse.class)));
 
         webTestClient.put()
                 .uri(API_BASE_PATH + "/indexes/{indexId}/name",
@@ -641,8 +562,9 @@ class IndexControllerTest {
 
         when(indexService.addColumnToIndex(
                 any(Validation.AddColumnToIndexRequest.class)))
-                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
-                        IndexColumnResponse.class)));
+                        .thenReturn(Mono
+                                .just(objectMapper.readValue(mockResponseJson,
+                                        IndexColumnResponse.class)));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/indexes/{indexId}/columns",
@@ -780,7 +702,7 @@ class IndexControllerTest {
 
         when(indexService.removeColumnFromIndex(
                 any(Validation.RemoveColumnFromIndexRequest.class)))
-                .thenReturn(Mono.empty());
+                        .thenReturn(Mono.empty());
 
         webTestClient.method(org.springframework.http.HttpMethod.DELETE)
                 .uri(API_BASE_PATH + "/indexes/{indexId}/columns/{columnId}",

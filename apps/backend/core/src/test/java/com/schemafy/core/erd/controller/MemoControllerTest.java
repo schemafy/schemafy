@@ -234,63 +234,6 @@ class MemoControllerTest {
     }
 
     @Test
-    @DisplayName("스키마별 메모 목록 조회 API 문서화")
-    void getMemosBySchemaId() throws Exception {
-        String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
-
-        MemoResponse response = objectMapper.treeToValue(
-                objectMapper.readTree("""
-                        {
-                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
-                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                            "positions": "{}",
-                            "createdAt": "2025-11-23T10:00:00Z",
-                            "updatedAt": "2025-11-23T10:00:00Z"
-                        }
-                        """), MemoResponse.class);
-
-        given(memoService.getMemosBySchemaId(schemaId))
-                .willReturn(Flux.just(response));
-
-        webTestClient.get()
-                .uri(API_BASE_PATH + "/memos/schema/{schemaId}", schemaId)
-                .header("Accept", "application/json")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .consumeWith(document("memo-list-by-schema",
-                        pathParameters(
-                                parameterWithName("schemaId")
-                                        .description("조회할 스키마 ID")),
-                        requestHeaders(
-                                headerWithName("Accept")
-                                        .description(
-                                                "응답 포맷 (application/json)")),
-                        responseHeaders(
-                                headerWithName("Content-Type")
-                                        .description("응답 컨텐츠 타입")),
-                        responseFields(
-                                fieldWithPath("success")
-                                        .description("요청 성공 여부"),
-                                fieldWithPath("result")
-                                        .description("메모 목록"),
-                                fieldWithPath("result[].id")
-                                        .description("메모 ID"),
-                                fieldWithPath("result[].schemaId")
-                                        .description("스키마 ID"),
-                                fieldWithPath("result[].authorId")
-                                        .description("작성자 ID"),
-                                fieldWithPath("result[].positions")
-                                        .description("메모 위치"),
-                                fieldWithPath("result[].createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result[].updatedAt")
-                                        .description("수정 일시"))));
-    }
-
-    @Test
     @DisplayName("메모 수정 API 문서화")
     void updateMemo() throws Exception {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
@@ -414,7 +357,7 @@ class MemoControllerTest {
 
         given(memoService.createComment(eq(memoId),
                 any(CreateMemoCommentRequest.class), any()))
-                .willReturn(Mono.just(response));
+                        .willReturn(Mono.just(response));
 
         webTestClient.post()
                 .uri(API_BASE_PATH + "/memos/{memoId}/comments", memoId)
@@ -538,7 +481,7 @@ class MemoControllerTest {
 
         given(memoService.updateComment(any(UpdateMemoCommentRequest.class),
                 any()))
-                .willReturn(Mono.just(response));
+                        .willReturn(Mono.just(response));
 
         webTestClient.put()
                 .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",
@@ -597,7 +540,7 @@ class MemoControllerTest {
 
         given(memoService.deleteComment(eq(memoId), eq(commentId),
                 any(AuthenticatedUser.class)))
-                .willReturn(Mono.empty());
+                        .willReturn(Mono.empty());
 
         webTestClient.delete()
                 .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",

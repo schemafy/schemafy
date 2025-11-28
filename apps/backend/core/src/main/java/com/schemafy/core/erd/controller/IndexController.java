@@ -1,7 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.List;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,15 +47,6 @@ public class IndexController {
     public Mono<BaseResponse<IndexResponse>> getIndex(
             @PathVariable String indexId) {
         return indexService.getIndex(indexId)
-                .map(BaseResponse::success);
-    }
-
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/indexes/table/{tableId}")
-    public Mono<BaseResponse<List<IndexResponse>>> getIndexesByTableId(
-            @PathVariable String tableId) {
-        return indexService.getIndexesByTableId(tableId)
-                .collectList()
                 .map(BaseResponse::success);
     }
 
