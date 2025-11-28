@@ -383,28 +383,40 @@ class MemoServiceTest {
     @DisplayName("deleteComment: 관리자(OWNER)는 다른 사람의 댓글을 삭제할 수 있다")
     void deleteComment_admin_success() {
         String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+        String otherAuthorId = "06D6W8HDY79QFZX39RMX62KSX4";
         Memo memo = memoRepository.save(Memo.builder()
                 .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
                 .authorId(authorId)
                 .positions("{}")
                 .build()).block();
 
-        MemoComment comment = memoCommentRepository.save(MemoComment.builder()
+        // 첫 번째 댓글 (본문)
+        memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
                 .authorId(authorId)
-                .body("댓글")
+                .body("본문")
                 .build()).block();
+
+        // 두 번째 댓글 (다른 사용자의 댓글 - 삭제 대상)
+        MemoComment targetComment = memoCommentRepository
+                .save(MemoComment.builder()
+                        .memoId(memo.getId())
+                        .authorId(otherAuthorId)
+                        .body("답글")
+                        .build())
+                .block();
 
         String ownerId = "06D6WCH677C3FCC2Q9SD5M1Y5Y"; // Owner User ID
         AuthenticatedUser ownerUser = AuthenticatedUser.withRoles(ownerId,
                 Set.of(ProjectRole.OWNER));
 
         StepVerifier
-                .create(memoService.deleteComment(memo.getId(), comment.getId(),
-                        ownerUser))
+                .create(memoService.deleteComment(memo.getId(),
+                        targetComment.getId(), ownerUser))
                 .verifyComplete();
 
-        StepVerifier.create(memoCommentRepository.findById(comment.getId()))
+        StepVerifier
+                .create(memoCommentRepository.findById(targetComment.getId()))
                 .assertNext(c -> assertThat(c.getDeletedAt()).isNotNull())
                 .verifyComplete();
     }
@@ -425,18 +437,20 @@ class MemoServiceTest {
                 .body("댓글 1")
                 .build()).block();
 
+        String comment2AuthorId = "06D6W8HDY79QFZX39RMX62KSX4";
         MemoComment comment2 = memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
-                .authorId("06D6W8HDY79QFZX39RMX62KSX4")
+                .authorId(comment2AuthorId)
                 .body("댓글 2")
                 .build()).block();
 
-        AuthenticatedUser user = AuthenticatedUser.of(authorId);
+        AuthenticatedUser comment2Author = AuthenticatedUser
+                .of(comment2AuthorId);
 
         // reply(comment2) 삭제 -> 본문(comment1)은 살아있음
         StepVerifier
                 .create(memoService.deleteComment(memo.getId(),
-                        comment2.getId(), user))
+                        comment2.getId(), comment2Author))
                 .verifyComplete();
 
         // comment2 삭제 확인
