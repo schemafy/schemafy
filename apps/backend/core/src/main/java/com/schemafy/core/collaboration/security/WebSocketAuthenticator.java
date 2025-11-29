@@ -41,33 +41,44 @@ public class WebSocketAuthenticator {
             String tokenType = jwtProvider.getTokenType(token);
 
             if (!JwtProvider.ACCESS_TOKEN.equals(tokenType)) {
-                log.warn("[WebSocketAuthenticator] WebSocket authentication failed: Invalid token type - {}", tokenType);
+                log.warn(
+                        "[WebSocketAuthenticator] WebSocket authentication failed: Invalid token type - {}",
+                        tokenType);
                 return Optional.empty();
             }
 
             if (!jwtProvider.validateToken(token, userId)) {
-                log.warn("[WebSocketAuthenticator] WebSocket authentication failed: Token validation failed");
+                log.warn(
+                        "[WebSocketAuthenticator] WebSocket authentication failed: Token validation failed");
                 return Optional.empty();
             }
 
             Optional<String> userNameOpt = extractUserName(token);
             if (userNameOpt.isEmpty()) {
-                log.warn("[WebSocketAuthenticator] WebSocket authentication failed: Missing user name (claim)");
+                log.warn(
+                        "[WebSocketAuthenticator] WebSocket authentication failed: Missing user name (claim)");
                 return Optional.empty();
             }
 
             String userName = userNameOpt.get();
-            log.debug("[WebSocketAuthenticator] WebSocket authentication succeeded: userId={}", userId);
+            log.debug(
+                    "[WebSocketAuthenticator] WebSocket authentication succeeded: userId={}",
+                    userId);
             return Optional.of(WebSocketAuthInfo.of(userId, userName));
 
         } catch (ExpiredJwtException e) {
-            log.warn("[WebSocketAuthenticator] WebSocket authentication failed: Token expired");
+            log.warn(
+                    "[WebSocketAuthenticator] WebSocket authentication failed: Token expired");
             return Optional.empty();
         } catch (JwtException e) {
-            log.warn("[WebSocketAuthenticator] WebSocket authentication failed: Invalid token format - {}", e.getMessage());
+            log.warn(
+                    "[WebSocketAuthenticator] WebSocket authentication failed: Invalid token format - {}",
+                    e.getMessage());
             return Optional.empty();
         } catch (Exception e) {
-            log.error("[WebSocketAuthenticator] WebSocket authentication failed: Unexpected error", e);
+            log.error(
+                    "[WebSocketAuthenticator] WebSocket authentication failed: Unexpected error",
+                    e);
             return Optional.empty();
         }
     }
@@ -80,7 +91,8 @@ public class WebSocketAuthenticator {
                     .getQueryParams();
             return params.getFirst(TOKEN_PARAM);
         } catch (Exception e) {
-            log.warn("[WebSocketAuthenticator] Token extraction failed: {}", e.getMessage());
+            log.warn("[WebSocketAuthenticator] Token extraction failed: {}",
+                    e.getMessage());
             return null;
         }
     }

@@ -7,10 +7,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import reactor.core.Disposable;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.Disposable;
 
 @Slf4j
 @Service
@@ -46,7 +45,9 @@ public class RedisSubscriptionService {
                             .subscribe();
                 })
                 .doOnError(error -> {
-                    log.error("[RedisSubscriptionService] Redis subscription error", error);
+                    log.error(
+                            "[RedisSubscriptionService] Redis subscription error",
+                            error);
                     resubscribe();
                 })
                 .subscribe();

@@ -6,8 +6,6 @@ import org.springframework.web.reactive.socket.CloseStatus;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
 
-import reactor.core.publisher.Mono;
-
 import com.schemafy.core.collaboration.security.ProjectAccessValidator;
 import com.schemafy.core.collaboration.security.WebSocketAuthInfo;
 import com.schemafy.core.collaboration.security.WebSocketAuthenticator;
@@ -16,6 +14,7 @@ import com.schemafy.core.collaboration.service.SessionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
@@ -73,10 +72,12 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                             .handleMessage(projectId, session.getId(), payload)
                             .subscribe();
                 })
-                .doOnError(error -> log.error("[CollaborationWebSocketHandler] WebSocket error: sessionId={}",
+                .doOnError(error -> log.error(
+                        "[CollaborationWebSocketHandler] WebSocket error: sessionId={}",
                         session.getId(), error))
                 .doFinally(signalType -> {
-                    log.info("[CollaborationWebSocketHandler] WebSocket disconnected: sessionId={}, signal={}",
+                    log.info(
+                            "[CollaborationWebSocketHandler] WebSocket disconnected: sessionId={}, signal={}",
                             session.getId(), signalType);
                     presenceService.removeSession(projectId, session.getId())
                             .subscribe();
@@ -85,14 +86,17 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     }
 
     private Mono<Void> handleUnauthenticated(WebSocketSession session) {
-        log.warn("[CollaborationWebSocketHandler] WebSocket authentication failed: sessionId={}", session.getId());
+        log.warn(
+                "[CollaborationWebSocketHandler] WebSocket authentication failed: sessionId={}",
+                session.getId());
         return session.close(CloseStatus.POLICY_VIOLATION
                 .withReason("Authentication required"));
     }
 
     private Mono<Void> handleAccessDenied(WebSocketSession session,
             String projectId) {
-        log.warn("[CollaborationWebSocketHandler] Access denied to project: sessionId={}, projectId={}",
+        log.warn(
+                "[CollaborationWebSocketHandler] Access denied to project: sessionId={}, projectId={}",
                 session.getId(), projectId);
         return session.close(CloseStatus.POLICY_VIOLATION
                 .withReason("Access denied to project"));

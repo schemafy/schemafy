@@ -1,16 +1,14 @@
 package com.schemafy.core.collaboration.service;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -24,7 +22,8 @@ public class SessionService {
         projectSessions
                 .computeIfAbsent(projectId, k -> new ConcurrentHashMap<>())
                 .put(sessionId, session);
-        log.info("[SessionService] Session added: projectId={}, sessionId={}, current session count={}",
+        log.info(
+                "[SessionService] Session added: projectId={}, sessionId={}, current session count={}",
                 projectId, sessionId, getSessionCount(projectId));
     }
 
@@ -35,7 +34,8 @@ public class SessionService {
             if (sessions.isEmpty()) {
                 projectSessions.remove(projectId);
             }
-            log.info("[SessionService] Session removed: projectId={}, sessionId={}, current session count={}",
+            log.info(
+                    "[SessionService] Session removed: projectId={}, sessionId={}, current session count={}",
                     projectId, sessionId, getSessionCount(projectId));
         }
     }
@@ -54,7 +54,8 @@ public class SessionService {
                     WebSocketSession session = entry.getValue();
                     return session.send(Mono.just(session.textMessage(message)))
                             .onErrorResume(e -> {
-                                log.warn("[SessionService] Message send failed: sessionId={}, error={}",
+                                log.warn(
+                                        "[SessionService] Message send failed: sessionId={}, error={}",
                                         entry.getKey(), e.getMessage());
                                 return Mono.empty();
                             });
