@@ -67,6 +67,7 @@ public class SecurityConfig {
                 .addFilterAt(jwtAuthenticationFilter,
                         SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers("/ws/**").permitAll() // NOTE: WebSocket은 핸들러에서 인증
                         .pathMatchers("/public/api/**").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated())
