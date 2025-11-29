@@ -25,4 +25,15 @@ public class PresenceJoinEvent extends PresenceEvent {
                 .build();
     }
 
+    @Override
+    public PresenceJoinEvent withoutSessionId() {
+        return PresenceJoinEvent.builder()
+                .type(this.type)
+                .sessionId(null)
+                .userId(this.userId)
+                .userName(this.userName)
+                .timestamp(this.timestamp)
+                .build();
+    }
+
 }

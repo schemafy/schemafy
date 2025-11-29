@@ -23,4 +23,14 @@ public class PresenceCursorEvent extends PresenceEvent {
                 .build();
     }
 
+    @Override
+    public PresenceCursorEvent withoutSessionId() {
+        return PresenceCursorEvent.builder()
+                .type(this.type)
+                .sessionId(null)
+                .cursor(this.cursor)
+                .timestamp(this.timestamp)
+                .build();
+    }
+
 }

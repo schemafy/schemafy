@@ -9,8 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.collaboration.dto.ClientMessage;
 import com.schemafy.core.collaboration.dto.CursorClientMessage;
 import com.schemafy.core.collaboration.dto.CursorPosition;
-import com.schemafy.core.collaboration.dto.PresenceEventFactory;
+import com.schemafy.core.collaboration.dto.PresenceEvent;
 import com.schemafy.core.collaboration.dto.PresenceEventType;
+import com.schemafy.core.collaboration.dto.PresenceEventFactory;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -113,7 +114,10 @@ public class PresenceService {
      * handle Redis messages received from Redis and broadcast to local WebSocket clients
      */
     public Mono<Void> handleRedisMessage(String projectId, String message) {
-        return sessionService.broadcastAll(projectId, message);
+        return deserializeFromJson(message, PresenceEvent.class)
+                .map(PresenceEvent::withoutSessionId)
+                .flatMap(this::serializeToJson)
+                .flatMap(filteredMessage -> sessionService.broadcastAll(projectId, filteredMessage));
     }
 
     private <T> Mono<String> serializeToJson(T object) {

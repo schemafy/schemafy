@@ -17,4 +17,13 @@ public class PresenceLeaveEvent extends PresenceEvent {
                 .build();
     }
 
+    @Override
+    public PresenceLeaveEvent withoutSessionId() {
+        return PresenceLeaveEvent.builder()
+                .type(this.type)
+                .sessionId(null)
+                .timestamp(this.timestamp)
+                .build();
+    }
+
 }
