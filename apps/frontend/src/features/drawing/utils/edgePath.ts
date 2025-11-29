@@ -70,7 +70,7 @@ export const getDefaultControlPoints = (
   }
 };
 
-export const getCurrentControlPoints = (
+const getCurrentControlPoints = (
   data: EdgeProps['data'],
   defaults: CrossDirectionControlPoints,
 ) => ({
@@ -92,7 +92,7 @@ export const getCurrentControlPoints = (
       : defaults.controlPoint2Y,
 });
 
-export const getCrossDirectionHandles = (
+const getCrossDirectionHandles = (
   sourceX: number,
   sourceY: number,
   targetX: number,
@@ -111,21 +111,21 @@ export const getCrossDirectionHandles = (
         y: cp.controlPoint2Y,
       },
     };
+  } else {
+    return {
+      handle1Position: {
+        x: (sourceX + cp.controlPoint2X) / 2,
+        y: cp.controlPoint1Y,
+      },
+      handle2Position: {
+        x: cp.controlPoint2X,
+        y: (cp.controlPoint1Y + targetY) / 2,
+      },
+    };
   }
-
-  return {
-    handle1Position: {
-      x: (sourceX + cp.controlPoint2X) / 2,
-      y: cp.controlPoint1Y,
-    },
-    handle2Position: {
-      x: cp.controlPoint2X,
-      y: (cp.controlPoint1Y + targetY) / 2,
-    },
-  };
 };
 
-export const getSameDirectionHandle = (
+const getSameDirectionHandle = (
   sourceX: number,
   sourceY: number,
   targetX: number,
@@ -138,12 +138,88 @@ export const getSameDirectionHandle = (
       x: cp.controlPoint1X,
       y: (sourceY + targetY) / 2,
     };
+  } else {
+    return {
+      x: (sourceX + targetX) / 2,
+      y: cp.controlPoint1Y,
+    };
   }
+};
 
-  return {
-    x: (sourceX + targetX) / 2,
-    y: cp.controlPoint1Y,
-  };
+export const calculateEdgeGeometry = (
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+  sourceIsHorizontal: boolean,
+  isCrossDirection: boolean,
+  data: EdgeProps['data'],
+) => {
+  const defaults = getDefaultControlPoints(
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourceIsHorizontal,
+    isCrossDirection,
+  );
+
+  const controlPoints = getCurrentControlPoints(data, defaults);
+
+  if (isCrossDirection) {
+    const path = buildCrossDirectionPath(
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourceIsHorizontal,
+      controlPoints.controlPoint1X,
+      controlPoints.controlPoint1Y,
+      controlPoints.controlPoint2X,
+      controlPoints.controlPoint2Y,
+    );
+
+    const handles = getCrossDirectionHandles(
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourceIsHorizontal,
+      controlPoints,
+    );
+
+    return {
+      controlPoints,
+      path,
+      ...handles,
+    };
+  } else {
+    const path = buildSameDirectionPath(
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourceIsHorizontal,
+      controlPoints.controlPoint1X,
+      controlPoints.controlPoint1Y,
+    );
+
+    const handle1Position = getSameDirectionHandle(
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourceIsHorizontal,
+      controlPoints,
+    );
+
+    return {
+      controlPoints,
+      path,
+      handle1Position,
+      handle2Position: null,
+    };
+  }
 };
 
 export const calculateNewControlPoints = (
@@ -172,15 +248,15 @@ export const calculateNewControlPoints = (
       controlPoint2X: sourceIsHorizontal ? controlPoint2X : flowPosition.x,
       controlPoint2Y: sourceIsHorizontal ? flowPosition.y : controlPoint2Y,
     };
+  } else {
+    const newPoint1X = sourceIsHorizontal ? flowPosition.x : controlPoint1X;
+    const newPoint1Y = sourceIsHorizontal ? controlPoint1Y : flowPosition.y;
+
+    return {
+      controlPoint1X: newPoint1X,
+      controlPoint1Y: newPoint1Y,
+      controlPoint2X: newPoint1X,
+      controlPoint2Y: newPoint1Y,
+    };
   }
-
-  const newPoint1X = sourceIsHorizontal ? flowPosition.x : controlPoint1X;
-  const newPoint1Y = sourceIsHorizontal ? controlPoint1Y : flowPosition.y;
-
-  return {
-    controlPoint1X: newPoint1X,
-    controlPoint1Y: newPoint1Y,
-    controlPoint2X: newPoint1X,
-    controlPoint2Y: newPoint1Y,
-  };
 };

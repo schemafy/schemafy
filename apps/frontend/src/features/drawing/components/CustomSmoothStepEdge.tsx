@@ -9,13 +9,8 @@ import { Move } from 'lucide-react';
 import type { CrossDirectionControlPoints, Point } from '../types';
 import {
   isHorizontalPosition,
-  getDefaultControlPoints,
-  buildCrossDirectionPath,
-  buildSameDirectionPath,
-  getCrossDirectionHandles,
-  getCurrentControlPoints,
   calculateNewControlPoints,
-  getSameDirectionHandle,
+  calculateEdgeGeometry,
 } from '../utils/edgePath';
 
 export const CustomSmoothStepEdge = ({
@@ -40,81 +35,16 @@ export const CustomSmoothStepEdge = ({
   const targetIsHorizontal = isHorizontalPosition(targetPosition);
   const isCrossDirection = sourceIsHorizontal !== targetIsHorizontal;
 
-  const {
-    controlPoint1X,
-    controlPoint1Y,
-    controlPoint2X,
-    controlPoint2Y,
-    path,
-    handle1Position,
-    handle2Position,
-  } = (() => {
-    const defaults = getDefaultControlPoints(
+  const { controlPoints, path, handle1Position, handle2Position } =
+    calculateEdgeGeometry(
       sourceX,
       sourceY,
       targetX,
       targetY,
       sourceIsHorizontal,
       isCrossDirection,
+      data,
     );
-
-    const controlPoints = getCurrentControlPoints(data, defaults);
-
-    if (isCrossDirection) {
-      const edgePath = buildCrossDirectionPath(
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
-        sourceIsHorizontal,
-        controlPoints.controlPoint1X,
-        controlPoints.controlPoint1Y,
-        controlPoints.controlPoint2X,
-        controlPoints.controlPoint2Y,
-      );
-
-      const handles = getCrossDirectionHandles(
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
-        sourceIsHorizontal,
-        controlPoints,
-      );
-
-      return {
-        ...controlPoints,
-        path: edgePath,
-        ...handles,
-      };
-    }
-
-    const edgePath = buildSameDirectionPath(
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      sourceIsHorizontal,
-      controlPoints.controlPoint1X,
-      controlPoints.controlPoint1Y,
-    );
-
-    const handlePosition = getSameDirectionHandle(
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      sourceIsHorizontal,
-      controlPoints,
-    );
-
-    return {
-      ...controlPoints,
-      path: edgePath,
-      handle1Position: handlePosition,
-      handle2Position: null,
-    };
-  })();
 
   const handleMouseDown = (handleIndex: number) => (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -125,12 +55,7 @@ export const CustomSmoothStepEdge = ({
   useEffect(() => {
     if (draggingHandle === null) return;
 
-    let finalControlPoints: CrossDirectionControlPoints = {
-      controlPoint1X,
-      controlPoint1Y,
-      controlPoint2X,
-      controlPoint2Y,
-    };
+    let finalControlPoints: CrossDirectionControlPoints = { ...controlPoints };
 
     const handleMouseMove = (e: MouseEvent) => {
       const flowPosition = screenToFlowPosition({
@@ -185,16 +110,17 @@ export const CustomSmoothStepEdge = ({
     screenToFlowPosition,
     isCrossDirection,
     sourceIsHorizontal,
-    controlPoint1X,
-    controlPoint1Y,
-    controlPoint2X,
-    controlPoint2Y,
+    controlPoints,
   ]);
 
   const labelPosition: Point = isCrossDirection
     ? {
-        x: sourceIsHorizontal ? controlPoint1X : controlPoint2X,
-        y: sourceIsHorizontal ? controlPoint2Y : controlPoint1Y,
+        x: sourceIsHorizontal
+          ? controlPoints.controlPoint1X
+          : controlPoints.controlPoint2X,
+        y: sourceIsHorizontal
+          ? controlPoints.controlPoint2Y
+          : controlPoints.controlPoint1Y,
       }
     : handle1Position;
 
