@@ -11,14 +11,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CursorPosition {
 
-    private String userId;
     private String userName;
-    private String userColor;
     private double x;
     private double y;
-    private double viewportX;
-    private double viewportY;
-    private double zoom;
-    private long timestamp;
+
+    public CursorPosition withUserName(String userName) {
+        return CursorPosition.builder()
+                .userName(userName)
+                .x(this.x)
+                .y(this.y)
+                .build();
+    }
 
 }

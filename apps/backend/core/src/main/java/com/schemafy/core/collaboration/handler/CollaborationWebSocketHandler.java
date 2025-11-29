@@ -60,7 +60,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 "[CollaborationWebSocketHandler] WebSocket connected: sessionId={}, projectId={}, userId={}",
                 session.getId(), projectId, userId);
 
-        sessionService.addSession(projectId, session.getId(), session);
+        sessionService.addSession(projectId, session.getId(), session, authInfo);
 
         presenceService.notifyJoin(projectId, session.getId(), userId, userName)
                 .subscribe();

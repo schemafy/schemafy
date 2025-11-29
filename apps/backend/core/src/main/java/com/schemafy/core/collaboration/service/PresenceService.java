@@ -33,7 +33,13 @@ public class PresenceService {
             CursorPosition cursor) {
         String channelName = CHANNEL_PREFIX + projectId;
 
-        return serializeToJson(PresenceEventFactory.cursor(sessionId, cursor))
+        String userName = sessionService.getAuthInfo(sessionId)
+                .map(auth -> auth.getUserName())
+                .orElse("Unknown");
+
+        CursorPosition cursorWithUserName = cursor.withUserName(userName);
+
+        return serializeToJson(PresenceEventFactory.cursor(sessionId, cursorWithUserName))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
                 .then();

@@ -1,6 +1,7 @@
 package com.schemafy.core.collaboration.service;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
@@ -10,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import com.schemafy.core.collaboration.security.WebSocketAuthInfo;
+
 @Slf4j
 @Service
 public class SessionService {
@@ -17,11 +20,15 @@ public class SessionService {
     // projectId -> (sessionId -> WebSocketSession)
     private final Map<String, Map<String, WebSocketSession>> projectSessions = new ConcurrentHashMap<>();
 
+    // sessionId -> WebSocketAuthInfo
+    private final Map<String, WebSocketAuthInfo> sessionAuthInfo = new ConcurrentHashMap<>();
+
     public void addSession(String projectId, String sessionId,
-            WebSocketSession session) {
+            WebSocketSession session, WebSocketAuthInfo authInfo) {
         projectSessions
                 .computeIfAbsent(projectId, k -> new ConcurrentHashMap<>())
                 .put(sessionId, session);
+        sessionAuthInfo.put(sessionId, authInfo);
         log.info(
                 "[SessionService] Session added: projectId={}, sessionId={}, current session count={}",
                 projectId, sessionId, getSessionCount(projectId));
@@ -38,6 +45,7 @@ public class SessionService {
                     "[SessionService] Session removed: projectId={}, sessionId={}, current session count={}",
                     projectId, sessionId, getSessionCount(projectId));
         }
+        sessionAuthInfo.remove(sessionId);
     }
 
     public Mono<Void> broadcast(String projectId, String excludeSessionId,
@@ -70,6 +78,10 @@ public class SessionService {
     public int getSessionCount(String projectId) {
         Map<String, WebSocketSession> sessions = projectSessions.get(projectId);
         return sessions != null ? sessions.size() : 0;
+    }
+
+    public Optional<WebSocketAuthInfo> getAuthInfo(String sessionId) {
+        return Optional.ofNullable(sessionAuthInfo.get(sessionId));
     }
 
 }
