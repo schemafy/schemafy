@@ -10,8 +10,8 @@ import com.schemafy.core.collaboration.dto.ClientMessage;
 import com.schemafy.core.collaboration.dto.CursorClientMessage;
 import com.schemafy.core.collaboration.dto.CursorPosition;
 import com.schemafy.core.collaboration.dto.PresenceEvent;
-import com.schemafy.core.collaboration.dto.PresenceEventType;
 import com.schemafy.core.collaboration.dto.PresenceEventFactory;
+import com.schemafy.core.collaboration.dto.PresenceEventType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,8 @@ public class PresenceService {
 
         CursorPosition cursorWithUserName = cursor.withUserName(userName);
 
-        return serializeToJson(PresenceEventFactory.cursor(sessionId, cursorWithUserName))
+        return serializeToJson(
+                PresenceEventFactory.cursor(sessionId, cursorWithUserName))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
                 .then();
@@ -123,7 +124,8 @@ public class PresenceService {
         return deserializeFromJson(message, PresenceEvent.class)
                 .map(PresenceEvent::withoutSessionId)
                 .flatMap(this::serializeToJson)
-                .flatMap(filteredMessage -> sessionService.broadcastAll(projectId, filteredMessage));
+                .flatMap(filteredMessage -> sessionService
+                        .broadcastAll(projectId, filteredMessage));
     }
 
     private <T> Mono<String> serializeToJson(T object) {
