@@ -1,7 +1,6 @@
 package com.schemafy.core.common.security.jwt;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
@@ -19,12 +18,14 @@ public class JwtTokenIssuer {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final Duration REFRESH_TOKEN_COOKIE_MAX_AGE = Duration
             .ofDays(7);
+    private static final String CLAIM_NAME = "name";
 
     private final JwtProvider jwtProvider;
 
-    public <T> ResponseEntity<T> issueTokens(String userId, T body) {
+    public <T> ResponseEntity<T> issueTokens(String userId, String userName,
+            T body) {
         long now = System.currentTimeMillis();
-        Map<String, Object> claims = new HashMap<>();
+        Map<String, Object> claims = Map.of(CLAIM_NAME, userName);
 
         String accessToken = jwtProvider.generateAccessToken(userId, claims,
                 now);
