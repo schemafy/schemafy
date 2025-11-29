@@ -4,6 +4,15 @@ spring:
   application:
     name: core
 
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+
+  data:
+    redis:
+      enabled: false
+
   sql:
     init:
       schema-locations: classpath:ddl/h2/**/*.sql
