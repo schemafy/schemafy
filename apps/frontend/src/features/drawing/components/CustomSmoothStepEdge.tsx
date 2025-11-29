@@ -3,151 +3,20 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   useReactFlow,
-  Position,
   type EdgeProps,
 } from '@xyflow/react';
 import { Move } from 'lucide-react';
+import type { CrossDirectionControlPoints, Point } from '../types';
 import {
-  type CrossDirectionControlPoints,
-  type SameDirectionControlPoints,
-  type Point,
-} from '../types';
-
-const isHorizontalPosition = (position: Position) =>
-  position === Position.Left || position === Position.Right;
-
-const getDefaultControlPoints = (
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-  sourceIsHorizontal: boolean,
-  isCrossDirection: boolean,
-) => {
-  if (isCrossDirection) {
-    return {
-      controlPoint1X: sourceIsHorizontal ? (sourceX + targetX) / 2 : sourceX,
-      controlPoint1Y: sourceIsHorizontal ? sourceY : (sourceY + targetY) / 2,
-      controlPoint2X: sourceIsHorizontal ? (sourceX + targetX) / 2 : targetX,
-      controlPoint2Y: (sourceY + targetY) / 2,
-    };
-  } else {
-    const midX = (sourceX + targetX) / 2;
-    const midY = (sourceY + targetY) / 2;
-    return {
-      controlPoint1X: midX,
-      controlPoint1Y: midY,
-      controlPoint2X: midX,
-      controlPoint2Y: midY,
-    };
-  }
-};
-
-const getCurrentControlPoints = (
-  data: EdgeProps['data'],
-  defaults: CrossDirectionControlPoints,
-) => ({
-  controlPoint1X:
-    typeof data?.controlPoint1X === 'number'
-      ? data.controlPoint1X
-      : defaults.controlPoint1X,
-  controlPoint1Y:
-    typeof data?.controlPoint1Y === 'number'
-      ? data.controlPoint1Y
-      : defaults.controlPoint1Y,
-  controlPoint2X:
-    typeof data?.controlPoint2X === 'number'
-      ? data.controlPoint2X
-      : defaults.controlPoint2X,
-  controlPoint2Y:
-    typeof data?.controlPoint2Y === 'number'
-      ? data.controlPoint2Y
-      : defaults.controlPoint2Y,
-});
-
-const buildCrossDirectionPath = (
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-  sourceIsHorizontal: boolean,
-  cp: CrossDirectionControlPoints,
-) => {
-  if (sourceIsHorizontal) {
-    return `M ${sourceX},${sourceY} L ${cp.controlPoint1X},${sourceY} L ${cp.controlPoint1X},${cp.controlPoint2Y} L ${targetX},${cp.controlPoint2Y} L ${targetX},${targetY}`;
-  } else {
-    return `M ${sourceX},${sourceY} L ${sourceX},${cp.controlPoint1Y} L ${cp.controlPoint2X},${cp.controlPoint1Y} L ${cp.controlPoint2X},${targetY} L ${targetX},${targetY}`;
-  }
-};
-
-const buildSameDirectionPath = (
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-  sourceIsHorizontal: boolean,
-  cp: SameDirectionControlPoints,
-) => {
-  if (sourceIsHorizontal) {
-    return `M ${sourceX},${sourceY} L ${cp.controlPoint1X},${sourceY} L ${cp.controlPoint1X},${targetY} L ${targetX},${targetY}`;
-  } else {
-    return `M ${sourceX},${sourceY} L ${sourceX},${cp.controlPoint1Y} L ${targetX},${cp.controlPoint1Y} L ${targetX},${targetY}`;
-  }
-};
-
-const getCrossDirectionHandles = (
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-  sourceIsHorizontal: boolean,
-  cp: CrossDirectionControlPoints,
-) => {
-  if (sourceIsHorizontal) {
-    return {
-      handle1Position: {
-        x: cp.controlPoint1X,
-        y: (sourceY + cp.controlPoint2Y) / 2,
-      },
-      handle2Position: {
-        x: (cp.controlPoint1X + targetX) / 2,
-        y: cp.controlPoint2Y,
-      },
-    };
-  } else {
-    return {
-      handle1Position: {
-        x: (sourceX + cp.controlPoint2X) / 2,
-        y: cp.controlPoint1Y,
-      },
-      handle2Position: {
-        x: cp.controlPoint2X,
-        y: (cp.controlPoint1Y + targetY) / 2,
-      },
-    };
-  }
-};
-
-const getSameDirectionHandle = (
-  sourceX: number,
-  sourceY: number,
-  targetX: number,
-  targetY: number,
-  sourceIsHorizontal: boolean,
-  cp: SameDirectionControlPoints,
-) => {
-  if (sourceIsHorizontal) {
-    return {
-      x: cp.controlPoint1X,
-      y: (sourceY + targetY) / 2,
-    };
-  } else {
-    return {
-      x: (sourceX + targetX) / 2,
-      y: cp.controlPoint1Y,
-    };
-  }
-};
+  isHorizontalPosition,
+  getDefaultControlPoints,
+  buildCrossDirectionPath,
+  buildSameDirectionPath,
+  getCrossDirectionHandles,
+  getCurrentControlPoints,
+  calculateNewControlPoints,
+  getSameDirectionHandle,
+} from '../utils/edgePath';
 
 export const CustomSmoothStepEdge = ({
   id,
@@ -198,7 +67,10 @@ export const CustomSmoothStepEdge = ({
         targetX,
         targetY,
         sourceIsHorizontal,
-        controlPoints,
+        controlPoints.controlPoint1X,
+        controlPoints.controlPoint1Y,
+        controlPoints.controlPoint2X,
+        controlPoints.controlPoint2Y,
       );
 
       const handles = getCrossDirectionHandles(
@@ -215,32 +87,33 @@ export const CustomSmoothStepEdge = ({
         path: edgePath,
         ...handles,
       };
-    } else {
-      const edgePath = buildSameDirectionPath(
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
-        sourceIsHorizontal,
-        controlPoints,
-      );
-
-      const handlePosition = getSameDirectionHandle(
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
-        sourceIsHorizontal,
-        controlPoints,
-      );
-
-      return {
-        ...controlPoints,
-        path: edgePath,
-        handle1Position: handlePosition,
-        handle2Position: null,
-      };
     }
+
+    const edgePath = buildSameDirectionPath(
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourceIsHorizontal,
+      controlPoints.controlPoint1X,
+      controlPoints.controlPoint1Y,
+    );
+
+    const handlePosition = getSameDirectionHandle(
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourceIsHorizontal,
+      controlPoints,
+    );
+
+    return {
+      ...controlPoints,
+      path: edgePath,
+      handle1Position: handlePosition,
+      handle2Position: null,
+    };
   })();
 
   const handleMouseDown = (handleIndex: number) => (e: React.MouseEvent) => {
@@ -259,63 +132,6 @@ export const CustomSmoothStepEdge = ({
       controlPoint2Y,
     };
 
-    const calculateNewControlPoints = (
-      flowPosition: Point,
-      handleIndex: number,
-    ) => {
-      if (isCrossDirection) {
-        if (handleIndex === 1) {
-          return {
-            controlPoint1X: sourceIsHorizontal
-              ? flowPosition.x
-              : controlPoint1X,
-            controlPoint1Y: sourceIsHorizontal
-              ? controlPoint1Y
-              : flowPosition.y,
-            controlPoint2X,
-            controlPoint2Y,
-          };
-        } else {
-          return {
-            controlPoint1X,
-            controlPoint1Y,
-            controlPoint2X: sourceIsHorizontal
-              ? controlPoint2X
-              : flowPosition.x,
-            controlPoint2Y: sourceIsHorizontal
-              ? flowPosition.y
-              : controlPoint2Y,
-          };
-        }
-      } else {
-        const newPoint1X = sourceIsHorizontal ? flowPosition.x : controlPoint1X;
-        const newPoint1Y = sourceIsHorizontal ? controlPoint1Y : flowPosition.y;
-        return {
-          controlPoint1X: newPoint1X,
-          controlPoint1Y: newPoint1Y,
-          controlPoint2X: newPoint1X,
-          controlPoint2Y: newPoint1Y,
-        };
-      }
-    };
-
-    const updateControlPointsInEdges = (
-      newPoints: CrossDirectionControlPoints,
-    ) => {
-      setEdges((edges) =>
-        edges.map((edge) => {
-          if (edge.id !== id) return edge;
-          return {
-            ...edge,
-            data: {
-              ...edge.data,
-              ...newPoints,
-            },
-          };
-        }),
-      );
-    };
-
     const handleMouseMove = (e: MouseEvent) => {
       const flowPosition = screenToFlowPosition({
         x: e.clientX,
@@ -325,10 +141,20 @@ export const CustomSmoothStepEdge = ({
       const newControlPoints = calculateNewControlPoints(
         flowPosition,
         draggingHandle,
+        isCrossDirection,
+        sourceIsHorizontal,
+        finalControlPoints,
       );
 
       finalControlPoints = newControlPoints;
-      updateControlPointsInEdges(newControlPoints);
+
+      setEdges((edges) =>
+        edges.map((edge) =>
+          edge.id === id
+            ? { ...edge, data: { ...edge.data, ...newControlPoints } }
+            : edge,
+        ),
+      );
     };
 
     const handleMouseUp = () => {

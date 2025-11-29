@@ -3,7 +3,6 @@ import { observer } from 'mobx-react-lite';
 import { ulid } from 'ulid';
 import {
   ReactFlow,
-  ConnectionLineType,
   MiniMap,
   Background,
   BackgroundVariant,
@@ -25,6 +24,7 @@ import {
   TablePreview,
   type RelationshipConfig,
   CustomSmoothStepEdge,
+  CustomConnectionLine,
   FloatingButtons,
   SchemaSelector,
   MemoPrivew,
@@ -69,19 +69,18 @@ const CanvasPageComponent = () => {
       const schemaId = ulid();
       erdStore.load({
         id: dbId,
+        isAffected: false,
         schemas: [
           {
             id: schemaId,
             projectId: ulid(),
-            dbVendorId: 'mysql',
+            dbVendorId: 'MYSQL',
             name: 'schema1',
             charset: 'utf8mb4',
             collation: 'utf8mb4_general_ci',
             vendorOption: '',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            deletedAt: null,
             tables: [],
+            isAffected: false,
           },
         ],
       });
@@ -219,7 +218,7 @@ const CanvasPageComponent = () => {
             onReconnectEnd={onReconnectEnd}
             nodeTypes={NODE_TYPES}
             edgeTypes={EDGE_TYPES}
-            connectionLineType={ConnectionLineType.SmoothStep}
+            connectionLineComponent={CustomConnectionLine}
             proOptions={{ hideAttribution: true }}
             connectionMode={ConnectionMode.Loose}
             fitView={false}
