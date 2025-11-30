@@ -15,8 +15,8 @@
     "format": "turbo run format",
     "format:check": "turbo run format:check",
     "test": "turbo run test",
-    "docs": "./gradlew :apps:backend:core:asciidoctor && open apps/backend/core/build/docs/asciidoc/api-guide.html",
-    "docs:build": "./gradlew :apps:backend:core:asciidoctor",
+    "docs": "./gradlew :core:asciidoctor && open apps/backend/core/build/docs/asciidoc/api-guide.html",
+    "docs:build": "./gradlew :core:asciidoctor",
     "docs:open": "open apps/backend/core/build/docs/asciidoc/api-guide.html"
   },
   "devDependencies": {

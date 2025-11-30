@@ -1,8 +1,8 @@
 package com.schemafy.core.project.controller.dto.response;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record ProjectSummaryResponse(String id, String workspaceId, String name,
         String description, String myRole, Long memberCount,
-        LocalDateTime createdAt, LocalDateTime updatedAt) {
+        Instant createdAt, Instant updatedAt) {
 }

@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib';
 import { Header } from './Header';
 import { Footer } from './Footer';
+import { Toaster } from './Toaster';
 
 export const Layout = ({ children }: PropsWithChildren) => {
   const location = useLocation();
@@ -20,6 +21,7 @@ export const Layout = ({ children }: PropsWithChildren) => {
         {children}
       </main>
       {!isCanvasPage && <Footer />}
+      <Toaster />
     </div>
   );
 };

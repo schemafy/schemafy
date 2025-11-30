@@ -27,4 +27,5 @@ public class CorsProperties {
     private boolean allowCredentials = true;
 
     private long maxAgeSeconds = 3600;
+
 }

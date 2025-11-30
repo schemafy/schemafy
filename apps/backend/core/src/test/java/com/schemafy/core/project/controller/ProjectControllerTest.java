@@ -114,7 +114,7 @@ class ProjectControllerTest {
                 .create(testWorkspaceId, testUser2Id, WorkspaceRole.MEMBER);
         workspaceMemberRepository.save(member2).block();
 
-        apiBasePath = ApiPath.AUTH_API.replace("{version}", "v1.0")
+        apiBasePath = ApiPath.API.replace("{version}", "v1.0")
                 + "/workspaces/" + testWorkspaceId + "/projects";
     }
 

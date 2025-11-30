@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping(ApiPath.AUTH_API + "/workspaces/{workspaceId}/projects")
+@RequestMapping(ApiPath.API + "/workspaces/{workspaceId}/projects")
 @RequiredArgsConstructor
 public class ProjectController {
 

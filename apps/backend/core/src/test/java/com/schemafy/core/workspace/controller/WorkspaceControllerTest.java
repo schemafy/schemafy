@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureWebTestClient
 @DisplayName("WorkspaceController 통합 테스트")
 class WorkspaceControllerTest {
-    private static final String API_BASE_PATH = ApiPath.AUTH_API
+    private static final String API_BASE_PATH = ApiPath.API
             .replace("{version}", "v1.0") + "/workspaces";
 
     @Autowired

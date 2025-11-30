@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ERD_VALIDATOR } from '@schemafy/validator';
 
 import { toErrorDetails } from '../common/error-mapper';
@@ -14,6 +14,7 @@ import type {
 
 @Injectable()
 export class ConstraintsService {
+  private readonly logger = new Logger(ConstraintsService.name);
   createConstraint(
     database: Database,
     schemaId: Schema['id'],
@@ -27,8 +28,19 @@ export class ConstraintsService {
         tableId,
         constraint,
       );
+      this.logger.log(
+        `CreateConstraint request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraint: ${JSON.stringify(
+          constraint,
+        )}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `CreateConstraint request failed, schemaId: ${schemaId}, tableId: ${tableId}, constraint: ${JSON.stringify(
+          constraint,
+        )}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -46,8 +58,15 @@ export class ConstraintsService {
         tableId,
         constraintId,
       );
+      this.logger.log(
+        `DeleteConstraint request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `DeleteConstraint request failed, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -67,8 +86,15 @@ export class ConstraintsService {
         constraintId,
         newName,
       );
+      this.logger.log(
+        `ChangeConstraintName request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}, newName: ${newName}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `ChangeConstraintName request failed, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}, newName: ${newName}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -88,8 +114,19 @@ export class ConstraintsService {
         constraintId,
         constraintColumn,
       );
+      this.logger.log(
+        `AddColumnToConstraint request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}, constraintColumn: ${JSON.stringify(
+          constraintColumn,
+        )}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `AddColumnToConstraint request failed, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}, constraintColumn: ${JSON.stringify(
+          constraintColumn,
+        )}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
@@ -109,8 +146,15 @@ export class ConstraintsService {
         constraintId,
         constraintColumnId,
       );
+      this.logger.log(
+        `RemoveColumnFromConstraint request successfully validated, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}, constraintColumnId: ${constraintColumnId}`,
+      );
       return { success: { database: updated } };
     } catch (err) {
+      this.logger.error(
+        `RemoveColumnFromConstraint request failed, schemaId: ${schemaId}, tableId: ${tableId}, constraintId: ${constraintId}, constraintColumnId: ${constraintColumnId}`,
+        err,
+      );
       return { failure: { errors: toErrorDetails(err) } };
     }
   }
