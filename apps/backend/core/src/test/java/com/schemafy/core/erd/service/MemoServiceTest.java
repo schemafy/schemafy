@@ -209,7 +209,8 @@ class MemoServiceTest {
                 .of("06D6W8HDY79QFZX39RMX62KSX4");
 
         StepVerifier
-                .create(memoService.updateMemo(memo.getId(), request, otherUser))
+                .create(memoService.updateMemo(memo.getId(), request,
+                        otherUser))
                 .expectErrorMatches(e -> e instanceof BusinessException
                         && ((BusinessException) e)
                                 .getErrorCode() == ErrorCode.ACCESS_DENIED)

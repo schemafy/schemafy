@@ -251,7 +251,8 @@ class MemoControllerTest {
                         }
                         """), MemoResponse.class);
 
-        given(memoService.updateMemo(eq(memoId), any(UpdateMemoRequest.class), any()))
+        given(memoService.updateMemo(eq(memoId), any(UpdateMemoRequest.class),
+                any()))
                 .willReturn(Mono.just(response));
 
         webTestClient.put()
