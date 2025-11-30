@@ -71,10 +71,6 @@ public class SessionService {
                 .then();
     }
 
-    public Mono<Void> broadcastAll(String projectId, String message) {
-        return broadcast(projectId, null, message);
-    }
-
     public int getSessionCount(String projectId) {
         Map<String, WebSocketSession> sessions = projectSessions.get(projectId);
         return sessions != null ? sessions.size() : 0;

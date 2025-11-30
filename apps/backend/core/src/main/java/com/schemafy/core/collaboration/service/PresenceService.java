@@ -123,10 +123,9 @@ public class PresenceService {
      */
     public Mono<Void> handleRedisMessage(String projectId, String message) {
         return deserializeFromJson(message, PresenceEvent.class)
-                .map(PresenceEvent::withoutSessionId)
-                .flatMap(this::serializeToJson)
-                .flatMap(filteredMessage -> sessionService
-                        .broadcastAll(projectId, filteredMessage));
+                .flatMap(event -> serializeToJson(event.withoutSessionId())
+                        .flatMap(json -> sessionService.broadcast(
+                                projectId, event.getSessionId(), json)));
     }
 
     private <T> Mono<String> serializeToJson(T object) {
