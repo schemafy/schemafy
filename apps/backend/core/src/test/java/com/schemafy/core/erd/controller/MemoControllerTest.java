@@ -237,7 +237,7 @@ class MemoControllerTest {
     @DisplayName("메모 수정 API 문서화")
     void updateMemo() throws Exception {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
-        UpdateMemoRequest request = new UpdateMemoRequest(memoId, "{}");
+        UpdateMemoRequest request = new UpdateMemoRequest("{}");
 
         MemoResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
@@ -251,7 +251,7 @@ class MemoControllerTest {
                         }
                         """), MemoResponse.class);
 
-        given(memoService.updateMemo(any(UpdateMemoRequest.class), any()))
+        given(memoService.updateMemo(eq(memoId), any(UpdateMemoRequest.class), any()))
                 .willReturn(Mono.just(response));
 
         webTestClient.put()
@@ -275,7 +275,6 @@ class MemoControllerTest {
                                         .description(
                                                 "응답 포맷 (application/json)")),
                         requestFields(
-                                fieldWithPath("memoId").description("메모 ID"),
                                 fieldWithPath("positions")
                                         .description("변경할 위치 정보")),
                         responseHeaders(
@@ -464,8 +463,8 @@ class MemoControllerTest {
     void updateMemoComment() throws Exception {
         String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
         String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
-        UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(memoId,
-                commentId, "수정된 내용");
+        UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
+                "수정된 내용");
 
         MemoCommentResponse response = objectMapper.treeToValue(
                 objectMapper.readTree("""
@@ -479,8 +478,8 @@ class MemoControllerTest {
                         }
                         """), MemoCommentResponse.class);
 
-        given(memoService.updateComment(any(UpdateMemoCommentRequest.class),
-                any()))
+        given(memoService.updateComment(eq(memoId), eq(commentId),
+                any(UpdateMemoCommentRequest.class), any()))
                 .willReturn(Mono.just(response));
 
         webTestClient.put()
@@ -507,8 +506,6 @@ class MemoControllerTest {
                                         .description(
                                                 "응답 포맷 (application/json)")),
                         requestFields(
-                                fieldWithPath("memoId").description("메모 ID"),
-                                fieldWithPath("commentId").description("댓글 ID"),
                                 fieldWithPath("body").description("수정할 내용")),
                         responseHeaders(
                                 headerWithName("Content-Type")

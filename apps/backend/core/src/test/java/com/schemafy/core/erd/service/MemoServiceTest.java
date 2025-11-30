@@ -175,11 +175,11 @@ class MemoServiceTest {
                 .positions("{\"x\":0,\"y\":0}")
                 .build()).block();
 
-        UpdateMemoRequest request = new UpdateMemoRequest(memo.getId(),
+        UpdateMemoRequest request = new UpdateMemoRequest(
                 "{\"x\":100,\"y\":100}");
         AuthenticatedUser user = AuthenticatedUser.of(authorId);
 
-        StepVerifier.create(memoService.updateMemo(request, user))
+        StepVerifier.create(memoService.updateMemo(memo.getId(), request, user))
                 .assertNext(response -> {
                     assertThat(response.getPositions())
                             .isEqualTo(request.positions());
@@ -203,13 +203,13 @@ class MemoServiceTest {
                 .positions("{\"x\":0,\"y\":0}")
                 .build()).block();
 
-        UpdateMemoRequest request = new UpdateMemoRequest(memo.getId(),
+        UpdateMemoRequest request = new UpdateMemoRequest(
                 "{\"x\":100,\"y\":100}");
         AuthenticatedUser otherUser = AuthenticatedUser
                 .of("06D6W8HDY79QFZX39RMX62KSX4");
 
         StepVerifier
-                .create(memoService.updateMemo(request, otherUser))
+                .create(memoService.updateMemo(memo.getId(), request, otherUser))
                 .expectErrorMatches(e -> e instanceof BusinessException
                         && ((BusinessException) e)
                                 .getErrorCode() == ErrorCode.ACCESS_DENIED)
@@ -309,10 +309,11 @@ class MemoServiceTest {
                 .build()).block();
 
         UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
-                memo.getId(), comment.getId(), "수정 내용");
+                "수정 내용");
         AuthenticatedUser user = AuthenticatedUser.of(authorId);
 
-        StepVerifier.create(memoService.updateComment(request, user))
+        StepVerifier.create(memoService.updateComment(memo.getId(),
+                comment.getId(), request, user))
                 .assertNext(response -> {
                     assertThat(response.getBody()).isEqualTo("수정 내용");
                 })
@@ -335,10 +336,11 @@ class MemoServiceTest {
                 .build()).block();
 
         UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
-                "06D6W1GAHD51T5NJPK29Q6BCR9", comment.getId(), "수정 내용");
+                "수정 내용");
         AuthenticatedUser user = AuthenticatedUser.of(authorId);
 
-        StepVerifier.create(memoService.updateComment(request, user))
+        StepVerifier.create(memoService.updateComment(
+                "06D6W1GAHD51T5NJPK29Q6BCR9", comment.getId(), request, user))
                 .expectErrorMatches(e -> e instanceof BusinessException
                         && ((BusinessException) e)
                                 .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
@@ -632,11 +634,12 @@ class MemoServiceTest {
                 .build()).block();
 
         UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
-                memo.getId(), comment.getId(), "수정 내용");
+                "수정 내용");
         AuthenticatedUser otherUser = AuthenticatedUser
                 .of("06D6W8HDY79QFZX39RMX62KSX4");
 
-        StepVerifier.create(memoService.updateComment(request, otherUser))
+        StepVerifier.create(memoService.updateComment(memo.getId(),
+                comment.getId(), request, otherUser))
                 .expectErrorMatches(e -> e instanceof BusinessException
                         && ((BusinessException) e)
                                 .getErrorCode() == ErrorCode.ACCESS_DENIED)
