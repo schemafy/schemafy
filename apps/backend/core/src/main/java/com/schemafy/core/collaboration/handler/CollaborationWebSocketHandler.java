@@ -40,7 +40,8 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         }
 
         return authenticator.authenticate(uri)
-                .map(authInfo -> validateProjectAccess(session, authInfo, projectIdOpt.get()))
+                .map(authInfo -> validateProjectAccess(session, authInfo,
+                        projectIdOpt.get()))
                 .orElseGet(() -> handleUnauthenticated(session));
     }
 
