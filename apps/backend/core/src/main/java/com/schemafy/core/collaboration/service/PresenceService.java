@@ -47,13 +47,11 @@ public class PresenceService {
     }
 
     public Mono<Void> removeSession(String projectId, String sessionId) {
-        sessionService.removeSession(projectId, sessionId);
-
         String channelName = CHANNEL_PREFIX + projectId;
 
-        return serializeToJson(PresenceEventFactory.leave(sessionId))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
-                        eventJson))
+        return Mono.fromRunnable(() -> sessionService.removeSession(projectId, sessionId))
+                .then(serializeToJson(PresenceEventFactory.leave(sessionId)))
+                .flatMap(eventJson -> redisTemplate.convertAndSend(channelName, eventJson))
                 .then();
     }
 

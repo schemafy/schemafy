@@ -73,6 +73,9 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 authInfo);
 
         presenceService.notifyJoin(projectId, session.getId(), userId, userName)
+                .doOnError(e -> log.warn(
+                        "[CollaborationWebSocketHandler] Failed to notify join: sessionId={}, error={}",
+                        session.getId(), e.getMessage()))
                 .subscribe();
 
         return session.receive()
@@ -80,6 +83,9 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                     String payload = message.getPayloadAsText();
                     presenceService
                             .handleMessage(projectId, session.getId(), payload)
+                            .doOnError(e -> log.warn(
+                                    "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
+                                    session.getId(), e.getMessage()))
                             .subscribe();
                 })
                 .doOnError(error -> log.error(
@@ -90,6 +96,9 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                             "[CollaborationWebSocketHandler] WebSocket disconnected: sessionId={}, signal={}",
                             session.getId(), signalType);
                     presenceService.removeSession(projectId, session.getId())
+                            .doOnError(e -> log.warn(
+                                    "[CollaborationWebSocketHandler] Failed to remove session: sessionId={}, error={}",
+                                    session.getId(), e.getMessage()))
                             .subscribe();
                 })
                 .then();
