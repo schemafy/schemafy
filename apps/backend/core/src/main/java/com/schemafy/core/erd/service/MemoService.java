@@ -73,9 +73,9 @@ public class MemoService {
                 .map(MemoResponse::from);
     }
 
-    public Mono<MemoResponse> updateMemo(UpdateMemoRequest request,
-            AuthenticatedUser user) {
-        return memoRepository.findByIdAndDeletedAtIsNull(request.memoId())
+    public Mono<MemoResponse> updateMemo(String memoId,
+            UpdateMemoRequest request, AuthenticatedUser user) {
+        return memoRepository.findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .flatMap(memo -> {
@@ -125,20 +125,21 @@ public class MemoService {
                         .map(MemoCommentResponse::from));
     }
 
-    public Mono<MemoCommentResponse> updateComment(
-            UpdateMemoCommentRequest request, AuthenticatedUser user) {
+    public Mono<MemoCommentResponse> updateComment(String memoId,
+            String commentId, UpdateMemoCommentRequest request,
+            AuthenticatedUser user) {
         return memoCommentRepository
-                .findByIdAndDeletedAtIsNull(request.commentId())
+                .findByIdAndDeletedAtIsNull(commentId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
                 .flatMap(comment -> {
-                    if (!comment.getMemoId().equals(request.memoId())) {
+                    if (!comment.getMemoId().equals(memoId)) {
                         return Mono.error(new BusinessException(
                                 ErrorCode.COMMON_INVALID_PARAMETER));
                     }
                     return memoRepository
-                            .findByIdAndDeletedAtIsNull(request.memoId())
+                            .findByIdAndDeletedAtIsNull(memoId)
                             .switchIfEmpty(Mono.error(
                                     new BusinessException(
                                             ErrorCode.ERD_MEMO_NOT_FOUND)))

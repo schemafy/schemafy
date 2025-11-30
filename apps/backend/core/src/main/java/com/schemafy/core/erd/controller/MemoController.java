@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
@@ -62,12 +60,7 @@ public class MemoController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String memoId,
             @Valid @RequestBody UpdateMemoRequest request) {
-        if (!memoId.equals(request.memoId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-
-        return memoService.updateMemo(request, user)
+        return memoService.updateMemo(memoId, request, user)
                 .map(BaseResponse::success);
     }
 
@@ -106,17 +99,7 @@ public class MemoController {
             @PathVariable String memoId,
             @PathVariable String commentId,
             @Valid @RequestBody UpdateMemoCommentRequest request) {
-        if (!memoId.equals(request.memoId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-
-        if (!commentId.equals(request.commentId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-
-        return memoService.updateComment(request, user)
+        return memoService.updateComment(memoId, commentId, request, user)
                 .map(BaseResponse::success);
     }
 
