@@ -16,28 +16,19 @@ import com.schemafy.core.erd.repository.entity.Index;
 import com.schemafy.core.erd.repository.entity.IndexColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
+@RequiredArgsConstructor
 public class IndexService {
 
     private final ValidationClient validationClient;
     private final IndexRepository indexRepository;
     private final IndexColumnRepository indexColumnRepository;
     private final TransactionalOperator transactionalOperator;
-
-    public IndexService(
-            ValidationClient validationClient,
-            IndexRepository indexRepository,
-            IndexColumnRepository indexColumnRepository,
-            TransactionalOperator transactionalOperator) {
-        this.validationClient = validationClient;
-        this.indexRepository = indexRepository;
-        this.indexColumnRepository = indexColumnRepository;
-        this.transactionalOperator = transactionalOperator;
-    }
 
     public Mono<AffectedMappingResponse> createIndex(
             Validation.CreateIndexRequest request) {

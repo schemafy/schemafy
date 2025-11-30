@@ -18,7 +18,7 @@ import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.service.ColumnService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import validation.Validation.ChangeColumnNameRequest;
 import validation.Validation.ChangeColumnPositionRequest;
@@ -27,7 +27,7 @@ import validation.Validation.CreateColumnRequest;
 import validation.Validation.DeleteColumnRequest;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class ColumnController {
 

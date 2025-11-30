@@ -18,7 +18,7 @@ import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.service.ConstraintService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import validation.Validation.AddColumnToConstraintRequest;
 import validation.Validation.ChangeConstraintNameRequest;
@@ -27,7 +27,7 @@ import validation.Validation.DeleteConstraintRequest;
 import validation.Validation.RemoveColumnFromConstraintRequest;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class ConstraintController {
 

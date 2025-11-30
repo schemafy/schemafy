@@ -25,14 +25,14 @@ import com.schemafy.core.erd.service.MemoService;
 import com.schemafy.core.erd.service.SchemaService;
 import com.schemafy.core.erd.service.TableService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import validation.Validation.ChangeSchemaNameRequest;
 import validation.Validation.CreateSchemaRequest;
 import validation.Validation.DeleteSchemaRequest;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class SchemaController {
 

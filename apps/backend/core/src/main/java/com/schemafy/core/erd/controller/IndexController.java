@@ -19,7 +19,7 @@ import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
 import com.schemafy.core.erd.service.IndexService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import validation.Validation.AddColumnToIndexRequest;
 import validation.Validation.ChangeIndexNameRequest;
@@ -28,7 +28,7 @@ import validation.Validation.DeleteIndexRequest;
 import validation.Validation.RemoveColumnFromIndexRequest;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class IndexController {
 

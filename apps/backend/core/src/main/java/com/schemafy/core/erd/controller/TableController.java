@@ -31,7 +31,7 @@ import com.schemafy.core.erd.service.IndexService;
 import com.schemafy.core.erd.service.RelationshipService;
 import com.schemafy.core.erd.service.TableService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import validation.Validation.ChangeTableNameRequest;
@@ -40,7 +40,7 @@ import validation.Validation.DeleteTableRequest;
 
 @Slf4j
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class TableController {
 

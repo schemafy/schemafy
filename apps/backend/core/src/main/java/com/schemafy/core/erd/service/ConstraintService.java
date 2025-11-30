@@ -15,11 +15,13 @@ import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.ConstraintColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
+@RequiredArgsConstructor
 public class ConstraintService {
 
     private final ValidationClient validationClient;
@@ -27,19 +29,6 @@ public class ConstraintService {
     private final ConstraintColumnRepository constraintColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
     private final TransactionalOperator transactionalOperator;
-
-    public ConstraintService(
-            ValidationClient validationClient,
-            ConstraintRepository constraintRepository,
-            ConstraintColumnRepository constraintColumnRepository,
-            AffectedEntitiesSaver affectedEntitiesSaver,
-            TransactionalOperator transactionalOperator) {
-        this.validationClient = validationClient;
-        this.constraintRepository = constraintRepository;
-        this.constraintColumnRepository = constraintColumnRepository;
-        this.affectedEntitiesSaver = affectedEntitiesSaver;
-        this.transactionalOperator = transactionalOperator;
-    }
 
     public Mono<AffectedMappingResponse> createConstraint(
             Validation.CreateConstraintRequest request) {

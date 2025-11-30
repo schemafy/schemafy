@@ -16,11 +16,13 @@ import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
+@RequiredArgsConstructor
 public class RelationshipService {
 
     private final ValidationClient validationClient;
@@ -28,19 +30,6 @@ public class RelationshipService {
     private final RelationshipColumnRepository relationshipColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
     private final TransactionalOperator transactionalOperator;
-
-    public RelationshipService(
-            ValidationClient validationClient,
-            RelationshipRepository relationshipRepository,
-            RelationshipColumnRepository relationshipColumnRepository,
-            AffectedEntitiesSaver affectedEntitiesSaver,
-            TransactionalOperator transactionalOperator) {
-        this.validationClient = validationClient;
-        this.relationshipRepository = relationshipRepository;
-        this.relationshipColumnRepository = relationshipColumnRepository;
-        this.affectedEntitiesSaver = affectedEntitiesSaver;
-        this.transactionalOperator = transactionalOperator;
-    }
 
     public Mono<AffectedMappingResponse> createRelationship(
             CreateRelationshipRequestWithExtra request) {
