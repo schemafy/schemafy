@@ -1,5 +1,8 @@
 package com.schemafy.core.collaboration.handler;
 
+import java.net.URI;
+import java.util.Optional;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.CloseStatus;
@@ -29,15 +32,20 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        return authenticator.authenticate(session.getHandshakeInfo().getUri())
-                .map(authInfo -> validateProjectAccess(session, authInfo))
+        URI uri = session.getHandshakeInfo().getUri();
+
+        Optional<String> projectIdOpt = authenticator.extractProjectId(uri);
+        if (projectIdOpt.isEmpty()) {
+            return handleInvalidProjectId(session);
+        }
+
+        return authenticator.authenticate(uri)
+                .map(authInfo -> validateProjectAccess(session, authInfo, projectIdOpt.get()))
                 .orElseGet(() -> handleUnauthenticated(session));
     }
 
     private Mono<Void> validateProjectAccess(WebSocketSession session,
-            WebSocketAuthInfo authInfo) {
-        String path = session.getHandshakeInfo().getUri().getPath();
-        String projectId = extractProjectId(path);
+            WebSocketAuthInfo authInfo, String projectId) {
         String userId = authInfo.getUserId();
 
         return projectAccessValidator.canAccess(projectId, userId)
@@ -103,10 +111,12 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 .withReason("Access denied to project"));
     }
 
-    private String extractProjectId(String path) {
-        // /ws/collaboration/{projectId}
-        String[] parts = path.split("/");
-        return parts.length >= 4 ? parts[3] : "unknown";
+    private Mono<Void> handleInvalidProjectId(WebSocketSession session) {
+        log.warn(
+                "[CollaborationWebSocketHandler] Invalid or missing projectId: sessionId={}",
+                session.getId());
+        return session.close(CloseStatus.BAD_DATA
+                .withReason("projectId is required"));
     }
 
 }

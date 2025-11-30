@@ -22,19 +22,22 @@ import lombok.extern.slf4j.Slf4j;
 public class WebSocketAuthenticator {
 
     private static final String TOKEN_PARAM = "token";
+    private static final String PROJECT_ID_PARAM = "projectId";
     private static final String CLAIM_NAME = "name";
 
     private final JwtProvider jwtProvider;
 
     public Optional<WebSocketAuthInfo> authenticate(URI uri) {
-        // /ws/collaboration/{projectId}?token={accessToken}
-        String token = extractToken(uri);
+        // /ws/collaboration?projectId={projectId}&token={accessToken}
+        Optional<String> tokenOpt = extractToken(uri);
 
-        if (token == null || token.isBlank()) {
+        if (tokenOpt.isEmpty()) {
             log.warn(
                     "[WebSocketAuthenticator] WebSocket authentication failed: No token provided.");
             return Optional.empty();
         }
+
+        String token = tokenOpt.get();
 
         try {
             String userId = jwtProvider.extractUserId(token);
@@ -83,17 +86,39 @@ public class WebSocketAuthenticator {
         }
     }
 
-    private String extractToken(URI uri) {
+    private Optional<String> extractToken(URI uri) {
         try {
             MultiValueMap<String, String> params = UriComponentsBuilder
                     .fromUri(uri)
                     .build()
                     .getQueryParams();
-            return params.getFirst(TOKEN_PARAM);
+            String token = params.getFirst(TOKEN_PARAM);
+            if (token == null || token.isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.of(token);
         } catch (Exception e) {
             log.warn("[WebSocketAuthenticator] Token extraction failed: {}",
                     e.getMessage());
-            return null;
+            return Optional.empty();
+        }
+    }
+
+    public Optional<String> extractProjectId(URI uri) {
+        try {
+            MultiValueMap<String, String> params = UriComponentsBuilder
+                    .fromUri(uri)
+                    .build()
+                    .getQueryParams();
+            String projectId = params.getFirst(PROJECT_ID_PARAM);
+            if (projectId == null || projectId.isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.of(projectId);
+        } catch (Exception e) {
+            log.warn("[WebSocketAuthenticator] ProjectId extraction failed: {}",
+                    e.getMessage());
+            return Optional.empty();
         }
     }
 
