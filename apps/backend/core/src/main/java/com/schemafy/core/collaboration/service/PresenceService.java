@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schemafy.core.collaboration.constant.CollaborationConstants;
 import com.schemafy.core.collaboration.dto.ClientMessage;
 import com.schemafy.core.collaboration.dto.CursorClientMessage;
 import com.schemafy.core.collaboration.dto.CursorPosition;
@@ -23,15 +24,13 @@ import reactor.core.publisher.Mono;
 @ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class PresenceService {
 
-    private static final String CHANNEL_PREFIX = "collaboration:";
-
     private final SessionService sessionService;
     private final ReactiveStringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
     public Mono<Void> updateCursor(String projectId, String sessionId,
             CursorPosition cursor) {
-        String channelName = CHANNEL_PREFIX + projectId;
+        String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
 
         String userName = sessionService.getAuthInfo(sessionId)
                 .map(auth -> auth.getUserName())
@@ -47,7 +46,7 @@ public class PresenceService {
     }
 
     public Mono<Void> removeSession(String projectId, String sessionId) {
-        String channelName = CHANNEL_PREFIX + projectId;
+        String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
 
         return Mono
                 .fromRunnable(() -> sessionService.removeSession(projectId,
@@ -60,7 +59,7 @@ public class PresenceService {
 
     public Mono<Void> notifyJoin(String projectId, String sessionId,
             String userId, String userName) {
-        String channelName = CHANNEL_PREFIX + projectId;
+        String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
 
         return serializeToJson(
                 PresenceEventFactory.join(sessionId, userId, userName))

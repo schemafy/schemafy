@@ -72,21 +72,20 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         sessionService.addSession(projectId, session.getId(), session,
                 authInfo);
 
-        presenceService.notifyJoin(projectId, session.getId(), userId, userName)
+        // Notify join first, then handle messages
+        return presenceService.notifyJoin(projectId, session.getId(), userId, userName)
                 .doOnError(e -> log.warn(
                         "[CollaborationWebSocketHandler] Failed to notify join: sessionId={}, error={}",
                         session.getId(), e.getMessage()))
-                .subscribe();
-
-        return session.receive()
-                .doOnNext(message -> {
+                .thenMany(session.receive())
+                .flatMap(message -> {
                     String payload = message.getPayloadAsText();
-                    presenceService
+                    return presenceService
                             .handleMessage(projectId, session.getId(), payload)
                             .doOnError(e -> log.warn(
                                     "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
                                     session.getId(), e.getMessage()))
-                            .subscribe();
+                            .onErrorResume(e -> Mono.empty());
                 })
                 .doOnError(error -> log.error(
                         "[CollaborationWebSocketHandler] WebSocket error: sessionId={}",
