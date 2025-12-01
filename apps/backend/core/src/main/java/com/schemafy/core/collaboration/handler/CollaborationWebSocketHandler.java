@@ -1,12 +1,14 @@
 package com.schemafy.core.collaboration.handler;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Optional;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.CloseStatus;
 import org.springframework.web.reactive.socket.WebSocketHandler;
+import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 
 import com.schemafy.core.collaboration.security.ProjectAccessValidator;
@@ -78,16 +80,15 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 .doOnError(e -> log.warn(
                         "[CollaborationWebSocketHandler] Failed to notify join: sessionId={}, error={}",
                         session.getId(), e.getMessage()))
-                .thenMany(session.receive())
-                .flatMap(message -> {
-                    String payload = message.getPayloadAsText();
-                    return presenceService
-                            .handleMessage(projectId, session.getId(), payload)
-                            .doOnError(e -> log.warn(
-                                    "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
-                                    session.getId(), e.getMessage()))
-                            .onErrorResume(e -> Mono.empty());
-                })
+                .thenMany(session.receive()
+                        .map(WebSocketMessage::getPayloadAsText)
+                        .sample(Duration.ofMillis(2000)))
+                .flatMap(payload -> presenceService
+                        .handleMessage(projectId, session.getId(), payload)
+                        .doOnError(e -> log.warn(
+                                "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
+                                session.getId(), e.getMessage()))
+                        .onErrorResume(e -> Mono.empty()))
                 .doOnError(error -> log.error(
                         "[CollaborationWebSocketHandler] WebSocket error: sessionId={}",
                         session.getId(), error))

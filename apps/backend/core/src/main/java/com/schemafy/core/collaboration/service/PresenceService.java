@@ -1,5 +1,8 @@
 package com.schemafy.core.collaboration.service;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -27,6 +30,7 @@ public class PresenceService {
     private final SessionService sessionService;
     private final ReactiveStringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final Map<String, CursorPosition> cursorDedupeCache = new ConcurrentHashMap<>();
 
     public Mono<Void> updateCursor(String projectId, String sessionId,
             CursorPosition cursor) {
@@ -38,11 +42,18 @@ public class PresenceService {
 
         CursorPosition cursorWithUserName = cursor.withUserName(userName);
 
+        CursorPosition previousCursor = cursorDedupeCache.get(sessionId);
+        if (isDuplicateCursor(previousCursor, cursorWithUserName)) {
+            return Mono.empty();
+        }
+        cursorDedupeCache.put(sessionId, cursorWithUserName);
+
         return serializeToJson(
                 PresenceEventFactory.cursor(sessionId, cursorWithUserName))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
-                        eventJson))
-                .then();
+                        .flatMap(eventJson -> redisTemplate.convertAndSend(
+                                channelName,
+                                eventJson))
+                        .then();
     }
 
     public Mono<Void> removeSession(String projectId, String sessionId) {
@@ -51,6 +62,7 @@ public class PresenceService {
         return Mono
                 .fromRunnable(() -> sessionService.removeSession(projectId,
                         sessionId))
+                .doFinally(signalType -> cursorDedupeCache.remove(sessionId))
                 .then(serializeToJson(PresenceEventFactory.leave(sessionId)))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
@@ -63,10 +75,10 @@ public class PresenceService {
 
         return serializeToJson(
                 PresenceEventFactory.join(sessionId, userId, userName))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(
-                        channelName,
-                        eventJson))
-                .then();
+                        .flatMap(eventJson -> redisTemplate.convertAndSend(
+                                channelName,
+                                eventJson))
+                        .then();
     }
 
     /**
@@ -141,6 +153,16 @@ public class PresenceService {
                         e -> new RuntimeException(
                                 "[PresenceService] failed to deserialize JSON",
                                 e));
+    }
+
+    private boolean isDuplicateCursor(CursorPosition first,
+            CursorPosition second) {
+        if (first == null || second == null) {
+            return false;
+        }
+
+        return Double.compare(first.getX(), second.getX()) == 0
+                && Double.compare(first.getY(), second.getY()) == 0;
     }
 
 }
