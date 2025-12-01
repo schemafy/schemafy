@@ -73,7 +73,8 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 authInfo);
 
         // Notify join first, then handle messages
-        return presenceService.notifyJoin(projectId, session.getId(), userId, userName)
+        return presenceService
+                .notifyJoin(projectId, session.getId(), userId, userName)
                 .doOnError(e -> log.warn(
                         "[CollaborationWebSocketHandler] Failed to notify join: sessionId={}, error={}",
                         session.getId(), e.getMessage()))

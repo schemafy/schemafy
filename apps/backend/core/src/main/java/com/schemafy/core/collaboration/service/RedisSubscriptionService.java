@@ -43,18 +43,22 @@ public class RedisSubscriptionService {
     }
 
     private void subscribeToChannels() {
-        subscription = redisTemplate.listenToPattern(CollaborationConstants.CHANNEL_PATTERN)
+        subscription = redisTemplate
+                .listenToPattern(CollaborationConstants.CHANNEL_PATTERN)
                 .flatMap(message -> {
                     String channel = message.getChannel();
                     String payload = message.getMessage();
                     String projectId = extractProjectId(channel);
 
                     if (projectId == null || projectId.isBlank()) {
-                        log.warn("[RedisSubscriptionService] Invalid channel format: {}", channel);
+                        log.warn(
+                                "[RedisSubscriptionService] Invalid channel format: {}",
+                                channel);
                         return Mono.empty();
                     }
 
-                    return presenceService.handleRedisMessage(projectId, payload)
+                    return presenceService
+                            .handleRedisMessage(projectId, payload)
                             .doOnError(e -> log.error(
                                     "[RedisSubscriptionService] Failed to handle message for project {}: {}",
                                     projectId, e.getMessage()))
@@ -78,8 +82,10 @@ public class RedisSubscriptionService {
     }
 
     private String extractProjectId(String channel) {
-        if (channel != null && channel.startsWith(CollaborationConstants.CHANNEL_PREFIX)) {
-            return channel.substring(CollaborationConstants.CHANNEL_PREFIX.length());
+        if (channel != null
+                && channel.startsWith(CollaborationConstants.CHANNEL_PREFIX)) {
+            return channel
+                    .substring(CollaborationConstants.CHANNEL_PREFIX.length());
         }
         return channel;
     }

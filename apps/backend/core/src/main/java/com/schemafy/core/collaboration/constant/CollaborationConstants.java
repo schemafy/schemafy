@@ -1,7 +1,7 @@
 package com.schemafy.core.collaboration.constant;
 
 public final class CollaborationConstants {
-    
+
     private CollaborationConstants() {
         // utility class
     }
