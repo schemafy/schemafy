@@ -27,6 +27,8 @@ import reactor.core.publisher.Mono;
 @ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class PresenceService {
 
+    private static final double CURSOR_POSITION_EPS = 0.5;
+
     private final SessionService sessionService;
     private final ReactiveStringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -161,8 +163,8 @@ public class PresenceService {
             return false;
         }
 
-        return Double.compare(first.getX(), second.getX()) == 0
-                && Double.compare(first.getY(), second.getY()) == 0;
+        return Math.abs(first.getX() - second.getX()) < CURSOR_POSITION_EPS
+                && Math.abs(first.getY() - second.getY()) < CURSOR_POSITION_EPS;
     }
 
 }

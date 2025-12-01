@@ -74,7 +74,6 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         sessionService.addSession(projectId, session.getId(), session,
                 authInfo);
 
-        // Notify join first, then handle messages
         return presenceService
                 .notifyJoin(projectId, session.getId(), userId, userName)
                 .doOnError(e -> log.warn(
@@ -82,7 +81,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                         session.getId(), e.getMessage()))
                 .thenMany(session.receive()
                         .map(WebSocketMessage::getPayloadAsText)
-                        .sample(Duration.ofMillis(2000)))
+                        .sample(Duration.ofMillis(50)))
                 .flatMap(payload -> presenceService
                         .handleMessage(projectId, session.getId(), payload)
                         .doOnError(e -> log.warn(
