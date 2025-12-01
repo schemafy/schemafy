@@ -52,10 +52,10 @@ public class PresenceService {
 
         return serializeToJson(
                 PresenceEventFactory.cursor(sessionId, cursorWithUserName))
-                        .flatMap(eventJson -> redisTemplate.convertAndSend(
-                                channelName,
-                                eventJson))
-                        .then();
+                .flatMap(eventJson -> redisTemplate.convertAndSend(
+                        channelName,
+                        eventJson))
+                .then();
     }
 
     public Mono<Void> removeSession(String projectId, String sessionId) {
@@ -77,10 +77,10 @@ public class PresenceService {
 
         return serializeToJson(
                 PresenceEventFactory.join(sessionId, userId, userName))
-                        .flatMap(eventJson -> redisTemplate.convertAndSend(
-                                channelName,
-                                eventJson))
-                        .then();
+                .flatMap(eventJson -> redisTemplate.convertAndSend(
+                        channelName,
+                        eventJson))
+                .then();
     }
 
     /**
