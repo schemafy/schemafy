@@ -23,7 +23,7 @@ import reactor.util.retry.Retry;
 @ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class RedisSubscriptionService {
 
-    private static final int MAX_RETRY_ATTEMPTS = 5;
+    private static final long MAX_RETRY_ATTEMPTS = Long.MAX_VALUE;
     private static final Duration INITIAL_BACKOFF = Duration.ofSeconds(1);
     private static final Duration MAX_BACKOFF = Duration.ofSeconds(30);
 
@@ -70,14 +70,8 @@ public class RedisSubscriptionService {
                 .retryWhen(Retry.backoff(MAX_RETRY_ATTEMPTS, INITIAL_BACKOFF)
                         .maxBackoff(MAX_BACKOFF)
                         .doBeforeRetry(signal -> log.info(
-                                "[RedisSubscriptionService] Retrying subscription (attempt {}/{})",
-                                signal.totalRetries() + 1, MAX_RETRY_ATTEMPTS))
-                        .onRetryExhaustedThrow((spec, signal) -> {
-                            log.error(
-                                    "[RedisSubscriptionService] Max retry attempts ({}) reached. Giving up.",
-                                    MAX_RETRY_ATTEMPTS);
-                            return signal.failure();
-                        }))
+                                "[RedisSubscriptionService] Retrying subscription (attempt #{})",
+                                signal.totalRetries() + 1)))
                 .subscribe();
     }
 
