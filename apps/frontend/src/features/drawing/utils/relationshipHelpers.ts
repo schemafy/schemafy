@@ -150,10 +150,8 @@ export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
         data: {
           relationshipType,
           isNonIdentifying,
-          controlPoint1X: extra.controlPoint1X,
-          controlPoint1Y: extra.controlPoint1Y,
-          controlPoint2X: extra.controlPoint2X,
-          controlPoint2Y: extra.controlPoint2Y,
+          controlPoint1: extra.controlPoint1,
+          controlPoint2: extra.controlPoint2,
           dbRelationship: rel,
         },
       } as Edge;

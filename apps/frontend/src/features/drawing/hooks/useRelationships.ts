@@ -5,7 +5,11 @@ import { autorun } from 'mobx';
 import { toast } from 'sonner';
 import { ErdStore } from '@/store';
 import type { RelationshipConfig } from '../types';
-import { RELATIONSHIP_TYPES, type RelationshipExtra } from '../types';
+import {
+  RELATIONSHIP_TYPES,
+  type RelationshipExtra,
+  type Point,
+} from '../types';
 import {
   convertRelationshipsToEdges,
   createRelationshipFromConnection,
@@ -22,10 +26,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
   const updateRelationshipControlPoint = (
     relationshipId: string,
-    controlPoint1X: number,
-    controlPoint1Y: number,
-    controlPoint2X?: number,
-    controlPoint2Y?: number,
+    controlPoint1: Point,
+    controlPoint2?: Point,
   ) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
     const selectedSchema = erdStore.selectedSchema;
@@ -42,13 +44,11 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
     const updatedExtra: RelationshipExtra = {
       ...currentExtra,
-      controlPoint1X,
-      controlPoint1Y,
+      controlPoint1,
     };
 
-    if (controlPoint2X !== undefined && controlPoint2Y !== undefined) {
-      updatedExtra.controlPoint2X = controlPoint2X;
-      updatedExtra.controlPoint2Y = controlPoint2Y;
+    if (controlPoint2) {
+      updatedExtra.controlPoint2 = controlPoint2;
     }
 
     erdStore.updateRelationshipExtra(

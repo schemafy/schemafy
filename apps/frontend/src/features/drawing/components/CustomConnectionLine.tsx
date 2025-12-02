@@ -1,4 +1,5 @@
 import { type ConnectionLineComponentProps } from '@xyflow/react';
+import type { Point } from '../types';
 import {
   isHorizontalPosition,
   getDefaultControlPoints,
@@ -18,35 +19,29 @@ export const CustomConnectionLine = ({
   const targetIsHorizontal = isHorizontalPosition(toPosition);
   const isCrossDirection = sourceIsHorizontal !== targetIsHorizontal;
 
+  const source: Point = { x: fromX, y: fromY };
+  const target: Point = { x: toX, y: toY };
+
   const controlPoints = getDefaultControlPoints(
-    fromX,
-    fromY,
-    toX,
-    toY,
+    source,
+    target,
     sourceIsHorizontal,
     isCrossDirection,
   );
 
   const path = isCrossDirection
     ? buildCrossDirectionPath(
-        fromX,
-        fromY,
-        toX,
-        toY,
+        source,
+        target,
         sourceIsHorizontal,
-        controlPoints.controlPoint1X,
-        controlPoints.controlPoint1Y,
-        controlPoints.controlPoint2X,
-        controlPoints.controlPoint2Y,
+        controlPoints.controlPoint1,
+        controlPoints.controlPoint2,
       )
     : buildSameDirectionPath(
-        fromX,
-        fromY,
-        toX,
-        toY,
+        source,
+        target,
         sourceIsHorizontal,
-        controlPoints.controlPoint1X,
-        controlPoints.controlPoint1Y,
+        controlPoints.controlPoint1,
       );
 
   return (

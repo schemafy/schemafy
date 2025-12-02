@@ -35,12 +35,13 @@ export const CustomSmoothStepEdge = ({
   const targetIsHorizontal = isHorizontalPosition(targetPosition);
   const isCrossDirection = sourceIsHorizontal !== targetIsHorizontal;
 
+  const source: Point = { x: sourceX, y: sourceY };
+  const target: Point = { x: targetX, y: targetY };
+
   const { controlPoints, path, handle1Position, handle2Position } =
     calculateEdgeGeometry(
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
+      source,
+      target,
       sourceIsHorizontal,
       isCrossDirection,
       data,
@@ -87,10 +88,8 @@ export const CustomSmoothStepEdge = ({
       if (data && typeof data.onControlPointDragEnd === 'function') {
         data.onControlPointDragEnd(
           id,
-          finalControlPoints.controlPoint1X,
-          finalControlPoints.controlPoint1Y,
-          finalControlPoints.controlPoint2X,
-          finalControlPoints.controlPoint2Y,
+          finalControlPoints.controlPoint1,
+          finalControlPoints.controlPoint2,
         );
       }
     };
@@ -116,11 +115,11 @@ export const CustomSmoothStepEdge = ({
   const labelPosition: Point = isCrossDirection
     ? {
         x: sourceIsHorizontal
-          ? controlPoints.controlPoint1X
-          : controlPoints.controlPoint2X,
+          ? controlPoints.controlPoint1.x
+          : controlPoints.controlPoint2.x,
         y: sourceIsHorizontal
-          ? controlPoints.controlPoint2Y
-          : controlPoints.controlPoint1Y,
+          ? controlPoints.controlPoint2.y
+          : controlPoints.controlPoint1.y,
       }
     : handle1Position;
 
