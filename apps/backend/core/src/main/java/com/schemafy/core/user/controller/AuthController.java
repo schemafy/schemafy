@@ -41,6 +41,7 @@ public class AuthController {
         return userService.signUp(request.toCommand())
                 .map(user -> jwtTokenIssuer.issueTokens(
                         user.getId(),
+                        user.getName(),
                         BaseResponse.success(UserInfoResponse.from(user))));
     }
 
@@ -56,6 +57,7 @@ public class AuthController {
         return userService.login(request.toCommand())
                 .map(user -> jwtTokenIssuer.issueTokens(
                         user.getId(),
+                        user.getName(),
                         BaseResponse.success(UserInfoResponse.from(user))));
     }
 
@@ -69,8 +71,10 @@ public class AuthController {
     public Mono<ResponseEntity<BaseResponse<Void>>> refresh(
             ServerHttpRequest request) {
         return Mono.fromCallable(() -> extractRefreshTokenFromCookie(request))
-                .flatMap(userService::getUserIdFromRefreshToken)
-                .map(userId -> jwtTokenIssuer.issueTokens(userId,
+                .flatMap(userService::getUserFromRefreshToken)
+                .map(user -> jwtTokenIssuer.issueTokens(
+                        user.getId(),
+                        user.getName(),
                         BaseResponse.success(null)));
     }
 
