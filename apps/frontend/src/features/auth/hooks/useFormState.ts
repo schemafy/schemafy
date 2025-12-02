@@ -14,7 +14,14 @@ export const useFormState = <T extends FormValues>(
       const validator = validationRules[name];
       if (validator) {
         const error = validator(value, currentForm);
-        setErrors((prev) => ({ ...prev, [name]: error }));
+        setErrors((prev) => {
+          if (!error) {
+            const next = { ...prev };
+            delete next[name];
+            return next;
+          }
+          return { ...prev, [name]: error };
+        });
       }
     },
     [validationRules],
@@ -43,10 +50,11 @@ export const useFormState = <T extends FormValues>(
         if (touchedRef.current[name as keyof T]) {
           validateField(name as keyof T, value as T[keyof T], updatedForm);
         } else {
-          setErrors((prevErrors) => ({
-            ...prevErrors,
-            [name as keyof T]: undefined,
-          }));
+          setErrors((prevErrors) => {
+            const next = { ...prevErrors };
+            delete next[name as keyof T];
+            return next;
+          });
         }
         return updatedForm;
       });

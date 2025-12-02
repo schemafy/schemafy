@@ -6,7 +6,8 @@ logs/
 ._.DS_Store
 **/.DS_Store
 **/._.DS_Store
-CLAUDE.md
+.claude
+agent-log
 
 HELP.md
 .gradle

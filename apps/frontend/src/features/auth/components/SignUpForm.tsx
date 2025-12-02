@@ -1,6 +1,8 @@
 import { Button, InputField } from '@/components';
 import { useFormState } from '../hooks';
-import { useFormStatus } from 'react-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signUp } from '@/lib/api';
 import type { ValidationRules, SignUpFormValues } from '../types';
 
 const formFields = [
@@ -64,14 +66,53 @@ const validationRules: ValidationRules<SignUpFormValues> = {
 };
 
 export const SignUpForm = () => {
-  const { form, errors, handleChange, handleBlur } = useFormState(
+  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
     initialForm,
     validationRules,
   );
-  const { pending } = useFormStatus();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>('');
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitError('');
+
+    const hasErrors = Object.keys(errors).length > 0;
+    if (hasErrors) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await signUp({
+        email: form.email,
+        name: form.name,
+        password: form.password,
+      });
+
+      if (response.success) {
+        resetForm();
+        navigate('/');
+      } else {
+        setSubmitError(response.error?.message || '회원가입에 실패했습니다.');
+      }
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : '회원가입에 실패했습니다.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <form noValidate className="flex flex-col w-full max-w-[480px]">
+    <form
+      noValidate
+      className="flex flex-col w-full max-w-[480px]"
+      onSubmit={handleSubmit}
+    >
       {formFields.map((field) => (
         <InputField
           key={field.name}
@@ -79,15 +120,18 @@ export const SignUpForm = () => {
           type={field.type}
           name={field.name}
           placeholder={field.label}
-          disabled={pending}
+          disabled={isSubmitting}
           value={form[field.name]}
           error={errors[field.name]}
           onChange={handleChange}
           onBlur={handleBlur}
         />
       ))}
-      <Button disabled={pending} className="my-4" round>
-        {pending ? 'Creating...' : 'Create Account'}
+      {submitError && (
+        <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
+      )}
+      <Button type="submit" disabled={isSubmitting} className="my-4" round>
+        {isSubmitting ? 'Creating...' : 'Create Account'}
       </Button>
     </form>
   );

@@ -10,7 +10,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.TestSecurityConfig;
+import com.schemafy.core.common.config.TestSecurityConfig;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
@@ -22,9 +22,9 @@ import static com.schemafy.core.ulid.docs.UlidApiSnippets.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
+@ActiveProfiles("test")
 @WebFluxTest(controllers = UlidController.class)
 @AutoConfigureRestDocs
-@ActiveProfiles("test")
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
 

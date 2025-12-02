@@ -3,6 +3,7 @@ package com.schemafy.core.common.exception;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
@@ -42,6 +43,17 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = e.getErrorCode();
         log.warn("[BusinessException] BusinessException occurred: {}",
                 errorCode.getMessage(), e);
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(BaseResponse.error(errorCode.getCode(),
+                        errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<BaseResponse<Object>> handleAuthorizationDeniedException(
+            AuthorizationDeniedException e) {
+        ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
+        log.warn("AuthorizationDeniedException occurred: {}", e.getMessage());
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(BaseResponse.error(errorCode.getCode(),
