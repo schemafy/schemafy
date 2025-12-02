@@ -23,6 +23,7 @@ import {
   CustomControls,
   TablePreview,
   type RelationshipConfig,
+  type Point,
   CustomSmoothStepEdge,
   CustomConnectionLine,
   FloatingButtons,
@@ -52,13 +53,10 @@ const CanvasPageComponent = () => {
       isNonIdentifying: false,
     });
   const [activeTool, setActiveTool] = useState('pointer');
-  const [mousePosition, setMousePosition] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const [mousePosition, setMousePosition] = useState<Point | null>(null);
   const [tempMemoPosition, setTempMemoPosition] = useState<{
-    flow: { x: number; y: number };
-    screen: { x: number; y: number };
+    flow: Point;
+    screen: Point;
   } | null>(null);
 
   const { handleMoveEnd } = useViewport();

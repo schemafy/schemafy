@@ -43,8 +43,6 @@ export const isRelationshipType = (
   );
 };
 
-export type Point = { x: number; y: number };
-
 export type CrossDirectionControlPoints = {
   controlPoint1X: number;
   controlPoint1Y: number;
