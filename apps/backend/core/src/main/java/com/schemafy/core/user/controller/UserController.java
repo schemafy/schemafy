@@ -28,8 +28,8 @@ public class UserController {
 
     @GetMapping("/users")
     public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo(
-            @AuthenticationPrincipal(expression = "userId") String userId) {
-        return userService.getUserById(userId)
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        return userService.getUserById(user.userId())
                 .map(BaseResponse::success)
                 .map(ResponseEntity::ok);
     }
