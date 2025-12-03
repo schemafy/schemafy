@@ -1,5 +1,6 @@
 package com.schemafy.core.common.security.principal;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -16,7 +17,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 public record AuthenticatedUser(
         String userId,
         Set<ProjectRole> roles // TODO: 사용자 역할을 저장/조회해 채워 넣는다.
-) {
+) implements Principal {
+
+    @Override
+    public String getName() {
+        return userId;
+    }
 
     public static AuthenticatedUser of(String userId) {
         return new AuthenticatedUser(userId, Collections.emptySet());

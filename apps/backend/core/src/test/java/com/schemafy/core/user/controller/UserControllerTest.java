@@ -225,7 +225,7 @@ class UserControllerTest {
                 "Test User", "password");
 
         EntityExchangeResult<byte[]> result = webTestClient.post()
-                .uri(API_BASE_PATH + "/users/signup")
+                .uri(PUBLIC_API_BASE_PATH + "/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
