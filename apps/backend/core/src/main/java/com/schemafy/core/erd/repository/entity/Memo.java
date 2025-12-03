@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.repository.entity;
 
 import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.common.type.BaseEntity;
 import com.schemafy.core.ulid.generator.UlidGenerator;
@@ -16,30 +17,24 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@org.springframework.data.relational.core.mapping.Table("db_tables")
-public class Table extends BaseEntity {
+@Table("memos")
+public class Memo extends BaseEntity {
 
     @Column("schema_id")
     private String schemaId;
 
-    @Column("name")
-    private String name;
+    @Column("author_id")
+    private String authorId;
 
-    @Column("comment")
-    private String comment;
-
-    @Column("table_options")
-    private String tableOptions;
-
-    @Column("extra")
-    private String extra;
+    @Column("positions")
+    private String positions;
 
     @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Table newTable(String schemaId, String name, String comment,
-            String tableOptions, String extra) {
-        Table table = new Table(schemaId, name, comment, tableOptions, extra);
-        table.setId(UlidGenerator.generate());
-        return table;
+    private static Memo newMemo(String schemaId, String authorId,
+            String positions) {
+        Memo memo = new Memo(schemaId, authorId, positions);
+        memo.setId(UlidGenerator.generate());
+        return memo;
     }
 
 }

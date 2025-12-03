@@ -17,27 +17,24 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Table("db_indexes")
-public class Index extends BaseEntity {
+@Table("memo_comments")
+public class MemoComment extends BaseEntity {
 
-    @Column("table_id")
-    private String tableId;
+    @Column("memo_id")
+    private String memoId;
 
-    @Column("name")
-    private String name;
+    @Column("author_id")
+    private String authorId;
 
-    @Column("type")
-    private String type;
-
-    @Column("comment")
-    private String comment;
+    @Column("body")
+    private String body;
 
     @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Index newIndex(String tableId, String name, String type,
-            String comment) {
-        Index index = new Index(tableId, name, type, comment);
-        index.setId(UlidGenerator.generate());
-        return index;
+    private static MemoComment newMemoComment(String memoId, String authorId,
+            String body) {
+        MemoComment memoComment = new MemoComment(memoId, authorId, body);
+        memoComment.setId(UlidGenerator.generate());
+        return memoComment;
     }
 
 }

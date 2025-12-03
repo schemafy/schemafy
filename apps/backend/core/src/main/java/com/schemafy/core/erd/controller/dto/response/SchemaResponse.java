@@ -8,11 +8,9 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaResponse {
 
@@ -26,7 +24,6 @@ public class SchemaResponse {
     private String canvasViewport; // NOTE: 추후 제거 예정
     private Instant createdAt;
     private Instant updatedAt;
-    private Instant deletedAt;
 
     public static SchemaResponse from(Schema schema) {
         return SchemaResponse.builder()
@@ -40,7 +37,6 @@ public class SchemaResponse {
                 .canvasViewport(schema.getCanvasViewport())
                 .createdAt(schema.getCreatedAt())
                 .updatedAt(schema.getUpdatedAt())
-                .deletedAt(schema.getDeletedAt())
                 .build();
     }
 

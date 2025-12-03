@@ -7,7 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -19,11 +18,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.MemoResponse;
 import com.schemafy.core.erd.controller.dto.response.SchemaDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.SchemaResponse;
+import com.schemafy.core.erd.controller.dto.response.TableResponse;
+import com.schemafy.core.erd.service.MemoService;
 import com.schemafy.core.erd.service.SchemaService;
+import com.schemafy.core.erd.service.TableService;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
@@ -45,7 +50,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("SchemaController 통합 테스트")
-@WithMockUser(roles = "EDITOR")
+@WithMockCustomUser(roles = "EDITOR")
 class SchemaControllerTest {
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -59,6 +64,12 @@ class SchemaControllerTest {
 
     @MockitoBean
     private SchemaService schemaService;
+
+    @MockitoBean
+    private TableService tableService;
+
+    @MockitoBean
+    private MemoService memoService;
 
     private String toJson(Message message) throws Exception {
         return JsonFormat.printer()
@@ -202,7 +213,6 @@ class SchemaControllerTest {
                                                             "canvasViewport": null,
                                                             "createdAt": "2025-11-09T16:25:31Z",
                                                             "updatedAt": "2025-11-10T13:16:40Z",
-                                                            "deletedAt": null,
                                                             "tables": []
                                                         }
                                                     }
@@ -262,8 +272,6 @@ class SchemaControllerTest {
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
                                         .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"),
                                 fieldWithPath("result.tables")
                                         .description("테이블 목록"))));
     }
@@ -315,8 +323,7 @@ class SchemaControllerTest {
                                                 "vendorOption": "",
                                                 "canvasViewport": null,
                                                 "createdAt": "2025-11-09T16:25:31Z",
-                                                "updatedAt": "2025-11-10T13:26:24.595812Z",
-                                                "deletedAt": null
+                                                "updatedAt": "2025-11-10T13:26:24.595812Z"
                                             }
                                         }
                                         """)
@@ -381,9 +388,7 @@ class SchemaControllerTest {
                                 fieldWithPath("result.createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"))));
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -489,6 +494,139 @@ class SchemaControllerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false);
+    }
+
+    @Test
+    @DisplayName("스키마별 테이블 목록 조회 API 문서화")
+    void getTablesBySchemaId() throws Exception {
+        String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
+
+        TableResponse tableResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                            "name": "users",
+                                            "comment": "사용자 테이블",
+                                            "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                            "extra": "{}",
+                                            "createdAt": "2025-11-10T13:48:01Z",
+                                            "updatedAt": "2025-11-10T13:48:01Z"
+                                        }
+                                        """),
+                TableResponse.class);
+
+        given(tableService.getTablesBySchemaId(schemaId))
+                .willReturn(Flux.just(tableResponse));
+
+        webTestClient.get()
+                .uri(API_BASE_PATH + "/schemas/{schemaId}/tables", schemaId)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result").isArray()
+                .jsonPath("$.result.length()").isEqualTo(1)
+                .jsonPath("$.result[0].id")
+                .isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
+                .jsonPath("$.result[0].schemaId")
+                .isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
+                .jsonPath("$.result[0].name").isEqualTo("users")
+                .jsonPath("$.result[0].comment").isEqualTo("사용자 테이블")
+                .jsonPath("$.result[0].tableOptions")
+                .isEqualTo("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+                .consumeWith(document("table-list-by-schema",
+                        pathParameters(
+                                parameterWithName("schemaId")
+                                        .description("조회할 스키마의 ID")),
+                        requestHeaders(
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("테이블 목록"),
+                                fieldWithPath("result[].id")
+                                        .description("테이블 ID"),
+                                fieldWithPath("result[].schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("result[].name")
+                                        .description("테이블 이름"),
+                                fieldWithPath("result[].comment")
+                                        .description("테이블 설명"),
+                                fieldWithPath("result[].tableOptions")
+                                        .description("테이블 옵션"),
+                                fieldWithPath("result[].extra")
+                                        .description("추가 정보"),
+                                fieldWithPath("result[].createdAt")
+                                        .description("생성 일시"),
+                                fieldWithPath("result[].updatedAt")
+                                        .description("수정 일시"))));
+    }
+
+    @Test
+    @DisplayName("스키마별 메모 목록 조회 API 문서화")
+    void getMemosBySchemaId() throws Exception {
+        String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
+
+        MemoResponse response = objectMapper.treeToValue(
+                objectMapper.readTree("""
+                        {
+                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "positions": "{}",
+                            "createdAt": "2025-11-23T10:00:00Z",
+                            "updatedAt": "2025-11-23T10:00:00Z"
+                        }
+                        """), MemoResponse.class);
+
+        given(memoService.getMemosBySchemaId(schemaId))
+                .willReturn(Flux.just(response));
+
+        webTestClient.get()
+                .uri(API_BASE_PATH + "/schemas/{schemaId}/memos", schemaId)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .consumeWith(document("memo-list-by-schema",
+                        pathParameters(
+                                parameterWithName("schemaId")
+                                        .description("조회할 스키마 ID")),
+                        requestHeaders(
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("메모 목록"),
+                                fieldWithPath("result[].id")
+                                        .description("메모 ID"),
+                                fieldWithPath("result[].schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("result[].authorId")
+                                        .description("작성자 ID"),
+                                fieldWithPath("result[].positions")
+                                        .description("메모 위치"),
+                                fieldWithPath("result[].createdAt")
+                                        .description("생성 일시"),
+                                fieldWithPath("result[].updatedAt")
+                                        .description("수정 일시"))));
     }
 
 }
