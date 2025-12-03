@@ -37,22 +37,31 @@ public class MemoService {
 
     public Mono<MemoDetailResponse> createMemo(CreateMemoRequest request,
             AuthenticatedUser user) {
-        return transactionalOperator
-                .transactional(ensureSchemaExists(request.schemaId())
-                        .then(memoRepository.save(Memo.builder()
-                                .schemaId(request.schemaId())
-                                .authorId(user.userId())
-                                .positions(request.positions())
-                                .build()))
-                        .flatMap(memo -> memoCommentRepository
-                                .save(MemoComment.builder()
-                                        .memoId(memo.getId())
-                                        .authorId(user.userId())
-                                        .body(request.body())
-                                        .build())
-                                .map(MemoCommentResponse::from)
+        return transactionalOperator.transactional(
+                ensureSchemaExists(request.schemaId())
+                        .then(saveMemo(request, user))
+                        .flatMap(memo -> saveFirstComment(memo.getId(), request.body(), user)
                                 .map(comment -> MemoDetailResponse.from(memo,
                                         Collections.singletonList(comment)))));
+    }
+
+    private Mono<Memo> saveMemo(CreateMemoRequest request, AuthenticatedUser user) {
+        return memoRepository.save(Memo.builder()
+                .schemaId(request.schemaId())
+                .authorId(user.userId())
+                .positions(request.positions())
+                .build());
+    }
+
+    private Mono<MemoCommentResponse> saveFirstComment(String memoId, String body,
+            AuthenticatedUser user) {
+        return memoCommentRepository
+                .save(MemoComment.builder()
+                        .memoId(memoId)
+                        .authorId(user.userId())
+                        .body(body)
+                        .build())
+                .map(MemoCommentResponse::from);
     }
 
     public Mono<MemoDetailResponse> getMemo(String memoId) {
@@ -158,38 +167,46 @@ public class MemoService {
 
     public Mono<Void> deleteComment(String memoId, String commentId,
             AuthenticatedUser user) {
-        return transactionalOperator.transactional(memoCommentRepository
-                .findByIdAndDeletedAtIsNull(commentId)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(
-                                ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
-                .flatMap(comment -> {
-                    if (!comment.getMemoId().equals(memoId)) {
-                        return Mono.error(
+        return transactionalOperator.transactional(
+                memoCommentRepository
+                        .findByIdAndDeletedAtIsNull(commentId)
+                        .switchIfEmpty(Mono.error(
                                 new BusinessException(
-                                        ErrorCode.COMMON_INVALID_PARAMETER));
-                    }
-                    return checkDeletePermission(user, comment.getAuthorId())
-                            .then(memoRepository
-                                    .findByIdAndDeletedAtIsNull(memoId))
-                            .switchIfEmpty(Mono.error(
-                                    new BusinessException(
-                                            ErrorCode.ERD_MEMO_NOT_FOUND)))
-                            .flatMap(memo -> isFirstComment(memoId, commentId)
-                                    .flatMap(isFirstComment -> {
-                                        if (isFirstComment) {
-                                            // 첫 댓글 삭제 시 메모만 삭제 처리
-                                            memo.delete();
-                                            return memoRepository.save(memo)
-                                                    .then();
-                                        }
-                                        comment.delete();
-                                        return memoCommentRepository
-                                                .save(comment)
-                                                .then();
-                                    }));
-                })
-                .then());
+                                        ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
+                        .flatMap(comment -> validateCommentMemoId(comment, memoId)
+                                .then(checkDeletePermission(user, comment.getAuthorId()))
+                                .then(findMemoAndDeleteComment(memoId, commentId, comment)))
+                        .then());
+    }
+
+    private Mono<Void> validateCommentMemoId(MemoComment comment, String memoId) {
+        if (!comment.getMemoId().equals(memoId)) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+        return Mono.empty();
+    }
+
+    private Mono<Void> findMemoAndDeleteComment(String memoId, String commentId,
+            MemoComment comment) {
+        return memoRepository
+                .findByIdAndDeletedAtIsNull(memoId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+                .flatMap(memo -> isFirstComment(memoId, commentId)
+                        .flatMap(isFirst -> isFirst
+                                ? deleteMemo(memo)
+                                : deleteCommentOnly(comment)));
+    }
+
+    private Mono<Void> deleteMemo(Memo memo) {
+        memo.delete();
+        return memoRepository.save(memo).then();
+    }
+
+    private Mono<Void> deleteCommentOnly(MemoComment comment) {
+        comment.delete();
+        return memoCommentRepository.save(comment).then();
     }
 
     private Mono<Boolean> isFirstComment(String memoId, String commentId) {

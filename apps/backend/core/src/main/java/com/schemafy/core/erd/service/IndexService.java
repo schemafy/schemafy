@@ -33,33 +33,43 @@ public class IndexService {
     public Mono<AffectedMappingResponse> createIndex(
             Validation.CreateIndexRequest request) {
         return validationClient.createIndex(request)
-                .flatMap(database -> transactionalOperator
-                        .transactional(indexRepository
-                                .save(ErdMapper.toEntity(request.getIndex()))
-                                .flatMap(savedIndex -> Flux
-                                        .fromIterable(
-                                                request.getIndex()
-                                                        .getColumnsList())
-                                        .flatMap(column -> {
-                                            IndexColumn entity = ErdMapper
-                                                    .toEntity(column);
-                                            entity.setIndexId(
-                                                    savedIndex.getId());
-                                            return indexColumnRepository
-                                                    .save(entity);
-                                        })
-                                        .then(Mono.just(
-                                                AffectedMappingResponse.of(
-                                                        request,
-                                                        request.getDatabase(),
-                                                        AffectedMappingResponse
-                                                                .updateEntityIdInDatabase(
-                                                                        database,
-                                                                        EntityType.INDEX,
-                                                                        request.getIndex()
-                                                                                .getId(),
-                                                                        savedIndex
-                                                                                .getId())))))));
+                .flatMap(database -> saveIndexWithColumns(request, database));
+    }
+
+    private Mono<AffectedMappingResponse> saveIndexWithColumns(
+            Validation.CreateIndexRequest request,
+            Validation.Database database) {
+        return transactionalOperator.transactional(
+                indexRepository
+                        .save(ErdMapper.toEntity(request.getIndex()))
+                        .flatMap(savedIndex -> {
+                            Validation.Database updatedDatabase = AffectedMappingResponse
+                                    .updateEntityIdInDatabase(
+                                            database,
+                                            EntityType.INDEX,
+                                            request.getIndex().getId(),
+                                            savedIndex.getId());
+
+                            return saveIndexColumns(
+                                            request.getIndex().getColumnsList(),
+                                            savedIndex.getId())
+                                    .then(Mono.just(AffectedMappingResponse.of(
+                                            request,
+                                            request.getDatabase(),
+                                            updatedDatabase)));
+                        }));
+    }
+
+    private Mono<Void> saveIndexColumns(
+            java.util.List<Validation.IndexColumn> columns,
+            String indexId) {
+        return Flux.fromIterable(columns)
+                .flatMap(column -> {
+                    IndexColumn entity = ErdMapper.toEntity(column);
+                    entity.setIndexId(indexId);
+                    return indexColumnRepository.save(entity);
+                })
+                .then();
     }
 
     public Mono<IndexResponse> getIndex(String id) {
