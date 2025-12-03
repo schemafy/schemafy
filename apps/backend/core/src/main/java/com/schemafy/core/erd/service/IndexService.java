@@ -51,8 +51,8 @@ public class IndexService {
                                             savedIndex.getId());
 
                             return saveIndexColumns(
-                                            request.getIndex().getColumnsList(),
-                                            savedIndex.getId())
+                                    request.getIndex().getColumnsList(),
+                                    savedIndex.getId())
                                     .then(Mono.just(AffectedMappingResponse.of(
                                             request,
                                             request.getDatabase(),

@@ -33,7 +33,8 @@ public class ConstraintService {
     public Mono<AffectedMappingResponse> createConstraint(
             Validation.CreateConstraintRequest request) {
         return validationClient.createConstraint(request)
-                .flatMap(database -> saveConstraintWithColumns(request, database));
+                .flatMap(database -> saveConstraintWithColumns(request,
+                        database));
     }
 
     private Mono<AffectedMappingResponse> saveConstraintWithColumns(
@@ -51,8 +52,8 @@ public class ConstraintService {
                                             savedConstraint.getId());
 
                             return saveConstraintColumns(
-                                            request.getConstraint().getColumnsList(),
-                                            savedConstraint.getId())
+                                    request.getConstraint().getColumnsList(),
+                                    savedConstraint.getId())
                                     .then(saveAffectedEntitiesAndBuildResponse(
                                             request,
                                             updatedDatabase,
@@ -131,7 +132,8 @@ public class ConstraintService {
     public Mono<AffectedMappingResponse> addColumnToConstraint(
             Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
-                .flatMap(database -> saveConstraintColumnAndAffectedEntities(request, database));
+                .flatMap(database -> saveConstraintColumnAndAffectedEntities(
+                        request, database));
     }
 
     private Mono<AffectedMappingResponse> saveConstraintColumnAndAffectedEntities(
@@ -145,7 +147,8 @@ public class ConstraintService {
                                     .updateEntityIdInDatabase(
                                             database,
                                             EntityType.CONSTRAINT_COLUMN,
-                                            request.getConstraintColumn().getId(),
+                                            request.getConstraintColumn()
+                                                    .getId(),
                                             savedConstraintColumn.getId());
 
                             return affectedEntitiesSaver
@@ -155,11 +158,12 @@ public class ConstraintService {
                                             savedConstraintColumn.getId(),
                                             request.getConstraintId(),
                                             "CONSTRAINT")
-                                    .map(propagated -> AffectedMappingResponse.of(
-                                            request,
-                                            request.getDatabase(),
-                                            updatedDatabase,
-                                            propagated));
+                                    .map(propagated -> AffectedMappingResponse
+                                            .of(
+                                                    request,
+                                                    request.getDatabase(),
+                                                    updatedDatabase,
+                                                    propagated));
                         }));
     }
 

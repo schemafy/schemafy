@@ -40,12 +40,14 @@ public class MemoService {
         return transactionalOperator.transactional(
                 ensureSchemaExists(request.schemaId())
                         .then(saveMemo(request, user))
-                        .flatMap(memo -> saveFirstComment(memo.getId(), request.body(), user)
+                        .flatMap(memo -> saveFirstComment(memo.getId(),
+                                request.body(), user)
                                 .map(comment -> MemoDetailResponse.from(memo,
                                         Collections.singletonList(comment)))));
     }
 
-    private Mono<Memo> saveMemo(CreateMemoRequest request, AuthenticatedUser user) {
+    private Mono<Memo> saveMemo(CreateMemoRequest request,
+            AuthenticatedUser user) {
         return memoRepository.save(Memo.builder()
                 .schemaId(request.schemaId())
                 .authorId(user.userId())
@@ -53,7 +55,8 @@ public class MemoService {
                 .build());
     }
 
-    private Mono<MemoCommentResponse> saveFirstComment(String memoId, String body,
+    private Mono<MemoCommentResponse> saveFirstComment(String memoId,
+            String body,
             AuthenticatedUser user) {
         return memoCommentRepository
                 .save(MemoComment.builder()
@@ -173,13 +176,17 @@ public class MemoService {
                         .switchIfEmpty(Mono.error(
                                 new BusinessException(
                                         ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
-                        .flatMap(comment -> validateCommentMemoId(comment, memoId)
-                                .then(checkDeletePermission(user, comment.getAuthorId()))
-                                .then(findMemoAndDeleteComment(memoId, commentId, comment)))
+                        .flatMap(comment -> validateCommentMemoId(comment,
+                                memoId)
+                                .then(checkDeletePermission(user,
+                                        comment.getAuthorId()))
+                                .then(findMemoAndDeleteComment(memoId,
+                                        commentId, comment)))
                         .then());
     }
 
-    private Mono<Void> validateCommentMemoId(MemoComment comment, String memoId) {
+    private Mono<Void> validateCommentMemoId(MemoComment comment,
+            String memoId) {
         if (!comment.getMemoId().equals(memoId)) {
             return Mono.error(
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));

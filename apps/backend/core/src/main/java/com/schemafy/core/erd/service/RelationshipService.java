@@ -34,7 +34,8 @@ public class RelationshipService {
     public Mono<AffectedMappingResponse> createRelationship(
             CreateRelationshipRequestWithExtra request) {
         return validationClient.createRelationship(request.request())
-                .flatMap(database -> saveRelationshipWithColumns(request, database));
+                .flatMap(database -> saveRelationshipWithColumns(request,
+                        database));
     }
 
     private Mono<AffectedMappingResponse> saveRelationshipWithColumns(
@@ -50,12 +51,14 @@ public class RelationshipService {
                                     .updateEntityIdInDatabase(
                                             database,
                                             EntityType.RELATIONSHIP,
-                                            request.request().getRelationship().getId(),
+                                            request.request().getRelationship()
+                                                    .getId(),
                                             savedRelationship.getId());
 
                             return saveRelationshipColumns(
-                                            request.request().getRelationship().getColumnsList(),
-                                            savedRelationship.getId())
+                                    request.request().getRelationship()
+                                            .getColumnsList(),
+                                    savedRelationship.getId())
                                     .then(saveAffectedEntitiesAndBuildResponse(
                                             request,
                                             updatedDatabase,
@@ -149,7 +152,8 @@ public class RelationshipService {
     public Mono<AffectedMappingResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
-                .flatMap(database -> saveRelationshipColumnAndAffectedEntities(request, database));
+                .flatMap(database -> saveRelationshipColumnAndAffectedEntities(
+                        request, database));
     }
 
     private Mono<AffectedMappingResponse> saveRelationshipColumnAndAffectedEntities(
@@ -157,13 +161,15 @@ public class RelationshipService {
             Validation.Database database) {
         return transactionalOperator.transactional(
                 relationshipColumnRepository
-                        .save(ErdMapper.toEntity(request.getRelationshipColumn()))
+                        .save(ErdMapper
+                                .toEntity(request.getRelationshipColumn()))
                         .flatMap(savedRelationshipColumn -> {
                             Validation.Database updatedDatabase = AffectedMappingResponse
                                     .updateEntityIdInDatabase(
                                             database,
                                             EntityType.RELATIONSHIP_COLUMN,
-                                            request.getRelationshipColumn().getId(),
+                                            request.getRelationshipColumn()
+                                                    .getId(),
                                             savedRelationshipColumn.getId());
 
                             return affectedEntitiesSaver
@@ -173,11 +179,12 @@ public class RelationshipService {
                                             savedRelationshipColumn.getId(),
                                             request.getRelationshipId(),
                                             "RELATIONSHIP")
-                                    .map(propagated -> AffectedMappingResponse.of(
-                                            request,
-                                            request.getDatabase(),
-                                            updatedDatabase,
-                                            propagated));
+                                    .map(propagated -> AffectedMappingResponse
+                                            .of(
+                                                    request,
+                                                    request.getDatabase(),
+                                                    updatedDatabase,
+                                                    propagated));
                         }));
     }
 
