@@ -14,4 +14,5 @@ public record CreateWorkspaceRequest(
         return settings != null ? settings
                 : WorkspaceSettings.defaultSettings();
     }
+
 }

@@ -53,4 +53,5 @@ public class Project extends BaseEntity {
     public boolean belongsToWorkspace(String workspaceId) {
         return this.workspaceId.equals(workspaceId);
     }
+
 }

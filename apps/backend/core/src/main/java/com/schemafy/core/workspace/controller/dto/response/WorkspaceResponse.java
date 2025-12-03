@@ -15,4 +15,5 @@ public record WorkspaceResponse(String id, String name, String description,
                 workspace.getSettingsAsVo(), workspace.getCreatedAt(),
                 workspace.getUpdatedAt());
     }
+
 }

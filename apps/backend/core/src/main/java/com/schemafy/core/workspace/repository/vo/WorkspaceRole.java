@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum WorkspaceRole {
+
     ADMIN("admin"),
     MEMBER("member");
 
@@ -23,4 +24,5 @@ public enum WorkspaceRole {
     }
 
     public boolean isAdmin() { return this == ADMIN; }
+
 }

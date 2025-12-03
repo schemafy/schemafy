@@ -44,4 +44,5 @@ public record ProjectSettings(String theme, String language,
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }
+
 }

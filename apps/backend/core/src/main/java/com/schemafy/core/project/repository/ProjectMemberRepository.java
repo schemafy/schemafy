@@ -33,4 +33,5 @@ public interface ProjectMemberRepository
 
     @Query("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP WHERE project_id = :projectId AND deleted_at IS NULL")
     Mono<Void> softDeleteByProjectId(String projectId);
+
 }

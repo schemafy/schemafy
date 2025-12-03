@@ -15,4 +15,5 @@ public record ProjectResponse(String id, String workspaceId, String ownerId,
                 project.getDescription(), project.getSettingsAsVo(),
                 project.getCreatedAt(), project.getUpdatedAt());
     }
+
 }

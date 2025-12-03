@@ -15,4 +15,5 @@ public record PageResponse<T>(List<T> content, int page, int size,
     public static <T> PageResponse<T> empty(int page, int size) {
         return new PageResponse<>(List.of(), page, size, 0, 0);
     }
+
 }

@@ -28,4 +28,5 @@ public interface WorkspaceRepository
             WHERE id = :id
             """)
     Mono<Void> softDelete(String id);
+
 }

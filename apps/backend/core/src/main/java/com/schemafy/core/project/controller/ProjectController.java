@@ -3,6 +3,7 @@ package com.schemafy.core.project.controller;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<BaseResponse<ProjectResponse>> createProject(
@@ -37,6 +39,7 @@ public class ProjectController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping
     public Mono<BaseResponse<PageResponse<ProjectSummaryResponse>>> getProjects(
             @PathVariable String workspaceId,
@@ -48,6 +51,7 @@ public class ProjectController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/{id}")
     public Mono<BaseResponse<ProjectResponse>> getProject(
             @PathVariable String workspaceId, @PathVariable String id,
@@ -57,6 +61,7 @@ public class ProjectController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     @PutMapping("/{id}")
     public Mono<BaseResponse<ProjectResponse>> updateProject(
             @PathVariable String workspaceId, @PathVariable String id,
@@ -67,6 +72,7 @@ public class ProjectController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteProject(@PathVariable String workspaceId,
@@ -75,6 +81,7 @@ public class ProjectController {
         return projectService.deleteProject(workspaceId, id, userId);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/{id}/members")
     public Mono<BaseResponse<PageResponse<ProjectMemberResponse>>> getMembers(
             @PathVariable String workspaceId, @PathVariable String id,
@@ -85,4 +92,5 @@ public class ProjectController {
         return projectService.getMembers(workspaceId, id, userId, page, size)
                 .map(BaseResponse::success);
     }
+
 }

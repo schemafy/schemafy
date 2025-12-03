@@ -44,7 +44,4 @@ public class Workspace extends BaseEntity {
         return WorkspaceSettings.fromJson(this.settings);
     }
 
-    public boolean isOwner(String userId) {
-        return this.ownerId.equals(userId);
-    }
 }

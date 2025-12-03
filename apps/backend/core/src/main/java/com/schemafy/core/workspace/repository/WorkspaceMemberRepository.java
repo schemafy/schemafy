@@ -62,4 +62,5 @@ public interface WorkspaceMemberRepository
             """)
     Mono<Boolean> existsByWorkspaceIdAndUserIdAndNotDeleted(String workspaceId,
             String userId);
+
 }

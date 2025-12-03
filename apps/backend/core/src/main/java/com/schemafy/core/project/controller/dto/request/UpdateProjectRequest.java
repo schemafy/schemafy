@@ -11,4 +11,5 @@ public record UpdateProjectRequest(
     public ProjectSettings getSettingsOrDefault() {
         return settings != null ? settings : ProjectSettings.defaultSettings();
     }
+
 }

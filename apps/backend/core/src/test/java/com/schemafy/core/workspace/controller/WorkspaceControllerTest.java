@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureWebTestClient
 @DisplayName("WorkspaceController 통합 테스트")
 class WorkspaceControllerTest {
+
     private static final String API_BASE_PATH = ApiPath.API
             .replace("{version}", "v1.0") + "/workspaces";
 
@@ -104,8 +105,7 @@ class WorkspaceControllerTest {
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isCreated().expectBody()
                 .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.name")
-                .isEqualTo("My Workspace").jsonPath("$.result.ownerId")
-                .isEqualTo(testUserId);
+                .isEqualTo("My Workspace");
 
         workspaceMemberRepository.findByUserIdAndNotDeleted(testUserId)
                 .collectList().block().forEach(member -> {
@@ -206,8 +206,8 @@ class WorkspaceControllerTest {
     }
 
     @Test
-    @DisplayName("Owner가 아닌 사용자는 워크스페이스 수정에 실패한다")
-    void updateWorkspaceFailWhenNotOwner() {
+    @DisplayName("Admin이 아닌 사용자는 워크스페이스 수정에 실패한다")
+    void updateWorkspaceFailWhenNotAdmin() {
         Workspace workspace = Workspace.create(testUserId, "Test Workspace",
                 "Description", WorkspaceSettings.defaultSettings());
         workspace = workspaceRepository.save(workspace).block();
@@ -244,15 +244,14 @@ class WorkspaceControllerTest {
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isNoContent();
 
-        // Verify soft delete
         Workspace deletedWorkspace = workspaceRepository.findById(
                 workspace.getId()).block();
         assertThat(deletedWorkspace.isDeleted()).isTrue();
     }
 
     @Test
-    @DisplayName("Owner가 아닌 사용자는 워크스페이스 삭제에 실패한다")
-    void deleteWorkspaceFailWhenNotOwner() {
+    @DisplayName("Admin이 아닌 사용자는 워크스페이스 삭제에 실패한다")
+    void deleteWorkspaceFailWhenNotAdmin() {
         Workspace workspace = Workspace.create(testUserId, "Test Workspace",
                 "Description", WorkspaceSettings.defaultSettings());
         workspace = workspaceRepository.save(workspace).block();
@@ -290,8 +289,8 @@ class WorkspaceControllerTest {
     }
 
     @Test
-    @DisplayName("Admin이 아닌 사용자는 멤버 목록 조회에 실패한다")
-    void getMembersFailWhenNotAdmin() {
+    @DisplayName("MEMBER도 멤버 목록을 조회할 수 있다")
+    void getMembersSuccessWithMemberRole() {
         Workspace workspace = Workspace.create(testUserId, "Test Workspace",
                 "Description", WorkspaceSettings.defaultSettings());
         workspace = workspaceRepository.save(workspace).block();
@@ -307,6 +306,7 @@ class WorkspaceControllerTest {
         webTestClient.get().uri(API_BASE_PATH + "/" + workspace.getId()
                 + "/members?page=0&size=20")
                 .header("Authorization", "Bearer " + accessToken2).exchange()
-                .expectStatus().isForbidden();
+                .expectStatus().isOk();
     }
+
 }

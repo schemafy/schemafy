@@ -52,4 +52,5 @@ public record WorkspaceSettings(
                     "Invalid defaultProjectAccess: " + defaultProjectAccess);
         }
     }
+
 }

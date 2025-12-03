@@ -75,4 +75,5 @@ public class WorkspaceMember implements Persistable<String> {
     public boolean belongsToWorkspace(String workspaceId) {
         return this.workspaceId.equals(workspaceId);
     }
+
 }

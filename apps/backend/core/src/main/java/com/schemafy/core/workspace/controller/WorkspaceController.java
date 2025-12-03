@@ -3,6 +3,7 @@ package com.schemafy.core.workspace.controller;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +47,7 @@ public class WorkspaceController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
     @GetMapping("/workspaces/{id}")
     public Mono<BaseResponse<WorkspaceResponse>> getWorkspace(
             @PathVariable String id, Authentication authentication) {
@@ -54,6 +56,7 @@ public class WorkspaceController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @PutMapping("/workspaces/{id}")
     public Mono<BaseResponse<WorkspaceResponse>> updateWorkspace(
             @PathVariable String id,
@@ -64,6 +67,7 @@ public class WorkspaceController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/workspaces/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteWorkspace(@PathVariable String id,
@@ -72,6 +76,7 @@ public class WorkspaceController {
         return workspaceService.deleteWorkspace(id, userId);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
     @GetMapping("/workspaces/{id}/members")
     public Mono<BaseResponse<PageResponse<WorkspaceMemberResponse>>> getMembers(
             @PathVariable String id, @RequestParam(defaultValue = "0") int page,
@@ -81,4 +86,5 @@ public class WorkspaceController {
         return workspaceService.getMembers(id, userId, page, size)
                 .map(BaseResponse::success);
     }
+
 }

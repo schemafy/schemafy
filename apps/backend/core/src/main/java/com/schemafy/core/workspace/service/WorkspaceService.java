@@ -95,7 +95,7 @@ public class WorkspaceService {
     @Transactional
     public Mono<WorkspaceResponse> updateWorkspace(String workspaceId,
             UpdateWorkspaceRequest request, String userId) {
-        return validateOwnerAccess(workspaceId, userId).then(
+        return validateAdminAccess(workspaceId, userId).then(
                 workspaceRepository.findByIdAndNotDeleted(workspaceId))
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
@@ -111,7 +111,7 @@ public class WorkspaceService {
 
     @Transactional
     public Mono<Void> deleteWorkspace(String workspaceId, String userId) {
-        return validateOwnerAccess(workspaceId, userId).then(
+        return validateAdminAccess(workspaceId, userId).then(
                 workspaceRepository.findByIdAndNotDeleted(workspaceId))
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
@@ -131,7 +131,7 @@ public class WorkspaceService {
     @Transactional(readOnly = true)
     public Mono<PageResponse<WorkspaceMemberResponse>> getMembers(
             String workspaceId, String userId, int page, int size) {
-        return validateAdminAccess(workspaceId, userId).then(
+        return validateMemberAccess(workspaceId, userId).then(
                 workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
                         workspaceId))
                 .flatMap(totalElements -> {
@@ -168,19 +168,6 @@ public class WorkspaceService {
                 });
     }
 
-    private Mono<Void> validateOwnerAccess(String workspaceId, String userId) {
-        return workspaceRepository.findByIdAndNotDeleted(workspaceId)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
-                .flatMap(workspace -> {
-                    if (!workspace.isOwner(userId)) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.WORKSPACE_OWNER_ONLY));
-                    }
-                    return Mono.empty();
-                });
-    }
-
     private Mono<Void> validateAdminAccess(String workspaceId, String userId) {
         return workspaceMemberRepository
                 .findByWorkspaceIdAndUserIdAndNotDeleted(
@@ -204,4 +191,5 @@ public class WorkspaceService {
             throw new BusinessException(ErrorCode.WORKSPACE_SETTINGS_TOO_LARGE);
         }
     }
+
 }

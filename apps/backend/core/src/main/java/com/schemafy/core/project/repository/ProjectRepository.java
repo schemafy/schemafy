@@ -24,4 +24,5 @@ public interface ProjectRepository
 
     @Query("SELECT COUNT(*) FROM projects WHERE workspace_id = :workspaceId AND deleted_at IS NULL")
     Mono<Long> countByWorkspaceIdAndNotDeleted(String workspaceId);
+
 }

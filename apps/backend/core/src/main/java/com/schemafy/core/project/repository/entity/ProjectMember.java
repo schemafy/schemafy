@@ -50,4 +50,5 @@ public class ProjectMember extends BaseEntity {
     public boolean canEdit() {
         return getRoleAsEnum().canEdit();
     }
+
 }
