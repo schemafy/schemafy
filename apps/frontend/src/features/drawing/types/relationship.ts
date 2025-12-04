@@ -60,7 +60,7 @@ export type RelationshipExtra = {
   targetHandle?: string;
 } & Partial<CrossDirectionControlPoints>;
 
-export interface EdgeData {
+export interface EdgeData extends Record<string, unknown> {
   relationshipType: RelationshipType;
   isNonIdentifying: boolean;
   controlPoint1?: Point;

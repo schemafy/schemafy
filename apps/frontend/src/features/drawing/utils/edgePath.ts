@@ -124,10 +124,8 @@ export const calculateEdgeGeometry = (
   target: Point,
   sourceIsHorizontal: boolean,
   isCrossDirection: boolean,
-  data?: unknown,
+  data?: EdgeData,
 ) => {
-  const edgeData = data as EdgeData | undefined;
-
   const defaults = getDefaultControlPoints(
     source,
     target,
@@ -135,7 +133,7 @@ export const calculateEdgeGeometry = (
     isCrossDirection,
   );
 
-  const controlPoints = getCurrentControlPoints(defaults, edgeData);
+  const controlPoints = getCurrentControlPoints(defaults, data);
 
   if (isCrossDirection) {
     const path = buildCrossDirectionPath(

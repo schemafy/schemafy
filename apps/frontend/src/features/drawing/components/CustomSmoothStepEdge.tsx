@@ -4,9 +4,10 @@ import {
   EdgeLabelRenderer,
   useReactFlow,
   type EdgeProps,
+  type Edge,
 } from '@xyflow/react';
 import { Move } from 'lucide-react';
-import type { CrossDirectionControlPoints, Point } from '../types';
+import type { CrossDirectionControlPoints, Point, EdgeData } from '../types';
 import {
   isHorizontalPosition,
   calculateNewControlPoints,
@@ -27,7 +28,7 @@ export const CustomSmoothStepEdge = ({
   label,
   labelStyle,
   data,
-}: EdgeProps) => {
+}: EdgeProps<Edge<EdgeData>>) => {
   const { setEdges, screenToFlowPosition } = useReactFlow();
   const [draggingHandle, setDraggingHandle] = useState<number | null>(null);
 
