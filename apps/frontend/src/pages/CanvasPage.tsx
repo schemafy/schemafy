@@ -3,7 +3,6 @@ import { observer } from 'mobx-react-lite';
 import { ulid } from 'ulid';
 import {
   ReactFlow,
-  ConnectionLineType,
   MiniMap,
   Background,
   BackgroundVariant,
@@ -24,7 +23,9 @@ import {
   CustomControls,
   TablePreview,
   type RelationshipConfig,
+  type Point,
   CustomSmoothStepEdge,
+  CustomConnectionLine,
   FloatingButtons,
   SchemaSelector,
   MemoPrivew,
@@ -52,13 +53,10 @@ const CanvasPageComponent = () => {
       isNonIdentifying: false,
     });
   const [activeTool, setActiveTool] = useState('pointer');
-  const [mousePosition, setMousePosition] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const [mousePosition, setMousePosition] = useState<Point | null>(null);
   const [tempMemoPosition, setTempMemoPosition] = useState<{
-    flow: { x: number; y: number };
-    screen: { x: number; y: number };
+    flow: Point;
+    screen: Point;
   } | null>(null);
 
   const { handleMoveEnd } = useViewport();
@@ -69,19 +67,18 @@ const CanvasPageComponent = () => {
       const schemaId = ulid();
       erdStore.load({
         id: dbId,
+        isAffected: false,
         schemas: [
           {
             id: schemaId,
             projectId: ulid(),
-            dbVendorId: 'mysql',
+            dbVendorId: 'MYSQL',
             name: 'schema1',
             charset: 'utf8mb4',
             collation: 'utf8mb4_general_ci',
             vendorOption: '',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            deletedAt: null,
             tables: [],
+            isAffected: false,
           },
         ],
       });
@@ -219,7 +216,7 @@ const CanvasPageComponent = () => {
             onReconnectEnd={onReconnectEnd}
             nodeTypes={NODE_TYPES}
             edgeTypes={EDGE_TYPES}
-            connectionLineType={ConnectionLineType.SmoothStep}
+            connectionLineComponent={CustomConnectionLine}
             proOptions={{ hideAttribution: true }}
             connectionMode={ConnectionMode.Loose}
             fitView={false}

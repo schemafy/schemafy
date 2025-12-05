@@ -5,6 +5,7 @@ export * from './RelationshipEditor';
 export * from './CustomControls';
 export * from './TablePreview';
 export * from './CustomSmoothStepEdge';
+export * from './CustomConnectionLine';
 export * from './FloatingButtons';
 export * from './SchemaSelector';
 export * from './IndexRow';

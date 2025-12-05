@@ -3,10 +3,16 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   useReactFlow,
-  Position,
   type EdgeProps,
+  type Edge,
 } from '@xyflow/react';
 import { Move } from 'lucide-react';
+import type { CrossDirectionControlPoints, Point, EdgeData } from '../types';
+import {
+  isHorizontalPosition,
+  calculateNewControlPoints,
+  calculateEdgeGeometry,
+} from '../utils/edgePath';
 
 export const CustomSmoothStepEdge = ({
   id,
@@ -15,65 +21,43 @@ export const CustomSmoothStepEdge = ({
   targetX,
   targetY,
   sourcePosition,
+  targetPosition,
   style = {},
   markerEnd,
   markerStart,
   label,
   labelStyle,
   data,
-}: EdgeProps) => {
+}: EdgeProps<Edge<EdgeData>>) => {
   const { setEdges, screenToFlowPosition } = useReactFlow();
-  const [isDragging, setIsDragging] = useState(false);
+  const [draggingHandle, setDraggingHandle] = useState<number | null>(null);
 
-  const isHorizontal =
-    sourcePosition === Position.Left || sourcePosition === Position.Right;
+  const sourceIsHorizontal = isHorizontalPosition(sourcePosition);
+  const targetIsHorizontal = isHorizontalPosition(targetPosition);
+  const isCrossDirection = sourceIsHorizontal !== targetIsHorizontal;
 
-  const { controlPointX, controlPointY, path, handlePosition } = (() => {
-    const defaultControlPointX = (sourceX + targetX) / 2;
-    const defaultControlPointY = (sourceY + targetY) / 2;
+  const source: Point = { x: sourceX, y: sourceY };
+  const target: Point = { x: targetX, y: targetY };
 
-    const currentControlPointX: number =
-      typeof data?.controlPointX === 'number'
-        ? data.controlPointX
-        : defaultControlPointX;
-    const currentControlPointY: number =
-      typeof data?.controlPointY === 'number'
-        ? data.controlPointY
-        : defaultControlPointY;
+  const { controlPoints, path, handle1Position, handle2Position } =
+    calculateEdgeGeometry(
+      source,
+      target,
+      sourceIsHorizontal,
+      isCrossDirection,
+      data,
+    );
 
-    let edgePath = '';
-    if (isHorizontal) {
-      edgePath = `M ${sourceX},${sourceY} L ${currentControlPointX},${sourceY} L ${currentControlPointX},${targetY} L ${targetX},${targetY}`;
-    } else {
-      edgePath = `M ${sourceX},${sourceY} L ${sourceX},${currentControlPointY} L ${targetX},${currentControlPointY} L ${targetX},${targetY}`;
-    }
-
-    const handleX = isHorizontal
-      ? currentControlPointX
-      : (sourceX + targetX) / 2;
-    const handleY = isHorizontal
-      ? (sourceY + targetY) / 2
-      : currentControlPointY;
-
-    return {
-      controlPointX: currentControlPointX,
-      controlPointY: currentControlPointY,
-      path: edgePath,
-      handlePosition: { x: handleX, y: handleY },
-    };
-  })();
-
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (handleIndex: number) => (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setIsDragging(true);
+    setDraggingHandle(handleIndex);
   };
 
   useEffect(() => {
-    if (!isDragging) return;
+    if (draggingHandle === null) return;
 
-    let finalControlPointX = controlPointX;
-    let finalControlPointY = controlPointY;
+    let finalControlPoints: CrossDirectionControlPoints = { ...controlPoints };
 
     const handleMouseMove = (e: MouseEvent) => {
       const flowPosition = screenToFlowPosition({
@@ -81,32 +65,33 @@ export const CustomSmoothStepEdge = ({
         y: e.clientY,
       });
 
-      const newControlPointX = isHorizontal ? flowPosition.x : controlPointX;
-      const newControlPointY = isHorizontal ? controlPointY : flowPosition.y;
+      const newControlPoints = calculateNewControlPoints(
+        flowPosition,
+        draggingHandle,
+        isCrossDirection,
+        sourceIsHorizontal,
+        finalControlPoints,
+      );
 
-      finalControlPointX = newControlPointX;
-      finalControlPointY = newControlPointY;
+      finalControlPoints = newControlPoints;
 
-      setEdges((relationships) =>
-        relationships.map((relationship) => {
-          if (relationship.id !== id) return relationship;
-
-          return {
-            ...relationship,
-            data: {
-              ...relationship.data,
-              controlPointX: newControlPointX,
-              controlPointY: newControlPointY,
-            },
-          };
-        }),
+      setEdges((edges) =>
+        edges.map((edge) =>
+          edge.id === id
+            ? { ...edge, data: { ...edge.data, ...newControlPoints } }
+            : edge,
+        ),
       );
     };
 
     const handleMouseUp = () => {
-      setIsDragging(false);
+      setDraggingHandle(null);
       if (data && typeof data.onControlPointDragEnd === 'function') {
-        data.onControlPointDragEnd(id, finalControlPointX, finalControlPointY);
+        data.onControlPointDragEnd(
+          id,
+          finalControlPoints.controlPoint1,
+          finalControlPoints.controlPoint2,
+        );
       }
     };
 
@@ -118,62 +103,47 @@ export const CustomSmoothStepEdge = ({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [
-    isDragging,
+    draggingHandle,
     id,
     data,
     setEdges,
     screenToFlowPosition,
-    isHorizontal,
-    controlPointX,
-    controlPointY,
+    isCrossDirection,
+    sourceIsHorizontal,
+    controlPoints,
   ]);
 
-  return (
-    <>
-      <BaseEdge
-        path={path}
-        markerEnd={markerEnd}
-        markerStart={markerStart}
-        style={style}
-      />
+  const labelPosition: Point = isCrossDirection
+    ? {
+        x: sourceIsHorizontal
+          ? controlPoints.controlPoint1.x
+          : controlPoints.controlPoint2.x,
+        y: sourceIsHorizontal
+          ? controlPoints.controlPoint2.y
+          : controlPoints.controlPoint1.y,
+      }
+    : handle1Position;
 
-      {label && (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${handlePosition.x}px, ${handlePosition.y}px)`,
-              fontSize: labelStyle?.fontSize || 12,
-              fontWeight: labelStyle?.fontWeight || 'bold',
-              color: labelStyle?.color || 'var(--color-schemafy-dark-gray)',
-              pointerEvents: 'none',
-              background: 'white',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              marginTop: '-25px',
-            }}
-          >
-            {label}
-          </div>
-        </EdgeLabelRenderer>
-      )}
+  const renderHandle = (position: Point, handleIndex: number) => {
+    const isActive = draggingHandle === handleIndex;
 
-      <EdgeLabelRenderer>
+    return (
+      <EdgeLabelRenderer key={handleIndex}>
         <div
           style={{
             position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${handlePosition.x}px, ${handlePosition.y}px)`,
+            transform: `translate(-50%, -50%) translate(${position.x}px, ${position.y}px)`,
             pointerEvents: 'all',
-            cursor: isDragging ? 'grabbing' : 'grab',
+            cursor: isActive ? 'grabbing' : 'grab',
             zIndex: 1000,
           }}
           className="nodrag nopan"
-          onMouseDown={handleMouseDown}
+          onMouseDown={handleMouseDown(handleIndex)}
         >
           <div
             className={`
               bg-schemafy-bg border-2 rounded-full shadow-lg transition-all
-              ${isDragging ? 'scale-125 border-blue-500' : 'border-schemafy-dark-gray hover:border-blue-400'}
+              ${isActive ? 'scale-125 border-schemafy-blue' : 'border-schemafy-dark-gray hover:border-schemafy-blue'}
             `}
             style={{
               width: 20,
@@ -186,12 +156,52 @@ export const CustomSmoothStepEdge = ({
             <Move
               size={10}
               className={
-                isDragging ? 'text-blue-500' : 'text-schemafy-dark-gray'
+                isActive ? 'text-schemafy-blue' : 'text-schemafy-dark-gray'
               }
             />
           </div>
         </div>
       </EdgeLabelRenderer>
+    );
+  };
+
+  const renderLabel = () => {
+    if (!label) return null;
+
+    return (
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelPosition.x}px, ${labelPosition.y}px)`,
+            fontSize: labelStyle?.fontSize || 12,
+            fontWeight: labelStyle?.fontWeight || 'bold',
+            color: labelStyle?.color || 'var(--color-schemafy-dark-gray)',
+            pointerEvents: 'none',
+            background: 'white',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            marginTop: '-25px',
+          }}
+        >
+          {label}
+        </div>
+      </EdgeLabelRenderer>
+    );
+  };
+
+  return (
+    <>
+      <BaseEdge
+        path={path}
+        markerEnd={markerEnd}
+        markerStart={markerStart}
+        style={style}
+      />
+
+      {renderLabel()}
+      {renderHandle(handle1Position, 1)}
+      {handle2Position && renderHandle(handle2Position, 2)}
     </>
   );
 };

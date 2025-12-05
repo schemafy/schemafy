@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Avatar } from '@/components';
 import { MoveUp } from 'lucide-react';
+import type { Point } from '../types';
 
 interface TempMemoPreviewProps {
-  position: { x: number; y: number };
+  position: Point;
   onConfirm: (content: string) => void;
   onCancel: () => void;
 }
