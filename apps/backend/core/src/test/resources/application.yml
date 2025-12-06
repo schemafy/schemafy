@@ -43,6 +43,9 @@ cache:
   expire-after-write-minutes: 5
   expire-after-access-minutes: 2
 
+sharelink:
+  pepper: test-pepper-value
+
 logging:
   level:
     com:
