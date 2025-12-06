@@ -20,7 +20,7 @@ import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

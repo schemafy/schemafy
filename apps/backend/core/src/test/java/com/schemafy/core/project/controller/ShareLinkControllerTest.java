@@ -1,12 +1,15 @@
-package com.schemafy.core.sharelink.controller;
+package com.schemafy.core.project.controller;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
+import com.schemafy.core.RestDocsConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -18,32 +21,36 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
+import com.schemafy.core.project.docs.ShareLinkApiSnippets;
+import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkAccessLogRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ShareLink;
+import com.schemafy.core.project.repository.entity.Workspace;
+import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.project.service.ShareLinkTokenService;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
-import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
-import com.schemafy.core.workspace.repository.WorkspaceRepository;
-import com.schemafy.core.workspace.repository.entity.Workspace;
-import com.schemafy.core.workspace.repository.entity.WorkspaceMember;
-import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
 
 import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
+@AutoConfigureRestDocs
+@Import(RestDocsConfiguration.class)
 @DisplayName("ShareLinkController 통합 테스트")
 class ShareLinkControllerTest {
 
@@ -142,10 +149,17 @@ class ShareLinkControllerTest {
         CreateShareLinkRequest request = new CreateShareLinkRequest("viewer",
                 null);
 
-        webTestClient.post().uri(apiBasePath)
+        webTestClient.post()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links", testWorkspace.getId(), testProject.getId())
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isCreated().expectBody()
+                .consumeWith(document("share-link-create",
+                        ShareLinkApiSnippets.createShareLinkPathParameters(),
+                        ShareLinkApiSnippets.createShareLinkRequestHeaders(),
+                        ShareLinkApiSnippets.createShareLinkRequest(),
+                        ShareLinkApiSnippets.createShareLinkResponseHeaders(),
+                        ShareLinkApiSnippets.createShareLinkResponse()))
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.projectId").isEqualTo(testProject.getId())
                 .jsonPath("$.result.role").isEqualTo("viewer")
@@ -199,9 +213,17 @@ class ShareLinkControllerTest {
         createTestShareLink(ShareLinkRole.VIEWER);
         createTestShareLink(ShareLinkRole.EDITOR);
 
-        webTestClient.get().uri(apiBasePath + "?page=0&size=20")
+        webTestClient.get()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=0&size=20", testWorkspace.getId(), testProject.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk().expectBody().jsonPath("$.success")
+                .expectStatus().isOk().expectBody()
+                .consumeWith(document("share-link-list",
+                        ShareLinkApiSnippets.getShareLinksPathParameters(),
+                        ShareLinkApiSnippets.getShareLinksRequestHeaders(),
+                        ShareLinkApiSnippets.getShareLinksQueryParameters(),
+                        ShareLinkApiSnippets.getShareLinksResponseHeaders(),
+                        ShareLinkApiSnippets.getShareLinksResponse()))
+                .jsonPath("$.success")
                 .isEqualTo(true).jsonPath("$.result.totalElements").isEqualTo(2)
                 .jsonPath("$.result.content").isArray();
     }
@@ -211,9 +233,16 @@ class ShareLinkControllerTest {
     void getShareLink_Success() {
         ShareLink shareLink = createTestShareLink(ShareLinkRole.VIEWER);
 
-        webTestClient.get().uri(apiBasePath + "/" + shareLink.getId())
+        webTestClient.get()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}", testWorkspace.getId(), testProject.getId(), shareLink.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk().expectBody().jsonPath("$.success")
+                .expectStatus().isOk().expectBody()
+                .consumeWith(document("share-link-get",
+                        ShareLinkApiSnippets.getShareLinkPathParameters(),
+                        ShareLinkApiSnippets.getShareLinkRequestHeaders(),
+                        ShareLinkApiSnippets.getShareLinkResponseHeaders(),
+                        ShareLinkApiSnippets.getShareLinkResponse()))
+                .jsonPath("$.success")
                 .isEqualTo(true).jsonPath("$.result.id")
                 .isEqualTo(shareLink.getId()).jsonPath("$.result.role")
                 .isEqualTo("viewer");
@@ -233,9 +262,15 @@ class ShareLinkControllerTest {
         ShareLink shareLink = createTestShareLink(ShareLinkRole.VIEWER);
 
         webTestClient.patch()
-                .uri(apiBasePath + "/" + shareLink.getId() + "/revoke")
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke", testWorkspace.getId(), testProject.getId(), shareLink.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk();
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(document("share-link-revoke",
+                        ShareLinkApiSnippets.revokeShareLinkPathParameters(),
+                        ShareLinkApiSnippets.revokeShareLinkRequestHeaders(),
+                        ShareLinkApiSnippets.revokeShareLinkResponseHeaders(),
+                        ShareLinkApiSnippets.revokeShareLinkResponse()));
 
         // Verify revoked
         ShareLink revoked = shareLinkRepository
@@ -259,9 +294,14 @@ class ShareLinkControllerTest {
     void deleteShareLink_Success() {
         ShareLink shareLink = createTestShareLink(ShareLinkRole.VIEWER);
 
-        webTestClient.delete().uri(apiBasePath + "/" + shareLink.getId())
+        webTestClient.delete()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}", testWorkspace.getId(), testProject.getId(), shareLink.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isNoContent();
+                .expectStatus().isNoContent()
+                .expectBody()
+                .consumeWith(document("share-link-delete",
+                        ShareLinkApiSnippets.deleteShareLinkPathParameters(),
+                        ShareLinkApiSnippets.deleteShareLinkRequestHeaders()));
 
         // Verify soft deleted
         ShareLink deleted = shareLinkRepository.findById(shareLink.getId())

@@ -1,4 +1,4 @@
-package com.schemafy.core.workspace.repository.entity;
+package com.schemafy.core.project.repository.entity;
 
 import java.time.LocalDateTime;
 
@@ -8,7 +8,7 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.ulid.generator.UlidGenerator;
-import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

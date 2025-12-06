@@ -1,9 +1,9 @@
-package com.schemafy.core.workspace.repository;
+package com.schemafy.core.project.repository;
 
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
-import com.schemafy.core.workspace.repository.entity.Workspace;
+import com.schemafy.core.project.repository.entity.Workspace;
 
 import reactor.core.publisher.Mono;
 

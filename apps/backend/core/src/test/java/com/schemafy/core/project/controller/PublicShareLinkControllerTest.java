@@ -1,4 +1,4 @@
-package com.schemafy.core.sharelink.controller;
+package com.schemafy.core.project.controller;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -27,12 +27,12 @@ import com.schemafy.core.project.service.ShareLinkTokenService;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
-import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
-import com.schemafy.core.workspace.repository.WorkspaceRepository;
-import com.schemafy.core.workspace.repository.entity.Workspace;
-import com.schemafy.core.workspace.repository.entity.WorkspaceMember;
-import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Workspace;
+import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 import reactor.core.publisher.Mono;
 

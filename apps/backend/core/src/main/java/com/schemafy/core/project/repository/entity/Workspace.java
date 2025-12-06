@@ -1,10 +1,10 @@
-package com.schemafy.core.workspace.repository.entity;
+package com.schemafy.core.project.repository.entity;
 
 import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.common.type.BaseEntity;
 import com.schemafy.core.ulid.generator.UlidGenerator;
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

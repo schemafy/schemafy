@@ -1,4 +1,4 @@
-package com.schemafy.core.workspace.service;
+package com.schemafy.core.project.service;
 
 import java.util.List;
 
@@ -9,17 +9,17 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.workspace.controller.dto.request.CreateWorkspaceRequest;
-import com.schemafy.core.workspace.controller.dto.request.UpdateWorkspaceRequest;
-import com.schemafy.core.workspace.controller.dto.response.WorkspaceMemberResponse;
-import com.schemafy.core.workspace.controller.dto.response.WorkspaceResponse;
-import com.schemafy.core.workspace.controller.dto.response.WorkspaceSummaryResponse;
-import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
-import com.schemafy.core.workspace.repository.WorkspaceRepository;
-import com.schemafy.core.workspace.repository.entity.Workspace;
-import com.schemafy.core.workspace.repository.entity.WorkspaceMember;
-import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
+import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
+import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
+import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
+import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
+import com.schemafy.core.project.controller.dto.response.WorkspaceSummaryResponse;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Workspace;
+import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

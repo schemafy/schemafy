@@ -1,4 +1,4 @@
-package com.schemafy.core.workspace.controller.dto.response;
+package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 

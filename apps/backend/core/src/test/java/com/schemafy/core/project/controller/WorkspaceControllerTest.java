@@ -1,41 +1,42 @@
-package com.schemafy.core.workspace.controller;
+package com.schemafy.core.project.controller;
 
-import java.util.HashMap;
-
+import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
+import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
+import com.schemafy.core.project.docs.WorkspaceApiSnippets;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Workspace;
+import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.core.user.repository.vo.UserInfo;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
-import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.user.repository.vo.UserInfo;
-import com.schemafy.core.workspace.controller.dto.request.CreateWorkspaceRequest;
-import com.schemafy.core.workspace.controller.dto.request.UpdateWorkspaceRequest;
-import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
-import com.schemafy.core.workspace.repository.WorkspaceRepository;
-import com.schemafy.core.workspace.repository.entity.Workspace;
-import com.schemafy.core.workspace.repository.entity.WorkspaceMember;
-import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
-
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
+import java.util.HashMap;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
+@AutoConfigureRestDocs
 @DisplayName("WorkspaceController 통합 테스트")
 class WorkspaceControllerTest {
 
@@ -104,6 +105,11 @@ class WorkspaceControllerTest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isCreated().expectBody()
+                .consumeWith(document("workspace-create",
+                        WorkspaceApiSnippets.createWorkspaceRequestHeaders(),
+                        WorkspaceApiSnippets.createWorkspaceRequest(),
+                        WorkspaceApiSnippets.createWorkspaceResponseHeaders(),
+                        WorkspaceApiSnippets.createWorkspaceResponse()))
                 .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.name")
                 .isEqualTo("My Workspace");
 
@@ -140,7 +146,13 @@ class WorkspaceControllerTest {
         // when & then
         webTestClient.get().uri(API_BASE_PATH + "?page=0&size=10")
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk().expectBody().jsonPath("$.success")
+                .expectStatus().isOk().expectBody()
+                .consumeWith(document("workspace-list",
+                        WorkspaceApiSnippets.getWorkspacesRequestHeaders(),
+                        WorkspaceApiSnippets.getWorkspacesQueryParameters(),
+                        WorkspaceApiSnippets.getWorkspacesResponseHeaders(),
+                        WorkspaceApiSnippets.getWorkspacesResponse()))
+                .jsonPath("$.success")
                 .isEqualTo(true).jsonPath("$.result.content[0].name")
                 .isEqualTo("Test Workspace").jsonPath("$.result.totalElements")
                 .isEqualTo(1);
@@ -157,9 +169,16 @@ class WorkspaceControllerTest {
                 testUserId, WorkspaceRole.ADMIN);
         workspaceMemberRepository.save(member).block();
 
-        webTestClient.get().uri(API_BASE_PATH + "/" + workspace.getId())
+        webTestClient.get()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{id}", workspace.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk().expectBody().jsonPath("$.success")
+                .expectStatus().isOk().expectBody()
+                .consumeWith(document("workspace-get",
+                        WorkspaceApiSnippets.getWorkspacePathParameters(),
+                        WorkspaceApiSnippets.getWorkspaceRequestHeaders(),
+                        WorkspaceApiSnippets.getWorkspaceResponseHeaders(),
+                        WorkspaceApiSnippets.getWorkspaceResponse()))
+                .jsonPath("$.success")
                 .isEqualTo(true).jsonPath("$.result.id")
                 .isEqualTo(workspace.getId()).jsonPath("$.result.name")
                 .isEqualTo("Test Workspace");
@@ -196,10 +215,17 @@ class WorkspaceControllerTest {
                 "Updated Workspace", "Updated Description",
                 new WorkspaceSettings("dark", "en", "editor"));
 
-        webTestClient.put().uri(API_BASE_PATH + "/" + workspace.getId())
+        webTestClient.put()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{id}", workspace.getId())
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isOk().expectBody()
+                .consumeWith(document("workspace-update",
+                        WorkspaceApiSnippets.updateWorkspacePathParameters(),
+                        WorkspaceApiSnippets.updateWorkspaceRequestHeaders(),
+                        WorkspaceApiSnippets.updateWorkspaceRequest(),
+                        WorkspaceApiSnippets.updateWorkspaceResponseHeaders(),
+                        WorkspaceApiSnippets.updateWorkspaceResponse()))
                 .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.name")
                 .isEqualTo("Updated Workspace")
                 .jsonPath("$.result.settings.theme").isEqualTo("dark");
@@ -240,9 +266,14 @@ class WorkspaceControllerTest {
                 testUserId, WorkspaceRole.ADMIN);
         workspaceMemberRepository.save(member).block();
 
-        webTestClient.delete().uri(API_BASE_PATH + "/" + workspace.getId())
+        webTestClient.delete()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{id}", workspace.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isNoContent();
+                .expectStatus().isNoContent()
+                .expectBody()
+                .consumeWith(document("workspace-delete",
+                        WorkspaceApiSnippets.deleteWorkspacePathParameters(),
+                        WorkspaceApiSnippets.deleteWorkspaceRequestHeaders()));
 
         Workspace deletedWorkspace = workspaceRepository.findById(
                 workspace.getId()).block();
@@ -280,10 +311,17 @@ class WorkspaceControllerTest {
                 testUserId, WorkspaceRole.ADMIN);
         workspaceMemberRepository.save(member).block();
 
-        webTestClient.get().uri(API_BASE_PATH + "/" + workspace.getId()
-                + "/members?page=0&size=20")
+        webTestClient.get()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{id}/members?page=0&size=20", workspace.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk().expectBody().jsonPath("$.success")
+                .expectStatus().isOk().expectBody()
+                .consumeWith(document("workspace-members",
+                        WorkspaceApiSnippets.getWorkspaceMembersPathParameters(),
+                        WorkspaceApiSnippets.getWorkspaceMembersRequestHeaders(),
+                        WorkspaceApiSnippets.getWorkspaceMembersQueryParameters(),
+                        WorkspaceApiSnippets.getWorkspaceMembersResponseHeaders(),
+                        WorkspaceApiSnippets.getWorkspaceMembersResponse()))
+                .jsonPath("$.success")
                 .isEqualTo(true).jsonPath("$.result.totalElements")
                 .isEqualTo(1);
     }

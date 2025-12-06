@@ -1,4 +1,4 @@
-package com.schemafy.core.workspace.repository.vo;
+package com.schemafy.core.project.repository.vo;
 
 import lombok.Getter;
 

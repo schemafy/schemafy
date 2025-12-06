@@ -17,9 +17,9 @@ import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.service.dto.LoginCommand;
-import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
-import com.schemafy.core.workspace.repository.WorkspaceRepository;
-import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

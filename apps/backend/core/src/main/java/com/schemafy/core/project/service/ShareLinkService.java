@@ -17,7 +17,7 @@ import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.ShareLinkAccessLog;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
-import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

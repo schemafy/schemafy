@@ -1,4 +1,4 @@
-package com.schemafy.core.workspace.controller;
+package com.schemafy.core.project.controller;
 
 import jakarta.validation.Valid;
 
@@ -10,12 +10,12 @@ import org.springframework.web.bind.annotation.*;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.PageResponse;
-import com.schemafy.core.workspace.controller.dto.request.CreateWorkspaceRequest;
-import com.schemafy.core.workspace.controller.dto.request.UpdateWorkspaceRequest;
-import com.schemafy.core.workspace.controller.dto.response.WorkspaceMemberResponse;
-import com.schemafy.core.workspace.controller.dto.response.WorkspaceResponse;
-import com.schemafy.core.workspace.controller.dto.response.WorkspaceSummaryResponse;
-import com.schemafy.core.workspace.service.WorkspaceService;
+import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
+import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
+import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
+import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
+import com.schemafy.core.project.controller.dto.response.WorkspaceSummaryResponse;
+import com.schemafy.core.project.service.WorkspaceService;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

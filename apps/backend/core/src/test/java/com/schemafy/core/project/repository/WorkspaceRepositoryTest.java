@@ -1,4 +1,4 @@
-package com.schemafy.core.workspace.repository;
+package com.schemafy.core.project.repository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
@@ -9,8 +9,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.config.R2dbcConfig;
-import com.schemafy.core.workspace.repository.entity.Workspace;
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
+import com.schemafy.core.project.repository.entity.Workspace;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 import reactor.test.StepVerifier;
 

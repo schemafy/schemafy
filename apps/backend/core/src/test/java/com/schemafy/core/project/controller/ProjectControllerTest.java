@@ -2,9 +2,12 @@ package com.schemafy.core.project.controller;
 
 import java.util.HashMap;
 
+import com.schemafy.core.RestDocsConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -18,30 +21,34 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
+import com.schemafy.core.project.docs.ProjectApiSnippets;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
+import com.schemafy.core.project.repository.entity.Workspace;
+import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
-import com.schemafy.core.workspace.repository.WorkspaceMemberRepository;
-import com.schemafy.core.workspace.repository.WorkspaceRepository;
-import com.schemafy.core.workspace.repository.entity.Workspace;
-import com.schemafy.core.workspace.repository.entity.WorkspaceMember;
-import com.schemafy.core.workspace.repository.vo.WorkspaceRole;
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
 
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
+@AutoConfigureRestDocs
+@Import(RestDocsConfiguration.class)
 @DisplayName("ProjectController 통합 테스트")
 class ProjectControllerTest {
 
@@ -129,10 +136,17 @@ class ProjectControllerTest {
         CreateProjectRequest request = new CreateProjectRequest("My Project",
                 "Test Description", ProjectSettings.defaultSettings());
 
-        webTestClient.post().uri(apiBasePath)
+        webTestClient.post()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects", testWorkspaceId)
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isCreated().expectBody()
+                .consumeWith(document("project-create",
+                        ProjectApiSnippets.createProjectPathParameters(),
+                        ProjectApiSnippets.createProjectRequestHeaders(),
+                        ProjectApiSnippets.createProjectRequest(),
+                        ProjectApiSnippets.createProjectResponseHeaders(),
+                        ProjectApiSnippets.createProjectResponse()))
                 .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.name")
                 .isEqualTo("My Project").jsonPath("$.result.workspaceId")
                 .isEqualTo(testWorkspaceId).jsonPath("$.result.ownerId")
@@ -183,9 +197,17 @@ class ProjectControllerTest {
                 testUserId, ProjectRole.OWNER);
         projectMemberRepository.save(member).block();
 
-        webTestClient.get().uri(apiBasePath + "?page=0&size=10")
+        webTestClient.get()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects?page=0&size=10", testWorkspaceId)
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk().expectBody().jsonPath("$.success")
+                .expectStatus().isOk().expectBody()
+                .consumeWith(document("project-list",
+                        ProjectApiSnippets.getProjectsPathParameters(),
+                        ProjectApiSnippets.getProjectsRequestHeaders(),
+                        ProjectApiSnippets.getProjectsQueryParameters(),
+                        ProjectApiSnippets.getProjectsResponseHeaders(),
+                        ProjectApiSnippets.getProjectsResponse()))
+                .jsonPath("$.success")
                 .isEqualTo(true).jsonPath("$.result.content[0].name")
                 .isEqualTo("Test Project").jsonPath("$.result.totalElements")
                 .isEqualTo(1);
@@ -203,9 +225,16 @@ class ProjectControllerTest {
                 testUserId, ProjectRole.OWNER);
         projectMemberRepository.save(member).block();
 
-        webTestClient.get().uri(apiBasePath + "/" + project.getId())
+        webTestClient.get()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{id}", testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk().expectBody().jsonPath("$.success")
+                .expectStatus().isOk().expectBody()
+                .consumeWith(document("project-get",
+                        ProjectApiSnippets.getProjectPathParameters(),
+                        ProjectApiSnippets.getProjectRequestHeaders(),
+                        ProjectApiSnippets.getProjectResponseHeaders(),
+                        ProjectApiSnippets.getProjectResponse()))
+                .jsonPath("$.success")
                 .isEqualTo(true).jsonPath("$.result.id")
                 .isEqualTo(project.getId()).jsonPath("$.result.name")
                 .isEqualTo("Test Project");
@@ -244,10 +273,17 @@ class ProjectControllerTest {
                 "Updated Project", "Updated Description",
                 new ProjectSettings("dark", "en", "board"));
 
-        webTestClient.put().uri(apiBasePath + "/" + project.getId())
+        webTestClient.put()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{id}", testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isOk().expectBody()
+                .consumeWith(document("project-update",
+                        ProjectApiSnippets.updateProjectPathParameters(),
+                        ProjectApiSnippets.updateProjectRequestHeaders(),
+                        ProjectApiSnippets.updateProjectRequest(),
+                        ProjectApiSnippets.updateProjectResponseHeaders(),
+                        ProjectApiSnippets.updateProjectResponse()))
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.name").isEqualTo("Updated Project")
                 .jsonPath("$.result.settings.theme").isEqualTo("dark");
@@ -290,9 +326,14 @@ class ProjectControllerTest {
                 testUserId, ProjectRole.OWNER);
         projectMemberRepository.save(member).block();
 
-        webTestClient.delete().uri(apiBasePath + "/" + project.getId())
+        webTestClient.delete()
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{id}", testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isNoContent();
+                .expectStatus().isNoContent()
+                .expectBody()
+                .consumeWith(document("project-delete",
+                        ProjectApiSnippets.deleteProjectPathParameters(),
+                        ProjectApiSnippets.deleteProjectRequestHeaders()));
 
         // Verify soft delete
         Project deletedProject = projectRepository.findById(project.getId())
@@ -334,10 +375,16 @@ class ProjectControllerTest {
         projectMemberRepository.save(member).block();
 
         webTestClient.get()
-                .uri(apiBasePath + "/" + project.getId()
-                        + "/members?page=0&size=20")
+                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{id}/members?page=0&size=20", testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isOk().expectBody().jsonPath("$.success")
+                .expectStatus().isOk().expectBody()
+                .consumeWith(document("project-members",
+                        ProjectApiSnippets.getProjectMembersPathParameters(),
+                        ProjectApiSnippets.getProjectMembersRequestHeaders(),
+                        ProjectApiSnippets.getProjectMembersQueryParameters(),
+                        ProjectApiSnippets.getProjectMembersResponseHeaders(),
+                        ProjectApiSnippets.getProjectMembersResponse()))
+                .jsonPath("$.success")
                 .isEqualTo(true).jsonPath("$.result.totalElements")
                 .isEqualTo(1);
     }

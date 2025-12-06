@@ -1,15 +1,17 @@
-package com.schemafy.core.workspace.controller.dto.request;
+package com.schemafy.core.project.controller.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 public record UpdateWorkspaceRequest(
         @NotBlank(message = "Workspace name is required") @Size(min = 1, max = 255, message = "Workspace name must be between 1 and 255 characters") String name,
         @Size(max = 1000, message = "Description must not exceed 10000 characters") String description,
         WorkspaceSettings settings) {
 
+    @JsonIgnore
     public WorkspaceSettings getSettingsOrDefault() {
         return settings != null ? settings
                 : WorkspaceSettings.defaultSettings();

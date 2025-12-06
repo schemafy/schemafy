@@ -1,9 +1,9 @@
-package com.schemafy.core.workspace.controller.dto.response;
+package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.workspace.repository.entity.Workspace;
-import com.schemafy.core.workspace.repository.vo.WorkspaceSettings;
+import com.schemafy.core.project.repository.entity.Workspace;
+import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 public record WorkspaceResponse(String id, String name, String description,
         String ownerId, WorkspaceSettings settings, Instant createdAt,

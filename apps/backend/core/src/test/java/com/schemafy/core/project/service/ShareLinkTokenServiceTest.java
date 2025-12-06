@@ -1,6 +1,5 @@
-package com.schemafy.core.sharelink.service;
+package com.schemafy.core.project.service;
 
-import com.schemafy.core.project.service.ShareLinkTokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
