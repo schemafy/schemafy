@@ -16,6 +16,8 @@ import com.schemafy.core.collaboration.dto.CursorPosition;
 import com.schemafy.core.collaboration.dto.PresenceEvent;
 import com.schemafy.core.collaboration.dto.PresenceEventFactory;
 import com.schemafy.core.collaboration.dto.PresenceEventType;
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +42,9 @@ public class PresenceService {
 
         String userName = sessionService.getAuthInfo(sessionId)
                 .map(auth -> auth.getUserName())
-                .orElse("Unknown");
+                // 인증된 세션에서 authInfo가 없으면 시스템 일관성 문제로 간주
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.COMMON_SYSTEM_ERROR));
 
         CursorPosition cursorWithUserName = cursor.withUserName(userName);
 
@@ -52,16 +56,16 @@ public class PresenceService {
 
         return serializeToJson(
                 PresenceEventFactory.cursor(sessionId, cursorWithUserName))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(
-                        channelName,
-                        eventJson))
-                .then();
+                        .flatMap(eventJson -> redisTemplate.convertAndSend(
+                                channelName,
+                                eventJson))
+                        .then();
     }
 
     public Mono<Void> removeSession(String projectId, String sessionId) {
         String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
         cursorDedupeCache.remove(sessionId);
-        
+
         return Mono
                 .fromRunnable(() -> sessionService.removeSession(projectId,
                         sessionId))
@@ -77,10 +81,10 @@ public class PresenceService {
 
         return serializeToJson(
                 PresenceEventFactory.join(sessionId, userId, userName))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(
-                        channelName,
-                        eventJson))
-                .then();
+                        .flatMap(eventJson -> redisTemplate.convertAndSend(
+                                channelName,
+                                eventJson))
+                        .then();
     }
 
     /**
