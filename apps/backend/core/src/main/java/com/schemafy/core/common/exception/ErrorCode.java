@@ -84,6 +84,16 @@ public enum ErrorCode {
             "이미 삭제된 워크스페이스입니다."),
     WORKSPACE_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "W008",
             "관리자 권한이 필요합니다."),
+    MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "W009", "이미 워크스페이스 멤버입니다."),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "W010", "멤버를 찾을 수 없습니다."),
+    MEMBER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "W011",
+            "워크스페이스 멤버 수 제한(100명)을 초과했습니다."),
+    LAST_ADMIN_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "W012",
+            "마지막 관리자는 제거할 수 없습니다."),
+    LAST_ADMIN_CANNOT_CHANGE_ROLE(HttpStatus.BAD_REQUEST, "W013",
+            "마지막 관리자의 권한은 변경할 수 없습니다."),
+    LAST_ADMIN_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "W014",
+            "마지막 관리자는 워크스페이스를 떠날 수 없습니다."),
 
     // PROJECT
     PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "프로젝트를 찾을 수 없습니다."),

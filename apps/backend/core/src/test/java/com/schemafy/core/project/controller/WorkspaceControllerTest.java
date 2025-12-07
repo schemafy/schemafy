@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.docs.WorkspaceApiSnippets;
@@ -118,7 +119,8 @@ class WorkspaceControllerTest {
 
         workspaceMemberRepository.findByUserIdAndNotDeleted(testUserId)
                 .collectList().block().forEach(member -> {
-                    assertThat(member.getRole()).isEqualTo("admin");
+                    assertThat(member.getRole())
+                            .isEqualTo(WorkspaceRole.ADMIN.getValue());
                 });
     }
 
@@ -318,7 +320,7 @@ class WorkspaceControllerTest {
 
         webTestClient.get()
                 .uri(ApiPath.API.replace("{version}", "v1.0")
-                        + "/workspaces/{id}/members?page=0&size=20",
+                        + "/workspaces/{id}/members?page=0&size=10",
                         workspace.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isOk().expectBody()
@@ -356,6 +358,144 @@ class WorkspaceControllerTest {
                 + "/members?page=0&size=20")
                 .header("Authorization", "Bearer " + accessToken2).exchange()
                 .expectStatus().isOk();
+    }
+
+    @Test
+    @DisplayName("멤버 추가에 성공한다")
+    void addMemberSuccess() {
+        Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+                "Description", WorkspaceSettings.defaultSettings());
+        workspace = workspaceRepository.save(workspace).block();
+
+        WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
+                testUserId, WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(member).block();
+
+        AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
+                testUser2Id, WorkspaceRole.MEMBER);
+
+        webTestClient.post()
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/members",
+                        workspace.getId())
+                .header("Authorization", "Bearer " + accessToken)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+                .exchange().expectStatus().isCreated().expectBody()
+                .consumeWith(document("workspace-member-add",
+                        WorkspaceApiSnippets.addMemberPathParameters(),
+                        WorkspaceApiSnippets.addMemberRequestHeaders(),
+                        WorkspaceApiSnippets.addMemberRequest(),
+                        WorkspaceApiSnippets.addMemberResponseHeaders(),
+                        WorkspaceApiSnippets.addMemberResponse()))
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.userId").isEqualTo(testUser2Id)
+                .jsonPath("$.result.role")
+                .isEqualTo(WorkspaceRole.MEMBER.getValue());
+    }
+
+    @Test
+    @DisplayName("Admin이 아닌 사용자는 멤버 추가에 실패한다")
+    void addMemberFailWhenNotAdmin() {
+        Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+                "Description", WorkspaceSettings.defaultSettings());
+        workspace = workspaceRepository.save(workspace).block();
+
+        WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
+                testUserId, WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(member1).block();
+
+        WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
+                testUser2Id, WorkspaceRole.MEMBER);
+        workspaceMemberRepository.save(member2).block();
+
+        AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
+                "some-other-user-id", WorkspaceRole.MEMBER);
+
+        webTestClient.post()
+                .uri(API_BASE_PATH + "/" + workspace.getId() + "/members")
+                .header("Authorization", "Bearer " + accessToken2)
+                .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+                .exchange().expectStatus().isForbidden();
+    }
+
+    @Test
+    @DisplayName("멤버 추방에 성공한다")
+    void removeMemberSuccess() {
+        Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+                "Description", WorkspaceSettings.defaultSettings());
+        workspace = workspaceRepository.save(workspace).block();
+
+        WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
+                testUserId, WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(member1).block();
+
+        WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
+                testUser2Id, WorkspaceRole.MEMBER);
+        member2 = workspaceMemberRepository.save(member2).block();
+
+        webTestClient.delete()
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/members/{memberId}",
+                        workspace.getId(), member2.getId())
+                .header("Authorization", "Bearer " + accessToken).exchange()
+                .expectStatus().isNoContent().expectBody()
+                .consumeWith(document("workspace-member-remove",
+                        WorkspaceApiSnippets.removeMemberPathParameters(),
+                        WorkspaceApiSnippets.removeMemberRequestHeaders()));
+
+        assertThat(workspaceMemberRepository.findById(member2.getId()).block()
+                .isDeleted()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Admin이 아닌 사용자는 멤버 추방에 실패한다")
+    void removeMemberFailWhenNotAdmin() {
+        Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+                "Description", WorkspaceSettings.defaultSettings());
+        workspace = workspaceRepository.save(workspace).block();
+
+        WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
+                testUserId, WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(member1).block();
+
+        WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
+                testUser2Id, WorkspaceRole.MEMBER);
+        member2 = workspaceMemberRepository.save(member2).block();
+
+        webTestClient.delete()
+                .uri(API_BASE_PATH + "/" + workspace.getId() + "/members/"
+                        + member2.getId())
+                .header("Authorization", "Bearer " + accessToken2).exchange()
+                .expectStatus().isForbidden();
+    }
+
+    @Test
+    @DisplayName("워크스페이스 탈퇴에 성공한다")
+    void leaveMemberSuccess() {
+        Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+                "Description", WorkspaceSettings.defaultSettings());
+        workspace = workspaceRepository.save(workspace).block();
+
+        WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
+                testUserId, WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(member1).block();
+
+        WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
+                testUser2Id, WorkspaceRole.MEMBER);
+        member2 = workspaceMemberRepository.save(member2).block();
+
+        webTestClient.delete()
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/members/me",
+                        workspace.getId())
+                .header("Authorization", "Bearer " + accessToken2).exchange()
+                .expectStatus().isNoContent().expectBody()
+                .consumeWith(document("workspace-member-leave",
+                        WorkspaceApiSnippets.leaveMemberPathParameters(),
+                        WorkspaceApiSnippets.leaveMemberRequestHeaders()));
+
+        assertThat(workspaceMemberRepository.findById(member2.getId()).block()
+                .isDeleted()).isTrue();
     }
 
 }

@@ -113,7 +113,7 @@ class UserServiceTest {
                     assertThat(member.getRole())
                             .isEqualTo(WorkspaceRole.ADMIN.getValue());
                     assertThat(member.isAdmin()).isTrue();
-                    assertThat(member.getJoinedAt()).isNotNull();
+                    assertThat(member.getCreatedAt()).isNotNull();
                     assertThat(member.getDeletedAt()).isNull();
                 })
                 .verifyComplete();

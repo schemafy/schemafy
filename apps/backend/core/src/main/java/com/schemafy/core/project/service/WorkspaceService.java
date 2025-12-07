@@ -8,7 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
+import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
+import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
@@ -179,6 +181,166 @@ public class WorkspaceService {
         if (json.length() > 65536) {
             throw new BusinessException(ErrorCode.WORKSPACE_SETTINGS_TOO_LARGE);
         }
+    }
+
+    /**
+     * 워크스페이스에 멤버 추가
+     */
+    @Transactional
+    public Mono<WorkspaceMemberResponse> addMember(
+            String workspaceId,
+            AddWorkspaceMemberRequest request,
+            String currentUserId) {
+        return validateAdminAccess(workspaceId, currentUserId)
+                .then(userRepository.findById(request.userId())
+                        .switchIfEmpty(Mono.error(new BusinessException(
+                                ErrorCode.USER_NOT_FOUND))))
+                .then(workspaceMemberRepository
+                        .existsByWorkspaceIdAndUserIdAndNotDeleted(
+                                workspaceId, request.userId()))
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.error(new BusinessException(
+                                ErrorCode.MEMBER_ALREADY_EXISTS));
+                    }
+                    return workspaceMemberRepository
+                            .countByWorkspaceIdAndNotDeleted(workspaceId);
+                })
+                .flatMap(memberCount -> {
+                    if (memberCount >= 100) {
+                        return Mono.error(new BusinessException(
+                                ErrorCode.MEMBER_LIMIT_EXCEEDED));
+                    }
+                    WorkspaceMember newMember = WorkspaceMember.create(
+                            workspaceId, request.userId(), request.role());
+                    return workspaceMemberRepository.save(newMember);
+                })
+                .flatMap(savedMember -> userRepository
+                        .findById(savedMember.getUserId())
+                        .map(user -> WorkspaceMemberResponse.of(savedMember,
+                                user)));
+    }
+
+    /**
+     * 워크스페이스 멤버 제거
+     */
+    @Transactional
+    public Mono<Void> removeMember(
+            String workspaceId,
+            String memberId,
+            String currentUserId) {
+        return validateAdminAccess(workspaceId, currentUserId)
+                .then(workspaceMemberRepository.findByIdAndNotDeleted(memberId))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.MEMBER_NOT_FOUND)))
+                .flatMap(targetMember -> {
+                    if (targetMember.isAdmin()) {
+                        return workspaceMemberRepository
+                                .countByWorkspaceIdAndRoleAndNotDeleted(
+                                        workspaceId,
+                                        WorkspaceRole.ADMIN.getValue())
+                                .flatMap(adminCount -> {
+                                    if (adminCount <= 1) {
+                                        return Mono.error(new BusinessException(
+                                                ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED));
+                                    }
+                                    targetMember.delete();
+                                    return workspaceMemberRepository
+                                            .save(targetMember);
+                                });
+                    } else {
+                        targetMember.delete();
+                        return workspaceMemberRepository.save(targetMember);
+                    }
+                })
+                .then();
+    }
+
+    /**
+     * 본인 워크스페이스 탈퇴
+     */
+    @Transactional
+    public Mono<Void> leaveMember(
+            String workspaceId,
+            String currentUserId) {
+        return workspaceMemberRepository
+                .findByWorkspaceIdAndUserIdAndNotDeleted(
+                        workspaceId, currentUserId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.MEMBER_NOT_FOUND)))
+                .flatMap(myMember -> workspaceMemberRepository
+                        .countByWorkspaceIdAndNotDeleted(
+                                workspaceId)
+                        .flatMap(totalMembers -> {
+                            // 멤버가 1명만 있으면 워크스페이스 삭제
+                            if (totalMembers == 1) {
+                                return this.deleteWorkspace(workspaceId,
+                                        currentUserId);
+                            }
+
+                            // ADMIN이고 ADMIN이 1명만 남았으면 탈퇴 불가
+                            if (myMember.isAdmin()) {
+                                return workspaceMemberRepository
+                                        .countByWorkspaceIdAndRoleAndNotDeleted(
+                                                workspaceId,
+                                                WorkspaceRole.ADMIN.getValue())
+                                        .flatMap(adminCount -> {
+                                            if (adminCount <= 1) {
+                                                return Mono.error(
+                                                        new BusinessException(
+                                                                ErrorCode.LAST_ADMIN_CANNOT_LEAVE));
+                                            }
+                                            myMember.delete();
+                                            return workspaceMemberRepository
+                                                    .save(myMember).then();
+                                        });
+                            } else {
+                                myMember.delete();
+                                return workspaceMemberRepository.save(myMember)
+                                        .then();
+                            }
+                        }));
+    }
+
+    /**
+     * 멤버 권한 변경
+     */
+    @Transactional
+    public Mono<WorkspaceMemberResponse> updateMemberRole(
+            String workspaceId,
+            String memberId,
+            UpdateMemberRoleRequest request,
+            String currentUserId) {
+        return validateAdminAccess(workspaceId, currentUserId)
+                .then(workspaceMemberRepository.findByIdAndNotDeleted(memberId))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.MEMBER_NOT_FOUND)))
+                .flatMap(targetMember -> {
+                    // ADMIN -> MEMBER 변경인 경우, 마지막 ADMIN 체크
+                    if (targetMember.isAdmin()
+                            && request.role() == WorkspaceRole.MEMBER) {
+                        return workspaceMemberRepository
+                                .countByWorkspaceIdAndRoleAndNotDeleted(
+                                        workspaceId,
+                                        WorkspaceRole.ADMIN.getValue())
+                                .flatMap(adminCount -> {
+                                    if (adminCount <= 1) {
+                                        return Mono.error(new BusinessException(
+                                                ErrorCode.LAST_ADMIN_CANNOT_CHANGE_ROLE));
+                                    }
+                                    targetMember.updateRole(request.role());
+                                    return workspaceMemberRepository
+                                            .save(targetMember);
+                                });
+                    } else {
+                        targetMember.updateRole(request.role());
+                        return workspaceMemberRepository.save(targetMember);
+                    }
+                })
+                .flatMap(updatedMember -> userRepository
+                        .findById(updatedMember.getUserId())
+                        .map(user -> WorkspaceMemberResponse.of(updatedMember,
+                                user)));
     }
 
 }

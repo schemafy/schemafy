@@ -17,8 +17,9 @@ CREATE TABLE IF NOT EXISTS workspace_members (
     workspace_id CHAR(26)     NOT NULL,
     user_id      CHAR(26)     NOT NULL,
     role         VARCHAR(32)  NOT NULL,
-    joined_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at   TIMESTAMP    NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at  TIMESTAMP    NULL,
     CONSTRAINT pk_workspace_members PRIMARY KEY (id),
     CONSTRAINT uq_workspace_members_workspace_user UNIQUE (workspace_id, user_id),
     CONSTRAINT ck_workspace_members_role CHECK (role IN ('admin','member'))

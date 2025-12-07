@@ -406,4 +406,101 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
                                 .description("전체 페이지 수")));
     }
 
+    // ========== POST /api/workspaces/{workspaceId}/members - 멤버 추가 ==========
+
+    /**
+     * 멤버 추가 경로 파라미터
+     */
+    public static Snippet addMemberPathParameters() {
+        return pathParameters(
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"));
+    }
+
+    /**
+     * 멤버 추가 요청 헤더
+     */
+    public static Snippet addMemberRequestHeaders() {
+        return createRequestHeadersSnippet(authorizationHeader());
+    }
+
+    /**
+     * 멤버 추가 요청 바디
+     */
+    public static Snippet addMemberRequest() {
+        return requestFields(
+                fieldWithPath("userId").type(JsonFieldType.STRING)
+                        .description("추가할 사용자의 ID (필수)"),
+                fieldWithPath("role").type(JsonFieldType.STRING)
+                        .description("부여할 역할 (ADMIN, MEMBER)"));
+    }
+
+    /**
+     * 멤버 추가 응답 헤더
+     */
+    public static Snippet addMemberResponseHeaders() {
+        return createResponseHeadersSnippet(commonResponseHeaders());
+    }
+
+    /**
+     * 멤버 추가 응답
+     */
+    public static Snippet addMemberResponse() {
+        return createResponseFieldsSnippet(
+                successResponseFields(
+                        fieldWithPath("result.id").type(JsonFieldType.STRING)
+                                .description("생성된 멤버십 ID (ULID)"),
+                        fieldWithPath("result.userId")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 ID (ULID)"),
+                        fieldWithPath("result.userName")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 이름"),
+                        fieldWithPath("result.userEmail")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 이메일"),
+                        fieldWithPath("result.role").type(JsonFieldType.STRING)
+                                .description("할당된 역할"),
+                        fieldWithPath("result.joinedAt")
+                                .type(JsonFieldType.STRING)
+                                .description("가입 시각 (ISO 8601)")));
+    }
+
+    // ========== DELETE /api/workspaces/{workspaceId}/members/{memberId} - 멤버 추방 ==========
+
+    /**
+     * 멤버 추방 경로 파라미터
+     */
+    public static Snippet removeMemberPathParameters() {
+        return pathParameters(
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
+                parameterWithName("memberId").description("멤버십 ID (ULID)"));
+    }
+
+    /**
+     * 멤버 추방 요청 헤더
+     */
+    public static Snippet removeMemberRequestHeaders() {
+        return createRequestHeadersSnippet(authorizationHeader());
+    }
+
+    // ========== DELETE /api/workspaces/{workspaceId}/members/me - 워크스페이스 탈퇴 ==========
+
+    /**
+     * 워크스페이스 탈퇴 경로 파라미터
+     */
+    public static Snippet leaveMemberPathParameters() {
+        return pathParameters(
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"));
+    }
+
+    /**
+     * 워크스페이스 탈퇴 요청 헤더
+     */
+    public static Snippet leaveMemberRequestHeaders() {
+        return createRequestHeadersSnippet(authorizationHeader());
+    }
+
 }

@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.*;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.PageResponse;
+import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
+import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
@@ -84,6 +86,51 @@ public class WorkspaceController {
             Authentication authentication) {
         String userId = authentication.getName();
         return workspaceService.getMembers(id, userId, page, size)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/workspaces/{workspaceId}/members")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<BaseResponse<WorkspaceMemberResponse>> addMember(
+            @PathVariable String workspaceId,
+            @Valid @RequestBody AddWorkspaceMemberRequest request,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        return workspaceService.addMember(workspaceId, request, userId)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/workspaces/{workspaceId}/members/{memberId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> removeMember(
+            @PathVariable String workspaceId,
+            @PathVariable String memberId,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        return workspaceService.removeMember(workspaceId, memberId, userId);
+    }
+
+    @DeleteMapping("/workspaces/{workspaceId}/members/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> leaveMember(
+            @PathVariable String workspaceId,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        return workspaceService.leaveMember(workspaceId, userId);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/workspaces/{workspaceId}/members/{memberId}/role")
+    public Mono<BaseResponse<WorkspaceMemberResponse>> updateMemberRole(
+            @PathVariable String workspaceId,
+            @PathVariable String memberId,
+            @Valid @RequestBody UpdateMemberRoleRequest request,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        return workspaceService
+                .updateMemberRole(workspaceId, memberId, request, userId)
                 .map(BaseResponse::success);
     }
 

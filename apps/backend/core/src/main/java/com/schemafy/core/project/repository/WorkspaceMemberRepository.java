@@ -24,7 +24,7 @@ public interface WorkspaceMemberRepository
             SELECT * FROM workspace_members
             WHERE user_id = :userId
               AND deleted_at IS NULL
-            ORDER BY joined_at DESC
+            ORDER BY created_at DESC
             """)
     Flux<WorkspaceMember> findByUserIdAndNotDeleted(String userId);
 
@@ -32,7 +32,7 @@ public interface WorkspaceMemberRepository
             SELECT * FROM workspace_members
             WHERE workspace_id = :workspaceId
               AND deleted_at IS NULL
-            ORDER BY joined_at ASC
+            ORDER BY created_at ASC
             LIMIT :limit OFFSET :offset
             """)
     Flux<WorkspaceMember> findByWorkspaceIdAndNotDeleted(String workspaceId,
@@ -62,5 +62,21 @@ public interface WorkspaceMemberRepository
             """)
     Mono<Boolean> existsByWorkspaceIdAndUserIdAndNotDeleted(String workspaceId,
             String userId);
+
+    @Query("""
+            SELECT COUNT(*) FROM workspace_members
+            WHERE workspace_id = :workspaceId
+              AND role = :role
+              AND deleted_at IS NULL
+            """)
+    Mono<Long> countByWorkspaceIdAndRoleAndNotDeleted(String workspaceId,
+            String role);
+
+    @Query("""
+            SELECT * FROM workspace_members
+            WHERE id = :id
+              AND deleted_at IS NULL
+            """)
+    Mono<WorkspaceMember> findByIdAndNotDeleted(String id);
 
 }
