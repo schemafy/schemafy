@@ -95,13 +95,14 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                     log.info(
                             "[CollaborationWebSocketHandler] WebSocket disconnected: sessionId={}, signal={}",
                             session.getId(), signalType);
-                    presenceService.removeSession(projectId, session.getId())
-                            .doOnError(e -> log.warn(
-                                    "[CollaborationWebSocketHandler] Failed to remove session: sessionId={}, error={}",
-                                    session.getId(), e.getMessage()))
-                            .subscribe();
                 })
-                .then();
+                .onErrorResume(e -> Mono.empty())
+                .then(presenceService.removeSession(projectId, session.getId())
+                        .timeout(Duration.ofSeconds(5))
+                        .doOnError(e -> log.warn(
+                                "[CollaborationWebSocketHandler] Failed to remove session: sessionId={}, error={}",
+                                session.getId(), e.getMessage()))
+                        .onErrorResume(e -> Mono.empty()));
     }
 
     private Mono<Void> handleUnauthenticated(WebSocketSession session) {
