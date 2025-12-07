@@ -1,9 +1,9 @@
 package com.schemafy.core.project.controller.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 public record UpdateWorkspaceRequest(

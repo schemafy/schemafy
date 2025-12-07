@@ -8,16 +8,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
-import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
 import com.schemafy.core.project.controller.dto.response.ShareLinkAccessResponse;
 import com.schemafy.core.project.controller.dto.response.ShareLinkResponse;
+import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkAccessLogRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.ShareLinkAccessLog;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,12 +86,10 @@ public class ShareLinkService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
                 .flatMap(shareLink -> {
-                    // Verify URL projectId matches share link's project
                     if (!shareLink.getProjectId().equals(projectId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.INVALID_INPUT_VALUE));
+                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
-                    // Validate ownership of the share link's actual project
                     return validateProjectOwnerAccess(workspaceId,
                             shareLink.getProjectId(), userId)
                             .thenReturn(ShareLinkResponse.from(shareLink));
@@ -106,17 +104,16 @@ public class ShareLinkService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
                 .flatMap(shareLink -> {
-                    // Verify URL projectId matches share link's project
                     if (!shareLink.getProjectId().equals(projectId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.INVALID_INPUT_VALUE));
+                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
-                    // Validate ownership of the share link's actual project
                     return validateProjectOwnerAccess(workspaceId,
                             shareLink.getProjectId(), userId)
                             .then(Mono.defer(() -> {
                                 shareLink.revoke();
-                                return shareLinkRepository.save(shareLink).then();
+                                return shareLinkRepository.save(shareLink)
+                                        .then();
                             }));
                 });
     }
@@ -129,17 +126,16 @@ public class ShareLinkService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
                 .flatMap(shareLink -> {
-                    // Verify URL projectId matches share link's project
                     if (!shareLink.getProjectId().equals(projectId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.INVALID_INPUT_VALUE));
+                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
-                    // Validate ownership of the share link's actual project
                     return validateProjectOwnerAccess(workspaceId,
                             shareLink.getProjectId(), userId)
                             .then(Mono.defer(() -> {
                                 shareLink.delete();
-                                return shareLinkRepository.save(shareLink).then();
+                                return shareLinkRepository.save(shareLink)
+                                        .then();
                             }));
                 });
     }
@@ -159,7 +155,8 @@ public class ShareLinkService {
                     return projectRepository
                             .findByIdAndNotDeleted(shareLink.getProjectId())
                             .switchIfEmpty(Mono.error(
-                                    new BusinessException(ErrorCode.NOT_FOUND)))
+                                    new BusinessException(
+                                            ErrorCode.PROJECT_NOT_FOUND)))
                             .map(project -> {
                                 ShareLinkRole effectiveRole = (userId == null)
                                         ? ShareLinkRole.VIEWER
@@ -203,15 +200,16 @@ public class ShareLinkService {
             String projectId, String userId) {
         return projectRepository.findByIdAndNotDeleted(projectId)
                 .switchIfEmpty(
-                        Mono.error(new BusinessException(ErrorCode.NOT_FOUND)))
+                        Mono.error(new BusinessException(
+                                ErrorCode.PROJECT_NOT_FOUND)))
                 .flatMap(project -> {
                     if (!project.belongsToWorkspace(workspaceId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.INVALID_INPUT_VALUE));
+                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
                     if (!project.isOwner(userId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.ACCESS_DENIED));
+                                ErrorCode.PROJECT_OWNER_ONLY));
                     }
                     return Mono.empty();
                 });

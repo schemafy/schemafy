@@ -22,13 +22,13 @@ import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
 
 import reactor.test.StepVerifier;
 

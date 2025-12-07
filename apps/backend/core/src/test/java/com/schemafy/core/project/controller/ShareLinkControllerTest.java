@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
-import com.schemafy.core.RestDocsConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.core.RestDocsConfiguration;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
@@ -150,7 +150,9 @@ class ShareLinkControllerTest {
                 null);
 
         webTestClient.post()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links", testWorkspace.getId(), testProject.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+                        testWorkspace.getId(), testProject.getId())
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isCreated().expectBody()
@@ -214,7 +216,9 @@ class ShareLinkControllerTest {
         createTestShareLink(ShareLinkRole.EDITOR);
 
         webTestClient.get()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=0&size=20", testWorkspace.getId(), testProject.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=0&size=20",
+                        testWorkspace.getId(), testProject.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isOk().expectBody()
                 .consumeWith(document("share-link-list",
@@ -234,7 +238,10 @@ class ShareLinkControllerTest {
         ShareLink shareLink = createTestShareLink(ShareLinkRole.VIEWER);
 
         webTestClient.get()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}", testWorkspace.getId(), testProject.getId(), shareLink.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
+                        testWorkspace.getId(), testProject.getId(),
+                        shareLink.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isOk().expectBody()
                 .consumeWith(document("share-link-get",
@@ -262,7 +269,10 @@ class ShareLinkControllerTest {
         ShareLink shareLink = createTestShareLink(ShareLinkRole.VIEWER);
 
         webTestClient.patch()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke", testWorkspace.getId(), testProject.getId(), shareLink.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
+                        testWorkspace.getId(), testProject.getId(),
+                        shareLink.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -295,7 +305,10 @@ class ShareLinkControllerTest {
         ShareLink shareLink = createTestShareLink(ShareLinkRole.VIEWER);
 
         webTestClient.delete()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}", testWorkspace.getId(), testProject.getId(), shareLink.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
+                        testWorkspace.getId(), testProject.getId(),
+                        shareLink.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isNoContent()
                 .expectBody()

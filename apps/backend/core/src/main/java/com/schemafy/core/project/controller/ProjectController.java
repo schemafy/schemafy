@@ -21,14 +21,14 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping(ApiPath.API + "/workspaces/{workspaceId}/projects")
+@RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class ProjectController {
 
     private final ProjectService projectService;
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
-    @PostMapping
+    @PostMapping("/workspaces/{workspaceId}/projects")
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<BaseResponse<ProjectResponse>> createProject(
             @PathVariable String workspaceId,
@@ -40,11 +40,11 @@ public class ProjectController {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping
+    @GetMapping("/workspaces/{workspaceId}/projects")
     public Mono<BaseResponse<PageResponse<ProjectSummaryResponse>>> getProjects(
             @PathVariable String workspaceId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "5") int size,
             Authentication authentication) {
         String userId = authentication.getName();
         return projectService.getProjects(workspaceId, userId, page, size)
@@ -52,7 +52,7 @@ public class ProjectController {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/{id}")
+    @GetMapping("/workspaces/{workspaceId}/projects/{id}")
     public Mono<BaseResponse<ProjectResponse>> getProject(
             @PathVariable String workspaceId, @PathVariable String id,
             Authentication authentication) {
@@ -62,7 +62,7 @@ public class ProjectController {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
-    @PutMapping("/{id}")
+    @PutMapping("/workspaces/{workspaceId}/projects/{id}")
     public Mono<BaseResponse<ProjectResponse>> updateProject(
             @PathVariable String workspaceId, @PathVariable String id,
             @Valid @RequestBody UpdateProjectRequest request,
@@ -73,7 +73,7 @@ public class ProjectController {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/workspaces/{workspaceId}/projects/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteProject(@PathVariable String workspaceId,
             @PathVariable String id, Authentication authentication) {
@@ -82,11 +82,11 @@ public class ProjectController {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/{id}/members")
+    @GetMapping("/workspaces/{workspaceId}/projects/{id}/members")
     public Mono<BaseResponse<PageResponse<ProjectMemberResponse>>> getMembers(
             @PathVariable String workspaceId, @PathVariable String id,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "5") int size,
             Authentication authentication) {
         String userId = authentication.getName();
         return projectService.getMembers(workspaceId, id, userId, page, size)

@@ -1,5 +1,18 @@
 package com.schemafy.core.project.service;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
@@ -17,19 +30,9 @@ import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
+
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -165,7 +168,7 @@ class ShareLinkServiceTest {
             StepVerifier.create(result)
                     .expectErrorMatches(e -> e instanceof BusinessException &&
                             ((BusinessException) e)
-                                    .getErrorCode() == ErrorCode.ACCESS_DENIED)
+                                    .getErrorCode() == ErrorCode.PROJECT_OWNER_ONLY)
                     .verify();
         }
 
@@ -386,7 +389,8 @@ class ShareLinkServiceTest {
             // Create with future date first
             ShareLink shareLink = ShareLink.create(testProject.getId(),
                     tokenHash,
-                    ShareLinkRole.VIEWER, Instant.now().plus(1, ChronoUnit.DAYS));
+                    ShareLinkRole.VIEWER,
+                    Instant.now().plus(1, ChronoUnit.DAYS));
             shareLinkRepository.save(shareLink).block();
 
             // Change expiresAt to past using reflection

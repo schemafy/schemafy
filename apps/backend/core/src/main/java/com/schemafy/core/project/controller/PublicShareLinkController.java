@@ -1,5 +1,7 @@
 package com.schemafy.core.project.controller;
 
+import java.net.InetSocketAddress;
+
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
@@ -17,13 +19,13 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping(ApiPath.PUBLIC_API + "/share")
+@RequestMapping(ApiPath.PUBLIC_API)
 @RequiredArgsConstructor
 public class PublicShareLinkController {
 
     private final ShareLinkService shareLinkService;
 
-    @GetMapping("/{token}")
+    @GetMapping("/share/{token}")
     public Mono<BaseResponse<ShareLinkAccessResponse>> accessByToken(
             @PathVariable String token, ServerHttpRequest request,
             @Nullable Authentication authentication) {
@@ -42,9 +44,13 @@ public class PublicShareLinkController {
         if (xForwardedFor != null && !xForwardedFor.isBlank()) {
             return xForwardedFor.split(",")[0].trim();
         }
-        return request.getRemoteAddress() != null
-                ? request.getRemoteAddress().getAddress().getHostAddress()
-                : "unknown";
+
+        InetSocketAddress remoteAddress = request.getRemoteAddress();
+        if (remoteAddress != null && remoteAddress.getAddress() != null) {
+            return remoteAddress.getAddress().getHostAddress();
+        }
+
+        return "unknown";
     }
 
 }

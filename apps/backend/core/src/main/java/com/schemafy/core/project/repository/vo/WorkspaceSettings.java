@@ -3,19 +3,16 @@ package com.schemafy.core.project.repository.vo;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public record WorkspaceSettings(
-        @NotNull @Pattern(regexp = "^(light|dark)$") String theme,
-        @NotNull @Pattern(regexp = "^(ko|en)$") String language,
-        @JsonProperty("defaultProjectAccess") @Pattern(regexp = "^(viewer|editor)$") String defaultProjectAccess) {
+        @NotNull @Pattern(regexp = "^(ko|en)$") String language) {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static WorkspaceSettings defaultSettings() {
-        return new WorkspaceSettings("light", "ko", "viewer");
+        return new WorkspaceSettings("ko");
     }
 
     public String toJson() {
@@ -40,16 +37,8 @@ public record WorkspaceSettings(
     }
 
     public void validate() {
-        if (theme == null || !theme.matches("^(light|dark)$")) {
-            throw new IllegalArgumentException("Invalid theme: " + theme);
-        }
         if (language == null || !language.matches("^(ko|en)$")) {
             throw new IllegalArgumentException("Invalid language: " + language);
-        }
-        if (defaultProjectAccess == null
-                || !defaultProjectAccess.matches("^(viewer|editor)$")) {
-            throw new IllegalArgumentException(
-                    "Invalid defaultProjectAccess: " + defaultProjectAccess);
         }
     }
 

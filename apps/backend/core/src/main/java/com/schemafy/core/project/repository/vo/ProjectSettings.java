@@ -5,13 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 
-public record ProjectSettings(String theme, String language,
-        String defaultView) {
+public record ProjectSettings(String theme, String language) {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static ProjectSettings defaultSettings() {
-        return new ProjectSettings("light", "en", "table");
+        return new ProjectSettings("light", "en");
     }
 
     public void validate() {
@@ -19,9 +18,6 @@ public record ProjectSettings(String theme, String language,
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         if (language == null || language.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-        if (defaultView == null || defaultView.isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

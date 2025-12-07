@@ -26,14 +26,13 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping(ApiPath.API
-        + "/workspaces/{workspaceId}/projects/{projectId}/share-links")
+@RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class ShareLinkController {
 
     private final ShareLinkService shareLinkService;
 
-    @PostMapping
+    @PostMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links")
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<BaseResponse<ShareLinkResponse>> createShareLink(
             @PathVariable String workspaceId, @PathVariable String projectId,
@@ -45,7 +44,7 @@ public class ShareLinkController {
                 .map(BaseResponse::success);
     }
 
-    @GetMapping
+    @GetMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links")
     public Mono<BaseResponse<PageResponse<ShareLinkResponse>>> getShareLinks(
             @PathVariable String workspaceId, @PathVariable String projectId,
             @RequestParam(defaultValue = "0") int page,
@@ -57,7 +56,7 @@ public class ShareLinkController {
                 .map(BaseResponse::success);
     }
 
-    @GetMapping("/{shareLinkId}")
+    @GetMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}")
     public Mono<BaseResponse<ShareLinkResponse>> getShareLink(
             @PathVariable String workspaceId, @PathVariable String projectId,
             @PathVariable String shareLinkId, Authentication authentication) {
@@ -67,7 +66,7 @@ public class ShareLinkController {
                 .map(BaseResponse::success);
     }
 
-    @PatchMapping("/{shareLinkId}/revoke")
+    @PatchMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke")
     public Mono<BaseResponse<Void>> revokeShareLink(
             @PathVariable String workspaceId, @PathVariable String projectId,
             @PathVariable String shareLinkId, Authentication authentication) {
@@ -77,7 +76,7 @@ public class ShareLinkController {
                 .thenReturn(BaseResponse.success(null));
     }
 
-    @DeleteMapping("/{shareLinkId}")
+    @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteShareLink(@PathVariable String workspaceId,
             @PathVariable String projectId, @PathVariable String shareLinkId,

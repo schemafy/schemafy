@@ -85,15 +85,30 @@ public enum ErrorCode {
     WORKSPACE_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "W008",
             "관리자 권한이 필요합니다."),
 
+    // PROJECT
+    PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "프로젝트를 찾을 수 없습니다."),
+    PROJECT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P002", "프로젝트 접근 권한이 없습니다."),
+    PROJECT_OWNER_ONLY(HttpStatus.FORBIDDEN, "P003",
+            "프로젝트 소유자만 수행할 수 있는 작업입니다."),
+    PROJECT_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "P004", "프로젝트 관리자 권한이 필요합니다."),
+    PROJECT_WORKSPACE_MISMATCH(HttpStatus.BAD_REQUEST, "P005",
+            "프로젝트가 해당 워크스페이스에 속하지 않습니다."),
+    PROJECT_SETTINGS_TOO_LARGE(HttpStatus.BAD_REQUEST, "P006",
+            "프로젝트 설정 크기가 너무 큽니다. (최대 64KB)"),
+    PROJECT_ALREADY_DELETED(HttpStatus.CONFLICT, "P007", "이미 삭제된 프로젝트입니다."),
+
     // SHARE_LINK
     SHARE_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "공유 링크를 찾을 수 없습니다."),
     SHARE_LINK_EXPIRED(HttpStatus.GONE, "S002", "공유 링크가 만료되었습니다."),
     SHARE_LINK_REVOKED(HttpStatus.FORBIDDEN, "S003", "공유 링크가 비활성화되었습니다."),
     SHARE_LINK_INVALID(HttpStatus.UNAUTHORIZED, "S004", "유효하지 않은 공유 링크입니다."),
-    SHARE_LINK_INVALID_PROJECT_ID(HttpStatus.BAD_REQUEST, "S005", "프로젝트 ID가 유효하지 않습니다."),
-    SHARE_LINK_INVALID_TOKEN_HASH(HttpStatus.BAD_REQUEST, "S006", "토큰 해시가 유효하지 않습니다."),
+    SHARE_LINK_INVALID_PROJECT_ID(HttpStatus.BAD_REQUEST, "S005",
+            "프로젝트 ID가 유효하지 않습니다."),
+    SHARE_LINK_INVALID_TOKEN_HASH(HttpStatus.BAD_REQUEST, "S006",
+            "토큰 해시가 유효하지 않습니다."),
     SHARE_LINK_INVALID_ROLE(HttpStatus.BAD_REQUEST, "S007", "권한이 유효하지 않습니다."),
-    SHARE_LINK_INVALID_EXPIRATION(HttpStatus.BAD_REQUEST, "S008", "만료 시간은 미래 시간이어야 합니다.");
+    SHARE_LINK_INVALID_EXPIRATION(HttpStatus.BAD_REQUEST, "S008",
+            "만료 시간은 미래 시간이어야 합니다.");
 
     private final HttpStatus status;
     private final String code;

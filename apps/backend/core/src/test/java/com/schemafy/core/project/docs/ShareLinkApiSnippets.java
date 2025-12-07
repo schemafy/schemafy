@@ -112,7 +112,8 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      */
     public static Snippet createShareLinkPathParameters() {
         return pathParameters(
-                parameterWithName("workspaceId").description("워크스페이스 ID (ULID)"),
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
                 parameterWithName("projectId").description("프로젝트 ID (ULID)"));
     }
 
@@ -129,7 +130,8 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
     public static Snippet createShareLinkRequest() {
         return requestFields(
                 fieldWithPath("role").type(JsonFieldType.STRING)
-                        .description("부여할 역할 (viewer, commenter, editor 중 하나, 필수)"),
+                        .description(
+                                "부여할 역할 (viewer, commenter, editor 중 하나, 필수)"),
                 fieldWithPath("expiresAt").type(JsonFieldType.STRING)
                         .description("만료 시각 (ISO 8601 형식, 선택 사항)").optional());
     }
@@ -145,7 +147,8 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      * 공유 링크 생성 응답
      */
     public static Snippet createShareLinkResponse() {
-        return createResponseFieldsSnippet(successResponseFields(shareLinkResponseFields()));
+        return createResponseFieldsSnippet(
+                successResponseFields(shareLinkResponseFields()));
     }
 
     // ========== GET /api/workspaces/{workspaceId}/projects/{projectId}/share-links - 공유 링크 목록 조회 ==========
@@ -176,7 +179,8 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      */
     public static Snippet getShareLinksPathParameters() {
         return pathParameters(
-                parameterWithName("workspaceId").description("워크스페이스 ID (ULID)"),
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
                 parameterWithName("projectId").description("프로젝트 ID (ULID)"));
     }
 
@@ -192,8 +196,10 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      */
     public static Snippet getShareLinksQueryParameters() {
         return queryParameters(
-                parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)").optional(),
-                parameterWithName("size").description("페이지 크기 (기본값: 20, 최대: 100)").optional());
+                parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)")
+                        .optional(),
+                parameterWithName("size")
+                        .description("페이지 크기 (기본값: 20, 최대: 100)").optional());
     }
 
     /**
@@ -210,19 +216,23 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         return createResponseFieldsSnippet(
                 successResponseFields(concat(
                         new FieldDescriptor[] {
-                            fieldWithPath("result.content[]").type(JsonFieldType.ARRAY)
+                            fieldWithPath("result.content[]")
+                                    .type(JsonFieldType.ARRAY)
                                     .description("공유 링크 목록"),
-                            fieldWithPath("result.page").type(JsonFieldType.NUMBER)
+                            fieldWithPath("result.page")
+                                    .type(JsonFieldType.NUMBER)
                                     .description("현재 페이지 번호 (0부터 시작)"),
-                            fieldWithPath("result.size").type(JsonFieldType.NUMBER)
+                            fieldWithPath("result.size")
+                                    .type(JsonFieldType.NUMBER)
                                     .description("페이지 크기"),
-                            fieldWithPath("result.totalElements").type(JsonFieldType.NUMBER)
+                            fieldWithPath("result.totalElements")
+                                    .type(JsonFieldType.NUMBER)
                                     .description("전체 공유 링크 개수"),
-                            fieldWithPath("result.totalPages").type(JsonFieldType.NUMBER)
+                            fieldWithPath("result.totalPages")
+                                    .type(JsonFieldType.NUMBER)
                                     .description("전체 페이지 수")
                         },
-                        shareLinkSummaryFields("result.content[].")
-                )));
+                        shareLinkSummaryFields("result.content[]."))));
     }
 
     // ========== GET /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 상세 조회 ==========
@@ -252,9 +262,11 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      */
     public static Snippet getShareLinkPathParameters() {
         return pathParameters(
-                parameterWithName("workspaceId").description("워크스페이스 ID (ULID)"),
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
                 parameterWithName("projectId").description("프로젝트 ID (ULID)"),
-                parameterWithName("shareLinkId").description("공유 링크 ID (ULID)"));
+                parameterWithName("shareLinkId")
+                        .description("공유 링크 ID (ULID)"));
     }
 
     /**
@@ -275,7 +287,8 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      * 공유 링크 상세 조회 응답
      */
     public static Snippet getShareLinkResponse() {
-        return createResponseFieldsSnippet(successResponseFields(shareLinkResponseFields()));
+        return createResponseFieldsSnippet(
+                successResponseFields(shareLinkResponseFields()));
     }
 
     // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke - 공유 링크 비활성화 ==========
@@ -307,9 +320,11 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      */
     public static Snippet revokeShareLinkPathParameters() {
         return pathParameters(
-                parameterWithName("workspaceId").description("워크스페이스 ID (ULID)"),
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
                 parameterWithName("projectId").description("프로젝트 ID (ULID)"),
-                parameterWithName("shareLinkId").description("공유 링크 ID (ULID)"));
+                parameterWithName("shareLinkId")
+                        .description("공유 링크 ID (ULID)"));
     }
 
     /**
@@ -330,7 +345,8 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      * 공유 링크 비활성화 응답
      */
     public static Snippet revokeShareLinkResponse() {
-        return createResponseFieldsSnippet(successResponseFields(shareLinkResponseFields()));
+        return createResponseFieldsSnippet(
+                successResponseFields(shareLinkResponseFields()));
     }
 
     // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 삭제 ==========
@@ -361,9 +377,11 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      */
     public static Snippet deleteShareLinkPathParameters() {
         return pathParameters(
-                parameterWithName("workspaceId").description("워크스페이스 ID (ULID)"),
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
                 parameterWithName("projectId").description("프로젝트 ID (ULID)"),
-                parameterWithName("shareLinkId").description("공유 링크 ID (ULID)"));
+                parameterWithName("shareLinkId")
+                        .description("공유 링크 ID (ULID)"));
     }
 
     /**
@@ -377,7 +395,8 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
      * 공유 링크 삭제 응답
      */
     public static Snippet deleteShareLinkResponse() {
-        return createResponseFieldsSnippet(successResponseFieldsWithNullResult());
+        return createResponseFieldsSnippet(
+                successResponseFieldsWithNullResult());
     }
 
 }

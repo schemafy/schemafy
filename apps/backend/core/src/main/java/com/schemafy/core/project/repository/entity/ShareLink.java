@@ -38,16 +38,19 @@ public class ShareLink extends BaseEntity {
     public static ShareLink create(String projectId, byte[] tokenHash,
             ShareLinkRole role, Instant expiresAt) {
         if (projectId == null || projectId.isBlank()) {
-            throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
+            throw new BusinessException(
+                    ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
         }
         if (tokenHash == null || tokenHash.length != 32) {
-            throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_TOKEN_HASH);
+            throw new BusinessException(
+                    ErrorCode.SHARE_LINK_INVALID_TOKEN_HASH);
         }
         if (role == null) {
             throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_ROLE);
         }
         if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
-            throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_EXPIRATION);
+            throw new BusinessException(
+                    ErrorCode.SHARE_LINK_INVALID_EXPIRATION);
         }
 
         ShareLink shareLink = new ShareLink(

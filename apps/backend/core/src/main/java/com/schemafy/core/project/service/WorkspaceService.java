@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
-import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
@@ -20,6 +19,7 @@ import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.repository.vo.WorkspaceSettings;
+import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -61,22 +61,15 @@ public class WorkspaceService {
                                 workspace -> workspaceMemberRepository
                                         .countByWorkspaceIdAndNotDeleted(
                                                 workspace.getId())
-                                        .map(count -> new WorkspaceSummaryResponse(
-                                                workspace.getId(),
-                                                workspace.getName(),
-                                                workspace.getDescription(),
-                                                workspace.getOwnerId(),
-                                                member.getRole(), count,
-                                                workspace.getCreatedAt(),
-                                                workspace.getUpdatedAt()))))
+                                        .map(memberCount -> WorkspaceSummaryResponse
+                                                .of(workspace, memberCount))))
                 .collectList().flatMap(allWorkspaces -> {
                     int offset = page * size;
                     int totalElements = allWorkspaces.size();
                     int start = Math.min(offset, totalElements);
                     int end = Math.min(offset + size, totalElements);
                     List<WorkspaceSummaryResponse> pagedContent = allWorkspaces
-                            .subList(
-                                    start, end);
+                            .subList(start, end);
                     return Mono.just(PageResponse.of(pagedContent, page, size,
                             totalElements));
                 });
@@ -140,15 +133,11 @@ public class WorkspaceService {
                             .findByWorkspaceIdAndNotDeleted(
                                     workspaceId, size, offset)
                             .flatMap(
-                                    member -> userRepository
-                                            .findById(member.getUserId())
-                                            .map(user -> new WorkspaceMemberResponse(
-                                                    member.getId(),
-                                                    user.getId(),
-                                                    user.getName(),
-                                                    user.getEmail(),
-                                                    member.getRole(),
-                                                    member.getJoinedAt())))
+                                    workSpaceMember -> userRepository
+                                            .findById(
+                                                    workSpaceMember.getUserId())
+                                            .map(user -> WorkspaceMemberResponse
+                                                    .of(workSpaceMember, user)))
                             .collectList()
                             .map(members -> PageResponse.of(members, page, size,
                                     totalElements));

@@ -2,7 +2,6 @@ package com.schemafy.core.project.controller;
 
 import java.util.HashMap;
 
-import com.schemafy.core.RestDocsConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.core.RestDocsConfiguration;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
@@ -137,7 +137,8 @@ class ProjectControllerTest {
                 "Test Description", ProjectSettings.defaultSettings());
 
         webTestClient.post()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects", testWorkspaceId)
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects", testWorkspaceId)
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isCreated().expectBody()
@@ -198,7 +199,9 @@ class ProjectControllerTest {
         projectMemberRepository.save(member).block();
 
         webTestClient.get()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects?page=0&size=10", testWorkspaceId)
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects?page=0&size=10",
+                        testWorkspaceId)
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isOk().expectBody()
                 .consumeWith(document("project-list",
@@ -226,7 +229,9 @@ class ProjectControllerTest {
         projectMemberRepository.save(member).block();
 
         webTestClient.get()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{id}", testWorkspaceId, project.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{id}",
+                        testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isOk().expectBody()
                 .consumeWith(document("project-get",
@@ -271,10 +276,12 @@ class ProjectControllerTest {
 
         UpdateProjectRequest request = new UpdateProjectRequest(
                 "Updated Project", "Updated Description",
-                new ProjectSettings("dark", "en", "board"));
+                new ProjectSettings("dark", "en"));
 
         webTestClient.put()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{id}", testWorkspaceId, project.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{id}",
+                        testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isOk().expectBody()
@@ -327,7 +334,9 @@ class ProjectControllerTest {
         projectMemberRepository.save(member).block();
 
         webTestClient.delete()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{id}", testWorkspaceId, project.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{id}",
+                        testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isNoContent()
                 .expectBody()
@@ -375,7 +384,9 @@ class ProjectControllerTest {
         projectMemberRepository.save(member).block();
 
         webTestClient.get()
-                .uri(ApiPath.API.replace("{version}", "v1.0") + "/workspaces/{workspaceId}/projects/{id}/members?page=0&size=20", testWorkspaceId, project.getId())
+                .uri(ApiPath.API.replace("{version}", "v1.0")
+                        + "/workspaces/{workspaceId}/projects/{id}/members?page=0&size=20",
+                        testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
                 .expectStatus().isOk().expectBody()
                 .consumeWith(document("project-members",

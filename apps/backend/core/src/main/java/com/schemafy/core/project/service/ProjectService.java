@@ -15,12 +15,12 @@ import com.schemafy.core.project.controller.dto.response.ProjectResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectSummaryResponse;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
+import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -68,14 +68,11 @@ public class ProjectService {
                                 .flatMap(project -> projectMemberRepository
                                         .countByProjectIdAndNotDeleted(
                                                 project.getId())
-                                        .map(count -> new ProjectSummaryResponse(
-                                                project.getId(),
-                                                project.getWorkspaceId(),
-                                                project.getName(),
-                                                project.getDescription(),
-                                                member.getRole(), count,
-                                                project.getCreatedAt(),
-                                                project.getUpdatedAt()))))
+                                        .map(count -> ProjectSummaryResponse.of(
+                                                project,
+                                                ProjectRole.fromString(
+                                                        member.getRole()),
+                                                count))))
                         .collectList().flatMap(allProjects -> {
                             int offset = page * size;
                             int totalElements = allProjects.size();
@@ -96,11 +93,12 @@ public class ProjectService {
                 .then(validateProjectMemberAccess(projectId, userId))
                 .then(projectRepository.findByIdAndNotDeleted(projectId))
                 .switchIfEmpty(
-                        Mono.error(new BusinessException(ErrorCode.NOT_FOUND)))
+                        Mono.error(new BusinessException(
+                                ErrorCode.PROJECT_NOT_FOUND)))
                 .flatMap(project -> {
                     if (!project.belongsToWorkspace(workspaceId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.INVALID_INPUT_VALUE));
+                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
                     return Mono.just(ProjectResponse.from(project));
                 });
@@ -113,11 +111,12 @@ public class ProjectService {
                 .then(validateProjectAdminAccess(projectId, userId))
                 .then(projectRepository.findByIdAndNotDeleted(projectId))
                 .switchIfEmpty(
-                        Mono.error(new BusinessException(ErrorCode.NOT_FOUND)))
+                        Mono.error(new BusinessException(
+                                ErrorCode.PROJECT_NOT_FOUND)))
                 .flatMap(project -> {
                     if (!project.belongsToWorkspace(workspaceId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.INVALID_INPUT_VALUE));
+                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
 
                     ProjectSettings settings = request.getSettingsOrDefault();
@@ -136,15 +135,16 @@ public class ProjectService {
                 .then(validateProjectOwnerAccess(projectId, userId))
                 .then(projectRepository.findByIdAndNotDeleted(projectId))
                 .switchIfEmpty(
-                        Mono.error(new BusinessException(ErrorCode.NOT_FOUND)))
+                        Mono.error(new BusinessException(
+                                ErrorCode.PROJECT_NOT_FOUND)))
                 .flatMap(project -> {
                     if (!project.belongsToWorkspace(workspaceId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.INVALID_INPUT_VALUE));
+                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
                     if (project.isDeleted()) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.ALREADY_DELETED));
+                                ErrorCode.PROJECT_ALREADY_DELETED));
                     }
                     project.delete();
                     return projectRepository.save(project)
@@ -168,11 +168,8 @@ public class ProjectService {
                                     offset)
                             .flatMap(member -> userRepository
                                     .findById(member.getUserId())
-                                    .map(user -> new ProjectMemberResponse(
-                                            member.getId(), user.getId(),
-                                            user.getName(), user.getEmail(),
-                                            member.getRole(),
-                                            member.getJoinedAt())))
+                                    .map(user -> ProjectMemberResponse
+                                            .of(member, user)))
                             .collectList()
                             .map(members -> PageResponse.of(members, page, size,
                                     totalElements));
@@ -199,7 +196,7 @@ public class ProjectService {
                 .flatMap(exists -> {
                     if (!exists) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.ACCESS_DENIED));
+                                ErrorCode.PROJECT_ACCESS_DENIED));
                     }
                     return Mono.empty();
                 });
@@ -209,11 +206,12 @@ public class ProjectService {
             String userId) {
         return projectRepository.findByIdAndNotDeleted(projectId)
                 .switchIfEmpty(
-                        Mono.error(new BusinessException(ErrorCode.NOT_FOUND)))
+                        Mono.error(new BusinessException(
+                                ErrorCode.PROJECT_NOT_FOUND)))
                 .flatMap(project -> {
                     if (!project.isOwner(userId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.ACCESS_DENIED));
+                                ErrorCode.PROJECT_OWNER_ONLY));
                     }
                     return Mono.empty();
                 });
@@ -224,11 +222,11 @@ public class ProjectService {
         return projectMemberRepository
                 .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
                 .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ACCESS_DENIED)))
+                        new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
                 .flatMap(member -> {
                     if (!member.isAdmin()) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.ACCESS_DENIED));
+                                ErrorCode.PROJECT_ADMIN_REQUIRED));
                     }
                     return Mono.empty();
                 });
@@ -238,7 +236,7 @@ public class ProjectService {
         settings.validate();
         String json = settings.toJson();
         if (json.length() > 65536) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new BusinessException(ErrorCode.PROJECT_SETTINGS_TOO_LARGE);
         }
     }
 
