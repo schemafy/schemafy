@@ -1,13 +1,14 @@
 package com.schemafy.core.collaboration.service;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
 
 import com.schemafy.core.collaboration.security.WebSocketAuthInfo;
+import com.schemafy.core.collaboration.service.model.SessionEntry;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -17,49 +18,41 @@ import reactor.core.publisher.Mono;
 @Service
 public class SessionService {
 
-    // projectId -> (sessionId -> WebSocketSession)
-    private final Map<String, Map<String, WebSocketSession>> projectSessions = new ConcurrentHashMap<>();
-
-    // sessionId -> WebSocketAuthInfo
-    private final Map<String, WebSocketAuthInfo> sessionAuthInfo = new ConcurrentHashMap<>();
+    // projectId -> (sessionId -> SessionEntry)
+    private final Map<String, Map<String, SessionEntry>> projectSessions = new ConcurrentHashMap<>();
 
     public void addSession(String projectId, String sessionId,
             WebSocketSession session, WebSocketAuthInfo authInfo) {
         projectSessions
                 .computeIfAbsent(projectId, k -> new ConcurrentHashMap<>())
-                .put(sessionId, session);
-        sessionAuthInfo.put(sessionId, authInfo);
+                .put(sessionId, new SessionEntry(session, authInfo));
         log.info(
                 "[SessionService] Session added: projectId={}, sessionId={}, current session count={}",
                 projectId, sessionId, getSessionCount(projectId));
     }
 
     public void removeSession(String projectId, String sessionId) {
-        Map<String, WebSocketSession> sessions = projectSessions.get(projectId);
-        if (sessions != null) {
+        projectSessions.computeIfPresent(projectId, (pid, sessions) -> {
             sessions.remove(sessionId);
-            if (sessions.isEmpty()) {
-                projectSessions.remove(projectId);
-            }
-            log.info(
-                    "[SessionService] Session removed: projectId={}, sessionId={}, current session count={}",
-                    projectId, sessionId, getSessionCount(projectId));
-        }
-        sessionAuthInfo.remove(sessionId);
+            return sessions.isEmpty() ? null : sessions;
+        });
+        log.info(
+                "[SessionService] Session removed: projectId={}, sessionId={}, current session count={}",
+                projectId, sessionId, getSessionCount(projectId));
     }
 
     public Mono<Void> broadcast(String projectId, String excludeSessionId,
             String message) {
-        Map<String, WebSocketSession> sessions = projectSessions.get(projectId);
+        Map<String, SessionEntry> sessions = projectSessions.get(projectId);
         if (sessions == null || sessions.isEmpty()) {
             return Mono.empty();
         }
 
         return Flux.fromIterable(sessions.entrySet())
                 .filter(entry -> !entry.getKey().equals(excludeSessionId))
-                .filter(entry -> entry.getValue().isOpen())
+                .filter(entry -> entry.getValue().session().isOpen())
                 .flatMap(entry -> {
-                    WebSocketSession session = entry.getValue();
+                    WebSocketSession session = entry.getValue().session();
                     return session.send(Mono.just(session.textMessage(message)))
                             .onErrorResume(e -> {
                                 log.warn(
@@ -72,12 +65,17 @@ public class SessionService {
     }
 
     public int getSessionCount(String projectId) {
-        Map<String, WebSocketSession> sessions = projectSessions.get(projectId);
+        Map<String, SessionEntry> sessions = projectSessions.get(projectId);
         return sessions != null ? sessions.size() : 0;
     }
 
     public Optional<WebSocketAuthInfo> getAuthInfo(String sessionId) {
-        return Optional.ofNullable(sessionAuthInfo.get(sessionId));
+        return projectSessions.values()
+                .stream()
+                .map(map -> map.get(sessionId))
+                .filter(entry -> entry != null)
+                .findFirst()
+                .map(SessionEntry::authInfo);
     }
 
 }

@@ -60,11 +60,11 @@ public class PresenceService {
 
     public Mono<Void> removeSession(String projectId, String sessionId) {
         String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
-
+        cursorDedupeCache.remove(sessionId);
+        
         return Mono
                 .fromRunnable(() -> sessionService.removeSession(projectId,
                         sessionId))
-                .doFinally(signalType -> cursorDedupeCache.remove(sessionId))
                 .then(serializeToJson(PresenceEventFactory.leave(sessionId)))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
