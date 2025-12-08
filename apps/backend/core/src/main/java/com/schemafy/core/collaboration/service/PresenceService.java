@@ -167,8 +167,8 @@ public class PresenceService {
             return false;
         }
 
-        return Math.abs(first.getX() - second.getX()) < CURSOR_POSITION_EPS
-                && Math.abs(first.getY() - second.getY()) < CURSOR_POSITION_EPS;
+        return Math.abs(first.x() - second.x()) < CURSOR_POSITION_EPS
+                && Math.abs(first.y() - second.y()) < CURSOR_POSITION_EPS;
     }
 
 }
