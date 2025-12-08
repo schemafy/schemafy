@@ -1,5 +1,7 @@
 package com.schemafy.core.erd.controller;
 
+import java.util.List;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,22 +17,28 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.MemoResponse;
 import com.schemafy.core.erd.controller.dto.response.SchemaDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.SchemaResponse;
+import com.schemafy.core.erd.controller.dto.response.TableResponse;
+import com.schemafy.core.erd.service.MemoService;
 import com.schemafy.core.erd.service.SchemaService;
+import com.schemafy.core.erd.service.TableService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import validation.Validation.ChangeSchemaNameRequest;
 import validation.Validation.CreateSchemaRequest;
 import validation.Validation.DeleteSchemaRequest;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class SchemaController {
 
     private final SchemaService schemaService;
+    private final TableService tableService;
+    private final MemoService memoService;
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/schemas")
@@ -45,6 +53,24 @@ public class SchemaController {
     public Mono<BaseResponse<SchemaDetailResponse>> getSchema(
             @PathVariable String schemaId) {
         return schemaService.getSchema(schemaId)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+    @GetMapping("/schemas/{schemaId}/tables")
+    public Mono<BaseResponse<List<TableResponse>>> getTablesBySchemaId(
+            @PathVariable String schemaId) {
+        return tableService.getTablesBySchemaId(schemaId)
+                .collectList()
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+    @GetMapping("/schemas/{schemaId}/memos")
+    public Mono<BaseResponse<List<MemoResponse>>> getMemosBySchemaId(
+            @PathVariable String schemaId) {
+        return memoService.getMemosBySchemaId(schemaId)
+                .collectList()
                 .map(BaseResponse::success);
     }
 

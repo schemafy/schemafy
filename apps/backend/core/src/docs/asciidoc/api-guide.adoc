@@ -87,6 +87,7 @@ include::{snippets}/ulid-generate/response-fields.adoc[]
 
 ---
 
+
 == Workspace API
 
 === 정책 및 제약사항
@@ -842,9 +843,13 @@ NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다
 
 ---
 
-== Schema API
+== ERD API
 
-=== Schema 생성
+ERD(Entity-Relationship Diagram) 관련 API입니다.
+
+=== Schema
+
+==== Schema 생성
 
 스키마를 생성합니다.
 
@@ -874,7 +879,7 @@ include::{snippets}/schema-create/response-fields.adoc[]
 
 ---
 
-=== Schema 조회
+==== Schema 조회
 
 스키마를 조회합니다.
 
@@ -905,7 +910,7 @@ include::{snippets}/schema-get/response-fields.adoc[]
 
 ---
 
-=== Schema 이름 변경
+==== Schema 이름 변경
 
 스키마 이름을 변경합니다.
 
@@ -936,7 +941,7 @@ include::{snippets}/schema-update-name/response-fields.adoc[]
 
 ---
 
-=== Schema 삭제
+==== Schema 삭제
 
 스키마를 삭제합니다.
 
@@ -967,9 +972,40 @@ include::{snippets}/schema-delete/response-fields.adoc[]
 
 ---
 
-== Table API
+==== 스키마별 Table 목록 조회
 
-=== Table 생성
+특정 스키마에 속한 테이블 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}/tables
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-list-by-schema/http-request.adoc[]
+include::{snippets}/table-list-by-schema/request-headers.adoc[]
+include::{snippets}/table-list-by-schema/path-parameters.adoc[]
+include::{snippets}/table-list-by-schema/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-list-by-schema/response-headers.adoc[]
+include::{snippets}/table-list-by-schema/response-body.adoc[]
+include::{snippets}/table-list-by-schema/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-list-by-schema/response-fields.adoc[]
+
+---
+
+=== Table
+
+==== Table 생성
 
 테이블을 생성합니다.
 
@@ -999,7 +1035,7 @@ include::{snippets}/table-create/response-fields.adoc[]
 
 ---
 
-=== Table 조회
+==== Table 조회
 
 테이블을 조회합니다.
 
@@ -1030,38 +1066,7 @@ include::{snippets}/table-get/response-fields.adoc[]
 
 ---
 
-=== 스키마별 Table 목록 조회
-
-특정 스키마에 속한 테이블 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/tables/schema/{schemaId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/table-list-by-schema/http-request.adoc[]
-include::{snippets}/table-list-by-schema/request-headers.adoc[]
-include::{snippets}/table-list-by-schema/path-parameters.adoc[]
-include::{snippets}/table-list-by-schema/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/table-list-by-schema/response-headers.adoc[]
-include::{snippets}/table-list-by-schema/response-body.adoc[]
-include::{snippets}/table-list-by-schema/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/table-list-by-schema/response-fields.adoc[]
-
----
-
-=== Table 이름 변경
+==== Table 이름 변경
 
 테이블 이름을 변경합니다.
 
@@ -1092,7 +1097,7 @@ include::{snippets}/table-update-name/response-fields.adoc[]
 
 ---
 
-=== Table 삭제
+==== Table 삭제
 
 테이블을 삭제합니다.
 
@@ -1123,9 +1128,133 @@ include::{snippets}/table-delete/response-fields.adoc[]
 
 ---
 
-== Column API
+==== 테이블별 Column 목록 조회
 
-=== Column 생성
+테이블에 속한 컬럼 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/columns
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-list-by-table/http-request.adoc[]
+include::{snippets}/column-list-by-table/request-headers.adoc[]
+include::{snippets}/column-list-by-table/path-parameters.adoc[]
+include::{snippets}/column-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-list-by-table/response-headers.adoc[]
+include::{snippets}/column-list-by-table/response-body.adoc[]
+include::{snippets}/column-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-list-by-table/response-fields.adoc[]
+
+---
+
+==== 테이블별 Relationship 목록 조회
+
+특정 테이블의 관계 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/relationships
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-list-by-table/http-request.adoc[]
+include::{snippets}/relationship-list-by-table/path-parameters.adoc[]
+include::{snippets}/relationship-list-by-table/request-headers.adoc[]
+include::{snippets}/relationship-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-list-by-table/response-headers.adoc[]
+include::{snippets}/relationship-list-by-table/response-body.adoc[]
+include::{snippets}/relationship-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-list-by-table/response-fields.adoc[]
+
+---
+
+==== 테이블별 Index 목록 조회
+
+특정 테이블의 인덱스 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/indexes
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-list-by-table/http-request.adoc[]
+include::{snippets}/index-list-by-table/path-parameters.adoc[]
+include::{snippets}/index-list-by-table/request-headers.adoc[]
+include::{snippets}/index-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-list-by-table/response-headers.adoc[]
+include::{snippets}/index-list-by-table/response-body.adoc[]
+include::{snippets}/index-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-list-by-table/response-fields.adoc[]
+
+---
+
+==== 테이블별 Constraint 목록 조회
+
+특정 테이블의 제약조건 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/constraints
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-list-by-table/http-request.adoc[]
+include::{snippets}/constraint-list-by-table/path-parameters.adoc[]
+include::{snippets}/constraint-list-by-table/request-headers.adoc[]
+include::{snippets}/constraint-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-list-by-table/response-headers.adoc[]
+include::{snippets}/constraint-list-by-table/response-body.adoc[]
+include::{snippets}/constraint-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-list-by-table/response-fields.adoc[]
+
+---
+
+=== Column
+
+==== Column 생성
 
 컬럼을 생성합니다.
 
@@ -1155,7 +1284,7 @@ include::{snippets}/column-create/response-fields.adoc[]
 
 ---
 
-=== Column 조회
+==== Column 조회
 
 컬럼을 조회합니다.
 
@@ -1186,38 +1315,7 @@ include::{snippets}/column-get/response-fields.adoc[]
 
 ---
 
-=== 테이블별 Column 목록 조회
-
-테이블에 속한 컬럼 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/columns/table/{tableId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/column-list-by-table/http-request.adoc[]
-include::{snippets}/column-list-by-table/request-headers.adoc[]
-include::{snippets}/column-list-by-table/path-parameters.adoc[]
-include::{snippets}/column-list-by-table/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/column-list-by-table/response-headers.adoc[]
-include::{snippets}/column-list-by-table/response-body.adoc[]
-include::{snippets}/column-list-by-table/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/column-list-by-table/response-fields.adoc[]
-
----
-
-=== Column 이름 변경
+==== Column 이름 변경
 
 컬럼 이름을 변경합니다.
 
@@ -1248,7 +1346,7 @@ include::{snippets}/column-update-name/response-fields.adoc[]
 
 ---
 
-=== Column 타입 변경
+==== Column 타입 변경
 
 컬럼 타입을 변경합니다.
 
@@ -1279,7 +1377,7 @@ include::{snippets}/column-update-type/response-fields.adoc[]
 
 ---
 
-=== Column 위치 변경
+==== Column 위치 변경
 
 컬럼 위치를 변경합니다.
 
@@ -1310,7 +1408,7 @@ include::{snippets}/column-update-position/response-fields.adoc[]
 
 ---
 
-=== Column 삭제
+==== Column 삭제
 
 컬럼을 삭제합니다.
 
@@ -1341,9 +1439,9 @@ include::{snippets}/column-delete/response-fields.adoc[]
 
 ---
 
-== Relationship API
+=== Relationship
 
-=== Relationship 생성
+==== Relationship 생성
 
 관계를 생성합니다.
 
@@ -1373,7 +1471,7 @@ include::{snippets}/relationship-create/response-fields.adoc[]
 
 ---
 
-=== Relationship 조회
+==== Relationship 조회
 
 관계를 조회합니다.
 
@@ -1404,38 +1502,7 @@ include::{snippets}/relationship-get/response-fields.adoc[]
 
 ---
 
-=== 테이블별 Relationship 목록 조회
-
-특정 테이블의 관계 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/relationships/table/{tableId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/relationship-get-by-table/http-request.adoc[]
-include::{snippets}/relationship-get-by-table/path-parameters.adoc[]
-include::{snippets}/relationship-get-by-table/request-headers.adoc[]
-include::{snippets}/relationship-get-by-table/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/relationship-get-by-table/response-headers.adoc[]
-include::{snippets}/relationship-get-by-table/response-body.adoc[]
-include::{snippets}/relationship-get-by-table/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/relationship-get-by-table/response-fields.adoc[]
-
----
-
-=== Relationship 이름 변경
+==== Relationship 이름 변경
 
 관계의 이름을 변경합니다.
 
@@ -1466,7 +1533,7 @@ include::{snippets}/relationship-update-name/response-fields.adoc[]
 
 ---
 
-=== Relationship 카디널리티 변경
+==== Relationship 카디널리티 변경
 
 관계의 카디널리티를 변경합니다.
 
@@ -1497,7 +1564,7 @@ include::{snippets}/relationship-update-cardinality/response-fields.adoc[]
 
 ---
 
-=== Relationship에 컬럼 추가
+==== Relationship에 컬럼 추가
 
 관계에 컬럼을 추가합니다.
 
@@ -1528,7 +1595,7 @@ include::{snippets}/relationship-add-column/response-fields.adoc[]
 
 ---
 
-=== Relationship에서 컬럼 제거
+==== Relationship에서 컬럼 제거
 
 관계에서 컬럼을 제거합니다.
 
@@ -1559,7 +1626,7 @@ include::{snippets}/relationship-remove-column/response-fields.adoc[]
 
 ---
 
-=== Relationship 삭제
+==== Relationship 삭제
 
 관계를 삭제합니다.
 
@@ -1590,9 +1657,9 @@ include::{snippets}/relationship-delete/response-fields.adoc[]
 
 ---
 
-== Constraint API
+=== Constraint
 
-=== Constraint 생성
+==== Constraint 생성
 
 제약조건을 생성합니다.
 
@@ -1622,7 +1689,7 @@ include::{snippets}/constraint-create/response-fields.adoc[]
 
 ---
 
-=== Constraint 조회
+==== Constraint 조회
 
 제약조건을 조회합니다.
 
@@ -1653,38 +1720,7 @@ include::{snippets}/constraint-get/response-fields.adoc[]
 
 ---
 
-=== 테이블별 Constraint 목록 조회
-
-특정 테이블의 제약조건 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/constraints/table/{tableId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/constraint-get-by-table/http-request.adoc[]
-include::{snippets}/constraint-get-by-table/path-parameters.adoc[]
-include::{snippets}/constraint-get-by-table/request-headers.adoc[]
-include::{snippets}/constraint-get-by-table/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/constraint-get-by-table/response-headers.adoc[]
-include::{snippets}/constraint-get-by-table/response-body.adoc[]
-include::{snippets}/constraint-get-by-table/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/constraint-get-by-table/response-fields.adoc[]
-
----
-
-=== Constraint 이름 변경
+==== Constraint 이름 변경
 
 제약조건의 이름을 변경합니다.
 
@@ -1715,7 +1751,7 @@ include::{snippets}/constraint-update-name/response-fields.adoc[]
 
 ---
 
-=== Constraint에 컬럼 추가
+==== Constraint에 컬럼 추가
 
 제약조건에 컬럼을 추가합니다.
 
@@ -1746,7 +1782,7 @@ include::{snippets}/constraint-add-column/response-fields.adoc[]
 
 ---
 
-=== Constraint에서 컬럼 제거
+==== Constraint에서 컬럼 제거
 
 제약조건에서 컬럼을 제거합니다.
 
@@ -1777,7 +1813,7 @@ include::{snippets}/constraint-remove-column/response-fields.adoc[]
 
 ---
 
-=== Constraint 삭제
+==== Constraint 삭제
 
 제약조건을 삭제합니다.
 
@@ -1808,9 +1844,9 @@ include::{snippets}/constraint-delete/response-fields.adoc[]
 
 ---
 
-== Index API
+=== Index
 
-=== Index 생성
+==== Index 생성
 
 인덱스를 생성합니다.
 
@@ -1840,7 +1876,7 @@ include::{snippets}/index-create/response-fields.adoc[]
 
 ---
 
-=== Index 조회
+==== Index 조회
 
 인덱스를 조회합니다.
 
@@ -1871,38 +1907,7 @@ include::{snippets}/index-get/response-fields.adoc[]
 
 ---
 
-=== 테이블별 Index 목록 조회
-
-특정 테이블의 인덱스 목록을 조회합니다.
-
-[source]
-----
-GET /api/v1.0/indexes/table/{tableId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/index-get-by-table/http-request.adoc[]
-include::{snippets}/index-get-by-table/path-parameters.adoc[]
-include::{snippets}/index-get-by-table/request-headers.adoc[]
-include::{snippets}/index-get-by-table/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/index-get-by-table/response-headers.adoc[]
-include::{snippets}/index-get-by-table/response-body.adoc[]
-include::{snippets}/index-get-by-table/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/index-get-by-table/response-fields.adoc[]
-
----
-
-=== Index 이름 변경
+==== Index 이름 변경
 
 인덱스의 이름을 변경합니다.
 
@@ -1933,7 +1938,7 @@ include::{snippets}/index-update-name/response-fields.adoc[]
 
 ---
 
-=== Index에 컬럼 추가
+==== Index에 컬럼 추가
 
 인덱스에 컬럼을 추가합니다.
 
@@ -1964,7 +1969,7 @@ include::{snippets}/index-add-column/response-fields.adoc[]
 
 ---
 
-=== Index에서 컬럼 제거
+==== Index에서 컬럼 제거
 
 인덱스에서 컬럼을 제거합니다.
 
@@ -1995,7 +2000,7 @@ include::{snippets}/index-remove-column/response-fields.adoc[]
 
 ---
 
-=== Index 삭제
+==== Index 삭제
 
 인덱스를 삭제합니다.
 
@@ -2023,6 +2028,286 @@ include::{snippets}/index-delete/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/index-delete/response-fields.adoc[]
+
+---
+
+=== Memo
+
+==== Memo 생성
+
+메모를 생성합니다.
+
+[source]
+----
+POST /api/v1.0/memos
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-create/http-request.adoc[]
+include::{snippets}/memo-create/request-headers.adoc[]
+include::{snippets}/memo-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-create/response-headers.adoc[]
+include::{snippets}/memo-create/response-body.adoc[]
+include::{snippets}/memo-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-create/response-fields.adoc[]
+
+---
+
+==== Memo 조회
+
+메모를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/memos/{memoId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-get/http-request.adoc[]
+include::{snippets}/memo-get/request-headers.adoc[]
+include::{snippets}/memo-get/path-parameters.adoc[]
+include::{snippets}/memo-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-get/response-headers.adoc[]
+include::{snippets}/memo-get/response-body.adoc[]
+include::{snippets}/memo-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-get/response-fields.adoc[]
+
+---
+
+==== 스키마별 Memo 목록 조회
+
+특정 스키마에 속한 메모 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}/memos
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-list-by-schema/http-request.adoc[]
+include::{snippets}/memo-list-by-schema/request-headers.adoc[]
+include::{snippets}/memo-list-by-schema/path-parameters.adoc[]
+include::{snippets}/memo-list-by-schema/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-list-by-schema/response-headers.adoc[]
+include::{snippets}/memo-list-by-schema/response-body.adoc[]
+include::{snippets}/memo-list-by-schema/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-list-by-schema/response-fields.adoc[]
+
+---
+
+==== Memo 수정
+
+메모를 수정합니다.
+
+[source]
+----
+PUT /api/v1.0/memos/{memoId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-update/http-request.adoc[]
+include::{snippets}/memo-update/request-headers.adoc[]
+include::{snippets}/memo-update/path-parameters.adoc[]
+include::{snippets}/memo-update/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-update/response-headers.adoc[]
+include::{snippets}/memo-update/response-body.adoc[]
+include::{snippets}/memo-update/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-update/response-fields.adoc[]
+
+---
+
+==== Memo 삭제
+
+메모를 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/memos/{memoId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-delete/http-request.adoc[]
+include::{snippets}/memo-delete/request-headers.adoc[]
+include::{snippets}/memo-delete/path-parameters.adoc[]
+include::{snippets}/memo-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-delete/response-headers.adoc[]
+include::{snippets}/memo-delete/response-body.adoc[]
+include::{snippets}/memo-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-delete/response-fields.adoc[]
+
+---
+
+==== Memo 댓글 생성
+
+메모에 댓글을 생성합니다.
+
+[source]
+----
+POST /api/v1.0/memos/{memoId}/comments
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-comment-create/http-request.adoc[]
+include::{snippets}/memo-comment-create/request-headers.adoc[]
+include::{snippets}/memo-comment-create/path-parameters.adoc[]
+include::{snippets}/memo-comment-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-comment-create/response-headers.adoc[]
+include::{snippets}/memo-comment-create/response-body.adoc[]
+include::{snippets}/memo-comment-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-comment-create/response-fields.adoc[]
+
+---
+
+==== Memo 댓글 목록 조회
+
+메모의 댓글 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/memos/{memoId}/comments
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-comment-list/http-request.adoc[]
+include::{snippets}/memo-comment-list/request-headers.adoc[]
+include::{snippets}/memo-comment-list/path-parameters.adoc[]
+include::{snippets}/memo-comment-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-comment-list/response-headers.adoc[]
+include::{snippets}/memo-comment-list/response-body.adoc[]
+include::{snippets}/memo-comment-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-comment-list/response-fields.adoc[]
+
+---
+
+==== Memo 댓글 수정
+
+메모의 댓글을 수정합니다.
+
+[source]
+----
+PUT /api/v1.0/memos/{memoId}/comments/{commentId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-comment-update/http-request.adoc[]
+include::{snippets}/memo-comment-update/request-headers.adoc[]
+include::{snippets}/memo-comment-update/path-parameters.adoc[]
+include::{snippets}/memo-comment-update/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-comment-update/response-headers.adoc[]
+include::{snippets}/memo-comment-update/response-body.adoc[]
+include::{snippets}/memo-comment-update/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-comment-update/response-fields.adoc[]
+
+---
+
+==== Memo 댓글 삭제
+
+메모의 댓글을 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/memos/{memoId}/comments/{commentId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-comment-delete/http-request.adoc[]
+include::{snippets}/memo-comment-delete/request-headers.adoc[]
+include::{snippets}/memo-comment-delete/path-parameters.adoc[]
+include::{snippets}/memo-comment-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-comment-delete/response-headers.adoc[]
+include::{snippets}/memo-comment-delete/response-body.adoc[]
+include::{snippets}/memo-comment-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-comment-delete/response-fields.adoc[]
 
 ---
 
@@ -2180,3 +2465,4 @@ API 호출이 실패한 경우 다음과 같은 형식으로 에러 응답을 �
 |`INTERNAL_ERROR`
 |서버 내부 오류
 |===
+

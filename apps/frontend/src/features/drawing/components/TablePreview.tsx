@@ -1,7 +1,8 @@
 import { useStore } from '@xyflow/react';
+import type { Point } from '../types';
 
 interface TablePreviewProps {
-  mousePosition: { x: number; y: number } | null;
+  mousePosition: Point | null;
 }
 
 export const TablePreview = ({ mousePosition }: TablePreviewProps) => {

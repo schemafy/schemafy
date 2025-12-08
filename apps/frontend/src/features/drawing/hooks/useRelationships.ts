@@ -5,15 +5,16 @@ import { autorun } from 'mobx';
 import { toast } from 'sonner';
 import { ErdStore } from '@/store';
 import type { RelationshipConfig } from '../types';
-import { RELATIONSHIP_TYPES } from '../types';
+import {
+  RELATIONSHIP_TYPES,
+  type RelationshipExtra,
+  type Point,
+} from '../types';
 import {
   convertRelationshipsToEdges,
   createRelationshipFromConnection,
   findRelationshipInSchema,
   shouldRecreateRelationship,
-  mergeRelationshipExtra,
-  hasExtraChanged,
-  type RelationshipExtra,
 } from '../utils/relationshipHelpers';
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
@@ -25,8 +26,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
   const updateRelationshipControlPoint = (
     relationshipId: string,
-    controlPointX: number,
-    controlPointY: number,
+    controlPoint1: Point,
+    controlPoint2?: Point,
   ) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
     const selectedSchema = erdStore.selectedSchema;
@@ -41,11 +42,20 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
     const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
 
-    erdStore.updateRelationshipExtra(selectedSchemaId, relationshipId, {
+    const updatedExtra: RelationshipExtra = {
       ...currentExtra,
-      controlPointX,
-      controlPointY,
-    });
+      controlPoint1,
+    };
+
+    if (controlPoint2) {
+      updatedExtra.controlPoint2 = controlPoint2;
+    }
+
+    erdStore.updateRelationshipExtra(
+      selectedSchemaId,
+      relationshipId,
+      updatedExtra,
+    );
   };
 
   const getRelationships = (): Edge[] => {
@@ -192,18 +202,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         ...currentRelationship,
         kind: newKind,
         cardinality: typeConfig.cardinality,
-        extra: mergeRelationshipExtra(currentExtra, config),
+        extra: currentExtra,
       });
-    } else {
-      const newExtra = mergeRelationshipExtra(currentExtra, config);
-
-      if (hasExtraChanged(currentExtra, newExtra)) {
-        erdStore.updateRelationshipExtra(
-          selectedSchemaId,
-          relationshipId,
-          newExtra,
-        );
-      }
     }
   };
 

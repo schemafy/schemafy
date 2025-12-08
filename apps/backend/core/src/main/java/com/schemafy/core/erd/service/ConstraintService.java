@@ -15,35 +15,33 @@ import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.ConstraintColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-public class ConstraintService extends BaseErdService {
+@RequiredArgsConstructor
+public class ConstraintService {
 
     private final ValidationClient validationClient;
     private final ConstraintRepository constraintRepository;
     private final ConstraintColumnRepository constraintColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
-
-    public ConstraintService(
-            ValidationClient validationClient,
-            ConstraintRepository constraintRepository,
-            ConstraintColumnRepository constraintColumnRepository,
-            AffectedEntitiesSaver affectedEntitiesSaver,
-            TransactionalOperator transactionalOperator) {
-        super(transactionalOperator);
-        this.validationClient = validationClient;
-        this.constraintRepository = constraintRepository;
-        this.constraintColumnRepository = constraintColumnRepository;
-        this.affectedEntitiesSaver = affectedEntitiesSaver;
-    }
+    private final TransactionalOperator transactionalOperator;
 
     public Mono<AffectedMappingResponse> createConstraint(
             Validation.CreateConstraintRequest request) {
         return validationClient.createConstraint(request)
-                .flatMap(database -> transactional(constraintRepository
+                .flatMap(database -> saveConstraintWithColumns(request,
+                        database));
+    }
+
+    private Mono<AffectedMappingResponse> saveConstraintWithColumns(
+            Validation.CreateConstraintRequest request,
+            Validation.Database database) {
+        return transactionalOperator.transactional(
+                constraintRepository
                         .save(ErdMapper.toEntity(request.getConstraint()))
                         .flatMap(savedConstraint -> {
                             Validation.Database updatedDatabase = AffectedMappingResponse
@@ -53,31 +51,44 @@ public class ConstraintService extends BaseErdService {
                                             request.getConstraint().getId(),
                                             savedConstraint.getId());
 
-                            return Flux
-                                    .fromIterable(request.getConstraint()
-                                            .getColumnsList())
-                                    .flatMap(column -> {
-                                        ConstraintColumn entity = ErdMapper
-                                                .toEntity(column);
-                                        entity.setConstraintId(
-                                                savedConstraint.getId());
-                                        return constraintColumnRepository
-                                                .save(entity);
-                                    })
-                                    .then(affectedEntitiesSaver
-                                            .saveAffectedEntities(
-                                                    request.getDatabase(),
-                                                    updatedDatabase,
-                                                    savedConstraint.getId(),
-                                                    savedConstraint.getId(),
-                                                    "CONSTRAINT"))
-                                    .map(propagated -> AffectedMappingResponse
-                                            .of(
-                                                    request,
-                                                    request.getDatabase(),
-                                                    updatedDatabase,
-                                                    propagated));
-                        })));
+                            return saveConstraintColumns(
+                                    request.getConstraint().getColumnsList(),
+                                    savedConstraint.getId())
+                                    .then(saveAffectedEntitiesAndBuildResponse(
+                                            request,
+                                            updatedDatabase,
+                                            savedConstraint.getId()));
+                        }));
+    }
+
+    private Mono<Void> saveConstraintColumns(
+            java.util.List<Validation.ConstraintColumn> columns,
+            String constraintId) {
+        return Flux.fromIterable(columns)
+                .flatMap(column -> {
+                    ConstraintColumn entity = ErdMapper.toEntity(column);
+                    entity.setConstraintId(constraintId);
+                    return constraintColumnRepository.save(entity);
+                })
+                .then();
+    }
+
+    private Mono<AffectedMappingResponse> saveAffectedEntitiesAndBuildResponse(
+            Validation.CreateConstraintRequest request,
+            Validation.Database updatedDatabase,
+            String constraintId) {
+        return affectedEntitiesSaver
+                .saveAffectedEntities(
+                        request.getDatabase(),
+                        updatedDatabase,
+                        constraintId,
+                        constraintId,
+                        "CONSTRAINT")
+                .map(propagated -> AffectedMappingResponse.of(
+                        request,
+                        request.getDatabase(),
+                        updatedDatabase,
+                        propagated));
     }
 
     public Mono<ConstraintResponse> getConstraint(String id) {
@@ -121,9 +132,16 @@ public class ConstraintService extends BaseErdService {
     public Mono<AffectedMappingResponse> addColumnToConstraint(
             Validation.AddColumnToConstraintRequest request) {
         return validationClient.addColumnToConstraint(request)
-                .flatMap(database -> transactional(constraintColumnRepository
-                        .save(ErdMapper.toEntity(
-                                request.getConstraintColumn()))
+                .flatMap(database -> saveConstraintColumnAndAffectedEntities(
+                        request, database));
+    }
+
+    private Mono<AffectedMappingResponse> saveConstraintColumnAndAffectedEntities(
+            Validation.AddColumnToConstraintRequest request,
+            Validation.Database database) {
+        return transactionalOperator.transactional(
+                constraintColumnRepository
+                        .save(ErdMapper.toEntity(request.getConstraintColumn()))
                         .flatMap(savedConstraintColumn -> {
                             Validation.Database updatedDatabase = AffectedMappingResponse
                                     .updateEntityIdInDatabase(
@@ -146,7 +164,7 @@ public class ConstraintService extends BaseErdService {
                                                     request.getDatabase(),
                                                     updatedDatabase,
                                                     propagated));
-                        })));
+                        }));
     }
 
     public Mono<Void> removeColumnFromConstraint(
