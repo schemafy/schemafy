@@ -3,7 +3,6 @@ package com.schemafy.core.collaboration.service;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +15,7 @@ import com.schemafy.core.collaboration.dto.CursorPosition;
 import com.schemafy.core.collaboration.dto.PresenceEvent;
 import com.schemafy.core.collaboration.dto.PresenceEventFactory;
 import com.schemafy.core.collaboration.dto.PresenceEventType;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 
@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnRedisEnabled
 public class PresenceService {
 
     private static final double CURSOR_POSITION_EPS = 0.5;

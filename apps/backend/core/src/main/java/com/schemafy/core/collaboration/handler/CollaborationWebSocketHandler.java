@@ -4,7 +4,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.CloseStatus;
 import org.springframework.web.reactive.socket.WebSocketHandler;
@@ -16,6 +15,7 @@ import com.schemafy.core.collaboration.security.WebSocketAuthInfo;
 import com.schemafy.core.collaboration.security.WebSocketAuthenticator;
 import com.schemafy.core.collaboration.service.PresenceService;
 import com.schemafy.core.collaboration.service.SessionService;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnRedisEnabled
 public class CollaborationWebSocketHandler implements WebSocketHandler {
 
     private final PresenceService presenceService;
