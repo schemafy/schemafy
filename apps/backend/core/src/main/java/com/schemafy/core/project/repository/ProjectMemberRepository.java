@@ -34,4 +34,11 @@ public interface ProjectMemberRepository
     @Query("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP WHERE project_id = :projectId AND deleted_at IS NULL")
     Mono<Void> softDeleteByProjectId(String projectId);
 
+    @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND role = :role AND deleted_at IS NULL")
+    Mono<Long> countByProjectIdAndRoleAndNotDeleted(String projectId,
+            String role);
+
+    @Query("SELECT * FROM project_members WHERE id = :id AND deleted_at IS NULL")
+    Mono<ProjectMember> findByIdAndNotDeleted(String id);
+
 }

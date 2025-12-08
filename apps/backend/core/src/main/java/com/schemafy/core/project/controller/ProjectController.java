@@ -11,6 +11,8 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
+import com.schemafy.core.project.controller.dto.request.JoinProjectByShareLinkRequest;
+import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
 import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectResponse;
@@ -91,6 +93,51 @@ public class ProjectController {
         String userId = authentication.getName();
         return projectService.getMembers(workspaceId, id, userId, page, size)
                 .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+    @PostMapping("/projects/join")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<BaseResponse<ProjectMemberResponse>> joinProjectByShareLink(
+            @Valid @RequestBody JoinProjectByShareLinkRequest request,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        return projectService.joinProjectByShareLink(request.token(), userId)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    @PatchMapping("/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role")
+    public Mono<BaseResponse<ProjectMemberResponse>> updateMemberRole(
+            @PathVariable String workspaceId, @PathVariable String projectId,
+            @PathVariable String memberId,
+            @Valid @RequestBody UpdateProjectMemberRoleRequest request,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        return projectService
+                .updateMemberRole(workspaceId, projectId, memberId, request,
+                        userId)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> removeMember(@PathVariable String workspaceId,
+            @PathVariable String projectId, @PathVariable String memberId,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        return projectService.removeMember(workspaceId, projectId, memberId,
+                userId);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+    @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/members/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> leaveProject(@PathVariable String workspaceId,
+            @PathVariable String projectId, Authentication authentication) {
+        String userId = authentication.getName();
+        return projectService.leaveProject(workspaceId, projectId, userId);
     }
 
 }

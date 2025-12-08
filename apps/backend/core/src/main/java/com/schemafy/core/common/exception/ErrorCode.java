@@ -107,6 +107,16 @@ public enum ErrorCode {
             "프로젝트 설정 크기가 너무 큽니다. (최대 64KB)"),
     PROJECT_ALREADY_DELETED(HttpStatus.CONFLICT, "P007", "이미 삭제된 프로젝트입니다."),
 
+    // PROJECT MEMBER MANAGEMENT
+    CANNOT_CHANGE_OWN_ROLE(HttpStatus.BAD_REQUEST, "PM001",
+            "자신의 권한은 변경할 수 없습니다."),
+    LAST_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "PM002",
+            "마지막 소유자는 제거할 수 없습니다."),
+    WORKSPACE_MEMBERSHIP_REQUIRED(HttpStatus.FORBIDDEN, "PM003",
+            "프로젝트 접근을 위해서는 워크스페이스 멤버여야 합니다."),
+    PROJECT_MEMBER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PM004",
+            "프로젝트 멤버 수 제한(100명)을 초과했습니다."),
+
     // SHARE_LINK
     SHARE_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "공유 링크를 찾을 수 없습니다."),
     SHARE_LINK_EXPIRED(HttpStatus.GONE, "S002", "공유 링크가 만료되었습니다."),

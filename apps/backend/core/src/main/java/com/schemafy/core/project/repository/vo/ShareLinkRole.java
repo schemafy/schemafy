@@ -22,6 +22,14 @@ public enum ShareLinkRole {
         return this == EDITOR || this == COMMENTER;
     }
 
+    public ProjectRole toProjectRole() {
+        return switch (this) {
+        case VIEWER -> ProjectRole.VIEWER;
+        case COMMENTER -> ProjectRole.COMMENTER;
+        case EDITOR -> ProjectRole.EDITOR;
+        };
+    }
+
     public static ShareLinkRole fromString(String value) {
         for (ShareLinkRole role : ShareLinkRole.values()) {
             if (role.value.equalsIgnoreCase(value)) {
