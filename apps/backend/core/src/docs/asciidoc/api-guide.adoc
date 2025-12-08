@@ -509,6 +509,146 @@ include::{snippets}/project-members/response-fields.adoc[]
 
 ---
 
+=== Project 참여 (ShareLink)
+
+ShareLink를 통해 프로젝트에 참여합니다.
+
+[source]
+----
+POST /api/v1.0/projects/join
+----
+
+**비즈니스 규칙:**
+
+* 유효한 ShareLink 토큰 필요
+* 워크스페이스 멤버만 참여 가능
+* 이미 멤버인 경우 역할 업그레이드 가능 (멱등성)
+* 최대 30명까지 참여 가능
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-join-by-sharelink/http-request.adoc[]
+include::{snippets}/project-join-by-sharelink/request-headers.adoc[]
+include::{snippets}/project-join-by-sharelink/request-fields.adoc[]
+include::{snippets}/project-join-by-sharelink/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-join-by-sharelink/response-headers.adoc[]
+include::{snippets}/project-join-by-sharelink/response-body.adoc[]
+include::{snippets}/project-join-by-sharelink/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-join-by-sharelink/response-fields.adoc[]
+
+---
+
+=== Project 멤버 역할 변경
+
+프로젝트 멤버의 역할을 변경합니다.
+
+[source]
+----
+PATCH /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role
+----
+
+**비즈니스 규칙:**
+
+* OWNER 또는 ADMIN만 변경 가능
+* 자신의 역할은 변경 불가
+* 마지막 OWNER/ADMIN의 권한 변경 불가
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-member-update-role/http-request.adoc[]
+include::{snippets}/project-member-update-role/request-headers.adoc[]
+include::{snippets}/project-member-update-role/path-parameters.adoc[]
+include::{snippets}/project-member-update-role/request-fields.adoc[]
+include::{snippets}/project-member-update-role/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-member-update-role/response-headers.adoc[]
+include::{snippets}/project-member-update-role/response-body.adoc[]
+include::{snippets}/project-member-update-role/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-member-update-role/response-fields.adoc[]
+
+---
+
+=== Project 멤버 제거
+
+프로젝트에서 멤버를 제거합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}
+----
+
+**비즈니스 규칙:**
+
+* OWNER 또는 ADMIN만 제거 가능
+* 마지막 OWNER/ADMIN은 제거 불가
+* 제거된 멤버는 ShareLink로 재참여 가능
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-member-remove/http-request.adoc[]
+include::{snippets}/project-member-remove/request-headers.adoc[]
+include::{snippets}/project-member-remove/path-parameters.adoc[]
+include::{snippets}/project-member-remove/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-member-remove/http-response.adoc[]
+
+NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
+
+---
+
+=== Project 탈퇴
+
+프로젝트에서 자발적으로 탈퇴합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/me
+----
+
+**비즈니스 규칙:**
+
+* 마지막 OWNER/ADMIN은 탈퇴 불가
+* 마지막 멤버 탈퇴 시 프로젝트도 삭제
+* 탈퇴 후 ShareLink로 재참여 가능
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-member-leave/http-request.adoc[]
+include::{snippets}/project-member-leave/request-headers.adoc[]
+include::{snippets}/project-member-leave/path-parameters.adoc[]
+include::{snippets}/project-member-leave/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-member-leave/http-response.adoc[]
+
+NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
+
+---
+
 == ShareLink API
 
 === 정책 및 제약사항

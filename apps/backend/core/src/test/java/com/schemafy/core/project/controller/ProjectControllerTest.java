@@ -429,6 +429,13 @@ class ProjectControllerTest {
                 .header("Authorization", "Bearer " + accessToken2)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isCreated().expectBody()
+                .consumeWith(document("project-join-by-sharelink",
+                        ProjectApiSnippets
+                                .joinProjectByShareLinkRequestHeaders(),
+                        ProjectApiSnippets.joinProjectByShareLinkRequest(),
+                        ProjectApiSnippets
+                                .joinProjectByShareLinkResponseHeaders(),
+                        ProjectApiSnippets.joinProjectByShareLinkResponse()))
                 .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
                 .isEqualTo("editor").jsonPath("$.result.userId")
                 .isEqualTo(testUser2Id);
@@ -593,6 +600,12 @@ class ProjectControllerTest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
                 .exchange().expectStatus().isOk().expectBody()
+                .consumeWith(document("project-member-update-role",
+                        ProjectApiSnippets.updateMemberRolePathParameters(),
+                        ProjectApiSnippets.updateMemberRoleRequestHeaders(),
+                        ProjectApiSnippets.updateMemberRoleRequest(),
+                        ProjectApiSnippets.updateMemberRoleResponseHeaders(),
+                        ProjectApiSnippets.updateMemberRoleResponse()))
                 .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
                 .isEqualTo("editor");
 
@@ -733,7 +746,10 @@ class ProjectControllerTest {
                         + "/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}",
                         testWorkspaceId, project.getId(), targetMember.getId())
                 .header("Authorization", "Bearer " + accessToken).exchange()
-                .expectStatus().isNoContent();
+                .expectStatus().isNoContent().expectBody()
+                .consumeWith(document("project-member-remove",
+                        ProjectApiSnippets.removeMemberPathParameters(),
+                        ProjectApiSnippets.removeMemberRequestHeaders()));
 
         ProjectMember deletedMember = projectMemberRepository
                 .findById(targetMember.getId()).block();
@@ -805,7 +821,10 @@ class ProjectControllerTest {
                         + "/workspaces/{workspaceId}/projects/{projectId}/members/me",
                         testWorkspaceId, project.getId())
                 .header("Authorization", "Bearer " + accessToken2).exchange()
-                .expectStatus().isNoContent();
+                .expectStatus().isNoContent().expectBody()
+                .consumeWith(document("project-member-leave",
+                        ProjectApiSnippets.leaveProjectPathParameters(),
+                        ProjectApiSnippets.leaveProjectRequestHeaders()));
 
         ProjectMember deletedMember = projectMemberRepository
                 .findByProjectIdAndUserIdAndNotDeleted(project.getId(),

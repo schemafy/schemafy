@@ -434,4 +434,197 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                                 .description("전체 페이지 수")));
     }
 
+    // ========== POST /api/projects/join - ShareLink로 프로젝트 참여 ==========
+
+    /**
+     * ShareLink로 프로젝트 참여 요청 헤더
+     *
+     * <p>비즈니스 규칙:</p>
+     * <ul>
+     *   <li>유효한 ShareLink 토큰 필요</li>
+     *   <li>워크스페이스 멤버만 참여 가능</li>
+     *   <li>이미 멤버인 경우 역할 업그레이드 가능 (멱등성)</li>
+     *   <li>최대 30명까지 참여 가능</li>
+     * </ul>
+     */
+    public static Snippet joinProjectByShareLinkRequestHeaders() {
+        return createRequestHeadersSnippet(authorizationHeader());
+    }
+
+    /**
+     * ShareLink로 프로젝트 참여 요청 바디
+     */
+    public static Snippet joinProjectByShareLinkRequest() {
+        return requestFields(
+                fieldWithPath("token").type(JsonFieldType.STRING)
+                        .description("ShareLink 토큰 (필수)"));
+    }
+
+    /**
+     * ShareLink로 프로젝트 참여 응답 헤더
+     */
+    public static Snippet joinProjectByShareLinkResponseHeaders() {
+        return createResponseHeadersSnippet(commonResponseHeaders());
+    }
+
+    /**
+     * ShareLink로 프로젝트 참여 응답
+     */
+    public static Snippet joinProjectByShareLinkResponse() {
+        return createResponseFieldsSnippet(
+                successResponseFields(
+                        fieldWithPath("result.id").type(JsonFieldType.STRING)
+                                .description("멤버십 ID (ULID)"),
+                        fieldWithPath("result.userId")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 ID (ULID)"),
+                        fieldWithPath("result.userName")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 이름"),
+                        fieldWithPath("result.userEmail")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 이메일"),
+                        fieldWithPath("result.role").type(JsonFieldType.STRING)
+                                .description(
+                                        "부여받은 역할 (EDITOR, COMMENTER, VIEWER)"),
+                        fieldWithPath("result.joinedAt")
+                                .type(JsonFieldType.STRING)
+                                .description("가입 시각 (ISO 8601)")));
+    }
+
+    // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role - 멤버 역할 변경 ==========
+
+    /**
+     * 멤버 역할 변경 경로 파라미터
+     *
+     * <p>비즈니스 규칙:</p>
+     * <ul>
+     *   <li>OWNER 또는 ADMIN만 변경 가능</li>
+     *   <li>자신의 역할은 변경 불가</li>
+     *   <li>마지막 OWNER/ADMIN의 권한 변경 불가</li>
+     * </ul>
+     */
+    public static Snippet updateMemberRolePathParameters() {
+        return pathParameters(
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
+                parameterWithName("projectId").description("프로젝트 ID (ULID)"),
+                parameterWithName("memberId").description("멤버 ID (ULID)"));
+    }
+
+    /**
+     * 멤버 역할 변경 요청 헤더
+     */
+    public static Snippet updateMemberRoleRequestHeaders() {
+        return createRequestHeadersSnippet(authorizationHeader());
+    }
+
+    /**
+     * 멤버 역할 변경 요청 바디
+     */
+    public static Snippet updateMemberRoleRequest() {
+        return requestFields(
+                fieldWithPath("role").type(JsonFieldType.STRING)
+                        .description(
+                                "변경할 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)"));
+    }
+
+    /**
+     * 멤버 역할 변경 응답 헤더
+     */
+    public static Snippet updateMemberRoleResponseHeaders() {
+        return createResponseHeadersSnippet(commonResponseHeaders());
+    }
+
+    /**
+     * 멤버 역할 변경 응답
+     */
+    public static Snippet updateMemberRoleResponse() {
+        return createResponseFieldsSnippet(
+                successResponseFields(
+                        fieldWithPath("result.id").type(JsonFieldType.STRING)
+                                .description("멤버십 ID (ULID)"),
+                        fieldWithPath("result.userId")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 ID (ULID)"),
+                        fieldWithPath("result.userName")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 이름"),
+                        fieldWithPath("result.userEmail")
+                                .type(JsonFieldType.STRING)
+                                .description("사용자 이메일"),
+                        fieldWithPath("result.role").type(JsonFieldType.STRING)
+                                .description("변경된 역할"),
+                        fieldWithPath("result.joinedAt")
+                                .type(JsonFieldType.STRING)
+                                .description("가입 시각 (ISO 8601)")));
+    }
+
+    // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/members/{memberId} - 멤버 제거 ==========
+
+    /**
+     * 멤버 제거 경로 파라미터
+     *
+     * <p>비즈니스 규칙:</p>
+     * <ul>
+     *   <li>OWNER 또는 ADMIN만 제거 가능</li>
+     *   <li>마지막 OWNER/ADMIN은 제거 불가</li>
+     *   <li>제거된 멤버는 ShareLink로 재참여 가능</li>
+     * </ul>
+     */
+    public static Snippet removeMemberPathParameters() {
+        return pathParameters(
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
+                parameterWithName("projectId").description("프로젝트 ID (ULID)"),
+                parameterWithName("memberId").description("멤버 ID (ULID)"));
+    }
+
+    /**
+     * 멤버 제거 요청 헤더
+     */
+    public static Snippet removeMemberRequestHeaders() {
+        return createRequestHeadersSnippet(authorizationHeader());
+    }
+
+    /**
+     * 멤버 제거 응답 헤더
+     */
+    public static Snippet removeMemberResponseHeaders() {
+        return createResponseHeadersSnippet(commonResponseHeaders());
+    }
+
+    // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/members/me - 프로젝트 탈퇴 ==========
+
+    /**
+     * 프로젝트 탈퇴 경로 파라미터
+     *
+     * <p>비즈니스 규칙:</p>
+     * <ul>
+     *   <li>마지막 OWNER/ADMIN은 탈퇴 불가</li>
+     *   <li>마지막 멤버 탈퇴 시 프로젝트도 삭제</li>
+     *   <li>탈퇴 후 ShareLink로 재참여 가능</li>
+     * </ul>
+     */
+    public static Snippet leaveProjectPathParameters() {
+        return pathParameters(
+                parameterWithName("workspaceId")
+                        .description("워크스페이스 ID (ULID)"),
+                parameterWithName("projectId").description("프로젝트 ID (ULID)"));
+    }
+
+    /**
+     * 프로젝트 탈퇴 요청 헤더
+     */
+    public static Snippet leaveProjectRequestHeaders() {
+        return createRequestHeadersSnippet(authorizationHeader());
+    }
+
+    /**
+     * 프로젝트 탈퇴 응답 헤더
+     */
+    public static Snippet leaveProjectResponseHeaders() {
+        return createResponseHeadersSnippet(commonResponseHeaders());
+    }
+
 }
