@@ -72,7 +72,7 @@ public class MemoService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .flatMap(memo -> memoCommentRepository
-                        .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
+                        .findByMemoIdAndDeletedAtIsNullOrderByCreatedAtAscIdAsc(
                                 memoId)
                         .map(MemoCommentResponse::from)
                         .collectList()
@@ -132,7 +132,7 @@ public class MemoService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .thenMany(memoCommentRepository
-                        .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
+                        .findByMemoIdAndDeletedAtIsNullOrderByCreatedAtAscIdAsc(
                                 memoId)
                         .map(MemoCommentResponse::from));
     }
@@ -218,7 +218,8 @@ public class MemoService {
 
     private Mono<Boolean> isFirstComment(String memoId, String commentId) {
         return memoCommentRepository
-                .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(memoId)
+                .findByMemoIdAndDeletedAtIsNullOrderByCreatedAtAscIdAsc(
+                        memoId)
                 .next()
                 .map(first -> first.getId().equals(commentId))
                 .defaultIfEmpty(false);
