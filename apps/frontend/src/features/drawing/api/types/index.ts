@@ -1,4 +1,4 @@
-import type { ULID } from './common';
+import type { ULID, DatabaseContext } from './common';
 
 export interface IndexColumnResponse {
   id: ULID;
@@ -18,36 +18,58 @@ export interface IndexResponse {
 }
 
 export interface CreateIndexRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   tableId: ULID;
-  name: string;
-  type: string;
-  comment?: string;
-  columns?: CreateIndexColumnRequest[];
-}
-
-export interface CreateIndexColumnRequest {
-  columnId: ULID;
-  seqNo: number;
-  sortDir?: string;
+  index: {
+    id: ULID;
+    tableId: ULID;
+    name: string;
+    type: string;
+    comment: string;
+    columns: {
+      id: ULID;
+      indexId: ULID;
+      columnId: ULID;
+      seqNo: number;
+      sortDir: string;
+    }[];
+  };
 }
 
 export interface UpdateIndexNameRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  tableId: ULID;
   indexId: ULID;
-  name: string;
+  newName: string;
 }
 
 export interface AddColumnToIndexRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  tableId: ULID;
   indexId: ULID;
-  columnId: ULID;
-  seqNo: number;
-  sortDir?: string;
+  indexColumn: {
+    id: ULID;
+    indexId: ULID;
+    columnId: ULID;
+    seqNo: number;
+    sortDir?: string;
+  };
 }
 
 export interface RemoveColumnFromIndexRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  tableId: ULID;
   indexId: ULID;
   indexColumnId: ULID;
 }
 
 export interface DeleteIndexRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  tableId: ULID;
   indexId: ULID;
 }

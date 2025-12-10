@@ -1,3 +1,8 @@
+import type { ColumnResponse } from './column';
+import type { ConstraintResponse } from './constraint';
+import type { IndexResponse } from './index';
+import type { RelationshipResponse } from './relationship';
+
 export type ISODateString = string;
 export type ULID = string;
 export type IdMapping = Record<ULID, ULID>;
@@ -44,4 +49,28 @@ export interface PropagatedIndexColumn {
   columnId: string;
   sourceType: string;
   sourceId: string;
+}
+
+export interface DatabaseContext {
+  id: ULID;
+  schemas: {
+    id: ULID;
+    projectId: ULID;
+    dbVendorId: string;
+    name: string;
+    charset: string | null;
+    collation: string | null;
+    vendorOption: string | null;
+    tables?: {
+      id: ULID;
+      schemaId: ULID;
+      name: string;
+      comment: string | null;
+      tableOptions: string | null;
+      columns?: ColumnResponse[];
+      relationships?: RelationshipResponse[];
+      constraints?: ConstraintResponse[];
+      indexes?: IndexResponse[];
+    }[];
+  }[];
 }

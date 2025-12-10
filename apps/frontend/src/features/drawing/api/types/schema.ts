@@ -1,4 +1,4 @@
-import type { ISODateString, ULID } from './common';
+import type { ISODateString, ULID, DatabaseContext } from './common';
 import type { TableResponse } from './table';
 
 export interface SchemaResponse {
@@ -15,23 +15,29 @@ export interface SchemaResponse {
 }
 
 export interface SchemaDetailResponse extends SchemaResponse {
-  tables: TableResponse[];
+  tables?: TableResponse[];
 }
 
 export interface CreateSchemaRequest {
-  projectId: ULID;
-  name: string;
-  dbVendor: string;
-  charset?: string;
-  collation?: string;
-  vendorOption?: string;
+  database: DatabaseContext;
+  schema: {
+    id: ULID;
+    projectId: ULID;
+    dbVendorId: string;
+    name: string;
+    charset: string;
+    collation: string;
+    vendorOption: string;
+  };
 }
 
 export interface UpdateSchemaNameRequest {
+  database: DatabaseContext;
   schemaId: ULID;
-  name: string;
+  newName: string;
 }
 
 export interface DeleteSchemaRequest {
+  database: DatabaseContext;
   schemaId: ULID;
 }

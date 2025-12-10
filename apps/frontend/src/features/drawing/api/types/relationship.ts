@@ -1,4 +1,4 @@
-import type { ULID } from './common';
+import type { ULID, DatabaseContext } from './common';
 
 export interface RelationshipColumnResponse {
   id: ULID;
@@ -22,44 +22,69 @@ export interface RelationshipResponse {
 }
 
 export interface CreateRelationshipRequest {
-  srcTableId: ULID;
-  tgtTableId: ULID;
-  name: string;
-  kind: string;
-  cardinality: string;
-  onDelete?: string;
-  onUpdate?: string;
-  columns?: CreateRelationshipColumnRequest[];
+  database: DatabaseContext;
+  schemaId: ULID;
+  relationship: {
+    id: ULID;
+    srcTableId: ULID;
+    tgtTableId: ULID;
+    name: string;
+    kind: string;
+    cardinality: string;
+    onDelete: string;
+    onUpdate: string;
+    columns: {
+      id: ULID;
+      relationshipId: ULID;
+      fkColumnId: ULID;
+      refColumnId: ULID;
+      seqNo: number;
+    }[];
+  };
 }
 
 export interface CreateRelationshipColumnRequest {
-  srcColumnId: ULID;
-  tgtColumnId: ULID;
+  fkColumnId: ULID;
+  refColumnId: ULID;
   seqNo: number;
 }
 
 export interface UpdateRelationshipNameRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   relationshipId: ULID;
-  name: string;
+  newName: string;
 }
 
 export interface UpdateRelationshipCardinalityRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   relationshipId: ULID;
   cardinality: string;
 }
 
 export interface AddColumnToRelationshipRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   relationshipId: ULID;
-  srcColumnId: ULID;
-  tgtColumnId: ULID;
-  seqNo: number;
+  relationshipColumn: {
+    id: ULID;
+    relationshipId: ULID;
+    fkColumnId: ULID;
+    refColumnId: ULID;
+    seqNo: number;
+  };
 }
 
 export interface RemoveColumnFromRelationshipRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   relationshipId: ULID;
   relationshipColumnId: ULID;
 }
 
 export interface DeleteRelationshipRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   relationshipId: ULID;
 }

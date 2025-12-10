@@ -1,4 +1,4 @@
-import type { ULID } from './common';
+import type { ULID, DatabaseContext } from './common';
 
 export interface ConstraintColumnResponse {
   id: ULID;
@@ -16,33 +16,54 @@ export interface ConstraintResponse {
 }
 
 export interface CreateConstraintRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   tableId: ULID;
-  name: string;
-  kind: string;
-  columns?: CreateConstraintColumnRequest[];
-}
-
-export interface CreateConstraintColumnRequest {
-  columnId: ULID;
-  seqNo: number;
+  constraint: {
+    id: ULID;
+    tableId: ULID;
+    name: string;
+    columns: {
+      id: ULID;
+      constraintId: ULID;
+      columnId: ULID;
+      seqNo: number;
+    }[];
+  };
 }
 
 export interface UpdateConstraintNameRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  tableId: ULID;
   constraintId: ULID;
-  name: string;
+  newName: string;
 }
 
 export interface AddColumnToConstraintRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  tableId: ULID;
   constraintId: ULID;
-  columnId: ULID;
-  seqNo: number;
+  constraintColumn: {
+    id: ULID;
+    constraintId: ULID;
+    columnId: ULID;
+    seqNo: number;
+  };
 }
 
 export interface RemoveColumnFromConstraintRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  tableId: ULID;
   constraintId: ULID;
   constraintColumnId: ULID;
 }
 
 export interface DeleteConstraintRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  tableId: ULID;
   constraintId: ULID;
 }

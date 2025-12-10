@@ -3,7 +3,7 @@ import type { ISODateString } from './common';
 export interface DatatypeParameter {
   name: string;
   label: string;
-  valueType: 'integer' | 'string' | 'string_array';
+  valueType: string;
   required: boolean;
   order: number;
 }

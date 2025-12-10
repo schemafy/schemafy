@@ -1,4 +1,4 @@
-import type { ISODateString, ULID } from './common';
+import type { ISODateString, ULID, DatabaseContext } from './common';
 import type { ColumnResponse } from './column';
 import type { ConstraintResponse } from './constraint';
 import type { IndexResponse } from './index';
@@ -23,17 +23,26 @@ export interface TableDetailResponse extends TableResponse {
 }
 
 export interface CreateTableRequest {
+  database: DatabaseContext;
   schemaId: ULID;
-  name: string;
-  comment?: string;
-  tableOptions?: string;
+  table: {
+    id: ULID;
+    schemaId: ULID;
+    name: string;
+    comment: string;
+    tableOptions: string;
+  };
 }
 
 export interface UpdateTableNameRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   tableId: ULID;
-  name: string;
+  newName: string;
 }
 
 export interface DeleteTableRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
   tableId: ULID;
 }
