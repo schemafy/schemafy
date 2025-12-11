@@ -10,6 +10,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.schemafy.core.project.repository.vo.ProjectRole;
+
 /**
  * 인증된 사용자 정보를 담는 UserDetails 구현체.
  * JWT 토큰에서 추출한 사용자 정보를 담으며, Spring Security의 표준 방식을 따른다.

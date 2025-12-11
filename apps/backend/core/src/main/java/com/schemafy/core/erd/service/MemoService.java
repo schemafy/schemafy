@@ -8,7 +8,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.common.security.principal.ProjectRole;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
