@@ -3,6 +3,7 @@ package com.schemafy.core.project.controller;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,7 @@ public class ShareLinkController {
 
     private final ShareLinkService shareLinkService;
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     @PostMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links")
     @ResponseStatus(HttpStatus.CREATED)
     public Mono<BaseResponse<ShareLinkResponse>> createShareLink(
@@ -44,6 +46,7 @@ public class ShareLinkController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     @GetMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links")
     public Mono<BaseResponse<PageResponse<ShareLinkResponse>>> getShareLinks(
             @PathVariable String workspaceId, @PathVariable String projectId,
@@ -56,6 +59,7 @@ public class ShareLinkController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @GetMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}")
     public Mono<BaseResponse<ShareLinkResponse>> getShareLink(
             @PathVariable String workspaceId, @PathVariable String projectId,
@@ -66,6 +70,7 @@ public class ShareLinkController {
                 .map(BaseResponse::success);
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
     @PatchMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke")
     public Mono<BaseResponse<Void>> revokeShareLink(
             @PathVariable String workspaceId, @PathVariable String projectId,
@@ -76,6 +81,7 @@ public class ShareLinkController {
                 .thenReturn(BaseResponse.success(null));
     }
 
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteShareLink(@PathVariable String workspaceId,

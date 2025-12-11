@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS project_members (
     deleted_at TIMESTAMP   NULL,
     CONSTRAINT pk_project_members PRIMARY KEY (id),
     CONSTRAINT uq_project_members_project_user UNIQUE (project_id, user_id),
-    CONSTRAINT ck_project_members_role CHECK (role IN ('owner','admin','editor','viewer'))
+    CONSTRAINT ck_project_members_role CHECK (role IN ('owner','admin','editor','viewer', 'commenter'))
     );
 
 CREATE INDEX IF NOT EXISTS idx_project_members_user_id ON project_members(user_id);

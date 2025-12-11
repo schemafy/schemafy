@@ -40,6 +40,8 @@ public class ProjectService {
     private final ShareLinkRepository shareLinkRepository;
     private final ShareLinkTokenService tokenService;
 
+    private static final int MAX_PROJECT_MEMBERS = 30;
+
     @Transactional
     public Mono<ProjectResponse> createProject(String workspaceId,
             CreateProjectRequest request, String userId) {
@@ -332,7 +334,8 @@ public class ProjectService {
                     ProjectRole newRole = shareLinkRole.toProjectRole();
                     ProjectRole currentRole = existingMember.getRoleAsEnum();
 
-                    if (newRole.ordinal() < currentRole.ordinal()) {
+                    // 새로운 역할이 현재 역할보다 높은 권한을 가지면 업그레이드
+                    if (newRole.getLevel() > currentRole.getLevel()) {
                         existingMember.updateRole(newRole);
                         return projectMemberRepository.save(existingMember);
                     }
@@ -342,7 +345,7 @@ public class ProjectService {
                 .switchIfEmpty(Mono.defer(() -> projectMemberRepository
                         .countByProjectIdAndNotDeleted(project.getId())
                         .flatMap(memberCount -> {
-                            if (memberCount >= 30) {
+                            if (memberCount >= MAX_PROJECT_MEMBERS) {
                                 return Mono.error(new BusinessException(
                                         ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED));
                             }
