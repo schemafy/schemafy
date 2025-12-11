@@ -8,7 +8,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -21,6 +20,7 @@ import com.schemafy.core.erd.repository.MemoRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
