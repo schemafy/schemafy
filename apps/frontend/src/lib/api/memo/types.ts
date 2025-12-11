@@ -3,8 +3,8 @@ export type MemoComment = {
   memoId: string;
   authorId: string;
   body: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Memo = {
@@ -12,8 +12,8 @@ export type Memo = {
   schemaId: string;
   authorId: string;
   positions: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
   comments?: MemoComment[];
 };
 

@@ -8,8 +8,8 @@ export interface Memo {
   content: string;
   parentMemoId: string | null;
   resolvedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   extra?: {
     position: { x: number; y: number };
   };
