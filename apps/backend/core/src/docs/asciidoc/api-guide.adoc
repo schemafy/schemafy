@@ -341,6 +341,37 @@ include::{snippets}/table-update-name/response-fields.adoc[]
 
 ---
 
+==== Table extra 정보 변경
+
+테이블의 extra 정보를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/tables/{tableId}/extra
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-update-extra/http-request.adoc[]
+include::{snippets}/table-update-extra/request-headers.adoc[]
+include::{snippets}/table-update-extra/path-parameters.adoc[]
+include::{snippets}/table-update-extra/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-update-extra/response-headers.adoc[]
+include::{snippets}/table-update-extra/response-body.adoc[]
+include::{snippets}/table-update-extra/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-update-extra/response-fields.adoc[]
+
+---
+
 ==== Table 삭제
 
 테이블을 삭제합니다.
@@ -774,6 +805,37 @@ include::{snippets}/relationship-update-name/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/relationship-update-name/response-fields.adoc[]
+
+---
+
+==== Relationship extra 정보 변경
+
+관계의 extra 정보를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/relationships/{relationshipId}/extra
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-update-extra/http-request.adoc[]
+include::{snippets}/relationship-update-extra/path-parameters.adoc[]
+include::{snippets}/relationship-update-extra/request-headers.adoc[]
+include::{snippets}/relationship-update-extra/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-update-extra/response-headers.adoc[]
+include::{snippets}/relationship-update-extra/response-body.adoc[]
+include::{snippets}/relationship-update-extra/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-update-extra/response-fields.adoc[]
 
 ---
 

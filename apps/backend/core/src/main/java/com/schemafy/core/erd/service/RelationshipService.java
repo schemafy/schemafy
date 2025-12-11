@@ -59,10 +59,10 @@ public class RelationshipService {
                                     request.request().getRelationship()
                                             .getColumnsList(),
                                     savedRelationship.getId())
-                                    .then(saveAffectedEntitiesAndBuildResponse(
-                                            request,
-                                            updatedDatabase,
-                                            savedRelationship.getId()));
+                                            .then(saveAffectedEntitiesAndBuildResponse(
+                                                    request,
+                                                    updatedDatabase,
+                                                    savedRelationship.getId()));
                         }));
     }
 
@@ -130,6 +130,17 @@ public class RelationshipService {
                         .changeRelationshipName(request))
                 .doOnNext(relationship -> relationship
                         .setName(request.getNewName()))
+                .flatMap(relationshipRepository::save)
+                .map(RelationshipResponse::from);
+    }
+
+    public Mono<RelationshipResponse> updateRelationshipExtra(
+            String relationshipId, String extra) {
+        return relationshipRepository.findByIdAndDeletedAtIsNull(relationshipId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
+                .doOnNext(relationship -> relationship.setExtra(extra))
                 .flatMap(relationshipRepository::save)
                 .map(RelationshipResponse::from);
     }

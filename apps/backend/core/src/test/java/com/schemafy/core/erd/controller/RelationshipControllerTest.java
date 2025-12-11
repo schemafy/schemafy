@@ -21,6 +21,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
+import com.schemafy.core.erd.controller.dto.request.UpdateRelationshipExtraRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.service.RelationshipService;
@@ -29,6 +30,7 @@ import reactor.core.publisher.Mono;
 import validation.Validation;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
@@ -465,6 +467,89 @@ class RelationshipControllerTest {
                                         .description("타겟 테이블 ID"),
                                 fieldWithPath("result.name")
                                         .description("변경된 관계 이름"),
+                                fieldWithPath("result.kind")
+                                        .description("관계 종류"),
+                                fieldWithPath("result.cardinality")
+                                        .description("카디널리티"),
+                                fieldWithPath("result.onDelete")
+                                        .description("DELETE 액션"),
+                                fieldWithPath("result.onUpdate")
+                                        .description("UPDATE 액션"),
+                                fieldWithPath("result.extra")
+                                        .description("추가 정보"),
+                                fieldWithPath("result.columns")
+                                        .description("관계 컬럼 목록"))));
+    }
+
+    @Test
+    @DisplayName("관계 추가 정보 변경 API 문서화")
+    void updateRelationshipExtra() throws Exception {
+        String relationshipId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
+        String extra = """
+                {"displayColor":"#3366ff"}
+                """;
+        UpdateRelationshipExtraRequest request = new UpdateRelationshipExtraRequest(
+                extra);
+
+        RelationshipResponse mockResponse = objectMapper.readValue(
+                """
+                        {
+                            "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "name": "FK_recommend_user",
+                            "kind": "NON_IDENTIFYING",
+                            "cardinality": "ONE_TO_MANY",
+                            "onDelete": "CASCADE",
+                            "onUpdate": "CASCADE_UPDATE",
+                            "extra": "{\\"displayColor\\":\\"#3366ff\\"}",
+                            "columns": []
+                        }
+                        """,
+                RelationshipResponse.class);
+
+        when(relationshipService.updateRelationshipExtra(eq(relationshipId),
+                eq(extra))).thenReturn(Mono.just(mockResponse));
+
+        webTestClient.put()
+                .uri(API_BASE_PATH + "/relationships/{relationshipId}/extra",
+                        relationshipId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .jsonPath("$.result.extra")
+                .isEqualTo("{\"displayColor\":\"#3366ff\"}")
+                .consumeWith(document("relationship-update-extra",
+                        pathParameters(
+                                parameterWithName("relationshipId")
+                                        .description("관계 ID")),
+                        requestHeaders(
+                                headerWithName("Content-Type")
+                                        .description(
+                                                "요청 본문 타입 (application/json)"),
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("수정된 관계 정보"),
+                                fieldWithPath("result.id").description("관계 ID"),
+                                fieldWithPath("result.srcTableId")
+                                        .description("소스 테이블 ID"),
+                                fieldWithPath("result.tgtTableId")
+                                        .description("타겟 테이블 ID"),
+                                fieldWithPath("result.name")
+                                        .description("관계 이름"),
                                 fieldWithPath("result.kind")
                                         .description("관계 종류"),
                                 fieldWithPath("result.cardinality")
