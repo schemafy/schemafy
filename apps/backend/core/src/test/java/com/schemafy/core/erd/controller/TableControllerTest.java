@@ -47,6 +47,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -486,6 +487,10 @@ class TableControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        requestFields(
+                                fieldWithPath("extra")
+                                        .type(JsonFieldType.STRING)
+                                        .description("추가 정보(JSON 문자열)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),

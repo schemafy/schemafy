@@ -36,6 +36,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -535,6 +536,10 @@ class RelationshipControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        requestFields(
+                                fieldWithPath("extra")
+                                        .type(JsonFieldType.STRING)
+                                        .description("추가 정보(JSON 문자열)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),

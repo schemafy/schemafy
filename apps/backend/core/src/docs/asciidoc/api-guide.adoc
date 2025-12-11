@@ -356,6 +356,7 @@ PUT /api/v1.0/tables/{tableId}/extra
 include::{snippets}/table-update-extra/http-request.adoc[]
 include::{snippets}/table-update-extra/request-headers.adoc[]
 include::{snippets}/table-update-extra/path-parameters.adoc[]
+include::{snippets}/table-update-extra/request-fields.adoc[]
 include::{snippets}/table-update-extra/curl-request.adoc[]
 
 [discrete]
@@ -823,6 +824,7 @@ PUT /api/v1.0/relationships/{relationshipId}/extra
 include::{snippets}/relationship-update-extra/http-request.adoc[]
 include::{snippets}/relationship-update-extra/path-parameters.adoc[]
 include::{snippets}/relationship-update-extra/request-headers.adoc[]
+include::{snippets}/relationship-update-extra/request-fields.adoc[]
 include::{snippets}/relationship-update-extra/curl-request.adoc[]
 
 [discrete]
