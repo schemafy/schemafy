@@ -1,12 +1,11 @@
 package com.schemafy.core.project.controller.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
+import jakarta.validation.constraints.Size;
 
 public record CreateProjectRequest(
-        @NotBlank(message = "Project name is required") String name,
+        @Size(min = 1, max = 255, message = "Project name must be between 1 and 255 characters") String name,
         String description, ProjectSettings settings) {
 
     @JsonIgnore

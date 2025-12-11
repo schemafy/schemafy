@@ -237,6 +237,7 @@ public class ProjectService {
                                 ErrorCode.CANNOT_CHANGE_OWN_ROLE));
                     }
 
+                    // TODO: 역할 변경에 대한 정책 반영 필요
                     if ((targetMember.isOwner()
                             && request.role() != ProjectRole.OWNER) ||
                             (targetMember.isAdmin()
