@@ -6,6 +6,7 @@ import { cn, formatDate } from '@/lib';
 import { CircleCheck, MoveUp, Trash, X } from 'lucide-react';
 import type { MemoData } from '../hooks/useMemos';
 import type { Memo as MemoType } from '../types/memo';
+import type { Point } from '../types';
 
 interface MemoProps {
   data: MemoData;
@@ -13,7 +14,7 @@ interface MemoProps {
 }
 
 interface MemoPreviewProps {
-  mousePosition: { x: number; y: number } | null;
+  mousePosition: Point | null;
 }
 
 const ReplyItem = ({ memo }: { memo: MemoType }) => {

@@ -16,6 +16,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
+import com.schemafy.core.erd.controller.dto.request.UpdateRelationshipExtraRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.service.RelationshipService;
@@ -60,6 +61,16 @@ public class RelationshipController {
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
         return relationshipService.updateRelationshipName(request)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+    @PutMapping("/relationships/{relationshipId}/extra")
+    public Mono<BaseResponse<RelationshipResponse>> updateRelationshipExtra(
+            @PathVariable String relationshipId,
+            @RequestBody UpdateRelationshipExtraRequest request) {
+        return relationshipService
+                .updateRelationshipExtra(relationshipId, request.extra())
                 .map(BaseResponse::success);
     }
 

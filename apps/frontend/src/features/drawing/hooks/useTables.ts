@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
 import { toast } from 'sonner';
 import { ErdStore } from '@/store';
-import type { TableData } from '../types';
+import type { TableData, Point } from '../types';
 import { ulid } from 'ulid';
 import { transformTableToNode } from '../utils/tableHelpers';
 import { generateUniqueName } from '../utils/nameGenerator';
@@ -26,7 +26,7 @@ export const useTables = () => {
     setTables(getTablesFromStore());
   }, [erdStore.erdState, erdStore.selectedSchemaId]);
 
-  const addTable = (position: { x: number; y: number }) => {
+  const addTable = (position: Point) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
     const selectedSchema = erdStore.selectedSchema;
 

@@ -1,9 +1,9 @@
 import type { Node } from '@xyflow/react';
 import type { Table, Column, Constraint } from '@schemafy/validator';
-import type { TableData, ColumnType, ConstraintKind } from '../types';
+import type { TableData, ColumnType, ConstraintKind, Point } from '../types';
 
 type TableExtra = {
-  position?: { x: number; y: number };
+  position?: Point;
 };
 
 export const hasConstraint = (

@@ -18,6 +18,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
+import com.schemafy.core.erd.controller.dto.request.UpdateTableExtraRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
@@ -116,6 +117,15 @@ public class TableController {
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
         return tableService.updateTableName(request)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+    @PutMapping("/tables/{tableId}/extra")
+    public Mono<BaseResponse<TableResponse>> updateTableExtra(
+            @PathVariable String tableId,
+            @RequestBody UpdateTableExtraRequest request) {
+        return tableService.updateTableExtra(tableId, request.extra())
                 .map(BaseResponse::success);
     }
 

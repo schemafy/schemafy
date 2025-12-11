@@ -62,8 +62,6 @@ const extractRelationshipData = (
 const createConfig = (data: RelationshipData): RelationshipConfig => ({
   type: data.type,
   isNonIdentifying: data.isNonIdentifying,
-  controlPointX: data.controlPointX,
-  controlPointY: data.controlPointY,
 });
 
 export const RelationshipEditor = ({
