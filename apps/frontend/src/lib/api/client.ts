@@ -43,7 +43,9 @@ const refreshAccessToken = async (): Promise<string | null> => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const response = await refreshClient.post('/api/v1.0/users/refresh');
+        const response = await refreshClient.post(
+          '/public/api/v1.0/users/refresh',
+        );
         const authHeader: string | undefined =
           response.headers['authorization'];
         if (authHeader && authHeader.startsWith('Bearer ')) {

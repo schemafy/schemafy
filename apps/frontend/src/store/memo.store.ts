@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as memoApi from '../lib/api/memo';
+import * as memoApi from '@/lib/api/memo';
 import type {
   Memo,
   MemoComment,
@@ -7,21 +7,19 @@ import type {
   UpdateMemoRequest,
   CreateMemoCommentRequest,
   UpdateMemoCommentRequest,
-} from '../lib/api/memo';
+} from '@/lib/api/memo/types';
 
 type MemosBySchema = Record<string, Memo[]>;
 type CommentsByMemo = Record<string, MemoComment[]>;
 
-interface MemoState {
+export interface MemoState {
   memosBySchema: MemosBySchema;
   commentsByMemo: CommentsByMemo;
   isLoading: boolean;
   error: string | null;
 
-  // memo list
   fetchSchemaMemos: (schemaId: string) => Promise<void>;
 
-  // memo
   createMemo: (data: CreateMemoRequest) => Promise<Memo | null>;
   updateMemo: (
     memoId: string,
@@ -205,7 +203,7 @@ export const useMemoStore = create<MemoState>((set, get) => ({
           },
         };
       });
-      // sync memo in list if it has comments array
+
       set((state) => {
         const schemaId = Object.keys(state.memosBySchema).find((sid) =>
           (state.memosBySchema[sid] ?? []).some((m) => m.id === memoId),
