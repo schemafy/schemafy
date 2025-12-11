@@ -35,6 +35,9 @@ cache:
   expire-after-write-minutes: 30
   expire-after-access-minutes: 10
 
+sharelink:
+  pepper: ${SHARELINK_PEPPER:default-pepper-change-me}
+
 management:
   endpoints:
     web:
