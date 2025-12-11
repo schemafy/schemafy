@@ -59,10 +59,10 @@ public class RelationshipService {
                                     request.request().getRelationship()
                                             .getColumnsList(),
                                     savedRelationship.getId())
-                                            .then(saveAffectedEntitiesAndBuildResponse(
-                                                    request,
-                                                    updatedDatabase,
-                                                    savedRelationship.getId()));
+                                    .then(saveAffectedEntitiesAndBuildResponse(
+                                            request,
+                                            updatedDatabase,
+                                            savedRelationship.getId()));
                         }));
     }
 
