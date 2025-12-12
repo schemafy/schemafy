@@ -5,6 +5,7 @@ export interface ConstraintColumnResponse {
   constraintId: ULID;
   columnId: ULID;
   seqNo: number;
+  isAffected: boolean;
 }
 
 export interface ConstraintResponse {
@@ -12,7 +13,10 @@ export interface ConstraintResponse {
   tableId: ULID;
   name: string;
   kind: string;
+  checkExpr?: string | null;
+  defaultExpr?: string | null;
   columns: ConstraintColumnResponse[];
+  isAffected: boolean;
 }
 
 export interface CreateConstraintRequest {

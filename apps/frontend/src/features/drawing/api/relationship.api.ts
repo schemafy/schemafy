@@ -10,7 +10,7 @@ import type {
 } from './types/relationship';
 import type { AffectedMappingResponse } from './types/common';
 
-export const createRelationship = (
+export const createRelationshipAPI = (
   data: CreateRelationshipRequest,
   extra?: string,
 ) =>
@@ -18,19 +18,16 @@ export const createRelationship = (
     params: extra ? { extra } : undefined,
   });
 
-export const getRelationship = (relationshipId: string) =>
+export const getRelationshipAPI = (relationshipId: string) =>
   api.get<RelationshipResponse>(`/relationships/${relationshipId}`);
 
-export const updateRelationshipName = (
+export const updateRelationshipNameAPI = (
   relationshipId: string,
   data: UpdateRelationshipNameRequest,
 ) =>
-  api.put<RelationshipResponse>(
-    `/relationships/${relationshipId}/name`,
-    data,
-  );
+  api.put<RelationshipResponse>(`/relationships/${relationshipId}/name`, data);
 
-export const updateRelationshipCardinality = (
+export const updateRelationshipCardinalityAPI = (
   relationshipId: string,
   data: UpdateRelationshipCardinalityRequest,
 ) =>
@@ -39,7 +36,7 @@ export const updateRelationshipCardinality = (
     data,
   );
 
-export const addColumnToRelationship = (
+export const addColumnToRelationshipAPI = (
   relationshipId: string,
   data: AddColumnToRelationshipRequest,
 ) =>
@@ -48,7 +45,7 @@ export const addColumnToRelationship = (
     data,
   );
 
-export const removeColumnFromRelationship = (
+export const removeColumnFromRelationshipAPI = (
   relationshipId: string,
   columnId: string,
   data: RemoveColumnFromRelationshipRequest,
@@ -57,7 +54,7 @@ export const removeColumnFromRelationship = (
     data,
   });
 
-export const deleteRelationship = (
+export const deleteRelationshipAPI = (
   relationshipId: string,
   data: DeleteRelationshipRequest,
 ) => api.delete<null>(`/relationships/${relationshipId}`, { data });

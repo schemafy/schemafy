@@ -3,9 +3,10 @@ import type { ULID, DatabaseContext } from './common';
 export interface RelationshipColumnResponse {
   id: ULID;
   relationshipId: ULID;
-  srcColumnId: ULID;
-  tgtColumnId: ULID;
+  fkColumnId: ULID;
+  refColumnId: ULID;
   seqNo: number;
+  isAffected: boolean;
 }
 
 export interface RelationshipResponse {
@@ -15,10 +16,12 @@ export interface RelationshipResponse {
   name: string;
   kind: string;
   cardinality: string;
-  onDelete: string | null;
-  onUpdate: string | null;
-  extra: string | null;
+  onDelete: string;
+  onUpdate: string;
+  fkEnforced: false;
   columns: RelationshipColumnResponse[];
+  isAffected: boolean;
+  extra?: unknown;
 }
 
 export interface CreateRelationshipRequest {

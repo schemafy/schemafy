@@ -8,19 +8,19 @@ import type {
 } from './types/schema';
 import type { AffectedMappingResponse } from './types/common';
 
-export const createSchema = (data: CreateSchemaRequest) =>
+export const createSchemaAPI = (data: CreateSchemaRequest) =>
   api.post<AffectedMappingResponse>('/schemas', data);
 
-export const getSchema = (schemaId: string) =>
+export const getSchemaAPI = (schemaId: string) =>
   api.get<SchemaDetailResponse>(`/schemas/${schemaId}`);
 
-export const getSchemaTableList = (schemaId: string) =>
+export const getSchemaTableListAPI = (schemaId: string) =>
   api.get<SchemaDetailResponse['tables']>(`/schemas/${schemaId}/tables`);
 
-export const updateSchemaName = (
+export const updateSchemaNameAPI = (
   schemaId: string,
   data: UpdateSchemaNameRequest,
 ) => api.put<SchemaResponse>(`/schemas/${schemaId}/name`, data);
 
-export const deleteSchema = (schemaId: string, data: DeleteSchemaRequest) =>
+export const deleteSchemaAPI = (schemaId: string, data: DeleteSchemaRequest) =>
   api.delete(`/schemas/${schemaId}`, { data });

@@ -5,7 +5,8 @@ export interface IndexColumnResponse {
   indexId: ULID;
   columnId: ULID;
   seqNo: number;
-  sortDir: string | null;
+  sortDir: string;
+  isAffected: boolean;
 }
 
 export interface IndexResponse {
@@ -13,8 +14,9 @@ export interface IndexResponse {
   tableId: ULID;
   name: string;
   type: string;
-  comment: string | null;
+  comment?: string | null;
   columns: IndexColumnResponse[];
+  isAffected: boolean;
 }
 
 export interface CreateIndexRequest {

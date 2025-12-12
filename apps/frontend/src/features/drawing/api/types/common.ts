@@ -58,19 +58,25 @@ export interface DatabaseContext {
     projectId: ULID;
     dbVendorId: string;
     name: string;
-    charset: string | null;
-    collation: string | null;
-    vendorOption: string | null;
-    tables?: {
+    charset: string;
+    collation: string;
+    vendorOption: string;
+    tables: {
       id: ULID;
       schemaId: ULID;
       name: string;
-      comment: string | null;
-      tableOptions: string | null;
-      columns?: ColumnResponse[];
-      relationships?: RelationshipResponse[];
-      constraints?: ConstraintResponse[];
-      indexes?: IndexResponse[];
+      comment?: string | null;
+      tableOptions: string;
+      columns: ColumnResponse[];
+      relationships: RelationshipResponse[];
+      constraints: ConstraintResponse[];
+      indexes: IndexResponse[];
+      isAffected: boolean;
+      extra?: unknown;
     }[];
+    isAffected: boolean;
+    extra?: unknown;
   }[];
+  isAffected: boolean;
+  extra?: unknown;
 }

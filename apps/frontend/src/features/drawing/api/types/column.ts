@@ -4,13 +4,14 @@ export interface ColumnResponse {
   id: ULID;
   tableId: ULID;
   name: string;
-  dataType: string;
-  lengthScale: string | null;
-  isAutoIncrement: boolean;
-  charset: string | null;
-  collation: string | null;
-  comment: string | null;
   ordinalPosition: number;
+  dataType?: string | null;
+  lengthScale: string;
+  isAutoIncrement: boolean;
+  charset: string;
+  collation: string;
+  comment?: string | null;
+  isAffected: boolean;
 }
 
 export interface CreateColumnRequest {

@@ -9,18 +9,18 @@ import type {
 } from './types/constraint';
 import type { AffectedMappingResponse } from './types/common';
 
-export const createConstraint = (data: CreateConstraintRequest) =>
+export const createConstraintAPI = (data: CreateConstraintRequest) =>
   api.post<AffectedMappingResponse>('/constraints', data);
 
-export const getConstraint = (constraintId: string) =>
+export const getConstraintAPI = (constraintId: string) =>
   api.get<ConstraintResponse>(`/constraints/${constraintId}`);
 
-export const updateConstraintName = (
+export const updateConstraintNameAPI = (
   constraintId: string,
   data: UpdateConstraintNameRequest,
 ) => api.put<ConstraintResponse>(`/constraints/${constraintId}/name`, data);
 
-export const addColumnToConstraint = (
+export const addColumnToConstraintAPI = (
   constraintId: string,
   data: AddColumnToConstraintRequest,
 ) =>
@@ -29,7 +29,7 @@ export const addColumnToConstraint = (
     data,
   );
 
-export const removeColumnFromConstraint = (
+export const removeColumnFromConstraintAPI = (
   constraintId: string,
   columnId: string,
   data: RemoveColumnFromConstraintRequest,
@@ -38,7 +38,7 @@ export const removeColumnFromConstraint = (
     data,
   });
 
-export const deleteConstraint = (
+export const deleteConstraintAPI = (
   constraintId: string,
   data: DeleteConstraintRequest,
 ) => api.delete<null>(`/constraints/${constraintId}`, { data });

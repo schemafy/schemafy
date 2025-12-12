@@ -10,27 +10,27 @@ import type {
 } from './types/index';
 import type { AffectedMappingResponse } from './types/common';
 
-export const createIndex = (data: CreateIndexRequest) =>
+export const createIndexAPI = (data: CreateIndexRequest) =>
   api.post<AffectedMappingResponse>('/indexes', data);
 
-export const getIndex = (indexId: string) =>
+export const getIndexAPI = (indexId: string) =>
   api.get<IndexResponse>(`/indexes/${indexId}`);
 
-export const updateIndexName = (
+export const updateIndexNameAPI = (
   indexId: string,
   data: UpdateIndexNameRequest,
 ) => api.put<IndexResponse>(`/indexes/${indexId}/name`, data);
 
-export const addColumnToIndex = (
+export const addColumnToIndexAPI = (
   indexId: string,
   data: AddColumnToIndexRequest,
 ) => api.post<IndexColumnResponse>(`/indexes/${indexId}/columns`, data);
 
-export const removeColumnFromIndex = (
+export const removeColumnFromIndexAPI = (
   indexId: string,
   columnId: string,
   data: RemoveColumnFromIndexRequest,
 ) => api.delete<null>(`/indexes/${indexId}/columns/${columnId}`, { data });
 
-export const deleteIndex = (indexId: string, data: DeleteIndexRequest) =>
+export const deleteIndexAPI = (indexId: string, data: DeleteIndexRequest) =>
   api.delete<null>(`/indexes/${indexId}`, { data });
