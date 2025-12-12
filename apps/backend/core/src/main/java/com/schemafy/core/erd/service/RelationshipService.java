@@ -134,6 +134,17 @@ public class RelationshipService {
                 .map(RelationshipResponse::from);
     }
 
+    public Mono<RelationshipResponse> updateRelationshipExtra(
+            String relationshipId, String extra) {
+        return relationshipRepository.findByIdAndDeletedAtIsNull(relationshipId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
+                .doOnNext(relationship -> relationship.setExtra(extra))
+                .flatMap(relationshipRepository::save)
+                .map(RelationshipResponse::from);
+    }
+
     public Mono<RelationshipResponse> updateRelationshipCardinality(
             Validation.ChangeRelationshipCardinalityRequest request) {
         return relationshipRepository

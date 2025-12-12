@@ -96,6 +96,15 @@ public class TableService {
                 .map(TableResponse::from);
     }
 
+    public Mono<TableResponse> updateTableExtra(String tableId, String extra) {
+        return tableRepository.findByIdAndDeletedAtIsNull(tableId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_TABLE_NOT_FOUND)))
+                .doOnNext(table -> table.setExtra(extra))
+                .flatMap(tableRepository::save)
+                .map(TableResponse::from);
+    }
+
     public Mono<Void> deleteTable(Validation.DeleteTableRequest request) {
         return tableRepository
                 .findByIdAndDeletedAtIsNull(request.getTableId())
