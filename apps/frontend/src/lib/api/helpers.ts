@@ -2,6 +2,9 @@ import type { AxiosRequestConfig } from 'axios';
 import { apiClient } from './client';
 import type { ApiResponse } from './types';
 
+const API_VERSION = 'v1.0';
+const API_BASE_PATH = `/api/${API_VERSION}`;
+
 async function request<T>(
   method: 'get' | 'post' | 'put' | 'delete',
   url: string,
@@ -10,7 +13,7 @@ async function request<T>(
 ): Promise<ApiResponse<T>> {
   const response = await apiClient.request<ApiResponse<T>>({
     method,
-    url,
+    url: `${API_BASE_PATH}${url}`,
     data,
     ...config,
   });

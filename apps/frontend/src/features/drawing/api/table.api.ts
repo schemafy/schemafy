@@ -9,33 +9,33 @@ import type {
 import type { AffectedMappingResponse } from './types/common';
 
 export const createTable = (data: CreateTableRequest, extra?: string) =>
-  api.post<AffectedMappingResponse>('/api/tables', data, {
+  api.post<AffectedMappingResponse>('/tables', data, {
     params: extra ? { extra } : undefined,
   });
 
 export const getTable = (tableId: string) =>
-  api.get<TableDetailResponse>(`/api/tables/${tableId}`);
+  api.get<TableDetailResponse>(`/tables/${tableId}`);
 
 export const getTableColumnList = (tableId: string) =>
-  api.get<TableDetailResponse['columns']>(`/api/tables/${tableId}/columns`);
+  api.get<TableDetailResponse['columns']>(`/tables/${tableId}/columns`);
 
 export const getTableRelationshipList = (tableId: string) =>
   api.get<TableDetailResponse['relationships']>(
-    `/api/tables/${tableId}/relationships`,
+    `/tables/${tableId}/relationships`,
   );
 
 export const getTableIndexList = (tableId: string) =>
-  api.get<TableDetailResponse['indexes']>(`/api/tables/${tableId}/indexes`);
+  api.get<TableDetailResponse['indexes']>(`/tables/${tableId}/indexes`);
 
 export const getTableConstraintList = (tableId: string) =>
   api.get<TableDetailResponse['constraints']>(
-    `/api/tables/${tableId}/constraints`,
+    `/tables/${tableId}/constraints`,
   );
 
 export const updateTableName = (
   tableId: string,
   data: UpdateTableNameRequest,
-) => api.put<TableResponse>(`/api/tables/${tableId}/name`, data);
+) => api.put<TableResponse>(`/tables/${tableId}/name`, data);
 
 export const deleteTable = (tableId: string, data: DeleteTableRequest) =>
-  api.delete<null>(`/api/tables/${tableId}`, { data });
+  api.delete<null>(`/tables/${tableId}`, { data });

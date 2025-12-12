@@ -10,22 +10,22 @@ import type {
 import type { AffectedMappingResponse } from './types/common';
 
 export const createConstraint = (data: CreateConstraintRequest) =>
-  api.post<AffectedMappingResponse>('/api/constraints', data);
+  api.post<AffectedMappingResponse>('/constraints', data);
 
 export const getConstraint = (constraintId: string) =>
-  api.get<ConstraintResponse>(`/api/constraints/${constraintId}`);
+  api.get<ConstraintResponse>(`/constraints/${constraintId}`);
 
 export const updateConstraintName = (
   constraintId: string,
   data: UpdateConstraintNameRequest,
-) => api.put<ConstraintResponse>(`/api/constraints/${constraintId}/name`, data);
+) => api.put<ConstraintResponse>(`/constraints/${constraintId}/name`, data);
 
 export const addColumnToConstraint = (
   constraintId: string,
   data: AddColumnToConstraintRequest,
 ) =>
   api.post<AffectedMappingResponse>(
-    `/api/constraints/${constraintId}/columns`,
+    `/constraints/${constraintId}/columns`,
     data,
   );
 
@@ -34,11 +34,11 @@ export const removeColumnFromConstraint = (
   columnId: string,
   data: RemoveColumnFromConstraintRequest,
 ) =>
-  api.delete<null>(`/api/constraints/${constraintId}/columns/${columnId}`, {
+  api.delete<null>(`/constraints/${constraintId}/columns/${columnId}`, {
     data,
   });
 
 export const deleteConstraint = (
   constraintId: string,
   data: DeleteConstraintRequest,
-) => api.delete<null>(`/api/constraints/${constraintId}`, { data });
+) => api.delete<null>(`/constraints/${constraintId}`, { data });
