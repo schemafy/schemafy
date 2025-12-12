@@ -172,6 +172,25 @@ export class ErdStore {
     this.update((db) => ERD_VALIDATOR.createSchema(db, schema));
   }
 
+  replaceSchemaId(oldId: Schema['id'], newId: Schema['id']) {
+    this.update((db) => {
+      const extra = getDatabaseExtra(db.extra);
+      const selectedSchemaId =
+        extra.selectedSchemaId === oldId ? newId : extra.selectedSchemaId;
+
+      return {
+        ...db,
+        schemas: db.schemas.map((schema) =>
+          schema.id === oldId ? { ...schema, id: newId } : schema,
+        ),
+        extra: {
+          ...extra,
+          selectedSchemaId,
+        },
+      };
+    });
+  }
+
   changeSchemaName(schemaId: Schema['id'], newName: Schema['name']) {
     this.update((db) => ERD_VALIDATOR.changeSchemaName(db, schemaId, newName));
   }
