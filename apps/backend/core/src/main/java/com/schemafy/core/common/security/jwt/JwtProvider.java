@@ -1,6 +1,7 @@
 package com.schemafy.core.common.security.jwt;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -111,6 +112,10 @@ public class JwtProvider {
     public String getTokenType(String token) {
         return extractClaim(token,
                 claims -> claims.get(CLAIM_TYPE, String.class));
+    }
+
+    public Duration getAccessTokenExpiresIn() {
+        return Duration.ofMillis(jwtProperties.getAccessTokenExpiration());
     }
 
 }
