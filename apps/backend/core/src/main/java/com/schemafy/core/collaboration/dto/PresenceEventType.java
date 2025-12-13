@@ -1,5 +1,6 @@
 package com.schemafy.core.collaboration.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum PresenceEventType {
@@ -17,6 +18,7 @@ public enum PresenceEventType {
     @JsonValue
     public String getValue() { return value; }
 
+    @JsonCreator
     public static PresenceEventType fromValue(String value) {
         if (value == null) {
             return null;

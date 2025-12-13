@@ -4,18 +4,21 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.socket.CloseStatus;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.schemafy.core.collaboration.security.ProjectAccessValidator;
 import com.schemafy.core.collaboration.security.WebSocketAuthInfo;
-import com.schemafy.core.collaboration.security.WebSocketAuthenticator;
 import com.schemafy.core.collaboration.service.PresenceService;
 import com.schemafy.core.collaboration.service.SessionService;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.security.principal.AuthenticatedUser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,22 +32,57 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
 
     private final PresenceService presenceService;
     private final SessionService sessionService;
-    private final WebSocketAuthenticator authenticator;
     private final ProjectAccessValidator projectAccessValidator;
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
         URI uri = session.getHandshakeInfo().getUri();
 
-        Optional<String> projectIdOpt = authenticator.extractProjectId(uri);
+        Optional<String> projectIdOpt = extractProjectId(uri);
         if (projectIdOpt.isEmpty()) {
             return handleInvalidProjectId(session);
         }
 
-        return authenticator.authenticate(uri)
-                .map(authInfo -> validateProjectAccess(session, authInfo,
-                        projectIdOpt.get()))
-                .orElseGet(() -> handleUnauthenticated(session));
+        return session.getHandshakeInfo()
+                .getPrincipal()
+                .ofType(Authentication.class)
+                .flatMap(authentication -> {
+                    Object principal = authentication.getPrincipal();
+                    if (!(principal instanceof AuthenticatedUser user)) {
+                        return handleUnauthenticated(session);
+                    }
+
+                    String userId = user.userId();
+                    String userName = user.userName();
+                    if (userId == null || userId.isBlank()) {
+                        return handleUnauthenticated(session);
+                    }
+
+                    WebSocketAuthInfo authInfo = WebSocketAuthInfo.of(userId,
+                            userName);
+                    return validateProjectAccess(session, authInfo,
+                            projectIdOpt.get());
+                })
+                .switchIfEmpty(handleUnauthenticated(session));
+    }
+
+    private Optional<String> extractProjectId(URI uri) {
+        try {
+            MultiValueMap<String, String> params = UriComponentsBuilder
+                    .fromUri(uri)
+                    .build()
+                    .getQueryParams();
+            String projectId = params.getFirst("projectId");
+            if (projectId == null || projectId.isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.of(projectId);
+        } catch (Exception e) {
+            log.warn(
+                    "[CollaborationWebSocketHandler] ProjectId extraction failed: {}",
+                    e.getMessage());
+            return Optional.empty();
+        }
     }
 
     private Mono<Void> validateProjectAccess(WebSocketSession session,

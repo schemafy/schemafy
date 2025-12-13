@@ -28,6 +28,8 @@ import reactor.core.scheduler.Schedulers;
 public class JwtAuthenticationFilter implements WebFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
+    private static final String CLAIM_NAME = "name";
 
     private final JwtProvider jwtProvider;
     private final WebExchangeErrorWriter errorResponseWriter;
@@ -74,7 +76,9 @@ public class JwtAuthenticationFilter implements WebFilter {
                 return AuthenticationResult.error(ErrorCode.INVALID_TOKEN);
             }
 
-            AuthenticatedUser principal = createPrincipal(userId);
+            String userName = jwtProvider.extractClaim(token,
+                    claims -> claims.get(CLAIM_NAME, String.class));
+            AuthenticatedUser principal = createPrincipal(userId, userName);
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     principal, null, principal.asAuthorities());
 
@@ -111,10 +115,10 @@ public class JwtAuthenticationFilter implements WebFilter {
         return handleJwtError(exchange, ErrorCode.TOKEN_VALIDATION_ERROR);
     }
 
-    private AuthenticatedUser createPrincipal(String userId) {
+    private AuthenticatedUser createPrincipal(String userId, String userName) {
         // TODO: JWT 클레임 또는 DB 조회를 통해 역할(roles)을 채워 넣는다.
         // 현재는 모든 프로젝트 롤을 부여해 hasAuthority 기반 접근제어를 통과시키는 임시 구현.
-        return AuthenticatedUser.withAllRoles(userId);
+        return AuthenticatedUser.withAllRoles(userId, userName);
     }
 
     private String extractToken(ServerHttpRequest request) {
@@ -124,6 +128,14 @@ public class JwtAuthenticationFilter implements WebFilter {
         if (StringUtils.hasText(bearerToken)
                 && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(BEARER_PREFIX.length());
+        }
+
+        String path = request.getPath().pathWithinApplication().value();
+        if (path != null && path.startsWith("/ws/")) {
+            var cookie = request.getCookies().getFirst(ACCESS_TOKEN_COOKIE_NAME);
+            if (cookie != null && StringUtils.hasText(cookie.getValue())) {
+                return cookie.getValue();
+            }
         }
 
         return null;

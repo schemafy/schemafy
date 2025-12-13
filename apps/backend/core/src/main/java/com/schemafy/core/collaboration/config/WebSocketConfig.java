@@ -20,7 +20,7 @@ public class WebSocketConfig {
     @Bean
     public HandlerMapping webSocketHandlerMapping(
             CollaborationWebSocketHandler handler) {
-        // /ws/collaboration?projectId={projectId}&token={accessToken}
+        // /ws/collaboration?projectId={projectId}
         Map<String, WebSocketHandler> map = new HashMap<>();
         map.put("/ws/collaboration", handler);
 

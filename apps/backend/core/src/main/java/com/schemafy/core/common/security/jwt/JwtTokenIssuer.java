@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 public class JwtTokenIssuer {
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+    private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final Duration REFRESH_TOKEN_COOKIE_MAX_AGE = Duration
             .ofDays(7);
@@ -41,9 +42,19 @@ public class JwtTokenIssuer {
                 .sameSite("Strict") // CSRF 방어
                 .build();
 
+        ResponseCookie accessTokenCookie = ResponseCookie
+                .from(ACCESS_TOKEN_COOKIE_NAME, accessToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(jwtProvider.getAccessTokenExpiresIn())
+                .sameSite("Strict")
+                .build();
+
         HttpHeaders headers = new HttpHeaders();
         headers.set(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken);
         headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+        headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
 
         return ResponseEntity.ok()
                 .headers(headers)
