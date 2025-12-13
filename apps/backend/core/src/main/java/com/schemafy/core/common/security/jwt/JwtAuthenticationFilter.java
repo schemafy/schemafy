@@ -132,7 +132,8 @@ public class JwtAuthenticationFilter implements WebFilter {
 
         String path = request.getPath().pathWithinApplication().value();
         if (path != null && path.startsWith("/ws/")) {
-            var cookie = request.getCookies().getFirst(ACCESS_TOKEN_COOKIE_NAME);
+            var cookie = request.getCookies()
+                    .getFirst(ACCESS_TOKEN_COOKIE_NAME);
             if (cookie != null && StringUtils.hasText(cookie.getValue())) {
                 return cookie.getValue();
             }

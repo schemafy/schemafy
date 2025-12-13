@@ -8,4 +8,5 @@ public record CursorPosition(
     public CursorPosition withUserName(String userName) {
         return new CursorPosition(userName, x, y);
     }
+
 }
