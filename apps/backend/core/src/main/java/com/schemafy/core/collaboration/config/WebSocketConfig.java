@@ -3,7 +3,6 @@ package com.schemafy.core.collaboration.config;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.HandlerMapping;
@@ -12,9 +11,10 @@ import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter;
 
 import com.schemafy.core.collaboration.handler.CollaborationWebSocketHandler;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 @Configuration
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnRedisEnabled
 public class WebSocketConfig {
 
     @Bean

@@ -1,14 +1,15 @@
 package com.schemafy.core.collaboration.security;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnRedisEnabled
 public class ProjectAccessValidator {
 
     public Mono<Boolean> canAccess(String projectId, String userId) {

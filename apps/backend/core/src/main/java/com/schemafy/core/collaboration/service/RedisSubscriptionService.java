@@ -5,11 +5,11 @@ import java.time.Duration;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.collaboration.constant.CollaborationConstants;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import reactor.util.retry.Retry;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnRedisEnabled
 public class RedisSubscriptionService {
 
     private static final long MAX_RETRY_ATTEMPTS = Long.MAX_VALUE;

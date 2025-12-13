@@ -3,11 +3,11 @@ package com.schemafy.core.collaboration.security;
 import java.net.URI;
 import java.util.Optional;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnRedisEnabled
 public class WebSocketAuthenticator {
 
     private static final String TOKEN_PARAM = "token";
