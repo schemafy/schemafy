@@ -47,16 +47,19 @@ public class SessionService {
     }
 
     public void broadcast(BroadcastMessage request) {
-        Map<String, SessionEntry> sessions = projectSessions.get(request.projectId());
+        Map<String, SessionEntry> sessions = projectSessions
+                .get(request.projectId());
         if (sessions == null || sessions.isEmpty()) {
             return;
         }
 
         sessions.forEach((sessionId, entry) -> {
-            if (!sessionId.equals(request.excludeSessionId()) && entry.isOpen()) {
+            if (!sessionId.equals(request.excludeSessionId())
+                    && entry.isOpen()) {
                 Sinks.EmitResult result = entry.send(request.message());
                 if (!result.isSuccess()) {
-                    request.onFailure().ifPresent(consumer -> consumer.accept(result));
+                    request.onFailure()
+                            .ifPresent(consumer -> consumer.accept(result));
                 }
             }
         });

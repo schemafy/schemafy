@@ -13,7 +13,8 @@ import reactor.core.publisher.Sinks;
 
 public class SessionEntry {
 
-    private static final Duration CURSOR_SAMPLE_INTERVAL = Duration.ofMillis(50);
+    private static final Duration CURSOR_SAMPLE_INTERVAL = Duration
+            .ofMillis(50);
 
     private final WebSocketSession session;
     private final WebSocketAuthInfo authInfo;
@@ -68,8 +69,6 @@ public class SessionEntry {
         cursorSink.tryEmitComplete();
     }
 
-    public boolean isOpen() {
-        return session.isOpen();
-    }
+    public boolean isOpen() { return session.isOpen(); }
 
 }

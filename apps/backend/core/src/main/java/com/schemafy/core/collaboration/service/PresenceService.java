@@ -9,10 +9,10 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.collaboration.constant.CollaborationConstants;
+import com.schemafy.core.collaboration.dto.BroadcastMessage;
 import com.schemafy.core.collaboration.dto.ClientMessage;
 import com.schemafy.core.collaboration.dto.CursorClientMessage;
 import com.schemafy.core.collaboration.dto.CursorPosition;
-import com.schemafy.core.collaboration.dto.BroadcastMessage;
 import com.schemafy.core.collaboration.dto.PresenceEvent;
 import com.schemafy.core.collaboration.dto.PresenceEventFactory;
 import com.schemafy.core.collaboration.dto.PresenceEventType;
@@ -94,10 +94,10 @@ public class PresenceService {
 
         return serializeToJson(
                 PresenceEventFactory.join(sessionId, userId, userName))
-                        .flatMap(eventJson -> redisTemplate.convertAndSend(
-                                channelName,
-                                eventJson))
-                        .then();
+                .flatMap(eventJson -> redisTemplate.convertAndSend(
+                        channelName,
+                        eventJson))
+                .then();
     }
 
     /**
