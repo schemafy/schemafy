@@ -7,12 +7,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.socket.WebSocketSession;
 
+import com.schemafy.core.collaboration.dto.BroadcastMessage;
 import com.schemafy.core.collaboration.security.WebSocketAuthInfo;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
 
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 @Slf4j
 @Service
@@ -21,19 +21,24 @@ public class SessionService {
     // projectId -> (sessionId -> SessionEntry)
     private final Map<String, Map<String, SessionEntry>> projectSessions = new ConcurrentHashMap<>();
 
-    public void addSession(String projectId, String sessionId,
+    public SessionEntry addSession(String projectId, String sessionId,
             WebSocketSession session, WebSocketAuthInfo authInfo) {
+        SessionEntry entry = new SessionEntry(session, authInfo);
         projectSessions
                 .computeIfAbsent(projectId, k -> new ConcurrentHashMap<>())
-                .put(sessionId, new SessionEntry(session, authInfo));
+                .put(sessionId, entry);
         log.info(
                 "[SessionService] Session added: projectId={}, sessionId={}, current session count={}",
                 projectId, sessionId, getSessionCount(projectId));
+        return entry;
     }
 
     public void removeSession(String projectId, String sessionId) {
         projectSessions.computeIfPresent(projectId, (pid, sessions) -> {
-            sessions.remove(sessionId);
+            SessionEntry entry = sessions.remove(sessionId);
+            if (entry != null) {
+                entry.complete();
+            }
             return sessions.isEmpty() ? null : sessions;
         });
         log.info(
@@ -41,27 +46,20 @@ public class SessionService {
                 projectId, sessionId, getSessionCount(projectId));
     }
 
-    public Mono<Void> broadcast(String projectId, String excludeSessionId,
-            String message) {
-        Map<String, SessionEntry> sessions = projectSessions.get(projectId);
+    public void broadcast(BroadcastMessage request) {
+        Map<String, SessionEntry> sessions = projectSessions.get(request.projectId());
         if (sessions == null || sessions.isEmpty()) {
-            return Mono.empty();
+            return;
         }
 
-        return Flux.fromIterable(sessions.entrySet())
-                .filter(entry -> !entry.getKey().equals(excludeSessionId))
-                .filter(entry -> entry.getValue().session().isOpen())
-                .flatMap(entry -> {
-                    WebSocketSession session = entry.getValue().session();
-                    return session.send(Mono.just(session.textMessage(message)))
-                            .onErrorResume(e -> {
-                                log.warn(
-                                        "[SessionService] Message send failed: sessionId={}, error={}",
-                                        entry.getKey(), e.getMessage());
-                                return Mono.empty();
-                            });
-                })
-                .then();
+        sessions.forEach((sessionId, entry) -> {
+            if (!sessionId.equals(request.excludeSessionId()) && entry.isOpen()) {
+                Sinks.EmitResult result = entry.send(request.message());
+                if (!result.isSuccess()) {
+                    request.onFailure().ifPresent(consumer -> consumer.accept(result));
+                }
+            }
+        });
     }
 
     public int getSessionCount(String projectId) {
@@ -76,6 +74,15 @@ public class SessionService {
                 .filter(entry -> entry != null)
                 .findFirst()
                 .map(SessionEntry::authInfo);
+    }
+
+    public Optional<SessionEntry> getSessionEntry(String projectId,
+            String sessionId) {
+        Map<String, SessionEntry> sessions = projectSessions.get(projectId);
+        if (sessions == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(sessions.get(sessionId));
     }
 
 }

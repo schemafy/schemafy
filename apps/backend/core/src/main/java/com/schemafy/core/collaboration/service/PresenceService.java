@@ -12,12 +12,12 @@ import com.schemafy.core.collaboration.constant.CollaborationConstants;
 import com.schemafy.core.collaboration.dto.ClientMessage;
 import com.schemafy.core.collaboration.dto.CursorClientMessage;
 import com.schemafy.core.collaboration.dto.CursorPosition;
+import com.schemafy.core.collaboration.dto.BroadcastMessage;
 import com.schemafy.core.collaboration.dto.PresenceEvent;
 import com.schemafy.core.collaboration.dto.PresenceEventFactory;
 import com.schemafy.core.collaboration.dto.PresenceEventType;
+import com.schemafy.core.collaboration.service.model.SessionEntry;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,29 +36,42 @@ public class PresenceService {
     private final ObjectMapper objectMapper;
     private final Map<String, CursorPosition> cursorDedupeCache = new ConcurrentHashMap<>();
 
-    public Mono<Void> updateCursor(String projectId, String sessionId,
+    public void pushCursorToSink(String projectId, String sessionId,
+            CursorPosition cursor) {
+        SessionEntry entry = sessionService
+                .getSessionEntry(projectId, sessionId)
+                .orElse(null);
+
+        if (entry == null) {
+            log.warn(
+                    "[PresenceService] Session not found for cursor push: sessionId={}",
+                    sessionId);
+            return;
+        }
+
+        String userName = entry.authInfo().getUserName();
+        CursorPosition cursorWithUserName = cursor.withUserName(userName);
+
+        entry.pushCursor(cursorWithUserName);
+    }
+
+    public Mono<Void> publishCursorToRedis(String projectId, String sessionId,
             CursorPosition cursor) {
         String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
 
-        String userName = sessionService.getAuthInfo(sessionId)
-                .map(auth -> auth.getUserName())
-                // 인증된 세션에서 authInfo가 없으면 시스템 일관성 문제로 간주
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.COMMON_SYSTEM_ERROR));
-
-        CursorPosition cursorWithUserName = cursor.withUserName(userName);
-
         CursorPosition previousCursor = cursorDedupeCache.get(sessionId);
-        if (isDuplicateCursor(previousCursor, cursorWithUserName)) {
+        if (isDuplicateCursor(previousCursor, cursor)) {
             return Mono.empty();
         }
-        cursorDedupeCache.put(sessionId, cursorWithUserName);
+        cursorDedupeCache.put(sessionId, cursor);
 
-        return serializeToJson(
-                PresenceEventFactory.cursor(sessionId, cursorWithUserName))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(
-                        channelName,
+        return serializeToJson(PresenceEventFactory.cursor(sessionId, cursor))
+                .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
+                .doOnError(e -> log.warn(
+                        "[PresenceService] Failed to publish cursor: sessionId={}, error={}",
+                        sessionId, e.getMessage()))
+                .onErrorResume(e -> Mono.empty())
                 .then();
     }
 
@@ -81,10 +94,10 @@ public class PresenceService {
 
         return serializeToJson(
                 PresenceEventFactory.join(sessionId, userId, userName))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(
-                        channelName,
-                        eventJson))
-                .then();
+                        .flatMap(eventJson -> redisTemplate.convertAndSend(
+                                channelName,
+                                eventJson))
+                        .then();
     }
 
     /**
@@ -108,16 +121,17 @@ public class PresenceService {
                             log.warn(
                                     "[PresenceService] Invalid message format: sessionId={}",
                                     sessionId);
-                            yield Mono.empty();
+                            yield Mono.<Void>empty();
                         }
                         CursorPosition cursor = cursorMessage.getCursor();
                         if (cursor == null) {
                             log.warn(
                                     "[PresenceService] No cursor data: sessionId={}",
                                     sessionId);
-                            yield Mono.empty();
+                            yield Mono.<Void>empty();
                         }
-                        yield updateCursor(projectId, sessionId, cursor);
+                        pushCursorToSink(projectId, sessionId, cursor);
+                        yield Mono.<Void>empty();
                     }
                     default -> {
                         log.warn(
@@ -136,13 +150,45 @@ public class PresenceService {
     }
 
     /**
-     * handle Redis messages received from Redis and broadcast to local WebSocket clients
+     * handle Redis messages received from Redis and broadcast to local WebSocket clients.
      */
     public Mono<Void> handleRedisMessage(String projectId, String message) {
         return deserializeFromJson(message, PresenceEvent.class)
                 .flatMap(event -> serializeToJson(event.withoutSessionId())
-                        .flatMap(json -> sessionService.broadcast(
-                                projectId, event.getSessionId(), json)));
+                        .doOnNext(json -> broadcastByEventType(
+                                projectId,
+                                event.getSessionId(),
+                                event.getType(),
+                                json))
+                        .then());
+    }
+
+    private void broadcastByEventType(String projectId, String excludeSessionId,
+            PresenceEventType eventType, String json) {
+        if (eventType == null) {
+            log.warn("[PresenceService] Event type is null, using best effort");
+            sessionService.broadcast(
+                    BroadcastMessage.of(projectId, excludeSessionId, json));
+            return;
+        }
+
+        switch (eventType) {
+        case JOIN, LEAVE -> {
+            sessionService.broadcast(
+                    BroadcastMessage.of(projectId, excludeSessionId, json));
+        }
+        case CURSOR -> {
+            sessionService.broadcast(
+                    BroadcastMessage.of(projectId, excludeSessionId, json));
+        }
+        default -> {
+            log.warn(
+                    "[PresenceService] Unknown event type: {}, using best effort",
+                    eventType);
+            sessionService.broadcast(
+                    BroadcastMessage.of(projectId, excludeSessionId, json));
+        }
+        }
     }
 
     private <T> Mono<String> serializeToJson(T object) {
