@@ -46,7 +46,6 @@ export const useTables = () => {
         undefined,
         JSON.stringify({ position }),
       );
-      toast.success('Table created successfully');
     } catch (error) {
       toast.error('Failed to create table');
       console.error(error);

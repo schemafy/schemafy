@@ -15,6 +15,7 @@ import {
 } from '../../hooks';
 import { ErdStore } from '@/store/erd.store';
 import { ConnectionHandles } from './ConnectionHandles';
+import * as columnService from '../../services/column.service';
 
 const TableNodeComponent = ({ data, id }: TableProps) => {
   const erdStore = ErdStore.getInstance();
@@ -37,7 +38,6 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   });
 
   const columnActions = useColumns({
-    erdStore,
     schemaId: data.schemaId,
     tableId: id,
     columns,
@@ -61,13 +61,17 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
 
   const dragAndDrop = useDragAndDrop({
     items: columns,
-    onReorder: (_newColumns, draggedColumnId, newIndex) => {
-      erdStore.changeColumnPosition(
-        data.schemaId,
-        id,
-        draggedColumnId,
-        newIndex,
-      );
+    onReorder: async (draggedColumnId, newIndex) => {
+      try {
+        await columnService.updateColumnPosition(
+          data.schemaId,
+          id,
+          draggedColumnId,
+          newIndex,
+        );
+      } catch (error) {
+        console.error('Failed to update column position:', error);
+      }
     },
   });
 

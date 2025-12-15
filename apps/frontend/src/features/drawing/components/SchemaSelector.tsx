@@ -50,7 +50,6 @@ export const SchemaSelector = observer(() => {
 
       setNewSchemaName('');
       setIsAdding(false);
-      toast.success('Schema created successfully');
     } catch (error) {
       toast.error('Failed to create schema');
       console.error(error);
@@ -67,7 +66,6 @@ export const SchemaSelector = observer(() => {
     try {
       await schemaService.updateSchemaName(schemaId, trimmedName);
       cancelEdit();
-      toast.success('Schema name updated successfully');
     } catch (error) {
       toast.error('Failed to update schema name');
       console.error(error);
@@ -94,7 +92,6 @@ export const SchemaSelector = observer(() => {
 
     try {
       await schemaService.deleteSchema(schemaId);
-      toast.success('Schema deleted successfully');
     } catch (error) {
       toast.error('Failed to delete schema');
       console.error(error);

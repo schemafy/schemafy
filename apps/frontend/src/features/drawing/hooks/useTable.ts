@@ -16,7 +16,6 @@ export const useTable = ({ schemaId, tableId, tableName }: UseTableProps) => {
     try {
       await tableService.updateTableName(schemaId, tableId, editingTableName);
       setIsEditingTableName(false);
-      toast.success('Table name updated successfully');
     } catch (error) {
       toast.error('Failed to save table name');
       console.error(error);
@@ -26,7 +25,6 @@ export const useTable = ({ schemaId, tableId, tableName }: UseTableProps) => {
   const deleteTable = async () => {
     try {
       await tableService.deleteTable(schemaId, tableId);
-      toast.success('Table deleted successfully');
     } catch (error) {
       toast.error('Failed to delete table');
       console.error(error);

@@ -20,6 +20,9 @@ import {
   MousePointer2,
   Hand,
 } from 'lucide-react';
+import { ErdStore } from '@/store';
+import * as schemaService from '../services/schema.service';
+import { toast } from 'sonner';
 
 interface ToolbarProps {
   setActiveTool: (toolId: string) => void;
@@ -76,6 +79,7 @@ export const Toolbar = ({
   onRelationshipConfigChange,
 }: ToolbarProps) => {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+  const erdStore = ErdStore.getInstance();
 
   const handleToolClick = (toolId: string) => {
     if (toolId === 'search') {
@@ -86,6 +90,23 @@ export const Toolbar = ({
       setActiveTool('pointer');
     } else {
       setActiveTool(toolId);
+    }
+  };
+
+  const handleFetchTableList = async () => {
+    const schemaId = erdStore.selectedSchemaId;
+    if (!schemaId) {
+      toast.error('No schema selected');
+      return;
+    }
+
+    try {
+      const tables = await schemaService.getSchemaTableList(schemaId);
+      console.log('Fetched table list:', tables);
+      toast.success(`Fetched ${tables?.length || 0} tables`);
+    } catch (error) {
+      toast.error('Failed to fetch table list');
+      console.error(error);
     }
   };
 
@@ -106,6 +127,17 @@ export const Toolbar = ({
             isActive={activeTool === tool.id}
           />
         ))}
+
+        <div className="w-px h-6 bg-schemafy-light-gray" />
+
+        <Button
+          onClick={handleFetchTableList}
+          variant="none"
+          size="none"
+          className="px-3 py-1.5 rounded-md bg-schemafy-primary hover:bg-schemafy-primary/90 text-white text-xs font-medium transition-colors"
+        >
+          Fetch Tables
+        </Button>
 
         {activeTool &&
           TOOLS.find((t) => t.id === activeTool)?.isRelationship && (

@@ -2,6 +2,8 @@ import { ulid } from 'ulid';
 import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType, ConstraintKind } from '../types';
 import type { Constraint, ConstraintColumn } from '@schemafy/validator';
+import * as columnService from '../services/column.service';
+import { toast } from 'sonner';
 
 export const getColumnName = (
   columns: Array<{ id: string; name: string }>,
@@ -10,24 +12,34 @@ export const getColumnName = (
   return columns.find((col) => col.id === columnId)?.name || 'Unknown';
 };
 
-export const saveColumnName = (
-  erdStore: ErdStore,
+export const saveColumnName = async (
+  _erdStore: ErdStore,
   schemaId: string,
   tableId: string,
   columnId: string,
   name: string,
 ) => {
-  erdStore.changeColumnName(schemaId, tableId, columnId, name);
+  try {
+    await columnService.updateColumnName(schemaId, tableId, columnId, name);
+  } catch (error) {
+    toast.error('Failed to update column name');
+    throw error;
+  }
 };
 
-export const saveColumnType = (
-  erdStore: ErdStore,
+export const saveColumnType = async (
+  _erdStore: ErdStore,
   schemaId: string,
   tableId: string,
   columnId: string,
   dataType: string,
 ) => {
-  erdStore.changeColumnType(schemaId, tableId, columnId, dataType);
+  try {
+    await columnService.updateColumnType(schemaId, tableId, columnId, dataType);
+  } catch (error) {
+    toast.error('Failed to update column type');
+    throw error;
+  }
 };
 
 const CONSTRAINT_PREFIX_MAP: Record<ConstraintKind, string> = {
@@ -54,7 +66,6 @@ const addPrimaryKeyConstraint = (
   const existingPk = table.constraints.find((c) => c.kind === 'PRIMARY_KEY');
 
   if (existingPk) {
-    // TODO: validator에서 복합 pk에 대한 nn 추가 로직 필요
     erdStore.addColumnToConstraint(
       schemaId,
       tableId,
