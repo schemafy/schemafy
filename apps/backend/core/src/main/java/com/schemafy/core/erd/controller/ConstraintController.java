@@ -1,7 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.List;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +18,7 @@ import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.service.ConstraintService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import validation.Validation.AddColumnToConstraintRequest;
 import validation.Validation.ChangeConstraintNameRequest;
@@ -29,7 +27,7 @@ import validation.Validation.DeleteConstraintRequest;
 import validation.Validation.RemoveColumnFromConstraintRequest;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class ConstraintController {
 
@@ -51,15 +49,7 @@ public class ConstraintController {
                 .map(BaseResponse::success);
     }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/constraints/table/{tableId}")
-    public Mono<BaseResponse<List<ConstraintResponse>>> getConstraintsByTableId(
-            @PathVariable String tableId) {
-        return constraintService.getConstraintsByTableId(tableId)
-                .collectList()
-                .map(BaseResponse::success);
-    }
-
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/constraints/{constraintId}/name")
     public Mono<BaseResponse<ConstraintResponse>> updateConstraintName(
             @PathVariable String constraintId,

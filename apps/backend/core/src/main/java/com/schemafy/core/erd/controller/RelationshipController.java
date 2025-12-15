@@ -1,7 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.List;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,16 +16,17 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
+import com.schemafy.core.erd.controller.dto.request.UpdateRelationshipExtraRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.service.RelationshipService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class RelationshipController {
 
@@ -52,14 +51,7 @@ public class RelationshipController {
                 .map(BaseResponse::success);
     }
 
-    @GetMapping("/relationships/table/{tableId}")
-    public Mono<BaseResponse<List<RelationshipResponse>>> getRelationshipsByTableId(
-            @PathVariable String tableId) {
-        return relationshipService.getRelationshipsByTableId(tableId)
-                .collectList()
-                .map(BaseResponse::success);
-    }
-
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/relationships/{relationshipId}/name")
     public Mono<BaseResponse<RelationshipResponse>> updateRelationshipName(
             @PathVariable String relationshipId,
@@ -69,6 +61,16 @@ public class RelationshipController {
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
         return relationshipService.updateRelationshipName(request)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+    @PutMapping("/relationships/{relationshipId}/extra")
+    public Mono<BaseResponse<RelationshipResponse>> updateRelationshipExtra(
+            @PathVariable String relationshipId,
+            @RequestBody UpdateRelationshipExtraRequest request) {
+        return relationshipService
+                .updateRelationshipExtra(relationshipId, request.extra())
                 .map(BaseResponse::success);
     }
 

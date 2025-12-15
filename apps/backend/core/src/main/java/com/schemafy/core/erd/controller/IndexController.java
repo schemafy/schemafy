@@ -1,7 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.List;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +19,7 @@ import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
 import com.schemafy.core.erd.service.IndexService;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import validation.Validation.AddColumnToIndexRequest;
 import validation.Validation.ChangeIndexNameRequest;
@@ -30,7 +28,7 @@ import validation.Validation.DeleteIndexRequest;
 import validation.Validation.RemoveColumnFromIndexRequest;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping(ApiPath.API)
 public class IndexController {
 
@@ -52,15 +50,7 @@ public class IndexController {
                 .map(BaseResponse::success);
     }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/indexes/table/{tableId}")
-    public Mono<BaseResponse<List<IndexResponse>>> getIndexesByTableId(
-            @PathVariable String tableId) {
-        return indexService.getIndexesByTableId(tableId)
-                .collectList()
-                .map(BaseResponse::success);
-    }
-
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/indexes/{indexId}/name")
     public Mono<BaseResponse<IndexResponse>> updateIndexName(
             @PathVariable String indexId,

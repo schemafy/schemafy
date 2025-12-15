@@ -16,35 +16,33 @@ import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-public class RelationshipService extends BaseErdService {
+@RequiredArgsConstructor
+public class RelationshipService {
 
     private final ValidationClient validationClient;
     private final RelationshipRepository relationshipRepository;
     private final RelationshipColumnRepository relationshipColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
-
-    public RelationshipService(
-            ValidationClient validationClient,
-            RelationshipRepository relationshipRepository,
-            RelationshipColumnRepository relationshipColumnRepository,
-            AffectedEntitiesSaver affectedEntitiesSaver,
-            TransactionalOperator transactionalOperator) {
-        super(transactionalOperator);
-        this.validationClient = validationClient;
-        this.relationshipRepository = relationshipRepository;
-        this.relationshipColumnRepository = relationshipColumnRepository;
-        this.affectedEntitiesSaver = affectedEntitiesSaver;
-    }
+    private final TransactionalOperator transactionalOperator;
 
     public Mono<AffectedMappingResponse> createRelationship(
             CreateRelationshipRequestWithExtra request) {
         return validationClient.createRelationship(request.request())
-                .flatMap(database -> transactional(relationshipRepository
+                .flatMap(database -> saveRelationshipWithColumns(request,
+                        database));
+    }
+
+    private Mono<AffectedMappingResponse> saveRelationshipWithColumns(
+            CreateRelationshipRequestWithExtra request,
+            Validation.Database database) {
+        return transactionalOperator.transactional(
+                relationshipRepository
                         .save(ErdMapper.toEntity(
                                 request.request().getRelationship(),
                                 request.extra()))
@@ -57,33 +55,45 @@ public class RelationshipService extends BaseErdService {
                                                     .getId(),
                                             savedRelationship.getId());
 
-                            return Flux
-                                    .fromIterable(request.request()
-                                            .getRelationship().getColumnsList())
-                                    .flatMap(column -> {
-                                        RelationshipColumn entity = ErdMapper
-                                                .toEntity(column);
-                                        entity.setRelationshipId(
-                                                savedRelationship.getId());
-                                        return relationshipColumnRepository
-                                                .save(entity);
-                                    })
-                                    .then(affectedEntitiesSaver
-                                            .saveAffectedEntities(
-                                                    request.request()
-                                                            .getDatabase(),
-                                                    updatedDatabase,
-                                                    savedRelationship.getId(),
-                                                    savedRelationship.getId(),
-                                                    "RELATIONSHIP"))
-                                    .map(propagated -> AffectedMappingResponse
-                                            .of(
-                                                    request.request(),
-                                                    request.request()
-                                                            .getDatabase(),
-                                                    updatedDatabase,
-                                                    propagated));
-                        })));
+                            return saveRelationshipColumns(
+                                    request.request().getRelationship()
+                                            .getColumnsList(),
+                                    savedRelationship.getId())
+                                    .then(saveAffectedEntitiesAndBuildResponse(
+                                            request,
+                                            updatedDatabase,
+                                            savedRelationship.getId()));
+                        }));
+    }
+
+    private Mono<Void> saveRelationshipColumns(
+            java.util.List<Validation.RelationshipColumn> columns,
+            String relationshipId) {
+        return Flux.fromIterable(columns)
+                .flatMap(column -> {
+                    RelationshipColumn entity = ErdMapper.toEntity(column);
+                    entity.setRelationshipId(relationshipId);
+                    return relationshipColumnRepository.save(entity);
+                })
+                .then();
+    }
+
+    private Mono<AffectedMappingResponse> saveAffectedEntitiesAndBuildResponse(
+            CreateRelationshipRequestWithExtra request,
+            Validation.Database updatedDatabase,
+            String relationshipId) {
+        return affectedEntitiesSaver
+                .saveAffectedEntities(
+                        request.request().getDatabase(),
+                        updatedDatabase,
+                        relationshipId,
+                        relationshipId,
+                        "RELATIONSHIP")
+                .map(propagated -> AffectedMappingResponse.of(
+                        request.request(),
+                        request.request().getDatabase(),
+                        updatedDatabase,
+                        propagated));
     }
 
     public Mono<RelationshipResponse> getRelationship(String id) {
@@ -124,6 +134,17 @@ public class RelationshipService extends BaseErdService {
                 .map(RelationshipResponse::from);
     }
 
+    public Mono<RelationshipResponse> updateRelationshipExtra(
+            String relationshipId, String extra) {
+        return relationshipRepository.findByIdAndDeletedAtIsNull(relationshipId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
+                .doOnNext(relationship -> relationship.setExtra(extra))
+                .flatMap(relationshipRepository::save)
+                .map(RelationshipResponse::from);
+    }
+
     public Mono<RelationshipResponse> updateRelationshipCardinality(
             Validation.ChangeRelationshipCardinalityRequest request) {
         return relationshipRepository
@@ -142,7 +163,15 @@ public class RelationshipService extends BaseErdService {
     public Mono<AffectedMappingResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
-                .flatMap(database -> transactional(relationshipColumnRepository
+                .flatMap(database -> saveRelationshipColumnAndAffectedEntities(
+                        request, database));
+    }
+
+    private Mono<AffectedMappingResponse> saveRelationshipColumnAndAffectedEntities(
+            Validation.AddColumnToRelationshipRequest request,
+            Validation.Database database) {
+        return transactionalOperator.transactional(
+                relationshipColumnRepository
                         .save(ErdMapper
                                 .toEntity(request.getRelationshipColumn()))
                         .flatMap(savedRelationshipColumn -> {
@@ -167,7 +196,7 @@ public class RelationshipService extends BaseErdService {
                                                     request.getDatabase(),
                                                     updatedDatabase,
                                                     propagated));
-                        })));
+                        }));
     }
 
     public Mono<Void> removeColumnFromRelationship(

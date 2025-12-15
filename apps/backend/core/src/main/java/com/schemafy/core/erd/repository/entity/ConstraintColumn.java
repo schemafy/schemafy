@@ -15,7 +15,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_constraint_columns")
 public class ConstraintColumn extends BaseEntity {

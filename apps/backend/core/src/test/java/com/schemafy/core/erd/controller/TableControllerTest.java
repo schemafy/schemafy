@@ -7,7 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -19,9 +18,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.WithMockCustomUser;
+import com.schemafy.core.erd.controller.dto.request.UpdateTableExtraRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.TableResponse;
+import com.schemafy.core.erd.service.ColumnService;
+import com.schemafy.core.erd.service.ConstraintService;
+import com.schemafy.core.erd.service.IndexService;
+import com.schemafy.core.erd.service.RelationshipService;
 import com.schemafy.core.erd.service.TableService;
 
 import reactor.core.publisher.Flux;
@@ -29,12 +38,14 @@ import reactor.core.publisher.Mono;
 import validation.Validation;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -46,7 +57,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("TableController 통합 테스트")
-@WithMockUser(roles = "EDITOR")
+@WithMockCustomUser(roles = "EDITOR")
 class TableControllerTest {
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -60,6 +71,18 @@ class TableControllerTest {
 
     @MockitoBean
     private TableService tableService;
+
+    @MockitoBean
+    private ColumnService columnService;
+
+    @MockitoBean
+    private RelationshipService relationshipService;
+
+    @MockitoBean
+    private IndexService indexService;
+
+    @MockitoBean
+    private ConstraintService constraintService;
 
     private String toJson(Message message) throws Exception {
         return JsonFormat.printer()
@@ -198,85 +221,6 @@ class TableControllerTest {
     }
 
     @Test
-    @DisplayName("스키마별 테이블 목록 조회 API 문서화")
-    void getTablesBySchemaId() throws Exception {
-        String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
-
-        TableResponse tableResponse = objectMapper.treeToValue(
-                objectMapper
-                        .readTree(
-                                """
-                                        {
-                                            "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
-                                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                            "name": "users",
-                                            "comment": "사용자 테이블",
-                                            "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                            "extra": "{}",
-                                            "createdAt": "2025-11-10T13:48:01Z",
-                                            "updatedAt": "2025-11-10T13:48:01Z",
-                                            "deletedAt": null
-                                        }
-                                        """),
-                TableResponse.class);
-
-        given(tableService.getTablesBySchemaId(schemaId))
-                .willReturn(Flux.just(tableResponse));
-
-        webTestClient.get()
-                .uri(API_BASE_PATH + "/tables/schema/{schemaId}", schemaId)
-                .header("Accept", "application/json")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result").isArray()
-                .jsonPath("$.result.length()").isEqualTo(1)
-                .jsonPath("$.result[0].id")
-                .isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
-                .jsonPath("$.result[0].schemaId")
-                .isEqualTo("06D6VZBWHSDJBBG0H7D156YZ98")
-                .jsonPath("$.result[0].name").isEqualTo("users")
-                .jsonPath("$.result[0].comment").isEqualTo("사용자 테이블")
-                .jsonPath("$.result[0].tableOptions")
-                .isEqualTo("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
-                .consumeWith(document("table-list-by-schema",
-                        pathParameters(
-                                parameterWithName("schemaId")
-                                        .description("조회할 스키마의 ID")),
-                        requestHeaders(
-                                headerWithName("Accept")
-                                        .description(
-                                                "응답 포맷 (application/json)")),
-                        responseHeaders(
-                                headerWithName("Content-Type")
-                                        .description("응답 컨텐츠 타입")),
-                        responseFields(
-                                fieldWithPath("success")
-                                        .description("요청 성공 여부"),
-                                fieldWithPath("result")
-                                        .description("테이블 목록"),
-                                fieldWithPath("result[].id")
-                                        .description("테이블 ID"),
-                                fieldWithPath("result[].schemaId")
-                                        .description("스키마 ID"),
-                                fieldWithPath("result[].name")
-                                        .description("테이블 이름"),
-                                fieldWithPath("result[].comment")
-                                        .description("테이블 설명"),
-                                fieldWithPath("result[].tableOptions")
-                                        .description("테이블 옵션"),
-                                fieldWithPath("result[].extra")
-                                        .description("추가 정보"),
-                                fieldWithPath("result[].createdAt")
-                                        .description("생성 일시"),
-                                fieldWithPath("result[].updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result[].deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"))));
-    }
-
-    @Test
     @DisplayName("테이블 단건 조회 API 문서화")
     void getTable() throws Exception {
         String tableId = "06D6W1GAHD51T5NJPK29Q6BCR8";
@@ -296,7 +240,6 @@ class TableControllerTest {
                                                 "extra": "{}",
                                                 "createdAt": "2025-11-10T13:48:01Z",
                                                 "updatedAt": "2025-11-10T13:48:01Z",
-                                                "deletedAt": null,
                                                 "columns": [],
                                                 "constraints": [],
                                                 "indexes": [],
@@ -355,10 +298,8 @@ class TableControllerTest {
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
                                         .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시 (Soft Delete)"),
                                 fieldWithPath("result.columns")
-                                        .description("컬럼 목록"),
+                                        .description("컨럼 목록"),
                                 fieldWithPath("result.constraints")
                                         .description("제약조건 목록"),
                                 fieldWithPath("result.indexes")
@@ -426,8 +367,7 @@ class TableControllerTest {
                                                 "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
                                                 "extra": "{}",
                                                 "createdAt": "2025-11-10T13:48:01Z",
-                                                "updatedAt": "2025-11-10T14:15:08.399530Z",
-                                                "deletedAt": null
+                                                "updatedAt": "2025-11-10T14:15:08.399530Z"
                                             }
                                         }
                                         """)
@@ -488,9 +428,93 @@ class TableControllerTest {
                                 fieldWithPath("result.createdAt")
                                         .description("생성 일시"),
                                 fieldWithPath("result.updatedAt")
-                                        .description("수정 일시"),
-                                fieldWithPath("result.deletedAt")
-                                        .description("삭제 일시"))));
+                                        .description("수정 일시"))));
+    }
+
+    @Test
+    @DisplayName("테이블 추가 정보 변경 API 문서화")
+    void updateTableExtra() throws Exception {
+        String tableId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+        String extra = """
+                {"uiColor":"blue"}
+                """;
+
+        UpdateTableExtraRequest request = new UpdateTableExtraRequest(extra);
+
+        TableResponse mockResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "success": true,
+                                            "result": {
+                                                "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "extra": "{\\"uiColor\\":\\"blue\\"}",
+                                                "createdAt": "2025-11-10T13:48:01Z",
+                                                "updatedAt": "2025-11-10T14:15:08.399530Z"
+                                            }
+                                        }
+                                        """)
+                        .get("result"),
+                TableResponse.class);
+
+        given(tableService.updateTableExtra(eq(tableId), eq(extra)))
+                .willReturn(Mono.just(mockResponse));
+
+        webTestClient.put()
+                .uri(API_BASE_PATH + "/tables/{tableId}/extra", tableId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
+                .jsonPath("$.result.extra").isEqualTo("{\"uiColor\":\"blue\"}")
+                .consumeWith(document("table-update-extra",
+                        pathParameters(
+                                parameterWithName("tableId")
+                                        .description("테이블 ID")),
+                        requestHeaders(
+                                headerWithName("Content-Type")
+                                        .description(
+                                                "요청 본문 타입 (application/json)"),
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        requestFields(
+                                fieldWithPath("extra")
+                                        .type(JsonFieldType.STRING)
+                                        .description("추가 정보(JSON 문자열)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("수정된 테이블 정보"),
+                                fieldWithPath("result.id")
+                                        .description("테이블 ID"),
+                                fieldWithPath("result.schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("result.name")
+                                        .description("테이블 이름"),
+                                fieldWithPath("result.comment")
+                                        .description("테이블 설명"),
+                                fieldWithPath("result.tableOptions")
+                                        .description("테이블 옵션"),
+                                fieldWithPath("result.extra")
+                                        .description("추가 정보"),
+                                fieldWithPath("result.createdAt")
+                                        .description("생성 일시"),
+                                fieldWithPath("result.updatedAt")
+                                        .description("수정 일시"))));
     }
 
     @Test
@@ -571,6 +595,277 @@ class TableControllerTest {
                                         .type(JsonFieldType.NULL)
                                         .optional()
                                         .description("응답 데이터 (null)"))));
+    }
+
+    @Test
+    @DisplayName("테이블별 컬럼 목록 조회 API 문서화")
+    void getColumnsByTableId() throws Exception {
+        String tableId = "06D6W8HDY79QFZX39RMX62KSX4";
+
+        ColumnResponse columnResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                            "name": "user_id",
+                                            "dataType": "BIGINT",
+                                            "ordinalPosition": 1,
+                                            "lengthScale": "20",
+                                            "isAutoIncrement": false,
+                                            "charset": "utf8mb4",
+                                            "collation": "utf8mb4_unicode_ci",
+                                            "comment": "사용자 ID"
+                                        }
+                                        """),
+                ColumnResponse.class);
+
+        given(columnService.getColumnsByTableId(tableId))
+                .willReturn(Flux.just(columnResponse));
+
+        webTestClient.get()
+                .uri(API_BASE_PATH + "/tables/{tableId}/columns", tableId)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result").isArray()
+                .jsonPath("$.result.length()").isEqualTo(1)
+                .jsonPath("$.result[0].id")
+                .isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
+                .jsonPath("$.result[0].tableId")
+                .isEqualTo("06D6W8HDY79QFZX39RMX62KSX4")
+                .jsonPath("$.result[0].name").isEqualTo("user_id")
+                .jsonPath("$.result[0].dataType").isEqualTo("BIGINT")
+                .consumeWith(document("column-list-by-table",
+                        pathParameters(
+                                parameterWithName("tableId")
+                                        .description("테이블 ID")),
+                        requestHeaders(
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result").description("컬럼 목록"),
+                                fieldWithPath("result[].id")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("result[].tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("result[].name")
+                                        .description("컬럼 이름"),
+                                fieldWithPath("result[].dataType")
+                                        .description("데이터 타입"),
+                                fieldWithPath("result[].lengthScale")
+                                        .description("길이/스케일"),
+                                fieldWithPath("result[].isAutoIncrement")
+                                        .description("자동 증가 여부"),
+                                fieldWithPath("result[].charset")
+                                        .description("문자 집합"),
+                                fieldWithPath("result[].collation")
+                                        .description("정렬 규칙"),
+                                fieldWithPath("result[].comment")
+                                        .description("컬럼 설명"),
+                                fieldWithPath("result[].ordinalPosition")
+                                        .description("컬럼 위치"))));
+    }
+
+    @Test
+    @DisplayName("테이블별 관계 목록 조회 API 문서화")
+    void getRelationshipsByTableId() throws Exception {
+        String tableId = "06D6W8HDY79QFZX39RMX62KSX4";
+
+        RelationshipResponse relationshipResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "id": "06D6WJQP78M1RKSJMT8JWKNJNG",
+                                            "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                            "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX5",
+                                            "name": "fk_users_orders",
+                                            "kind": "FOREIGN_KEY",
+                                            "cardinality": "ONE_TO_MANY",
+                                            "onDelete": "CASCADE",
+                                            "onUpdate": "CASCADE",
+                                            "extra": "{}",
+                                            "columns": []
+                                        }
+                                        """),
+                RelationshipResponse.class);
+
+        given(relationshipService.getRelationshipsByTableId(tableId))
+                .willReturn(Flux.just(relationshipResponse));
+
+        webTestClient.get()
+                .uri(API_BASE_PATH + "/tables/{tableId}/relationships", tableId)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result").isArray()
+                .jsonPath("$.result.length()").isEqualTo(1)
+                .consumeWith(document("relationship-list-by-table",
+                        pathParameters(
+                                parameterWithName("tableId")
+                                        .description("테이블 ID")),
+                        requestHeaders(
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result").description("관계 목록"),
+                                fieldWithPath("result[].id")
+                                        .description("관계 ID"),
+                                fieldWithPath("result[].srcTableId")
+                                        .description("소스 테이블 ID"),
+                                fieldWithPath("result[].tgtTableId")
+                                        .description("타겟 테이블 ID"),
+                                fieldWithPath("result[].name")
+                                        .description("관계 이름"),
+                                fieldWithPath("result[].kind")
+                                        .description("관계 종류"),
+                                fieldWithPath("result[].cardinality")
+                                        .description("카디널리티"),
+                                fieldWithPath("result[].onDelete")
+                                        .description("삭제 시 동작"),
+                                fieldWithPath("result[].onUpdate")
+                                        .description("수정 시 동작"),
+                                fieldWithPath("result[].extra")
+                                        .description("추가 정보"),
+                                fieldWithPath("result[].columns")
+                                        .description("관계 컬럼 목록"))));
+    }
+
+    @Test
+    @DisplayName("테이블별 인덱스 목록 조회 API 문서화")
+    void getIndexesByTableId() throws Exception {
+        String tableId = "06D6W8HDY79QFZX39RMX62KSX4";
+
+        IndexResponse indexResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "id": "06D6WKQP78M1RKSJMT8JWKNJNG",
+                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                            "name": "idx_user_id",
+                                            "type": "BTREE",
+                                            "comment": "인덱스 코멘트",
+                                            "columns": []
+                                        }
+                                        """),
+                IndexResponse.class);
+
+        given(indexService.getIndexesByTableId(tableId))
+                .willReturn(Flux.just(indexResponse));
+
+        webTestClient.get()
+                .uri(API_BASE_PATH + "/tables/{tableId}/indexes", tableId)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result").isArray()
+                .jsonPath("$.result.length()").isEqualTo(1)
+                .consumeWith(document("index-list-by-table",
+                        pathParameters(
+                                parameterWithName("tableId")
+                                        .description("테이블 ID")),
+                        requestHeaders(
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result").description("인덱스 목록"),
+                                fieldWithPath("result[].id")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("result[].tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("result[].name")
+                                        .description("인덱스 이름"),
+                                fieldWithPath("result[].type")
+                                        .description("인덱스 타입"),
+                                fieldWithPath("result[].comment")
+                                        .description("인덱스 코멘트"),
+                                fieldWithPath("result[].columns")
+                                        .description("인덱스 컬럼 목록"))));
+    }
+
+    @Test
+    @DisplayName("테이블별 제약조건 목록 조회 API 문서화")
+    void getConstraintsByTableId() throws Exception {
+        String tableId = "06D6W8HDY79QFZX39RMX62KSX4";
+
+        ConstraintResponse constraintResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "id": "06D6WLQP78M1RKSJMT8JWKNJNG",
+                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                            "name": "pk_user_id",
+                                            "kind": "PRIMARY_KEY",
+                                            "columns": []
+                                        }
+                                        """),
+                ConstraintResponse.class);
+
+        given(constraintService.getConstraintsByTableId(tableId))
+                .willReturn(Flux.just(constraintResponse));
+
+        webTestClient.get()
+                .uri(API_BASE_PATH + "/tables/{tableId}/constraints", tableId)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result").isArray()
+                .jsonPath("$.result.length()").isEqualTo(1)
+                .consumeWith(document("constraint-list-by-table",
+                        pathParameters(
+                                parameterWithName("tableId")
+                                        .description("테이블 ID")),
+                        requestHeaders(
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result").description("제약조건 목록"),
+                                fieldWithPath("result[].id")
+                                        .description("제약조건 ID"),
+                                fieldWithPath("result[].tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("result[].name")
+                                        .description("제약조건 이름"),
+                                fieldWithPath("result[].kind")
+                                        .description("제약조건 종류"),
+                                fieldWithPath("result[].columns")
+                                        .description("제약조건 컬럼 목록"))));
     }
 
 }

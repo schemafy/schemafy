@@ -16,54 +16,60 @@ import com.schemafy.core.erd.repository.entity.Index;
 import com.schemafy.core.erd.repository.entity.IndexColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
 @Service
-public class IndexService extends BaseErdService {
+@RequiredArgsConstructor
+public class IndexService {
 
     private final ValidationClient validationClient;
     private final IndexRepository indexRepository;
     private final IndexColumnRepository indexColumnRepository;
-
-    public IndexService(
-            ValidationClient validationClient,
-            IndexRepository indexRepository,
-            IndexColumnRepository indexColumnRepository,
-            TransactionalOperator transactionalOperator) {
-        super(transactionalOperator);
-        this.validationClient = validationClient;
-        this.indexRepository = indexRepository;
-        this.indexColumnRepository = indexColumnRepository;
-    }
+    private final TransactionalOperator transactionalOperator;
 
     public Mono<AffectedMappingResponse> createIndex(
             Validation.CreateIndexRequest request) {
         return validationClient.createIndex(request)
-                .flatMap(database -> transactional(indexRepository
+                .flatMap(database -> saveIndexWithColumns(request, database));
+    }
+
+    private Mono<AffectedMappingResponse> saveIndexWithColumns(
+            Validation.CreateIndexRequest request,
+            Validation.Database database) {
+        return transactionalOperator.transactional(
+                indexRepository
                         .save(ErdMapper.toEntity(request.getIndex()))
-                        .flatMap(savedIndex -> Flux
-                                .fromIterable(
-                                        request.getIndex().getColumnsList())
-                                .flatMap(column -> {
-                                    IndexColumn entity = ErdMapper
-                                            .toEntity(column);
-                                    entity.setIndexId(savedIndex.getId());
-                                    return indexColumnRepository
-                                            .save(entity);
-                                })
-                                .then(Mono.just(AffectedMappingResponse.of(
-                                        request,
-                                        request.getDatabase(),
-                                        AffectedMappingResponse
-                                                .updateEntityIdInDatabase(
-                                                        database,
-                                                        EntityType.INDEX,
-                                                        request.getIndex()
-                                                                .getId(),
-                                                        savedIndex
-                                                                .getId())))))));
+                        .flatMap(savedIndex -> {
+                            Validation.Database updatedDatabase = AffectedMappingResponse
+                                    .updateEntityIdInDatabase(
+                                            database,
+                                            EntityType.INDEX,
+                                            request.getIndex().getId(),
+                                            savedIndex.getId());
+
+                            return saveIndexColumns(
+                                    request.getIndex().getColumnsList(),
+                                    savedIndex.getId())
+                                    .then(Mono.just(AffectedMappingResponse.of(
+                                            request,
+                                            request.getDatabase(),
+                                            updatedDatabase)));
+                        }));
+    }
+
+    private Mono<Void> saveIndexColumns(
+            java.util.List<Validation.IndexColumn> columns,
+            String indexId) {
+        return Flux.fromIterable(columns)
+                .flatMap(column -> {
+                    IndexColumn entity = ErdMapper.toEntity(column);
+                    entity.setIndexId(indexId);
+                    return indexColumnRepository.save(entity);
+                })
+                .then();
     }
 
     public Mono<IndexResponse> getIndex(String id) {

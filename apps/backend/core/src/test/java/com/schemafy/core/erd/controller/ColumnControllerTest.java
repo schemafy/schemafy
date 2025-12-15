@@ -7,7 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -19,11 +18,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.service.ColumnService;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import validation.Validation;
 
@@ -45,7 +44,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("ColumnController 통합 테스트")
-@WithMockUser(roles = "EDITOR")
+@WithMockCustomUser(roles = "EDITOR")
 class ColumnControllerTest {
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -293,85 +292,6 @@ class ColumnControllerTest {
                                 fieldWithPath("result.comment")
                                         .description("컬럼 설명"),
                                 fieldWithPath("result.ordinalPosition")
-                                        .description("컬럼 위치"))));
-    }
-
-    @Test
-    @DisplayName("테이블별 컬럼 목록 조회 API 문서화")
-    void getColumnsByTableId() throws Exception {
-        String tableId = "06D6W8HDY79QFZX39RMX62KSX4";
-
-        ColumnResponse columnResponse = objectMapper.treeToValue(
-                objectMapper
-                        .readTree(
-                                """
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "user_id",
-                                            "dataType": "BIGINT",
-                                            "ordinalPosition": 1,
-                                            "lengthScale": "20",
-                                            "isAutoIncrement": false,
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID"
-                                        }
-                                        """),
-                ColumnResponse.class);
-
-        given(columnService.getColumnsByTableId(tableId))
-                .willReturn(Flux.just(columnResponse));
-
-        webTestClient.get()
-                .uri(API_BASE_PATH + "/columns/table/{tableId}", tableId)
-                .header("Accept", "application/json")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result").isArray()
-                .jsonPath("$.result.length()").isEqualTo(1)
-                .jsonPath("$.result[0].id")
-                .isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
-                .jsonPath("$.result[0].tableId")
-                .isEqualTo("06D6W8HDY79QFZX39RMX62KSX4")
-                .jsonPath("$.result[0].name").isEqualTo("user_id")
-                .jsonPath("$.result[0].dataType").isEqualTo("BIGINT")
-                .consumeWith(document("column-list-by-table",
-                        pathParameters(
-                                parameterWithName("tableId")
-                                        .description("테이블 ID")),
-                        requestHeaders(
-                                headerWithName("Accept")
-                                        .description(
-                                                "응답 포맷 (application/json)")),
-                        responseHeaders(
-                                headerWithName("Content-Type")
-                                        .description("응답 컨텐츠 타입")),
-                        responseFields(
-                                fieldWithPath("success")
-                                        .description("요청 성공 여부"),
-                                fieldWithPath("result").description("컬럼 목록"),
-                                fieldWithPath("result[].id")
-                                        .description("컬럼 ID"),
-                                fieldWithPath("result[].tableId")
-                                        .description("테이블 ID"),
-                                fieldWithPath("result[].name")
-                                        .description("컬럼 이름"),
-                                fieldWithPath("result[].dataType")
-                                        .description("데이터 타입"),
-                                fieldWithPath("result[].lengthScale")
-                                        .description("길이/스케일"),
-                                fieldWithPath("result[].isAutoIncrement")
-                                        .description("자동 증가 여부"),
-                                fieldWithPath("result[].charset")
-                                        .description("문자 집합"),
-                                fieldWithPath("result[].collation")
-                                        .description("정렬 규칙"),
-                                fieldWithPath("result[].comment")
-                                        .description("컬럼 설명"),
-                                fieldWithPath("result[].ordinalPosition")
                                         .description("컬럼 위치"))));
     }
 

@@ -1,3 +1,6 @@
+import type { Point } from './index';
+import type { Relationship } from '@schemafy/validator';
+
 export const RELATIONSHIP_TYPES = {
   'one-to-one': {
     label: '1:1',
@@ -32,8 +35,6 @@ export type RelationshipType = keyof typeof RELATIONSHIP_TYPES;
 export interface RelationshipConfig {
   type: RelationshipType;
   isNonIdentifying: boolean;
-  controlPointX?: number;
-  controlPointY?: number;
 }
 
 export const isRelationshipType = (
@@ -44,3 +45,30 @@ export const isRelationshipType = (
     (Object.keys(RELATIONSHIP_TYPES) as string[]).includes(value)
   );
 };
+
+export type CrossDirectionControlPoints = {
+  controlPoint1: Point;
+  controlPoint2: Point;
+};
+
+export type SameDirectionControlPoints = {
+  controlPoint1: Point;
+};
+
+export type RelationshipExtra = {
+  sourceHandle?: string;
+  targetHandle?: string;
+} & Partial<CrossDirectionControlPoints>;
+
+export interface EdgeData extends Record<string, unknown> {
+  relationshipType: RelationshipType;
+  isNonIdentifying: boolean;
+  controlPoint1?: Point;
+  controlPoint2?: Point;
+  dbRelationship?: Relationship;
+  onControlPointDragEnd?: (
+    id: string,
+    controlPoint1: Point,
+    controlPoint2?: Point,
+  ) => void;
+}
