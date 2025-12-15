@@ -10,8 +10,20 @@ public class UlidGenerator {
     private static final char[] BASE32_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
             .toCharArray();
 
-    public static String generate() {
+    private static long lastTimestamp = -1L;
+    private static final byte[] lastRandomBytes = new byte[10];
+
+    public static synchronized String generate() {
         long timestamp = Instant.now().toEpochMilli();
+
+        if (timestamp > lastTimestamp) {
+            lastTimestamp = timestamp;
+            SECURE_RANDOM.nextBytes(lastRandomBytes);
+        } else {
+            // 같은 ms(또는 시계 역행)에도 단조 증가(monotonic)하도록 random 파트를 증가시킨다.
+            incrementRandomBytes(lastRandomBytes);
+            timestamp = lastTimestamp;
+        }
 
         byte[] timestampBytes = new byte[6];
         timestampBytes[0] = (byte) ((timestamp >>> 40) & 0xFF);
@@ -21,14 +33,29 @@ public class UlidGenerator {
         timestampBytes[4] = (byte) ((timestamp >>> 8) & 0xFF);
         timestampBytes[5] = (byte) (timestamp & 0xFF);
 
-        byte[] randomBytes = new byte[10];
-        SECURE_RANDOM.nextBytes(randomBytes);
-
         byte[] ulidBytes = new byte[16];
         System.arraycopy(timestampBytes, 0, ulidBytes, 0, 6);
-        System.arraycopy(randomBytes, 0, ulidBytes, 6, 10);
+        System.arraycopy(lastRandomBytes, 0, ulidBytes, 6, 10);
 
         return encodeBase32(ulidBytes);
+    }
+
+    private static void incrementRandomBytes(byte[] randomBytes) {
+        for (int i = randomBytes.length - 1; i >= 0; i--) {
+            int value = (randomBytes[i] & 0xFF) + 1;
+            randomBytes[i] = (byte) value;
+            if (value <= 0xFF) {
+                return;
+            }
+        }
+
+        // 80-bit overflow는 매우 드물지만, 발생 시 다음 ms로 넘어갈 때까지 대기 후 난수를 재생성한다.
+        long timestamp;
+        do {
+            timestamp = Instant.now().toEpochMilli();
+        } while (timestamp <= lastTimestamp);
+        lastTimestamp = timestamp;
+        SECURE_RANDOM.nextBytes(randomBytes);
     }
 
     private static String encodeBase32(byte[] data) {
