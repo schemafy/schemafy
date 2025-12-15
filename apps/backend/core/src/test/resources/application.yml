@@ -27,6 +27,15 @@ spring:
       initial-size: 5
       max-size: 20
 
+  security:
+    user:
+      name: test
+      password: test
+
+  output:
+    ansi:
+      enabled: always
+
 jwt:
   secret: my-super-secret-key-for-jwt-token-generation-min-256-bits-required
   access-token-expiration: 7200000
@@ -36,15 +45,6 @@ jwt:
 
 cors:
   allowed-origins: http://localhost:3000
-
-  security:
-    user:
-      name: test
-      password: test
-
-  output:
-    ansi:
-      enabled: always
 
 cache:
   type: CAFFEINE
