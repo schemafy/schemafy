@@ -79,10 +79,26 @@ public class PresenceService {
         String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
         cursorDedupeCache.remove(sessionId);
 
+        SessionEntry entry = sessionService
+                .getSessionEntry(projectId, sessionId)
+                .orElse(null);
+        if (entry == null) {
+            log.warn(
+                    "[PresenceService] Session not found for removal: sessionId={}",
+                    sessionId);
+            return Mono.fromRunnable(
+                    () -> sessionService.removeSession(projectId, sessionId))
+                    .then();
+        }
+
+        String userId = entry.authInfo().getUserId();
+        String userName = entry.authInfo().getUserName();
+
         return Mono
                 .fromRunnable(() -> sessionService.removeSession(projectId,
                         sessionId))
-                .then(serializeToJson(PresenceEventFactory.leave(sessionId)))
+                .then(serializeToJson(PresenceEventFactory.leave(sessionId,
+                        userId, userName)))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
                 .then();

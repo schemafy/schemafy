@@ -9,8 +9,9 @@ public final class PresenceEventFactory {
         return PresenceJoinEvent.of(sessionId, userId, userName);
     }
 
-    public static PresenceLeaveEvent leave(String sessionId) {
-        return PresenceLeaveEvent.of(sessionId);
+    public static PresenceLeaveEvent leave(String sessionId, String userId,
+            String userName) {
+        return PresenceLeaveEvent.of(sessionId, userId, userName);
     }
 
     public static PresenceCursorEvent cursor(String sessionId,
