@@ -1,34 +1,36 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { ErdStore } from '@/store/erd.store';
+import * as tableService from '../services/table.service';
 
 interface UseTableProps {
-  erdStore: ErdStore;
   schemaId: string;
   tableId: string;
   tableName: string;
 }
 
-export const useTable = ({
-  erdStore,
-  schemaId,
-  tableId,
-  tableName,
-}: UseTableProps) => {
+export const useTable = ({ schemaId, tableId, tableName }: UseTableProps) => {
   const [isEditingTableName, setIsEditingTableName] = useState(false);
   const [editingTableName, setEditingTableName] = useState(tableName);
 
-  const saveTableName = () => {
+  const saveTableName = async () => {
     try {
-      erdStore.changeTableName(schemaId, tableId, editingTableName);
+      await tableService.updateTableName(schemaId, tableId, editingTableName);
       setIsEditingTableName(false);
-    } catch {
+      toast.success('Table name updated successfully');
+    } catch (error) {
       toast.error('Failed to save table name');
+      console.error(error);
     }
   };
 
-  const deleteTable = () => {
-    erdStore.deleteTable(schemaId, tableId);
+  const deleteTable = async () => {
+    try {
+      await tableService.deleteTable(schemaId, tableId);
+      toast.success('Table deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete table');
+      console.error(error);
+    }
   };
 
   return {

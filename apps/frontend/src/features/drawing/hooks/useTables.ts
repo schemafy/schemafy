@@ -3,9 +3,9 @@ import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
 import { toast } from 'sonner';
 import { ErdStore } from '@/store';
 import type { TableData, Point } from '../types';
-import { ulid } from 'ulid';
 import { transformTableToNode } from '../utils/tableHelpers';
 import { generateUniqueName } from '../utils/nameGenerator';
+import * as tableService from '../services/table.service';
 
 export const useTables = () => {
   const erdStore = ErdStore.getInstance();
@@ -26,7 +26,7 @@ export const useTables = () => {
     setTables(getTablesFromStore());
   }, [erdStore.erdState, erdStore.selectedSchemaId]);
 
-  const addTable = (position: Point) => {
+  const addTable = async (position: Point) => {
     const selectedSchemaId = erdStore.selectedSchemaId;
     const selectedSchema = erdStore.selectedSchema;
 
@@ -36,18 +36,21 @@ export const useTables = () => {
     }
 
     const existingTableNames = selectedSchema.tables.map((table) => table.name);
+    const tableName = generateUniqueName(existingTableNames, 'Table');
 
-    erdStore.createTable(selectedSchemaId, {
-      id: ulid(),
-      name: generateUniqueName(existingTableNames, 'Table'),
-      columns: [],
-      indexes: [],
-      constraints: [],
-      relationships: [],
-      tableOptions: '',
-      extra: { position },
-      isAffected: false,
-    });
+    try {
+      await tableService.createTable(
+        selectedSchemaId,
+        tableName,
+        '',
+        undefined,
+        JSON.stringify({ position }),
+      );
+      toast.success('Table created successfully');
+    } catch (error) {
+      toast.error('Failed to create table');
+      console.error(error);
+    }
   };
 
   const handlePositionChanges = (
@@ -61,15 +64,23 @@ export const useTables = () => {
           change.dragging === false &&
           change.position,
       )
-      .forEach((change) => {
+      .forEach(async (change) => {
         if (change.type !== 'position' || !change.position) return;
 
         const table = nodes.find((t) => t.id === change.id);
         if (!table) return;
 
-        erdStore.updateTableExtra(table.data.schemaId, change.id, {
-          position: change.position,
-        });
+        try {
+          await tableService.updateTableExtra(
+            table.data.schemaId,
+            change.id,
+            {
+              position: change.position,
+            },
+          );
+        } catch (error) {
+          console.error('Failed to update table position:', error);
+        }
       });
   };
 

@@ -4,6 +4,7 @@ import type {
   TableDetailResponse,
   CreateTableRequest,
   UpdateTableNameRequest,
+  UpdateTableExtraRequest,
   DeleteTableRequest,
 } from './types/table';
 import type { AffectedMappingResponse } from './types/common';
@@ -34,6 +35,11 @@ export const updateTableNameAPI = (
   tableId: string,
   data: UpdateTableNameRequest,
 ) => api.put<TableResponse>(`/tables/${tableId}/name`, data);
+
+export const updateTableExtraAPI = (
+  tableId: string,
+  data: UpdateTableExtraRequest,
+) => api.put<TableResponse>(`/tables/${tableId}/extra`, data);
 
 export const deleteTableAPI = (tableId: string, data: DeleteTableRequest) =>
   api.delete<null>(`/tables/${tableId}`, { data });

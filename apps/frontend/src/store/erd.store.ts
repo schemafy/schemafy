@@ -161,17 +161,24 @@ export class ErdStore {
       runInAction(() => {
         this.erdState = { state: 'loaded', database: next };
       });
+      console.log(this.erdState);
     } catch (e) {
       console.error(e);
       throw e;
     }
   }
 
-  // schemas
-  createSchema(schema: Schema) {
-    this.update((db) => ERD_VALIDATOR.createSchema(db, schema));
+  private replaceIdInArray<T extends { id: string }>(
+    items: T[],
+    oldId: string,
+    newId: string,
+  ): T[] {
+    return items.map((item) =>
+      item.id === oldId ? { ...item, id: newId } : item,
+    );
   }
 
+  // replace ID
   replaceSchemaId(oldId: Schema['id'], newId: Schema['id']) {
     this.update((db) => {
       const extra = getDatabaseExtra(db.extra);
@@ -180,15 +187,151 @@ export class ErdStore {
 
       return {
         ...db,
-        schemas: db.schemas.map((schema) =>
-          schema.id === oldId ? { ...schema, id: newId } : schema,
-        ),
+        schemas: this.replaceIdInArray(db.schemas, oldId, newId),
         extra: {
           ...extra,
           selectedSchemaId,
         },
       };
     });
+  }
+
+  replaceTableId(
+    schemaId: Schema['id'],
+    oldId: Table['id'],
+    newId: Table['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: this.replaceIdInArray(schema.tables, oldId, newId),
+            },
+      ),
+    }));
+  }
+
+  replaceColumnId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    oldId: Column['id'],
+    newId: Column['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) =>
+                table.id !== tableId
+                  ? table
+                  : {
+                      ...table,
+                      columns: this.replaceIdInArray(
+                        table.columns,
+                        oldId,
+                        newId,
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+  }
+
+  replaceIndexId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    oldId: Index['id'],
+    newId: Index['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) =>
+                table.id !== tableId
+                  ? table
+                  : {
+                      ...table,
+                      indexes: this.replaceIdInArray(
+                        table.indexes,
+                        oldId,
+                        newId,
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+  }
+
+  replaceConstraintId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    oldId: Constraint['id'],
+    newId: Constraint['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) =>
+                table.id !== tableId
+                  ? table
+                  : {
+                      ...table,
+                      constraints: this.replaceIdInArray(
+                        table.constraints,
+                        oldId,
+                        newId,
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+  }
+
+  replaceRelationshipId(
+    schemaId: Schema['id'],
+    oldId: Relationship['id'],
+    newId: Relationship['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) => ({
+                ...table,
+                relationships: this.replaceIdInArray(
+                  table.relationships,
+                  oldId,
+                  newId,
+                ),
+              })),
+            },
+      ),
+    }));
+  }
+
+  // schemas
+  createSchema(schema: Schema) {
+    this.update((db) => ERD_VALIDATOR.createSchema(db, schema));
   }
 
   changeSchemaName(schemaId: Schema['id'], newName: Schema['name']) {

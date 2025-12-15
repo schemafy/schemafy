@@ -31,7 +31,6 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   );
 
   const tableActions = useTable({
-    erdStore,
     schemaId: data.schemaId,
     tableId: id,
     tableName: data.tableName,

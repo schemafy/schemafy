@@ -3,9 +3,11 @@ export async function withOptimisticUpdate<T, R = void>(
   apiFunction: () => Promise<T>,
   rollbackFunction: (rollbackData: R) => void,
 ): Promise<T> {
+  const apiPromise = apiFunction();
   const rollbackData = optimisticFunction();
+
   try {
-    return await apiFunction();
+    return await apiPromise;
   } catch (error) {
     rollbackFunction(rollbackData);
     throw error;

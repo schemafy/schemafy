@@ -41,6 +41,10 @@ export interface UpdateTableNameRequest {
   newName: string;
 }
 
+export interface UpdateTableExtraRequest {
+  extra: string;
+}
+
 export interface DeleteTableRequest {
   database: DatabaseContext;
   schemaId: ULID;

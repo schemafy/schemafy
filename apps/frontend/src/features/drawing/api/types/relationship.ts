@@ -86,6 +86,10 @@ export interface RemoveColumnFromRelationshipRequest {
   relationshipColumnId: ULID;
 }
 
+export interface UpdateRelationshipExtraRequest {
+  extra: string;
+}
+
 export interface DeleteRelationshipRequest {
   database: DatabaseContext;
   schemaId: ULID;
