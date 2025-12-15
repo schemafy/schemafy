@@ -22,11 +22,15 @@ public class JwtTokenIssuer {
     private static final String CLAIM_NAME = "name";
 
     private final JwtProvider jwtProvider;
+    private final JwtProperties jwtProperties;
 
     public <T> ResponseEntity<T> issueTokens(String userId, String userName,
             T body) {
         long now = System.currentTimeMillis();
         Map<String, Object> claims = Map.of(CLAIM_NAME, userName);
+
+        boolean cookieSecure = jwtProperties.getCookie().isSecure();
+        String cookieSameSite = jwtProperties.getCookie().getSameSite();
 
         String accessToken = jwtProvider.generateAccessToken(userId, claims,
                 now);
@@ -36,19 +40,19 @@ public class JwtTokenIssuer {
         ResponseCookie refreshTokenCookie = ResponseCookie
                 .from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
-                .secure(true) // HTTPS에서만 전송
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(REFRESH_TOKEN_COOKIE_MAX_AGE)
-                .sameSite("Strict") // CSRF 방어
+                .sameSite(cookieSameSite)
                 .build();
 
         ResponseCookie accessTokenCookie = ResponseCookie
                 .from(ACCESS_TOKEN_COOKIE_NAME, accessToken)
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(jwtProvider.getAccessTokenExpiresIn())
-                .sameSite("Strict")
+                .sameSite(cookieSameSite)
                 .build();
 
         HttpHeaders headers = new HttpHeaders();
