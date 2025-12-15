@@ -10,7 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.common.security.principal.ProjectRole;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 
 public class WithMockCustomUserSecurityContextFactory
         implements WithSecurityContextFactory<WithMockCustomUser> {
@@ -28,7 +28,7 @@ public class WithMockCustomUserSecurityContextFactory
                 .withRoles(customUser.userId(), roles);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                principal, null, principal.asAuthorities());
+                principal, null, principal.getAuthorities());
 
         context.setAuthentication(authentication);
         return context;

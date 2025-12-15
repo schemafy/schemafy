@@ -8,7 +8,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.common.security.principal.ProjectRole;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -21,6 +20,7 @@ import com.schemafy.core.erd.repository.MemoRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -72,7 +72,7 @@ public class MemoService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .flatMap(memo -> memoCommentRepository
-                        .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
+                        .findByMemoIdAndDeletedAtIsNullOrderByCreatedAtAscIdAsc(
                                 memoId)
                         .map(MemoCommentResponse::from)
                         .collectList()
@@ -132,7 +132,7 @@ public class MemoService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
                 .thenMany(memoCommentRepository
-                        .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
+                        .findByMemoIdAndDeletedAtIsNullOrderByCreatedAtAscIdAsc(
                                 memoId)
                         .map(MemoCommentResponse::from));
     }
@@ -218,7 +218,8 @@ public class MemoService {
 
     private Mono<Boolean> isFirstComment(String memoId, String commentId) {
         return memoCommentRepository
-                .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(memoId)
+                .findByMemoIdAndDeletedAtIsNullOrderByCreatedAtAscIdAsc(
+                        memoId)
                 .next()
                 .map(first -> first.getId().equals(commentId))
                 .defaultIfEmpty(false);

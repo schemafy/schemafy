@@ -74,9 +74,9 @@ public class JwtAuthenticationFilter implements WebFilter {
                 return AuthenticationResult.error(ErrorCode.INVALID_TOKEN);
             }
 
-            AuthenticatedUser principal = createPrincipal(userId);
+            AuthenticatedUser userDetails = createPrincipal(userId);
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    principal, null, principal.asAuthorities());
+                    userDetails, null, userDetails.getAuthorities());
 
             return AuthenticationResult.success(authentication);
 
