@@ -142,7 +142,9 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                         "[CollaborationWebSocketHandler] Outbound error: sessionId={}",
                         sessionId, error));
 
+        Mono<Void> closeSignal = session.closeStatus().then();
         Mono<Void> cursorPipeline = entry.sampledCursorFlux()
+                .takeUntilOther(closeSignal)
                 .flatMap(cursor -> presenceService
                         .publishCursorToRedis(projectId, sessionId, cursor))
                 .doOnError(error -> log.error(
