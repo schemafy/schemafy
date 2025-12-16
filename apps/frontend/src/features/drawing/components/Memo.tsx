@@ -1,11 +1,10 @@
 import { useStore } from '@xyflow/react';
 import { useState } from 'react';
-import { ulid } from 'ulid';
 import { Avatar } from '@/components';
 import { cn, formatDate } from '@/lib';
 import { CircleCheck, MoveUp, Trash, X } from 'lucide-react';
 import type { MemoData } from '../hooks/useMemos';
-import type { Memo as MemoType } from '../types/memo';
+import type { MemoComment } from '@/lib/api/memo/types';
 import type { Point } from '../types';
 
 interface MemoProps {
@@ -17,18 +16,18 @@ interface MemoPreviewProps {
   mousePosition: Point | null;
 }
 
-const ReplyItem = ({ memo }: { memo: MemoType }) => {
+const ReplyItem = ({ comment }: { comment: MemoComment }) => {
   return (
     <li className="flex gap-2 text-schemafy-text">
       <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
       <div>
         <div className="flex items-center gap-2">
-          <span className="font-overline-sm">{memo.userId}</span>
+          <span className="font-overline-sm">{comment.authorId}</span>
           <span className="font-body-xs text-schemafy-dark-gray">
-            {formatDate(memo.updatedAt)}
+            {formatDate(new Date(comment.updatedAt ?? comment.createdAt ?? new Date()))}
           </span>
         </div>
-        <p className="font-body-sm mt-1">{memo.content}</p>
+        <p className="font-body-sm mt-1">{comment.body}</p>
       </div>
     </li>
   );
@@ -38,46 +37,29 @@ export const Memo = ({ data, id }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [replyInput, setReplyInput] = useState('');
 
-  const [replies, setReplies] = useState<MemoType[]>([
-    {
-      id: `${id}-reply-1`,
-      schemaId: 'schema-id',
-      elementType: 'SCHEMA',
-      elementId: 'schema-id',
-      userId: 'user',
-      content: data.content,
-      parentMemoId: id,
-      resolvedAt: null,
-      createdAt: new Date(Date.now()),
-      updatedAt: new Date(Date.now()),
-    },
-  ]);
+  const comments = data.comments ?? [];
+
+  const handleDeleteMemo = () => {
+    if (data.deleteMemo) {
+      data.deleteMemo();
+    }
+  };
 
   const handleIconClick = () => {
     setShowThread(!showThread);
   };
 
-  const handleAddReply = () => {
+  const handleAddReply = async () => {
     if (!replyInput.trim()) return;
 
-    const newReply: MemoType = {
-      id: ulid(),
-      schemaId: 'schema-id',
-      elementType: 'SCHEMA',
-      elementId: 'schema-id',
-      userId: 'user',
-      content: replyInput.trim(),
-      parentMemoId: id,
-      resolvedAt: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    setReplies([...replies, newReply]);
-    setReplyInput('');
+    if (data.createComment) {
+      await data.createComment(replyInput.trim());
+      setReplyInput('');
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter') {
       handleAddReply();
     }
@@ -105,7 +87,7 @@ export const Memo = ({ data, id }: MemoProps) => {
             <div className="flex gap-2">
               <button
                 title="Resolved Memo"
-                onClick={() => {}}
+                onClick={handleDeleteMemo}
                 className="text-schemafy-dark-gray hover:text-schemafy-text cursor-pointer transition-colors duration-200 hover:bg-schemafy-light-gray rounded-sm p-1"
               >
                 <Trash size={14} color="var(--color-schemafy-dark-gray)" />
@@ -130,8 +112,8 @@ export const Memo = ({ data, id }: MemoProps) => {
           </div>
 
           <ul className="flex flex-col gap-4">
-            {replies.map((reply) => (
-              <ReplyItem key={reply.id} memo={reply} />
+            {comments.map((comment) => (
+              <ReplyItem key={comment.id} comment={comment} />
             ))}
           </ul>
 

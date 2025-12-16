@@ -28,7 +28,6 @@ export interface MemoState {
   ) => Promise<Memo | null>;
   deleteMemo: (memoId: string, schemaId: string) => Promise<boolean>;
 
-  // comments
   fetchMemoComments: (memoId: string) => Promise<void>;
   createMemoComment: (
     memoId: string,
@@ -58,8 +57,37 @@ export const useMemoStore = create<MemoState>((set, get) => ({
         set({ error: res.error?.message ?? 'Failed to fetch memos' });
         return;
       }
+      const memos = res.result;
+
+      const commentsResults = await Promise.allSettled(
+        memos.map((memo) => memoApi.getMemoComments(memo.id)),
+      );
+
+      const combinedMemos = memos.map((memo, index) => {
+        const result = commentsResults[index];
+        const comments =
+          result.status === 'fulfilled' &&
+          result.value.success &&
+          result.value.result
+            ? result.value.result
+            : [];
+        return { ...memo, comments };
+      });
+
+      const newCommentsByMemo = combinedMemos.reduce((acc, memo) => {
+        acc[memo.id] = memo.comments ?? [];
+        return acc;
+      }, {} as CommentsByMemo);
+
       set((state) => ({
-        memosBySchema: { ...state.memosBySchema, [schemaId]: res.result! },
+        memosBySchema: {
+          ...state.memosBySchema,
+          [schemaId]: combinedMemos,
+        },
+        commentsByMemo: {
+          ...state.commentsByMemo,
+          ...newCommentsByMemo,
+        },
         isLoading: false,
       }));
     } catch (e) {
@@ -188,6 +216,7 @@ export const useMemoStore = create<MemoState>((set, get) => ({
   createMemoComment: async (memoId: string, data: CreateMemoCommentRequest) => {
     set({ error: null });
     try {
+      console.log('createMemoComment', memoId, data);
       const res = await memoApi.createMemoComment(memoId, data);
       if (!res.success || !res.result) {
         set({ error: res.error?.message ?? 'Failed to create comment' });
