@@ -125,7 +125,7 @@ export const useMemos = () => {
 
             const memo = nds.find((m) => m.id === change.id);
             if (!memo) return;
-            
+
             if (schemaId) {
               updateMemo(
                 change.id,
@@ -225,7 +225,9 @@ export const useMemos = () => {
             continue;
           }
           const currentComments = n.data.comments ?? [];
-          const nextComments = currentComments.filter((c) => c.id !== commentId);
+          const nextComments = currentComments.filter(
+            (c) => c.id !== commentId,
+          );
 
           if (nextComments.length > 0) {
             nextMemos.push({

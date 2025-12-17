@@ -29,7 +29,9 @@ const ReplyItem = ({
         <div className="flex items-center gap-2">
           <span className="font-overline-sm">{comment.authorId}</span>
           <span className="font-body-xs text-schemafy-dark-gray">
-            {formatDate(new Date(comment.updatedAt ?? comment.createdAt ?? new Date()))}
+            {formatDate(
+              new Date(comment.updatedAt ?? comment.createdAt ?? new Date()),
+            )}
           </span>
           <Trash
             size={14}
