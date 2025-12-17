@@ -10,6 +10,7 @@ export interface MemoData extends Record<string, unknown> {
   createComment?: (content: string) => Promise<void>;
   updateComment?: (content: string) => Promise<void>;
   deleteMemo?: () => Promise<void>;
+  deleteComment?: (commentId: string) => Promise<void>;
 }
 
 const safeParsePosition = (positions: string): { x: number; y: number } => {
@@ -62,6 +63,7 @@ export const useMemos = () => {
     deleteMemo: deleteMemoFromStore,
     createMemoComment,
     updateMemoComment,
+    deleteMemoComment,
   } = useMemoStore();
 
   const [memos, setMemos] = useState<Node<MemoData>[]>([]);
@@ -213,6 +215,58 @@ export const useMemos = () => {
     [updateMemoComment],
   );
 
+  const deleteComment = useCallback(
+    async (memoId: string, commentId: string) => {
+      setMemos((prev) => {
+        const nextMemos: Node<MemoData>[] = [];
+        for (const n of prev) {
+          if (n.id !== memoId) {
+            nextMemos.push(n);
+            continue;
+          }
+          const currentComments = n.data.comments ?? [];
+          const nextComments = currentComments.filter((c) => c.id !== commentId);
+
+          if (nextComments.length > 0) {
+            nextMemos.push({
+              ...n,
+              data: {
+                ...n.data,
+                comments: nextComments,
+              },
+            });
+          }
+        }
+        return nextMemos;
+      });
+
+      const result = await deleteMemoComment(memoId, commentId);
+
+      if (!result) {
+        const originalMemo = memosFromStore.find((m) => m.id === memoId);
+        if (originalMemo) {
+          setMemos((prev) => {
+            const exists = prev.some((n) => n.id === memoId);
+            if (exists) {
+              return prev.map((n) =>
+                n.id === memoId
+                  ? {
+                      ...n,
+                      data: { ...n.data, comments: originalMemo.comments },
+                    }
+                  : n,
+              );
+            } else {
+              const recoveredNode = transformApiMemoToNode(originalMemo);
+              return [...prev, recoveredNode];
+            }
+          });
+        }
+      }
+    },
+    [deleteMemoComment, memosFromStore],
+  );
+
   return {
     memos,
     addMemo,
@@ -220,5 +274,6 @@ export const useMemos = () => {
     createComment,
     updateComment,
     deleteMemo,
+    deleteComment,
   };
 };

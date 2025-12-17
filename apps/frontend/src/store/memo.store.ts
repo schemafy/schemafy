@@ -324,13 +324,21 @@ export const useMemoStore = create<MemoState>((set, get) => ({
           (state.memosBySchema[sid] ?? []).some((m) => m.id === memoId),
         );
         if (!schemaId) return {};
-        const nextList = (state.memosBySchema[schemaId] ?? []).map((m) =>
-          m.id === memoId
-            ? {
-                ...m,
-                comments: (m.comments ?? []).filter((c) => c.id !== commentId),
-              }
-            : m,
+        const nextList = (state.memosBySchema[schemaId] ?? []).reduce(
+          (acc, m) => {
+            if (m.id !== memoId) {
+              acc.push(m);
+              return acc;
+            }
+            const updatedComments = (m.comments ?? []).filter(
+              (c) => c.id !== commentId,
+            );
+            if (updatedComments.length > 0) {
+              acc.push({ ...m, comments: updatedComments });
+            }
+            return acc;
+          },
+          [] as Memo[],
         );
         return {
           memosBySchema: { ...state.memosBySchema, [schemaId]: nextList },

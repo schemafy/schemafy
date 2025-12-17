@@ -93,6 +93,7 @@ const CanvasPageComponent = () => {
     createComment,
     updateComment,
     deleteMemo,
+    deleteComment,
   } = useMemos();
 
   const memos = useMemo(
@@ -104,9 +105,10 @@ const CanvasPageComponent = () => {
           createComment: (content: string) => createComment(m.id, content),
           updateComment: (content: string) => updateComment(m.id, content),
           deleteMemo: () => deleteMemo(m.id),
+          deleteComment: (commentId: string) => deleteComment(m.id, commentId),
         },
       })),
-    [memosFromHook, createComment, updateComment, deleteMemo],
+    [memosFromHook, createComment, updateComment, deleteMemo, deleteComment],
   );
   const {
     relationships,

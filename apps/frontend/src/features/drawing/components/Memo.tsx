@@ -9,16 +9,21 @@ import type { Point } from '../types';
 
 interface MemoProps {
   data: MemoData;
-  id: string;
 }
 
 interface MemoPreviewProps {
   mousePosition: Point | null;
 }
 
-const ReplyItem = ({ comment }: { comment: MemoComment }) => {
+const ReplyItem = ({
+  comment,
+  onDelete,
+}: {
+  comment: MemoComment;
+  onDelete?: () => void;
+}) => {
   return (
-    <li className="flex gap-2 text-schemafy-text">
+    <li className="flex gap-2 text-schemafy-text group">
       <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
       <div>
         <div className="flex items-center gap-2">
@@ -26,6 +31,12 @@ const ReplyItem = ({ comment }: { comment: MemoComment }) => {
           <span className="font-body-xs text-schemafy-dark-gray">
             {formatDate(new Date(comment.updatedAt ?? comment.createdAt ?? new Date()))}
           </span>
+          <Trash
+            size={14}
+            color="var(--color-schemafy-dark-gray)"
+            onClick={onDelete}
+            className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+          />
         </div>
         <p className="font-body-sm mt-1">{comment.body}</p>
       </div>
@@ -33,7 +44,7 @@ const ReplyItem = ({ comment }: { comment: MemoComment }) => {
   );
 };
 
-export const Memo = ({ data, id }: MemoProps) => {
+export const Memo = ({ data }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [replyInput, setReplyInput] = useState('');
 
@@ -113,7 +124,11 @@ export const Memo = ({ data, id }: MemoProps) => {
 
           <ul className="flex flex-col gap-4">
             {comments.map((comment) => (
-              <ReplyItem key={comment.id} comment={comment} />
+              <ReplyItem
+                key={comment.id}
+                comment={comment}
+                onDelete={() => data.deleteComment?.(comment.id)}
+              />
             ))}
           </ul>
 
