@@ -5,10 +5,16 @@ spring:
   application:
     name: core
 
+  data:
+    redis:
+      enabled: ${REDIS_ENABLED:true}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
   r2dbc:
-    url: "r2dbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:schemafy}"
-    username: "${DB_USER:schemafy}"
-    password: "${DB_PASSWORD:schemafy}"
+    url: r2dbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:schemafy}
+    username: ${DB_USER:schemafy}
+    password: ${DB_PASSWORD:schemafy}
     pool:
       enabled: true
       initial-size: 5

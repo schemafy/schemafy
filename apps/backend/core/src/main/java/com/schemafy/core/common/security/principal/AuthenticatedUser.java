@@ -15,21 +15,36 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
  */
 public record AuthenticatedUser(
         String userId,
+        String userName,
         Set<ProjectRole> roles // TODO: 사용자 역할을 저장/조회해 채워 넣는다.
 ) {
 
     public static AuthenticatedUser of(String userId) {
-        return new AuthenticatedUser(userId, Collections.emptySet());
+        return of(userId, "unknown");
+    }
+
+    public static AuthenticatedUser of(String userId, String userName) {
+        return new AuthenticatedUser(userId, userName, Collections.emptySet());
     }
 
     public static AuthenticatedUser withAllRoles(String userId) {
-        return new AuthenticatedUser(userId,
+        return withAllRoles(userId, "unknown");
+    }
+
+    public static AuthenticatedUser withAllRoles(String userId,
+            String userName) {
+        return new AuthenticatedUser(userId, userName,
                 EnumSet.allOf(ProjectRole.class));
     }
 
     public static AuthenticatedUser withRoles(String userId,
             Set<ProjectRole> roles) {
-        return new AuthenticatedUser(userId, roles);
+        return withRoles(userId, "unknown", roles);
+    }
+
+    public static AuthenticatedUser withRoles(String userId, String userName,
+            Set<ProjectRole> roles) {
+        return new AuthenticatedUser(userId, userName, roles);
     }
 
     public Collection<? extends GrantedAuthority> asAuthorities() {
