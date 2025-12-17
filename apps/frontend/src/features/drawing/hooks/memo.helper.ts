@@ -10,7 +10,9 @@ export interface MemoData extends Record<string, unknown> {
   deleteComment?: (commentId: string) => Promise<void>;
 }
 
-export const safeParsePosition = (positions: string): { x: number; y: number } => {
+export const safeParsePosition = (
+  positions: string,
+): { x: number; y: number } => {
   if (!positions) return { x: 0, y: 0 };
   try {
     const parsed = JSON.parse(positions);

@@ -24,7 +24,7 @@ export const useMemos = () => {
   const [memos, setMemos] = useState<Node<MemoData>[]>([]);
 
   const memosFromStore = useMemo(
-    () => (schemaId ? memosBySchema[schemaId] ?? [] : []),
+    () => (schemaId ? (memosBySchema[schemaId] ?? []) : []),
     [schemaId, memosBySchema],
   );
 
