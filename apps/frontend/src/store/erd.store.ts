@@ -292,10 +292,53 @@ export class ErdStore {
                   ? table
                   : {
                       ...table,
-                      constraints: this.replaceIdInArray(
-                        table.constraints,
-                        oldId,
-                        newId,
+                      constraints: table.constraints.map((constraint) =>
+                        constraint.id !== oldId
+                          ? constraint
+                          : {
+                              ...constraint,
+                              id: newId,
+                              columns: constraint.columns.map((col) => ({
+                                ...col,
+                                constraintId: newId,
+                              })),
+                            },
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+  }
+
+  replaceConstraintColumnId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    oldId: ConstraintColumn['id'],
+    newId: ConstraintColumn['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) =>
+                table.id !== tableId
+                  ? table
+                  : {
+                      ...table,
+                      constraints: table.constraints.map((constraint) =>
+                        constraint.id !== constraintId
+                          ? constraint
+                          : {
+                              ...constraint,
+                              columns: constraint.columns.map((col) =>
+                                col.id === oldId ? { ...col, id: newId } : col,
+                              ),
+                            },
                       ),
                     },
               ),

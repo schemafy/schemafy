@@ -1,8 +1,8 @@
-import { ulid } from 'ulid';
 import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType, ConstraintKind } from '../types';
 import type { Constraint, ConstraintColumn } from '@schemafy/validator';
 import * as columnService from '../services/column.service';
+import * as constraintService from '../services/constraint.service';
 import { toast } from 'sonner';
 
 export const getColumnName = (
@@ -48,16 +48,7 @@ const CONSTRAINT_PREFIX_MAP: Record<ConstraintKind, string> = {
   UNIQUE: 'uq',
 };
 
-const createConstraintColumn = (columnId: string, seqNo: number) => ({
-  id: ulid(),
-  columnId,
-  seqNo,
-  constraintId: '',
-  isAffected: false,
-});
-
-const addPrimaryKeyConstraint = (
-  erdStore: ErdStore,
+const addPrimaryKeyConstraint = async (
   schemaId: string,
   tableId: string,
   columnId: string,
@@ -66,42 +57,41 @@ const addPrimaryKeyConstraint = (
   const existingPk = table.constraints.find((c) => c.kind === 'PRIMARY_KEY');
 
   if (existingPk) {
-    erdStore.addColumnToConstraint(
+    await constraintService.addColumnToConstraint(
       schemaId,
       tableId,
       existingPk.id,
-      createConstraintColumn(columnId, existingPk.columns.length),
+      columnId,
+      existingPk.columns.length,
     );
   } else {
-    erdStore.createConstraint(schemaId, tableId, {
-      id: ulid(),
-      name: `pk_${table.name}`,
-      kind: 'PRIMARY_KEY',
-      isAffected: false,
-      columns: [createConstraintColumn(columnId, 0)],
-    });
+    await constraintService.createConstraint(
+      schemaId,
+      tableId,
+      `pk_${table.name}`,
+      'PRIMARY_KEY',
+      [{ columnId, seqNo: 0 }],
+    );
   }
 };
 
-const addSingleColumnConstraint = (
-  erdStore: ErdStore,
+const addSingleColumnConstraint = async (
   schemaId: string,
   tableId: string,
   columnId: string,
   constraintKind: ConstraintKind,
 ) => {
   const prefix = CONSTRAINT_PREFIX_MAP[constraintKind];
-  erdStore.createConstraint(schemaId, tableId, {
-    id: ulid(),
-    name: `${prefix}_${columnId}`,
-    kind: constraintKind,
-    isAffected: false,
-    columns: [createConstraintColumn(columnId, 0)],
-  });
+  await constraintService.createConstraint(
+    schemaId,
+    tableId,
+    `${prefix}_${columnId}`,
+    constraintKind,
+    [{ columnId, seqNo: 0 }],
+  );
 };
 
-const removePrimaryKeyConstraint = (
-  erdStore: ErdStore,
+const removePrimaryKeyConstraint = async (
   schemaId: string,
   tableId: string,
   existingConstraint: Constraint,
@@ -111,7 +101,7 @@ const removePrimaryKeyConstraint = (
     (cc: ConstraintColumn) => cc.columnId === columnId,
   );
   if (pkColumn) {
-    erdStore.removeColumnFromConstraint(
+    await constraintService.removeColumnFromConstraint(
       schemaId,
       tableId,
       existingConstraint.id,
@@ -120,7 +110,7 @@ const removePrimaryKeyConstraint = (
   }
 };
 
-const saveColumnConstraint = (
+const saveColumnConstraint = async (
   erdStore: ErdStore,
   schemaId: string,
   tableId: string,
@@ -146,41 +136,48 @@ const saveColumnConstraint = (
       c.columns.some((cc) => cc.columnId === columnId),
   );
 
-  if (enabled && !existingConstraint) {
-    if (constraintKind === 'PRIMARY_KEY') {
-      addPrimaryKeyConstraint(erdStore, schemaId, tableId, columnId, table);
-    } else {
-      addSingleColumnConstraint(
-        erdStore,
-        schemaId,
-        tableId,
-        columnId,
-        constraintKind,
-      );
+  try {
+    if (enabled && !existingConstraint) {
+      if (constraintKind === 'PRIMARY_KEY') {
+        await addPrimaryKeyConstraint(schemaId, tableId, columnId, table);
+      } else {
+        await addSingleColumnConstraint(
+          schemaId,
+          tableId,
+          columnId,
+          constraintKind,
+        );
+      }
+    } else if (!enabled && existingConstraint) {
+      if (constraintKind === 'PRIMARY_KEY') {
+        await removePrimaryKeyConstraint(
+          schemaId,
+          tableId,
+          existingConstraint,
+          columnId,
+        );
+      } else {
+        await constraintService.deleteConstraint(
+          schemaId,
+          tableId,
+          existingConstraint.id,
+        );
+      }
     }
-  } else if (!enabled && existingConstraint) {
-    if (constraintKind === 'PRIMARY_KEY') {
-      removePrimaryKeyConstraint(
-        erdStore,
-        schemaId,
-        tableId,
-        existingConstraint,
-        columnId,
-      );
-    } else {
-      erdStore.deleteConstraint(schemaId, tableId, existingConstraint.id);
-    }
+  } catch (error) {
+    toast.error('Failed to update constraint');
+    throw error;
   }
 };
 
-export const saveColumnPrimaryKey = (
+export const saveColumnPrimaryKey = async (
   erdStore: ErdStore,
   schemaId: string,
   tableId: string,
   columnId: string,
   isPrimaryKey: boolean,
 ) => {
-  saveColumnConstraint(
+  await saveColumnConstraint(
     erdStore,
     schemaId,
     tableId,
@@ -190,14 +187,14 @@ export const saveColumnPrimaryKey = (
   );
 };
 
-export const saveColumnNotNull = (
+export const saveColumnNotNull = async (
   erdStore: ErdStore,
   schemaId: string,
   tableId: string,
   columnId: string,
   isNotNull: boolean,
 ) => {
-  saveColumnConstraint(
+  await saveColumnConstraint(
     erdStore,
     schemaId,
     tableId,
@@ -213,24 +210,36 @@ type ColumnFieldSaver = (
   tableId: string,
   columnId: string,
   value: string | boolean,
-) => void;
+) => Promise<void>;
 
 const COLUMN_FIELD_SAVERS: Partial<Record<keyof ColumnType, ColumnFieldSaver>> =
   {
-    name: (erdStore, schemaId, tableId, columnId, value) =>
-      saveColumnName(erdStore, schemaId, tableId, columnId, value as string),
-    type: (erdStore, schemaId, tableId, columnId, value) =>
-      saveColumnType(erdStore, schemaId, tableId, columnId, value as string),
-    isPrimaryKey: (erdStore, schemaId, tableId, columnId, value) =>
-      saveColumnPrimaryKey(
+    name: async (erdStore, schemaId, tableId, columnId, value) =>
+      await saveColumnName(
+        erdStore,
+        schemaId,
+        tableId,
+        columnId,
+        value as string,
+      ),
+    type: async (erdStore, schemaId, tableId, columnId, value) =>
+      await saveColumnType(
+        erdStore,
+        schemaId,
+        tableId,
+        columnId,
+        value as string,
+      ),
+    isPrimaryKey: async (erdStore, schemaId, tableId, columnId, value) =>
+      await saveColumnPrimaryKey(
         erdStore,
         schemaId,
         tableId,
         columnId,
         value as boolean,
       ),
-    isNotNull: (erdStore, schemaId, tableId, columnId, value) =>
-      saveColumnNotNull(
+    isNotNull: async (erdStore, schemaId, tableId, columnId, value) =>
+      await saveColumnNotNull(
         erdStore,
         schemaId,
         tableId,
@@ -239,7 +248,7 @@ const COLUMN_FIELD_SAVERS: Partial<Record<keyof ColumnType, ColumnFieldSaver>> =
       ),
   };
 
-export const saveColumnField = (
+export const saveColumnField = async (
   erdStore: ErdStore,
   schemaId: string,
   tableId: string,
@@ -249,6 +258,6 @@ export const saveColumnField = (
 ) => {
   const saver = COLUMN_FIELD_SAVERS[key];
   if (saver) {
-    saver(erdStore, schemaId, tableId, columnId, value);
+    await saver(erdStore, schemaId, tableId, columnId, value);
   }
 };
