@@ -1,87 +1,42 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
 import { useMemoStore } from '@/store';
-import type { Memo as ApiMemo } from '@/lib/api/memo';
-//import { ErdStore } from '@/store/erd.store';
+import {
+  type MemoData,
+  transformApiMemoToNode,
+  stringifyPosition,
+} from './memo.helper';
 
-export interface MemoData extends Record<string, unknown> {
-  content: string;
-  comments: ApiMemo['comments'];
-  createComment?: (content: string) => Promise<void>;
-  updateComment?: (content: string) => Promise<void>;
-  deleteMemo?: () => Promise<void>;
-  deleteComment?: (commentId: string) => Promise<void>;
-}
-
-const safeParsePosition = (positions: string): { x: number; y: number } => {
-  if (!positions) return { x: 0, y: 0 };
-  try {
-    const parsed = JSON.parse(positions);
-    if (
-      parsed &&
-      typeof parsed === 'object' &&
-      typeof parsed.x === 'number' &&
-      typeof parsed.y === 'number'
-    ) {
-      return { x: parsed.x, y: parsed.y };
-    }
-  } catch {
-    console.error('Failed to parse positions');
-  }
-  return { x: 0, y: 0 };
-};
-
-const stringifyPosition = (pos: { x: number; y: number }): string =>
-  JSON.stringify({ x: pos.x, y: pos.y });
-
-const transformApiMemoToNode = (memo: ApiMemo): Node<MemoData> => {
-  const position = safeParsePosition(memo.positions);
-  const lastCommentBody =
-    memo.comments && memo.comments.length > 0
-      ? (memo.comments[memo.comments.length - 1]?.body ?? '')
-      : '';
-  return {
-    id: memo.id,
-    type: 'memo',
-    position,
-    data: {
-      content: lastCommentBody,
-      comments: memo.comments,
-    },
-  };
-};
+export type { MemoData };
 
 export const useMemos = () => {
-  //const erdStore = ErdStore.getInstance();
-  const schemaId = '06DJEMTB2H3BE7JS6S0789B2FW'; //erdStore.selectedSchemaId;
+  const schemaId = '06DJEMTB2H3BE7JS6S0789B2FW';
 
-  const {
-    memosBySchema,
-    fetchSchemaMemos,
-    createMemo,
-    updateMemo,
-    deleteMemo: deleteMemoFromStore,
-    createMemoComment,
-    updateMemoComment,
-    deleteMemoComment,
-  } = useMemoStore();
+  const memosBySchema = useMemoStore((state) => state.memosBySchema);
+  const fetchSchemaMemos = useMemoStore((state) => state.fetchSchemaMemos);
+  const createMemo = useMemoStore((state) => state.createMemo);
+  const updateMemo = useMemoStore((state) => state.updateMemo);
+  const deleteMemoFromStore = useMemoStore((state) => state.deleteMemo);
+  const createMemoComment = useMemoStore((state) => state.createMemoComment);
+  const updateMemoComment = useMemoStore((state) => state.updateMemoComment);
+  const deleteMemoComment = useMemoStore((state) => state.deleteMemoComment);
 
   const [memos, setMemos] = useState<Node<MemoData>[]>([]);
+
+  const memosFromStore = useMemo(
+    () => (schemaId ? memosBySchema[schemaId] ?? [] : []),
+    [schemaId, memosBySchema],
+  );
 
   useEffect(() => {
     if (!schemaId) {
       setMemos([]);
       return;
     }
-    fetchSchemaMemos(schemaId).catch(() => {
-      console.error('Failed to fetch memos');
+    fetchSchemaMemos(schemaId).catch((error) => {
+      console.error('Failed to fetch memos:', error);
     });
   }, [schemaId, fetchSchemaMemos]);
-
-  const memosFromStore: ApiMemo[] = useMemo(
-    () => (schemaId ? (memosBySchema[schemaId] ?? []) : []),
-    [schemaId, memosBySchema],
-  );
 
   useEffect(() => {
     setMemos(memosFromStore.map(transformApiMemoToNode));
@@ -113,37 +68,25 @@ export const useMemos = () => {
       setMemos((nds) => {
         const updatedMemos = applyNodeChanges(changes, nds) as Node<MemoData>[];
 
-        changes
-          .filter(
-            (change) =>
-              change.type === 'position' &&
-              change.dragging === false &&
-              change.position,
-          )
-          .forEach((change) => {
-            if (change.type !== 'position' || !change.position) return;
+        changes.forEach((change) => {
+          if (!schemaId) return;
 
-            const memo = nds.find((m) => m.id === change.id);
-            if (!memo) return;
+          if (
+            change.type === 'position' &&
+            !change.dragging &&
+            change.position
+          ) {
+            updateMemo(
+              change.id,
+              { positions: stringifyPosition(change.position) },
+              schemaId,
+            );
+          }
 
-            if (schemaId) {
-              updateMemo(
-                change.id,
-                {
-                  positions: stringifyPosition(change.position),
-                },
-                schemaId,
-              );
-            }
-          });
-
-        changes
-          .filter((change) => change.type === 'remove')
-          .forEach((change) => {
-            if (schemaId) {
-              deleteMemoFromStore(change.id, schemaId);
-            }
-          });
+          if (change.type === 'remove') {
+            deleteMemoFromStore(change.id, schemaId);
+          }
+        });
 
         return updatedMemos;
       });
@@ -177,20 +120,22 @@ export const useMemos = () => {
         );
       }
     },
-    [createMemoComment],
+    [createMemoComment, memosFromStore],
   );
 
   const updateComment = useCallback(
     async (memoId: string, content: string) => {
       const memo = memosFromStore.find((m) => m.id === memoId);
-      const comments = memo?.comments;
       const lastComment =
-        comments && comments.length > 0 ? comments[comments.length - 1] : null;
+        memo?.comments && memo.comments.length > 0
+          ? memo.comments[memo.comments.length - 1]
+          : null;
 
       if (!lastComment) {
         console.error('No comment to update');
         return;
       }
+
       setMemos((prev) =>
         prev.map((n) =>
           n.id === memoId ? { ...n, data: { ...n.data, content } } : n,
@@ -202,17 +147,19 @@ export const useMemos = () => {
       });
 
       if (!result) {
-        const originalContent = lastComment.body;
         setMemos((prev) =>
           prev.map((n) =>
             n.id === memoId
-              ? { ...n, data: { ...n.data, content: originalContent } }
+              ? {
+                  ...n,
+                  data: { ...n.data, content: lastComment.body },
+                }
               : n,
           ),
         );
       }
     },
-    [updateMemoComment],
+    [updateMemoComment, memosFromStore],
   );
 
   const deleteComment = useCallback(
