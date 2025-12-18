@@ -34,8 +34,8 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -130,15 +130,15 @@ class ConstraintControllerTest {
                             },
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
                             "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-	                            "constraint": {
-	                                "id": "06D5XSF8RRRKMCHVNX68TDX1K4",
-	                                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-	                                "name": "PK",
-	                                "kind": "PRIMARY_KEY",
-	                                "columns": [
-	                                    {
-	                                        "id": "06D5XST4N38Z9QANKMEDMCXAYG",
-	                                        "constraintId": "06D5XSF8RRRKMCHVNX68TDX1K4",
+                             "constraint": {
+                                 "id": "06D5XSF8RRRKMCHVNX68TDX1K4",
+                                 "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                 "name": "PK",
+                                 "kind": "PRIMARY_KEY",
+                                 "columns": [
+                                     {
+                                         "id": "06D5XST4N38Z9QANKMEDMCXAYG",
+                                         "constraintId": "06D5XSF8RRRKMCHVNX68TDX1K4",
                                         "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                         "seqNo": 1
                                     }
@@ -192,26 +192,26 @@ class ConstraintControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
-	                        relaxedRequestFields(
-	                                fieldWithPath("database.id")
-	                                        .description("데이터베이스 ID"),
-	                                fieldWithPath("schemaId")
-	                                        .description("스키마 ID"),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
                                 fieldWithPath("tableId")
                                         .description("테이블 ID"),
                                 fieldWithPath("constraint.id")
                                         .description("제약조건 ID (FE ID)"),
                                 fieldWithPath("constraint.tableId")
                                         .description("테이블 ID"),
-	                                fieldWithPath("constraint.name")
-	                                        .description("제약조건 이름"),
-	                                fieldWithPath("constraint.kind")
-	                                        .type(JsonFieldType.STRING)
-	                                        .description("제약조건 타입"),
-	                                fieldWithPath("constraint.columns")
-	                                        .description("제약조건 컬럼 목록"),
-	                                fieldWithPath("constraint.columns[].columnId")
-	                                        .description("컬럼 ID"),
+                                fieldWithPath("constraint.name")
+                                        .description("제약조건 이름"),
+                                fieldWithPath("constraint.kind")
+                                        .type(JsonFieldType.STRING)
+                                        .description("제약조건 타입"),
+                                fieldWithPath("constraint.columns")
+                                        .description("제약조건 컬럼 목록"),
+                                fieldWithPath("constraint.columns[].columnId")
+                                        .description("컬럼 ID"),
                                 fieldWithPath("constraint.columns[].seqNo")
                                         .description("순서 번호")),
                         responseHeaders(

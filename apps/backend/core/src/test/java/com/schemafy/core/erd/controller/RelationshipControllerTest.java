@@ -36,8 +36,8 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -223,9 +223,11 @@ class RelationshipControllerTest {
                                         .description("수정 시 동작"),
                                 fieldWithPath("relationship.columns")
                                         .description("관계 컬럼 목록"),
-                                fieldWithPath("relationship.columns[].fkColumnId")
+                                fieldWithPath(
+                                        "relationship.columns[].fkColumnId")
                                         .description("FK 컬럼 ID"),
-                                fieldWithPath("relationship.columns[].refColumnId")
+                                fieldWithPath(
+                                        "relationship.columns[].refColumnId")
                                         .description("참조 컬럼 ID"),
                                 fieldWithPath("relationship.columns[].seqNo")
                                         .description("순서 번호")),
@@ -913,7 +915,8 @@ class RelationshipControllerTest {
                                         .description("스키마 ID"),
                                 fieldWithPath("relationshipId")
                                         .description("관계 ID"),
-                                fieldWithPath("relationshipColumn.relationshipId")
+                                fieldWithPath(
+                                        "relationshipColumn.relationshipId")
                                         .description("관계 ID"),
                                 fieldWithPath("relationshipColumn.fkColumnId")
                                         .description("FK 컬럼 ID"),

@@ -32,8 +32,8 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -176,11 +176,11 @@ class ColumnControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
-	                        relaxedRequestFields(
-	                                fieldWithPath("database.id")
-	                                        .description("데이터베이스 ID"),
-	                                fieldWithPath("schemaId")
-	                                        .description("스키마 ID"),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
                                 fieldWithPath("tableId")
                                         .description("테이블 ID"),
                                 fieldWithPath("column.id")
@@ -201,13 +201,13 @@ class ColumnControllerTest {
                                         .description("정렬 규칙"),
                                 fieldWithPath("column.comment")
                                         .description("컬럼 설명"),
-	                                fieldWithPath("column.isAutoIncrement")
-	                                        .type(JsonFieldType.BOOLEAN)
-	                                        .optional()
-	                                        .description("자동 증가 여부")),
-	                        responseHeaders(
-	                                headerWithName("Content-Type")
-	                                        .description("응답 컨텐츠 타입")),
+                                fieldWithPath("column.isAutoIncrement")
+                                        .type(JsonFieldType.BOOLEAN)
+                                        .optional()
+                                        .description("자동 증가 여부")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
                         relaxedResponseFields(
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
