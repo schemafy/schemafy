@@ -37,6 +37,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.requestHe
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -199,6 +200,35 @@ class RelationshipControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("relationship.id")
+                                        .description("관계 ID (FE ID)"),
+                                fieldWithPath("relationship.srcTableId")
+                                        .description("출발 테이블 ID"),
+                                fieldWithPath("relationship.tgtTableId")
+                                        .description("도착 테이블 ID"),
+                                fieldWithPath("relationship.name")
+                                        .description("관계 이름"),
+                                fieldWithPath("relationship.kind")
+                                        .description("관계 종류"),
+                                fieldWithPath("relationship.cardinality")
+                                        .description("카디널리티"),
+                                fieldWithPath("relationship.onDelete")
+                                        .description("삭제 시 동작"),
+                                fieldWithPath("relationship.onUpdate")
+                                        .description("수정 시 동작"),
+                                fieldWithPath("relationship.columns")
+                                        .description("관계 컬럼 목록"),
+                                fieldWithPath("relationship.columns[].fkColumnId")
+                                        .description("FK 컬럼 ID"),
+                                fieldWithPath("relationship.columns[].refColumnId")
+                                        .description("참조 컬럼 ID"),
+                                fieldWithPath("relationship.columns[].seqNo")
+                                        .description("순서 번호")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -453,6 +483,15 @@ class RelationshipControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("relationshipId")
+                                        .description("변경할 관계 ID"),
+                                fieldWithPath("newName")
+                                        .description("새 관계 이름")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -692,6 +731,15 @@ class RelationshipControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("relationshipId")
+                                        .description("변경할 관계 ID"),
+                                fieldWithPath("cardinality")
+                                        .description("변경할 카디널리티")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -858,6 +906,21 @@ class RelationshipControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("relationshipId")
+                                        .description("관계 ID"),
+                                fieldWithPath("relationshipColumn.relationshipId")
+                                        .description("관계 ID"),
+                                fieldWithPath("relationshipColumn.fkColumnId")
+                                        .description("FK 컬럼 ID"),
+                                fieldWithPath("relationshipColumn.refColumnId")
+                                        .description("참조 컬럼 ID"),
+                                fieldWithPath("relationshipColumn.seqNo")
+                                        .description("순서 번호")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -1025,6 +1088,15 @@ class RelationshipControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("relationshipId")
+                                        .description("관계 ID"),
+                                fieldWithPath("relationshipColumnId")
+                                        .description("삭제할 관계 컬럼 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -1146,6 +1218,13 @@ class RelationshipControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("relationshipId")
+                                        .description("삭제할 관계 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
