@@ -78,13 +78,13 @@ class MemoServiceTest {
                 .assertNext(response -> {
                     assertThat(response.getSchemaId())
                             .isEqualTo(schema.getId());
-                    assertThat(response.getAuthorId()).isEqualTo(authorId);
+                    assertThat(response.getAuthor().id()).isEqualTo(authorId);
                     assertThat(response.getPositions())
                             .isEqualTo(request.positions());
                     assertThat(response.getComments()).hasSize(1);
                     assertThat(response.getComments().get(0).getBody())
                             .isEqualTo(request.body());
-                    assertThat(response.getComments().get(0).getAuthorId())
+                    assertThat(response.getComments().get(0).getAuthor().id())
                             .isEqualTo(authorId);
                 })
                 .verifyComplete();
@@ -289,7 +289,7 @@ class MemoServiceTest {
                 .assertNext(response -> {
                     assertThat(response.getMemoId()).isEqualTo(memo.getId());
                     assertThat(response.getBody()).isEqualTo("새 댓글");
-                    assertThat(response.getAuthorId()).isEqualTo(authorId);
+                    assertThat(response.getAuthor().id()).isEqualTo(authorId);
                 })
                 .verifyComplete();
     }

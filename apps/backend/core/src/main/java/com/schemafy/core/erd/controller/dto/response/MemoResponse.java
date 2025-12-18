@@ -3,6 +3,7 @@ package com.schemafy.core.erd.controller.dto.response;
 import java.time.Instant;
 
 import com.schemafy.core.erd.repository.entity.Memo;
+import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,16 +17,16 @@ public class MemoResponse {
 
     private String id;
     private String schemaId;
-    private String authorId;
+    private UserInfoResponse author;
     private String positions;
     private Instant createdAt;
     private Instant updatedAt;
 
-    public static MemoResponse from(Memo memo) {
+    public static MemoResponse from(Memo memo, UserInfoResponse author) {
         return MemoResponse.builder()
                 .id(memo.getId())
                 .schemaId(memo.getSchemaId())
-                .authorId(memo.getAuthorId())
+                .author(author)
                 .positions(memo.getPositions())
                 .createdAt(memo.getCreatedAt())
                 .updatedAt(memo.getUpdatedAt())
