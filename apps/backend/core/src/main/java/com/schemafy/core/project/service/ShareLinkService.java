@@ -2,8 +2,9 @@ package com.schemafy.core.project.service;
 
 import java.time.Instant;
 
+import com.schemafy.core.project.repository.entity.Project;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -22,20 +23,20 @@ import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ShareLinkService {
 
+    private final TransactionalOperator transactionalOperator;
+    private final TransactionalOperator readOnlyTransactionalOperator;
     private final ShareLinkRepository shareLinkRepository;
     private final ShareLinkAccessLogRepository accessLogRepository;
     private final ProjectRepository projectRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final ShareLinkTokenService tokenService;
 
-    @Transactional
     public Mono<ShareLinkResponse> createShareLink(String workspaceId,
             String projectId, CreateShareLinkRequest request, String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -54,10 +55,10 @@ public class ShareLinkService {
 
                     return shareLinkRepository.save(shareLink)
                             .map(saved -> ShareLinkResponse.of(saved, token));
-                }));
+                }))
+                .as(transactionalOperator::transactional);
     }
 
-    @Transactional(readOnly = true)
     public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
             String workspaceId,
             String projectId, String userId, int page, int size) {
@@ -78,7 +79,6 @@ public class ShareLinkService {
                 });
     }
 
-    @Transactional(readOnly = true)
     public Mono<ShareLinkResponse> getShareLink(String workspaceId,
             String projectId, String shareLinkId, String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -96,7 +96,6 @@ public class ShareLinkService {
                 });
     }
 
-    @Transactional
     public Mono<Void> revokeShareLink(String workspaceId, String projectId,
             String shareLinkId, String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -115,10 +114,10 @@ public class ShareLinkService {
                                 return shareLinkRepository.save(shareLink)
                                         .then();
                             }));
-                });
+                })
+                .as(transactionalOperator::transactional);
     }
 
-    @Transactional
     public Mono<Void> deleteShareLink(String workspaceId, String projectId,
             String shareLinkId, String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -137,10 +136,10 @@ public class ShareLinkService {
                                 return shareLinkRepository.save(shareLink)
                                         .then();
                             }));
-                });
+                })
+                .as(transactionalOperator::transactional);
     }
 
-    @Transactional
     public Mono<ShareLinkAccessResponse> accessByToken(String token,
             String userId, String ipAddress, String userAgent) {
         byte[] tokenHash = tokenService.hashToken(token);
@@ -149,14 +148,24 @@ public class ShareLinkService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
                 .flatMap(shareLink -> {
-                    recordAccessAsync(shareLink.getId(), userId, ipAddress,
-                            userAgent);
+                    ShareLinkAccessLog accessLog = ShareLinkAccessLog.create(
+                            shareLink.getId(), userId, ipAddress, userAgent);
 
-                    return projectRepository
+                    Mono<Project> fetchProject = projectRepository
                             .findByIdAndNotDeleted(shareLink.getProjectId())
                             .switchIfEmpty(Mono.error(
                                     new BusinessException(
-                                            ErrorCode.PROJECT_NOT_FOUND)))
+                                            ErrorCode.PROJECT_NOT_FOUND)));
+
+                    Mono<Void> recordAccess = Mono.when(
+                            accessLogRepository.save(accessLog),
+                            shareLinkRepository.incrementAccessCount(shareLink.getId())
+                    )
+                            .doOnError(e -> log.error("Failed to log access: {}", shareLink.getId(), e))
+                            .onErrorResume(e -> Mono.empty());
+
+                    return fetchProject
+                            .delayUntil(project -> recordAccess)
                             .map(project -> {
                                 ShareLinkRole effectiveRole = (userId == null)
                                         ? ShareLinkRole.VIEWER
@@ -165,22 +174,6 @@ public class ShareLinkService {
                                         effectiveRole);
                             });
                 });
-    }
-
-    private void recordAccessAsync(String shareLinkId, String userId,
-            String ipAddress, String userAgent) {
-        ShareLinkAccessLog accessLog = ShareLinkAccessLog.create(shareLinkId,
-                userId, ipAddress, userAgent);
-
-        Mono.zip(accessLogRepository.save(accessLog),
-                shareLinkRepository.incrementAccessCount(shareLinkId))
-                .subscribeOn(Schedulers.boundedElastic())
-                .subscribe(
-                        result -> log.debug("Access logged for share link: {}",
-                                shareLinkId),
-                        error -> log.error(
-                                "Failed to log access for share link: {}",
-                                shareLinkId, error));
     }
 
     private Mono<Void> validateWorkspaceMemberAccess(String workspaceId,
