@@ -89,7 +89,8 @@ class MemoServiceTest {
                 .assertNext(response -> {
                     assertThat(response.getSchemaId())
                             .isEqualTo(schema.getId());
-                    assertThat(response.getAuthor().id()).isEqualTo(author.getId());
+                    assertThat(response.getAuthor().id())
+                            .isEqualTo(author.getId());
                     assertThat(response.getAuthor().name()).isEqualTo("메모 작성자");
                     assertThat(response.getPositions())
                             .isEqualTo(request.positions());
@@ -157,7 +158,8 @@ class MemoServiceTest {
                 .assertNext(response -> {
                     assertThat(response.getId()).isEqualTo(memo.getId());
                     assertThat(response.getComments()).hasSize(2);
-                    assertThat(response.getAuthor().id()).isEqualTo(author1.getId());
+                    assertThat(response.getAuthor().id())
+                            .isEqualTo(author1.getId());
                     assertThat(response.getAuthor().name()).isEqualTo("작성자1");
                     assertThat(response.getComments().get(0).author().id())
                             .isEqualTo(author1.getId());
@@ -205,9 +207,11 @@ class MemoServiceTest {
                 .create(memoService.getMemosBySchemaId(schemaId).collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
-                    assertThat(list.get(0).author().id()).isEqualTo(memo1.getAuthorId());
+                    assertThat(list.get(0).author().id())
+                            .isEqualTo(memo1.getAuthorId());
                     assertThat(list.get(0).author().name()).isEqualTo("작성자1");
-                    assertThat(list.get(1).author().id()).isEqualTo(memo2.getAuthorId());
+                    assertThat(list.get(1).author().id())
+                            .isEqualTo(memo2.getAuthorId());
                     assertThat(list.get(1).author().name()).isEqualTo("작성자2");
                 })
                 .verifyComplete();
@@ -235,7 +239,8 @@ class MemoServiceTest {
                 .assertNext(response -> {
                     assertThat(response.positions())
                             .isEqualTo(request.positions());
-                    assertThat(response.author().id()).isEqualTo(author.getId());
+                    assertThat(response.author().id())
+                            .isEqualTo(author.getId());
                     assertThat(response.author().name()).isEqualTo("메모 수정자");
                 })
                 .verifyComplete();
@@ -334,7 +339,8 @@ class MemoServiceTest {
         userRepository.save(memoAuthor).block();
 
         User commentAuthor = TestFixture
-                .createTestUser("commentAuthor@example.com", "댓글 작성자", "password")
+                .createTestUser("commentAuthor@example.com", "댓글 작성자",
+                        "password")
                 .block();
         userRepository.save(commentAuthor).block();
 
@@ -352,7 +358,8 @@ class MemoServiceTest {
                 .assertNext(response -> {
                     assertThat(response.memoId()).isEqualTo(memo.getId());
                     assertThat(response.body()).isEqualTo("새 댓글");
-                    assertThat(response.author().id()).isEqualTo(commentAuthor.getId());
+                    assertThat(response.author().id())
+                            .isEqualTo(commentAuthor.getId());
                     assertThat(response.author().name()).isEqualTo("댓글 작성자");
                 })
                 .verifyComplete();
@@ -385,7 +392,8 @@ class MemoServiceTest {
                 comment.getId(), request, user))
                 .assertNext(response -> {
                     assertThat(response.body()).isEqualTo("수정 내용");
-                    assertThat(response.author().id()).isEqualTo(author.getId());
+                    assertThat(response.author().id())
+                            .isEqualTo(author.getId());
                     assertThat(response.author().name()).isEqualTo("댓글 수정자");
                 })
                 .verifyComplete();

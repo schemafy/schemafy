@@ -7,4 +7,5 @@ public record UserSummaryResponse(String id, String name) {
     public static UserSummaryResponse from(User user) {
         return new UserSummaryResponse(user.getId(), user.getName());
     }
+
 }
