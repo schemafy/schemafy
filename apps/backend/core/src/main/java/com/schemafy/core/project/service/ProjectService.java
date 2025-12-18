@@ -239,11 +239,7 @@ public class ProjectService {
                                 ErrorCode.CANNOT_CHANGE_OWN_ROLE));
                     }
 
-                    // TODO: 역할 변경에 대한 정책 반영 필요
-                    if ((targetMember.isOwner()
-                            && request.role() != ProjectRole.OWNER) ||
-                            (targetMember.isAdmin()
-                                    && !request.role().isAdmin())) {
+                    if (isChangeAllowRole(targetMember, request.role(), userId)) {
                         return validateOwnerOrAdminProtection(projectId)
                                 .then(Mono.defer(() -> {
                                     targetMember.updateRole(request.role());
@@ -260,6 +256,28 @@ public class ProjectService {
                         .map(user -> ProjectMemberResponse.of(updatedMember,
                                 user)))
                 .as(transactionalOperator::transactional);
+    }
+
+    // TODO: 역할 변경에 대한 정책 반영 필요
+    private boolean isChangeAllowRole(ProjectMember targetMember, ProjectRole newRole, String userId) {
+        // 사용자가 자신의 역할을 변경하려는 경우 허용하지 않음
+        if (targetMember.getUserId().equals(userId)) {
+            return false;
+        }
+
+        ProjectRole targetRole = targetMember.getRoleAsEnum();
+
+        // 소유자 역할은 다른 역할로 변경할 수 없음
+        if (targetRole == ProjectRole.OWNER && newRole != ProjectRole.OWNER) {
+            return false;
+        }
+
+        // 관리자는 최소한 관리자 역할을 유지해야 함
+        if (targetRole == ProjectRole.ADMIN && !newRole.isAdmin()) {
+            return false;
+        }
+
+        return true; // 그 외의 경우에는 변경 허용
     }
 
     /**
