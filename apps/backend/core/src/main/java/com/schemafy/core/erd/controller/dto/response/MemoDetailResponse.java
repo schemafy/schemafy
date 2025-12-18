@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 import com.schemafy.core.erd.repository.entity.Memo;
-import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
+import com.schemafy.core.user.controller.dto.response.UserSummaryResponse;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -18,14 +18,14 @@ public class MemoDetailResponse {
 
     private String id;
     private String schemaId;
-    private UserInfoResponse author;
+    private UserSummaryResponse author;
     private String positions;
     private Instant createdAt;
     private Instant updatedAt;
     private List<MemoCommentResponse> comments;
 
     public static MemoDetailResponse from(Memo memo,
-            List<MemoCommentResponse> comments, UserInfoResponse author) {
+            List<MemoCommentResponse> comments, UserSummaryResponse author) {
         return MemoDetailResponse.builder()
                 .id(memo.getId())
                 .schemaId(memo.getSchemaId())

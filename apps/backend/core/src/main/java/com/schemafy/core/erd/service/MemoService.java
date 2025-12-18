@@ -1,6 +1,8 @@
 package com.schemafy.core.erd.service;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,7 +25,7 @@ import com.schemafy.core.erd.repository.MemoRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
-import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
+import com.schemafy.core.user.controller.dto.response.UserSummaryResponse;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 
@@ -46,15 +48,17 @@ public class MemoService {
         return transactionalOperator.transactional(
                 ensureSchemaExists(request.schemaId())
                         .then(saveMemo(request, user))
-                        .flatMap(memo -> saveFirstComment(memo.getId(),
-                                request.body(), user)
-                                .flatMap(comment -> getUserInfo(user.userId())
-                                        .map(userInfo -> MemoDetailResponse
-                                                .from(memo,
-                                                        Collections
-                                                                .singletonList(
-                                                                        comment),
-                                                        userInfo)))));
+                        .flatMap(memo -> createInitialCommentAndBuildResponse(
+                                memo, request.body(), user)));
+    }
+
+    private Mono<MemoDetailResponse> createInitialCommentAndBuildResponse(
+            Memo memo, String body, AuthenticatedUser user) {
+        return saveFirstComment(memo.getId(), body, user)
+                .zipWith(getUserSummary(user.userId()))
+                .map(tuple -> MemoDetailResponse.from(memo,
+                        Collections.singletonList(tuple.getT1()),
+                        tuple.getT2()));
     }
 
     private Mono<Memo> saveMemo(CreateMemoRequest request,
@@ -75,7 +79,7 @@ public class MemoService {
                         .authorId(user.userId())
                         .body(body)
                         .build())
-                .flatMap(comment -> getUserInfo(user.userId())
+                .flatMap(comment -> getUserSummary(user.userId())
                         .map(userInfo -> MemoCommentResponse.from(comment,
                                 userInfo)));
     }
@@ -84,34 +88,39 @@ public class MemoService {
         return memoRepository.findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
-                .flatMap(memo -> getComments(memoId).collectList()
-                        .zipWith(getUserInfo(memo.getAuthorId()))
-                        .map(tuple -> MemoDetailResponse.from(memo,
-                                tuple.getT1(), tuple.getT2())));
+                .flatMap(this::buildMemoDetailResponse);
+    }
+
+    private Mono<MemoDetailResponse> buildMemoDetailResponse(Memo memo) {
+        Mono<List<MemoCommentResponse>> commentsMono = getComments(memo.getId())
+                .collectList();
+        Mono<UserSummaryResponse> authorMono = getUserSummary(
+                memo.getAuthorId());
+
+        return Mono.zip(commentsMono, authorMono)
+                .map(tuple -> MemoDetailResponse.from(memo, tuple.getT1(),
+                        tuple.getT2()));
     }
 
     public Flux<MemoResponse> getMemosBySchemaId(String schemaId) {
         return memoRepository.findBySchemaIdAndDeletedAtIsNull(schemaId)
                 .collectList()
-                .flatMapMany(memos -> {
-                    if (memos.isEmpty()) {
-                        return Flux.empty();
-                    }
-                    Set<String> authorIds = memos.stream()
-                            .map(Memo::getAuthorId)
-                            .collect(Collectors.toSet());
+                .flatMapMany(this::mapMemosToResponses);
+    }
 
-                    return userRepository.findAllById(authorIds)
-                            .collectMap(User::getId, UserInfoResponse::from)
-                            .flatMapMany(userMap -> Flux.fromIterable(memos)
-                                    .map(memo -> MemoResponse.from(memo,
-                                            userMap.getOrDefault(
-                                                    memo.getAuthorId(),
-                                                    new UserInfoResponse(
-                                                            memo.getAuthorId(),
-                                                            "unknown",
-                                                            "Unknown")))));
-                });
+    private Flux<MemoResponse> mapMemosToResponses(List<Memo> memos) {
+        if (memos.isEmpty()) {
+            return Flux.empty();
+        }
+        Set<String> authorIds = memos.stream()
+                .map(Memo::getAuthorId)
+                .collect(Collectors.toSet());
+
+        return userRepository.findAllById(authorIds)
+                .collectMap(User::getId, UserSummaryResponse::from)
+                .flatMapMany(userMap -> Flux.fromIterable(memos)
+                        .map(memo -> MemoResponse.from(memo,
+                                getUserFromMap(userMap, memo.getAuthorId()))));
     }
 
     public Mono<MemoResponse> updateMemo(String memoId,
@@ -119,16 +128,19 @@ public class MemoService {
         return memoRepository.findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
-                .flatMap(memo -> {
-                    if (!memo.getAuthorId().equals(user.userId())) {
-                        return Mono.error(
-                                new BusinessException(ErrorCode.ACCESS_DENIED));
-                    }
-                    memo.setPositions(request.positions());
-                    return memoRepository.save(memo);
-                })
-                .flatMap(memo -> getUserInfo(user.userId())
-                        .map(userInfo -> MemoResponse.from(memo, userInfo)));
+                .flatMap(memo -> updateMemoIfAuthor(memo, request, user));
+    }
+
+    private Mono<MemoResponse> updateMemoIfAuthor(Memo memo,
+            UpdateMemoRequest request, AuthenticatedUser user) {
+        if (!memo.getAuthorId().equals(user.userId())) {
+            return Mono.error(new BusinessException(ErrorCode.ACCESS_DENIED));
+        }
+        memo.setPositions(request.positions());
+        return memoRepository.save(memo)
+                .flatMap(savedMemo -> getUserSummary(user.userId())
+                        .map(userInfo -> MemoResponse.from(savedMemo,
+                                userInfo)));
     }
 
     public Mono<Void> deleteMemo(String memoId, AuthenticatedUser user) {
@@ -149,12 +161,17 @@ public class MemoService {
         return memoRepository.findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
-                .then(memoCommentRepository.save(MemoComment.builder()
-                        .memoId(memoId)
-                        .authorId(user.userId())
-                        .body(request.body())
-                        .build()))
-                .flatMap(comment -> getUserInfo(user.userId())
+                .then(saveComment(memoId, request.body(), user));
+    }
+
+    private Mono<MemoCommentResponse> saveComment(String memoId, String body,
+            AuthenticatedUser user) {
+        return memoCommentRepository.save(MemoComment.builder()
+                .memoId(memoId)
+                .authorId(user.userId())
+                .body(body)
+                .build())
+                .flatMap(comment -> getUserSummary(user.userId())
                         .map(userInfo -> MemoCommentResponse.from(comment,
                                 userInfo)));
     }
@@ -166,28 +183,24 @@ public class MemoService {
                 .thenMany(memoCommentRepository
                         .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(memoId)
                         .collectList()
-                        .flatMapMany(comments -> {
-                            if (comments.isEmpty()) {
-                                return Flux.empty();
-                            }
-                            Set<String> authorIds = comments.stream()
-                                    .map(MemoComment::getAuthorId)
-                                    .collect(Collectors.toSet());
+                        .flatMapMany(this::mapCommentsToResponses));
+    }
 
-                            return userRepository.findAllById(authorIds)
-                                    .collectMap(User::getId,
-                                            UserInfoResponse::from)
-                                    .flatMapMany(userMap -> Flux
-                                            .fromIterable(comments)
-                                            .map(comment -> MemoCommentResponse
-                                                    .from(comment,
-                                                            userMap.getOrDefault(
-                                                                    comment.getAuthorId(),
-                                                                    new UserInfoResponse(
-                                                                            comment.getAuthorId(),
-                                                                            "unknown",
-                                                                            "Unknown")))));
-                        }));
+    private Flux<MemoCommentResponse> mapCommentsToResponses(
+            List<MemoComment> comments) {
+        if (comments.isEmpty()) {
+            return Flux.empty();
+        }
+        Set<String> authorIds = comments.stream()
+                .map(MemoComment::getAuthorId)
+                .collect(Collectors.toSet());
+
+        return userRepository.findAllById(authorIds)
+                .collectMap(User::getId, UserSummaryResponse::from)
+                .flatMapMany(userMap -> Flux.fromIterable(comments)
+                        .map(comment -> MemoCommentResponse.from(comment,
+                                getUserFromMap(userMap,
+                                        comment.getAuthorId()))));
     }
 
     public Mono<MemoCommentResponse> updateComment(String memoId,
@@ -198,29 +211,32 @@ public class MemoService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
-                .flatMap(comment -> {
-                    if (!comment.getMemoId().equals(memoId)) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.COMMON_INVALID_PARAMETER));
+                .flatMap(comment -> updateCommentIfValid(comment, memoId,
+                        request, user));
+    }
+
+    private Mono<MemoCommentResponse> updateCommentIfValid(MemoComment comment,
+            String memoId, UpdateMemoCommentRequest request,
+            AuthenticatedUser user) {
+        if (!comment.getMemoId().equals(memoId)) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+        return memoRepository.findByIdAndDeletedAtIsNull(memoId)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+                .then(Mono.defer(() -> {
+                    if (!comment.getAuthorId().equals(user.userId())) {
+                        return Mono.error(
+                                new BusinessException(ErrorCode.ACCESS_DENIED));
                     }
-                    return memoRepository
-                            .findByIdAndDeletedAtIsNull(memoId)
-                            .switchIfEmpty(Mono.error(
-                                    new BusinessException(
-                                            ErrorCode.ERD_MEMO_NOT_FOUND)))
-                            .then(Mono.defer(() -> {
-                                if (!comment.getAuthorId()
-                                        .equals(user.userId())) {
-                                    return Mono.error(new BusinessException(
-                                            ErrorCode.ACCESS_DENIED));
-                                }
-                                comment.setBody(request.body());
-                                return memoCommentRepository.save(comment);
-                            }));
-                })
-                .flatMap(comment -> getUserInfo(user.userId())
-                        .map(userInfo -> MemoCommentResponse.from(comment,
-                                userInfo)));
+                    comment.setBody(request.body());
+                    return memoCommentRepository.save(comment)
+                            .flatMap(savedComment -> getUserSummary(
+                                    user.userId())
+                                    .map(userInfo -> MemoCommentResponse.from(
+                                            savedComment, userInfo)));
+                }));
     }
 
     public Mono<Void> deleteComment(String memoId, String commentId,
@@ -297,11 +313,16 @@ public class MemoService {
         return Mono.empty();
     }
 
-    private Mono<UserInfoResponse> getUserInfo(String userId) {
+    private Mono<UserSummaryResponse> getUserSummary(String userId) {
         return userRepository.findById(userId)
-                .map(UserInfoResponse::from)
-                .defaultIfEmpty(new UserInfoResponse(userId, "unknown",
-                        "Unknown"));
+                .map(UserSummaryResponse::from)
+                .defaultIfEmpty(new UserSummaryResponse(userId, "Unknown"));
+    }
+
+    private UserSummaryResponse getUserFromMap(
+            Map<String, UserSummaryResponse> userMap, String userId) {
+        return userMap.getOrDefault(userId,
+                new UserSummaryResponse(userId, "Unknown"));
     }
 
 }

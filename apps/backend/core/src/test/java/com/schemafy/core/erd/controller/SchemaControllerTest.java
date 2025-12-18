@@ -584,7 +584,6 @@ class SchemaControllerTest {
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
                             "author": {
                                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                "email": "test@example.com",
                                 "name": "testuser"
                             },
                             "positions": "{}",
@@ -627,8 +626,6 @@ class SchemaControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result[].author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath("result[].author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath("result[].author.name")
                                         .description("작성자 이름"),
                                 fieldWithPath("result[].positions")

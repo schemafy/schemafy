@@ -77,7 +77,6 @@ class MemoControllerTest {
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
                             "author": {
                                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                "email": "test@example.com",
                                 "name": "testuser"
                             },
                             "positions": "{}",
@@ -89,7 +88,6 @@ class MemoControllerTest {
                                     "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
                                     "author": {
                                         "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                        "email": "test@example.com",
                                         "name": "testuser"
                                     },
                                     "body": "메모 내용",
@@ -141,8 +139,6 @@ class MemoControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath("result.author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath("result.author.name")
                                         .description("작성자 이름"),
                                 fieldWithPath("result.positions")
@@ -161,9 +157,6 @@ class MemoControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result.comments[].author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath(
-                                        "result.comments[].author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath(
                                         "result.comments[].author.name")
                                         .description("작성자 이름"),
@@ -187,7 +180,6 @@ class MemoControllerTest {
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
                             "author": {
                                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                "email": "test@example.com",
                                 "name": "testuser"
                             },
                             "positions": "{}",
@@ -199,7 +191,6 @@ class MemoControllerTest {
                                     "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
                                     "author": {
                                         "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                        "email": "test@example.com",
                                         "name": "testuser"
                                     },
                                     "body": "메모 내용",
@@ -243,8 +234,6 @@ class MemoControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath("result.author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath("result.author.name")
                                         .description("작성자 이름"),
                                 fieldWithPath("result.positions")
@@ -263,9 +252,6 @@ class MemoControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result.comments[].author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath(
-                                        "result.comments[].author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath(
                                         "result.comments[].author.name")
                                         .description("작성자 이름"),
@@ -290,7 +276,6 @@ class MemoControllerTest {
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
                             "author": {
                                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                "email": "test@example.com",
                                 "name": "testuser"
                             },
                             "positions": "{}",
@@ -342,8 +327,6 @@ class MemoControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath("result.author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath("result.author.name")
                                         .description("작성자 이름"),
                                 fieldWithPath("result.positions")
@@ -404,7 +387,6 @@ class MemoControllerTest {
                             "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
                             "author": {
                                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                "email": "test@example.com",
                                 "name": "testuser"
                             },
                             "body": "댓글 내용",
@@ -455,8 +437,6 @@ class MemoControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath("result.author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath("result.author.name")
                                         .description("작성자 이름"),
                                 fieldWithPath("result.body")
@@ -478,7 +458,6 @@ class MemoControllerTest {
                             "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
                             "author": {
                                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                "email": "test@example.com",
                                 "name": "testuser"
                             },
                             "body": "댓글 내용",
@@ -521,8 +500,6 @@ class MemoControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result[].author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath("result[].author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath("result[].author.name")
                                         .description("작성자 이름"),
                                 fieldWithPath("result[].body")
@@ -548,7 +525,6 @@ class MemoControllerTest {
                             "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
                             "author": {
                                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                "email": "test@example.com",
                                 "name": "testuser"
                             },
                             "body": "수정된 내용",
@@ -602,8 +578,6 @@ class MemoControllerTest {
                                         .description("작성자 정보"),
                                 fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
-                                fieldWithPath("result.author.email")
-                                        .description("작성자 이메일"),
                                 fieldWithPath("result.author.name")
                                         .description("작성자 이름"),
                                 fieldWithPath("result.body")
