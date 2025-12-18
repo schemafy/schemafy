@@ -3,7 +3,7 @@ package com.schemafy.core.project.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -33,6 +33,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ProjectService {
 
+    private final TransactionalOperator transactionalOperator;
+    private final TransactionalOperator readOnlyTransactionalOperator;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
@@ -42,7 +44,6 @@ public class ProjectService {
 
     private static final int MAX_PROJECT_MEMBERS = 30;
 
-    @Transactional
     public Mono<ProjectResponse> createProject(String workspaceId,
             CreateProjectRequest request, String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId).then(
@@ -61,10 +62,10 @@ public class ProjectService {
                                     .save(ownerMember)
                                     .thenReturn(savedProject))
                             .map(ProjectResponse::from);
-                }));
+                }))
+                .as(transactionalOperator::transactional);
     }
 
-    @Transactional(readOnly = true)
     public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
             String workspaceId, String userId, int page, int size) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -90,10 +91,10 @@ public class ProjectService {
                                     .subList(start, end);
                             return Mono.just(PageResponse.of(pagedContent, page,
                                     size, totalElements));
-                        }));
+                        }))
+                .as(readOnlyTransactionalOperator::transactional);
     }
 
-    @Transactional(readOnly = true)
     public Mono<ProjectResponse> getProject(String workspaceId,
             String projectId,
             String userId) {
@@ -109,10 +110,10 @@ public class ProjectService {
                                 ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
                     return Mono.just(ProjectResponse.from(project));
-                });
+                })
+                .as(readOnlyTransactionalOperator::transactional);
     }
 
-    @Transactional
     public Mono<ProjectResponse> updateProject(String workspaceId,
             String projectId, UpdateProjectRequest request, String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -133,10 +134,11 @@ public class ProjectService {
                     project.update(request.name(), request.description(),
                             settings);
                     return projectRepository.save(project);
-                }).map(ProjectResponse::from);
+                })
+                .map(ProjectResponse::from)
+                .as(transactionalOperator::transactional);
     }
 
-    @Transactional
     public Mono<Void> deleteProject(String workspaceId, String projectId,
             String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -158,10 +160,10 @@ public class ProjectService {
                     return projectRepository.save(project)
                             .then(projectMemberRepository
                                     .softDeleteByProjectId(projectId));
-                });
+                })
+                .as(transactionalOperator::transactional);
     }
 
-    @Transactional(readOnly = true)
     public Mono<PageResponse<ProjectMemberResponse>> getMembers(
             String workspaceId, String projectId, String userId, int page,
             int size) {
@@ -181,13 +183,13 @@ public class ProjectService {
                             .collectList()
                             .map(members -> PageResponse.of(members, page, size,
                                     totalElements));
-                });
+                })
+                .as(readOnlyTransactionalOperator::transactional);
     }
 
     /**
      * ShareLink 토큰을 통한 프로젝트 참여
      */
-    @Transactional
     public Mono<ProjectMemberResponse> joinProjectByShareLink(String token,
             String userId) {
         byte[] tokenHash = tokenService.hashToken(token);
@@ -210,13 +212,13 @@ public class ProjectService {
                                     }
                                     return createOrUpdateProjectMember(project,
                                             shareLink, userId);
-                                })));
+                                })))
+                .as(transactionalOperator::transactional);
     }
 
     /**
      * 프로젝트 멤버 역할 변경
      */
-    @Transactional
     public Mono<ProjectMemberResponse> updateMemberRole(String workspaceId,
             String projectId, String memberId,
             UpdateProjectMemberRoleRequest request, String userId) {
@@ -256,13 +258,13 @@ public class ProjectService {
                 .flatMap(updatedMember -> userRepository
                         .findById(updatedMember.getUserId())
                         .map(user -> ProjectMemberResponse.of(updatedMember,
-                                user)));
+                                user)))
+                .as(transactionalOperator::transactional);
     }
 
     /**
      * 프로젝트 멤버 제거 (관리자 권한)
      */
-    @Transactional
     public Mono<Void> removeMember(String workspaceId, String projectId,
             String memberId, String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -283,13 +285,13 @@ public class ProjectService {
                     }
 
                     return softDeleteMember(targetMember);
-                });
+                })
+                .as(transactionalOperator::transactional);
     }
 
     /**
      * 프로젝트 자발적 탈퇴
      */
-    @Transactional
     public Mono<Void> leaveProject(String workspaceId, String projectId,
             String userId) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
@@ -323,7 +325,8 @@ public class ProjectService {
                                 }
                                 return softDeleteMember(member);
                             });
-                });
+                })
+                .as(transactionalOperator::transactional);
     }
 
     private Mono<ProjectMemberResponse> createOrUpdateProjectMember(

@@ -3,7 +3,7 @@ package com.schemafy.core.user.service;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -29,17 +29,18 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UserService {
 
+    private final TransactionalOperator transactionalOperator;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
 
-    @Transactional
     public Mono<User> signUp(SignUpCommand request) {
         return checkEmailUniqueness(request.email())
                 .then(createNewUser(request))
-                .flatMap(this::createDefaultWorkspace);
+                .flatMap(this::createDefaultWorkspace)
+                .as(transactionalOperator::transactional);
     }
 
     private Mono<Void> checkEmailUniqueness(String email) {

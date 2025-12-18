@@ -3,7 +3,7 @@ package com.schemafy.core.project.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -30,11 +30,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class WorkspaceService {
 
+    private final TransactionalOperator transactionalOperator;
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final UserRepository userRepository;
 
-    @Transactional
     public Mono<WorkspaceResponse> createWorkspace(
             CreateWorkspaceRequest request, String userId) {
         return Mono.defer(() -> {
@@ -51,10 +51,9 @@ public class WorkspaceService {
                     savedWorkspace -> workspaceMemberRepository.save(
                             ownerMember).thenReturn(savedWorkspace))
                     .map(WorkspaceResponse::from);
-        });
+        }).as(transactionalOperator::transactional);
     }
 
-    @Transactional(readOnly = true)
     public Mono<PageResponse<WorkspaceSummaryResponse>> getWorkspaces(
             String userId, int page, int size) {
         return workspaceMemberRepository.findByUserIdAndNotDeleted(userId)
@@ -77,7 +76,6 @@ public class WorkspaceService {
                 });
     }
 
-    @Transactional(readOnly = true)
     public Mono<WorkspaceResponse> getWorkspace(String workspaceId,
             String userId) {
         return validateMemberAccess(workspaceId, userId).then(
@@ -87,7 +85,6 @@ public class WorkspaceService {
                 .map(WorkspaceResponse::from);
     }
 
-    @Transactional
     public Mono<WorkspaceResponse> updateWorkspace(String workspaceId,
             UpdateWorkspaceRequest request, String userId) {
         return validateAdminAccess(workspaceId, userId).then(
@@ -101,10 +98,10 @@ public class WorkspaceService {
                     workspace.update(request.name(), request.description(),
                             settings);
                     return workspaceRepository.save(workspace);
-                }).map(WorkspaceResponse::from);
+                }).map(WorkspaceResponse::from)
+                .as(transactionalOperator::transactional);
     }
 
-    @Transactional
     public Mono<Void> deleteWorkspace(String workspaceId, String userId) {
         return validateAdminAccess(workspaceId, userId).then(
                 workspaceRepository.findByIdAndNotDeleted(workspaceId))
@@ -120,10 +117,9 @@ public class WorkspaceService {
                             .then(workspaceMemberRepository
                                     .softDeleteByWorkspaceId(
                                             workspaceId));
-                });
+                }).as(transactionalOperator::transactional);
     }
 
-    @Transactional(readOnly = true)
     public Mono<PageResponse<WorkspaceMemberResponse>> getMembers(
             String workspaceId, String userId, int page, int size) {
         return validateMemberAccess(workspaceId, userId).then(
@@ -186,7 +182,6 @@ public class WorkspaceService {
     /**
      * 워크스페이스에 멤버 추가
      */
-    @Transactional
     public Mono<WorkspaceMemberResponse> addMember(
             String workspaceId,
             AddWorkspaceMemberRequest request,
@@ -218,13 +213,13 @@ public class WorkspaceService {
                 .flatMap(savedMember -> userRepository
                         .findById(savedMember.getUserId())
                         .map(user -> WorkspaceMemberResponse.of(savedMember,
-                                user)));
+                                user)))
+                .as(transactionalOperator::transactional);
     }
 
     /**
      * 워크스페이스 멤버 제거
      */
-    @Transactional
     public Mono<Void> removeMember(
             String workspaceId,
             String memberId,
@@ -253,13 +248,13 @@ public class WorkspaceService {
                         return workspaceMemberRepository.save(targetMember);
                     }
                 })
-                .then();
+                .then()
+                .as(transactionalOperator::transactional);
     }
 
     /**
      * 본인 워크스페이스 탈퇴
      */
-    @Transactional
     public Mono<Void> leaveMember(
             String workspaceId,
             String currentUserId) {
@@ -299,13 +294,13 @@ public class WorkspaceService {
                                 return workspaceMemberRepository.save(myMember)
                                         .then();
                             }
-                        }));
+                        }))
+                .as(transactionalOperator::transactional);
     }
 
     /**
      * 멤버 권한 변경
      */
-    @Transactional
     public Mono<WorkspaceMemberResponse> updateMemberRole(
             String workspaceId,
             String memberId,
@@ -340,7 +335,8 @@ public class WorkspaceService {
                 .flatMap(updatedMember -> userRepository
                         .findById(updatedMember.getUserId())
                         .map(user -> WorkspaceMemberResponse.of(updatedMember,
-                                user)));
+                                user)))
+                .as(transactionalOperator::transactional);
     }
 
 }
