@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.core.common.TestFixture;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
@@ -25,6 +26,8 @@ import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
 import com.schemafy.core.erd.repository.entity.Schema;
+import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.repository.entity.User;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -48,11 +51,15 @@ class MemoServiceTest {
     @Autowired
     SchemaRepository schemaRepository;
 
+    @Autowired
+    UserRepository userRepository;
+
     @BeforeEach
     void setUp() {
         memoCommentRepository.deleteAll().block();
         memoRepository.deleteAll().block();
         schemaRepository.deleteAll().block();
+        userRepository.deleteAll().block();
     }
 
     @Test
@@ -64,12 +71,16 @@ class MemoServiceTest {
                 .name("test-schema")
                 .build()).block();
 
+        User author = TestFixture
+                .createTestUser("author@example.com", "메모 작성자", "password")
+                .block();
+        userRepository.save(author).block();
+
         CreateMemoRequest request = new CreateMemoRequest(
                 schema.getId(),
                 "{\"x\":100,\"y\":100}",
                 "초기 메모 내용");
-        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        AuthenticatedUser user = AuthenticatedUser.of(authorId);
+        AuthenticatedUser user = AuthenticatedUser.of(author.getId());
 
         Mono<MemoDetailResponse> result = memoService.createMemo(request,
                 user);
@@ -78,14 +89,18 @@ class MemoServiceTest {
                 .assertNext(response -> {
                     assertThat(response.getSchemaId())
                             .isEqualTo(schema.getId());
-                    assertThat(response.getAuthorId()).isEqualTo(authorId);
+                    assertThat(response.getAuthor().id())
+                            .isEqualTo(author.getId());
+                    assertThat(response.getAuthor().name()).isEqualTo("메모 작성자");
                     assertThat(response.getPositions())
                             .isEqualTo(request.positions());
                     assertThat(response.getComments()).hasSize(1);
-                    assertThat(response.getComments().get(0).getBody())
+                    assertThat(response.getComments().get(0).body())
                             .isEqualTo(request.body());
-                    assertThat(response.getComments().get(0).getAuthorId())
-                            .isEqualTo(authorId);
+                    assertThat(response.getComments().get(0).author().id())
+                            .isEqualTo(author.getId());
+                    assertThat(response.getComments().get(0).author().name())
+                            .isEqualTo("메모 작성자");
                 })
                 .verifyComplete();
     }
@@ -111,21 +126,31 @@ class MemoServiceTest {
     @Test
     @DisplayName("getMemo: 메모 상세 정보를 조회한다")
     void getMemo_success() {
+        User author1 = TestFixture
+                .createTestUser("author1@example.com", "작성자1", "password")
+                .block();
+        userRepository.save(author1).block();
+
+        User author2 = TestFixture
+                .createTestUser("author2@example.com", "작성자2", "password")
+                .block();
+        userRepository.save(author2).block();
+
         Memo memo = memoRepository.save(Memo.builder()
                 .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
-                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .authorId(author1.getId())
                 .positions("{}")
                 .build()).block();
 
         memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
-                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .authorId(author1.getId())
                 .body("댓글 1")
                 .build()).block();
 
         memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
-                .authorId("06D6W8HDY79QFZX39RMX62KSX4")
+                .authorId(author2.getId())
                 .body("댓글 2")
                 .build()).block();
 
@@ -133,6 +158,17 @@ class MemoServiceTest {
                 .assertNext(response -> {
                     assertThat(response.getId()).isEqualTo(memo.getId());
                     assertThat(response.getComments()).hasSize(2);
+                    assertThat(response.getAuthor().id())
+                            .isEqualTo(author1.getId());
+                    assertThat(response.getAuthor().name()).isEqualTo("작성자1");
+                    assertThat(response.getComments().get(0).author().id())
+                            .isEqualTo(author1.getId());
+                    assertThat(response.getComments().get(0).author().name())
+                            .isEqualTo("작성자1");
+                    assertThat(response.getComments().get(1).author().id())
+                            .isEqualTo(author2.getId());
+                    assertThat(response.getComments().get(1).author().name())
+                            .isEqualTo("작성자2");
                 })
                 .verifyComplete();
     }
@@ -140,20 +176,30 @@ class MemoServiceTest {
     @Test
     @DisplayName("getMemosBySchemaId: 스키마별 메모 목록을 조회한다")
     void getMemosBySchemaId_success() {
+        User author1 = TestFixture
+                .createTestUser("author1@example.com", "작성자1", "password")
+                .block();
+        userRepository.save(author1).block();
+
+        User author2 = TestFixture
+                .createTestUser("author2@example.com", "작성자2", "password")
+                .block();
+        userRepository.save(author2).block();
+
         String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
-        memoRepository.save(Memo.builder()
+        Memo memo1 = memoRepository.save(Memo.builder()
                 .schemaId(schemaId)
-                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .authorId(author1.getId())
                 .positions("{}")
                 .build()).block();
-        memoRepository.save(Memo.builder()
+        Memo memo2 = memoRepository.save(Memo.builder()
                 .schemaId(schemaId)
-                .authorId("06D6W8HDY79QFZX39RMX62KSX4")
+                .authorId(author2.getId())
                 .positions("{}")
                 .build()).block();
         memoRepository.save(Memo.builder()
                 .schemaId("06D6VZBWHSDJBBG0H7D156YZ99")
-                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .authorId(author1.getId())
                 .positions("{}")
                 .build()).block();
 
@@ -161,6 +207,12 @@ class MemoServiceTest {
                 .create(memoService.getMemosBySchemaId(schemaId).collectList())
                 .assertNext(list -> {
                     assertThat(list).hasSize(2);
+                    assertThat(list.get(0).author().id())
+                            .isEqualTo(memo1.getAuthorId());
+                    assertThat(list.get(0).author().name()).isEqualTo("작성자1");
+                    assertThat(list.get(1).author().id())
+                            .isEqualTo(memo2.getAuthorId());
+                    assertThat(list.get(1).author().name()).isEqualTo("작성자2");
                 })
                 .verifyComplete();
     }
@@ -168,21 +220,28 @@ class MemoServiceTest {
     @Test
     @DisplayName("updateMemo: 작성자 본인이면 메모 위치를 수정한다")
     void updateMemo_success() {
-        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+        User author = TestFixture
+                .createTestUser("author@example.com", "메모 수정자", "password")
+                .block();
+        userRepository.save(author).block();
+
         Memo memo = memoRepository.save(Memo.builder()
                 .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
-                .authorId(authorId)
+                .authorId(author.getId())
                 .positions("{\"x\":0,\"y\":0}")
                 .build()).block();
 
         UpdateMemoRequest request = new UpdateMemoRequest(
                 "{\"x\":100,\"y\":100}");
-        AuthenticatedUser user = AuthenticatedUser.of(authorId);
+        AuthenticatedUser user = AuthenticatedUser.of(author.getId());
 
         StepVerifier.create(memoService.updateMemo(memo.getId(), request, user))
                 .assertNext(response -> {
-                    assertThat(response.getPositions())
+                    assertThat(response.positions())
                             .isEqualTo(request.positions());
+                    assertThat(response.author().id())
+                            .isEqualTo(author.getId());
+                    assertThat(response.author().name()).isEqualTo("메모 수정자");
                 })
                 .verifyComplete();
 
@@ -274,22 +333,34 @@ class MemoServiceTest {
     @Test
     @DisplayName("createComment: 메모 댓글을 생성한다")
     void createComment_success() {
+        User memoAuthor = TestFixture
+                .createTestUser("memoAuthor@example.com", "메모 작성자", "password")
+                .block();
+        userRepository.save(memoAuthor).block();
+
+        User commentAuthor = TestFixture
+                .createTestUser("commentAuthor@example.com", "댓글 작성자",
+                        "password")
+                .block();
+        userRepository.save(commentAuthor).block();
+
         Memo memo = memoRepository.save(Memo.builder()
                 .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
-                .authorId("01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .authorId(memoAuthor.getId())
                 .positions("{}")
                 .build()).block();
 
         CreateMemoCommentRequest request = new CreateMemoCommentRequest("새 댓글");
-        String authorId = "06D6W8HDY79QFZX39RMX62KSX4";
-        AuthenticatedUser user = AuthenticatedUser.of(authorId);
+        AuthenticatedUser user = AuthenticatedUser.of(commentAuthor.getId());
 
         StepVerifier
                 .create(memoService.createComment(memo.getId(), request, user))
                 .assertNext(response -> {
-                    assertThat(response.getMemoId()).isEqualTo(memo.getId());
-                    assertThat(response.getBody()).isEqualTo("새 댓글");
-                    assertThat(response.getAuthorId()).isEqualTo(authorId);
+                    assertThat(response.memoId()).isEqualTo(memo.getId());
+                    assertThat(response.body()).isEqualTo("새 댓글");
+                    assertThat(response.author().id())
+                            .isEqualTo(commentAuthor.getId());
+                    assertThat(response.author().name()).isEqualTo("댓글 작성자");
                 })
                 .verifyComplete();
     }
@@ -297,26 +368,33 @@ class MemoServiceTest {
     @Test
     @DisplayName("updateComment: 작성자 본인이면 댓글을 수정한다")
     void updateComment_success() {
-        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+        User author = TestFixture
+                .createTestUser("author@example.com", "댓글 수정자", "password")
+                .block();
+        userRepository.save(author).block();
+
         Memo memo = memoRepository.save(Memo.builder()
                 .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
-                .authorId(authorId)
+                .authorId(author.getId())
                 .positions("{}")
                 .build()).block();
         MemoComment comment = memoCommentRepository.save(MemoComment.builder()
                 .memoId(memo.getId())
-                .authorId(authorId)
+                .authorId(author.getId())
                 .body("이전 내용")
                 .build()).block();
 
         UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
                 "수정 내용");
-        AuthenticatedUser user = AuthenticatedUser.of(authorId);
+        AuthenticatedUser user = AuthenticatedUser.of(author.getId());
 
         StepVerifier.create(memoService.updateComment(memo.getId(),
                 comment.getId(), request, user))
                 .assertNext(response -> {
-                    assertThat(response.getBody()).isEqualTo("수정 내용");
+                    assertThat(response.body()).isEqualTo("수정 내용");
+                    assertThat(response.author().id())
+                            .isEqualTo(author.getId());
+                    assertThat(response.author().name()).isEqualTo("댓글 수정자");
                 })
                 .verifyComplete();
     }
@@ -571,9 +649,9 @@ class MemoServiceTest {
         StepVerifier.create(memoService.getMemo(memo.getId()))
                 .assertNext(response -> {
                     assertThat(response.getComments()).hasSize(2);
-                    assertThat(response.getComments().get(0).getId())
+                    assertThat(response.getComments().get(0).id())
                             .isEqualTo(first.getId());
-                    assertThat(response.getComments().get(1).getId())
+                    assertThat(response.getComments().get(1).id())
                             .isEqualTo(second.getId());
                 })
                 .verifyComplete();

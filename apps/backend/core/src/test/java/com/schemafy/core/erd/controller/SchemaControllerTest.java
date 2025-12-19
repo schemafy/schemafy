@@ -582,7 +582,10 @@ class SchemaControllerTest {
                         {
                             "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "author": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "name": "testuser"
+                            },
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z"
@@ -619,8 +622,12 @@ class SchemaControllerTest {
                                         .description("메모 ID"),
                                 fieldWithPath("result[].schemaId")
                                         .description("스키마 ID"),
-                                fieldWithPath("result[].authorId")
+                                fieldWithPath("result[].author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result[].author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath("result[].author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result[].positions")
                                         .description("메모 위치"),
                                 fieldWithPath("result[].createdAt")
