@@ -1,11 +1,11 @@
-import { ulid } from 'ulid';
-import type { ErdStore } from '@/store/erd.store';
 import type { IndexType, IndexSortDir } from '../types';
 import type { Index } from '@schemafy/validator';
 import { generateUniqueName } from '../utils/nameGenerator';
+import * as indexService from '../services/index.service';
+import { toast } from 'sonner';
+import { ErdStore } from '@/store/erd.store';
 
 interface UseIndexesProps {
-  erdStore: ErdStore;
   schemaId: string;
   tableId: string;
   tableName: string;
@@ -13,79 +13,122 @@ interface UseIndexesProps {
 }
 
 export const useIndexes = ({
-  erdStore,
   schemaId,
   tableId,
   tableName,
   indexes,
 }: UseIndexesProps) => {
-  const createIndex = () => {
+  const createIndex = async () => {
     const existingIndexNames = indexes.map((idx) => idx.name);
 
-    erdStore.createIndex(schemaId, tableId, {
-      id: ulid(),
-      name: generateUniqueName(existingIndexNames, `idx_${tableName}_`),
-      type: 'BTREE' as IndexType,
-      comment: null,
-      columns: [],
-      isAffected: false,
-    });
-  };
-
-  const deleteIndex = (indexId: string) => {
-    erdStore.deleteIndex(schemaId, tableId, indexId);
-  };
-
-  const changeIndexName = (indexId: string, newName: string) => {
-    erdStore.changeIndexName(schemaId, tableId, indexId, newName);
-  };
-
-  const changeIndexType = (indexId: string, newType: IndexType) => {
-    const index = indexes.find((idx) => idx.id === indexId);
-    if (!index) return;
-
-    erdStore.deleteIndex(schemaId, tableId, indexId);
-    erdStore.createIndex(schemaId, tableId, {
-      ...index,
-      type: newType,
-    });
-  };
-
-  const addColumnToIndex = (indexId: string, columnId: string) => {
-    const index = indexes.find((idx) => idx.id === indexId);
-    if (index) {
-      erdStore.addColumnToIndex(schemaId, tableId, indexId, {
-        id: ulid(),
-        columnId,
-        seqNo: index.columns.length + 1,
-        sortDir: 'ASC' as IndexSortDir,
-        isAffected: false,
-      });
+    try {
+      await indexService.createIndex(
+        schemaId,
+        tableId,
+        generateUniqueName(existingIndexNames, `idx_${tableName}_`),
+        'BTREE',
+        [],
+      );
+    } catch (error) {
+      toast.error('Failed to create index');
+      console.error(error);
     }
   };
 
-  const removeColumnFromIndex = (indexId: string, indexColumnId: string) => {
-    erdStore.removeColumnFromIndex(schemaId, tableId, indexId, indexColumnId);
+  const deleteIndex = async (indexId: string) => {
+    try {
+      await indexService.deleteIndex(schemaId, tableId, indexId);
+    } catch (error) {
+      toast.error('Failed to delete index');
+      console.error(error);
+    }
   };
 
-  const changeSortDir = (
+  const changeIndexName = async (indexId: string, newName: string) => {
+    try {
+      await indexService.updateIndexName(schemaId, tableId, indexId, newName);
+    } catch (error) {
+      toast.error('Failed to update index name');
+      console.error(error);
+    }
+  };
+
+  const changeIndexType = async (indexId: string, newType: IndexType) => {
+    const erdStore = ErdStore.getInstance();
+    const index = indexes.find((idx) => idx.id === indexId);
+    if (!index) return;
+
+    try {
+      erdStore.deleteIndex(schemaId, tableId, indexId);
+      erdStore.createIndex(schemaId, tableId, {
+        ...index,
+        type: newType,
+      });
+    } catch (error) {
+      toast.error('Failed to update index type');
+      console.error(error);
+    }
+  };
+
+  const addColumnToIndex = async (indexId: string, columnId: string) => {
+    const index = indexes.find((idx) => idx.id === indexId);
+    if (!index) return;
+
+    try {
+      await indexService.addColumnToIndex(
+        schemaId,
+        tableId,
+        indexId,
+        columnId,
+        index.columns.length + 1,
+      );
+    } catch (error) {
+      toast.error('Failed to add column to index');
+      console.error(error);
+    }
+  };
+
+  const removeColumnFromIndex = async (
+    indexId: string,
+    indexColumnId: string,
+  ) => {
+    try {
+      await indexService.removeColumnFromIndex(
+        schemaId,
+        tableId,
+        indexId,
+        indexColumnId,
+      );
+    } catch (error) {
+      toast.error('Failed to remove column from index');
+      console.error(error);
+    }
+  };
+
+  const changeSortDir = async (
     indexId: string,
     indexColumnId: string,
     sortDir: IndexSortDir,
   ) => {
+    const erdStore = ErdStore.getInstance();
     const index = indexes.find((idx) => idx.id === indexId);
     if (!index) return;
 
     const indexColumn = index.columns.find((col) => col.id === indexColumnId);
     if (!indexColumn) return;
 
-    erdStore.deleteIndex(schemaId, tableId, indexId);
-    erdStore.createIndex(schemaId, tableId, {
-      ...index,
-      columns: index.columns.map((col) =>
-        col.id === indexColumnId ? { ...col, sortDir } : col,
-      ),
-    });
+    try {
+      erdStore.deleteIndex(schemaId, tableId, indexId);
+      erdStore.createIndex(schemaId, tableId, {
+        ...index,
+        columns: index.columns.map((col) =>
+          col.id === indexColumnId ? { ...col, sortDir } : col,
+        ),
+      });
+    } catch (error) {
+      toast.error('Failed to change sort direction');
+      console.error(error);
+    }
   };
 
   return {

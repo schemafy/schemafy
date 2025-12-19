@@ -44,7 +44,6 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   });
 
   const indexActions = useIndexes({
-    erdStore,
     schemaId: data.schemaId,
     tableId: id,
     tableName: data.tableName,
@@ -52,7 +51,6 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   });
 
   const constraintActions = useConstraints({
-    erdStore,
     schemaId: data.schemaId,
     tableId: id,
     tableName: data.tableName,

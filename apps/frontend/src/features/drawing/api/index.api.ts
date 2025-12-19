@@ -1,12 +1,12 @@
 import { api } from '@/lib/api/helpers';
 import type {
   IndexResponse,
+  IndexColumnResponse,
   CreateIndexRequest,
   UpdateIndexNameRequest,
   AddColumnToIndexRequest,
   RemoveColumnFromIndexRequest,
   DeleteIndexRequest,
-  IndexColumnResponse,
 } from './types/index';
 import type { AffectedMappingResponse } from './types/common';
 

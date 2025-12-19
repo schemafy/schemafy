@@ -347,6 +347,42 @@ export class ErdStore {
     }));
   }
 
+  replaceIndexColumnId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    oldId: IndexColumn['id'],
+    newId: IndexColumn['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) =>
+                table.id !== tableId
+                  ? table
+                  : {
+                      ...table,
+                      indexes: table.indexes.map((index) =>
+                        index.id !== indexId
+                          ? index
+                          : {
+                              ...index,
+                              columns: index.columns.map((col) =>
+                                col.id === oldId ? { ...col, id: newId } : col,
+                              ),
+                            },
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+  }
+
   replaceRelationshipId(
     schemaId: Schema['id'],
     oldId: Relationship['id'],
