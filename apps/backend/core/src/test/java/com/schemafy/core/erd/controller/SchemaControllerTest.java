@@ -38,6 +38,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -153,6 +154,21 @@ class SchemaControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schema.id")
+                                        .description("스키마 ID (FE ID)"),
+                                fieldWithPath("schema.projectId")
+                                        .description("프로젝트 ID"),
+                                fieldWithPath("schema.dbVendorId")
+                                        .description("데이터베이스 벤더 ID"),
+                                fieldWithPath("schema.name")
+                                        .description("스키마 이름"),
+                                fieldWithPath("schema.charset")
+                                        .description("문자 집합"),
+                                fieldWithPath("schema.collation")
+                                        .description("정렬 규칙")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -361,6 +377,13 @@ class SchemaControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("변경할 스키마 ID"),
+                                fieldWithPath("newName")
+                                        .description("새 스키마 이름")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -464,6 +487,11 @@ class SchemaControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("삭제할 스키마 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),

@@ -32,6 +32,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -199,6 +200,29 @@ class IndexControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("index.id")
+                                        .description("인덱스 ID (FE ID)"),
+                                fieldWithPath("index.tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("index.name")
+                                        .description("인덱스 이름"),
+                                fieldWithPath("index.type")
+                                        .description("인덱스 타입"),
+                                fieldWithPath("index.columns")
+                                        .description("인덱스 컬럼 목록"),
+                                fieldWithPath("index.columns[].columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("index.columns[].seqNo")
+                                        .description("순서 번호"),
+                                fieldWithPath("index.columns[].sortDir")
+                                        .description("정렬 방향 (ASC/DESC)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -437,6 +461,17 @@ class IndexControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("indexId")
+                                        .description("변경할 인덱스 ID"),
+                                fieldWithPath("newName")
+                                        .description("새 인덱스 이름")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -588,6 +623,23 @@ class IndexControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("indexColumn.indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("indexColumn.columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("indexColumn.seqNo")
+                                        .description("순서 번호"),
+                                fieldWithPath("indexColumn.sortDir")
+                                        .description("정렬 방향 (ASC/DESC)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -725,6 +777,17 @@ class IndexControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("indexColumnId")
+                                        .description("삭제할 인덱스 컬럼 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -839,6 +902,15 @@ class IndexControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("indexId")
+                                        .description("삭제할 인덱스 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
