@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +26,11 @@ import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
-
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -85,6 +85,22 @@ class RelationshipServiceTest {
                 any(Validation.DeleteRelationshipRequest.class)))
                 .willReturn(Mono.just(
                         Validation.Database.newBuilder().build()));
+
+        AffectedEntitiesSaver.SaveResult emptySaveResult = new AffectedEntitiesSaver.SaveResult(
+                AffectedMappingResponse.PropagatedEntities.empty(),
+                new IdMappings(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
+                        Map.of(), Map.of(), Map.of(), Map.of()));
+
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class)))
+                .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any()))
+                .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any(), any()))
+                .willReturn(Mono.just(emptySaveResult));
+
         given(affectedEntitiesSaver.saveAffectedEntities(any(),
                 any(Validation.Database.class)))
                 .willReturn(Mono.just(
@@ -168,11 +184,6 @@ class RelationshipServiceTest {
         given(validationClient.createRelationship(
                 any(Validation.CreateRelationshipRequest.class)))
                 .willReturn(Mono.just(mockResponse));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
-                any(), any(), any()))
-                .willReturn(Mono
-                        .just(AffectedMappingResponse.PropagatedEntities
-                                .empty()));
 
         // when
         Mono<AffectedMappingResponse> result = relationshipService
@@ -330,25 +341,19 @@ class RelationshipServiceTest {
                 .createRelationship(requestWithExtra);
 
         // then
-        Mono<Tuple2<AffectedMappingResponse, RelationshipColumn>> composed = result
-                .flatMap(response -> {
-                    String savedRelationshipId = response.relationships()
-                            .get("table-1")
-                            .get("fe-relationship-id");
+        String persistedRelationshipColumnId = "be-relationship-col-1";
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
+                any(), any(), eq("RELATIONSHIP"))).willReturn(Mono.just(
+                        new AffectedEntitiesSaver.SaveResult(
+                                AffectedMappingResponse.PropagatedEntities
+                                        .empty(),
+                                new IdMappings(Map.of(), Map.of(), Map.of(),
+                                        Map.of(), Map.of(), Map.of(), Map.of(),
+                                        Map.of(), Map.of("fe-relationship-col-1",
+                                                persistedRelationshipColumnId)))));
 
-                    return relationshipColumnRepository
-                            .findByRelationshipIdAndDeletedAtIsNull(
-                                    savedRelationshipId)
-                            .single()
-                            .map(savedRelationshipColumn -> Tuples
-                                    .of(response, savedRelationshipColumn));
-                });
-
-        StepVerifier.create(composed)
-                .assertNext(tuple -> {
-                    AffectedMappingResponse response = tuple.getT1();
-                    RelationshipColumn savedRelationshipColumn = tuple.getT2();
-
+        StepVerifier.create(result)
+                .assertNext(response -> {
                     String savedRelationshipId = response.relationships()
                             .get("table-1")
                             .get("fe-relationship-id");
@@ -357,29 +362,21 @@ class RelationshipServiceTest {
                     assertThat(savedRelationshipId)
                             .isNotEqualTo("fe-relationship-id");
 
-                    String savedRelationshipColumnId = response
-                            .relationshipColumns()
-                            .get(savedRelationshipId)
-                            .get("fe-relationship-col-1");
-
-                    assertThat(savedRelationshipColumnId).isNotNull();
-                    assertThat(savedRelationshipColumnId)
-                            .isNotEqualTo("fe-relationship-col-1");
-
-                    assertThat(savedRelationshipColumn).isNotNull();
-                    assertThat(savedRelationshipColumn.getId())
-                            .isEqualTo(savedRelationshipColumnId);
+                    assertThat(response.relationshipColumns())
+                            .containsKey(savedRelationshipId);
+                    assertThat(response.relationshipColumns()
+                            .get(savedRelationshipId))
+                            .containsEntry("fe-relationship-col-1",
+                                    persistedRelationshipColumnId);
                 })
                 .verifyComplete();
 
         ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
                 .forClass(Validation.Database.class);
 
-        verify(affectedEntitiesSaver).saveAffectedEntities(any(),
+        verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
                 afterDbCaptor.capture(), anyString(), anyString(),
-                eq("RELATIONSHIP"), argThat((Set<String> excludeEntityIds) -> {
-                    return excludeEntityIds.contains("fe-relationship-col-1");
-                }));
+                eq("RELATIONSHIP"));
 
         assertThat(containsRelationshipColumnId(afterDbCaptor.getValue(),
                 "fe-relationship-col-1"))
@@ -592,26 +589,30 @@ class RelationshipServiceTest {
         given(validationClient.createRelationship(
                 any(Validation.CreateRelationshipRequest.class)))
                 .willReturn(Mono.just(mockResponse));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
                 any(), any(), any()))
                 .willAnswer(invocation -> {
                     String sourceId = invocation.getArgument(3);
-                    return Mono.just(new AffectedMappingResponse.PropagatedEntities(
-                            List.of(new AffectedMappingResponse.PropagatedColumn(
-                                    "be-fk-column-id",
-                                    "child-table",
-                                    "RELATIONSHIP",
-                                    sourceId,
-                                    "parent-id-col")),
-                            List.of(),
-                            List.of(),
-                            List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
-                                    "propagated-constraint-col",
-                                    "child-pk-constraint",
-                                    "be-fk-column-id",
-                                    "RELATIONSHIP",
-                                    sourceId)),
-                            List.of()));
+                    return Mono.just(new AffectedEntitiesSaver.SaveResult(
+                            new AffectedMappingResponse.PropagatedEntities(
+                                    List.of(new AffectedMappingResponse.PropagatedColumn(
+                                            "be-fk-column-id",
+                                            "child-table",
+                                            "RELATIONSHIP",
+                                            sourceId,
+                                            "parent-id-col")),
+                                    List.of(),
+                                    List.of(),
+                                    List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
+                                            "propagated-constraint-col",
+                                            "child-pk-constraint",
+                                            "be-fk-column-id",
+                                            "RELATIONSHIP",
+                                            sourceId)),
+                                    List.of()),
+                            new IdMappings(Map.of(), Map.of(), Map.of(),
+                                    Map.of(), Map.of(), Map.of(), Map.of(),
+                                    Map.of(), Map.of())));
                 });
 
         // when

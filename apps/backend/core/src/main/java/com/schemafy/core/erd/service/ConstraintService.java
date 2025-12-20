@@ -1,8 +1,6 @@
 package com.schemafy.core.erd.service;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -55,68 +53,39 @@ public class ConstraintService {
                                             request.getConstraint().getId(),
                                             savedConstraint.getId());
 
-                            return saveConstraintColumns(
-                                    request.getConstraint().getColumnsList(),
-                                    savedConstraint.getId())
-                                    .flatMap(mappings -> {
-                                        Set<String> excludeEntityIds = request
-                                                .getConstraint()
-                                                .getColumnsList()
-                                                .stream()
-                                                .map(Validation.ConstraintColumn::getId)
-                                                .collect(Collectors.toSet());
-
-                                        Validation.Database afterDatabase = applyMappings(
+                            return affectedEntitiesSaver
+                                    .saveAffectedEntitiesResult(
+                                            request.getDatabase(),
+                                            updatedDatabase,
+                                            savedConstraint.getId(),
+                                            savedConstraint.getId(),
+                                            "CONSTRAINT")
+                                    .map(saveResult -> {
+                                        Validation.Database afterDatabase = applyConstraintColumnMappings(
                                                 updatedDatabase,
-                                                mappings);
-
-                                        return affectedEntitiesSaver
-                                                .saveAffectedEntities(
-                                                        request.getDatabase(),
-                                                        updatedDatabase,
-                                                        savedConstraint
-                                                                .getId(),
-                                                        savedConstraint
-                                                                .getId(),
-                                                        "CONSTRAINT",
-                                                        excludeEntityIds)
-                                                .map(propagated -> AffectedMappingResponse
-                                                        .of(request,
-                                                                request.getDatabase(),
-                                                                afterDatabase,
-                                                                propagated));
+                                                saveResult.idMappings()
+                                                        .constraintColumns());
+                                        return AffectedMappingResponse.of(
+                                                request,
+                                                request.getDatabase(),
+                                                afterDatabase,
+                                                saveResult.propagated());
                                     });
                         }));
     }
 
-    private Mono<List<IdMapping>> saveConstraintColumns(
-            List<Validation.ConstraintColumn> columns,
-            String constraintId) {
-        return Flux.fromIterable(columns)
-                .concatMap(column -> {
-                    ConstraintColumn entity = ErdMapper.toEntity(column);
-                    entity.setConstraintId(constraintId);
-                    return constraintColumnRepository.save(entity)
-                            .map(saved -> new IdMapping(column.getId(),
-                                    saved.getId()));
-                })
-                .collectList();
-    }
-
-    private record IdMapping(String feId, String beId) {
-    }
-
-    private static Validation.Database applyMappings(
+    private static Validation.Database applyConstraintColumnMappings(
             Validation.Database database,
-            List<IdMapping> mappings) {
+            Map<String, String> constraintColumnMappings) {
         Validation.Database updatedDatabase = database;
-        for (IdMapping mapping : mappings) {
+        for (Map.Entry<String, String> mapping : constraintColumnMappings
+                .entrySet()) {
             updatedDatabase = AffectedMappingResponse
                     .updateEntityIdInDatabase(
                             updatedDatabase,
                             EntityType.CONSTRAINT_COLUMN,
-                            mapping.feId(),
-                            mapping.beId());
+                            mapping.getKey(),
+                            mapping.getValue());
         }
         return updatedDatabase;
     }

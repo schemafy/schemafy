@@ -1,5 +1,7 @@
 package com.schemafy.core.erd.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -61,7 +63,7 @@ public class IndexService {
     }
 
     private Mono<Void> saveIndexColumns(
-            java.util.List<Validation.IndexColumn> columns,
+            List<Validation.IndexColumn> columns,
             String indexId) {
         return Flux.fromIterable(columns)
                 .flatMap(column -> {

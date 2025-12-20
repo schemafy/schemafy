@@ -1,7 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,7 +34,6 @@ import reactor.util.function.Tuples;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -80,6 +79,22 @@ class ConstraintServiceTest {
                 any(Validation.DeleteConstraintRequest.class)))
                 .willReturn(Mono.just(
                         Validation.Database.newBuilder().build()));
+
+        AffectedEntitiesSaver.SaveResult emptySaveResult = new AffectedEntitiesSaver.SaveResult(
+                AffectedMappingResponse.PropagatedEntities.empty(),
+                new IdMappings(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
+                        Map.of(), Map.of(), Map.of(), Map.of()));
+
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class)))
+                .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any()))
+                .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any(), any()))
+                .willReturn(Mono.just(emptySaveResult));
+
         given(affectedEntitiesSaver.saveAffectedEntities(any(),
                 any(Validation.Database.class)))
                 .willReturn(Mono.just(
@@ -144,11 +159,6 @@ class ConstraintServiceTest {
         given(validationClient.createConstraint(
                 any(Validation.CreateConstraintRequest.class)))
                 .willReturn(Mono.just(mockResponse));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
-                any(), any(), any()))
-                .willReturn(Mono
-                        .just(AffectedMappingResponse.PropagatedEntities
-                                .empty()));
 
         // when
         Mono<AffectedMappingResponse> result = constraintService
@@ -277,30 +287,20 @@ class ConstraintServiceTest {
                 .createConstraint(request);
 
         // then
-        Mono<Tuple2<AffectedMappingResponse, ConstraintColumn>> composed = result
-                .flatMap(response -> {
-                    String savedConstraintId = response.constraints()
-                            .get("table-1")
-                            .get("fe-constraint-id");
+        String persistedConstraintColumnId = "be-constraint-col-1";
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
+                any(), any(), eq("CONSTRAINT"))).willReturn(Mono.just(
+                        new AffectedEntitiesSaver.SaveResult(
+                                AffectedMappingResponse.PropagatedEntities
+                                        .empty(),
+                                new IdMappings(Map.of(), Map.of(), Map.of(),
+                                        Map.of(), Map.of(), Map.of(), Map.of(
+                                                "fe-constraint-col-1",
+                                                persistedConstraintColumnId),
+                                        Map.of(), Map.of()))));
 
-                    String savedConstraintColumnId = response
-                            .constraintColumns()
-                            .get(savedConstraintId)
-                            .get("fe-constraint-col-1");
-
-                    return constraintColumnRepository
-                            .findByConstraintIdAndDeletedAtIsNull(
-                                    savedConstraintId)
-                            .single()
-                            .map(savedConstraintColumn -> Tuples
-                                    .of(response, savedConstraintColumn));
-                });
-
-        StepVerifier.create(composed)
-                .assertNext(tuple -> {
-                    AffectedMappingResponse response = tuple.getT1();
-                    ConstraintColumn savedConstraintColumn = tuple.getT2();
-
+        StepVerifier.create(result)
+                .assertNext(response -> {
                     String savedConstraintId = response.constraints()
                             .get("table-1")
                             .get("fe-constraint-id");
@@ -309,28 +309,20 @@ class ConstraintServiceTest {
                     assertThat(savedConstraintId)
                             .isNotEqualTo("fe-constraint-id");
 
-                    String savedConstraintColumnId = response.constraintColumns()
-                            .get(savedConstraintId)
-                            .get("fe-constraint-col-1");
-
-                    assertThat(savedConstraintColumnId).isNotNull();
-                    assertThat(savedConstraintColumnId)
-                            .isNotEqualTo("fe-constraint-col-1");
-
-                    assertThat(savedConstraintColumn).isNotNull();
-                    assertThat(savedConstraintColumn.getId())
-                            .isEqualTo(savedConstraintColumnId);
+                    assertThat(response.constraintColumns())
+                            .containsKey(savedConstraintId);
+                    assertThat(response.constraintColumns().get(savedConstraintId))
+                            .containsEntry("fe-constraint-col-1",
+                                    persistedConstraintColumnId);
                 })
                 .verifyComplete();
 
         ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
                 .forClass(Validation.Database.class);
 
-        verify(affectedEntitiesSaver).saveAffectedEntities(any(),
+        verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
                 afterDbCaptor.capture(), anyString(), anyString(),
-                eq("CONSTRAINT"), argThat((Set<String> excludeEntityIds) -> {
-                    return excludeEntityIds.contains("fe-constraint-col-1");
-                }));
+                eq("CONSTRAINT"));
 
         assertThat(containsConstraintColumnId(afterDbCaptor.getValue(),
                 "fe-constraint-col-1"))
@@ -517,26 +509,30 @@ class ConstraintServiceTest {
         given(validationClient.createConstraint(
                 any(Validation.CreateConstraintRequest.class)))
                 .willReturn(Mono.just(mockResponse));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
                 any(), any(), any()))
                 .willAnswer(invocation -> {
                     String sourceId = invocation.getArgument(3);
-                    return Mono.just(new AffectedMappingResponse.PropagatedEntities(
-                            List.of(new AffectedMappingResponse.PropagatedColumn(
-                                    "propagated-parent-id-col",
-                                    "child-table",
-                                    "CONSTRAINT",
-                                    sourceId,
-                                    "parent-id-col")),
-                            List.of(),
-                            List.of(),
-                            List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
-                                    "propagated-constraint-col",
-                                    "child-pk-constraint",
-                                    "propagated-parent-id-col",
-                                    "CONSTRAINT",
-                                    sourceId)),
-                            List.of()));
+                    return Mono.just(new AffectedEntitiesSaver.SaveResult(
+                            new AffectedMappingResponse.PropagatedEntities(
+                                    List.of(new AffectedMappingResponse.PropagatedColumn(
+                                            "propagated-parent-id-col",
+                                            "child-table",
+                                            "CONSTRAINT",
+                                            sourceId,
+                                            "parent-id-col")),
+                                    List.of(),
+                                    List.of(),
+                                    List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
+                                            "propagated-constraint-col",
+                                            "child-pk-constraint",
+                                            "propagated-parent-id-col",
+                                            "CONSTRAINT",
+                                            sourceId)),
+                                    List.of()),
+                            new IdMappings(Map.of(), Map.of(), Map.of(),
+                                    Map.of(), Map.of(), Map.of(), Map.of(),
+                                    Map.of(), Map.of())));
                 });
 
         // when

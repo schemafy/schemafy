@@ -132,7 +132,7 @@ public class AffectedEntitiesSaver {
             List<Validation.Index> indexesToSave = new ArrayList<>();
             List<Validation.IndexColumn> indexColumnsToSave = new ArrayList<>();
             List<Validation.Constraint> constraintsToSave = new ArrayList<>();
-            List<Validation.ConstraintColumn> constraintColumnsToSave = new ArrayList<>();
+            List<ConstraintColumnWithConstraintId> constraintColumnsToSave = new ArrayList<>();
             List<Validation.Relationship> relationshipsToSave = new ArrayList<>();
             List<RelationshipColumnWithRelationshipId> relationshipColumnsToSave = new ArrayList<>();
 
@@ -187,7 +187,10 @@ public class AffectedEntitiesSaver {
                             if (shouldSaveEntity(constraintColumn.getId(),
                                     constraintColumn.getIsAffected(), beforeIds,
                                     excludedIds)) {
-                                constraintColumnsToSave.add(constraintColumn);
+                                constraintColumnsToSave
+                                        .add(new ConstraintColumnWithConstraintId(
+                                                constraintColumn,
+                                                constraint.getId()));
                             }
                         }
                     }
@@ -390,11 +393,14 @@ public class AffectedEntitiesSaver {
 
             Mono<Void> saveConstraintColumnsTask = saveIndexColumnsTask
                     .thenMany(Flux.fromIterable(constraintColumnsToSave)
-                            .concatMap(constraintColumn -> {
+                            .concatMap(item -> {
+                                Validation.ConstraintColumn constraintColumn = item
+                                        .constraintColumn();
+
                                 var entity = ErdMapper
                                         .toEntity(constraintColumn);
                                 entity.setConstraintId(remapId(
-                                        constraintColumn.getConstraintId(),
+                                        item.constraintId(),
                                         constraintIdMap));
                                 entity.setColumnId(remapId(
                                         constraintColumn.getColumnId(),
@@ -562,24 +568,17 @@ public class AffectedEntitiesSaver {
             String relationshipId) {
     }
 
+    private record ConstraintColumnWithConstraintId(
+            Validation.ConstraintColumn constraintColumn,
+            String constraintId) {
+    }
+
     private record SavedPropagatedColumn(String columnId, String tableId) {
     }
 
     public record SaveResult(
             PropagatedEntities propagated,
             IdMappings idMappings) {
-    }
-
-    public record IdMappings(
-            Map<String, String> schemas,
-            Map<String, String> tables,
-            Map<String, String> columns,
-            Map<String, String> indexes,
-            Map<String, String> indexColumns,
-            Map<String, String> constraints,
-            Map<String, String> constraintColumns,
-            Map<String, String> relationships,
-            Map<String, String> relationshipColumns) {
     }
 
     private static Map<String, String> buildFkToRefColumnIdMap(

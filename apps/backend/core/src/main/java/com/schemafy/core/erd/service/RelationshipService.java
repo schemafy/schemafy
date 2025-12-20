@@ -1,8 +1,6 @@
 package com.schemafy.core.erd.service;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -59,73 +57,42 @@ public class RelationshipService {
                                                     .getId(),
                                             savedRelationship.getId());
 
-                            return saveRelationshipColumns(
-                                    request.request().getRelationship()
-                                            .getColumnsList(),
-                                    savedRelationship.getId())
-                                    .flatMap(mappings -> {
-                                        Set<String> excludeEntityIds = request
-                                                .request().getRelationship()
-                                                .getColumnsList()
-                                                .stream()
-                                                .map(Validation.RelationshipColumn::getId)
-                                                .collect(Collectors.toSet());
-
-                                        Validation.Database afterDatabase = applyMappings(
+                            return affectedEntitiesSaver
+                                    .saveAffectedEntitiesResult(
+                                            request.request().getDatabase(),
+                                            updatedDatabase,
+                                            savedRelationship.getId(),
+                                            savedRelationship.getId(),
+                                            "RELATIONSHIP")
+                                    .map(saveResult -> {
+                                        Validation.Database afterDatabase = applyRelationshipColumnMappings(
                                                 updatedDatabase,
-                                                mappings);
-
-                                        return affectedEntitiesSaver
-                                                .saveAffectedEntities(
+                                                saveResult.idMappings()
+                                                        .relationshipColumns());
+                                        return AffectedMappingResponse
+                                                .of(request.request(),
                                                         request.request()
                                                                 .getDatabase(),
-                                                        updatedDatabase,
-                                                        savedRelationship
-                                                                .getId(),
-                                                        savedRelationship
-                                                                .getId(),
-                                                        "RELATIONSHIP",
-                                                        excludeEntityIds)
-                                                .map(propagated -> AffectedMappingResponse
-                                                        .of(request.request(),
-                                                                request.request()
-                                                                        .getDatabase(),
-                                                                afterDatabase,
-                                                                propagated));
+                                                        afterDatabase,
+                                                        saveResult.propagated());
                                     });
                         }));
     }
 
-    private Mono<List<IdMapping>> saveRelationshipColumns(
-            List<Validation.RelationshipColumn> columns,
-            String relationshipId) {
-        return Flux.fromIterable(columns)
-                .concatMap(column -> {
-                    RelationshipColumn entity = ErdMapper.toEntity(column);
-                    entity.setRelationshipId(relationshipId);
-                    return relationshipColumnRepository.save(entity)
-                            .map(saved -> new IdMapping(column.getId(),
-                                    saved.getId()));
-                })
-                .collectList();
-    }
-
-    private static Validation.Database applyMappings(
+    private static Validation.Database applyRelationshipColumnMappings(
             Validation.Database database,
-            List<IdMapping> mappings) {
+            Map<String, String> relationshipColumnMappings) {
         Validation.Database updatedDatabase = database;
-        for (IdMapping mapping : mappings) {
+        for (Map.Entry<String, String> mapping : relationshipColumnMappings
+                .entrySet()) {
             updatedDatabase = AffectedMappingResponse
                     .updateEntityIdInDatabase(
                             updatedDatabase,
                             EntityType.RELATIONSHIP_COLUMN,
-                            mapping.feId(),
-                            mapping.beId());
+                            mapping.getKey(),
+                            mapping.getValue());
         }
         return updatedDatabase;
-    }
-
-    private record IdMapping(String feId, String beId) {
     }
 
     public Mono<RelationshipResponse> getRelationship(String id) {

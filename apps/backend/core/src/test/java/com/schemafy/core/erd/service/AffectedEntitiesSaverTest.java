@@ -699,8 +699,7 @@ class AffectedEntitiesSaverTest {
         Mono<Tuple3<AffectedEntitiesSaver.SaveResult, Column, RelationshipColumn>> result = affectedEntitiesSaver
                 .saveAffectedEntitiesResult(before, after)
                 .flatMap(saveResult -> {
-                    AffectedEntitiesSaver.IdMappings idMappings = saveResult
-                            .idMappings();
+                    IdMappings idMappings = saveResult.idMappings();
                     return Mono.zip(
                             Mono.just(saveResult),
                             columnRepository.findByIdAndDeletedAtIsNull(
@@ -717,8 +716,7 @@ class AffectedEntitiesSaverTest {
                     Column savedColumn = tuple.getT2();
                     RelationshipColumn savedRelationshipColumn = tuple.getT3();
 
-                    AffectedEntitiesSaver.IdMappings idMappings = saveResult
-                            .idMappings();
+                    IdMappings idMappings = saveResult.idMappings();
 
                     assertThat(idMappings.schemas()).isEmpty();
                     assertThat(idMappings.tables()).isEmpty();
