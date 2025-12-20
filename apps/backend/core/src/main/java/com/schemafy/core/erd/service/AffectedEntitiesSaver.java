@@ -70,6 +70,36 @@ public class AffectedEntitiesSaver {
             String sourceId,
             String sourceType,
             Set<String> excludeEntityIds) {
+        return saveAffectedEntitiesResult(before, after, excludeEntityId,
+                sourceId,
+                sourceType, excludeEntityIds).map(SaveResult::propagated);
+    }
+
+    public Mono<SaveResult> saveAffectedEntitiesResult(
+            Validation.Database before,
+            Validation.Database after) {
+        return saveAffectedEntitiesResult(before, after, null, null, null,
+                Set.of());
+    }
+
+    public Mono<SaveResult> saveAffectedEntitiesResult(
+            Validation.Database before,
+            Validation.Database after,
+            String excludeEntityId,
+            String sourceId,
+            String sourceType) {
+        return saveAffectedEntitiesResult(before, after, excludeEntityId,
+                sourceId,
+                sourceType, Set.of());
+    }
+
+    public Mono<SaveResult> saveAffectedEntitiesResult(
+            Validation.Database before,
+            Validation.Database after,
+            String excludeEntityId,
+            String sourceId,
+            String sourceType,
+            Set<String> excludeEntityIds) {
         return Mono.defer(() -> {
             Set<String> excludedIds = new HashSet<>();
             if (excludeEntityId != null) {
@@ -90,8 +120,11 @@ public class AffectedEntitiesSaver {
             Map<String, String> tableIdMap = new HashMap<>();
             Map<String, String> columnIdMap = new HashMap<>();
             Map<String, String> indexIdMap = new HashMap<>();
+            Map<String, String> indexColumnIdMap = new HashMap<>();
             Map<String, String> constraintIdMap = new HashMap<>();
+            Map<String, String> constraintColumnIdMap = new HashMap<>();
             Map<String, String> relationshipIdMap = new HashMap<>();
+            Map<String, String> relationshipColumnIdMap = new HashMap<>();
 
             List<Validation.Schema> schemasToSave = new ArrayList<>();
             List<Validation.Table> tablesToSave = new ArrayList<>();
@@ -334,6 +367,9 @@ public class AffectedEntitiesSaver {
 
                                 return indexColumnRepository.save(entity)
                                         .doOnNext(savedIndexColumn -> {
+                                            indexColumnIdMap.put(
+                                                    indexColumn.getId(),
+                                                    savedIndexColumn.getId());
                                             if (sourceId != null
                                                     && sourceType != null) {
                                                 propagatedIndexColumns
@@ -366,6 +402,10 @@ public class AffectedEntitiesSaver {
 
                                 return constraintColumnRepository.save(entity)
                                         .doOnNext(savedConstraintColumn -> {
+                                            constraintColumnIdMap.put(
+                                                    constraintColumn.getId(),
+                                                    savedConstraintColumn
+                                                            .getId());
                                             if (sourceId != null
                                                     && sourceType != null) {
                                                 propagatedConstraintColumns
@@ -410,6 +450,10 @@ public class AffectedEntitiesSaver {
 
                                 return relationshipColumnRepository.save(entity)
                                         .doOnNext(savedRelationshipColumn -> {
+                                            relationshipColumnIdMap.put(
+                                                    relationshipColumn.getId(),
+                                                    savedRelationshipColumn
+                                                            .getId());
                                             if (sourceId != null
                                                     && sourceType != null) {
                                                 propagatedRelationshipColumns
@@ -429,13 +473,25 @@ public class AffectedEntitiesSaver {
                             }))
                     .then();
 
-            return saveRelationshipColumnsTask
-                    .then(Mono.fromSupplier(() -> new PropagatedEntities(
-                            propagatedColumns,
-                            propagatedRelationshipColumns,
-                            propagatedConstraints,
-                            propagatedConstraintColumns,
-                            propagatedIndexColumns)));
+            return saveRelationshipColumnsTask.then(Mono.fromSupplier(() -> {
+                PropagatedEntities propagated = new PropagatedEntities(
+                        propagatedColumns,
+                        propagatedRelationshipColumns,
+                        propagatedConstraints,
+                        propagatedConstraintColumns,
+                        propagatedIndexColumns);
+                IdMappings idMappings = new IdMappings(
+                        Map.copyOf(schemaIdMap),
+                        Map.copyOf(tableIdMap),
+                        Map.copyOf(columnIdMap),
+                        Map.copyOf(indexIdMap),
+                        Map.copyOf(indexColumnIdMap),
+                        Map.copyOf(constraintIdMap),
+                        Map.copyOf(constraintColumnIdMap),
+                        Map.copyOf(relationshipIdMap),
+                        Map.copyOf(relationshipColumnIdMap));
+                return new SaveResult(propagated, idMappings);
+            }));
         });
     }
 
@@ -507,6 +563,23 @@ public class AffectedEntitiesSaver {
     }
 
     private record SavedPropagatedColumn(String columnId, String tableId) {
+    }
+
+    public record SaveResult(
+            PropagatedEntities propagated,
+            IdMappings idMappings) {
+    }
+
+    public record IdMappings(
+            Map<String, String> schemas,
+            Map<String, String> tables,
+            Map<String, String> columns,
+            Map<String, String> indexes,
+            Map<String, String> indexColumns,
+            Map<String, String> constraints,
+            Map<String, String> constraintColumns,
+            Map<String, String> relationships,
+            Map<String, String> relationshipColumns) {
     }
 
     private static Map<String, String> buildFkToRefColumnIdMap(

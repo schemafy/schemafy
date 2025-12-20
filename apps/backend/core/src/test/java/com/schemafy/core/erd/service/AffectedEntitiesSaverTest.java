@@ -584,4 +584,167 @@ class AffectedEntitiesSaverTest {
                 .verifyComplete();
     }
 
+    @Test
+    @DisplayName("saveAffectedEntitiesResult: 저장된 엔티티의 logicalId -> persistedId 매핑을 반환한다")
+    void saveAffectedEntitiesResult_returnsIdMappings() {
+        String schemaId = "schema-1";
+        String tableId = "table-1";
+        String columnId = "col-1";
+        String indexId = "idx-1";
+        String indexColumnId = "idxcol-1";
+        String constraintId = "constraint-1";
+        String constraintColumnId = "constraintcol-1";
+        String relationshipId = "relationship-1";
+        String relationshipColumnId = "relcol-1";
+
+        Validation.Database before = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(tableId)
+                                .addIndexes(Validation.Index.newBuilder()
+                                        .setId(indexId)
+                                        .build())
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId(constraintId)
+                                        .build())
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
+                                        .setId(relationshipId)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database after = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .setName("test-schema")
+                        .setIsAffected(true)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(tableId)
+                                .setSchemaId(schemaId)
+                                .setName("test-table")
+                                .setIsAffected(true)
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(columnId)
+                                        .setTableId(tableId)
+                                        .setName("id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .setIsAffected(true)
+                                        .build())
+                                .addIndexes(Validation.Index.newBuilder()
+                                        .setId(indexId)
+                                        .setTableId(tableId)
+                                        .setName("idx_test")
+                                        .setType(Validation.IndexType.BTREE)
+                                        .setComment("")
+                                        .addColumns(Validation.IndexColumn
+                                                .newBuilder()
+                                                .setId(indexColumnId)
+                                                .setIndexId(indexId)
+                                                .setColumnId(columnId)
+                                                .setSeqNo(1)
+                                                .setSortDir(
+                                                        Validation.IndexSortDir.ASC)
+                                                .setIsAffected(true)
+                                                .build())
+                                        .build())
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId(constraintId)
+                                        .setTableId(tableId)
+                                        .setName("pk_test")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .addColumns(
+                                                Validation.ConstraintColumn
+                                                        .newBuilder()
+                                                        .setId(constraintColumnId)
+                                                        .setConstraintId(
+                                                                constraintId)
+                                                        .setColumnId(columnId)
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .build())
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
+                                        .setId(relationshipId)
+                                        .setSrcTableId(tableId)
+                                        .setTgtTableId(tableId)
+                                        .setName("rel_test")
+                                        .setKind(
+                                                Validation.RelationshipKind.NON_IDENTIFYING)
+                                        .setCardinality(
+                                                Validation.RelationshipCardinality.ONE_TO_MANY)
+                                        .addColumns(
+                                                Validation.RelationshipColumn
+                                                        .newBuilder()
+                                                        .setId(relationshipColumnId)
+                                                        .setRelationshipId(
+                                                                relationshipId)
+                                                        .setFkColumnId(columnId)
+                                                        .setRefColumnId(columnId)
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Mono<Tuple3<AffectedEntitiesSaver.SaveResult, Column, RelationshipColumn>> result = affectedEntitiesSaver
+                .saveAffectedEntitiesResult(before, after)
+                .flatMap(saveResult -> {
+                    AffectedEntitiesSaver.IdMappings idMappings = saveResult
+                            .idMappings();
+                    return Mono.zip(
+                            Mono.just(saveResult),
+                            columnRepository.findByIdAndDeletedAtIsNull(
+                                    idMappings.columns().get(columnId)),
+                            relationshipColumnRepository
+                                    .findByIdAndDeletedAtIsNull(idMappings
+                                            .relationshipColumns()
+                                            .get(relationshipColumnId)));
+                });
+
+        StepVerifier.create(result)
+                .assertNext(tuple -> {
+                    AffectedEntitiesSaver.SaveResult saveResult = tuple.getT1();
+                    Column savedColumn = tuple.getT2();
+                    RelationshipColumn savedRelationshipColumn = tuple.getT3();
+
+                    AffectedEntitiesSaver.IdMappings idMappings = saveResult
+                            .idMappings();
+
+                    assertThat(idMappings.schemas()).isEmpty();
+                    assertThat(idMappings.tables()).isEmpty();
+                    assertThat(idMappings.columns()).containsKey(columnId);
+                    assertThat(idMappings.indexes()).isEmpty();
+                    assertThat(idMappings.indexColumns())
+                            .containsKey(indexColumnId);
+                    assertThat(idMappings.constraints()).isEmpty();
+                    assertThat(idMappings.constraintColumns())
+                            .containsKey(constraintColumnId);
+                    assertThat(idMappings.relationships()).isEmpty();
+                    assertThat(idMappings.relationshipColumns())
+                            .containsKey(relationshipColumnId);
+
+                    assertThat(idMappings.columns().get(columnId))
+                            .isNotEqualTo(columnId);
+                    assertThat(idMappings.relationshipColumns()
+                            .get(relationshipColumnId))
+                            .isNotEqualTo(relationshipColumnId);
+
+                    assertThat(savedRelationshipColumn.getSrcColumnId())
+                            .isEqualTo(savedColumn.getId());
+                    assertThat(savedRelationshipColumn.getTgtColumnId())
+                            .isEqualTo(savedColumn.getId());
+                })
+                .verifyComplete();
+    }
+
 }
