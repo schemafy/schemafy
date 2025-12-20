@@ -14,8 +14,6 @@ import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
-import com.schemafy.core.erd.repository.entity.Relationship;
-import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
 import lombok.RequiredArgsConstructor;
@@ -31,6 +29,7 @@ public class RelationshipService {
     private final RelationshipRepository relationshipRepository;
     private final RelationshipColumnRepository relationshipColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
+    private final AffectedEntitiesSoftDeleter affectedEntitiesSoftDeleter;
     private final TransactionalOperator transactionalOperator;
 
     public Mono<AffectedMappingResponse> createRelationship(
@@ -200,29 +199,54 @@ public class RelationshipService {
 
     public Mono<Void> removeColumnFromRelationship(
             Validation.RemoveColumnFromRelationshipRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return relationshipColumnRepository
                 .findByIdAndDeletedAtIsNull(request.getRelationshipColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient
+                .flatMap(ignore -> validationClient
                         .removeColumnFromRelationship(request))
-                .doOnNext(RelationshipColumn::delete)
-                .flatMap(relationshipColumnRepository::save)
+                .flatMap(afterDatabase -> transactionalOperator.transactional(
+                        affectedEntitiesSoftDeleter
+                                .softDeleteRemovedEntities(
+                                        request.getDatabase(),
+                                        afterDatabase)
+                                .then(affectedEntitiesSaver
+                                        .saveAffectedEntitiesResult(
+                                                request.getDatabase(),
+                                                afterDatabase)
+                                        .then())))
                 .then();
     }
 
     public Mono<Void> deleteRelationship(
             Validation.DeleteRelationshipRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return relationshipRepository
                 .findByIdAndDeletedAtIsNull(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
-                .delayUntil(
-                        ignore -> validationClient.deleteRelationship(request))
-                .doOnNext(Relationship::delete)
-                .flatMap(relationshipRepository::save)
+                .flatMap(ignore -> validationClient.deleteRelationship(request))
+                .flatMap(afterDatabase -> transactionalOperator.transactional(
+                        affectedEntitiesSoftDeleter
+                                .softDeleteRemovedEntities(
+                                        request.getDatabase(),
+                                        afterDatabase)
+                                .then(affectedEntitiesSaver
+                                        .saveAffectedEntitiesResult(
+                                                request.getDatabase(),
+                                                afterDatabase)
+                                        .then())))
                 .then();
     }
 

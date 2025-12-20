@@ -1,6 +1,8 @@
 package com.schemafy.core.erd.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -11,7 +13,6 @@ import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
-import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.IndexColumnRepository;
 import com.schemafy.core.erd.repository.IndexRepository;
 import com.schemafy.core.erd.repository.entity.Index;
@@ -45,33 +46,116 @@ public class IndexService {
                 indexRepository
                         .save(ErdMapper.toEntity(request.getIndex()))
                         .flatMap(savedIndex -> {
-                            Validation.Database updatedDatabase = AffectedMappingResponse
-                                    .updateEntityIdInDatabase(
-                                            database,
-                                            EntityType.INDEX,
-                                            request.getIndex().getId(),
-                                            savedIndex.getId());
-
                             return saveIndexColumns(
                                     request.getIndex().getColumnsList(),
                                     savedIndex.getId())
-                                    .then(Mono.just(AffectedMappingResponse.of(
-                                            request,
-                                            request.getDatabase(),
-                                            updatedDatabase)));
+                                    .map(savedIndexColumnIdByColumnId -> {
+                                        String validatorIndexId = findValidatorIndexId(
+                                                database,
+                                                request.getIndex());
+                                        Map<String, String> indexColumnIdMappings = buildIndexColumnIdMappings(
+                                                database,
+                                                request.getIndex(),
+                                                savedIndexColumnIdByColumnId);
+
+                                        IdMappings idMappings = new IdMappings(
+                                                Map.of(),
+                                                Map.of(),
+                                                Map.of(),
+                                                Map.of(validatorIndexId,
+                                                        savedIndex.getId()),
+                                                indexColumnIdMappings,
+                                                Map.of(),
+                                                Map.of(),
+                                                Map.of(),
+                                                Map.of());
+
+                                        Validation.Database rewrittenAfterDatabase = ValidationDatabaseIdRewriter
+                                                .rewrite(database, idMappings);
+
+                                        return AffectedMappingResponse.of(
+                                                request,
+                                                request.getDatabase(),
+                                                rewrittenAfterDatabase);
+                                    });
                         }));
     }
 
-    private Mono<Void> saveIndexColumns(
+    private static String findValidatorIndexId(
+            Validation.Database database,
+            Validation.Index requestIndex) {
+        for (Validation.Schema schema : database.getSchemasList()) {
+            for (Validation.Table table : schema.getTablesList()) {
+                if (!table.getId().equals(requestIndex.getTableId())) {
+                    continue;
+                }
+                for (Validation.Index index : table.getIndexesList()) {
+                    if (index.getName().equals(requestIndex.getName())) {
+                        return index.getId();
+                    }
+                }
+            }
+        }
+        return requestIndex.getId();
+    }
+
+    private static Map<String, String> buildIndexColumnIdMappings(
+            Validation.Database database,
+            Validation.Index requestIndex,
+            Map<String, String> savedIndexColumnIdByColumnId) {
+        Map<String, String> result = new HashMap<>();
+
+        boolean foundIndex = false;
+        for (Validation.Schema schema : database.getSchemasList()) {
+            for (Validation.Table table : schema.getTablesList()) {
+                if (!table.getId().equals(requestIndex.getTableId())) {
+                    continue;
+                }
+                for (Validation.Index index : table.getIndexesList()) {
+                    if (!index.getName().equals(requestIndex.getName())) {
+                        continue;
+                    }
+
+                    foundIndex = true;
+                    for (Validation.IndexColumn validatorIndexColumn : index
+                            .getColumnsList()) {
+                        String savedId = savedIndexColumnIdByColumnId
+                                .get(validatorIndexColumn.getColumnId());
+                        if (savedId != null) {
+                            result.put(validatorIndexColumn.getId(), savedId);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (foundIndex) {
+            return result;
+        }
+
+        for (Validation.IndexColumn requestIndexColumn : requestIndex
+                .getColumnsList()) {
+            String savedId = savedIndexColumnIdByColumnId
+                    .get(requestIndexColumn.getColumnId());
+            if (savedId != null) {
+                result.put(requestIndexColumn.getId(), savedId);
+            }
+        }
+        return result;
+    }
+
+    private Mono<Map<String, String>> saveIndexColumns(
             List<Validation.IndexColumn> columns,
             String indexId) {
         return Flux.fromIterable(columns)
                 .flatMap(column -> {
                     IndexColumn entity = ErdMapper.toEntity(column);
                     entity.setIndexId(indexId);
-                    return indexColumnRepository.save(entity);
+                    return indexColumnRepository.save(entity)
+                            .map(saved -> Map.entry(column.getColumnId(),
+                                    saved.getId()));
                 })
-                .then();
+                .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
     public Mono<IndexResponse> getIndex(String id) {
@@ -119,10 +203,28 @@ public class IndexService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient
-                        .removeColumnFromIndex(request))
-                .doOnNext(IndexColumn::delete)
-                .flatMap(indexColumnRepository::save)
+                .delayUntil(
+                        ignore -> validationClient.removeColumnFromIndex(
+                                request))
+                .flatMap(indexColumn -> transactionalOperator.transactional(
+                        Mono.just(indexColumn)
+                                .doOnNext(IndexColumn::delete)
+                                .flatMap(indexColumnRepository::save)
+                                .then(indexColumnRepository
+                                        .findByIndexIdAndDeletedAtIsNull(
+                                                request.getIndexId())
+                                        .hasElements())
+                                .flatMap(hasRemainingColumns -> hasRemainingColumns
+                                        ? Mono.empty()
+                                        : softDeleteIndexIfExists(
+                                                request.getIndexId()))))
+                .then();
+    }
+
+    private Mono<Void> softDeleteIndexIfExists(String indexId) {
+        return indexRepository.findByIdAndDeletedAtIsNull(indexId)
+                .doOnNext(Index::delete)
+                .flatMap(indexRepository::save)
                 .then();
     }
 

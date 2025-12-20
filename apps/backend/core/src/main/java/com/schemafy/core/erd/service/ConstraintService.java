@@ -13,8 +13,6 @@ import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
-import com.schemafy.core.erd.repository.entity.Constraint;
-import com.schemafy.core.erd.repository.entity.ConstraintColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +28,7 @@ public class ConstraintService {
     private final ConstraintRepository constraintRepository;
     private final ConstraintColumnRepository constraintColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
+    private final AffectedEntitiesSoftDeleter affectedEntitiesSoftDeleter;
     private final TransactionalOperator transactionalOperator;
 
     public Mono<AffectedMappingResponse> createConstraint(
@@ -168,29 +167,54 @@ public class ConstraintService {
 
     public Mono<Void> removeColumnFromConstraint(
             Validation.RemoveColumnFromConstraintRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return constraintColumnRepository
                 .findByIdAndDeletedAtIsNull(request.getConstraintColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient
+                .flatMap(ignore -> validationClient
                         .removeColumnFromConstraint(request))
-                .doOnNext(ConstraintColumn::delete)
-                .flatMap(constraintColumnRepository::save)
+                .flatMap(afterDatabase -> transactionalOperator.transactional(
+                        affectedEntitiesSoftDeleter
+                                .softDeleteRemovedEntities(
+                                        request.getDatabase(),
+                                        afterDatabase)
+                                .then(affectedEntitiesSaver
+                                        .saveAffectedEntitiesResult(
+                                                request.getDatabase(),
+                                                afterDatabase)
+                                        .then())))
                 .then();
     }
 
     public Mono<Void> deleteConstraint(
             Validation.DeleteConstraintRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return constraintRepository
                 .findByIdAndDeletedAtIsNull(request.getConstraintId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
-                .delayUntil(
-                        ignore -> validationClient.deleteConstraint(request))
-                .doOnNext(Constraint::delete)
-                .flatMap(constraintRepository::save)
+                .flatMap(ignore -> validationClient.deleteConstraint(request))
+                .flatMap(afterDatabase -> transactionalOperator.transactional(
+                        affectedEntitiesSoftDeleter
+                                .softDeleteRemovedEntities(
+                                        request.getDatabase(),
+                                        afterDatabase)
+                                .then(affectedEntitiesSaver
+                                        .saveAffectedEntitiesResult(
+                                                request.getDatabase(),
+                                                afterDatabase)
+                                        .then())))
                 .then();
     }
 

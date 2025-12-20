@@ -18,8 +18,10 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
+import com.schemafy.core.erd.repository.entity.Column;
 import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.ConstraintColumn;
 import com.schemafy.core.validation.client.ValidationClient;
@@ -52,6 +54,9 @@ class ConstraintServiceTest {
     @Autowired
     ConstraintColumnRepository constraintColumnRepository;
 
+    @Autowired
+    ColumnRepository columnRepository;
+
     @MockitoBean
     ValidationClient validationClient;
 
@@ -62,6 +67,7 @@ class ConstraintServiceTest {
     void setUp() {
         constraintColumnRepository.deleteAll().block();
         constraintRepository.deleteAll().block();
+        columnRepository.deleteAll().block();
 
         given(validationClient.changeConstraintName(
                 any(Validation.ChangeConstraintNameRequest.class)))
@@ -789,29 +795,150 @@ class ConstraintServiceTest {
     @Test
     @DisplayName("removeColumnFromConstraint: 제약조건에서 컬럼을 제거한다 (소프트 삭제)")
     void removeColumnFromConstraint_success() {
+        Column pkColumn = columnRepository.save(
+                Column.builder()
+                        .tableId("parent-table")
+                        .name("id")
+                        .ordinalPosition(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+        Column fkColumnToDelete = columnRepository.save(
+                Column.builder()
+                        .tableId("child-table")
+                        .name("parent_id")
+                        .ordinalPosition(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+
         ConstraintColumn saved = constraintColumnRepository.save(
                 ConstraintColumn.builder()
                         .constraintId("constraint-1")
-                        .columnId("column-1")
+                        .columnId(pkColumn.getId())
                         .seqNo(1)
                         .build())
                 .block();
 
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("parent-table")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(pkColumn.getId())
+                                        .setTableId("parent-table")
+                                        .setName("id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId("constraint-1")
+                                        .setTableId("parent-table")
+                                        .setName("pk_parent")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .addColumns(
+                                                Validation.ConstraintColumn
+                                                        .newBuilder()
+                                                        .setId(saved.getId())
+                                                        .setConstraintId(
+                                                                "constraint-1")
+                                                        .setColumnId(
+                                                                pkColumn.getId())
+                                                        .setSeqNo(1)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnToDelete.getId())
+                                        .setTableId("child-table")
+                                        .setName("parent_id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database afterDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("parent-table")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(pkColumn.getId())
+                                        .setTableId("parent-table")
+                                        .setName("id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId("constraint-1")
+                                        .setTableId("parent-table")
+                                        .setName("pk_parent")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.removeColumnFromConstraint(
+                any(Validation.RemoveColumnFromConstraintRequest.class)))
+                .willReturn(Mono.just(afterDatabase));
+
         StepVerifier.create(constraintService.removeColumnFromConstraint(
                 Validation.RemoveColumnFromConstraintRequest.newBuilder()
+                        .setConstraintId("constraint-1")
                         .setConstraintColumnId(saved.getId())
+                        .setDatabase(beforeDatabase)
                         .build()))
                 .verifyComplete();
 
-        // 삭제 플래그 확인 (deletedAt not null)
         StepVerifier.create(constraintColumnRepository.findById(saved.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(
+                columnRepository.findById(fkColumnToDelete.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(columnRepository.findById(pkColumn.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isFalse())
                 .verifyComplete();
     }
 
     @Test
     @DisplayName("deleteConstraint: 소프트 삭제가 수행된다")
     void deleteConstraint_softDelete() {
+        Column fkColumnToDelete = columnRepository.save(
+                Column.builder()
+                        .tableId("child-table")
+                        .name("parent_id")
+                        .ordinalPosition(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+
         Constraint saved = constraintRepository.save(
                 Constraint.builder()
                         .tableId("table-1")
@@ -820,14 +947,72 @@ class ConstraintServiceTest {
                         .build())
                 .block();
 
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId(saved.getId())
+                                        .setTableId("table-1")
+                                        .setName("pk_parent")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnToDelete.getId())
+                                        .setTableId("child-table")
+                                        .setName("parent_id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database afterDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.deleteConstraint(
+                any(Validation.DeleteConstraintRequest.class)))
+                .willReturn(Mono.just(afterDatabase));
+
         StepVerifier.create(constraintService.deleteConstraint(
                 Validation.DeleteConstraintRequest.newBuilder()
                         .setConstraintId(saved.getId())
+                        .setDatabase(beforeDatabase)
                         .build()))
                 .verifyComplete();
 
-        // 삭제 플래그 확인 (deletedAt not null)
         StepVerifier.create(constraintRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(
+                columnRepository.findById(fkColumnToDelete.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
                 .verifyComplete();
     }

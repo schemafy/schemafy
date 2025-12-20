@@ -20,8 +20,10 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
+import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
+import com.schemafy.core.erd.repository.entity.Column;
 import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
@@ -54,6 +56,9 @@ class RelationshipServiceTest {
     @Autowired
     RelationshipColumnRepository relationshipColumnRepository;
 
+    @Autowired
+    ColumnRepository columnRepository;
+
     @MockitoBean
     ValidationClient validationClient;
 
@@ -64,6 +69,7 @@ class RelationshipServiceTest {
     void setUp() {
         relationshipColumnRepository.deleteAll().block();
         relationshipRepository.deleteAll().block();
+        columnRepository.deleteAll().block();
 
         given(validationClient.changeRelationshipName(
                 any(Validation.ChangeRelationshipNameRequest.class)))
@@ -949,31 +955,180 @@ class RelationshipServiceTest {
     @Test
     @DisplayName("removeColumnFromRelationship: 관계에서 컬럼을 제거한다 (소프트 삭제)")
     void removeColumnFromRelationship_success() {
-        RelationshipColumn saved = relationshipColumnRepository.save(
-                RelationshipColumn.builder()
-                        .relationshipId("relationship-1")
-                        .srcColumnId("src-column-1")
-                        .tgtColumnId("tgt-column-1")
-                        .seqNo(1)
+        Column fkColumnA = columnRepository.save(
+                Column.builder()
+                        .tableId("child-table")
+                        .name("parent_a")
+                        .ordinalPosition(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+        Column fkColumnB = columnRepository.save(
+                Column.builder()
+                        .tableId("child-table")
+                        .name("parent_b")
+                        .ordinalPosition(2)
+                        .dataType("INT")
                         .build())
                 .block();
 
+        RelationshipColumn savedA = relationshipColumnRepository.save(
+                RelationshipColumn.builder()
+                        .relationshipId("relationship-1")
+                        .srcColumnId(fkColumnA.getId())
+                        .tgtColumnId("parent-a")
+                        .seqNo(1)
+                        .build())
+                .block();
+        RelationshipColumn savedB = relationshipColumnRepository.save(
+                RelationshipColumn.builder()
+                        .relationshipId("relationship-1")
+                        .srcColumnId(fkColumnB.getId())
+                        .tgtColumnId("parent-b")
+                        .seqNo(2)
+                        .build())
+                .block();
+
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnA.getId())
+                                        .setTableId("child-table")
+                                        .setName("parent_a")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnB.getId())
+                                        .setTableId("child-table")
+                                        .setName("parent_b")
+                                        .setOrdinalPosition(2)
+                                        .setDataType("INT")
+                                        .build())
+                                .addRelationships(
+                                        Validation.Relationship.newBuilder()
+                                                .setId("relationship-1")
+                                                .setSrcTableId("child-table")
+                                                .setTgtTableId("parent-table")
+                                                .setName("fk_parent")
+                                                .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
+                                                .addColumns(
+                                                        Validation.RelationshipColumn
+                                                                .newBuilder()
+                                                                .setId(savedA.getId())
+                                                                .setRelationshipId(
+                                                                        "relationship-1")
+                                                                .setFkColumnId(
+                                                                        fkColumnA.getId())
+                                                                .setRefColumnId(
+                                                                        "parent-a")
+                                                                .setSeqNo(1)
+                                                                .build())
+                                                .addColumns(
+                                                        Validation.RelationshipColumn
+                                                                .newBuilder()
+                                                                .setId(savedB.getId())
+                                                                .setRelationshipId(
+                                                                        "relationship-1")
+                                                                .setFkColumnId(
+                                                                        fkColumnB.getId())
+                                                                .setRefColumnId(
+                                                                        "parent-b")
+                                                                .setSeqNo(2)
+                                                                .build())
+                                                .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database afterDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnA.getId())
+                                        .setTableId("child-table")
+                                        .setName("parent_a")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .addRelationships(
+                                        Validation.Relationship.newBuilder()
+                                                .setId("relationship-1")
+                                                .setSrcTableId("child-table")
+                                                .setTgtTableId("parent-table")
+                                                .setName("fk_parent")
+                                                .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
+                                                .addColumns(
+                                                        Validation.RelationshipColumn
+                                                                .newBuilder()
+                                                                .setId(savedA.getId())
+                                                                .setRelationshipId(
+                                                                        "relationship-1")
+                                                                .setFkColumnId(
+                                                                        fkColumnA.getId())
+                                                                .setRefColumnId(
+                                                                        "parent-a")
+                                                                .setSeqNo(1)
+                                                                .build())
+                                                .build())
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.removeColumnFromRelationship(
+                any(Validation.RemoveColumnFromRelationshipRequest.class)))
+                .willReturn(Mono.just(afterDatabase));
+
         StepVerifier.create(relationshipService.removeColumnFromRelationship(
                 Validation.RemoveColumnFromRelationshipRequest.newBuilder()
-                        .setRelationshipColumnId(saved.getId())
+                        .setRelationshipId("relationship-1")
+                        .setRelationshipColumnId(savedB.getId())
+                        .setDatabase(beforeDatabase)
                         .build()))
                 .verifyComplete();
 
-        // 삭제 플래그 확인 (deletedAt not null)
-        StepVerifier
-                .create(relationshipColumnRepository.findById(saved.getId()))
+        StepVerifier.create(
+                relationshipColumnRepository.findById(savedB.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(columnRepository.findById(fkColumnB.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(
+                relationshipColumnRepository.findById(savedA.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isFalse())
+                .verifyComplete();
+
+        StepVerifier.create(columnRepository.findById(fkColumnA.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isFalse())
                 .verifyComplete();
     }
 
     @Test
     @DisplayName("deleteRelationship: 소프트 삭제가 수행된다")
     void deleteRelationship_softDelete() {
+        Column fkColumnToDelete = columnRepository.save(
+                Column.builder()
+                        .tableId("table-1")
+                        .name("table_2_id")
+                        .ordinalPosition(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+
         Relationship saved = relationshipRepository.save(
                 Relationship.builder()
                         .srcTableId("table-1")
@@ -987,14 +1142,90 @@ class RelationshipServiceTest {
                         .build())
                 .block();
 
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnToDelete.getId())
+                                        .setTableId("table-1")
+                                        .setName("table_2_id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .addRelationships(
+                                        Validation.Relationship.newBuilder()
+                                                .setId(saved.getId())
+                                                .setSrcTableId("table-1")
+                                                .setTgtTableId("table-2")
+                                                .setName("to_delete")
+                                                .setKind(
+                                                        Validation.RelationshipKind.NON_IDENTIFYING)
+                                                .setCardinality(
+                                                        Validation.RelationshipCardinality.ONE_TO_MANY)
+                                                .addColumns(
+                                                        Validation.RelationshipColumn
+                                                                .newBuilder()
+                                                                .setId(
+                                                                        "relcol-1")
+                                                                .setRelationshipId(
+                                                                        saved.getId())
+                                                                .setFkColumnId(
+                                                                        fkColumnToDelete
+                                                                                .getId())
+                                                                .setRefColumnId(
+                                                                        "parent-id")
+                                                                .setSeqNo(1)
+                                                                .build())
+                                                .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-2")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database afterDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-2")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.deleteRelationship(
+                any(Validation.DeleteRelationshipRequest.class)))
+                .willReturn(Mono.just(afterDatabase));
+
         StepVerifier.create(relationshipService.deleteRelationship(
                 Validation.DeleteRelationshipRequest.newBuilder()
                         .setRelationshipId(saved.getId())
+                        .setDatabase(beforeDatabase)
                         .build()))
                 .verifyComplete();
 
         // 삭제 플래그 확인 (deletedAt not null)
         StepVerifier.create(relationshipRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(
+                columnRepository.findById(fkColumnToDelete.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
                 .verifyComplete();
     }
