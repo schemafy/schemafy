@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.service;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -58,22 +59,45 @@ public class RelationshipService {
                                                     .getId(),
                                             savedRelationship.getId());
 
-                            return saveRelationshipColumnsAndUpdateDatabase(
-                                    updatedDatabase,
+                            return saveRelationshipColumns(
                                     request.request().getRelationship()
                                             .getColumnsList(),
                                     savedRelationship.getId())
-                                    .flatMap(
-                                            updatedDatabaseWithRelationshipColumns -> saveAffectedEntitiesAndBuildResponse(
-                                            request,
-                                            updatedDatabaseWithRelationshipColumns,
-                                            savedRelationship.getId()));
+                                    .flatMap(mappings -> {
+                                        Set<String> excludeEntityIds = request
+                                                .request().getRelationship()
+                                                .getColumnsList()
+                                                .stream()
+                                                .map(Validation.RelationshipColumn::getId)
+                                                .collect(Collectors.toSet());
+
+                                        Validation.Database afterDatabase = applyMappings(
+                                                updatedDatabase,
+                                                mappings);
+
+                                        return affectedEntitiesSaver
+                                                .saveAffectedEntities(
+                                                        request.request()
+                                                                .getDatabase(),
+                                                        updatedDatabase,
+                                                        savedRelationship
+                                                                .getId(),
+                                                        savedRelationship
+                                                                .getId(),
+                                                        "RELATIONSHIP",
+                                                        excludeEntityIds)
+                                                .map(propagated -> AffectedMappingResponse
+                                                        .of(request.request(),
+                                                                request.request()
+                                                                        .getDatabase(),
+                                                                afterDatabase,
+                                                                propagated));
+                                    });
                         }));
     }
 
-    private Mono<Validation.Database> saveRelationshipColumnsAndUpdateDatabase(
-            Validation.Database database,
-            java.util.List<Validation.RelationshipColumn> columns,
+    private Mono<List<IdMapping>> saveRelationshipColumns(
+            List<Validation.RelationshipColumn> columns,
             String relationshipId) {
         return Flux.fromIterable(columns)
                 .concatMap(column -> {
@@ -83,44 +107,22 @@ public class RelationshipService {
                             .map(saved -> new IdMapping(column.getId(),
                                     saved.getId()));
                 })
-                .collectList()
-                .map(mappings -> {
-                    Validation.Database updatedDatabase = database;
-                    for (IdMapping mapping : mappings) {
-                        updatedDatabase = AffectedMappingResponse
-                                .updateEntityIdInDatabase(
-                                        updatedDatabase,
-                                        EntityType.RELATIONSHIP_COLUMN,
-                                        mapping.feId(),
-                                        mapping.beId());
-                    }
-                    return updatedDatabase;
-                });
+                .collectList();
     }
 
-    private Mono<AffectedMappingResponse> saveAffectedEntitiesAndBuildResponse(
-            CreateRelationshipRequestWithExtra request,
-            Validation.Database updatedDatabase,
-            String relationshipId) {
-        Set<String> excludeEntityIds = request.request().getRelationship()
-                .getColumnsList()
-                .stream()
-                .map(Validation.RelationshipColumn::getId)
-                .collect(Collectors.toSet());
-
-        return affectedEntitiesSaver
-                .saveAffectedEntities(
-                        request.request().getDatabase(),
-                        updatedDatabase,
-                        relationshipId,
-                        relationshipId,
-                        "RELATIONSHIP",
-                        excludeEntityIds)
-                .map(propagated -> AffectedMappingResponse.of(
-                        request.request(),
-                        request.request().getDatabase(),
-                        updatedDatabase,
-                        propagated));
+    private static Validation.Database applyMappings(
+            Validation.Database database,
+            List<IdMapping> mappings) {
+        Validation.Database updatedDatabase = database;
+        for (IdMapping mapping : mappings) {
+            updatedDatabase = AffectedMappingResponse
+                    .updateEntityIdInDatabase(
+                            updatedDatabase,
+                            EntityType.RELATIONSHIP_COLUMN,
+                            mapping.feId(),
+                            mapping.beId());
+        }
+        return updatedDatabase;
     }
 
     private record IdMapping(String feId, String beId) {

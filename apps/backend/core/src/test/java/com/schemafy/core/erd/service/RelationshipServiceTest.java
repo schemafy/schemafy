@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,6 +11,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import org.mockito.ArgumentCaptor;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -31,7 +34,10 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -140,7 +146,7 @@ class RelationshipServiceTest {
                                 .setIsAffected(true)
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
-                                        .setId("be-relationship-id")
+                                        .setId("fe-relationship-id")
                                         .setSrcTableId("table-1")
                                         .setTgtTableId("table-2")
                                         .setName("fk_test")
@@ -172,16 +178,33 @@ class RelationshipServiceTest {
                 .createRelationship(requestWithExtra);
 
         // then
-        StepVerifier.create(result)
-                .assertNext(response -> {
-                    // 관계 매핑 정보 확인 (FE-ID → BE-ID 매핑)
-                    // relationships는 tableId로 그룹핑된 nested map
-                    assertThat(response.relationships()).hasSize(1);
-                    assertThat(response.relationships().get("table-1"))
-                            .containsEntry("fe-relationship-id",
-                                    "be-relationship-id");
+        Mono<Tuple2<AffectedMappingResponse, Relationship>> composed = result
+                .flatMap(response -> {
+                    String savedRelationshipId = response.relationships()
+                            .get("table-1")
+                            .get("fe-relationship-id");
 
-                    // 다른 매핑들은 비어있어야 함 (관계만 생성했으므로)
+                    return relationshipRepository
+                            .findByIdAndDeletedAtIsNull(savedRelationshipId)
+                            .map(savedRelationship -> Tuples.of(response,
+                                    savedRelationship));
+                });
+
+        StepVerifier.create(composed)
+                .assertNext(tuple -> {
+                    AffectedMappingResponse response = tuple.getT1();
+                    Relationship savedRelationship = tuple.getT2();
+
+                    assertThat(response.relationships()).hasSize(1);
+                    String savedRelationshipId = response.relationships()
+                            .get("table-1")
+                            .get("fe-relationship-id");
+                    assertThat(savedRelationshipId).isNotNull();
+                    assertThat(savedRelationshipId)
+                            .isNotEqualTo("fe-relationship-id");
+                    assertThat(savedRelationship.getId())
+                            .isEqualTo(savedRelationshipId);
+
                     assertThat(response.schemas()).isEmpty();
                     assertThat(response.tables()).isEmpty();
                     assertThat(response.columns()).isEmpty();
@@ -347,6 +370,21 @@ class RelationshipServiceTest {
                             .isEqualTo(savedRelationshipColumnId);
                 })
                 .verifyComplete();
+
+        ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
+                .forClass(Validation.Database.class);
+        ArgumentCaptor<Set> excludeIdsCaptor = ArgumentCaptor
+                .forClass(Set.class);
+
+        verify(affectedEntitiesSaver).saveAffectedEntities(any(),
+                afterDbCaptor.capture(), anyString(), anyString(),
+                eq("RELATIONSHIP"), excludeIdsCaptor.capture());
+
+        assertThat(containsRelationshipColumnId(afterDbCaptor.getValue(),
+                "fe-relationship-col-1"))
+                        .isTrue();
+        assertThat(excludeIdsCaptor.getValue())
+                .contains("fe-relationship-col-1");
     }
 
     @Test
@@ -525,7 +563,7 @@ class RelationshipServiceTest {
                                         .build())
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
-                                        .setId("be-relationship-id")
+                                        .setId("fe-relationship-id")
                                         .setSrcTableId("child-table")
                                         .setTgtTableId("parent-table")
                                         .setName("fk_child_parent")
@@ -537,11 +575,11 @@ class RelationshipServiceTest {
                                         .addColumns(
                                                 Validation.RelationshipColumn
                                                         .newBuilder()
-                                                        .setId("be-relationship-col-1")
+                                                        .setId("fe-relationship-col-1")
                                                         .setRelationshipId(
-                                                                "be-relationship-id")
+                                                                "fe-relationship-id")
                                                         .setFkColumnId(
-                                                                "be-fk-column-id")
+                                                                "fe-fk-column-id")
                                                         .setRefColumnId(
                                                                 "parent-id-col")
                                                         .setSeqNo(1)
@@ -552,35 +590,29 @@ class RelationshipServiceTest {
                         .build())
                 .build();
 
-        // 전파된 엔티티 정보 모킹
-        AffectedMappingResponse.PropagatedEntities propagatedEntities = new AffectedMappingResponse.PropagatedEntities(
-                List.of(
-                        // 전파된 컬럼
-                        new AffectedMappingResponse.PropagatedColumn(
-                                "be-fk-column-id",
-                                "child-table",
-                                "RELATIONSHIP",
-                                "be-relationship-id",
-                                "parent-id-col" // 원본 컬럼 ID
-                        )),
-                List.of(),
-                List.of(
-                        // 전파된 제약조건 컬럼
-                        new AffectedMappingResponse.PropagatedConstraintColumn(
-                                "propagated-constraint-col",
-                                "child-pk-constraint",
-                                "be-fk-column-id",
-                                "RELATIONSHIP",
-                                "be-relationship-id")),
-                List.of() // 전파된 인덱스 컬럼 없음
-        );
-
         given(validationClient.createRelationship(
                 any(Validation.CreateRelationshipRequest.class)))
                 .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
                 any(), any(), any()))
-                .willReturn(Mono.just(propagatedEntities));
+                .willAnswer(invocation -> {
+                    String sourceId = invocation.getArgument(3);
+                    return Mono.just(new AffectedMappingResponse.PropagatedEntities(
+                            List.of(new AffectedMappingResponse.PropagatedColumn(
+                                    "be-fk-column-id",
+                                    "child-table",
+                                    "RELATIONSHIP",
+                                    sourceId,
+                                    "parent-id-col")),
+                            List.of(),
+                            List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
+                                    "propagated-constraint-col",
+                                    "child-pk-constraint",
+                                    "be-fk-column-id",
+                                    "RELATIONSHIP",
+                                    sourceId)),
+                            List.of()));
+                });
 
         // when
         Mono<AffectedMappingResponse> result = relationshipService
@@ -591,9 +623,15 @@ class RelationshipServiceTest {
                 .assertNext(response -> {
                     // 원본 관계 매핑 확인
                     assertThat(response.relationships()).hasSize(1);
+                    String savedRelationshipId = response.relationships()
+                            .get("child-table")
+                            .get("fe-relationship-id");
+                    assertThat(savedRelationshipId).isNotNull();
+                    assertThat(savedRelationshipId)
+                            .isNotEqualTo("fe-relationship-id");
                     assertThat(response.relationships().get("child-table"))
                             .containsEntry("fe-relationship-id",
-                                    "be-relationship-id");
+                                    savedRelationshipId);
 
                     // 전파된 엔티티 정보 확인
                     assertThat(response.propagated()).isNotNull();
@@ -607,7 +645,7 @@ class RelationshipServiceTest {
                     assertThat(propagatedColumn.sourceType())
                             .isEqualTo("RELATIONSHIP");
                     assertThat(propagatedColumn.sourceId())
-                            .isEqualTo("be-relationship-id");
+                            .isEqualTo(savedRelationshipId);
                     assertThat(propagatedColumn.sourceColumnId())
                             .isEqualTo("parent-id-col");
 
@@ -624,13 +662,32 @@ class RelationshipServiceTest {
                     assertThat(propagatedConstraintColumn.sourceType())
                             .isEqualTo("RELATIONSHIP");
                     assertThat(propagatedConstraintColumn.sourceId())
-                            .isEqualTo("be-relationship-id");
+                            .isEqualTo(savedRelationshipId);
 
                     // 전파된 인덱스 컬럼은 없음
                     assertThat(response.propagated().indexColumns())
                             .isEmpty();
                 })
                 .verifyComplete();
+    }
+
+    private static boolean containsRelationshipColumnId(
+            Validation.Database database, String relationshipColumnId) {
+        for (Validation.Schema schema : database.getSchemasList()) {
+            for (Validation.Table table : schema.getTablesList()) {
+                for (Validation.Relationship relationship : table
+                        .getRelationshipsList()) {
+                    for (Validation.RelationshipColumn relationshipColumn : relationship
+                            .getColumnsList()) {
+                        if (relationshipColumn.getId()
+                                .equals(relationshipColumnId)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,6 +11,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import org.mockito.ArgumentCaptor;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -30,7 +33,10 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -123,7 +129,7 @@ class ConstraintServiceTest {
                                 .setName("test-table")
                                 .addConstraints(Validation.Constraint
                                         .newBuilder()
-                                        .setId("be-constraint-id")
+                                        .setId("fe-constraint-id")
                                         .setTableId("table-1")
                                         .setName("pk_test")
                                         .setKind(
@@ -148,16 +154,33 @@ class ConstraintServiceTest {
                 .createConstraint(request);
 
         // then
-        StepVerifier.create(result)
-                .assertNext(response -> {
-                    // 제약조건 매핑 정보 확인 (FE-ID → BE-ID 매핑)
-                    // constraints는 tableId로 그룹핑된 nested map
-                    assertThat(response.constraints()).hasSize(1);
-                    assertThat(response.constraints().get("table-1"))
-                            .containsEntry("fe-constraint-id",
-                                    "be-constraint-id");
+        Mono<Tuple2<AffectedMappingResponse, Constraint>> composed = result
+                .flatMap(response -> {
+                    String savedConstraintId = response.constraints()
+                            .get("table-1")
+                            .get("fe-constraint-id");
 
-                    // 다른 매핑들은 비어있어야 함 (제약조건만 생성했으므로)
+                    return constraintRepository
+                            .findByIdAndDeletedAtIsNull(savedConstraintId)
+                            .map(savedConstraint -> Tuples.of(response,
+                                    savedConstraint));
+                });
+
+        StepVerifier.create(composed)
+                .assertNext(tuple -> {
+                    AffectedMappingResponse response = tuple.getT1();
+                    Constraint savedConstraint = tuple.getT2();
+
+                    assertThat(response.constraints()).hasSize(1);
+                    String savedConstraintId = response.constraints()
+                            .get("table-1")
+                            .get("fe-constraint-id");
+                    assertThat(savedConstraintId).isNotNull();
+                    assertThat(savedConstraintId)
+                            .isNotEqualTo("fe-constraint-id");
+                    assertThat(savedConstraint.getId())
+                            .isEqualTo(savedConstraintId);
+
                     assertThat(response.schemas()).isEmpty();
                     assertThat(response.tables()).isEmpty();
                     assertThat(response.columns()).isEmpty();
@@ -298,6 +321,21 @@ class ConstraintServiceTest {
                             .isEqualTo(savedConstraintColumnId);
                 })
                 .verifyComplete();
+
+        ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
+                .forClass(Validation.Database.class);
+        ArgumentCaptor<Set> excludeIdsCaptor = ArgumentCaptor
+                .forClass(Set.class);
+
+        verify(affectedEntitiesSaver).saveAffectedEntities(any(),
+                afterDbCaptor.capture(), anyString(), anyString(),
+                eq("CONSTRAINT"), excludeIdsCaptor.capture());
+
+        assertThat(containsConstraintColumnId(afterDbCaptor.getValue(),
+                "fe-constraint-col-1"))
+                        .isTrue();
+        assertThat(excludeIdsCaptor.getValue())
+                .contains("fe-constraint-col-1");
     }
 
     @Test
@@ -399,7 +437,7 @@ class ConstraintServiceTest {
                                         .build())
                                 .addConstraints(Validation.Constraint
                                         .newBuilder()
-                                        .setId("be-constraint-id")
+                                        .setId("fe-constraint-id")
                                         .setTableId("parent-table")
                                         .setName("pk_parent")
                                         .setKind(
@@ -407,9 +445,9 @@ class ConstraintServiceTest {
                                         .setIsAffected(true)
                                         .addColumns(Validation.ConstraintColumn
                                                 .newBuilder()
-                                                .setId("be-constraint-col-1")
+                                                .setId("fe-constraint-col-1")
                                                 .setConstraintId(
-                                                        "be-constraint-id")
+                                                        "fe-constraint-id")
                                                 .setColumnId("parent-id-col")
                                                 .setSeqNo(1)
                                                 .setIsAffected(true)
@@ -477,35 +515,29 @@ class ConstraintServiceTest {
                         .build())
                 .build();
 
-        // 전파된 엔티티 정보 모킹
-        AffectedMappingResponse.PropagatedEntities propagatedEntities = new AffectedMappingResponse.PropagatedEntities(
-                List.of(
-                        // 전파된 컬럼
-                        new AffectedMappingResponse.PropagatedColumn(
-                                "propagated-parent-id-col",
-                                "child-table",
-                                "CONSTRAINT",
-                                "be-constraint-id",
-                                "parent-id-col" // 원본 컬럼 ID
-                        )),
-                List.of(),
-                List.of(
-                        // 전파된 제약조건 컬럼
-                        new AffectedMappingResponse.PropagatedConstraintColumn(
-                                "propagated-constraint-col",
-                                "child-pk-constraint",
-                                "propagated-parent-id-col",
-                                "CONSTRAINT",
-                                "be-constraint-id")),
-                List.of() // 전파된 인덱스 컬럼 없음
-        );
-
         given(validationClient.createConstraint(
                 any(Validation.CreateConstraintRequest.class)))
                 .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
                 any(), any(), any()))
-                .willReturn(Mono.just(propagatedEntities));
+                .willAnswer(invocation -> {
+                    String sourceId = invocation.getArgument(3);
+                    return Mono.just(new AffectedMappingResponse.PropagatedEntities(
+                            List.of(new AffectedMappingResponse.PropagatedColumn(
+                                    "propagated-parent-id-col",
+                                    "child-table",
+                                    "CONSTRAINT",
+                                    sourceId,
+                                    "parent-id-col")),
+                            List.of(),
+                            List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
+                                    "propagated-constraint-col",
+                                    "child-pk-constraint",
+                                    "propagated-parent-id-col",
+                                    "CONSTRAINT",
+                                    sourceId)),
+                            List.of()));
+                });
 
         // when
         Mono<AffectedMappingResponse> result = constraintService
@@ -516,9 +548,15 @@ class ConstraintServiceTest {
                 .assertNext(response -> {
                     // 원본 제약조건 매핑 확인
                     assertThat(response.constraints()).hasSize(1);
+                    String savedConstraintId = response.constraints()
+                            .get("parent-table")
+                            .get("fe-constraint-id");
+                    assertThat(savedConstraintId).isNotNull();
+                    assertThat(savedConstraintId)
+                            .isNotEqualTo("fe-constraint-id");
                     assertThat(response.constraints().get("parent-table"))
                             .containsEntry("fe-constraint-id",
-                                    "be-constraint-id");
+                                    savedConstraintId);
 
                     // 전파된 엔티티 정보 확인
                     assertThat(response.propagated()).isNotNull();
@@ -532,7 +570,7 @@ class ConstraintServiceTest {
                     assertThat(propagatedColumn.sourceType())
                             .isEqualTo("CONSTRAINT");
                     assertThat(propagatedColumn.sourceId())
-                            .isEqualTo("be-constraint-id");
+                            .isEqualTo(savedConstraintId);
                     assertThat(propagatedColumn.sourceColumnId())
                             .isEqualTo("parent-id-col");
 
@@ -549,7 +587,7 @@ class ConstraintServiceTest {
                     assertThat(propagatedConstraintColumn.sourceType())
                             .isEqualTo("CONSTRAINT");
                     assertThat(propagatedConstraintColumn.sourceId())
-                            .isEqualTo("be-constraint-id");
+                            .isEqualTo(savedConstraintId);
 
                     // 전파된 인덱스 컬럼은 없음
                     assertThat(response.propagated().indexColumns())
@@ -795,6 +833,24 @@ class ConstraintServiceTest {
         StepVerifier.create(constraintRepository.findById(saved.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
                 .verifyComplete();
+    }
+
+    private static boolean containsConstraintColumnId(
+            Validation.Database database, String constraintColumnId) {
+        for (Validation.Schema schema : database.getSchemasList()) {
+            for (Validation.Table table : schema.getTablesList()) {
+                for (Validation.Constraint constraint : table
+                        .getConstraintsList()) {
+                    for (Validation.ConstraintColumn constraintColumn : constraint
+                            .getColumnsList()) {
+                        if (constraintColumn.getId().equals(constraintColumnId)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 }

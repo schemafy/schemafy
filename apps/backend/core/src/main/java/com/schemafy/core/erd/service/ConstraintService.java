@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.service;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,21 +55,42 @@ public class ConstraintService {
                                             request.getConstraint().getId(),
                                             savedConstraint.getId());
 
-                            return saveConstraintColumnsAndUpdateDatabase(
-                                    updatedDatabase,
+                            return saveConstraintColumns(
                                     request.getConstraint().getColumnsList(),
                                     savedConstraint.getId())
-                                    .flatMap(
-                                            updatedDatabaseWithConstraintColumns -> saveAffectedEntitiesAndBuildResponse(
-                                            request,
-                                            updatedDatabaseWithConstraintColumns,
-                                            savedConstraint.getId()));
+                                    .flatMap(mappings -> {
+                                        Set<String> excludeEntityIds = request
+                                                .getConstraint()
+                                                .getColumnsList()
+                                                .stream()
+                                                .map(Validation.ConstraintColumn::getId)
+                                                .collect(Collectors.toSet());
+
+                                        Validation.Database afterDatabase = applyMappings(
+                                                updatedDatabase,
+                                                mappings);
+
+                                        return affectedEntitiesSaver
+                                                .saveAffectedEntities(
+                                                        request.getDatabase(),
+                                                        updatedDatabase,
+                                                        savedConstraint
+                                                                .getId(),
+                                                        savedConstraint
+                                                                .getId(),
+                                                        "CONSTRAINT",
+                                                        excludeEntityIds)
+                                                .map(propagated -> AffectedMappingResponse
+                                                        .of(request,
+                                                                request.getDatabase(),
+                                                                afterDatabase,
+                                                                propagated));
+                                    });
                         }));
     }
 
-    private Mono<Validation.Database> saveConstraintColumnsAndUpdateDatabase(
-            Validation.Database database,
-            java.util.List<Validation.ConstraintColumn> columns,
+    private Mono<List<IdMapping>> saveConstraintColumns(
+            List<Validation.ConstraintColumn> columns,
             String constraintId) {
         return Flux.fromIterable(columns)
                 .concatMap(column -> {
@@ -78,47 +100,25 @@ public class ConstraintService {
                             .map(saved -> new IdMapping(column.getId(),
                                     saved.getId()));
                 })
-                .collectList()
-                .map(mappings -> {
-                    Validation.Database updatedDatabase = database;
-                    for (IdMapping mapping : mappings) {
-                        updatedDatabase = AffectedMappingResponse
-                                .updateEntityIdInDatabase(
-                                        updatedDatabase,
-                                        EntityType.CONSTRAINT_COLUMN,
-                                        mapping.feId(),
-                                        mapping.beId());
-                    }
-                    return updatedDatabase;
-                });
-    }
-
-    private Mono<AffectedMappingResponse> saveAffectedEntitiesAndBuildResponse(
-            Validation.CreateConstraintRequest request,
-            Validation.Database updatedDatabase,
-            String constraintId) {
-        Set<String> excludeEntityIds = request.getConstraint()
-                .getColumnsList()
-                .stream()
-                .map(Validation.ConstraintColumn::getId)
-                .collect(Collectors.toSet());
-
-        return affectedEntitiesSaver
-                .saveAffectedEntities(
-                        request.getDatabase(),
-                        updatedDatabase,
-                        constraintId,
-                        constraintId,
-                        "CONSTRAINT",
-                        excludeEntityIds)
-                .map(propagated -> AffectedMappingResponse.of(
-                        request,
-                        request.getDatabase(),
-                        updatedDatabase,
-                        propagated));
+                .collectList();
     }
 
     private record IdMapping(String feId, String beId) {
+    }
+
+    private static Validation.Database applyMappings(
+            Validation.Database database,
+            List<IdMapping> mappings) {
+        Validation.Database updatedDatabase = database;
+        for (IdMapping mapping : mappings) {
+            updatedDatabase = AffectedMappingResponse
+                    .updateEntityIdInDatabase(
+                            updatedDatabase,
+                            EntityType.CONSTRAINT_COLUMN,
+                            mapping.feId(),
+                            mapping.beId());
+        }
+        return updatedDatabase;
     }
 
     public Mono<ConstraintResponse> getConstraint(String id) {
