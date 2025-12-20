@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -81,6 +82,7 @@ public class AffectedEntitiesSaver {
             List<PropagatedRelationshipColumn> propagatedRelationshipColumns = new ArrayList<>();
             List<PropagatedConstraintColumn> propagatedConstraintColumns = new ArrayList<>();
             List<PropagatedIndexColumn> propagatedIndexColumns = new ArrayList<>();
+            List<SavedPropagatedColumn> savedPropagatedColumns = new ArrayList<>();
 
             Map<String, String> schemaIdMap = new HashMap<>();
             Map<String, String> tableIdMap = new HashMap<>();
@@ -213,23 +215,44 @@ public class AffectedEntitiesSaver {
 
                                             if (sourceId != null
                                                     && sourceType != null) {
-                                                propagatedColumns
-                                                        .add(new PropagatedColumn(
+                                                savedPropagatedColumns.add(
+                                                        new SavedPropagatedColumn(
                                                                 savedColumn
                                                                         .getId(),
                                                                 entity
-                                                                        .getTableId(),
-                                                                sourceType,
-                                                                sourceId,
-                                                                savedColumn
-                                                                        .getId()));
+                                                                        .getTableId()));
                                             }
                                         })
                                         .then();
                             }))
                     .then();
 
-            Mono<Void> saveIndexesTask = saveColumnsTask
+            Mono<Void> populatePropagatedColumnsTask = saveColumnsTask.then(
+                    Mono.fromRunnable(() -> {
+                        if (sourceId == null || sourceType == null) {
+                            return;
+                        }
+
+                        Map<String, String> fkToRefColumnIdMap = buildFkToRefColumnIdMap(
+                                after,
+                                sourceType,
+                                sourceId,
+                                columnIdMap);
+
+                        for (SavedPropagatedColumn savedColumn : savedPropagatedColumns) {
+                            String sourceColumnId = fkToRefColumnIdMap
+                                    .getOrDefault(savedColumn.columnId(),
+                                            savedColumn.columnId());
+                            propagatedColumns.add(new PropagatedColumn(
+                                    savedColumn.columnId(),
+                                    savedColumn.tableId(),
+                                    sourceType,
+                                    sourceId,
+                                    sourceColumnId));
+                        }
+                    }));
+
+            Mono<Void> saveIndexesTask = populatePropagatedColumnsTask
                     .thenMany(Flux.fromIterable(indexesToSave)
                             .concatMap(index -> {
                                 var entity = ErdMapper.toEntity(index);
@@ -461,6 +484,109 @@ public class AffectedEntitiesSaver {
     private record RelationshipColumnWithRelationshipId(
             Validation.RelationshipColumn relationshipColumn,
             String relationshipId) {
+    }
+
+    private record SavedPropagatedColumn(String columnId, String tableId) {
+    }
+
+    private static Map<String, String> buildFkToRefColumnIdMap(
+            Validation.Database database,
+            String sourceType,
+            String sourceId,
+            Map<String, String> columnIdMap) {
+        Map<String, String> fkToRefMap = new HashMap<>();
+
+        if ("RELATIONSHIP".equals(sourceType)) {
+            Validation.Relationship relationship = findRelationshipById(database,
+                    sourceId);
+            if (relationship == null) {
+                return fkToRefMap;
+            }
+
+            for (Validation.RelationshipColumn relationshipColumn : relationship
+                    .getColumnsList()) {
+                if (relationshipColumn.getFkColumnId().isBlank()) {
+                    continue;
+                }
+
+                fkToRefMap.put(
+                        remapId(relationshipColumn.getFkColumnId(), columnIdMap),
+                        remapId(relationshipColumn.getRefColumnId(),
+                                columnIdMap));
+            }
+            return fkToRefMap;
+        }
+
+        if ("CONSTRAINT".equals(sourceType)) {
+            Validation.Constraint constraint = findConstraintById(database,
+                    sourceId);
+            if (constraint == null) {
+                return fkToRefMap;
+            }
+
+            Set<String> parentColumnIds = constraint.getColumnsList().stream()
+                    .map(Validation.ConstraintColumn::getColumnId)
+                    .collect(Collectors.toSet());
+
+            for (Validation.Schema schema : database.getSchemasList()) {
+                for (Validation.Table table : schema.getTablesList()) {
+                    for (Validation.Relationship relationship : table
+                            .getRelationshipsList()) {
+                        for (Validation.RelationshipColumn relationshipColumn : relationship
+                                .getColumnsList()) {
+                            if (!parentColumnIds.contains(
+                                    relationshipColumn.getRefColumnId())) {
+                                continue;
+                            }
+
+                            if (relationshipColumn.getFkColumnId().isBlank()) {
+                                continue;
+                            }
+
+                            fkToRefMap.put(remapId(
+                                    relationshipColumn.getFkColumnId(),
+                                    columnIdMap), remapId(
+                                            relationshipColumn.getRefColumnId(),
+                                            columnIdMap));
+                        }
+                    }
+                }
+            }
+        }
+
+        return fkToRefMap;
+    }
+
+    private static Validation.Relationship findRelationshipById(
+            Validation.Database database,
+            String relationshipId) {
+        for (Validation.Schema schema : database.getSchemasList()) {
+            for (Validation.Table table : schema.getTablesList()) {
+                for (Validation.Relationship relationship : table
+                        .getRelationshipsList()) {
+                    if (relationship.getId().equals(relationshipId)) {
+                        return relationship;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Validation.Constraint findConstraintById(
+            Validation.Database database,
+            String constraintId) {
+        for (Validation.Schema schema : database.getSchemasList()) {
+            for (Validation.Table table : schema.getTablesList()) {
+                for (Validation.Constraint constraint : table
+                        .getConstraintsList()) {
+                    if (constraint.getId().equals(constraintId)) {
+                        return constraint;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
 }
