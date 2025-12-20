@@ -19,11 +19,13 @@ import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.TableRepository;
+import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.Column;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 import validation.Validation;
@@ -206,6 +208,98 @@ class AffectedEntitiesSaverTest {
 
                     assertThat(propagated.constraintColumns()).isEmpty();
                     assertThat(propagated.indexColumns()).isEmpty();
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("전파로 새로 생성된 constraint는 propagated.constraints로 반환된다")
+    void saveAffectedEntities_propagatedConstraint_includedInResponse() {
+        String schemaId = "schema-1";
+        String childTableId = "child-table";
+        String constraintLogicalId = "pk-constraint-logical";
+        String sourceId = "relationship-1";
+
+        Validation.Database before = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(childTableId)
+                                .setName("child")
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database after = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(childTableId)
+                                .setName("child")
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId(constraintLogicalId)
+                                        .setTableId(childTableId)
+                                        .setName("pk_child")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .setIsAffected(true)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Mono<Tuple2<AffectedMappingResponse.PropagatedEntities, Constraint>> result = affectedEntitiesSaver
+                .saveAffectedEntities(
+                        before,
+                        after,
+                        null,
+                        sourceId,
+                        "RELATIONSHIP",
+                        Set.of())
+                .flatMap(propagated -> {
+                    assertThat(propagated.constraints()).hasSize(1);
+                    AffectedMappingResponse.PropagatedConstraint propagatedConstraint = propagated
+                            .constraints().get(0);
+
+                    return constraintRepository
+                            .findByIdAndDeletedAtIsNull(
+                                    propagatedConstraint.constraintId())
+                            .map(savedConstraint -> Tuples.of(
+                                    propagated,
+                                    savedConstraint));
+                });
+
+        StepVerifier.create(result)
+                .assertNext(tuple -> {
+                    AffectedMappingResponse.PropagatedEntities propagated = tuple
+                            .getT1();
+                    Constraint savedConstraint = tuple.getT2();
+
+                    AffectedMappingResponse.PropagatedConstraint propagatedConstraint = propagated
+                            .constraints().get(0);
+
+                    assertThat(propagatedConstraint.sourceType())
+                            .isEqualTo("RELATIONSHIP");
+                    assertThat(propagatedConstraint.sourceId())
+                            .isEqualTo(sourceId);
+                    assertThat(propagatedConstraint.tableId())
+                            .isEqualTo(childTableId);
+                    assertThat(propagatedConstraint.kind())
+                            .isEqualTo("PRIMARY_KEY");
+                    assertThat(propagatedConstraint.name())
+                            .isEqualTo("pk_child");
+                    assertThat(propagatedConstraint.constraintId())
+                            .isNotEqualTo(constraintLogicalId);
+
+                    assertThat(savedConstraint.getId())
+                            .isEqualTo(propagatedConstraint.constraintId());
+                    assertThat(savedConstraint.getTableId())
+                            .isEqualTo(childTableId);
+                    assertThat(savedConstraint.getKind())
+                            .isEqualTo("PRIMARY_KEY");
+                    assertThat(savedConstraint.getName())
+                            .isEqualTo("pk_child");
                 })
                 .verifyComplete();
     }

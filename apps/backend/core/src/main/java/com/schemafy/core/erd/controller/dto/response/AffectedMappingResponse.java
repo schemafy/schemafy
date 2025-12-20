@@ -27,12 +27,13 @@ public record AffectedMappingResponse(
     public record PropagatedEntities(
             List<PropagatedColumn> columns,
             List<PropagatedRelationshipColumn> relationshipColumns,
+            List<PropagatedConstraint> constraints,
             List<PropagatedConstraintColumn> constraintColumns,
             List<PropagatedIndexColumn> indexColumns) {
 
         public static PropagatedEntities empty() {
             return new PropagatedEntities(List.of(), List.of(), List.of(),
-                    List.of());
+                    List.of(), List.of());
         }
 
     }
@@ -51,6 +52,15 @@ public record AffectedMappingResponse(
             String fkColumnId,
             String refColumnId,
             int seqNo,
+            String sourceType,
+            String sourceId) {
+    }
+
+    public record PropagatedConstraint(
+            String constraintId,
+            String tableId,
+            String name,
+            String kind,
             String sourceType,
             String sourceId) {
     }

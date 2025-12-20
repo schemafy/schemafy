@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedColumn;
+import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedConstraint;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedConstraintColumn;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedEntities;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedIndexColumn;
@@ -80,6 +81,7 @@ public class AffectedEntitiesSaver {
 
             List<PropagatedColumn> propagatedColumns = new ArrayList<>();
             List<PropagatedRelationshipColumn> propagatedRelationshipColumns = new ArrayList<>();
+            List<PropagatedConstraint> propagatedConstraints = new ArrayList<>();
             List<PropagatedConstraintColumn> propagatedConstraintColumns = new ArrayList<>();
             List<PropagatedIndexColumn> propagatedIndexColumns = new ArrayList<>();
             List<SavedPropagatedColumn> savedPropagatedColumns = new ArrayList<>();
@@ -274,10 +276,27 @@ public class AffectedEntitiesSaver {
                                         constraint.getTableId(),
                                         tableIdMap));
                                 return constraintRepository.save(entity)
-                                        .doOnNext(savedConstraint -> constraintIdMap
-                                                .put(constraint.getId(),
-                                                        savedConstraint
-                                                                .getId()))
+                                        .doOnNext(savedConstraint -> {
+                                            constraintIdMap.put(
+                                                    constraint.getId(),
+                                                    savedConstraint.getId());
+
+                                            if (sourceId != null
+                                                    && sourceType != null) {
+                                                propagatedConstraints
+                                                        .add(new PropagatedConstraint(
+                                                                savedConstraint
+                                                                        .getId(),
+                                                                entity
+                                                                        .getTableId(),
+                                                                entity
+                                                                        .getName(),
+                                                                entity
+                                                                        .getKind(),
+                                                                sourceType,
+                                                                sourceId));
+                                            }
+                                        })
                                         .then();
                             }))
                     .then();
@@ -414,6 +433,7 @@ public class AffectedEntitiesSaver {
                     .then(Mono.fromSupplier(() -> new PropagatedEntities(
                             propagatedColumns,
                             propagatedRelationshipColumns,
+                            propagatedConstraints,
                             propagatedConstraintColumns,
                             propagatedIndexColumns)));
         });

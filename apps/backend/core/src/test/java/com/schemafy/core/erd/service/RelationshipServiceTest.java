@@ -35,6 +35,7 @@ import reactor.util.function.Tuples;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -373,18 +374,16 @@ class RelationshipServiceTest {
 
         ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
                 .forClass(Validation.Database.class);
-        ArgumentCaptor<Set> excludeIdsCaptor = ArgumentCaptor
-                .forClass(Set.class);
 
         verify(affectedEntitiesSaver).saveAffectedEntities(any(),
                 afterDbCaptor.capture(), anyString(), anyString(),
-                eq("RELATIONSHIP"), excludeIdsCaptor.capture());
+                eq("RELATIONSHIP"), argThat((Set<String> excludeEntityIds) -> {
+                    return excludeEntityIds.contains("fe-relationship-col-1");
+                }));
 
         assertThat(containsRelationshipColumnId(afterDbCaptor.getValue(),
                 "fe-relationship-col-1"))
                         .isTrue();
-        assertThat(excludeIdsCaptor.getValue())
-                .contains("fe-relationship-col-1");
     }
 
     @Test
@@ -604,6 +603,7 @@ class RelationshipServiceTest {
                                     "RELATIONSHIP",
                                     sourceId,
                                     "parent-id-col")),
+                            List.of(),
                             List.of(),
                             List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
                                     "propagated-constraint-col",
