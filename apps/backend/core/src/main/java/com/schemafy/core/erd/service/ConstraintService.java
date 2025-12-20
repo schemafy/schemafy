@@ -1,5 +1,8 @@
 package com.schemafy.core.erd.service;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -77,13 +80,20 @@ public class ConstraintService {
             Validation.CreateConstraintRequest request,
             Validation.Database updatedDatabase,
             String constraintId) {
+        Set<String> excludeEntityIds = request.getConstraint()
+                .getColumnsList()
+                .stream()
+                .map(Validation.ConstraintColumn::getId)
+                .collect(Collectors.toSet());
+
         return affectedEntitiesSaver
                 .saveAffectedEntities(
                         request.getDatabase(),
                         updatedDatabase,
                         constraintId,
                         constraintId,
-                        "CONSTRAINT")
+                        "CONSTRAINT",
+                        excludeEntityIds)
                 .map(propagated -> AffectedMappingResponse.of(
                         request,
                         request.getDatabase(),

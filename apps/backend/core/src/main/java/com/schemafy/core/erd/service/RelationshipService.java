@@ -1,5 +1,8 @@
 package com.schemafy.core.erd.service;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -82,13 +85,20 @@ public class RelationshipService {
             CreateRelationshipRequestWithExtra request,
             Validation.Database updatedDatabase,
             String relationshipId) {
+        Set<String> excludeEntityIds = request.request().getRelationship()
+                .getColumnsList()
+                .stream()
+                .map(Validation.RelationshipColumn::getId)
+                .collect(Collectors.toSet());
+
         return affectedEntitiesSaver
                 .saveAffectedEntities(
                         request.request().getDatabase(),
                         updatedDatabase,
                         relationshipId,
                         relationshipId,
-                        "RELATIONSHIP")
+                        "RELATIONSHIP",
+                        excludeEntityIds)
                 .map(propagated -> AffectedMappingResponse.of(
                         request.request(),
                         request.request().getDatabase(),

@@ -78,6 +78,10 @@ class ConstraintServiceTest {
                 any(Validation.Database.class), any(), any(), any()))
                 .willReturn(Mono.just(
                         AffectedMappingResponse.PropagatedEntities.empty()));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(),
+                any(Validation.Database.class), any(), any(), any(), any()))
+                .willReturn(Mono.just(
+                        AffectedMappingResponse.PropagatedEntities.empty()));
     }
 
     @Test
@@ -131,7 +135,7 @@ class ConstraintServiceTest {
                 any(Validation.CreateConstraintRequest.class)))
                 .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
-                any(), any()))
+                any(), any(), any()))
                 .willReturn(Mono
                         .just(AffectedMappingResponse.PropagatedEntities
                                 .empty()));
@@ -367,7 +371,7 @@ class ConstraintServiceTest {
                 any(Validation.CreateConstraintRequest.class)))
                 .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
-                any(), any()))
+                any(), any(), any()))
                 .willReturn(Mono.just(propagatedEntities));
 
         // when

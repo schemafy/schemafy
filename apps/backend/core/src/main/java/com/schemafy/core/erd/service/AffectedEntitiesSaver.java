@@ -1,8 +1,10 @@
 package com.schemafy.core.erd.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -22,6 +24,7 @@ import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.TableRepository;
+import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -45,7 +48,7 @@ public class AffectedEntitiesSaver {
     public Mono<PropagatedEntities> saveAffectedEntities(
             Validation.Database before,
             Validation.Database after) {
-        return saveAffectedEntities(before, after, null, null, null);
+        return saveAffectedEntities(before, after, null, null, null, Set.of());
     }
 
     public Mono<PropagatedEntities> saveAffectedEntities(
@@ -54,169 +57,357 @@ public class AffectedEntitiesSaver {
             String excludeEntityId,
             String sourceId,
             String sourceType) {
+        return saveAffectedEntities(before, after, excludeEntityId, sourceId,
+                sourceType, Set.of());
+    }
+
+    public Mono<PropagatedEntities> saveAffectedEntities(
+            Validation.Database before,
+            Validation.Database after,
+            String excludeEntityId,
+            String sourceId,
+            String sourceType,
+            Set<String> excludeEntityIds) {
         return Mono.defer(() -> {
-            List<Mono<Void>> saveTasks = new ArrayList<>();
+            Set<String> excludedIds = new HashSet<>();
+            if (excludeEntityId != null) {
+                excludedIds.add(excludeEntityId);
+            }
+            if (excludeEntityIds != null) {
+                excludedIds.addAll(excludeEntityIds);
+            }
 
             List<PropagatedColumn> propagatedColumns = new ArrayList<>();
             List<PropagatedRelationshipColumn> propagatedRelationshipColumns = new ArrayList<>();
             List<PropagatedConstraintColumn> propagatedConstraintColumns = new ArrayList<>();
             List<PropagatedIndexColumn> propagatedIndexColumns = new ArrayList<>();
 
+            Map<String, String> schemaIdMap = new HashMap<>();
+            Map<String, String> tableIdMap = new HashMap<>();
+            Map<String, String> columnIdMap = new HashMap<>();
+            Map<String, String> indexIdMap = new HashMap<>();
+            Map<String, String> constraintIdMap = new HashMap<>();
+            Map<String, String> relationshipIdMap = new HashMap<>();
+
+            List<Validation.Schema> schemasToSave = new ArrayList<>();
+            List<Validation.Table> tablesToSave = new ArrayList<>();
+            List<Validation.Column> columnsToSave = new ArrayList<>();
+            List<Validation.Index> indexesToSave = new ArrayList<>();
+            List<Validation.IndexColumn> indexColumnsToSave = new ArrayList<>();
+            List<Validation.Constraint> constraintsToSave = new ArrayList<>();
+            List<Validation.ConstraintColumn> constraintColumnsToSave = new ArrayList<>();
+            List<Validation.Relationship> relationshipsToSave = new ArrayList<>();
+            List<RelationshipColumnWithRelationshipId> relationshipColumnsToSave = new ArrayList<>();
+
             var beforeIds = collectAllEntityIds(before);
 
             for (Validation.Schema schema : after.getSchemasList()) {
-                if (schema.getIsAffected()
-                        && !beforeIds.contains(schema.getId())
-                        && !schema.getId().equals(excludeEntityId)) {
-                    saveTasks.add(
-                            schemaRepository.save(ErdMapper.toEntity(schema))
-                                    .then());
+                if (shouldSaveEntity(schema.getId(), schema.getIsAffected(),
+                        beforeIds, excludedIds)) {
+                    schemasToSave.add(schema);
                 }
 
                 for (Validation.Table table : schema.getTablesList()) {
-                    if (table.getIsAffected()
-                            && !beforeIds.contains(table.getId())
-                            && !table.getId().equals(excludeEntityId)) {
-                        saveTasks.add(
-                                tableRepository
-                                        .save(ErdMapper.toEntity(table))
-                                        .then());
+                    if (shouldSaveEntity(table.getId(), table.getIsAffected(),
+                            beforeIds, excludedIds)) {
+                        tablesToSave.add(table);
                     }
 
                     for (Validation.Column column : table.getColumnsList()) {
-                        if (column.getIsAffected()
-                                && !beforeIds.contains(column.getId())
-                                && !column.getId().equals(excludeEntityId)) {
-                            saveTasks.add(
-                                    columnRepository
-                                            .save(ErdMapper.toEntity(column))
-                                            .then());
-
-                            if (sourceId != null && sourceType != null) {
-                                propagatedColumns.add(new PropagatedColumn(
-                                        column.getId(),
-                                        table.getId(),
-                                        sourceType,
-                                        sourceId,
-                                        column.getId()));
-                            }
+                        if (shouldSaveEntity(column.getId(),
+                                column.getIsAffected(), beforeIds,
+                                excludedIds)) {
+                            columnsToSave.add(column);
                         }
                     }
 
                     for (Validation.Index index : table.getIndexesList()) {
-                        if (index.getIsAffected()
-                                && !beforeIds.contains(index.getId())
-                                && !index.getId().equals(excludeEntityId)) {
-                            saveTasks.add(
-                                    indexRepository
-                                            .save(ErdMapper.toEntity(index))
-                                            .then());
+                        if (shouldSaveEntity(index.getId(), index.getIsAffected(),
+                                beforeIds, excludedIds)) {
+                            indexesToSave.add(index);
                         }
 
                         for (Validation.IndexColumn indexColumn : index
                                 .getColumnsList()) {
-                            if (indexColumn.getIsAffected()
-                                    && !beforeIds.contains(indexColumn.getId())
-                                    && !indexColumn.getId()
-                                            .equals(excludeEntityId)) {
-                                saveTasks.add(
-                                        indexColumnRepository
-                                                .save(ErdMapper
-                                                        .toEntity(indexColumn))
-                                                .then());
-
-                                if (sourceId != null && sourceType != null) {
-                                    propagatedIndexColumns
-                                            .add(new PropagatedIndexColumn(
-                                                    indexColumn.getId(),
-                                                    index.getId(),
-                                                    indexColumn.getColumnId(),
-                                                    sourceType,
-                                                    sourceId));
-                                }
+                            if (shouldSaveEntity(indexColumn.getId(),
+                                    indexColumn.getIsAffected(), beforeIds,
+                                    excludedIds)) {
+                                indexColumnsToSave.add(indexColumn);
                             }
                         }
                     }
 
                     for (Validation.Constraint constraint : table
                             .getConstraintsList()) {
-                        if (constraint.getIsAffected()
-                                && !beforeIds.contains(constraint.getId())
-                                && !constraint.getId()
-                                        .equals(excludeEntityId)) {
-                            saveTasks.add(
-                                    constraintRepository
-                                            .save(ErdMapper
-                                                    .toEntity(constraint))
-                                            .then());
+                        if (shouldSaveEntity(constraint.getId(),
+                                constraint.getIsAffected(), beforeIds,
+                                excludedIds)) {
+                            constraintsToSave.add(constraint);
                         }
 
                         for (Validation.ConstraintColumn constraintColumn : constraint
                                 .getColumnsList()) {
-                            if (constraintColumn.getIsAffected()
-                                    && !beforeIds
-                                            .contains(constraintColumn.getId())
-                                    && !constraintColumn.getId()
-                                            .equals(excludeEntityId)) {
-                                saveTasks.add(
-                                        constraintColumnRepository
-                                                .save(ErdMapper.toEntity(
-                                                        constraintColumn))
-                                                .then());
-
-                                if (sourceId != null && sourceType != null) {
-                                    propagatedConstraintColumns
-                                            .add(new PropagatedConstraintColumn(
-                                                    constraintColumn.getId(),
-                                                    constraint.getId(),
-                                                    constraintColumn
-                                                            .getColumnId(),
-                                                    sourceType,
-                                                    sourceId));
-                                }
+                            if (shouldSaveEntity(constraintColumn.getId(),
+                                    constraintColumn.getIsAffected(), beforeIds,
+                                    excludedIds)) {
+                                constraintColumnsToSave.add(constraintColumn);
                             }
                         }
                     }
 
                     for (Validation.Relationship relationship : table
                             .getRelationshipsList()) {
-                        if (relationship.getIsAffected()
-                                && !beforeIds.contains(relationship.getId())
-                                && !relationship.getId()
-                                        .equals(excludeEntityId)) {
-                            saveTasks.add(
-                                    relationshipRepository
-                                            .save(ErdMapper.toEntity(
-                                                    relationship))
-                                            .then());
+                        if (shouldSaveEntity(relationship.getId(),
+                                relationship.getIsAffected(), beforeIds,
+                                excludedIds)) {
+                            relationshipsToSave.add(relationship);
                         }
 
                         for (Validation.RelationshipColumn relationshipColumn : relationship
                                 .getColumnsList()) {
-                            if (relationshipColumn.getIsAffected()
-                                    && !beforeIds.contains(
-                                            relationshipColumn.getId())
-                                    && !relationshipColumn.getId()
-                                            .equals(excludeEntityId)) {
-                                saveTasks.add(
-                                        relationshipColumnRepository
-                                                .save(ErdMapper.toEntity(
-                                                        relationshipColumn))
-                                                .then());
+                            if (shouldSaveEntity(relationshipColumn.getId(),
+                                    relationshipColumn.getIsAffected(), beforeIds,
+                                    excludedIds)) {
+                                relationshipColumnsToSave
+                                        .add(new RelationshipColumnWithRelationshipId(
+                                                relationshipColumn,
+                                                relationship.getId()));
                             }
                         }
                     }
                 }
             }
 
-            return Flux.fromIterable(saveTasks)
-                    .flatMap(task -> task)
-                    .then(Mono.just(new PropagatedEntities(
+            Mono<Void> saveSchemasTask = Flux.fromIterable(schemasToSave)
+                    .concatMap(schema -> schemaRepository
+                            .save(ErdMapper.toEntity(schema))
+                            .doOnNext(savedSchema -> schemaIdMap
+                                    .put(schema.getId(), savedSchema.getId()))
+                            .then())
+                    .then();
+
+            Mono<Void> saveTablesTask = saveSchemasTask
+                    .thenMany(Flux.fromIterable(tablesToSave)
+                            .concatMap(table -> {
+                                var entity = ErdMapper.toEntity(table);
+                                entity.setSchemaId(remapId(table.getSchemaId(),
+                                        schemaIdMap));
+                                return tableRepository.save(entity)
+                                        .doOnNext(savedTable -> tableIdMap
+                                                .put(table.getId(),
+                                                        savedTable.getId()))
+                                        .then();
+                            }))
+                    .then();
+
+            Mono<Void> saveColumnsTask = saveTablesTask
+                    .thenMany(Flux.fromIterable(columnsToSave)
+                            .concatMap(column -> {
+                                var entity = ErdMapper.toEntity(column);
+                                entity.setTableId(remapId(column.getTableId(),
+                                        tableIdMap));
+                                return columnRepository.save(entity)
+                                        .doOnNext(savedColumn -> {
+                                            columnIdMap.put(column.getId(),
+                                                    savedColumn.getId());
+
+                                            if (sourceId != null
+                                                    && sourceType != null) {
+                                                propagatedColumns
+                                                        .add(new PropagatedColumn(
+                                                                savedColumn
+                                                                        .getId(),
+                                                                entity
+                                                                        .getTableId(),
+                                                                sourceType,
+                                                                sourceId,
+                                                                savedColumn
+                                                                        .getId()));
+                                            }
+                                        })
+                                        .then();
+                            }))
+                    .then();
+
+            Mono<Void> saveIndexesTask = saveColumnsTask
+                    .thenMany(Flux.fromIterable(indexesToSave)
+                            .concatMap(index -> {
+                                var entity = ErdMapper.toEntity(index);
+                                entity.setTableId(remapId(index.getTableId(),
+                                        tableIdMap));
+                                return indexRepository.save(entity)
+                                        .doOnNext(savedIndex -> indexIdMap.put(
+                                                index.getId(),
+                                                savedIndex.getId()))
+                                        .then();
+                            }))
+                    .then();
+
+            Mono<Void> saveConstraintsTask = saveIndexesTask
+                    .thenMany(Flux.fromIterable(constraintsToSave)
+                            .concatMap(constraint -> {
+                                var entity = ErdMapper.toEntity(constraint);
+                                entity.setTableId(remapId(
+                                        constraint.getTableId(),
+                                        tableIdMap));
+                                return constraintRepository.save(entity)
+                                        .doOnNext(savedConstraint -> constraintIdMap
+                                                .put(constraint.getId(),
+                                                        savedConstraint
+                                                                .getId()))
+                                        .then();
+                            }))
+                    .then();
+
+            Mono<Void> saveRelationshipsTask = saveConstraintsTask
+                    .thenMany(Flux.fromIterable(relationshipsToSave)
+                            .concatMap(relationship -> {
+                                var entity = ErdMapper
+                                        .toEntity(relationship);
+                                entity.setSrcTableId(remapId(
+                                        relationship.getSrcTableId(),
+                                        tableIdMap));
+                                entity.setTgtTableId(remapId(
+                                        relationship.getTgtTableId(),
+                                        tableIdMap));
+                                return relationshipRepository.save(entity)
+                                        .doOnNext(savedRelationship -> relationshipIdMap
+                                                .put(relationship.getId(),
+                                                        savedRelationship
+                                                                .getId()))
+                                        .then();
+                            }))
+                    .then();
+
+            Mono<Void> saveIndexColumnsTask = saveRelationshipsTask
+                    .thenMany(Flux.fromIterable(indexColumnsToSave)
+                            .concatMap(indexColumn -> {
+                                var entity = ErdMapper.toEntity(indexColumn);
+                                entity.setIndexId(remapId(
+                                        indexColumn.getIndexId(),
+                                        indexIdMap));
+                                entity.setColumnId(remapId(
+                                        indexColumn.getColumnId(),
+                                        columnIdMap));
+
+                                return indexColumnRepository.save(entity)
+                                        .doOnNext(savedIndexColumn -> {
+                                            if (sourceId != null
+                                                    && sourceType != null) {
+                                                propagatedIndexColumns
+                                                        .add(new PropagatedIndexColumn(
+                                                                savedIndexColumn
+                                                                        .getId(),
+                                                                entity
+                                                                        .getIndexId(),
+                                                                entity
+                                                                        .getColumnId(),
+                                                                sourceType,
+                                                                sourceId));
+                                            }
+                                        })
+                                        .then();
+                            }))
+                    .then();
+
+            Mono<Void> saveConstraintColumnsTask = saveIndexColumnsTask
+                    .thenMany(Flux.fromIterable(constraintColumnsToSave)
+                            .concatMap(constraintColumn -> {
+                                var entity = ErdMapper
+                                        .toEntity(constraintColumn);
+                                entity.setConstraintId(remapId(
+                                        constraintColumn.getConstraintId(),
+                                        constraintIdMap));
+                                entity.setColumnId(remapId(
+                                        constraintColumn.getColumnId(),
+                                        columnIdMap));
+
+                                return constraintColumnRepository.save(entity)
+                                        .doOnNext(savedConstraintColumn -> {
+                                            if (sourceId != null
+                                                    && sourceType != null) {
+                                                propagatedConstraintColumns
+                                                        .add(new PropagatedConstraintColumn(
+                                                                savedConstraintColumn
+                                                                        .getId(),
+                                                                entity
+                                                                        .getConstraintId(),
+                                                                entity
+                                                                        .getColumnId(),
+                                                                sourceType,
+                                                                sourceId));
+                                            }
+                                        })
+                                        .then();
+                            }))
+                    .then();
+
+            Mono<Void> saveRelationshipColumnsTask = saveConstraintColumnsTask
+                    .thenMany(Flux.fromIterable(relationshipColumnsToSave)
+                            .concatMap(item -> {
+                                Validation.RelationshipColumn relationshipColumn = item.relationshipColumn();
+
+                                String relationshipId = remapId(
+                                        item.relationshipId(),
+                                        relationshipIdMap);
+                                String fkColumnId = remapId(
+                                        relationshipColumn.getFkColumnId(),
+                                        columnIdMap);
+                                String refColumnId = remapId(
+                                        relationshipColumn.getRefColumnId(),
+                                        columnIdMap);
+
+                                RelationshipColumn entity = RelationshipColumn
+                                        .builder()
+                                        .relationshipId(relationshipId)
+                                        .srcColumnId(fkColumnId)
+                                        .tgtColumnId(refColumnId)
+                                        .seqNo((int) relationshipColumn
+                                                .getSeqNo())
+                                        .build();
+
+                                return relationshipColumnRepository.save(entity)
+                                        .doOnNext(savedRelationshipColumn -> {
+                                            if (sourceId != null
+                                                    && sourceType != null) {
+                                                propagatedRelationshipColumns
+                                                        .add(new PropagatedRelationshipColumn(
+                                                                savedRelationshipColumn
+                                                                        .getId(),
+                                                                relationshipId,
+                                                                fkColumnId,
+                                                                refColumnId,
+                                                                entity
+                                                                        .getSeqNo(),
+                                                                sourceType,
+                                                                sourceId));
+                                            }
+                                        })
+                                        .then();
+                            }))
+                    .then();
+
+            return saveRelationshipColumnsTask
+                    .then(Mono.fromSupplier(() -> new PropagatedEntities(
                             propagatedColumns,
                             propagatedRelationshipColumns,
                             propagatedConstraintColumns,
                             propagatedIndexColumns)));
         });
+    }
+
+    private static boolean shouldSaveEntity(
+            String entityId,
+            boolean isAffected,
+            Set<String> beforeIds,
+            Set<String> excludedIds) {
+        return isAffected && !beforeIds.contains(entityId)
+                && !excludedIds.contains(entityId);
+    }
+
+    private static String remapId(String originalId, Map<String, String> idMap) {
+        String mappedId = idMap.get(originalId);
+        return mappedId != null ? mappedId : originalId;
     }
 
     private Set<String> collectAllEntityIds(
@@ -265,6 +456,11 @@ public class AffectedEntitiesSaver {
         }
 
         return ids;
+    }
+
+    private record RelationshipColumnWithRelationshipId(
+            Validation.RelationshipColumn relationshipColumn,
+            String relationshipId) {
     }
 
 }

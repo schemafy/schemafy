@@ -83,6 +83,10 @@ class RelationshipServiceTest {
                 any(Validation.Database.class), any(), any(), any()))
                 .willReturn(Mono.just(
                         AffectedMappingResponse.PropagatedEntities.empty()));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(),
+                any(Validation.Database.class), any(), any(), any(), any()))
+                .willReturn(Mono.just(
+                        AffectedMappingResponse.PropagatedEntities.empty()));
     }
 
     @Test
@@ -155,7 +159,7 @@ class RelationshipServiceTest {
                 any(Validation.CreateRelationshipRequest.class)))
                 .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
-                any(), any()))
+                any(), any(), any()))
                 .willReturn(Mono
                         .just(AffectedMappingResponse.PropagatedEntities
                                 .empty()));
@@ -417,7 +421,7 @@ class RelationshipServiceTest {
                 any(Validation.CreateRelationshipRequest.class)))
                 .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
-                any(), any()))
+                any(), any(), any()))
                 .willReturn(Mono.just(propagatedEntities));
 
         // when
