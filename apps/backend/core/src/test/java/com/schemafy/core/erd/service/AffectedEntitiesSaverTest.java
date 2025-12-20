@@ -19,9 +19,13 @@ import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.TableRepository;
+import com.schemafy.core.erd.repository.entity.Column;
+import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple3;
+import reactor.util.function.Tuples;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -207,6 +211,137 @@ class AffectedEntitiesSaverTest {
     }
 
     @Test
+    @DisplayName("저장된 relationshipColumn.srcColumnId는 실제 컬럼을 참조한다")
+    void saveAffectedEntities_relationshipColumnSrcColumnId_referencesSavedColumn() {
+        String schemaId = "schema-1";
+        String parentTableId = "parent-table";
+        String childTableId = "child-table";
+        String parentColumnId = "parent-id-col";
+        String relationshipId = "be-relationship-id";
+        String fkColumnLogicalId = "fk-col-logical";
+        String relationshipColumnLogicalId = "relcol-logical";
+
+        Validation.Database before = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(parentTableId)
+                                .setName("parent")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(parentColumnId)
+                                        .setTableId(parentTableId)
+                                        .setName("id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(childTableId)
+                                .setName("child")
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database after = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(parentTableId)
+                                .setName("parent")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(parentColumnId)
+                                        .setTableId(parentTableId)
+                                        .setName("id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(childTableId)
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnLogicalId)
+                                        .setTableId(childTableId)
+                                        .setName("parent_id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .setIsAffected(true)
+                                        .build())
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
+                                        .setId(relationshipId)
+                                        .setSrcTableId(childTableId)
+                                        .setTgtTableId(parentTableId)
+                                        .setName("fk_child_parent")
+                                        .setKind(
+                                                Validation.RelationshipKind.IDENTIFYING)
+                                        .setCardinality(
+                                                Validation.RelationshipCardinality.ONE_TO_MANY)
+                                        .setIsAffected(true)
+                                        .addColumns(
+                                                Validation.RelationshipColumn
+                                                        .newBuilder()
+                                                        .setId(relationshipColumnLogicalId)
+                                                        .setRelationshipId(
+                                                                relationshipId)
+                                                        .setFkColumnId(
+                                                                fkColumnLogicalId)
+                                                        .setRefColumnId(
+                                                                parentColumnId)
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Mono<Tuple3<AffectedMappingResponse.PropagatedEntities, RelationshipColumn, Column>> result = affectedEntitiesSaver
+                .saveAffectedEntities(
+                        before,
+                        after,
+                        relationshipId,
+                        relationshipId,
+                        "RELATIONSHIP",
+                        Set.of())
+                .flatMap(propagated -> {
+                    assertThat(propagated.relationshipColumns()).hasSize(1);
+                    AffectedMappingResponse.PropagatedRelationshipColumn relationshipColumn = propagated
+                            .relationshipColumns().get(0);
+
+                    return relationshipColumnRepository
+                            .findByIdAndDeletedAtIsNull(
+                                    relationshipColumn.relationshipColumnId())
+                            .flatMap(savedRelationshipColumn -> columnRepository
+                                    .findByIdAndDeletedAtIsNull(
+                                            savedRelationshipColumn
+                                                    .getSrcColumnId())
+                                    .map(savedSrcColumn -> Tuples.of(
+                                            propagated,
+                                            savedRelationshipColumn,
+                                            savedSrcColumn)));
+                });
+
+        StepVerifier.create(result)
+                .assertNext(tuple -> {
+                    AffectedMappingResponse.PropagatedEntities propagated = tuple
+                            .getT1();
+                    RelationshipColumn savedRelationshipColumn = tuple.getT2();
+                    Column savedSrcColumn = tuple.getT3();
+
+                    assertThat(propagated.relationshipColumns()).hasSize(1);
+                    AffectedMappingResponse.PropagatedRelationshipColumn relationshipColumn = propagated
+                            .relationshipColumns().get(0);
+
+                    assertThat(savedRelationshipColumn.getSrcColumnId())
+                            .isEqualTo(relationshipColumn.fkColumnId());
+                    assertThat(savedSrcColumn.getId())
+                            .isEqualTo(savedRelationshipColumn.getSrcColumnId());
+                })
+                .verifyComplete();
+    }
+
+    @Test
     @DisplayName("CONSTRAINT 전파 컬럼의 sourceColumnId는 부모 PK 컬럼을 따른다")
     void saveAffectedEntities_constraintSource_setsSourceColumnId() {
         String schemaId = "schema-1";
@@ -356,4 +491,3 @@ class AffectedEntitiesSaverTest {
     }
 
 }
-

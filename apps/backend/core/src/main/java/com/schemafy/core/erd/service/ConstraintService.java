@@ -54,26 +54,43 @@ public class ConstraintService {
                                             request.getConstraint().getId(),
                                             savedConstraint.getId());
 
-                            return saveConstraintColumns(
+                            return saveConstraintColumnsAndUpdateDatabase(
+                                    updatedDatabase,
                                     request.getConstraint().getColumnsList(),
                                     savedConstraint.getId())
-                                    .then(saveAffectedEntitiesAndBuildResponse(
+                                    .flatMap(
+                                            updatedDatabaseWithConstraintColumns -> saveAffectedEntitiesAndBuildResponse(
                                             request,
-                                            updatedDatabase,
+                                            updatedDatabaseWithConstraintColumns,
                                             savedConstraint.getId()));
                         }));
     }
 
-    private Mono<Void> saveConstraintColumns(
+    private Mono<Validation.Database> saveConstraintColumnsAndUpdateDatabase(
+            Validation.Database database,
             java.util.List<Validation.ConstraintColumn> columns,
             String constraintId) {
         return Flux.fromIterable(columns)
-                .flatMap(column -> {
+                .concatMap(column -> {
                     ConstraintColumn entity = ErdMapper.toEntity(column);
                     entity.setConstraintId(constraintId);
-                    return constraintColumnRepository.save(entity);
+                    return constraintColumnRepository.save(entity)
+                            .map(saved -> new IdMapping(column.getId(),
+                                    saved.getId()));
                 })
-                .then();
+                .collectList()
+                .map(mappings -> {
+                    Validation.Database updatedDatabase = database;
+                    for (IdMapping mapping : mappings) {
+                        updatedDatabase = AffectedMappingResponse
+                                .updateEntityIdInDatabase(
+                                        updatedDatabase,
+                                        EntityType.CONSTRAINT_COLUMN,
+                                        mapping.feId(),
+                                        mapping.beId());
+                    }
+                    return updatedDatabase;
+                });
     }
 
     private Mono<AffectedMappingResponse> saveAffectedEntitiesAndBuildResponse(
@@ -99,6 +116,9 @@ public class ConstraintService {
                         request.getDatabase(),
                         updatedDatabase,
                         propagated));
+    }
+
+    private record IdMapping(String feId, String beId) {
     }
 
     public Mono<ConstraintResponse> getConstraint(String id) {

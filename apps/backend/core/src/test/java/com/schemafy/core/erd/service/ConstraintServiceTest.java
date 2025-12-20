@@ -25,6 +25,9 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
 
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -163,6 +166,136 @@ class ConstraintServiceTest {
                     assertThat(response.constraintColumns()).isEmpty();
                     assertThat(response.relationships()).isEmpty();
                     assertThat(response.relationshipColumns()).isEmpty();
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("createConstraint: constraintColumns 매핑이 FE-ID -> BE-ID로 반환된다")
+    void createConstraint_constraintColumns_mapping_notIdentity() {
+        // given
+        Validation.CreateConstraintRequest request = Validation.CreateConstraintRequest
+                .newBuilder()
+                .setConstraint(Validation.Constraint.newBuilder()
+                        .setId("fe-constraint-id")
+                        .setTableId("table-1")
+                        .setName("pk_test")
+                        .setKind(Validation.ConstraintKind.PRIMARY_KEY)
+                        .addColumns(Validation.ConstraintColumn.newBuilder()
+                                .setId("fe-constraint-col-1")
+                                .setConstraintId("fe-constraint-id")
+                                .setColumnId("col-1")
+                                .setSeqNo(1)
+                                .build())
+                        .build())
+                .setDatabase(Validation.Database.newBuilder()
+                        .setId("proj-1")
+                        .addSchemas(Validation.Schema.newBuilder()
+                                .setId("schema-1")
+                                .setName("test-schema")
+                                .addTables(Validation.Table.newBuilder()
+                                        .setId("table-1")
+                                        .setName("test-table")
+                                        .addColumns(Validation.Column
+                                                .newBuilder()
+                                                .setId("col-1")
+                                                .setTableId("table-1")
+                                                .setName("id")
+                                                .setOrdinalPosition(1)
+                                                .setDataType("INT")
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        // validator는 요청으로 받은 FE id를 그대로 after DB에 포함한다.
+        Validation.Database mockResponse = Validation.Database.newBuilder()
+                .setId("proj-1")
+                .setIsAffected(true)
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("test-schema")
+                        .setIsAffected(true)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setName("test-table")
+                                .setIsAffected(true)
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId("fe-constraint-id")
+                                        .setTableId("table-1")
+                                        .setName("pk_test")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .setIsAffected(true)
+                                        .addColumns(
+                                                Validation.ConstraintColumn
+                                                        .newBuilder()
+                                                        .setId("fe-constraint-col-1")
+                                                        .setConstraintId(
+                                                                "fe-constraint-id")
+                                                        .setColumnId("col-1")
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.createConstraint(
+                any(Validation.CreateConstraintRequest.class)))
+                .willReturn(Mono.just(mockResponse));
+
+        // when
+        Mono<AffectedMappingResponse> result = constraintService
+                .createConstraint(request);
+
+        // then
+        Mono<Tuple2<AffectedMappingResponse, ConstraintColumn>> composed = result
+                .flatMap(response -> {
+                    String savedConstraintId = response.constraints()
+                            .get("table-1")
+                            .get("fe-constraint-id");
+
+                    String savedConstraintColumnId = response
+                            .constraintColumns()
+                            .get(savedConstraintId)
+                            .get("fe-constraint-col-1");
+
+                    return constraintColumnRepository
+                            .findByConstraintIdAndDeletedAtIsNull(
+                                    savedConstraintId)
+                            .single()
+                            .map(savedConstraintColumn -> Tuples
+                                    .of(response, savedConstraintColumn));
+                });
+
+        StepVerifier.create(composed)
+                .assertNext(tuple -> {
+                    AffectedMappingResponse response = tuple.getT1();
+                    ConstraintColumn savedConstraintColumn = tuple.getT2();
+
+                    String savedConstraintId = response.constraints()
+                            .get("table-1")
+                            .get("fe-constraint-id");
+
+                    assertThat(savedConstraintId).isNotNull();
+                    assertThat(savedConstraintId)
+                            .isNotEqualTo("fe-constraint-id");
+
+                    String savedConstraintColumnId = response.constraintColumns()
+                            .get(savedConstraintId)
+                            .get("fe-constraint-col-1");
+
+                    assertThat(savedConstraintColumnId).isNotNull();
+                    assertThat(savedConstraintColumnId)
+                            .isNotEqualTo("fe-constraint-col-1");
+
+                    assertThat(savedConstraintColumn).isNotNull();
+                    assertThat(savedConstraintColumn.getId())
+                            .isEqualTo(savedConstraintColumnId);
                 })
                 .verifyComplete();
     }

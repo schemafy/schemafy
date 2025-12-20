@@ -58,27 +58,44 @@ public class RelationshipService {
                                                     .getId(),
                                             savedRelationship.getId());
 
-                            return saveRelationshipColumns(
+                            return saveRelationshipColumnsAndUpdateDatabase(
+                                    updatedDatabase,
                                     request.request().getRelationship()
                                             .getColumnsList(),
                                     savedRelationship.getId())
-                                    .then(saveAffectedEntitiesAndBuildResponse(
+                                    .flatMap(
+                                            updatedDatabaseWithRelationshipColumns -> saveAffectedEntitiesAndBuildResponse(
                                             request,
-                                            updatedDatabase,
+                                            updatedDatabaseWithRelationshipColumns,
                                             savedRelationship.getId()));
                         }));
     }
 
-    private Mono<Void> saveRelationshipColumns(
+    private Mono<Validation.Database> saveRelationshipColumnsAndUpdateDatabase(
+            Validation.Database database,
             java.util.List<Validation.RelationshipColumn> columns,
             String relationshipId) {
         return Flux.fromIterable(columns)
-                .flatMap(column -> {
+                .concatMap(column -> {
                     RelationshipColumn entity = ErdMapper.toEntity(column);
                     entity.setRelationshipId(relationshipId);
-                    return relationshipColumnRepository.save(entity);
+                    return relationshipColumnRepository.save(entity)
+                            .map(saved -> new IdMapping(column.getId(),
+                                    saved.getId()));
                 })
-                .then();
+                .collectList()
+                .map(mappings -> {
+                    Validation.Database updatedDatabase = database;
+                    for (IdMapping mapping : mappings) {
+                        updatedDatabase = AffectedMappingResponse
+                                .updateEntityIdInDatabase(
+                                        updatedDatabase,
+                                        EntityType.RELATIONSHIP_COLUMN,
+                                        mapping.feId(),
+                                        mapping.beId());
+                    }
+                    return updatedDatabase;
+                });
     }
 
     private Mono<AffectedMappingResponse> saveAffectedEntitiesAndBuildResponse(
@@ -104,6 +121,9 @@ public class RelationshipService {
                         request.request().getDatabase(),
                         updatedDatabase,
                         propagated));
+    }
+
+    private record IdMapping(String feId, String beId) {
     }
 
     public Mono<RelationshipResponse> getRelationship(String id) {

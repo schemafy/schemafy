@@ -26,6 +26,9 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import validation.Validation;
 
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -187,6 +190,161 @@ class RelationshipServiceTest {
                     assertThat(response.constraints()).isEmpty();
                     assertThat(response.constraintColumns()).isEmpty();
                     assertThat(response.relationshipColumns()).isEmpty();
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("createRelationship: relationshipColumns 매핑이 FE-ID -> BE-ID로 반환된다")
+    void createRelationship_relationshipColumns_mapping_notIdentity() {
+        // given
+        Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
+                .newBuilder()
+                .setRelationship(Validation.Relationship.newBuilder()
+                        .setId("fe-relationship-id")
+                        .setSrcTableId("table-1")
+                        .setTgtTableId("table-2")
+                        .setName("fk_test")
+                        .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
+                        .setCardinality(
+                                Validation.RelationshipCardinality.ONE_TO_MANY)
+                        .addColumns(Validation.RelationshipColumn.newBuilder()
+                                .setId("fe-relationship-col-1")
+                                .setRelationshipId("fe-relationship-id")
+                                .setFkColumnId("fk-col-id")
+                                .setRefColumnId("ref-col-id")
+                                .setSeqNo(1)
+                                .build())
+                        .build())
+                .setDatabase(Validation.Database.newBuilder()
+                        .setId("proj-1")
+                        .addSchemas(Validation.Schema.newBuilder()
+                                .setId("schema-1")
+                                .setName("test-schema")
+                                .addTables(Validation.Table.newBuilder()
+                                        .setId("table-1")
+                                        .setName("child-table")
+                                        .addColumns(Validation.Column
+                                                .newBuilder()
+                                                .setId("fk-col-id")
+                                                .setTableId("table-1")
+                                                .setName("fk")
+                                                .setOrdinalPosition(1)
+                                                .setDataType("INT")
+                                                .build())
+                                        .build())
+                                .addTables(Validation.Table.newBuilder()
+                                        .setId("table-2")
+                                        .setName("parent-table")
+                                        .addColumns(Validation.Column
+                                                .newBuilder()
+                                                .setId("ref-col-id")
+                                                .setTableId("table-2")
+                                                .setName("id")
+                                                .setOrdinalPosition(1)
+                                                .setDataType("INT")
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
+                request, "extra-data");
+
+        // validator는 요청으로 받은 FE id를 그대로 after DB에 포함한다.
+        Validation.Database mockResponse = Validation.Database.newBuilder()
+                .setId("proj-1")
+                .setIsAffected(true)
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("test-schema")
+                        .setIsAffected(true)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setName("child-table")
+                                .setIsAffected(true)
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
+                                        .setId("fe-relationship-id")
+                                        .setSrcTableId("table-1")
+                                        .setTgtTableId("table-2")
+                                        .setName("fk_test")
+                                        .setKind(
+                                                Validation.RelationshipKind.NON_IDENTIFYING)
+                                        .setCardinality(
+                                                Validation.RelationshipCardinality.ONE_TO_MANY)
+                                        .setIsAffected(true)
+                                        .addColumns(
+                                                Validation.RelationshipColumn
+                                                        .newBuilder()
+                                                        .setId("fe-relationship-col-1")
+                                                        .setRelationshipId(
+                                                                "fe-relationship-id")
+                                                        .setFkColumnId(
+                                                                "fk-col-id")
+                                                        .setRefColumnId(
+                                                                "ref-col-id")
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-2")
+                                .setName("parent-table")
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.createRelationship(
+                any(Validation.CreateRelationshipRequest.class)))
+                .willReturn(Mono.just(mockResponse));
+
+        // when
+        Mono<AffectedMappingResponse> result = relationshipService
+                .createRelationship(requestWithExtra);
+
+        // then
+        Mono<Tuple2<AffectedMappingResponse, RelationshipColumn>> composed = result
+                .flatMap(response -> {
+                    String savedRelationshipId = response.relationships()
+                            .get("table-1")
+                            .get("fe-relationship-id");
+
+                    return relationshipColumnRepository
+                            .findByRelationshipIdAndDeletedAtIsNull(
+                                    savedRelationshipId)
+                            .single()
+                            .map(savedRelationshipColumn -> Tuples
+                                    .of(response, savedRelationshipColumn));
+                });
+
+        StepVerifier.create(composed)
+                .assertNext(tuple -> {
+                    AffectedMappingResponse response = tuple.getT1();
+                    RelationshipColumn savedRelationshipColumn = tuple.getT2();
+
+                    String savedRelationshipId = response.relationships()
+                            .get("table-1")
+                            .get("fe-relationship-id");
+
+                    assertThat(savedRelationshipId).isNotNull();
+                    assertThat(savedRelationshipId)
+                            .isNotEqualTo("fe-relationship-id");
+
+                    String savedRelationshipColumnId = response
+                            .relationshipColumns()
+                            .get(savedRelationshipId)
+                            .get("fe-relationship-col-1");
+
+                    assertThat(savedRelationshipColumnId).isNotNull();
+                    assertThat(savedRelationshipColumnId)
+                            .isNotEqualTo("fe-relationship-col-1");
+
+                    assertThat(savedRelationshipColumn).isNotNull();
+                    assertThat(savedRelationshipColumn.getId())
+                            .isEqualTo(savedRelationshipColumnId);
                 })
                 .verifyComplete();
     }
