@@ -401,6 +401,7 @@ class RelationshipServiceTest {
                                 "be-relationship-id",
                                 "parent-id-col" // 원본 컬럼 ID
                         )),
+                List.of(),
                 List.of(
                         // 전파된 제약조건 컬럼
                         new AffectedMappingResponse.PropagatedConstraintColumn(

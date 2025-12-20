@@ -11,6 +11,7 @@ import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.Pro
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedConstraintColumn;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedEntities;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedIndexColumn;
+import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedRelationshipColumn;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
@@ -57,6 +58,7 @@ public class AffectedEntitiesSaver {
             List<Mono<Void>> saveTasks = new ArrayList<>();
 
             List<PropagatedColumn> propagatedColumns = new ArrayList<>();
+            List<PropagatedRelationshipColumn> propagatedRelationshipColumns = new ArrayList<>();
             List<PropagatedConstraintColumn> propagatedConstraintColumns = new ArrayList<>();
             List<PropagatedIndexColumn> propagatedIndexColumns = new ArrayList<>();
 
@@ -211,6 +213,7 @@ public class AffectedEntitiesSaver {
                     .flatMap(task -> task)
                     .then(Mono.just(new PropagatedEntities(
                             propagatedColumns,
+                            propagatedRelationshipColumns,
                             propagatedConstraintColumns,
                             propagatedIndexColumns)));
         });

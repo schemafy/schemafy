@@ -351,6 +351,7 @@ class ConstraintServiceTest {
                                 "be-constraint-id",
                                 "parent-id-col" // 원본 컬럼 ID
                         )),
+                List.of(),
                 List.of(
                         // 전파된 제약조건 컬럼
                         new AffectedMappingResponse.PropagatedConstraintColumn(
@@ -571,6 +572,7 @@ class ConstraintServiceTest {
                 .build();
 
         AffectedMappingResponse.PropagatedEntities propagatedEntities = new AffectedMappingResponse.PropagatedEntities(
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of());
