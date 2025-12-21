@@ -131,7 +131,8 @@ class PropagationE2ETest {
         assertThat(state.propagatedColumnId()).isNotBlank();
         assertThat(state.propagatedSourceType())
                 .isEqualTo(EntityType.RELATIONSHIP.name());
-        assertThat(state.propagatedSourceId()).isEqualTo(state.relationshipId());
+        assertThat(state.propagatedSourceId())
+                .isEqualTo(state.relationshipId());
         assertThat(state.propagatedSourceColumnId())
                 .isEqualTo(state.parentColumnId());
         assertThat(state.propagatedConstraintId()).isNotBlank();
@@ -161,7 +162,8 @@ class PropagationE2ETest {
         assertThat(state.propagatedConstraintColumnId()).isEmpty();
         assertThat(state.propagatedSourceType())
                 .isEqualTo(EntityType.RELATIONSHIP.name());
-        assertThat(state.propagatedSourceId()).isEqualTo(state.relationshipId());
+        assertThat(state.propagatedSourceId())
+                .isEqualTo(state.relationshipId());
         assertThat(state.propagatedSourceColumnId())
                 .isEqualTo(state.parentColumnId());
     }
