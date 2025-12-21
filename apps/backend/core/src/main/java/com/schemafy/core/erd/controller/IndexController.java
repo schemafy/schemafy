@@ -14,6 +14,8 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexColumnSortDirRequest;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexTypeRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
@@ -64,6 +66,15 @@ public class IndexController {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+    @PutMapping("/indexes/{indexId}/type")
+    public Mono<BaseResponse<IndexResponse>> updateIndexType(
+            @PathVariable String indexId,
+            @RequestBody UpdateIndexTypeRequest request) {
+        return indexService.updateIndexType(indexId, request)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/indexes/{indexId}/columns")
     public Mono<BaseResponse<IndexColumnResponse>> addColumnToIndex(
             @PathVariable String indexId,
@@ -73,6 +84,17 @@ public class IndexController {
                     new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
         }
         return indexService.addColumnToIndex(request)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+    @PutMapping("/indexes/{indexId}/columns/{indexColumnId}/sort-dir")
+    public Mono<BaseResponse<IndexColumnResponse>> updateIndexColumnSortDir(
+            @PathVariable String indexId,
+            @PathVariable String indexColumnId,
+            @RequestBody UpdateIndexColumnSortDirRequest request) {
+        return indexService
+                .updateIndexColumnSortDir(indexId, indexColumnId, request)
                 .map(BaseResponse::success);
     }
 

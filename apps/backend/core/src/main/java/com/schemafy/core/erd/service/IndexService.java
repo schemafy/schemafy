@@ -3,12 +3,15 @@ package com.schemafy.core.erd.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexColumnSortDirRequest;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexTypeRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
@@ -27,6 +30,10 @@ import validation.Validation;
 @Service
 @RequiredArgsConstructor
 public class IndexService {
+
+    private static final Set<String> VALID_INDEX_TYPES = Set
+            .of("BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER");
+    private static final Set<String> VALID_SORT_DIRS = Set.of("ASC", "DESC");
 
     private final ValidationClient validationClient;
     private final IndexRepository indexRepository;
@@ -188,12 +195,46 @@ public class IndexService {
                 .map(IndexResponse::from);
     }
 
+    public Mono<IndexResponse> updateIndexType(
+            String indexId,
+            UpdateIndexTypeRequest request) {
+        return normalizeValue(request.type(), VALID_INDEX_TYPES)
+                .flatMap(normalizedType -> indexRepository
+                        .findByIdAndDeletedAtIsNull(indexId)
+                        .switchIfEmpty(Mono.error(new BusinessException(
+                                ErrorCode.ERD_INDEX_NOT_FOUND)))
+                        .doOnNext(index -> index.setType(normalizedType))
+                        .flatMap(indexRepository::save)
+                        .map(IndexResponse::from));
+    }
+
     public Mono<IndexColumnResponse> addColumnToIndex(
             Validation.AddColumnToIndexRequest request) {
         return validationClient.addColumnToIndex(request)
                 .then(indexColumnRepository
                         .save(ErdMapper.toEntity(request.getIndexColumn())))
                 .map(IndexColumnResponse::from);
+    }
+
+    public Mono<IndexColumnResponse> updateIndexColumnSortDir(
+            String indexId,
+            String indexColumnId,
+            UpdateIndexColumnSortDirRequest request) {
+        return normalizeValue(request.sortDir(), VALID_SORT_DIRS)
+                .flatMap(normalizedSortDir -> indexColumnRepository
+                        .findByIdAndDeletedAtIsNull(indexColumnId)
+                        .switchIfEmpty(Mono.error(new BusinessException(
+                                ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
+                        .flatMap(indexColumn -> {
+                            if (!indexId.equals(indexColumn.getIndexId())) {
+                                return Mono.error(new BusinessException(
+                                        ErrorCode.COMMON_INVALID_PARAMETER));
+                            }
+
+                            indexColumn.setSortDir(normalizedSortDir);
+                            return indexColumnRepository.save(indexColumn);
+                        })
+                        .map(IndexColumnResponse::from));
     }
 
     public Mono<Void> removeColumnFromIndex(
@@ -227,6 +268,22 @@ public class IndexService {
                 .doOnNext(Index::delete)
                 .flatMap(indexRepository::save)
                 .then();
+    }
+
+    private Mono<String> normalizeValue(String value,
+            Set<String> validValues) {
+        if (value == null || value.isBlank()) {
+            return Mono.error(new BusinessException(
+                    ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
+        String normalized = value.trim().toUpperCase();
+        if (!validValues.contains(normalized)) {
+            return Mono.error(new BusinessException(
+                    ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
+        return Mono.just(normalized);
     }
 
     public Mono<Void> deleteIndex(

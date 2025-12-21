@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexColumnSortDirRequest;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexTypeRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
@@ -314,6 +316,66 @@ class IndexServiceTest {
     }
 
     @Test
+    @DisplayName("updateIndexType: 존재하면 타입을 변경한다")
+    void updateIndexType_success() {
+        Index saved = indexRepository.save(
+                Index.builder()
+                        .tableId("table-1")
+                        .name("idx_test")
+                        .type("BTREE")
+                        .comment("")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexType(
+                saved.getId(),
+                new UpdateIndexTypeRequest("hash")))
+                .assertNext(updated -> {
+                    assertThat(updated.getId()).isEqualTo(saved.getId());
+                    assertThat(updated.getType()).isEqualTo("HASH");
+                })
+                .verifyComplete();
+
+        StepVerifier.create(indexRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.getType())
+                        .isEqualTo("HASH"))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("updateIndexType: 존재하지 않으면 에러를 반환한다")
+    void updateIndexType_notFound() {
+        StepVerifier.create(indexService.updateIndexType(
+                "non-existent",
+                new UpdateIndexTypeRequest("BTREE")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ERD_INDEX_NOT_FOUND)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("updateIndexType: 유효하지 않은 타입이면 에러를 반환한다")
+    void updateIndexType_invalidType() {
+        Index saved = indexRepository.save(
+                Index.builder()
+                        .tableId("table-1")
+                        .name("idx_test")
+                        .type("BTREE")
+                        .comment("")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexType(
+                saved.getId(),
+                new UpdateIndexTypeRequest("INVALID")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+                .verify();
+    }
+
+    @Test
     @DisplayName("addColumnToIndex: 인덱스에 컬럼을 추가한다")
     void addColumnToIndex_success() {
         Validation.AddColumnToIndexRequest request = Validation.AddColumnToIndexRequest
@@ -349,6 +411,91 @@ class IndexServiceTest {
                     assertThat(found.getColumnId()).isEqualTo("column-1");
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("updateIndexColumnSortDir: 존재하면 정렬 방향을 변경한다")
+    void updateIndexColumnSortDir_success() {
+        IndexColumn saved = indexColumnRepository.save(
+                IndexColumn.builder()
+                        .indexId("index-1")
+                        .columnId("column-1")
+                        .seqNo(1)
+                        .sortDir("ASC")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexColumnSortDir(
+                "index-1",
+                saved.getId(),
+                new UpdateIndexColumnSortDirRequest("DESC")))
+                .assertNext(updated -> {
+                    assertThat(updated.getId()).isEqualTo(saved.getId());
+                    assertThat(updated.getSortDir()).isEqualTo("DESC");
+                })
+                .verifyComplete();
+
+        StepVerifier.create(indexColumnRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.getSortDir())
+                        .isEqualTo("DESC"))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("updateIndexColumnSortDir: 존재하지 않으면 에러를 반환한다")
+    void updateIndexColumnSortDir_notFound() {
+        StepVerifier.create(indexService.updateIndexColumnSortDir(
+                "index-1",
+                "non-existent",
+                new UpdateIndexColumnSortDirRequest("ASC")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("updateIndexColumnSortDir: indexId가 일치하지 않으면 에러를 반환한다")
+    void updateIndexColumnSortDir_mismatchIndexId() {
+        IndexColumn saved = indexColumnRepository.save(
+                IndexColumn.builder()
+                        .indexId("index-1")
+                        .columnId("column-1")
+                        .seqNo(1)
+                        .sortDir("ASC")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexColumnSortDir(
+                "index-2",
+                saved.getId(),
+                new UpdateIndexColumnSortDirRequest("DESC")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("updateIndexColumnSortDir: 유효하지 않은 정렬 방향이면 에러를 반환한다")
+    void updateIndexColumnSortDir_invalidSortDir() {
+        IndexColumn saved = indexColumnRepository.save(
+                IndexColumn.builder()
+                        .indexId("index-1")
+                        .columnId("column-1")
+                        .seqNo(1)
+                        .sortDir("ASC")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexColumnSortDir(
+                "index-1",
+                saved.getId(),
+                new UpdateIndexColumnSortDirRequest("INVALID")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+                .verify();
     }
 
     @Test
