@@ -1270,6 +1270,38 @@ include::{snippets}/index-update-name/response-fields.adoc[]
 
 ---
 
+==== Index 타입 변경
+
+인덱스 타입을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/indexes/{indexId}/type
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-update-type/http-request.adoc[]
+include::{snippets}/index-update-type/path-parameters.adoc[]
+include::{snippets}/index-update-type/request-headers.adoc[]
+include::{snippets}/index-update-type/request-fields.adoc[]
+include::{snippets}/index-update-type/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-update-type/response-headers.adoc[]
+include::{snippets}/index-update-type/response-body.adoc[]
+include::{snippets}/index-update-type/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-update-type/response-fields.adoc[]
+
+---
+
 ==== Index에 컬럼 추가
 
 인덱스에 컬럼을 추가합니다.
@@ -1299,6 +1331,38 @@ include::{snippets}/index-add-column/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/index-add-column/response-fields.adoc[]
+
+---
+
+==== Index 컬럼 정렬 방향 변경
+
+인덱스 컬럼의 정렬 방향을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/indexes/{indexId}/columns/{indexColumnId}/sort-dir
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-column-update-sort-dir/http-request.adoc[]
+include::{snippets}/index-column-update-sort-dir/path-parameters.adoc[]
+include::{snippets}/index-column-update-sort-dir/request-headers.adoc[]
+include::{snippets}/index-column-update-sort-dir/request-fields.adoc[]
+include::{snippets}/index-column-update-sort-dir/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-column-update-sort-dir/response-headers.adoc[]
+include::{snippets}/index-column-update-sort-dir/response-body.adoc[]
+include::{snippets}/index-column-update-sort-dir/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-column-update-sort-dir/response-fields.adoc[]
 
 ---
 
