@@ -239,7 +239,7 @@ public class ProjectService {
                                 ErrorCode.CANNOT_CHANGE_OWN_ROLE));
                     }
 
-                    if (isChangeAllowRole(targetMember, request.role(), userId)) {
+                    if (requiresOwnerAdminProtection(targetMember, request.role())) {
                         return validateOwnerOrAdminProtection(projectId)
                                 .then(Mono.defer(() -> {
                                     targetMember.updateRole(request.role());
@@ -258,26 +258,24 @@ public class ProjectService {
                 .as(transactionalOperator::transactional);
     }
 
-    // TODO: 역할 변경에 대한 정책 반영 필요
-    private boolean isChangeAllowRole(ProjectMember targetMember, ProjectRole newRole, String userId) {
-        // 사용자가 자신의 역할을 변경하려는 경우 허용하지 않음
-        if (targetMember.getUserId().equals(userId)) {
-            return false;
+    /**
+     * OWNER 또는 ADMIN 역할이 하향 변경될 때 마지막 관리자 보호 검증이 필요한지 확인
+     * removeMember()의 패턴과 동일하게 OWNER/ADMIN 변경 시에만 보호 검증 수행
+     */
+    private boolean requiresOwnerAdminProtection(ProjectMember targetMember, ProjectRole newRole) {
+        ProjectRole currentRole = targetMember.getRoleAsEnum();
+
+        // OWNER 역할이 하향되는 경우 (OWNER → ADMIN/EDITOR/COMMENTER/VIEWER)
+        if (currentRole == ProjectRole.OWNER && newRole != ProjectRole.OWNER) {
+            return true;
         }
 
-        ProjectRole targetRole = targetMember.getRoleAsEnum();
-
-        // 소유자 역할은 다른 역할로 변경할 수 없음
-        if (targetRole == ProjectRole.OWNER && newRole != ProjectRole.OWNER) {
-            return false;
+        // ADMIN 역할이 하향되는 경우 (ADMIN → EDITOR/COMMENTER/VIEWER)
+        if (currentRole == ProjectRole.ADMIN && !newRole.isAdmin()) {
+            return true;
         }
 
-        // 관리자는 최소한 관리자 역할을 유지해야 함
-        if (targetRole == ProjectRole.ADMIN && !newRole.isAdmin()) {
-            return false;
-        }
-
-        return true; // 그 외의 경우에는 변경 허용
+        return false;  // 일반 멤버 역할 변경 또는 상향 변경은 보호 검증은 현재는 미적용
     }
 
     /**
