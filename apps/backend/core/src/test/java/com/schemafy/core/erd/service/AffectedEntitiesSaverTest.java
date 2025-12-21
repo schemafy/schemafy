@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
@@ -173,7 +174,7 @@ class AffectedEntitiesSaverTest {
                         after,
                         relationshipId,
                         relationshipId,
-                        "RELATIONSHIP",
+                        EntityType.RELATIONSHIP.name(),
                         Set.of());
 
         StepVerifier.create(result)
@@ -185,7 +186,7 @@ class AffectedEntitiesSaverTest {
                     assertThat(propagatedColumn.tableId())
                             .isEqualTo(childTableId);
                     assertThat(propagatedColumn.sourceType())
-                            .isEqualTo("RELATIONSHIP");
+                            .isEqualTo(EntityType.RELATIONSHIP.name());
                     assertThat(propagatedColumn.sourceId())
                             .isEqualTo(relationshipId);
                     assertThat(propagatedColumn.sourceColumnId())
@@ -203,7 +204,7 @@ class AffectedEntitiesSaverTest {
                     assertThat(propagatedRelationshipColumn.seqNo())
                             .isEqualTo(1);
                     assertThat(propagatedRelationshipColumn.sourceType())
-                            .isEqualTo("RELATIONSHIP");
+                            .isEqualTo(EntityType.RELATIONSHIP.name());
                     assertThat(propagatedRelationshipColumn.sourceId())
                             .isEqualTo(relationshipId);
 
@@ -256,7 +257,7 @@ class AffectedEntitiesSaverTest {
                         after,
                         null,
                         sourceId,
-                        "RELATIONSHIP",
+                        EntityType.RELATIONSHIP.name(),
                         Set.of())
                 .flatMap(propagated -> {
                     assertThat(propagated.constraints()).hasSize(1);
@@ -281,7 +282,7 @@ class AffectedEntitiesSaverTest {
                             .constraints().get(0);
 
                     assertThat(propagatedConstraint.sourceType())
-                            .isEqualTo("RELATIONSHIP");
+                            .isEqualTo(EntityType.RELATIONSHIP.name());
                     assertThat(propagatedConstraint.sourceId())
                             .isEqualTo(sourceId);
                     assertThat(propagatedConstraint.tableId())
@@ -397,7 +398,7 @@ class AffectedEntitiesSaverTest {
                         after,
                         relationshipId,
                         relationshipId,
-                        "RELATIONSHIP",
+                        EntityType.RELATIONSHIP.name(),
                         Set.of())
                 .flatMap(propagated -> {
                     assertThat(propagated.relationshipColumns()).hasSize(1);
@@ -550,7 +551,7 @@ class AffectedEntitiesSaverTest {
                         after,
                         constraintId,
                         constraintId,
-                        "CONSTRAINT",
+                        EntityType.CONSTRAINT.name(),
                         Set.of(constraintColumnId));
 
         StepVerifier.create(result)
@@ -562,7 +563,7 @@ class AffectedEntitiesSaverTest {
                     assertThat(propagatedColumn.tableId())
                             .isEqualTo(childTableId);
                     assertThat(propagatedColumn.sourceType())
-                            .isEqualTo("CONSTRAINT");
+                            .isEqualTo(EntityType.CONSTRAINT.name());
                     assertThat(propagatedColumn.sourceId())
                             .isEqualTo(constraintId);
                     assertThat(propagatedColumn.sourceColumnId())
@@ -576,7 +577,7 @@ class AffectedEntitiesSaverTest {
                     assertThat(propagatedRelationshipColumn.refColumnId())
                             .isEqualTo(parentColumnId);
                     assertThat(propagatedRelationshipColumn.sourceType())
-                            .isEqualTo("CONSTRAINT");
+                            .isEqualTo(EntityType.CONSTRAINT.name());
                     assertThat(propagatedRelationshipColumn.sourceId())
                             .isEqualTo(constraintId);
 
@@ -710,7 +711,7 @@ class AffectedEntitiesSaverTest {
                         after,
                         null,
                         relationshipId,
-                        "RELATIONSHIP",
+                        EntityType.RELATIONSHIP.name(),
                         Set.of(),
                         Set.of(requestRelationshipColumnId));
 
@@ -821,7 +822,7 @@ class AffectedEntitiesSaverTest {
                         after,
                         null,
                         constraintId,
-                        "CONSTRAINT",
+                        EntityType.CONSTRAINT.name(),
                         Set.of(),
                         Set.of(constraintId, requestConstraintColumnId));
 
@@ -921,7 +922,7 @@ class AffectedEntitiesSaverTest {
                         after,
                         null,
                         sourceId,
-                        "RELATIONSHIP",
+                        EntityType.RELATIONSHIP.name(),
                         Set.of(),
                         Set.of());
 
@@ -955,7 +956,7 @@ class AffectedEntitiesSaverTest {
                     assertThat(propagatedIndexColumn.columnId())
                             .isEqualTo(savedColumnId);
                     assertThat(propagatedIndexColumn.sourceType())
-                            .isEqualTo("RELATIONSHIP");
+                            .isEqualTo(EntityType.RELATIONSHIP.name());
                     assertThat(propagatedIndexColumn.sourceId())
                             .isEqualTo(sourceId);
                 })

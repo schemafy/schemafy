@@ -68,7 +68,7 @@ public class ConstraintService {
                                             updatedDatabase,
                                             savedConstraint.getId(),
                                             savedConstraint.getId(),
-                                            "CONSTRAINT",
+                                            EntityType.CONSTRAINT.name(),
                                             Set.of(),
                                             excludePropagatedIds)
                                     .map(saveResult -> {
@@ -167,7 +167,7 @@ public class ConstraintService {
                                             updatedDatabase,
                                             savedConstraintColumn.getId(),
                                             request.getConstraintId(),
-                                            "CONSTRAINT")
+                                            EntityType.CONSTRAINT.name())
                                     .map(propagated -> AffectedMappingResponse
                                             .of(
                                                     request,

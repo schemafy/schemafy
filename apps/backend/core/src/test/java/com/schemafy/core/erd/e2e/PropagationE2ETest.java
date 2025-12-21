@@ -21,6 +21,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
@@ -128,9 +129,9 @@ class PropagationE2ETest {
         assertThat(propagated.path("indexColumns")).isEmpty();
 
         assertThat(state.propagatedColumnId()).isNotBlank();
-        assertThat(state.propagatedSourceType()).isEqualTo("RELATIONSHIP");
-        assertThat(state.propagatedSourceId())
-                .isEqualTo(state.relationshipId());
+        assertThat(state.propagatedSourceType())
+                .isEqualTo(EntityType.RELATIONSHIP.name());
+        assertThat(state.propagatedSourceId()).isEqualTo(state.relationshipId());
         assertThat(state.propagatedSourceColumnId())
                 .isEqualTo(state.parentColumnId());
         assertThat(state.propagatedConstraintId()).isNotBlank();
@@ -158,9 +159,9 @@ class PropagationE2ETest {
 
         assertThat(state.propagatedConstraintId()).isEmpty();
         assertThat(state.propagatedConstraintColumnId()).isEmpty();
-        assertThat(state.propagatedSourceType()).isEqualTo("RELATIONSHIP");
-        assertThat(state.propagatedSourceId())
-                .isEqualTo(state.relationshipId());
+        assertThat(state.propagatedSourceType())
+                .isEqualTo(EntityType.RELATIONSHIP.name());
+        assertThat(state.propagatedSourceId()).isEqualTo(state.relationshipId());
         assertThat(state.propagatedSourceColumnId())
                 .isEqualTo(state.parentColumnId());
     }
@@ -608,7 +609,7 @@ class PropagationE2ETest {
         JsonNode propagatedColumn = propagated.path("columns").get(0);
         String propagatedColumnId = propagatedColumn.path("columnId").asText();
         assertThat(propagatedColumn.path("sourceType").asText())
-                .isEqualTo("CONSTRAINT");
+                .isEqualTo(EntityType.CONSTRAINT.name());
         assertThat(propagatedColumn.path("sourceId").asText())
                 .isEqualTo(state.parentPkId());
         assertThat(propagatedColumn.path("sourceColumnId").asText())

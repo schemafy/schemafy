@@ -18,6 +18,7 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
@@ -298,7 +299,7 @@ class ConstraintServiceTest {
         // then
         String persistedConstraintColumnId = "be-constraint-col-1";
         given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
-                any(), any(), eq("CONSTRAINT"), any(), any()))
+                any(), any(), eq(EntityType.CONSTRAINT.name()), any(), any()))
                 .willReturn(Mono.just(
                         new AffectedEntitiesSaver.SaveResult(
                                 AffectedMappingResponse.PropagatedEntities
@@ -336,7 +337,8 @@ class ConstraintServiceTest {
 
         verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
                 afterDbCaptor.capture(), anyString(), anyString(),
-                eq("CONSTRAINT"), any(), excludePropagatedCaptor.capture());
+                eq(EntityType.CONSTRAINT.name()), any(),
+                excludePropagatedCaptor.capture());
 
         assertThat(containsConstraintColumnId(afterDbCaptor.getValue(),
                 "fe-constraint-col-1"))
@@ -534,7 +536,7 @@ class ConstraintServiceTest {
                                     List.of(new AffectedMappingResponse.PropagatedColumn(
                                             "propagated-parent-id-col",
                                             "child-table",
-                                            "CONSTRAINT",
+                                            EntityType.CONSTRAINT.name(),
                                             sourceId,
                                             "parent-id-col")),
                                     List.of(),
@@ -543,7 +545,7 @@ class ConstraintServiceTest {
                                             "propagated-constraint-col",
                                             "child-pk-constraint",
                                             "propagated-parent-id-col",
-                                            "CONSTRAINT",
+                                            EntityType.CONSTRAINT.name(),
                                             sourceId)),
                                     List.of()),
                             new IdMappings(Map.of(), Map.of(), Map.of(),
@@ -580,7 +582,7 @@ class ConstraintServiceTest {
                     assertThat(propagatedColumn.tableId())
                             .isEqualTo("child-table");
                     assertThat(propagatedColumn.sourceType())
-                            .isEqualTo("CONSTRAINT");
+                            .isEqualTo(EntityType.CONSTRAINT.name());
                     assertThat(propagatedColumn.sourceId())
                             .isEqualTo(savedConstraintId);
                     assertThat(propagatedColumn.sourceColumnId())
@@ -597,7 +599,7 @@ class ConstraintServiceTest {
                     assertThat(propagatedConstraintColumn.columnId())
                             .isEqualTo("propagated-parent-id-col");
                     assertThat(propagatedConstraintColumn.sourceType())
-                            .isEqualTo("CONSTRAINT");
+                            .isEqualTo(EntityType.CONSTRAINT.name());
                     assertThat(propagatedConstraintColumn.sourceId())
                             .isEqualTo(savedConstraintId);
 

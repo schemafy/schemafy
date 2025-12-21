@@ -19,6 +19,7 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
@@ -351,7 +352,8 @@ class RelationshipServiceTest {
         // then
         String persistedRelationshipColumnId = "be-relationship-col-1";
         given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
-                any(), any(), eq("RELATIONSHIP"), any(), any()))
+                any(), any(), eq(EntityType.RELATIONSHIP.name()), any(),
+                any()))
                 .willReturn(Mono.just(
                         new AffectedEntitiesSaver.SaveResult(
                                 AffectedMappingResponse.PropagatedEntities
@@ -389,7 +391,8 @@ class RelationshipServiceTest {
 
         verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
                 afterDbCaptor.capture(), anyString(), anyString(),
-                eq("RELATIONSHIP"), any(), excludePropagatedCaptor.capture());
+                eq(EntityType.RELATIONSHIP.name()), any(),
+                excludePropagatedCaptor.capture());
 
         assertThat(containsRelationshipColumnId(afterDbCaptor.getValue(),
                 "fe-relationship-col-1"))
@@ -613,7 +616,7 @@ class RelationshipServiceTest {
                                     List.of(new AffectedMappingResponse.PropagatedColumn(
                                             "be-fk-column-id",
                                             "child-table",
-                                            "RELATIONSHIP",
+                                            EntityType.RELATIONSHIP.name(),
                                             sourceId,
                                             "parent-id-col")),
                                     List.of(),
@@ -622,7 +625,7 @@ class RelationshipServiceTest {
                                             "propagated-constraint-col",
                                             "child-pk-constraint",
                                             "be-fk-column-id",
-                                            "RELATIONSHIP",
+                                            EntityType.RELATIONSHIP.name(),
                                             sourceId)),
                                     List.of()),
                             new IdMappings(Map.of(), Map.of(), Map.of(),
@@ -659,7 +662,7 @@ class RelationshipServiceTest {
                     assertThat(propagatedColumn.tableId())
                             .isEqualTo("child-table");
                     assertThat(propagatedColumn.sourceType())
-                            .isEqualTo("RELATIONSHIP");
+                            .isEqualTo(EntityType.RELATIONSHIP.name());
                     assertThat(propagatedColumn.sourceId())
                             .isEqualTo(savedRelationshipId);
                     assertThat(propagatedColumn.sourceColumnId())
@@ -676,7 +679,7 @@ class RelationshipServiceTest {
                     assertThat(propagatedConstraintColumn.columnId())
                             .isEqualTo("be-fk-column-id");
                     assertThat(propagatedConstraintColumn.sourceType())
-                            .isEqualTo("RELATIONSHIP");
+                            .isEqualTo(EntityType.RELATIONSHIP.name());
                     assertThat(propagatedConstraintColumn.sourceId())
                             .isEqualTo(savedRelationshipId);
 

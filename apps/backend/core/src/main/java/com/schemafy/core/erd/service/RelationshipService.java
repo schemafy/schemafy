@@ -71,7 +71,7 @@ public class RelationshipService {
                                             updatedDatabase,
                                             savedRelationship.getId(),
                                             savedRelationship.getId(),
-                                            "RELATIONSHIP",
+                                            EntityType.RELATIONSHIP.name(),
                                             Set.of(),
                                             excludePropagatedIds)
                                     .map(saveResult -> {
@@ -199,7 +199,7 @@ public class RelationshipService {
                                             updatedDatabase,
                                             savedRelationshipColumn.getId(),
                                             request.getRelationshipId(),
-                                            "RELATIONSHIP")
+                                            EntityType.RELATIONSHIP.name())
                                     .map(propagated -> AffectedMappingResponse
                                             .of(
                                                     request,
