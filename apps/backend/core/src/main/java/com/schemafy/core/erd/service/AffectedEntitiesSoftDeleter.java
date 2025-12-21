@@ -77,7 +77,8 @@ public class AffectedEntitiesSoftDeleter {
                 removedRelationshipColumns));
     }
 
-    public Mono<Void> softDeleteEntities(ValidationDatabaseEntityIds idsToDelete) {
+    public Mono<Void> softDeleteEntities(
+            ValidationDatabaseEntityIds idsToDelete) {
         return softDelete(idsToDelete.relationshipColumns(),
                 relationshipColumnRepository::findByIdAndDeletedAtIsNull,
                 relationshipColumnRepository::save)
@@ -127,4 +128,5 @@ public class AffectedEntitiesSoftDeleter {
                         .flatMap(saver))
                 .then();
     }
+
 }

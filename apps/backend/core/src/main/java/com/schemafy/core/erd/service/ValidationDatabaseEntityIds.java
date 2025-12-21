@@ -16,7 +16,8 @@ public record ValidationDatabaseEntityIds(
         Set<String> relationships,
         Set<String> relationshipColumns) {
 
-    public static ValidationDatabaseEntityIds from(Validation.Database database) {
+    public static ValidationDatabaseEntityIds from(
+            Validation.Database database) {
         Set<String> schemas = new HashSet<>();
         Set<String> tables = new HashSet<>();
         Set<String> columns = new HashSet<>();
@@ -76,5 +77,5 @@ public record ValidationDatabaseEntityIds(
                 relationships,
                 relationshipColumns);
     }
-}
 
+}

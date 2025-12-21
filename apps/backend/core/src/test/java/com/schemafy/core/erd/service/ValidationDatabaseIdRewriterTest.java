@@ -79,8 +79,10 @@ class ValidationDatabaseIdRewriterTest {
                                                         .setId("relcol-old")
                                                         .setRelationshipId(
                                                                 "relationship-old")
-                                                        .setFkColumnId("col-old")
-                                                        .setRefColumnId("col-old")
+                                                        .setFkColumnId(
+                                                                "col-old")
+                                                        .setRefColumnId(
+                                                                "col-old")
                                                         .setSeqNo(1)
                                                         .build())
                                         .build())
@@ -145,5 +147,5 @@ class ValidationDatabaseIdRewriterTest {
         assertThat(relationshipColumn.getFkColumnId()).isEqualTo("col-new");
         assertThat(relationshipColumn.getRefColumnId()).isEqualTo("col-new");
     }
-}
 
+}

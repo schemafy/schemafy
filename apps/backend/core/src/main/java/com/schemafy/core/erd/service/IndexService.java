@@ -214,10 +214,11 @@ public class IndexService {
                                         .findByIndexIdAndDeletedAtIsNull(
                                                 request.getIndexId())
                                         .hasElements())
-                                .flatMap(hasRemainingColumns -> hasRemainingColumns
-                                        ? Mono.empty()
-                                        : softDeleteIndexIfExists(
-                                                request.getIndexId()))))
+                                .flatMap(
+                                        hasRemainingColumns -> hasRemainingColumns
+                                                ? Mono.empty()
+                                                : softDeleteIndexIfExists(
+                                                        request.getIndexId()))))
                 .then();
     }
 

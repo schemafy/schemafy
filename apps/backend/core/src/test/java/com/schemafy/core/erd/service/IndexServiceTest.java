@@ -409,7 +409,8 @@ class IndexServiceTest {
                 .verifyComplete();
 
         StepVerifier
-                .create(indexColumnRepository.findById(savedIndexColumn.getId()))
+                .create(indexColumnRepository
+                        .findById(savedIndexColumn.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
                 .verifyComplete();
     }

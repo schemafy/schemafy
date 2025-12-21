@@ -12,7 +12,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
 import org.mockito.ArgumentCaptor;
 
 import com.schemafy.core.common.exception.BusinessException;
@@ -29,10 +28,9 @@ import com.schemafy.core.validation.client.ValidationClient;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import validation.Validation;
-
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -323,7 +321,8 @@ class ConstraintServiceTest {
 
                     assertThat(response.constraintColumns())
                             .containsKey(savedConstraintId);
-                    assertThat(response.constraintColumns().get(savedConstraintId))
+                    assertThat(
+                            response.constraintColumns().get(savedConstraintId))
                             .containsEntry("fe-constraint-col-1",
                                     persistedConstraintColumnId);
                 })
@@ -341,7 +340,7 @@ class ConstraintServiceTest {
 
         assertThat(containsConstraintColumnId(afterDbCaptor.getValue(),
                 "fe-constraint-col-1"))
-                        .isTrue();
+                .isTrue();
         assertThat(excludePropagatedCaptor.getValue())
                 .contains("fe-constraint-col-1");
     }
@@ -1036,7 +1035,8 @@ class ConstraintServiceTest {
                         .getConstraintsList()) {
                     for (Validation.ConstraintColumn constraintColumn : constraint
                             .getColumnsList()) {
-                        if (constraintColumn.getId().equals(constraintColumnId)) {
+                        if (constraintColumn.getId()
+                                .equals(constraintColumnId)) {
                             return true;
                         }
                     }

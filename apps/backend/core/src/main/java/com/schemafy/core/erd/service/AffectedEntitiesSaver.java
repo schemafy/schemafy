@@ -191,7 +191,8 @@ public class AffectedEntitiesSaver {
                     }
 
                     for (Validation.Index index : table.getIndexesList()) {
-                        if (shouldSaveEntity(index.getId(), index.getIsAffected(),
+                        if (shouldSaveEntity(index.getId(),
+                                index.getIsAffected(),
                                 beforeIds, excludedIds)) {
                             indexesToSave.add(index);
                         }
@@ -238,7 +239,8 @@ public class AffectedEntitiesSaver {
                         for (Validation.RelationshipColumn relationshipColumn : relationship
                                 .getColumnsList()) {
                             if (shouldSaveEntity(relationshipColumn.getId(),
-                                    relationshipColumn.getIsAffected(), beforeIds,
+                                    relationshipColumn.getIsAffected(),
+                                    beforeIds,
                                     excludedIds)) {
                                 relationshipColumnsToSave
                                         .add(new RelationshipColumnWithRelationshipId(
@@ -387,10 +389,12 @@ public class AffectedEntitiesSaver {
                                         relationship.getTgtTableId(),
                                         tableIdMap));
                                 return relationshipRepository.save(entity)
-                                        .doOnNext(savedRelationship -> relationshipIdMap
-                                                .put(relationship.getId(),
-                                                        savedRelationship
-                                                                .getId()))
+                                        .doOnNext(
+                                                savedRelationship -> relationshipIdMap
+                                                        .put(relationship
+                                                                .getId(),
+                                                                savedRelationship
+                                                                        .getId()))
                                         .then();
                             }))
                     .then();
@@ -414,8 +418,9 @@ public class AffectedEntitiesSaver {
                                             if (sourceId != null
                                                     && sourceType != null
                                                     && !excludedPropagatedIds
-                                                            .contains(indexColumn
-                                                                    .getId())) {
+                                                            .contains(
+                                                                    indexColumn
+                                                                            .getId())) {
                                                 propagatedIndexColumns
                                                         .add(new PropagatedIndexColumn(
                                                                 savedIndexColumn
@@ -456,8 +461,9 @@ public class AffectedEntitiesSaver {
                                             if (sourceId != null
                                                     && sourceType != null
                                                     && !excludedPropagatedIds
-                                                            .contains(constraintColumn
-                                                                    .getId())) {
+                                                            .contains(
+                                                                    constraintColumn
+                                                                            .getId())) {
                                                 propagatedConstraintColumns
                                                         .add(new PropagatedConstraintColumn(
                                                                 savedConstraintColumn
@@ -477,7 +483,8 @@ public class AffectedEntitiesSaver {
             Mono<Void> saveRelationshipColumnsTask = saveConstraintColumnsTask
                     .thenMany(Flux.fromIterable(relationshipColumnsToSave)
                             .concatMap(item -> {
-                                Validation.RelationshipColumn relationshipColumn = item.relationshipColumn();
+                                Validation.RelationshipColumn relationshipColumn = item
+                                        .relationshipColumn();
 
                                 String relationshipId = remapId(
                                         item.relationshipId(),
@@ -507,8 +514,9 @@ public class AffectedEntitiesSaver {
                                             if (sourceId != null
                                                     && sourceType != null
                                                     && !excludedPropagatedIds
-                                                            .contains(relationshipColumn
-                                                                    .getId())) {
+                                                            .contains(
+                                                                    relationshipColumn
+                                                                            .getId())) {
                                                 propagatedRelationshipColumns
                                                         .add(new PropagatedRelationshipColumn(
                                                                 savedRelationshipColumn
@@ -557,7 +565,8 @@ public class AffectedEntitiesSaver {
                 && !excludedIds.contains(entityId);
     }
 
-    private static String remapId(String originalId, Map<String, String> idMap) {
+    private static String remapId(String originalId,
+            Map<String, String> idMap) {
         String mappedId = idMap.get(originalId);
         return mappedId != null ? mappedId : originalId;
     }
@@ -636,7 +645,8 @@ public class AffectedEntitiesSaver {
         Map<String, String> fkToRefMap = new HashMap<>();
 
         if (EntityType.RELATIONSHIP.name().equals(sourceType)) {
-            Validation.Relationship relationship = findRelationshipById(database,
+            Validation.Relationship relationship = findRelationshipById(
+                    database,
                     sourceId);
             if (relationship == null) {
                 return fkToRefMap;
@@ -649,7 +659,8 @@ public class AffectedEntitiesSaver {
                 }
 
                 fkToRefMap.put(
-                        remapId(relationshipColumn.getFkColumnId(), columnIdMap),
+                        remapId(relationshipColumn.getFkColumnId(),
+                                columnIdMap),
                         remapId(relationshipColumn.getRefColumnId(),
                                 columnIdMap));
             }
@@ -684,7 +695,8 @@ public class AffectedEntitiesSaver {
 
                             fkToRefMap.put(remapId(
                                     relationshipColumn.getFkColumnId(),
-                                    columnIdMap), remapId(
+                                    columnIdMap),
+                                    remapId(
                                             relationshipColumn.getRefColumnId(),
                                             columnIdMap));
                         }

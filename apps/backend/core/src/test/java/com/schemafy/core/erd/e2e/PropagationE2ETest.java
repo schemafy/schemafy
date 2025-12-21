@@ -2,10 +2,6 @@ package com.schemafy.core.erd.e2e;
 
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +9,11 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -128,7 +129,8 @@ class PropagationE2ETest {
 
         assertThat(state.propagatedColumnId()).isNotBlank();
         assertThat(state.propagatedSourceType()).isEqualTo("RELATIONSHIP");
-        assertThat(state.propagatedSourceId()).isEqualTo(state.relationshipId());
+        assertThat(state.propagatedSourceId())
+                .isEqualTo(state.relationshipId());
         assertThat(state.propagatedSourceColumnId())
                 .isEqualTo(state.parentColumnId());
         assertThat(state.propagatedConstraintId()).isNotBlank();
@@ -157,7 +159,8 @@ class PropagationE2ETest {
         assertThat(state.propagatedConstraintId()).isEmpty();
         assertThat(state.propagatedConstraintColumnId()).isEmpty();
         assertThat(state.propagatedSourceType()).isEqualTo("RELATIONSHIP");
-        assertThat(state.propagatedSourceId()).isEqualTo(state.relationshipId());
+        assertThat(state.propagatedSourceId())
+                .isEqualTo(state.relationshipId());
         assertThat(state.propagatedSourceColumnId())
                 .isEqualTo(state.parentColumnId());
     }
@@ -953,7 +956,8 @@ class PropagationE2ETest {
                 .build();
 
         return Validation.CreateSchemaRequest.newBuilder()
-                .setDatabase(Validation.Database.newBuilder().setId(DATABASE_ID))
+                .setDatabase(
+                        Validation.Database.newBuilder().setId(DATABASE_ID))
                 .setSchema(schema)
                 .build();
     }
@@ -1137,7 +1141,8 @@ class PropagationE2ETest {
     private Validation.Relationship buildRelationship(SetupState state,
             String fkColumnId) {
         return buildRelationship(state, List.of(buildRelationshipColumn(
-                state.relationshipColumnId(), state.relationshipId(), fkColumnId,
+                state.relationshipColumnId(), state.relationshipId(),
+                fkColumnId,
                 state.parentColumnId(), 1)));
     }
 
@@ -1187,7 +1192,8 @@ class PropagationE2ETest {
         Validation.Relationship relationship = buildRelationship(state,
                 state.propagatedColumnId());
         List<Validation.Constraint> constraints = List.of();
-        if (state.relationshipKind() == Validation.RelationshipKind.IDENTIFYING) {
+        if (state
+                .relationshipKind() == Validation.RelationshipKind.IDENTIFYING) {
             Validation.Constraint childPk = buildPkConstraint(
                     state.propagatedConstraintId(), state.childTableId(),
                     state.propagatedConstraintColumnId(),
@@ -1200,12 +1206,14 @@ class PropagationE2ETest {
                 constraints, List.of(relationship));
     }
 
-    private Validation.Database buildDatabaseWithRelationship(SetupState state) {
+    private Validation.Database buildDatabaseWithRelationship(
+            SetupState state) {
         Validation.Table parentTable = buildParentTableWithPk(state,
                 List.of(buildColumn(state.parentColumnId(),
                         state.parentTableId(), "id", 1, true)));
         Validation.Table childTable = buildChildTableWithRelationship(state);
-        return buildDatabase(state.schemaId(), List.of(parentTable, childTable));
+        return buildDatabase(state.schemaId(),
+                List.of(parentTable, childTable));
     }
 
     private record SetupState(
@@ -1230,4 +1238,5 @@ class PropagationE2ETest {
     private record SetupResult(SetupState state,
             JsonNode relationshipResponse) {
     }
+
 }

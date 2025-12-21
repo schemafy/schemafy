@@ -2,12 +2,13 @@ package com.schemafy.core.erd.service;
 
 import java.util.Set;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.repository.ColumnRepository;
@@ -19,8 +20,8 @@ import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.TableRepository;
-import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.Column;
+import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 
 import reactor.core.publisher.Mono;
@@ -430,7 +431,8 @@ class AffectedEntitiesSaverTest {
                     assertThat(savedRelationshipColumn.getSrcColumnId())
                             .isEqualTo(relationshipColumn.fkColumnId());
                     assertThat(savedSrcColumn.getId())
-                            .isEqualTo(savedRelationshipColumn.getSrcColumnId());
+                            .isEqualTo(
+                                    savedRelationshipColumn.getSrcColumnId());
                 })
                 .verifyComplete();
     }
@@ -1063,7 +1065,8 @@ class AffectedEntitiesSaverTest {
                                                         .setRelationshipId(
                                                                 relationshipId)
                                                         .setFkColumnId(columnId)
-                                                        .setRefColumnId(columnId)
+                                                        .setRefColumnId(
+                                                                columnId)
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
                                                         .build())

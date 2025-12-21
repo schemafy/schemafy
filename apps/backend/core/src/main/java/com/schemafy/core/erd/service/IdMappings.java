@@ -13,4 +13,3 @@ public record IdMappings(
         Map<String, String> relationships,
         Map<String, String> relationshipColumns) {
 }
-

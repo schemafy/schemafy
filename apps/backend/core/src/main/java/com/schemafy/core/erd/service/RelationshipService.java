@@ -84,7 +84,8 @@ public class RelationshipService {
                                                         request.request()
                                                                 .getDatabase(),
                                                         afterDatabase,
-                                                        saveResult.propagated());
+                                                        saveResult
+                                                                .propagated());
                                     });
                         }));
     }

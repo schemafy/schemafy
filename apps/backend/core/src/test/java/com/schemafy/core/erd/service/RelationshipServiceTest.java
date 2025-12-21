@@ -12,7 +12,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
 import org.mockito.ArgumentCaptor;
 
 import com.schemafy.core.common.exception.BusinessException;
@@ -28,16 +27,15 @@ import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -360,7 +358,8 @@ class RelationshipServiceTest {
                                         .empty(),
                                 new IdMappings(Map.of(), Map.of(), Map.of(),
                                         Map.of(), Map.of(), Map.of(), Map.of(),
-                                        Map.of(), Map.of("fe-relationship-col-1",
+                                        Map.of(),
+                                        Map.of("fe-relationship-col-1",
                                                 persistedRelationshipColumnId)))));
 
         StepVerifier.create(result)
@@ -394,7 +393,7 @@ class RelationshipServiceTest {
 
         assertThat(containsRelationshipColumnId(afterDbCaptor.getValue(),
                 "fe-relationship-col-1"))
-                        .isTrue();
+                .isTrue();
         assertThat(excludePropagatedCaptor.getValue())
                 .contains("fe-relationship-col-1");
     }
@@ -1027,15 +1026,18 @@ class RelationshipServiceTest {
                                                 .setSrcTableId("child-table")
                                                 .setTgtTableId("parent-table")
                                                 .setName("fk_parent")
-                                                .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
+                                                .setKind(
+                                                        Validation.RelationshipKind.NON_IDENTIFYING)
                                                 .addColumns(
                                                         Validation.RelationshipColumn
                                                                 .newBuilder()
-                                                                .setId(savedA.getId())
+                                                                .setId(savedA
+                                                                        .getId())
                                                                 .setRelationshipId(
                                                                         "relationship-1")
                                                                 .setFkColumnId(
-                                                                        fkColumnA.getId())
+                                                                        fkColumnA
+                                                                                .getId())
                                                                 .setRefColumnId(
                                                                         "parent-a")
                                                                 .setSeqNo(1)
@@ -1043,11 +1045,13 @@ class RelationshipServiceTest {
                                                 .addColumns(
                                                         Validation.RelationshipColumn
                                                                 .newBuilder()
-                                                                .setId(savedB.getId())
+                                                                .setId(savedB
+                                                                        .getId())
                                                                 .setRelationshipId(
                                                                         "relationship-1")
                                                                 .setFkColumnId(
-                                                                        fkColumnB.getId())
+                                                                        fkColumnB
+                                                                                .getId())
                                                                 .setRefColumnId(
                                                                         "parent-b")
                                                                 .setSeqNo(2)
@@ -1078,15 +1082,18 @@ class RelationshipServiceTest {
                                                 .setSrcTableId("child-table")
                                                 .setTgtTableId("parent-table")
                                                 .setName("fk_parent")
-                                                .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
+                                                .setKind(
+                                                        Validation.RelationshipKind.NON_IDENTIFYING)
                                                 .addColumns(
                                                         Validation.RelationshipColumn
                                                                 .newBuilder()
-                                                                .setId(savedA.getId())
+                                                                .setId(savedA
+                                                                        .getId())
                                                                 .setRelationshipId(
                                                                         "relationship-1")
                                                                 .setFkColumnId(
-                                                                        fkColumnA.getId())
+                                                                        fkColumnA
+                                                                                .getId())
                                                                 .setRefColumnId(
                                                                         "parent-a")
                                                                 .setSeqNo(1)

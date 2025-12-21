@@ -6,8 +6,7 @@ import validation.Validation;
 
 public final class ValidationDatabaseIdRewriter {
 
-    private ValidationDatabaseIdRewriter() {
-    }
+    private ValidationDatabaseIdRewriter() {}
 
     public static Validation.Database rewrite(
             Validation.Database database,
@@ -133,7 +132,8 @@ public final class ValidationDatabaseIdRewriter {
             Validation.Relationship relationship,
             IdMappings idMappings) {
         Validation.Relationship.Builder builder = relationship.toBuilder()
-                .setId(remapId(relationship.getId(), idMappings.relationships()))
+                .setId(remapId(relationship.getId(),
+                        idMappings.relationships()))
                 .setSrcTableId(remapId(relationship.getSrcTableId(),
                         idMappings.tables()))
                 .setTgtTableId(remapId(relationship.getTgtTableId(),
@@ -155,8 +155,9 @@ public final class ValidationDatabaseIdRewriter {
         return relationshipColumn.toBuilder()
                 .setId(remapId(relationshipColumn.getId(),
                         idMappings.relationshipColumns()))
-                .setRelationshipId(remapId(relationshipColumn.getRelationshipId(),
-                        idMappings.relationships()))
+                .setRelationshipId(
+                        remapId(relationshipColumn.getRelationshipId(),
+                                idMappings.relationships()))
                 .setFkColumnId(remapId(relationshipColumn.getFkColumnId(),
                         idMappings.columns()))
                 .setRefColumnId(remapId(relationshipColumn.getRefColumnId(),
@@ -164,9 +165,10 @@ public final class ValidationDatabaseIdRewriter {
                 .build();
     }
 
-    private static String remapId(String originalId, Map<String, String> idMap) {
+    private static String remapId(String originalId,
+            Map<String, String> idMap) {
         String mappedId = idMap.get(originalId);
         return mappedId != null ? mappedId : originalId;
     }
-}
 
+}
