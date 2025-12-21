@@ -585,6 +585,382 @@ class AffectedEntitiesSaverTest {
     }
 
     @Test
+    @DisplayName("요청 relationshipColumn은 propagated에서 제외된다")
+    void saveAffectedEntitiesResult_excludesRequestedRelationshipColumnFromPropagation() {
+        String schemaId = "schema-1";
+        String parentTableId = "parent-table";
+        String childTableId = "child-table";
+        String parentColumnId = "parent-id";
+        String relationshipId = "relationship-1";
+        String requestRelationshipColumnId = "relcol-request";
+        String propagatedRelationshipColumnId = "relcol-propagated";
+
+        Validation.Database before = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(parentTableId)
+                                .setSchemaId(schemaId)
+                                .setName("parent")
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(childTableId)
+                                .setSchemaId(schemaId)
+                                .setName("child")
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
+                                        .setId(relationshipId)
+                                        .setSrcTableId(childTableId)
+                                        .setTgtTableId(parentTableId)
+                                        .setName("fk_child_parent")
+                                        .setKind(
+                                                Validation.RelationshipKind.NON_IDENTIFYING)
+                                        .setCardinality(
+                                                Validation.RelationshipCardinality.ONE_TO_MANY)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database after = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(parentTableId)
+                                .setSchemaId(schemaId)
+                                .setName("parent")
+                                .setIsAffected(true)
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(parentColumnId)
+                                        .setTableId(parentTableId)
+                                        .setName("id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .setIsAffected(true)
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(childTableId)
+                                .setSchemaId(schemaId)
+                                .setName("child")
+                                .setIsAffected(true)
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId("child-fk-a")
+                                        .setTableId(childTableId)
+                                        .setName("parent_a")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .setIsAffected(true)
+                                        .build())
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId("child-fk-b")
+                                        .setTableId(childTableId)
+                                        .setName("parent_b")
+                                        .setOrdinalPosition(2)
+                                        .setDataType("INT")
+                                        .setIsAffected(true)
+                                        .build())
+                                .addRelationships(Validation.Relationship
+                                        .newBuilder()
+                                        .setId(relationshipId)
+                                        .setSrcTableId(childTableId)
+                                        .setTgtTableId(parentTableId)
+                                        .setName("fk_child_parent")
+                                        .setKind(
+                                                Validation.RelationshipKind.NON_IDENTIFYING)
+                                        .setCardinality(
+                                                Validation.RelationshipCardinality.ONE_TO_MANY)
+                                        .setIsAffected(true)
+                                        .addColumns(
+                                                Validation.RelationshipColumn
+                                                        .newBuilder()
+                                                        .setId(requestRelationshipColumnId)
+                                                        .setRelationshipId(
+                                                                relationshipId)
+                                                        .setFkColumnId(
+                                                                "child-fk-a")
+                                                        .setRefColumnId(
+                                                                parentColumnId)
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .addColumns(
+                                                Validation.RelationshipColumn
+                                                        .newBuilder()
+                                                        .setId(propagatedRelationshipColumnId)
+                                                        .setRelationshipId(
+                                                                relationshipId)
+                                                        .setFkColumnId(
+                                                                "child-fk-b")
+                                                        .setRefColumnId(
+                                                                parentColumnId)
+                                                        .setSeqNo(2)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Mono<AffectedEntitiesSaver.SaveResult> result = affectedEntitiesSaver
+                .saveAffectedEntitiesResult(
+                        before,
+                        after,
+                        null,
+                        relationshipId,
+                        "RELATIONSHIP",
+                        Set.of(),
+                        Set.of(requestRelationshipColumnId));
+
+        StepVerifier.create(result)
+                .assertNext(saveResult -> {
+                    String savedRequestRelationshipColumnId = saveResult
+                            .idMappings()
+                            .relationshipColumns()
+                            .get(requestRelationshipColumnId);
+                    String savedPropagatedRelationshipColumnId = saveResult
+                            .idMappings()
+                            .relationshipColumns()
+                            .get(propagatedRelationshipColumnId);
+
+                    assertThat(savedRequestRelationshipColumnId).isNotNull();
+                    assertThat(savedPropagatedRelationshipColumnId).isNotNull();
+                    assertThat(saveResult.propagated().relationshipColumns())
+                            .extracting(
+                                    AffectedMappingResponse.PropagatedRelationshipColumn::relationshipColumnId)
+                            .containsExactly(
+                                    savedPropagatedRelationshipColumnId);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("요청 constraint/constraintColumn은 propagated에서 제외된다")
+    void saveAffectedEntitiesResult_excludesRequestedConstraintFromPropagation() {
+        String schemaId = "schema-1";
+        String tableId = "table-1";
+        String constraintId = "constraint-1";
+        String columnIdA = "column-a";
+        String columnIdB = "column-b";
+        String requestConstraintColumnId = "constraint-col-request";
+        String propagatedConstraintColumnId = "constraint-col-propagated";
+
+        Validation.Database before = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(tableId)
+                                .setSchemaId(schemaId)
+                                .setName("table")
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database after = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(tableId)
+                                .setSchemaId(schemaId)
+                                .setName("table")
+                                .setIsAffected(true)
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(columnIdA)
+                                        .setTableId(tableId)
+                                        .setName("a")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .setIsAffected(true)
+                                        .build())
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(columnIdB)
+                                        .setTableId(tableId)
+                                        .setName("b")
+                                        .setOrdinalPosition(2)
+                                        .setDataType("INT")
+                                        .setIsAffected(true)
+                                        .build())
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId(constraintId)
+                                        .setTableId(tableId)
+                                        .setName("pk_table")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .setIsAffected(true)
+                                        .addColumns(
+                                                Validation.ConstraintColumn
+                                                        .newBuilder()
+                                                        .setId(requestConstraintColumnId)
+                                                        .setConstraintId(
+                                                                constraintId)
+                                                        .setColumnId(columnIdA)
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .addColumns(
+                                                Validation.ConstraintColumn
+                                                        .newBuilder()
+                                                        .setId(propagatedConstraintColumnId)
+                                                        .setConstraintId(
+                                                                constraintId)
+                                                        .setColumnId(columnIdB)
+                                                        .setSeqNo(2)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Mono<AffectedEntitiesSaver.SaveResult> result = affectedEntitiesSaver
+                .saveAffectedEntitiesResult(
+                        before,
+                        after,
+                        null,
+                        constraintId,
+                        "CONSTRAINT",
+                        Set.of(),
+                        Set.of(constraintId, requestConstraintColumnId));
+
+        StepVerifier.create(result)
+                .assertNext(saveResult -> {
+                    String savedConstraintId = saveResult.idMappings()
+                            .constraints()
+                            .get(constraintId);
+                    String savedRequestConstraintColumnId = saveResult
+                            .idMappings()
+                            .constraintColumns()
+                            .get(requestConstraintColumnId);
+                    String savedPropagatedConstraintColumnId = saveResult
+                            .idMappings()
+                            .constraintColumns()
+                            .get(propagatedConstraintColumnId);
+
+                    assertThat(savedConstraintId).isNotNull();
+                    assertThat(savedRequestConstraintColumnId).isNotNull();
+                    assertThat(savedPropagatedConstraintColumnId).isNotNull();
+
+                    assertThat(saveResult.propagated().constraints()).isEmpty();
+                    assertThat(saveResult.propagated().constraintColumns())
+                            .extracting(
+                                    AffectedMappingResponse.PropagatedConstraintColumn::constraintColumnId)
+                            .containsExactly(
+                                    savedPropagatedConstraintColumnId);
+                    assertThat(saveResult.propagated().constraintColumns()
+                            .get(0)
+                            .constraintId())
+                            .isEqualTo(savedConstraintId);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("전파로 생성된 indexColumn은 propagated.indexColumns로 반환된다")
+    void saveAffectedEntities_propagatedIndexColumn_includedInResponse() {
+        String schemaId = "schema-1";
+        String tableId = "table-1";
+        String columnId = "col-logical";
+        String indexId = "idx-logical";
+        String indexColumnId = "idxcol-logical";
+        String sourceId = "relationship-1";
+
+        Validation.Database before = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(tableId)
+                                .setSchemaId(schemaId)
+                                .setName("table")
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database after = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId(schemaId)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(tableId)
+                                .setSchemaId(schemaId)
+                                .setName("table")
+                                .setIsAffected(true)
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(columnId)
+                                        .setTableId(tableId)
+                                        .setName("id")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("INT")
+                                        .setIsAffected(true)
+                                        .build())
+                                .addIndexes(Validation.Index.newBuilder()
+                                        .setId(indexId)
+                                        .setTableId(tableId)
+                                        .setName("idx_test")
+                                        .setType(Validation.IndexType.BTREE)
+                                        .setIsAffected(true)
+                                        .addColumns(Validation.IndexColumn
+                                                .newBuilder()
+                                                .setId(indexColumnId)
+                                                .setIndexId(indexId)
+                                                .setColumnId(columnId)
+                                                .setSeqNo(1)
+                                                .setSortDir(
+                                                        Validation.IndexSortDir.ASC)
+                                                .setIsAffected(true)
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Mono<AffectedEntitiesSaver.SaveResult> result = affectedEntitiesSaver
+                .saveAffectedEntitiesResult(
+                        before,
+                        after,
+                        null,
+                        sourceId,
+                        "RELATIONSHIP",
+                        Set.of(),
+                        Set.of());
+
+        StepVerifier.create(result)
+                .assertNext(saveResult -> {
+                    String savedColumnId = saveResult.idMappings()
+                            .columns()
+                            .get(columnId);
+                    String savedIndexId = saveResult.idMappings()
+                            .indexes()
+                            .get(indexId);
+                    String savedIndexColumnId = saveResult.idMappings()
+                            .indexColumns()
+                            .get(indexColumnId);
+
+                    assertThat(savedColumnId).isNotNull();
+                    assertThat(savedIndexId).isNotNull();
+                    assertThat(savedIndexColumnId).isNotNull();
+
+                    assertThat(saveResult.propagated().indexColumns())
+                            .hasSize(1);
+                    AffectedMappingResponse.PropagatedIndexColumn propagatedIndexColumn = saveResult
+                            .propagated()
+                            .indexColumns()
+                            .get(0);
+
+                    assertThat(propagatedIndexColumn.indexColumnId())
+                            .isEqualTo(savedIndexColumnId);
+                    assertThat(propagatedIndexColumn.indexId())
+                            .isEqualTo(savedIndexId);
+                    assertThat(propagatedIndexColumn.columnId())
+                            .isEqualTo(savedColumnId);
+                    assertThat(propagatedIndexColumn.sourceType())
+                            .isEqualTo("RELATIONSHIP");
+                    assertThat(propagatedIndexColumn.sourceId())
+                            .isEqualTo(sourceId);
+                })
+                .verifyComplete();
+    }
+
+    @Test
     @DisplayName("saveAffectedEntitiesResult: 저장된 엔티티의 logicalId -> persistedId 매핑을 반환한다")
     void saveAffectedEntitiesResult_returnsIdMappings() {
         String schemaId = "schema-1";

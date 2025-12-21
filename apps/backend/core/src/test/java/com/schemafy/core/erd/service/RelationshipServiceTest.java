@@ -106,6 +106,10 @@ class RelationshipServiceTest {
         given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
                 any(Validation.Database.class), any(), any(), any(), any()))
                 .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any(), any(),
+                any()))
+                .willReturn(Mono.just(emptySaveResult));
 
         given(affectedEntitiesSaver.saveAffectedEntities(any(),
                 any(Validation.Database.class)))
@@ -349,7 +353,8 @@ class RelationshipServiceTest {
         // then
         String persistedRelationshipColumnId = "be-relationship-col-1";
         given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
-                any(), any(), eq("RELATIONSHIP"))).willReturn(Mono.just(
+                any(), any(), eq("RELATIONSHIP"), any(), any()))
+                .willReturn(Mono.just(
                         new AffectedEntitiesSaver.SaveResult(
                                 AffectedMappingResponse.PropagatedEntities
                                         .empty(),
@@ -380,13 +385,18 @@ class RelationshipServiceTest {
         ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
                 .forClass(Validation.Database.class);
 
+        ArgumentCaptor<Set<String>> excludePropagatedCaptor = ArgumentCaptor
+                .forClass(Set.class);
+
         verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
                 afterDbCaptor.capture(), anyString(), anyString(),
-                eq("RELATIONSHIP"));
+                eq("RELATIONSHIP"), any(), excludePropagatedCaptor.capture());
 
         assertThat(containsRelationshipColumnId(afterDbCaptor.getValue(),
                 "fe-relationship-col-1"))
                         .isTrue();
+        assertThat(excludePropagatedCaptor.getValue())
+                .contains("fe-relationship-col-1");
     }
 
     @Test
@@ -596,7 +606,7 @@ class RelationshipServiceTest {
                 any(Validation.CreateRelationshipRequest.class)))
                 .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
-                any(), any(), any()))
+                any(), any(), any(), any(), any()))
                 .willAnswer(invocation -> {
                     String sourceId = invocation.getArgument(3);
                     return Mono.just(new AffectedEntitiesSaver.SaveResult(

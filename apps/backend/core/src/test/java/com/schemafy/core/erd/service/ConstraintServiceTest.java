@@ -2,6 +2,7 @@ package com.schemafy.core.erd.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -99,6 +100,10 @@ class ConstraintServiceTest {
                 .willReturn(Mono.just(emptySaveResult));
         given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
                 any(Validation.Database.class), any(), any(), any(), any()))
+                .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any(), any(),
+                any()))
                 .willReturn(Mono.just(emptySaveResult));
 
         given(affectedEntitiesSaver.saveAffectedEntities(any(),
@@ -295,7 +300,8 @@ class ConstraintServiceTest {
         // then
         String persistedConstraintColumnId = "be-constraint-col-1";
         given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
-                any(), any(), eq("CONSTRAINT"))).willReturn(Mono.just(
+                any(), any(), eq("CONSTRAINT"), any(), any()))
+                .willReturn(Mono.just(
                         new AffectedEntitiesSaver.SaveResult(
                                 AffectedMappingResponse.PropagatedEntities
                                         .empty(),
@@ -326,13 +332,18 @@ class ConstraintServiceTest {
         ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
                 .forClass(Validation.Database.class);
 
+        ArgumentCaptor<Set<String>> excludePropagatedCaptor = ArgumentCaptor
+                .forClass(Set.class);
+
         verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
                 afterDbCaptor.capture(), anyString(), anyString(),
-                eq("CONSTRAINT"));
+                eq("CONSTRAINT"), any(), excludePropagatedCaptor.capture());
 
         assertThat(containsConstraintColumnId(afterDbCaptor.getValue(),
                 "fe-constraint-col-1"))
                         .isTrue();
+        assertThat(excludePropagatedCaptor.getValue())
+                .contains("fe-constraint-col-1");
     }
 
     @Test
@@ -516,7 +527,7 @@ class ConstraintServiceTest {
                 any(Validation.CreateConstraintRequest.class)))
                 .willReturn(Mono.just(mockResponse));
         given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
-                any(), any(), any()))
+                any(), any(), any(), any(), any()))
                 .willAnswer(invocation -> {
                     String sourceId = invocation.getArgument(3);
                     return Mono.just(new AffectedEntitiesSaver.SaveResult(
