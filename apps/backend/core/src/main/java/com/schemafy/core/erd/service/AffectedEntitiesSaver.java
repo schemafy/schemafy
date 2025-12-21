@@ -17,6 +17,7 @@ import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.Pro
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedIndexColumn;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse.PropagatedRelationshipColumn;
 import com.schemafy.core.erd.mapper.ErdMapper;
+import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
@@ -634,7 +635,7 @@ public class AffectedEntitiesSaver {
             Map<String, String> columnIdMap) {
         Map<String, String> fkToRefMap = new HashMap<>();
 
-        if ("RELATIONSHIP".equals(sourceType)) {
+        if (EntityType.RELATIONSHIP.name().equals(sourceType)) {
             Validation.Relationship relationship = findRelationshipById(database,
                     sourceId);
             if (relationship == null) {
@@ -655,7 +656,7 @@ public class AffectedEntitiesSaver {
             return fkToRefMap;
         }
 
-        if ("CONSTRAINT".equals(sourceType)) {
+        if (EntityType.CONSTRAINT.name().equals(sourceType)) {
             Validation.Constraint constraint = findConstraintById(database,
                     sourceId);
             if (constraint == null) {
