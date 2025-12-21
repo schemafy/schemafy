@@ -41,4 +41,27 @@ public interface ProjectMemberRepository
     @Query("SELECT * FROM project_members WHERE id = :id AND deleted_at IS NULL")
     Mono<ProjectMember> findByIdAndNotDeleted(String id);
 
+    @Query("""
+            SELECT pm.role FROM project_members pm
+            INNER JOIN projects p ON pm.project_id = p.id
+            WHERE p.workspace_id = :workspaceId
+              AND pm.user_id = :userId
+              AND pm.deleted_at IS NULL
+              AND p.deleted_at IS NULL
+            ORDER BY p.created_at DESC
+            LIMIT :limit OFFSET :offset
+            """)
+    Flux<String> findRolesByWorkspaceIdAndUserIdWithPaging(String workspaceId,
+            String userId, int limit, int offset);
+
+    @Query("""
+            SELECT COUNT(*) FROM project_members pm
+            INNER JOIN projects p ON pm.project_id = p.id
+            WHERE p.workspace_id = :workspaceId
+              AND pm.user_id = :userId
+              AND pm.deleted_at IS NULL
+              AND p.deleted_at IS NULL
+            """)
+    Mono<Long> countByWorkspaceIdAndUserId(String workspaceId, String userId);
+
 }

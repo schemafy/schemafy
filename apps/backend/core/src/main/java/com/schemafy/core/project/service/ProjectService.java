@@ -1,7 +1,5 @@
 package com.schemafy.core.project.service;
 
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -27,6 +25,7 @@ import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -34,7 +33,6 @@ import reactor.core.publisher.Mono;
 public class ProjectService {
 
     private final TransactionalOperator transactionalOperator;
-    private final TransactionalOperator readOnlyTransactionalOperator;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
@@ -69,30 +67,46 @@ public class ProjectService {
     public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
             String workspaceId, String userId, int page, int size) {
         return validateWorkspaceMemberAccess(workspaceId, userId)
-                .then(projectMemberRepository.findByUserIdAndNotDeleted(userId)
-                        .flatMap(member -> projectRepository
-                                .findByIdAndNotDeleted(member.getProjectId())
-                                .filter(project -> project
-                                        .belongsToWorkspace(workspaceId))
-                                .flatMap(project -> projectMemberRepository
-                                        .countByProjectIdAndNotDeleted(
-                                                project.getId())
-                                        .map(count -> ProjectSummaryResponse.of(
-                                                project,
-                                                ProjectRole.fromString(
-                                                        member.getRole()),
-                                                count))))
-                        .collectList().flatMap(allProjects -> {
-                            int offset = page * size;
-                            int totalElements = allProjects.size();
-                            int start = Math.min(offset, totalElements);
-                            int end = Math.min(offset + size, totalElements);
-                            List<ProjectSummaryResponse> pagedContent = allProjects
-                                    .subList(start, end);
-                            return Mono.just(PageResponse.of(pagedContent, page,
-                                    size, totalElements));
-                        }))
-                .as(readOnlyTransactionalOperator::transactional);
+                .then(Mono.defer(() -> {
+                    int offset = page * size;
+                    return projectMemberRepository
+                            .countByWorkspaceIdAndUserId(workspaceId, userId)
+                            .flatMap(totalElements -> Mono.zip(
+                                    projectRepository
+                                            .findByWorkspaceIdAndUserIdWithPaging(
+                                                    workspaceId, userId, size,
+                                                    offset)
+                                            .collectList(),
+                                    projectMemberRepository
+                                            .findRolesByWorkspaceIdAndUserIdWithPaging(
+                                                    workspaceId, userId, size,
+                                                    offset)
+                                            .collectList())
+                                    .flatMap(tuple -> {
+                                        var projects = tuple.getT1();
+                                        var roles = tuple.getT2();
+                                        return Flux.range(0, projects.size())
+                                                .flatMap(i -> {
+                                                    var project = projects
+                                                            .get(i);
+                                                    var role = ProjectRole
+                                                            .fromString(
+                                                                    roles.get(
+                                                                            i));
+                                                    return projectMemberRepository
+                                                            .countByProjectIdAndNotDeleted(
+                                                                    project.getId())
+                                                            .map(count -> ProjectSummaryResponse
+                                                                    .of(project,
+                                                                            role,
+                                                                            count));
+                                                })
+                                                .collectList()
+                                                .map(content -> PageResponse.of(
+                                                        content, page, size,
+                                                        totalElements));
+                                    }));
+                }));
     }
 
     public Mono<ProjectResponse> getProject(String workspaceId,
@@ -110,8 +124,7 @@ public class ProjectService {
                                 ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
                     return Mono.just(ProjectResponse.from(project));
-                })
-                .as(readOnlyTransactionalOperator::transactional);
+                });
     }
 
     public Mono<ProjectResponse> updateProject(String workspaceId,
@@ -183,8 +196,7 @@ public class ProjectService {
                             .collectList()
                             .map(members -> PageResponse.of(members, page, size,
                                     totalElements));
-                })
-                .as(readOnlyTransactionalOperator::transactional);
+                });
     }
 
     /**

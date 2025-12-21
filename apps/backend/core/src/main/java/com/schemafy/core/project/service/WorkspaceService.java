@@ -1,7 +1,5 @@
 package com.schemafy.core.project.service;
 
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -58,24 +56,18 @@ public class WorkspaceService {
 
     public Mono<PageResponse<WorkspaceSummaryResponse>> getWorkspaces(
             String userId, int page, int size) {
-        return workspaceMemberRepository.findByUserIdAndNotDeleted(userId)
-                .flatMap(member -> workspaceRepository.findByIdAndNotDeleted(
-                        member.getWorkspaceId()).flatMap(
-                                workspace -> workspaceMemberRepository
-                                        .countByWorkspaceIdAndNotDeleted(
-                                                workspace.getId())
-                                        .map(memberCount -> WorkspaceSummaryResponse
-                                                .of(workspace, memberCount))))
-                .collectList().flatMap(allWorkspaces -> {
-                    int offset = page * size;
-                    int totalElements = allWorkspaces.size();
-                    int start = Math.min(offset, totalElements);
-                    int end = Math.min(offset + size, totalElements);
-                    List<WorkspaceSummaryResponse> pagedContent = allWorkspaces
-                            .subList(start, end);
-                    return Mono.just(PageResponse.of(pagedContent, page, size,
-                            totalElements));
-                });
+        int offset = page * size;
+        return workspaceRepository.countByUserId(userId)
+                .flatMap(totalElements -> workspaceRepository
+                        .findByUserIdWithPaging(userId, size, offset)
+                        .flatMap(workspace -> workspaceMemberRepository
+                                .countByWorkspaceIdAndNotDeleted(
+                                        workspace.getId())
+                                .map(memberCount -> WorkspaceSummaryResponse
+                                        .of(workspace, memberCount)))
+                        .collectList()
+                        .map(content -> PageResponse.of(content, page, size,
+                                totalElements)));
     }
 
     public Mono<WorkspaceResponse> getWorkspace(String workspaceId,
