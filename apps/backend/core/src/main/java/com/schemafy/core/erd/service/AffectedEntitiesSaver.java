@@ -72,7 +72,22 @@ public class AffectedEntitiesSaver {
             Set<String> excludeEntityIds) {
         return saveAffectedEntitiesResult(before, after, excludeEntityId,
                 sourceId,
-                sourceType, excludeEntityIds).map(SaveResult::propagated);
+                sourceType, excludeEntityIds, Set.of())
+                .map(SaveResult::propagated);
+    }
+
+    public Mono<PropagatedEntities> saveAffectedEntities(
+            Validation.Database before,
+            Validation.Database after,
+            String excludeEntityId,
+            String sourceId,
+            String sourceType,
+            Set<String> excludeEntityIds,
+            Set<String> excludePropagatedEntityIds) {
+        return saveAffectedEntitiesResult(before, after, excludeEntityId,
+                sourceId,
+                sourceType, excludeEntityIds, excludePropagatedEntityIds)
+                .map(SaveResult::propagated);
     }
 
     public Mono<SaveResult> saveAffectedEntitiesResult(
@@ -100,6 +115,19 @@ public class AffectedEntitiesSaver {
             String sourceId,
             String sourceType,
             Set<String> excludeEntityIds) {
+        return saveAffectedEntitiesResult(before, after, excludeEntityId,
+                sourceId,
+                sourceType, excludeEntityIds, Set.of());
+    }
+
+    public Mono<SaveResult> saveAffectedEntitiesResult(
+            Validation.Database before,
+            Validation.Database after,
+            String excludeEntityId,
+            String sourceId,
+            String sourceType,
+            Set<String> excludeEntityIds,
+            Set<String> excludePropagatedEntityIds) {
         return Mono.defer(() -> {
             Set<String> excludedIds = new HashSet<>();
             if (excludeEntityId != null) {
@@ -108,6 +136,9 @@ public class AffectedEntitiesSaver {
             if (excludeEntityIds != null) {
                 excludedIds.addAll(excludeEntityIds);
             }
+            Set<String> excludedPropagatedIds = excludePropagatedEntityIds != null
+                    ? excludePropagatedEntityIds
+                    : Set.of();
 
             List<PropagatedColumn> propagatedColumns = new ArrayList<>();
             List<PropagatedRelationshipColumn> propagatedRelationshipColumns = new ArrayList<>();
@@ -252,7 +283,10 @@ public class AffectedEntitiesSaver {
                                                     savedColumn.getId());
 
                                             if (sourceId != null
-                                                    && sourceType != null) {
+                                                    && sourceType != null
+                                                    && !excludedPropagatedIds
+                                                            .contains(
+                                                                    column.getId())) {
                                                 savedPropagatedColumns.add(
                                                         new SavedPropagatedColumn(
                                                                 savedColumn
@@ -318,7 +352,10 @@ public class AffectedEntitiesSaver {
                                                     savedConstraint.getId());
 
                                             if (sourceId != null
-                                                    && sourceType != null) {
+                                                    && sourceType != null
+                                                    && !excludedPropagatedIds
+                                                            .contains(constraint
+                                                                    .getId())) {
                                                 propagatedConstraints
                                                         .add(new PropagatedConstraint(
                                                                 savedConstraint
@@ -374,7 +411,10 @@ public class AffectedEntitiesSaver {
                                                     indexColumn.getId(),
                                                     savedIndexColumn.getId());
                                             if (sourceId != null
-                                                    && sourceType != null) {
+                                                    && sourceType != null
+                                                    && !excludedPropagatedIds
+                                                            .contains(indexColumn
+                                                                    .getId())) {
                                                 propagatedIndexColumns
                                                         .add(new PropagatedIndexColumn(
                                                                 savedIndexColumn
@@ -413,7 +453,10 @@ public class AffectedEntitiesSaver {
                                                     savedConstraintColumn
                                                             .getId());
                                             if (sourceId != null
-                                                    && sourceType != null) {
+                                                    && sourceType != null
+                                                    && !excludedPropagatedIds
+                                                            .contains(constraintColumn
+                                                                    .getId())) {
                                                 propagatedConstraintColumns
                                                         .add(new PropagatedConstraintColumn(
                                                                 savedConstraintColumn
@@ -461,7 +504,10 @@ public class AffectedEntitiesSaver {
                                                     savedRelationshipColumn
                                                             .getId());
                                             if (sourceId != null
-                                                    && sourceType != null) {
+                                                    && sourceType != null
+                                                    && !excludedPropagatedIds
+                                                            .contains(relationshipColumn
+                                                                    .getId())) {
                                                 propagatedRelationshipColumns
                                                         .add(new PropagatedRelationshipColumn(
                                                                 savedRelationshipColumn
