@@ -35,6 +35,8 @@ public class WorkspaceService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final UserRepository userRepository;
 
+    private static final int WORKSPACE_MAX_MEMBERS_COUNT = 30;
+
     public Mono<WorkspaceResponse> createWorkspace(
             CreateWorkspaceRequest request, String userId) {
         return Mono.defer(() -> {
@@ -202,7 +204,7 @@ public class WorkspaceService {
                             .countByWorkspaceIdAndNotDeleted(workspaceId);
                 })
                 .flatMap(memberCount -> {
-                    if (memberCount >= 100) {
+                    if (memberCount >= WORKSPACE_MAX_MEMBERS_COUNT) {
                         return Mono.error(new BusinessException(
                                 ErrorCode.MEMBER_LIMIT_EXCEEDED));
                     }

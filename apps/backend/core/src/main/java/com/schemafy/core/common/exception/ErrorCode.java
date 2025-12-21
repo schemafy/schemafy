@@ -90,7 +90,7 @@ public enum ErrorCode {
     MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "W009", "이미 워크스페이스 멤버입니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "W010", "멤버를 찾을 수 없습니다."),
     MEMBER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "W011",
-            "워크스페이스 멤버 수 제한(100명)을 초과했습니다."),
+            "워크스페이스 멤버 수 제한(30명)을 초과했습니다."),
     LAST_ADMIN_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "W012",
             "마지막 관리자는 제거할 수 없습니다."),
     LAST_ADMIN_CANNOT_CHANGE_ROLE(HttpStatus.BAD_REQUEST, "W013",

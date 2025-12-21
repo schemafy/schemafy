@@ -2,7 +2,6 @@ package com.schemafy.core.project.service;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.repository.entity.Project;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -16,6 +15,7 @@ import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkAccessLogRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.ShareLinkAccessLog;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
@@ -159,9 +159,11 @@ public class ShareLinkService {
 
                     Mono<Void> recordAccess = Mono.when(
                             accessLogRepository.save(accessLog),
-                            shareLinkRepository.incrementAccessCount(shareLink.getId())
-                    )
-                            .doOnError(e -> log.error("Failed to log access: {}", shareLink.getId(), e))
+                            shareLinkRepository
+                                    .incrementAccessCount(shareLink.getId()))
+                            .doOnError(
+                                    e -> log.error("Failed to log access: {}",
+                                            shareLink.getId(), e))
                             .onErrorResume(e -> Mono.empty());
 
                     return fetchProject

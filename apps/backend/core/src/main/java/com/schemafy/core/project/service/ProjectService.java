@@ -239,7 +239,8 @@ public class ProjectService {
                                 ErrorCode.CANNOT_CHANGE_OWN_ROLE));
                     }
 
-                    if (requiresOwnerAdminProtection(targetMember, request.role())) {
+                    if (requiresOwnerAdminProtection(targetMember,
+                            request.role())) {
                         return validateOwnerOrAdminProtection(projectId)
                                 .then(Mono.defer(() -> {
                                     targetMember.updateRole(request.role());
@@ -262,7 +263,8 @@ public class ProjectService {
      * OWNER 또는 ADMIN 역할이 하향 변경될 때 마지막 관리자 보호 검증이 필요한지 확인
      * removeMember()의 패턴과 동일하게 OWNER/ADMIN 변경 시에만 보호 검증 수행
      */
-    private boolean requiresOwnerAdminProtection(ProjectMember targetMember, ProjectRole newRole) {
+    private boolean requiresOwnerAdminProtection(ProjectMember targetMember,
+            ProjectRole newRole) {
         ProjectRole currentRole = targetMember.getRoleAsEnum();
 
         // OWNER 역할이 하향되는 경우 (OWNER → ADMIN/EDITOR/COMMENTER/VIEWER)
