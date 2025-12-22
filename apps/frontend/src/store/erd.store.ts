@@ -583,6 +583,17 @@ export class ErdStore {
     );
   }
 
+  changeIndexType(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    newType: Index['type'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeIndexType(db, schemaId, tableId, indexId, newType),
+    );
+  }
+
   addColumnToIndex(
     schemaId: Schema['id'],
     tableId: Table['id'],
@@ -596,6 +607,25 @@ export class ErdStore {
         tableId,
         indexId,
         indexColumn,
+      ),
+    );
+  }
+
+  changeIndexColumnSortDir(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    indexColumnId: IndexColumn['id'],
+    newSortDir: IndexColumn['sortDir'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeIndexColumnSortDir(
+        db,
+        schemaId,
+        tableId,
+        indexId,
+        indexColumnId,
+        newSortDir,
       ),
     );
   }

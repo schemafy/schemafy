@@ -69,6 +69,14 @@ export interface RemoveColumnFromIndexRequest {
   indexColumnId: ULID;
 }
 
+export interface UpdateIndexTypeRequest {
+  type: string;
+}
+
+export interface UpdateIndexColumnSortDirRequest {
+  sortDir: string;
+}
+
 export interface DeleteIndexRequest {
   database: DatabaseContext;
   schemaId: ULID;

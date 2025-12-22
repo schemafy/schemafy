@@ -32,12 +32,27 @@ export interface IndexHandlers {
     indexId: Index["id"],
     newName: Index["name"],
   ) => Database;
+  changeIndexType: (
+    database: Database,
+    schemaId: Schema["id"],
+    tableId: Table["id"],
+    indexId: Index["id"],
+    newType: Index["type"],
+  ) => Database;
   addColumnToIndex: (
     database: Database,
     schemaId: Schema["id"],
     tableId: Table["id"],
     indexId: Index["id"],
     indexColumn: Omit<IndexColumn, "indexId">,
+  ) => Database;
+  changeIndexColumnSortDir: (
+    database: Database,
+    schemaId: Schema["id"],
+    tableId: Table["id"],
+    indexId: Index["id"],
+    indexColumnId: IndexColumn["id"],
+    newSortDir: IndexColumn["sortDir"],
   ) => Database;
   removeColumnFromIndex: (
     database: Database,
@@ -182,6 +197,44 @@ export const indexHandlers: IndexHandlers = {
       schemas: changeSchemas,
     };
   },
+  changeIndexType: (database, schemaId, tableId, indexId, newType) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
+
+    const table = schema.tables.find((t) => t.id === tableId);
+    if (!table) throw new TableNotExistError(tableId);
+
+    const index = table.indexes.find((i) => i.id === indexId);
+    if (!index) throw new IndexNotExistError(indexId, tableId);
+
+    const validIndexTypes = ["BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER"];
+    if (!validIndexTypes.includes(newType))
+      throw new IndexTypeInvalidError(newType, schema.dbVendorId);
+
+    const changeTable: Table = {
+      ...table,
+      isAffected: true,
+      indexes: table.indexes.map((i) =>
+        i.id === indexId ? { ...i, type: newType, isAffected: true } : i,
+      ),
+    };
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: s.tables.map((t) => (t.id === tableId ? changeTable : t)),
+          }
+        : s,
+    );
+
+    return {
+      ...database,
+      isAffected: true,
+      schemas: changeSchemas,
+    };
+  },
   addColumnToIndex: (database, schemaId, tableId, indexId, indexColumn) => {
     const schema = database.schemas.find((s) => s.id === schemaId);
     if (!schema) throw new SchemaNotExistError(schemaId);
@@ -224,6 +277,66 @@ export const indexHandlers: IndexHandlers = {
         : s,
     );
     return { ...database, isAffected: true, schemas: changeSchemas };
+  },
+  changeIndexColumnSortDir: (
+    database,
+    schemaId,
+    tableId,
+    indexId,
+    indexColumnId,
+    newSortDir,
+  ) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
+
+    const table = schema.tables.find((t) => t.id === tableId);
+    if (!table) throw new TableNotExistError(tableId);
+
+    const index = table.indexes.find((i) => i.id === indexId);
+    if (!index) throw new IndexNotExistError(indexId, tableId);
+
+    const indexColumn = index.columns.find((ic) => ic.id === indexColumnId);
+    if (!indexColumn)
+      throw new IndexColumnNotExistError(indexColumnId, index.name);
+
+    const validSortDirs = ["ASC", "DESC"];
+    if (!validSortDirs.includes(newSortDir)) {
+      throw new IndexColumnSortDirInvalidError(newSortDir, index.name);
+    }
+
+    const changeTable: Table = {
+      ...table,
+      isAffected: true,
+      indexes: table.indexes.map((i) =>
+        i.id === indexId
+          ? {
+              ...i,
+              isAffected: true,
+              columns: i.columns.map((ic) =>
+                ic.id === indexColumnId
+                  ? { ...ic, sortDir: newSortDir, isAffected: true }
+                  : ic,
+              ),
+            }
+          : i,
+      ),
+    };
+
+    const changeSchemas: Schema[] = database.schemas.map((s) =>
+      s.id === schemaId
+        ? {
+            ...s,
+            isAffected: true,
+            tables: s.tables.map((t) => (t.id === tableId ? changeTable : t)),
+          }
+        : s,
+    );
+
+    return {
+      ...database,
+      isAffected: true,
+      schemas: changeSchemas,
+    };
   },
   removeColumnFromIndex: (
     database,

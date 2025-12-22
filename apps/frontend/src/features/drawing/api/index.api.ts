@@ -4,6 +4,8 @@ import type {
   IndexColumnResponse,
   CreateIndexRequest,
   UpdateIndexNameRequest,
+  UpdateIndexTypeRequest,
+  UpdateIndexColumnSortDirRequest,
   AddColumnToIndexRequest,
   RemoveColumnFromIndexRequest,
   DeleteIndexRequest,
@@ -21,10 +23,25 @@ export const updateIndexNameAPI = (
   data: UpdateIndexNameRequest,
 ) => api.put<IndexResponse>(`/indexes/${indexId}/name`, data);
 
+export const updateIndexTypeAPI = (
+  indexId: string,
+  data: UpdateIndexTypeRequest,
+) => api.put<IndexResponse>(`/indexes/${indexId}/type`, data);
+
 export const addColumnToIndexAPI = (
   indexId: string,
   data: AddColumnToIndexRequest,
 ) => api.post<IndexColumnResponse>(`/indexes/${indexId}/columns`, data);
+
+export const updateIndexColumnSortDirAPI = (
+  indexId: string,
+  indexColumnId: string,
+  data: UpdateIndexColumnSortDirRequest,
+) =>
+  api.put<IndexColumnResponse>(
+    `/indexes/${indexId}/columns/${indexColumnId}/sort-dir`,
+    data,
+  );
 
 export const removeColumnFromIndexAPI = (
   indexId: string,

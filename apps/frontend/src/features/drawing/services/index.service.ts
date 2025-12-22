@@ -5,7 +5,9 @@ import {
   createIndexAPI,
   getIndexAPI,
   updateIndexNameAPI,
+  updateIndexTypeAPI,
   addColumnToIndexAPI,
+  updateIndexColumnSortDirAPI,
   removeColumnFromIndexAPI,
   deleteIndexAPI,
 } from '../api/index.api';
@@ -147,6 +149,48 @@ export async function updateIndexName(
   );
 }
 
+export async function updateIndexType(
+  schemaId: string,
+  tableId: string,
+  indexId: string,
+  newType: Index['type'],
+) {
+  const erdStore = getErdStore();
+  const database = erdStore.database;
+
+  if (!database) {
+    throw new Error('Database not loaded');
+  }
+
+  const schema = database.schemas.find((s) => s.id === schemaId);
+  if (!schema) {
+    throw new Error(`Schema ${schemaId} not found`);
+  }
+
+  const table = schema.tables.find((t) => t.id === tableId);
+  if (!table) {
+    throw new Error(`Table ${tableId} not found`);
+  }
+
+  const index = table.indexes.find((i) => i.id === indexId);
+  if (!index) {
+    throw new Error(`Index ${indexId} not found`);
+  }
+
+  await withOptimisticUpdate(
+    () => {
+      const oldType = index.type;
+      erdStore.changeIndexType(schemaId, tableId, indexId, newType);
+      return oldType;
+    },
+    () =>
+      updateIndexTypeAPI(indexId, {
+        type: newType,
+      }),
+    (oldType) => erdStore.changeIndexType(schemaId, tableId, indexId, oldType),
+  );
+}
+
 export async function addColumnToIndex(
   schemaId: string,
   tableId: string,
@@ -222,6 +266,67 @@ export async function addColumnToIndex(
   }
 
   return indexColumnId;
+}
+
+export async function updateIndexColumnSortDir(
+  schemaId: string,
+  tableId: string,
+  indexId: string,
+  indexColumnId: string,
+  newSortDir: 'ASC' | 'DESC',
+) {
+  const erdStore = getErdStore();
+  const database = erdStore.database;
+
+  if (!database) {
+    throw new Error('Database not loaded');
+  }
+
+  const schema = database.schemas.find((s) => s.id === schemaId);
+  if (!schema) {
+    throw new Error(`Schema ${schemaId} not found`);
+  }
+
+  const table = schema.tables.find((t) => t.id === tableId);
+  if (!table) {
+    throw new Error(`Table ${tableId} not found`);
+  }
+
+  const index = table.indexes.find((i) => i.id === indexId);
+  if (!index) {
+    throw new Error(`Index ${indexId} not found`);
+  }
+
+  const indexColumn = index.columns.find((c) => c.id === indexColumnId);
+  if (!indexColumn) {
+    throw new Error(`Index column ${indexColumnId} not found`);
+  }
+
+  await withOptimisticUpdate(
+    () => {
+      const oldSortDir = indexColumn.sortDir;
+      erdStore.changeIndexColumnSortDir(
+        schemaId,
+        tableId,
+        indexId,
+        indexColumnId,
+        newSortDir,
+      );
+      return oldSortDir;
+    },
+    () =>
+      updateIndexColumnSortDirAPI(indexId, indexColumnId, {
+        sortDir: newSortDir,
+      }),
+    (oldSortDir) =>
+      erdStore.changeIndexColumnSortDir(
+        schemaId,
+        tableId,
+        indexId,
+        indexColumnId,
+        oldSortDir,
+      ),
+  );
 }
 
 export async function removeColumnFromIndex(
