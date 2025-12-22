@@ -80,6 +80,8 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
 
   const handleSaveAllPendingChanges = () => {
     saveAllPendingChanges();
+    indexActions.saveAllPendingChanges();
+    constraintActions.saveAllPendingChanges();
     setIsColumnEditMode(false);
   };
 

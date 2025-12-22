@@ -1,3 +1,6 @@
+import { useRef, useEffect } from 'react';
+import { debounce } from 'lodash-es';
+import type { DebouncedFunc } from 'lodash-es';
 import type { Constraint } from '@schemafy/validator';
 import { generateUniqueName } from '../utils/nameGenerator';
 import * as constraintService from '../services/constraint.service';
@@ -18,6 +21,20 @@ export const useConstraints = ({
   tableName,
   constraints,
 }: UseConstraintsProps) => {
+  const debouncedSaveRef = useRef<
+    Map<string, DebouncedFunc<(name: string) => void>>
+  >(new Map());
+
+  useEffect(() => {
+    const currentMap = debouncedSaveRef.current;
+    return () => {
+      currentMap.forEach((debouncedFn) => {
+        debouncedFn.cancel();
+      });
+      currentMap.clear();
+    };
+  }, []);
+
   const createConstraint = async (kind: CompositeConstraintKind = 'UNIQUE') => {
     const existingConstraintNames = constraints.map((c) => c.name);
     const prefixMap: Record<CompositeConstraintKind, string> = {
@@ -49,7 +66,7 @@ export const useConstraints = ({
     }
   };
 
-  const changeConstraintName = async (
+  const saveConstraintName = async (
     constraintId: string,
     newName: string,
   ) => {
@@ -64,6 +81,19 @@ export const useConstraints = ({
       toast.error('Failed to update constraint name');
       console.error(error);
     }
+  };
+
+  const changeConstraintName = (constraintId: string, newName: string) => {
+    let debouncedSave = debouncedSaveRef.current.get(constraintId);
+    if (!debouncedSave) {
+      debouncedSave = debounce((name: string) => {
+        saveConstraintName(constraintId, name);
+      }, 300);
+
+      debouncedSaveRef.current.set(constraintId, debouncedSave);
+    }
+
+    debouncedSave(newName);
   };
 
   const addColumnToConstraint = async (
@@ -104,11 +134,18 @@ export const useConstraints = ({
     }
   };
 
+  const saveAllPendingChanges = () => {
+    debouncedSaveRef.current.forEach((debouncedFn) => {
+      debouncedFn.flush();
+    });
+  };
+
   return {
     createConstraint,
     deleteConstraint,
     changeConstraintName,
     addColumnToConstraint,
     removeColumnFromConstraint,
+    saveAllPendingChanges,
   };
 };

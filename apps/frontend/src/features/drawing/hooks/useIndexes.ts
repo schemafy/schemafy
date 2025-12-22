@@ -1,3 +1,6 @@
+import { useRef, useEffect } from 'react';
+import { debounce } from 'lodash-es';
+import type { DebouncedFunc } from 'lodash-es';
 import type { IndexType, IndexSortDir } from '../types';
 import type { Index } from '@schemafy/validator';
 import { generateUniqueName } from '../utils/nameGenerator';
@@ -17,6 +20,20 @@ export const useIndexes = ({
   tableName,
   indexes,
 }: UseIndexesProps) => {
+  const debouncedSaveRef = useRef<
+    Map<string, DebouncedFunc<(name: string) => void>>
+  >(new Map());
+
+  useEffect(() => {
+    const currentMap = debouncedSaveRef.current;
+    return () => {
+      currentMap.forEach((debouncedFn) => {
+        debouncedFn.cancel();
+      });
+      currentMap.clear();
+    };
+  }, []);
+
   const createIndex = async () => {
     const existingIndexNames = indexes.map((idx) => idx.name);
 
@@ -43,13 +60,26 @@ export const useIndexes = ({
     }
   };
 
-  const changeIndexName = async (indexId: string, newName: string) => {
+  const saveIndexName = async (indexId: string, newName: string) => {
     try {
       await indexService.updateIndexName(schemaId, tableId, indexId, newName);
     } catch (error) {
       toast.error('Failed to update index name');
       console.error(error);
     }
+  };
+
+  const changeIndexName = (indexId: string, newName: string) => {
+    let debouncedSave = debouncedSaveRef.current.get(indexId);
+    if (!debouncedSave) {
+      debouncedSave = debounce((name: string) => {
+        saveIndexName(indexId, name);
+      }, 300);
+
+      debouncedSaveRef.current.set(indexId, debouncedSave);
+    }
+
+    debouncedSave(newName);
   };
 
   const changeIndexType = async (indexId: string, newType: IndexType) => {
@@ -115,6 +145,12 @@ export const useIndexes = ({
     }
   };
 
+  const saveAllPendingChanges = () => {
+    debouncedSaveRef.current.forEach((debouncedFn) => {
+      debouncedFn.flush();
+    });
+  };
+
   return {
     createIndex,
     deleteIndex,
@@ -123,5 +159,6 @@ export const useIndexes = ({
     addColumnToIndex,
     removeColumnFromIndex,
     changeSortDir,
+    saveAllPendingChanges,
   };
 };
