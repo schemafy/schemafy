@@ -221,18 +221,22 @@ public class RelationshipService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND)))
-                .flatMap(ignore -> validationClient
-                        .removeColumnFromRelationship(request))
-                .flatMap(afterDatabase -> transactionalOperator.transactional(
-                        affectedEntitiesSoftDeleter
-                                .softDeleteRemovedEntities(
-                                        request.getDatabase(),
-                                        afterDatabase)
-                                .then(affectedEntitiesSaver
-                                        .saveAffectedEntitiesResult(
-                                                request.getDatabase(),
-                                                afterDatabase)
-                                        .then())))
+                .flatMap(relationshipColumn -> validationClient
+                        .removeColumnFromRelationship(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(relationshipColumn)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(
+                                                relationshipColumnRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase))
+                                        .then(affectedEntitiesSaver
+                                                .saveAffectedEntitiesResult(
+                                                        request.getDatabase(),
+                                                        afterDatabase)
+                                                .then()))))
                 .then();
     }
 
@@ -248,17 +252,21 @@ public class RelationshipService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
-                .flatMap(ignore -> validationClient.deleteRelationship(request))
-                .flatMap(afterDatabase -> transactionalOperator.transactional(
-                        affectedEntitiesSoftDeleter
-                                .softDeleteRemovedEntities(
-                                        request.getDatabase(),
-                                        afterDatabase)
-                                .then(affectedEntitiesSaver
-                                        .saveAffectedEntitiesResult(
-                                                request.getDatabase(),
-                                                afterDatabase)
-                                        .then())))
+                .flatMap(relationship -> validationClient
+                        .deleteRelationship(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(relationship)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(relationshipRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase))
+                                        .then(affectedEntitiesSaver
+                                                .saveAffectedEntitiesResult(
+                                                        request.getDatabase(),
+                                                        afterDatabase)
+                                                .then()))))
                 .then();
     }
 

@@ -105,12 +105,15 @@ public class ColumnService {
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_COLUMN_NOT_FOUND)))
-                .flatMap(ignore -> validationClient.deleteColumn(request))
-                .flatMap(afterDatabase -> transactionalOperator.transactional(
-                        affectedEntitiesSoftDeleter
-                                .softDeleteRemovedEntities(
-                                        request.getDatabase(),
-                                        afterDatabase)))
+                .flatMap(column -> validationClient.deleteColumn(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(column)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(columnRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase)))))
                 .then();
     }
 

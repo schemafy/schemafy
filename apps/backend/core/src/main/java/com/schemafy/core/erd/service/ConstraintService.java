@@ -189,18 +189,22 @@ public class ConstraintService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND)))
-                .flatMap(ignore -> validationClient
-                        .removeColumnFromConstraint(request))
-                .flatMap(afterDatabase -> transactionalOperator.transactional(
-                        affectedEntitiesSoftDeleter
-                                .softDeleteRemovedEntities(
-                                        request.getDatabase(),
-                                        afterDatabase)
-                                .then(affectedEntitiesSaver
-                                        .saveAffectedEntitiesResult(
-                                                request.getDatabase(),
-                                                afterDatabase)
-                                        .then())))
+                .flatMap(constraintColumn -> validationClient
+                        .removeColumnFromConstraint(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(constraintColumn)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(
+                                                constraintColumnRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase))
+                                        .then(affectedEntitiesSaver
+                                                .saveAffectedEntitiesResult(
+                                                        request.getDatabase(),
+                                                        afterDatabase)
+                                                .then()))))
                 .then();
     }
 
@@ -216,17 +220,21 @@ public class ConstraintService {
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
-                .flatMap(ignore -> validationClient.deleteConstraint(request))
-                .flatMap(afterDatabase -> transactionalOperator.transactional(
-                        affectedEntitiesSoftDeleter
-                                .softDeleteRemovedEntities(
-                                        request.getDatabase(),
-                                        afterDatabase)
-                                .then(affectedEntitiesSaver
-                                        .saveAffectedEntitiesResult(
-                                                request.getDatabase(),
-                                                afterDatabase)
-                                        .then())))
+                .flatMap(constraint -> validationClient
+                        .deleteConstraint(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(constraint)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(constraintRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase))
+                                        .then(affectedEntitiesSaver
+                                                .saveAffectedEntitiesResult(
+                                                        request.getDatabase(),
+                                                        afterDatabase)
+                                                .then()))))
                 .then();
     }
 

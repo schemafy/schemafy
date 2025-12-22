@@ -119,12 +119,15 @@ public class TableService {
                 .findByIdAndDeletedAtIsNull(request.getTableId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_TABLE_NOT_FOUND)))
-                .flatMap(ignore -> validationClient.deleteTable(request))
-                .flatMap(afterDatabase -> transactionalOperator.transactional(
-                        syncTableDeletion(
-                                request.getDatabase(),
-                                afterDatabase,
-                                request.getTableId())))
+                .flatMap(table -> validationClient.deleteTable(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(table)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(tableRepository::save)
+                                        .then(syncTableDeletion(
+                                                request.getDatabase(),
+                                                afterDatabase,
+                                                request.getTableId())))))
                 .then();
     }
 
