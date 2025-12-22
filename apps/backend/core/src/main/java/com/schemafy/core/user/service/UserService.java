@@ -74,7 +74,7 @@ public class UserService {
                         .error(new BusinessException(ErrorCode.LOGIN_FAILED)));
     }
 
-    public Mono<String> getUserIdFromRefreshToken(String refreshToken) {
+    public Mono<User> getUserFromRefreshToken(String refreshToken) {
         return Mono.fromCallable(() -> {
             String userId = jwtProvider.extractUserId(refreshToken);
             String tokenType = jwtProvider.getTokenType(refreshToken);
@@ -88,8 +88,13 @@ public class UserService {
             }
 
             return userId;
-        }).onErrorMap(e -> !(e instanceof BusinessException),
-                e -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
+        })
+                .flatMap(userRepository::findById)
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.USER_NOT_FOUND)))
+                .onErrorMap(e -> !(e instanceof BusinessException),
+                        e -> new BusinessException(
+                                ErrorCode.INVALID_REFRESH_TOKEN));
     }
 
 }

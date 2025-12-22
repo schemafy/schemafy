@@ -16,4 +16,15 @@ public class JwtProperties {
     private String issuer = "schemafy";
     private String audience = "schemafy-audience";
 
+    private Cookie cookie = new Cookie();
+
+    @Getter
+    @Setter
+    public static class Cookie {
+
+        private boolean secure = true;
+        private String sameSite = "Strict";
+
+    }
+
 }
