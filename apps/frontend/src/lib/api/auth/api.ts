@@ -41,8 +41,8 @@ export const signIn = async (
 };
 
 export const refreshToken = async (): Promise<ApiResponse<null>> => {
-  const response = await apiClient.post<ApiResponse<null>>(
-    '/public/api/v1.0/users/refresh',
+  const response = await publicClient.post<ApiResponse<null>>(
+    '/api/v1.0/users/refresh',
   );
 
   handleTokenResponse(response);
