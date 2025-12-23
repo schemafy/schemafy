@@ -164,6 +164,7 @@ class RelationshipControllerTest {
                     },
                     "propagated": {
                         "columns": [],
+                        "relationshipColumns": [],
                         "constraintColumns": [],
                         "indexColumns": []
                     }
@@ -270,6 +271,9 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.propagated.columns")
                                         .description(
                                                 "전파된 컬럼 목록 (식별 관계 시 자식 테이블로 전파)"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
@@ -963,6 +967,9 @@ class RelationshipControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),

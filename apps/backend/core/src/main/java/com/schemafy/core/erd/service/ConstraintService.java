@@ -1,5 +1,10 @@
 package com.schemafy.core.erd.service;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -11,8 +16,6 @@ import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
-import com.schemafy.core.erd.repository.entity.Constraint;
-import com.schemafy.core.erd.repository.entity.ConstraintColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ public class ConstraintService {
     private final ConstraintRepository constraintRepository;
     private final ConstraintColumnRepository constraintColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
+    private final AffectedEntitiesSoftDeleter affectedEntitiesSoftDeleter;
     private final TransactionalOperator transactionalOperator;
 
     public Mono<AffectedMappingResponse> createConstraint(
@@ -51,44 +55,50 @@ public class ConstraintService {
                                             request.getConstraint().getId(),
                                             savedConstraint.getId());
 
-                            return saveConstraintColumns(
-                                    request.getConstraint().getColumnsList(),
-                                    savedConstraint.getId())
-                                    .then(saveAffectedEntitiesAndBuildResponse(
-                                            request,
+                            Set<String> excludePropagatedIds = new HashSet<>(
+                                    request.getConstraint().getColumnsList()
+                                            .stream()
+                                            .map(Validation.ConstraintColumn::getId)
+                                            .collect(Collectors.toSet()));
+                            excludePropagatedIds.add(savedConstraint.getId());
+
+                            return affectedEntitiesSaver
+                                    .saveAffectedEntitiesResult(
+                                            request.getDatabase(),
                                             updatedDatabase,
-                                            savedConstraint.getId()));
+                                            savedConstraint.getId(),
+                                            savedConstraint.getId(),
+                                            EntityType.CONSTRAINT.name(),
+                                            Set.of(),
+                                            excludePropagatedIds)
+                                    .map(saveResult -> {
+                                        Validation.Database afterDatabase = applyConstraintColumnMappings(
+                                                updatedDatabase,
+                                                saveResult.idMappings()
+                                                        .constraintColumns());
+                                        return AffectedMappingResponse.of(
+                                                request,
+                                                request.getDatabase(),
+                                                afterDatabase,
+                                                saveResult.propagated());
+                                    });
                         }));
     }
 
-    private Mono<Void> saveConstraintColumns(
-            java.util.List<Validation.ConstraintColumn> columns,
-            String constraintId) {
-        return Flux.fromIterable(columns)
-                .flatMap(column -> {
-                    ConstraintColumn entity = ErdMapper.toEntity(column);
-                    entity.setConstraintId(constraintId);
-                    return constraintColumnRepository.save(entity);
-                })
-                .then();
-    }
-
-    private Mono<AffectedMappingResponse> saveAffectedEntitiesAndBuildResponse(
-            Validation.CreateConstraintRequest request,
-            Validation.Database updatedDatabase,
-            String constraintId) {
-        return affectedEntitiesSaver
-                .saveAffectedEntities(
-                        request.getDatabase(),
-                        updatedDatabase,
-                        constraintId,
-                        constraintId,
-                        "CONSTRAINT")
-                .map(propagated -> AffectedMappingResponse.of(
-                        request,
-                        request.getDatabase(),
-                        updatedDatabase,
-                        propagated));
+    private static Validation.Database applyConstraintColumnMappings(
+            Validation.Database database,
+            Map<String, String> constraintColumnMappings) {
+        Validation.Database updatedDatabase = database;
+        for (Map.Entry<String, String> mapping : constraintColumnMappings
+                .entrySet()) {
+            updatedDatabase = AffectedMappingResponse
+                    .updateEntityIdInDatabase(
+                            updatedDatabase,
+                            EntityType.CONSTRAINT_COLUMN,
+                            mapping.getKey(),
+                            mapping.getValue());
+        }
+        return updatedDatabase;
     }
 
     public Mono<ConstraintResponse> getConstraint(String id) {
@@ -157,7 +167,7 @@ public class ConstraintService {
                                             updatedDatabase,
                                             savedConstraintColumn.getId(),
                                             request.getConstraintId(),
-                                            "CONSTRAINT")
+                                            EntityType.CONSTRAINT.name())
                                     .map(propagated -> AffectedMappingResponse
                                             .of(
                                                     request,
@@ -169,29 +179,62 @@ public class ConstraintService {
 
     public Mono<Void> removeColumnFromConstraint(
             Validation.RemoveColumnFromConstraintRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return constraintColumnRepository
                 .findByIdAndDeletedAtIsNull(request.getConstraintColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient
-                        .removeColumnFromConstraint(request))
-                .doOnNext(ConstraintColumn::delete)
-                .flatMap(constraintColumnRepository::save)
+                .flatMap(constraintColumn -> validationClient
+                        .removeColumnFromConstraint(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(constraintColumn)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(
+                                                constraintColumnRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase))
+                                        .then(affectedEntitiesSaver
+                                                .saveAffectedEntitiesResult(
+                                                        request.getDatabase(),
+                                                        afterDatabase)
+                                                .then()))))
                 .then();
     }
 
     public Mono<Void> deleteConstraint(
             Validation.DeleteConstraintRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return constraintRepository
                 .findByIdAndDeletedAtIsNull(request.getConstraintId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_CONSTRAINT_NOT_FOUND)))
-                .delayUntil(
-                        ignore -> validationClient.deleteConstraint(request))
-                .doOnNext(Constraint::delete)
-                .flatMap(constraintRepository::save)
+                .flatMap(constraint -> validationClient
+                        .deleteConstraint(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(constraint)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(constraintRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase))
+                                        .then(affectedEntitiesSaver
+                                                .saveAffectedEntitiesResult(
+                                                        request.getDatabase(),
+                                                        afterDatabase)
+                                                .then()))))
                 .then();
     }
 

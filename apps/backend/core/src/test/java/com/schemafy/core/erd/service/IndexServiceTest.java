@@ -1,5 +1,7 @@
 package com.schemafy.core.erd.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -24,6 +26,8 @@ import com.schemafy.core.validation.client.ValidationClient;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple3;
+import reactor.util.function.Tuples;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,6 +84,20 @@ class IndexServiceTest {
                         .setTableId("table-1")
                         .setName("idx_test")
                         .setType(Validation.IndexType.BTREE)
+                        .addColumns(Validation.IndexColumn.newBuilder()
+                                .setId("fe-index-column-1")
+                                .setIndexId("fe-index-id")
+                                .setColumnId("column-1")
+                                .setSeqNo(1)
+                                .setSortDir(Validation.IndexSortDir.ASC)
+                                .build())
+                        .addColumns(Validation.IndexColumn.newBuilder()
+                                .setId("fe-index-column-2")
+                                .setIndexId("fe-index-id")
+                                .setColumnId("column-2")
+                                .setSeqNo(2)
+                                .setSortDir(Validation.IndexSortDir.DESC)
+                                .build())
                         .build())
                 .setDatabase(Validation.Database.newBuilder()
                         .setId("proj-1")
@@ -107,12 +125,34 @@ class IndexServiceTest {
                                 .setName("test-table")
                                 .setIsAffected(true)
                                 .addIndexes(Validation.Index.newBuilder()
-                                        .setId("be-index-id")
+                                        .setId("validator-index-id")
                                         .setTableId("table-1")
                                         .setName("idx_test")
                                         .setType(Validation.IndexType.BTREE)
                                         .setComment("")
                                         .setIsAffected(true)
+                                        .addColumns(Validation.IndexColumn
+                                                .newBuilder()
+                                                .setId("validator-index-column-1")
+                                                .setIndexId(
+                                                        "validator-index-id")
+                                                .setColumnId("column-1")
+                                                .setSeqNo(1)
+                                                .setSortDir(
+                                                        Validation.IndexSortDir.ASC)
+                                                .setIsAffected(true)
+                                                .build())
+                                        .addColumns(Validation.IndexColumn
+                                                .newBuilder()
+                                                .setId("validator-index-column-2")
+                                                .setIndexId(
+                                                        "validator-index-id")
+                                                .setColumnId("column-2")
+                                                .setSeqNo(2)
+                                                .setSortDir(
+                                                        Validation.IndexSortDir.DESC)
+                                                .setIsAffected(true)
+                                                .build())
                                         .build())
                                 .build())
                         .build())
@@ -123,23 +163,56 @@ class IndexServiceTest {
                 .willReturn(Mono.just(mockResponse));
 
         // when
-        Mono<AffectedMappingResponse> result = indexService
-                .createIndex(request);
+        Mono<Tuple3<AffectedMappingResponse, Index, List<IndexColumn>>> result = indexService
+                .createIndex(request)
+                .flatMap(response -> indexRepository.findAll().single()
+                        .flatMap(savedIndex -> indexColumnRepository
+                                .findByIndexIdAndDeletedAtIsNull(
+                                        savedIndex.getId())
+                                .collectList()
+                                .map(savedIndexColumns -> Tuples.of(
+                                        response,
+                                        savedIndex,
+                                        savedIndexColumns))));
 
         // then
         StepVerifier.create(result)
-                .assertNext(response -> {
+                .assertNext(tuple -> {
+                    AffectedMappingResponse response = tuple.getT1();
+                    Index savedIndex = tuple.getT2();
+                    var savedIndexColumns = tuple.getT3();
+
+                    String savedIndexId = savedIndex.getId();
+                    assertThat(savedIndexColumns).hasSize(2);
+
+                    String savedIndexColumnId1 = savedIndexColumns.stream()
+                            .filter(c -> c.getColumnId().equals("column-1"))
+                            .findFirst()
+                            .orElseThrow()
+                            .getId();
+                    String savedIndexColumnId2 = savedIndexColumns.stream()
+                            .filter(c -> c.getColumnId().equals("column-2"))
+                            .findFirst()
+                            .orElseThrow()
+                            .getId();
+
                     // 인덱스 매핑 정보 확인 (FE-ID → BE-ID 매핑)
                     // indexes는 tableId로 그룹핑된 nested map
                     assertThat(response.indexes()).hasSize(1);
                     assertThat(response.indexes().get("table-1"))
-                            .containsEntry("fe-index-id", "be-index-id");
+                            .containsEntry("fe-index-id", savedIndexId);
 
                     // 다른 매핑들은 비어있어야 함 (인덱스만 생성했으므로)
                     assertThat(response.schemas()).isEmpty();
                     assertThat(response.tables()).isEmpty();
                     assertThat(response.columns()).isEmpty();
-                    assertThat(response.indexColumns()).isEmpty();
+                    assertThat(response.indexColumns())
+                            .containsKey(savedIndexId);
+                    assertThat(response.indexColumns().get(savedIndexId))
+                            .containsEntry("fe-index-column-1",
+                                    savedIndexColumnId1)
+                            .containsEntry("fe-index-column-2",
+                                    savedIndexColumnId2);
                     assertThat(response.constraints()).isEmpty();
                     assertThat(response.constraintColumns()).isEmpty();
                     assertThat(response.relationships()).isEmpty();
@@ -439,12 +512,52 @@ class IndexServiceTest {
 
         StepVerifier.create(indexService.removeColumnFromIndex(
                 Validation.RemoveColumnFromIndexRequest.newBuilder()
+                        .setIndexId("index-1")
                         .setIndexColumnId(saved.getId())
                         .build()))
                 .verifyComplete();
 
         // 삭제 플래그 확인 (deletedAt not null)
         StepVerifier.create(indexColumnRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("removeColumnFromIndex: 마지막 컬럼 제거 시 인덱스도 소프트 삭제된다")
+    void removeColumnFromIndex_lastColumnAlsoDeletesIndex() {
+        Index savedIndex = indexRepository.save(
+                Index.builder()
+                        .tableId("table-1")
+                        .name("idx_to_delete")
+                        .type("BTREE")
+                        .comment("")
+                        .build())
+                .block();
+
+        IndexColumn savedIndexColumn = indexColumnRepository.save(
+                IndexColumn.builder()
+                        .indexId(savedIndex.getId())
+                        .columnId("column-1")
+                        .seqNo(1)
+                        .sortDir("ASC")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.removeColumnFromIndex(
+                Validation.RemoveColumnFromIndexRequest.newBuilder()
+                        .setIndexId(savedIndex.getId())
+                        .setIndexColumnId(savedIndexColumn.getId())
+                        .build()))
+                .verifyComplete();
+
+        StepVerifier.create(indexRepository.findById(savedIndex.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier
+                .create(indexColumnRepository
+                        .findById(savedIndexColumn.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
                 .verifyComplete();
     }

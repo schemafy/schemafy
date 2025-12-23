@@ -110,7 +110,15 @@ export const relationshipHandlers: RelationshipHandlers = {
             isAffected: true,
             relationships: [
               ...t.relationships,
-              { ...relationship, isAffected: true },
+              {
+                ...relationship,
+                isAffected: true,
+                columns: relationship.columns.map((column) => ({
+                  ...column,
+                  relationshipId: relationship.id,
+                  isAffected: true,
+                })),
+              },
             ],
           }
         : t,
