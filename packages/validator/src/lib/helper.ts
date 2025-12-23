@@ -327,18 +327,20 @@ export const deleteCascadingForeignKeys = (
 
       if (fkColumnsToDelete.length === 0) continue;
 
-      const updateIndexes: Index[] = childTable.indexes.map((idx) => ({
-        ...idx,
-        isAffected: idx.columns.some((ic) =>
-          fkColumnsToDelete.includes(ic.columnId),
-        ),
-        columns: idx.columns.filter(
-          (ic) => !fkColumnsToDelete.includes(ic.columnId),
-        ),
-      }));
+      const updateIndexes: Index[] = childTable.indexes
+        .map((idx) => ({
+          ...idx,
+          isAffected: idx.columns.some((ic) =>
+            fkColumnsToDelete.includes(ic.columnId),
+          ),
+          columns: idx.columns.filter(
+            (ic) => !fkColumnsToDelete.includes(ic.columnId),
+          ),
+        }))
+        .filter((idx) => idx.columns.length > 0);
 
-      const updateConstraints: Constraint[] = childTable.constraints.map(
-        (constraint) => ({
+      const updateConstraints: Constraint[] = childTable.constraints
+        .map((constraint) => ({
           ...constraint,
           isAffected: constraint.columns.some((cc) =>
             fkColumnsToDelete.includes(cc.columnId),
@@ -346,11 +348,11 @@ export const deleteCascadingForeignKeys = (
           columns: constraint.columns.filter(
             (cc) => !fkColumnsToDelete.includes(cc.columnId),
           ),
-        }),
-      );
+        }))
+        .filter((constraint) => constraint.columns.length > 0);
 
-      const updateRelationships: Relationship[] = childTable.relationships.map(
-        (relationship) => ({
+      const updateRelationships: Relationship[] = childTable.relationships
+        .map((relationship) => ({
           ...relationship,
           isAffected: relationship.columns.some(
             (rc) =>
@@ -362,8 +364,8 @@ export const deleteCascadingForeignKeys = (
               !fkColumnsToDelete.includes(rc.fkColumnId) &&
               !fkColumnsToDelete.includes(rc.refColumnId),
           ),
-        }),
-      );
+        }))
+        .filter((relationship) => relationship.columns.length > 0);
 
       const updateTables: Table[] = updatedSchema.tables.map((t) =>
         t.id === childTable.id
@@ -650,12 +652,14 @@ export const deleteRelatedColumns = (
               (ic) => !fkColumnsToDelete.has(ic.columnId),
             ),
           })),
-          constraints: table.constraints.map((constraint) => ({
-            ...constraint,
-            columns: constraint.columns.filter(
-              (cc) => !fkColumnsToDelete.has(cc.columnId),
-            ),
-          })),
+          constraints: table.constraints
+            .map((constraint) => ({
+              ...constraint,
+              columns: constraint.columns.filter(
+                (cc) => !fkColumnsToDelete.has(cc.columnId),
+              ),
+            }))
+            .filter((constraint) => constraint.columns.length > 0),
         };
       }
       return table;
