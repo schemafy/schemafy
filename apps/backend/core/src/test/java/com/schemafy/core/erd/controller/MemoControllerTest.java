@@ -75,7 +75,10 @@ class MemoControllerTest {
                         {
                             "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "author": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "name": "testuser"
+                            },
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
@@ -83,7 +86,10 @@ class MemoControllerTest {
                                 {
                                     "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
                                     "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
-                                    "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                    "author": {
+                                        "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                        "name": "testuser"
+                                    },
                                     "body": "메모 내용",
                                     "createdAt": "2025-11-23T10:00:00Z",
                                     "updatedAt": "2025-11-23T10:00:00Z"
@@ -129,8 +135,12 @@ class MemoControllerTest {
                                         .description("메모 ID"),
                                 fieldWithPath("result.schemaId")
                                         .description("스키마 ID"),
-                                fieldWithPath("result.authorId")
+                                fieldWithPath("result.author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath("result.author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result.positions")
                                         .description("메모 위치"),
                                 fieldWithPath("result.createdAt")
@@ -143,8 +153,13 @@ class MemoControllerTest {
                                         .description("댓글 ID"),
                                 fieldWithPath("result.comments[].memoId")
                                         .description("메모 ID"),
-                                fieldWithPath("result.comments[].authorId")
+                                fieldWithPath("result.comments[].author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result.comments[].author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath(
+                                        "result.comments[].author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result.comments[].body")
                                         .description("댓글 내용"),
                                 fieldWithPath("result.comments[].createdAt")
@@ -163,7 +178,10 @@ class MemoControllerTest {
                         {
                             "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "author": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "name": "testuser"
+                            },
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z",
@@ -171,7 +189,10 @@ class MemoControllerTest {
                                 {
                                     "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
                                     "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
-                                    "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                    "author": {
+                                        "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                        "name": "testuser"
+                                    },
                                     "body": "메모 내용",
                                     "createdAt": "2025-11-23T10:00:00Z",
                                     "updatedAt": "2025-11-23T10:00:00Z"
@@ -209,8 +230,12 @@ class MemoControllerTest {
                                         .description("메모 ID"),
                                 fieldWithPath("result.schemaId")
                                         .description("스키마 ID"),
-                                fieldWithPath("result.authorId")
+                                fieldWithPath("result.author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath("result.author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result.positions")
                                         .description("메모 위치"),
                                 fieldWithPath("result.createdAt")
@@ -223,8 +248,13 @@ class MemoControllerTest {
                                         .description("댓글 ID"),
                                 fieldWithPath("result.comments[].memoId")
                                         .description("메모 ID"),
-                                fieldWithPath("result.comments[].authorId")
+                                fieldWithPath("result.comments[].author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result.comments[].author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath(
+                                        "result.comments[].author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result.comments[].body")
                                         .description("댓글 내용"),
                                 fieldWithPath("result.comments[].createdAt")
@@ -244,7 +274,10 @@ class MemoControllerTest {
                         {
                             "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "author": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "name": "testuser"
+                            },
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z"
@@ -290,8 +323,12 @@ class MemoControllerTest {
                                         .description("메모 ID"),
                                 fieldWithPath("result.schemaId")
                                         .description("스키마 ID"),
-                                fieldWithPath("result.authorId")
+                                fieldWithPath("result.author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath("result.author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result.positions")
                                         .description("메모 위치"),
                                 fieldWithPath("result.createdAt")
@@ -348,7 +385,10 @@ class MemoControllerTest {
                         {
                             "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
                             "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "author": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "name": "testuser"
+                            },
                             "body": "댓글 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z"
@@ -393,8 +433,12 @@ class MemoControllerTest {
                                         .description("댓글 ID"),
                                 fieldWithPath("result.memoId")
                                         .description("메모 ID"),
-                                fieldWithPath("result.authorId")
+                                fieldWithPath("result.author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath("result.author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result.body")
                                         .description("댓글 내용"),
                                 fieldWithPath("result.createdAt")
@@ -412,7 +456,10 @@ class MemoControllerTest {
                         {
                             "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
                             "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "author": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "name": "testuser"
+                            },
                             "body": "댓글 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z"
@@ -449,8 +496,12 @@ class MemoControllerTest {
                                         .description("댓글 ID"),
                                 fieldWithPath("result[].memoId")
                                         .description("메모 ID"),
-                                fieldWithPath("result[].authorId")
+                                fieldWithPath("result[].author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result[].author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath("result[].author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result[].body")
                                         .description("댓글 내용"),
                                 fieldWithPath("result[].createdAt")
@@ -472,7 +523,10 @@ class MemoControllerTest {
                         {
                             "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
                             "memoId": "06D6W1GAHD51T5NJPK29Q6BCR8",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "author": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "name": "testuser"
+                            },
                             "body": "수정된 내용",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z"
@@ -520,8 +574,12 @@ class MemoControllerTest {
                                         .description("댓글 ID"),
                                 fieldWithPath("result.memoId")
                                         .description("메모 ID"),
-                                fieldWithPath("result.authorId")
+                                fieldWithPath("result.author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result.author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath("result.author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result.body")
                                         .description("댓글 내용"),
                                 fieldWithPath("result.createdAt")
