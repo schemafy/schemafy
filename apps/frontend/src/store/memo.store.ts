@@ -95,8 +95,6 @@ export const useMemoStore = create<MemoState>((set, get) => ({
         isLoading: false,
         error: e instanceof Error ? e.message : 'Failed to fetch memos',
       });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
@@ -175,18 +173,15 @@ export const useMemoStore = create<MemoState>((set, get) => ({
       }
       set((state) => {
         const list = state.memosBySchema[schemaId] ?? [];
+        const nextCommentsByMemo = { ...state.commentsByMemo };
+        delete nextCommentsByMemo[memoId];
         return {
           memosBySchema: {
             ...state.memosBySchema,
             [schemaId]: list.filter((m) => m.id !== memoId),
           },
+          commentsByMemo: nextCommentsByMemo,
         };
-      });
-
-      set((state) => {
-        const next = { ...state.commentsByMemo };
-        delete next[memoId];
-        return { commentsByMemo: next };
       });
       return true;
     } catch (e) {
@@ -225,25 +220,29 @@ export const useMemoStore = create<MemoState>((set, get) => ({
       const comment = res.result;
       set((state) => {
         const list = state.commentsByMemo[memoId] ?? [];
-        return {
-          commentsByMemo: {
-            ...state.commentsByMemo,
-            [memoId]: [...list, comment],
-          },
+        const nextCommentsByMemo = {
+          ...state.commentsByMemo,
+          [memoId]: [...list, comment],
         };
-      });
 
-      set((state) => {
         const schemaId = Object.keys(state.memosBySchema).find((sid) =>
           (state.memosBySchema[sid] ?? []).some((m) => m.id === memoId),
         );
-        if (!schemaId) return {};
+
+        if (!schemaId) {
+          return {
+            commentsByMemo: nextCommentsByMemo,
+          };
+        }
+
         const nextList = (state.memosBySchema[schemaId] ?? []).map((m) =>
           m.id === memoId
             ? { ...m, comments: [...(m.comments ?? []), comment] }
             : m,
         );
+
         return {
+          commentsByMemo: nextCommentsByMemo,
           memosBySchema: { ...state.memosBySchema, [schemaId]: nextList },
         };
       });
@@ -271,14 +270,24 @@ export const useMemoStore = create<MemoState>((set, get) => ({
       const updated = res.result;
       set((state) => {
         const list = state.commentsByMemo[memoId] ?? [];
-        const next = list.map((c) => (c.id === commentId ? updated : c));
-        return { commentsByMemo: { ...state.commentsByMemo, [memoId]: next } };
-      });
-      set((state) => {
+        const nextComments = list.map((c) =>
+          c.id === commentId ? updated : c,
+        );
+        const nextCommentsByMemo = {
+          ...state.commentsByMemo,
+          [memoId]: nextComments,
+        };
+
         const schemaId = Object.keys(state.memosBySchema).find((sid) =>
           (state.memosBySchema[sid] ?? []).some((m) => m.id === memoId),
         );
-        if (!schemaId) return {};
+
+        if (!schemaId) {
+          return {
+            commentsByMemo: nextCommentsByMemo,
+          };
+        }
+
         const nextList = (state.memosBySchema[schemaId] ?? []).map((m) =>
           m.id === memoId
             ? {
@@ -289,7 +298,9 @@ export const useMemoStore = create<MemoState>((set, get) => ({
               }
             : m,
         );
+
         return {
+          commentsByMemo: nextCommentsByMemo,
           memosBySchema: { ...state.memosBySchema, [schemaId]: nextList },
         };
       });
@@ -312,18 +323,21 @@ export const useMemoStore = create<MemoState>((set, get) => ({
       }
       set((state) => {
         const list = state.commentsByMemo[memoId] ?? [];
-        return {
-          commentsByMemo: {
-            ...state.commentsByMemo,
-            [memoId]: list.filter((c) => c.id !== commentId),
-          },
+        const nextCommentsByMemo = {
+          ...state.commentsByMemo,
+          [memoId]: list.filter((c) => c.id !== commentId),
         };
-      });
-      set((state) => {
+
         const schemaId = Object.keys(state.memosBySchema).find((sid) =>
           (state.memosBySchema[sid] ?? []).some((m) => m.id === memoId),
         );
-        if (!schemaId) return {};
+
+        if (!schemaId) {
+          return {
+            commentsByMemo: nextCommentsByMemo,
+          };
+        }
+
         const nextList = (state.memosBySchema[schemaId] ?? []).reduce(
           (acc, m) => {
             if (m.id !== memoId) {
@@ -340,7 +354,9 @@ export const useMemoStore = create<MemoState>((set, get) => ({
           },
           [] as Memo[],
         );
+
         return {
+          commentsByMemo: nextCommentsByMemo,
           memosBySchema: { ...state.memosBySchema, [schemaId]: nextList },
         };
       });
