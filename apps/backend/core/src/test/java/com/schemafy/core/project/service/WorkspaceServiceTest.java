@@ -284,7 +284,7 @@ class WorkspaceServiceTest {
                     testWorkspace.getId(), request, adminUser.getId()))
                     .expectErrorMatches(e -> e instanceof BusinessException &&
                             ((BusinessException) e)
-                                    .getErrorCode() == ErrorCode.MEMBER_LIMIT_EXCEEDED)
+                                    .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEEDED)
                     .verify();
         }
 

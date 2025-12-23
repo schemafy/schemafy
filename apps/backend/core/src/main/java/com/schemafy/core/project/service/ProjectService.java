@@ -239,11 +239,11 @@ public class ProjectService {
                 .then(projectMemberRepository.findByIdAndNotDeleted(memberId))
                 .switchIfEmpty(Mono
                         .error(new BusinessException(
-                                ErrorCode.MEMBER_NOT_FOUND)))
+                                ErrorCode.PROJECT_MEMBER_NOT_FOUND)))
                 .flatMap(targetMember -> {
                     if (!targetMember.getProjectId().equals(projectId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.MEMBER_NOT_FOUND));
+                                ErrorCode.PROJECT_MEMBER_NOT_FOUND));
                     }
 
                     if (targetMember.getUserId().equals(userId)) {
@@ -302,11 +302,11 @@ public class ProjectService {
                 .then(projectMemberRepository.findByIdAndNotDeleted(memberId))
                 .switchIfEmpty(Mono
                         .error(new BusinessException(
-                                ErrorCode.MEMBER_NOT_FOUND)))
+                                ErrorCode.PROJECT_MEMBER_NOT_FOUND)))
                 .flatMap(targetMember -> {
                     if (!targetMember.getProjectId().equals(projectId)) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.MEMBER_NOT_FOUND));
+                                ErrorCode.PROJECT_MEMBER_NOT_FOUND));
                     }
 
                     if (targetMember.isOwner() || targetMember.isAdmin()) {
@@ -330,7 +330,7 @@ public class ProjectService {
                                 userId))
                 .switchIfEmpty(Mono
                         .error(new BusinessException(
-                                ErrorCode.MEMBER_NOT_FOUND)))
+                                ErrorCode.PROJECT_MEMBER_NOT_FOUND)))
                 .flatMap(member -> {
                     if (member.isOwner() || member.isAdmin()) {
                         return validateOwnerOrAdminProtection(projectId)

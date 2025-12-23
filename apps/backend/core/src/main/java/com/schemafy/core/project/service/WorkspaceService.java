@@ -190,7 +190,7 @@ public class WorkspaceService {
                 .flatMap(exists -> {
                     if (exists) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.MEMBER_ALREADY_EXISTS));
+                                ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS));
                     }
                     return workspaceMemberRepository
                             .countByWorkspaceIdAndNotDeleted(workspaceId);
@@ -198,7 +198,7 @@ public class WorkspaceService {
                 .flatMap(memberCount -> {
                     if (memberCount >= WORKSPACE_MAX_MEMBERS_COUNT) {
                         return Mono.error(new BusinessException(
-                                ErrorCode.MEMBER_LIMIT_EXCEEDED));
+                                ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEEDED));
                     }
                     WorkspaceMember newMember = WorkspaceMember.create(
                             workspaceId, request.userId(), request.role());
@@ -221,7 +221,8 @@ public class WorkspaceService {
         return validateAdminAccess(workspaceId, currentUserId)
                 .then(workspaceMemberRepository.findByIdAndNotDeleted(memberId))
                 .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.MEMBER_NOT_FOUND)))
+                        new BusinessException(
+                                ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)))
                 .flatMap(targetMember -> {
                     if (targetMember.isAdmin()) {
                         return workspaceMemberRepository
@@ -256,7 +257,8 @@ public class WorkspaceService {
                 .findByWorkspaceIdAndUserIdAndNotDeleted(
                         workspaceId, currentUserId)
                 .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.MEMBER_NOT_FOUND)))
+                        new BusinessException(
+                                ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)))
                 .flatMap(myMember -> workspaceMemberRepository
                         .countByWorkspaceIdAndNotDeleted(
                                 workspaceId)
@@ -303,7 +305,8 @@ public class WorkspaceService {
         return validateAdminAccess(workspaceId, currentUserId)
                 .then(workspaceMemberRepository.findByIdAndNotDeleted(memberId))
                 .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.MEMBER_NOT_FOUND)))
+                        new BusinessException(
+                                ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)))
                 .flatMap(targetMember -> {
                     // ADMIN -> MEMBER 변경인 경우, 마지막 ADMIN 체크
                     if (targetMember.isAdmin()
