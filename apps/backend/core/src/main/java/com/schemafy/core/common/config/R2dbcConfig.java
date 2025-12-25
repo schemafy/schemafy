@@ -24,47 +24,47 @@ import io.r2dbc.spi.ConnectionFactory;
 @EnableR2dbcAuditing
 public class R2dbcConfig {
 
-    @Bean
-    public R2dbcCustomConversions r2dbcCustomConversions() {
-        List<Object> converters = new ArrayList<>();
-        converters.add(new InstantToLocalDateTimeConverter());
-        converters.add(new LocalDateTimeToInstantConverter());
+  @Bean
+  public R2dbcCustomConversions r2dbcCustomConversions() {
+    List<Object> converters = new ArrayList<>();
+    converters.add(new InstantToLocalDateTimeConverter());
+    converters.add(new LocalDateTimeToInstantConverter());
 
-        return R2dbcCustomConversions.of(MySqlDialect.INSTANCE, converters);
+    return R2dbcCustomConversions.of(MySqlDialect.INSTANCE, converters);
+  }
+
+  @Bean
+  public ReactiveTransactionManager transactionManager(
+      ConnectionFactory connectionFactory) {
+    return new R2dbcTransactionManager(connectionFactory);
+  }
+
+  @Bean
+  public TransactionalOperator transactionalOperator(
+      ReactiveTransactionManager transactionManager) {
+    return TransactionalOperator.create(transactionManager);
+  }
+
+  @WritingConverter
+  static class InstantToLocalDateTimeConverter
+      implements Converter<Instant, LocalDateTime> {
+
+    @Override
+    public LocalDateTime convert(Instant source) {
+      return LocalDateTime.ofInstant(source, ZoneOffset.UTC);
     }
 
-    @Bean
-    public ReactiveTransactionManager transactionManager(
-            ConnectionFactory connectionFactory) {
-        return new R2dbcTransactionManager(connectionFactory);
+  }
+
+  @ReadingConverter
+  static class LocalDateTimeToInstantConverter
+      implements Converter<LocalDateTime, Instant> {
+
+    @Override
+    public Instant convert(LocalDateTime source) {
+      return source.toInstant(ZoneOffset.UTC);
     }
 
-    @Bean
-    public TransactionalOperator transactionalOperator(
-            ReactiveTransactionManager transactionManager) {
-        return TransactionalOperator.create(transactionManager);
-    }
-
-    @WritingConverter
-    static class InstantToLocalDateTimeConverter
-            implements Converter<Instant, LocalDateTime> {
-
-        @Override
-        public LocalDateTime convert(Instant source) {
-            return LocalDateTime.ofInstant(source, ZoneOffset.UTC);
-        }
-
-    }
-
-    @ReadingConverter
-    static class LocalDateTimeToInstantConverter
-            implements Converter<LocalDateTime, Instant> {
-
-        @Override
-        public Instant convert(LocalDateTime source) {
-            return source.toInstant(ZoneOffset.UTC);
-        }
-
-    }
+  }
 
 }

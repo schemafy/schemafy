@@ -14,26 +14,26 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class TableResponse {
 
-    private String id;
-    private String schemaId;
-    private String name;
-    private String comment;
-    private String tableOptions;
-    private String extra;
-    private Instant createdAt;
-    private Instant updatedAt;
+  private String id;
+  private String schemaId;
+  private String name;
+  private String comment;
+  private String tableOptions;
+  private String extra;
+  private Instant createdAt;
+  private Instant updatedAt;
 
-    public static TableResponse from(Table table) {
-        return TableResponse.builder()
-                .id(table.getId())
-                .schemaId(table.getSchemaId())
-                .name(table.getName())
-                .comment(table.getComment())
-                .tableOptions(table.getTableOptions())
-                .extra(table.getExtra())
-                .createdAt(table.getCreatedAt())
-                .updatedAt(table.getUpdatedAt())
-                .build();
-    }
+  public static TableResponse from(Table table) {
+    return TableResponse.builder()
+        .id(table.getId())
+        .schemaId(table.getSchemaId())
+        .name(table.getName())
+        .comment(table.getComment())
+        .tableOptions(table.getTableOptions())
+        .extra(table.getExtra())
+        .createdAt(table.getCreatedAt())
+        .updatedAt(table.getUpdatedAt())
+        .build();
+  }
 
 }

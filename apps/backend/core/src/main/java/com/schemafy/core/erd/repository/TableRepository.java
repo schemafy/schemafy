@@ -11,8 +11,8 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface TableRepository extends ReactiveCrudRepository<Table, String> {
 
-    public Flux<Table> findBySchemaIdAndDeletedAtIsNull(String schemaId);
+  public Flux<Table> findBySchemaIdAndDeletedAtIsNull(String schemaId);
 
-    public Mono<Table> findByIdAndDeletedAtIsNull(String id);
+  public Mono<Table> findByIdAndDeletedAtIsNull(String id);
 
 }

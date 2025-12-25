@@ -35,442 +35,442 @@ import static org.mockito.BDDMockito.given;
 @DisplayName("IndexService 테스트")
 class IndexServiceTest {
 
-    @Autowired
-    IndexService indexService;
+  @Autowired
+  IndexService indexService;
 
-    @Autowired
-    IndexRepository indexRepository;
+  @Autowired
+  IndexRepository indexRepository;
 
-    @Autowired
-    IndexColumnRepository indexColumnRepository;
+  @Autowired
+  IndexColumnRepository indexColumnRepository;
 
-    @MockitoBean
-    ValidationClient validationClient;
+  @MockitoBean
+  ValidationClient validationClient;
 
-    @BeforeEach
-    void setUp() {
-        indexColumnRepository.deleteAll().block();
-        indexRepository.deleteAll().block();
+  @BeforeEach
+  void setUp() {
+    indexColumnRepository.deleteAll().block();
+    indexRepository.deleteAll().block();
 
-        given(validationClient
-                .changeIndexName(any(Validation.ChangeIndexNameRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-        given(validationClient.addColumnToIndex(
-                any(Validation.AddColumnToIndexRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-        given(validationClient.removeColumnFromIndex(
-                any(Validation.RemoveColumnFromIndexRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-        given(validationClient
-                .deleteIndex(any(Validation.DeleteIndexRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-    }
+    given(validationClient
+        .changeIndexName(any(Validation.ChangeIndexNameRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+    given(validationClient.addColumnToIndex(
+        any(Validation.AddColumnToIndexRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+    given(validationClient.removeColumnFromIndex(
+        any(Validation.RemoveColumnFromIndexRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+    given(validationClient
+        .deleteIndex(any(Validation.DeleteIndexRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+  }
 
-    @Test
-    @DisplayName("createIndex: 인덱스 생성 시 매핑 정보가 올바르게 반환된다")
-    void createIndex_mappingResponse_success() {
-        Validation.CreateIndexRequest request = Validation.CreateIndexRequest
-                .newBuilder()
-                .setIndex(Validation.Index.newBuilder()
-                        .setId("fe-index-id")
-                        .setTableId("table-1")
-                        .setName("idx_test")
-                        .setType(Validation.IndexType.BTREE)
-                        .build())
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("proj-1")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("schema-1")
-                                .setName("test-schema")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("table-1")
-                                        .setName("test-table")
-                                        .build())
-                                .build())
-                        .build())
-                .build();
+  @Test
+  @DisplayName("createIndex: 인덱스 생성 시 매핑 정보가 올바르게 반환된다")
+  void createIndex_mappingResponse_success() {
+    Validation.CreateIndexRequest request = Validation.CreateIndexRequest
+        .newBuilder()
+        .setIndex(Validation.Index.newBuilder()
+            .setId("fe-index-id")
+            .setTableId("table-1")
+            .setName("idx_test")
+            .setType(Validation.IndexType.BTREE)
+            .build())
+        .setDatabase(Validation.Database.newBuilder()
+            .setId("proj-1")
+            .addSchemas(Validation.Schema.newBuilder()
+                .setId("schema-1")
+                .setName("test-schema")
+                .addTables(Validation.Table.newBuilder()
+                    .setId("table-1")
+                    .setName("test-table")
+                    .build())
+                .build())
+            .build())
+        .build();
 
-        // ValidationClient 모킹
-        Validation.Database mockResponse = Validation.Database.newBuilder()
-                .setId("proj-1")
+    // ValidationClient 모킹
+    Validation.Database mockResponse = Validation.Database.newBuilder()
+        .setId("proj-1")
+        .setIsAffected(true)
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setName("test-schema")
+            .setIsAffected(true)
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-1")
+                .setName("test-table")
                 .setIsAffected(true)
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setName("test-schema")
-                        .setIsAffected(true)
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-1")
-                                .setName("test-table")
-                                .setIsAffected(true)
-                                .addIndexes(Validation.Index.newBuilder()
-                                        .setId("be-index-id")
-                                        .setTableId("table-1")
-                                        .setName("idx_test")
-                                        .setType(Validation.IndexType.BTREE)
-                                        .setComment("")
-                                        .setIsAffected(true)
-                                        .build())
-                                .build())
-                        .build())
-                .build();
+                .addIndexes(Validation.Index.newBuilder()
+                    .setId("be-index-id")
+                    .setTableId("table-1")
+                    .setName("idx_test")
+                    .setType(Validation.IndexType.BTREE)
+                    .setComment("")
+                    .setIsAffected(true)
+                    .build())
+                .build())
+            .build())
+        .build();
 
-        given(validationClient
-                .createIndex(any(Validation.CreateIndexRequest.class)))
-                .willReturn(Mono.just(mockResponse));
+    given(validationClient
+        .createIndex(any(Validation.CreateIndexRequest.class)))
+        .willReturn(Mono.just(mockResponse));
 
-        // when
-        Mono<AffectedMappingResponse> result = indexService
-                .createIndex(request);
+    // when
+    Mono<AffectedMappingResponse> result = indexService
+        .createIndex(request);
 
-        // then
-        StepVerifier.create(result)
-                .assertNext(response -> {
-                    // 인덱스 매핑 정보 확인 (FE-ID → BE-ID 매핑)
-                    // indexes는 tableId로 그룹핑된 nested map
-                    assertThat(response.indexes()).hasSize(1);
-                    assertThat(response.indexes().get("table-1"))
-                            .containsEntry("fe-index-id", "be-index-id");
+    // then
+    StepVerifier.create(result)
+        .assertNext(response -> {
+          // 인덱스 매핑 정보 확인 (FE-ID → BE-ID 매핑)
+          // indexes는 tableId로 그룹핑된 nested map
+          assertThat(response.indexes()).hasSize(1);
+          assertThat(response.indexes().get("table-1"))
+              .containsEntry("fe-index-id", "be-index-id");
 
-                    // 다른 매핑들은 비어있어야 함 (인덱스만 생성했으므로)
-                    assertThat(response.schemas()).isEmpty();
-                    assertThat(response.tables()).isEmpty();
-                    assertThat(response.columns()).isEmpty();
-                    assertThat(response.indexColumns()).isEmpty();
-                    assertThat(response.constraints()).isEmpty();
-                    assertThat(response.constraintColumns()).isEmpty();
-                    assertThat(response.relationships()).isEmpty();
-                    assertThat(response.relationshipColumns()).isEmpty();
-                })
-                .verifyComplete();
-    }
+          // 다른 매핑들은 비어있어야 함 (인덱스만 생성했으므로)
+          assertThat(response.schemas()).isEmpty();
+          assertThat(response.tables()).isEmpty();
+          assertThat(response.columns()).isEmpty();
+          assertThat(response.indexColumns()).isEmpty();
+          assertThat(response.constraints()).isEmpty();
+          assertThat(response.constraintColumns()).isEmpty();
+          assertThat(response.relationships()).isEmpty();
+          assertThat(response.relationshipColumns()).isEmpty();
+        })
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("getIndex: 저장된 인덱스를 조회한다")
-    void getIndex_success() {
-        Index saved = indexRepository.save(
-                Index.builder()
-                        .tableId("table-1")
-                        .name("idx_test")
-                        .type("BTREE")
-                        .comment("")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("getIndex: 저장된 인덱스를 조회한다")
+  void getIndex_success() {
+    Index saved = indexRepository.save(
+        Index.builder()
+            .tableId("table-1")
+            .name("idx_test")
+            .type("BTREE")
+            .comment("")
+            .build())
+        .block();
 
-        Mono<IndexResponse> result = indexService.getIndex(saved.getId());
+    Mono<IndexResponse> result = indexService.getIndex(saved.getId());
 
-        StepVerifier.create(result)
-                .assertNext(found -> {
-                    assertThat(found.getId()).isEqualTo(saved.getId());
-                    assertThat(found.getName()).isEqualTo("idx_test");
-                    assertThat(found.getType()).isEqualTo("BTREE");
-                })
-                .verifyComplete();
-    }
+    StepVerifier.create(result)
+        .assertNext(found -> {
+          assertThat(found.getId()).isEqualTo(saved.getId());
+          assertThat(found.getName()).isEqualTo("idx_test");
+          assertThat(found.getType()).isEqualTo("BTREE");
+        })
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("getIndexesByTableId: 테이블 기준으로 인덱스 목록을 조회한다")
-    void getIndexesByTableId_success() {
-        Index i1 = Index.builder().tableId("table-A").name("idx_a")
-                .type("BTREE").comment("").build();
-        Index i2 = Index.builder().tableId("table-A").name("idx_b")
-                .type("HASH").comment("").build();
-        Index iOther = Index.builder().tableId("table-B").name("idx_c")
-                .type("BTREE").comment("").build();
+  @Test
+  @DisplayName("getIndexesByTableId: 테이블 기준으로 인덱스 목록을 조회한다")
+  void getIndexesByTableId_success() {
+    Index i1 = Index.builder().tableId("table-A").name("idx_a")
+        .type("BTREE").comment("").build();
+    Index i2 = Index.builder().tableId("table-A").name("idx_b")
+        .type("HASH").comment("").build();
+    Index iOther = Index.builder().tableId("table-B").name("idx_c")
+        .type("BTREE").comment("").build();
 
-        indexRepository.save(i1)
-                .then(indexRepository.save(i2))
-                .then(indexRepository.save(iOther))
-                .block();
+    indexRepository.save(i1)
+        .then(indexRepository.save(i2))
+        .then(indexRepository.save(iOther))
+        .block();
 
-        StepVerifier
-                .create(indexService.getIndexesByTableId("table-A")
-                        .collectList())
-                .assertNext(list -> {
-                    assertThat(list).hasSize(2);
-                    assertThat(
-                            list.stream().map(IndexResponse::getName).toList())
-                            .containsExactlyInAnyOrder("idx_a", "idx_b");
-                })
-                .verifyComplete();
-    }
+    StepVerifier
+        .create(indexService.getIndexesByTableId("table-A")
+            .collectList())
+        .assertNext(list -> {
+          assertThat(list).hasSize(2);
+          assertThat(
+              list.stream().map(IndexResponse::getName).toList())
+              .containsExactlyInAnyOrder("idx_a", "idx_b");
+        })
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("updateIndexName: 존재하면 이름을 변경한다")
-    void updateIndexName_success() {
-        Index saved = indexRepository.save(
-                Index.builder()
-                        .tableId("table-1")
-                        .name("old_name")
-                        .type("BTREE")
-                        .comment("")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("updateIndexName: 존재하면 이름을 변경한다")
+  void updateIndexName_success() {
+    Index saved = indexRepository.save(
+        Index.builder()
+            .tableId("table-1")
+            .name("old_name")
+            .type("BTREE")
+            .comment("")
+            .build())
+        .block();
 
-        StepVerifier.create(indexService.updateIndexName(
-                Validation.ChangeIndexNameRequest.newBuilder()
-                        .setIndexId(saved.getId())
-                        .setNewName("new_name")
-                        .build()))
-                .assertNext(updated -> {
-                    assertThat(updated.getId()).isEqualTo(saved.getId());
-                    assertThat(updated.getName()).isEqualTo("new_name");
-                })
-                .verifyComplete();
+    StepVerifier.create(indexService.updateIndexName(
+        Validation.ChangeIndexNameRequest.newBuilder()
+            .setIndexId(saved.getId())
+            .setNewName("new_name")
+            .build()))
+        .assertNext(updated -> {
+          assertThat(updated.getId()).isEqualTo(saved.getId());
+          assertThat(updated.getName()).isEqualTo("new_name");
+        })
+        .verifyComplete();
 
-        // DB 반영 확인
-        StepVerifier.create(indexRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.getName())
-                        .isEqualTo("new_name"))
-                .verifyComplete();
-    }
+    // DB 반영 확인
+    StepVerifier.create(indexRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.getName())
+            .isEqualTo("new_name"))
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("updateIndexName: 존재하지 않으면 에러를 반환한다")
-    void updateIndexName_notFound() {
-        StepVerifier.create(indexService.updateIndexName(
-                Validation.ChangeIndexNameRequest.newBuilder()
-                        .setIndexId("non-existent")
-                        .setNewName("new_name")
-                        .build()))
-                .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e)
-                                .getErrorCode() == ErrorCode.ERD_INDEX_NOT_FOUND)
-                .verify();
-    }
+  @Test
+  @DisplayName("updateIndexName: 존재하지 않으면 에러를 반환한다")
+  void updateIndexName_notFound() {
+    StepVerifier.create(indexService.updateIndexName(
+        Validation.ChangeIndexNameRequest.newBuilder()
+            .setIndexId("non-existent")
+            .setNewName("new_name")
+            .build()))
+        .expectErrorMatches(e -> e instanceof BusinessException
+            && ((BusinessException) e)
+                .getErrorCode() == ErrorCode.ERD_INDEX_NOT_FOUND)
+        .verify();
+  }
 
-    @Test
-    @DisplayName("updateIndexType: 존재하면 타입을 변경한다")
-    void updateIndexType_success() {
-        Index saved = indexRepository.save(
-                Index.builder()
-                        .tableId("table-1")
-                        .name("idx_test")
-                        .type("BTREE")
-                        .comment("")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("updateIndexType: 존재하면 타입을 변경한다")
+  void updateIndexType_success() {
+    Index saved = indexRepository.save(
+        Index.builder()
+            .tableId("table-1")
+            .name("idx_test")
+            .type("BTREE")
+            .comment("")
+            .build())
+        .block();
 
-        StepVerifier.create(indexService.updateIndexType(
-                saved.getId(),
-                new UpdateIndexTypeRequest("hash")))
-                .assertNext(updated -> {
-                    assertThat(updated.getId()).isEqualTo(saved.getId());
-                    assertThat(updated.getType()).isEqualTo("HASH");
-                })
-                .verifyComplete();
+    StepVerifier.create(indexService.updateIndexType(
+        saved.getId(),
+        new UpdateIndexTypeRequest("hash")))
+        .assertNext(updated -> {
+          assertThat(updated.getId()).isEqualTo(saved.getId());
+          assertThat(updated.getType()).isEqualTo("HASH");
+        })
+        .verifyComplete();
 
-        StepVerifier.create(indexRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.getType())
-                        .isEqualTo("HASH"))
-                .verifyComplete();
-    }
+    StepVerifier.create(indexRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.getType())
+            .isEqualTo("HASH"))
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("updateIndexType: 존재하지 않으면 에러를 반환한다")
-    void updateIndexType_notFound() {
-        StepVerifier.create(indexService.updateIndexType(
-                "non-existent",
-                new UpdateIndexTypeRequest("BTREE")))
-                .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e)
-                                .getErrorCode() == ErrorCode.ERD_INDEX_NOT_FOUND)
-                .verify();
-    }
+  @Test
+  @DisplayName("updateIndexType: 존재하지 않으면 에러를 반환한다")
+  void updateIndexType_notFound() {
+    StepVerifier.create(indexService.updateIndexType(
+        "non-existent",
+        new UpdateIndexTypeRequest("BTREE")))
+        .expectErrorMatches(e -> e instanceof BusinessException
+            && ((BusinessException) e)
+                .getErrorCode() == ErrorCode.ERD_INDEX_NOT_FOUND)
+        .verify();
+  }
 
-    @Test
-    @DisplayName("updateIndexType: 유효하지 않은 타입이면 에러를 반환한다")
-    void updateIndexType_invalidType() {
-        Index saved = indexRepository.save(
-                Index.builder()
-                        .tableId("table-1")
-                        .name("idx_test")
-                        .type("BTREE")
-                        .comment("")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("updateIndexType: 유효하지 않은 타입이면 에러를 반환한다")
+  void updateIndexType_invalidType() {
+    Index saved = indexRepository.save(
+        Index.builder()
+            .tableId("table-1")
+            .name("idx_test")
+            .type("BTREE")
+            .comment("")
+            .build())
+        .block();
 
-        StepVerifier.create(indexService.updateIndexType(
-                saved.getId(),
-                new UpdateIndexTypeRequest("INVALID")))
-                .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e)
-                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
-                .verify();
-    }
+    StepVerifier.create(indexService.updateIndexType(
+        saved.getId(),
+        new UpdateIndexTypeRequest("INVALID")))
+        .expectErrorMatches(e -> e instanceof BusinessException
+            && ((BusinessException) e)
+                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+        .verify();
+  }
 
-    @Test
-    @DisplayName("addColumnToIndex: 인덱스에 컬럼을 추가한다")
-    void addColumnToIndex_success() {
-        Validation.AddColumnToIndexRequest request = Validation.AddColumnToIndexRequest
-                .newBuilder()
-                .setIndexColumn(Validation.IndexColumn.newBuilder()
-                        .setId("index-column-1")
-                        .setIndexId("index-1")
-                        .setColumnId("column-1")
-                        .setSeqNo(1)
-                        .setSortDir(Validation.IndexSortDir.ASC)
-                        .build())
-                .build();
+  @Test
+  @DisplayName("addColumnToIndex: 인덱스에 컬럼을 추가한다")
+  void addColumnToIndex_success() {
+    Validation.AddColumnToIndexRequest request = Validation.AddColumnToIndexRequest
+        .newBuilder()
+        .setIndexColumn(Validation.IndexColumn.newBuilder()
+            .setId("index-column-1")
+            .setIndexId("index-1")
+            .setColumnId("column-1")
+            .setSeqNo(1)
+            .setSortDir(Validation.IndexSortDir.ASC)
+            .build())
+        .build();
 
-        Mono<IndexColumnResponse> result = indexService
-                .addColumnToIndex(request);
+    Mono<IndexColumnResponse> result = indexService
+        .addColumnToIndex(request);
 
-        StepVerifier.create(result)
-                .assertNext(indexColumn -> {
-                    assertThat(indexColumn.getId()).isNotNull(); // 자동 생성된 ID
-                    assertThat(indexColumn.getIndexId()).isEqualTo("index-1");
-                    assertThat(indexColumn.getColumnId()).isEqualTo("column-1");
-                    assertThat(indexColumn.getSeqNo()).isEqualTo(1);
-                    assertThat(indexColumn.getSortDir()).isEqualTo("ASC");
-                })
-                .verifyComplete();
+    StepVerifier.create(result)
+        .assertNext(indexColumn -> {
+          assertThat(indexColumn.getId()).isNotNull(); // 자동 생성된 ID
+          assertThat(indexColumn.getIndexId()).isEqualTo("index-1");
+          assertThat(indexColumn.getColumnId()).isEqualTo("column-1");
+          assertThat(indexColumn.getSeqNo()).isEqualTo(1);
+          assertThat(indexColumn.getSortDir()).isEqualTo("ASC");
+        })
+        .verifyComplete();
 
-        // DB 반영 확인 - 자동 생성된 ID 사용
-        StepVerifier.create(indexColumnRepository.findAll().collectList())
-                .assertNext(list -> {
-                    assertThat(list).hasSize(1);
-                    IndexColumn found = list.get(0);
-                    assertThat(found.getIndexId()).isEqualTo("index-1");
-                    assertThat(found.getColumnId()).isEqualTo("column-1");
-                })
-                .verifyComplete();
-    }
+    // DB 반영 확인 - 자동 생성된 ID 사용
+    StepVerifier.create(indexColumnRepository.findAll().collectList())
+        .assertNext(list -> {
+          assertThat(list).hasSize(1);
+          IndexColumn found = list.get(0);
+          assertThat(found.getIndexId()).isEqualTo("index-1");
+          assertThat(found.getColumnId()).isEqualTo("column-1");
+        })
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("updateIndexColumnSortDir: 존재하면 정렬 방향을 변경한다")
-    void updateIndexColumnSortDir_success() {
-        IndexColumn saved = indexColumnRepository.save(
-                IndexColumn.builder()
-                        .indexId("index-1")
-                        .columnId("column-1")
-                        .seqNo(1)
-                        .sortDir("ASC")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("updateIndexColumnSortDir: 존재하면 정렬 방향을 변경한다")
+  void updateIndexColumnSortDir_success() {
+    IndexColumn saved = indexColumnRepository.save(
+        IndexColumn.builder()
+            .indexId("index-1")
+            .columnId("column-1")
+            .seqNo(1)
+            .sortDir("ASC")
+            .build())
+        .block();
 
-        StepVerifier.create(indexService.updateIndexColumnSortDir(
-                "index-1",
-                saved.getId(),
-                new UpdateIndexColumnSortDirRequest("DESC")))
-                .assertNext(updated -> {
-                    assertThat(updated.getId()).isEqualTo(saved.getId());
-                    assertThat(updated.getSortDir()).isEqualTo("DESC");
-                })
-                .verifyComplete();
+    StepVerifier.create(indexService.updateIndexColumnSortDir(
+        "index-1",
+        saved.getId(),
+        new UpdateIndexColumnSortDirRequest("DESC")))
+        .assertNext(updated -> {
+          assertThat(updated.getId()).isEqualTo(saved.getId());
+          assertThat(updated.getSortDir()).isEqualTo("DESC");
+        })
+        .verifyComplete();
 
-        StepVerifier.create(indexColumnRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.getSortDir())
-                        .isEqualTo("DESC"))
-                .verifyComplete();
-    }
+    StepVerifier.create(indexColumnRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.getSortDir())
+            .isEqualTo("DESC"))
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("updateIndexColumnSortDir: 존재하지 않으면 에러를 반환한다")
-    void updateIndexColumnSortDir_notFound() {
-        StepVerifier.create(indexService.updateIndexColumnSortDir(
-                "index-1",
-                "non-existent",
-                new UpdateIndexColumnSortDirRequest("ASC")))
-                .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e)
-                                .getErrorCode() == ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)
-                .verify();
-    }
+  @Test
+  @DisplayName("updateIndexColumnSortDir: 존재하지 않으면 에러를 반환한다")
+  void updateIndexColumnSortDir_notFound() {
+    StepVerifier.create(indexService.updateIndexColumnSortDir(
+        "index-1",
+        "non-existent",
+        new UpdateIndexColumnSortDirRequest("ASC")))
+        .expectErrorMatches(e -> e instanceof BusinessException
+            && ((BusinessException) e)
+                .getErrorCode() == ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)
+        .verify();
+  }
 
-    @Test
-    @DisplayName("updateIndexColumnSortDir: indexId가 일치하지 않으면 에러를 반환한다")
-    void updateIndexColumnSortDir_mismatchIndexId() {
-        IndexColumn saved = indexColumnRepository.save(
-                IndexColumn.builder()
-                        .indexId("index-1")
-                        .columnId("column-1")
-                        .seqNo(1)
-                        .sortDir("ASC")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("updateIndexColumnSortDir: indexId가 일치하지 않으면 에러를 반환한다")
+  void updateIndexColumnSortDir_mismatchIndexId() {
+    IndexColumn saved = indexColumnRepository.save(
+        IndexColumn.builder()
+            .indexId("index-1")
+            .columnId("column-1")
+            .seqNo(1)
+            .sortDir("ASC")
+            .build())
+        .block();
 
-        StepVerifier.create(indexService.updateIndexColumnSortDir(
-                "index-2",
-                saved.getId(),
-                new UpdateIndexColumnSortDirRequest("DESC")))
-                .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e)
-                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
-                .verify();
-    }
+    StepVerifier.create(indexService.updateIndexColumnSortDir(
+        "index-2",
+        saved.getId(),
+        new UpdateIndexColumnSortDirRequest("DESC")))
+        .expectErrorMatches(e -> e instanceof BusinessException
+            && ((BusinessException) e)
+                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+        .verify();
+  }
 
-    @Test
-    @DisplayName("updateIndexColumnSortDir: 유효하지 않은 정렬 방향이면 에러를 반환한다")
-    void updateIndexColumnSortDir_invalidSortDir() {
-        IndexColumn saved = indexColumnRepository.save(
-                IndexColumn.builder()
-                        .indexId("index-1")
-                        .columnId("column-1")
-                        .seqNo(1)
-                        .sortDir("ASC")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("updateIndexColumnSortDir: 유효하지 않은 정렬 방향이면 에러를 반환한다")
+  void updateIndexColumnSortDir_invalidSortDir() {
+    IndexColumn saved = indexColumnRepository.save(
+        IndexColumn.builder()
+            .indexId("index-1")
+            .columnId("column-1")
+            .seqNo(1)
+            .sortDir("ASC")
+            .build())
+        .block();
 
-        StepVerifier.create(indexService.updateIndexColumnSortDir(
-                "index-1",
-                saved.getId(),
-                new UpdateIndexColumnSortDirRequest("INVALID")))
-                .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e)
-                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
-                .verify();
-    }
+    StepVerifier.create(indexService.updateIndexColumnSortDir(
+        "index-1",
+        saved.getId(),
+        new UpdateIndexColumnSortDirRequest("INVALID")))
+        .expectErrorMatches(e -> e instanceof BusinessException
+            && ((BusinessException) e)
+                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+        .verify();
+  }
 
-    @Test
-    @DisplayName("removeColumnFromIndex: 인덱스에서 컬럼을 제거한다 (소프트 삭제)")
-    void removeColumnFromIndex_success() {
-        IndexColumn saved = indexColumnRepository.save(
-                IndexColumn.builder()
-                        .indexId("index-1")
-                        .columnId("column-1")
-                        .seqNo(1)
-                        .sortDir("ASC")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("removeColumnFromIndex: 인덱스에서 컬럼을 제거한다 (소프트 삭제)")
+  void removeColumnFromIndex_success() {
+    IndexColumn saved = indexColumnRepository.save(
+        IndexColumn.builder()
+            .indexId("index-1")
+            .columnId("column-1")
+            .seqNo(1)
+            .sortDir("ASC")
+            .build())
+        .block();
 
-        StepVerifier.create(indexService.removeColumnFromIndex(
-                Validation.RemoveColumnFromIndexRequest.newBuilder()
-                        .setIndexColumnId(saved.getId())
-                        .build()))
-                .verifyComplete();
+    StepVerifier.create(indexService.removeColumnFromIndex(
+        Validation.RemoveColumnFromIndexRequest.newBuilder()
+            .setIndexColumnId(saved.getId())
+            .build()))
+        .verifyComplete();
 
-        // 삭제 플래그 확인 (deletedAt not null)
-        StepVerifier.create(indexColumnRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
-                .verifyComplete();
-    }
+    // 삭제 플래그 확인 (deletedAt not null)
+    StepVerifier.create(indexColumnRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("deleteIndex: 소프트 삭제가 수행된다")
-    void deleteIndex_softDelete() {
-        Index saved = indexRepository.save(
-                Index.builder()
-                        .tableId("table-1")
-                        .name("to_delete")
-                        .type("BTREE")
-                        .comment("")
-                        .build())
-                .block();
+  @Test
+  @DisplayName("deleteIndex: 소프트 삭제가 수행된다")
+  void deleteIndex_softDelete() {
+    Index saved = indexRepository.save(
+        Index.builder()
+            .tableId("table-1")
+            .name("to_delete")
+            .type("BTREE")
+            .comment("")
+            .build())
+        .block();
 
-        StepVerifier.create(indexService.deleteIndex(
-                Validation.DeleteIndexRequest.newBuilder()
-                        .setIndexId(saved.getId())
-                        .build()))
-                .verifyComplete();
+    StepVerifier.create(indexService.deleteIndex(
+        Validation.DeleteIndexRequest.newBuilder()
+            .setIndexId(saved.getId())
+            .build()))
+        .verifyComplete();
 
-        // 삭제 플래그 확인 (deletedAt not null)
-        StepVerifier.create(indexRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
-                .verifyComplete();
-    }
+    // 삭제 플래그 확인 (deletedAt not null)
+    StepVerifier.create(indexRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+        .verifyComplete();
+  }
 
 }

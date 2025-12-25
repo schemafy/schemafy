@@ -21,31 +21,31 @@ import lombok.Setter;
 @Table("db_constraints")
 public class Constraint extends BaseEntity {
 
-    @Column("table_id")
-    private String tableId;
+  @Column("table_id")
+  private String tableId;
 
-    @Column("name")
-    private String name;
+  @Column("name")
+  private String name;
 
-    @Column("kind")
-    private String kind;
+  @Column("kind")
+  private String kind;
 
-    @Nullable
-    @Column("check_expr")
-    private String checkExpr;
+  @Nullable
+  @Column("check_expr")
+  private String checkExpr;
 
-    @Nullable
-    @Column("default_expr")
-    private String defaultExpr;
+  @Nullable
+  @Column("default_expr")
+  private String defaultExpr;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Constraint newConstraint(String tableId, String name,
-            String kind,
-            String checkExpr, String defaultExpr) {
-        Constraint constraint = new Constraint(tableId, name, kind, checkExpr,
-                defaultExpr);
-        constraint.setId(UlidGenerator.generate());
-        return constraint;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static Constraint newConstraint(String tableId, String name,
+      String kind,
+      String checkExpr, String defaultExpr) {
+    Constraint constraint = new Constraint(tableId, name, kind, checkExpr,
+        defaultExpr);
+    constraint.setId(UlidGenerator.generate());
+    return constraint;
+  }
 
 }

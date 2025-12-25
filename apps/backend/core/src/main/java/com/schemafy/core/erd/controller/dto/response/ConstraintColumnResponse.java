@@ -12,19 +12,19 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConstraintColumnResponse {
 
-    private String id;
-    private String constraintId;
-    private String columnId;
-    private Integer seqNo;
+  private String id;
+  private String constraintId;
+  private String columnId;
+  private Integer seqNo;
 
-    public static ConstraintColumnResponse from(
-            ConstraintColumn constraintColumn) {
-        return ConstraintColumnResponse.builder()
-                .id(constraintColumn.getId())
-                .constraintId(constraintColumn.getConstraintId())
-                .columnId(constraintColumn.getColumnId())
-                .seqNo(constraintColumn.getSeqNo())
-                .build();
-    }
+  public static ConstraintColumnResponse from(
+      ConstraintColumn constraintColumn) {
+    return ConstraintColumnResponse.builder()
+        .id(constraintColumn.getId())
+        .constraintId(constraintColumn.getConstraintId())
+        .columnId(constraintColumn.getColumnId())
+        .seqNo(constraintColumn.getSeqNo())
+        .build();
+  }
 
 }

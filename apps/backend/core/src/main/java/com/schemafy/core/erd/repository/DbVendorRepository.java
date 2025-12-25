@@ -10,13 +10,13 @@ import reactor.core.publisher.Mono;
 
 @Repository
 public interface DbVendorRepository
-        extends ReactiveCrudRepository<DbVendor, String> {
+    extends ReactiveCrudRepository<DbVendor, String> {
 
-    public Mono<DbVendor> findByIdAndDeletedAtIsNull(String id);
+  public Mono<DbVendor> findByIdAndDeletedAtIsNull(String id);
 
-    public Flux<DbVendor> findByDeletedAtIsNull();
+  public Flux<DbVendor> findByDeletedAtIsNull();
 
-    public Mono<DbVendor> findByNameAndVersionAndDeletedAtIsNull(String name,
-            String version);
+  public Mono<DbVendor> findByNameAndVersionAndDeletedAtIsNull(String name,
+      String version);
 
 }

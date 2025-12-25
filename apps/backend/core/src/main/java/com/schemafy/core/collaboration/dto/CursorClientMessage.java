@@ -11,6 +11,6 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public class CursorClientMessage extends ClientMessage {
 
-    private CursorPosition cursor;
+  private CursorPosition cursor;
 
 }

@@ -10,21 +10,21 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "jwt")
 public class JwtProperties {
 
-    private String secret = "my-super-secret-key-for-jwt-token-generation-min-256-bits-required";
-    private long accessTokenExpiration = 7200000L; // 2 hours
-    private long refreshTokenExpiration = 604800000L; // 7 days
-    private String issuer = "schemafy";
-    private String audience = "schemafy-audience";
+  private String secret = "my-super-secret-key-for-jwt-token-generation-min-256-bits-required";
+  private long accessTokenExpiration = 7200000L; // 2 hours
+  private long refreshTokenExpiration = 604800000L; // 7 days
+  private String issuer = "schemafy";
+  private String audience = "schemafy-audience";
 
-    private Cookie cookie = new Cookie();
+  private Cookie cookie = new Cookie();
 
-    @Getter
-    @Setter
-    public static class Cookie {
+  @Getter
+  @Setter
+  public static class Cookie {
 
-        private boolean secure = true;
-        private String sameSite = "Strict";
+    private boolean secure = true;
+    private String sameSite = "Strict";
 
-    }
+  }
 
 }

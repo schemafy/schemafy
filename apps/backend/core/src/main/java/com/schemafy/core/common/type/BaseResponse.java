@@ -11,26 +11,26 @@ import lombok.Getter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BaseResponse<T> {
 
-    private final boolean success;
-    private final T result;
-    private final ErrorResponse error;
+  private final boolean success;
+  private final T result;
+  private final ErrorResponse error;
 
-    public static <T> BaseResponse<T> success(T result) {
-        return new BaseResponse<>(true, result, null);
-    }
+  public static <T> BaseResponse<T> success(T result) {
+    return new BaseResponse<>(true, result, null);
+  }
 
-    public static <T> BaseResponse<T> error(String code, String message) {
-        return new BaseResponse<>(false, null,
-                new ErrorResponse(code, message, null));
-    }
+  public static <T> BaseResponse<T> error(String code, String message) {
+    return new BaseResponse<>(false, null,
+        new ErrorResponse(code, message, null));
+  }
 
-    public static <T> BaseResponse<T> error(String code, String message,
-            Object details) {
-        return new BaseResponse<>(false, null,
-                new ErrorResponse(code, message, details));
-    }
+  public static <T> BaseResponse<T> error(String code, String message,
+      Object details) {
+    return new BaseResponse<>(false, null,
+        new ErrorResponse(code, message, details));
+  }
 
-    private record ErrorResponse(String code, String message, Object details) {
-    }
+  private record ErrorResponse(String code, String message, Object details) {
+  }
 
 }

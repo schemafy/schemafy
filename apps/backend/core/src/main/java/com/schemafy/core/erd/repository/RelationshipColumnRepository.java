@@ -8,11 +8,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface RelationshipColumnRepository
-        extends ReactiveCrudRepository<RelationshipColumn, String> {
+    extends ReactiveCrudRepository<RelationshipColumn, String> {
 
-    public Mono<RelationshipColumn> findByIdAndDeletedAtIsNull(String id);
+  public Mono<RelationshipColumn> findByIdAndDeletedAtIsNull(String id);
 
-    public Flux<RelationshipColumn> findByRelationshipIdAndDeletedAtIsNull(
-            String relationshipId);
+  public Flux<RelationshipColumn> findByRelationshipIdAndDeletedAtIsNull(
+      String relationshipId);
 
 }

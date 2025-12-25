@@ -16,16 +16,16 @@ import lombok.experimental.SuperBuilder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = PresenceJoinEvent.class, name = "JOIN"),
-    @JsonSubTypes.Type(value = PresenceLeaveEvent.class, name = "LEAVE"),
-    @JsonSubTypes.Type(value = PresenceCursorEvent.class, name = "CURSOR")
+  @JsonSubTypes.Type(value = PresenceJoinEvent.class, name = "JOIN"),
+  @JsonSubTypes.Type(value = PresenceLeaveEvent.class, name = "LEAVE"),
+  @JsonSubTypes.Type(value = PresenceCursorEvent.class, name = "CURSOR")
 })
 public abstract class PresenceEvent {
 
-    protected PresenceEventType type;
-    protected String sessionId;
-    protected long timestamp;
+  protected PresenceEventType type;
+  protected String sessionId;
+  protected long timestamp;
 
-    public abstract PresenceEvent withoutSessionId();
+  public abstract PresenceEvent withoutSessionId();
 
 }

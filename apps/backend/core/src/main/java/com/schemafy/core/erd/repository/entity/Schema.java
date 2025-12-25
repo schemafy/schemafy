@@ -21,40 +21,40 @@ import lombok.Setter;
 @Table("db_schemas")
 public class Schema extends BaseEntity {
 
-    @Column("project_id")
-    private String projectId;
+  @Column("project_id")
+  private String projectId;
 
-    @Column("db_vendor_id")
-    private String dbVendorId;
+  @Column("db_vendor_id")
+  private String dbVendorId;
 
-    @Column("name")
-    private String name;
+  @Column("name")
+  private String name;
 
-    @Nullable
-    @Column("charset")
-    private String charset;
+  @Nullable
+  @Column("charset")
+  private String charset;
 
-    @Nullable
-    @Column("collation")
-    private String collation;
+  @Nullable
+  @Column("collation")
+  private String collation;
 
-    @Nullable
-    @Column("vendor_option")
-    private String vendorOption;
+  @Nullable
+  @Column("vendor_option")
+  private String vendorOption;
 
-    @Nullable
-    @Column("canvas_viewport")
-    private String canvasViewport;
+  @Nullable
+  @Column("canvas_viewport")
+  private String canvasViewport;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Schema newSchema(String projectId, String dbVendorId,
-            String name,
-            String charset, String collation, String vendorOption,
-            String canvasViewport) {
-        Schema schema = new Schema(projectId, dbVendorId, name, charset,
-                collation, vendorOption, canvasViewport);
-        schema.setId(UlidGenerator.generate());
-        return schema;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static Schema newSchema(String projectId, String dbVendorId,
+      String name,
+      String charset, String collation, String vendorOption,
+      String canvasViewport) {
+    Schema schema = new Schema(projectId, dbVendorId, name, charset,
+        collation, vendorOption, canvasViewport);
+    schema.setId(UlidGenerator.generate());
+    return schema;
+  }
 
 }

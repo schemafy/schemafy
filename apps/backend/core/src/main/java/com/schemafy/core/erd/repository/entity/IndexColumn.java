@@ -20,25 +20,25 @@ import lombok.Setter;
 @Table("db_index_columns")
 public class IndexColumn extends BaseEntity {
 
-    @Column("index_id")
-    private String indexId;
+  @Column("index_id")
+  private String indexId;
 
-    @Column("column_id")
-    private String columnId;
+  @Column("column_id")
+  private String columnId;
 
-    @Column("seq_no")
-    private int seqNo;
+  @Column("seq_no")
+  private int seqNo;
 
-    @Column("sort_dir")
-    private String sortDir;
+  @Column("sort_dir")
+  private String sortDir;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static IndexColumn newIndexColumn(String indexId, String columnId,
-            int seqNo, String sortDir) {
-        IndexColumn indexColumn = new IndexColumn(indexId, columnId, seqNo,
-                sortDir);
-        indexColumn.setId(UlidGenerator.generate());
-        return indexColumn;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static IndexColumn newIndexColumn(String indexId, String columnId,
+      int seqNo, String sortDir) {
+    IndexColumn indexColumn = new IndexColumn(indexId, columnId, seqNo,
+        sortDir);
+    indexColumn.setId(UlidGenerator.generate());
+    return indexColumn;
+  }
 
 }

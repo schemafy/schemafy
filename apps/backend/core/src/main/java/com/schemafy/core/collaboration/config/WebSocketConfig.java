@@ -17,22 +17,22 @@ import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 @ConditionalOnRedisEnabled
 public class WebSocketConfig {
 
-    @Bean
-    public HandlerMapping webSocketHandlerMapping(
-            CollaborationWebSocketHandler handler) {
-        // /ws/collaboration?projectId={projectId}
-        Map<String, WebSocketHandler> map = new HashMap<>();
-        map.put("/ws/collaboration", handler);
+  @Bean
+  public HandlerMapping webSocketHandlerMapping(
+      CollaborationWebSocketHandler handler) {
+    // /ws/collaboration?projectId={projectId}
+    Map<String, WebSocketHandler> map = new HashMap<>();
+    map.put("/ws/collaboration", handler);
 
-        SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
-        mapping.setUrlMap(map);
-        mapping.setOrder(-1);
-        return mapping;
-    }
+    SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
+    mapping.setUrlMap(map);
+    mapping.setOrder(-1);
+    return mapping;
+  }
 
-    @Bean
-    public WebSocketHandlerAdapter handlerAdapter() {
-        return new WebSocketHandlerAdapter();
-    }
+  @Bean
+  public WebSocketHandlerAdapter handlerAdapter() {
+    return new WebSocketHandlerAdapter();
+  }
 
 }

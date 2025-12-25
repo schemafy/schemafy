@@ -16,25 +16,25 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class MemoDetailResponse {
 
-    private String id;
-    private String schemaId;
-    private UserSummaryResponse author;
-    private String positions;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private List<MemoCommentResponse> comments;
+  private String id;
+  private String schemaId;
+  private UserSummaryResponse author;
+  private String positions;
+  private Instant createdAt;
+  private Instant updatedAt;
+  private List<MemoCommentResponse> comments;
 
-    public static MemoDetailResponse from(Memo memo,
-            List<MemoCommentResponse> comments, UserSummaryResponse author) {
-        return MemoDetailResponse.builder()
-                .id(memo.getId())
-                .schemaId(memo.getSchemaId())
-                .author(author)
-                .positions(memo.getPositions())
-                .createdAt(memo.getCreatedAt())
-                .updatedAt(memo.getUpdatedAt())
-                .comments(comments)
-                .build();
-    }
+  public static MemoDetailResponse from(Memo memo,
+      List<MemoCommentResponse> comments, UserSummaryResponse author) {
+    return MemoDetailResponse.builder()
+        .id(memo.getId())
+        .schemaId(memo.getSchemaId())
+        .author(author)
+        .positions(memo.getPositions())
+        .createdAt(memo.getCreatedAt())
+        .updatedAt(memo.getUpdatedAt())
+        .comments(comments)
+        .build();
+  }
 
 }

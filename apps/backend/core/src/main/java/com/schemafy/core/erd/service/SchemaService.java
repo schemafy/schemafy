@@ -22,65 +22,65 @@ import validation.Validation;
 @RequiredArgsConstructor
 public class SchemaService {
 
-    private final ValidationClient validationClient;
-    private final SchemaRepository schemaRepository;
-    private final TableService tableService;
+  private final ValidationClient validationClient;
+  private final SchemaRepository schemaRepository;
+  private final TableService tableService;
 
-    public Mono<AffectedMappingResponse> createSchema(
-            Validation.CreateSchemaRequest request) {
-        return validationClient.createSchema(request)
-                .flatMap(database -> schemaRepository
-                        .save(ErdMapper.toEntity(request.getSchema()))
-                        .map(savedSchema -> AffectedMappingResponse.of(
-                                request,
-                                request.getDatabase(),
-                                AffectedMappingResponse
-                                        .updateEntityIdInDatabase(
-                                                database,
-                                                EntityType.SCHEMA,
-                                                request.getSchema().getId(),
-                                                savedSchema.getId()))));
-    }
+  public Mono<AffectedMappingResponse> createSchema(
+      Validation.CreateSchemaRequest request) {
+    return validationClient.createSchema(request)
+        .flatMap(database -> schemaRepository
+            .save(ErdMapper.toEntity(request.getSchema()))
+            .map(savedSchema -> AffectedMappingResponse.of(
+                request,
+                request.getDatabase(),
+                AffectedMappingResponse
+                    .updateEntityIdInDatabase(
+                        database,
+                        EntityType.SCHEMA,
+                        request.getSchema().getId(),
+                        savedSchema.getId()))));
+  }
 
-    public Mono<SchemaDetailResponse> getSchema(String id) {
-        return schemaRepository.findByIdAndDeletedAtIsNull(id)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
-                .flatMap(schema -> tableService.getTablesBySchemaId(id)
-                        .collectList()
-                        .map(tables -> SchemaDetailResponse.from(schema,
-                                tables)));
-    }
+  public Mono<SchemaDetailResponse> getSchema(String id) {
+    return schemaRepository.findByIdAndDeletedAtIsNull(id)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
+        .flatMap(schema -> tableService.getTablesBySchemaId(id)
+            .collectList()
+            .map(tables -> SchemaDetailResponse.from(schema,
+                tables)));
+  }
 
-    public Flux<SchemaResponse> getSchemasByProjectId(String projectId) {
-        return schemaRepository.findByProjectIdAndDeletedAtIsNull(projectId)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
-                .map(SchemaResponse::from);
-    }
+  public Flux<SchemaResponse> getSchemasByProjectId(String projectId) {
+    return schemaRepository.findByProjectIdAndDeletedAtIsNull(projectId)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
+        .map(SchemaResponse::from);
+  }
 
-    public Mono<SchemaResponse> updateSchemaName(
-            Validation.ChangeSchemaNameRequest request) {
-        return schemaRepository
-                .findByIdAndDeletedAtIsNull(request.getSchemaId())
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
-                .delayUntil(
-                        ignore -> validationClient.changeSchemaName(request))
-                .doOnNext(schema -> schema.setName(request.getNewName()))
-                .flatMap(schemaRepository::save)
-                .map(SchemaResponse::from);
-    }
+  public Mono<SchemaResponse> updateSchemaName(
+      Validation.ChangeSchemaNameRequest request) {
+    return schemaRepository
+        .findByIdAndDeletedAtIsNull(request.getSchemaId())
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
+        .delayUntil(
+            ignore -> validationClient.changeSchemaName(request))
+        .doOnNext(schema -> schema.setName(request.getNewName()))
+        .flatMap(schemaRepository::save)
+        .map(SchemaResponse::from);
+  }
 
-    public Mono<Void> deleteSchema(Validation.DeleteSchemaRequest request) {
-        return schemaRepository
-                .findByIdAndDeletedAtIsNull(request.getSchemaId())
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient.deleteSchema(request))
-                .doOnNext(Schema::delete)
-                .flatMap(schemaRepository::save)
-                .then();
-    }
+  public Mono<Void> deleteSchema(Validation.DeleteSchemaRequest request) {
+    return schemaRepository
+        .findByIdAndDeletedAtIsNull(request.getSchemaId())
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
+        .delayUntil(ignore -> validationClient.deleteSchema(request))
+        .doOnNext(Schema::delete)
+        .flatMap(schemaRepository::save)
+        .then();
+  }
 
 }

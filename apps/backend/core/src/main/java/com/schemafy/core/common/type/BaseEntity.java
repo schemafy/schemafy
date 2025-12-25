@@ -19,30 +19,30 @@ import lombok.Setter;
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public abstract class BaseEntity implements Persistable<String> {
 
-    @Id
-    @Setter(lombok.AccessLevel.PROTECTED)
-    protected String id;
+  @Id
+  @Setter(lombok.AccessLevel.PROTECTED)
+  protected String id;
 
-    @CreatedDate
-    protected Instant createdAt;
+  @CreatedDate
+  protected Instant createdAt;
 
-    @LastModifiedDate
-    protected Instant updatedAt;
+  @LastModifiedDate
+  protected Instant updatedAt;
 
-    protected Instant deletedAt;
+  protected Instant deletedAt;
 
-    @Override
-    public String getId() { return id; }
+  @Override
+  public String getId() { return id; }
 
-    @Override
-    @JsonIgnore
-    public boolean isNew() { return this.createdAt == null; }
+  @Override
+  @JsonIgnore
+  public boolean isNew() { return this.createdAt == null; }
 
-    public void delete() {
-        this.deletedAt = Instant.now();
-    }
+  public void delete() {
+    this.deletedAt = Instant.now();
+  }
 
-    @JsonIgnore
-    public boolean isDeleted() { return deletedAt != null; }
+  @JsonIgnore
+  public boolean isDeleted() { return deletedAt != null; }
 
 }

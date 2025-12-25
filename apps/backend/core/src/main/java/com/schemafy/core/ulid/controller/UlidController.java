@@ -19,16 +19,16 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UlidController {
 
-    private final UlidService ulidService;
+  private final UlidService ulidService;
 
-    @GetMapping("/ulid/generate")
-    public Mono<ResponseEntity<BaseResponse<UlidResponse>>> generateTemporaryUlid(
-            @ApiVersion String version) {
-        return ulidService
-                .generateTemporaryUlid()
-                .map(UlidResponse::new)
-                .map(BaseResponse::success)
-                .map(ResponseEntity::ok);
-    }
+  @GetMapping("/ulid/generate")
+  public Mono<ResponseEntity<BaseResponse<UlidResponse>>> generateTemporaryUlid(
+      @ApiVersion String version) {
+    return ulidService
+        .generateTemporaryUlid()
+        .map(UlidResponse::new)
+        .map(BaseResponse::success)
+        .map(ResponseEntity::ok);
+  }
 
 }

@@ -14,18 +14,18 @@ import com.schemafy.core.common.resolver.ApiVersionArgumentResolver;
 @Configuration
 public class WebFluxConfig implements WebFluxConfigurer {
 
-    @Override
-    public void configureArgumentResolvers(
-            @NonNull ArgumentResolverConfigurer configurer) {
-        configurer.addCustomResolver(new ApiVersionArgumentResolver());
-    }
+  @Override
+  public void configureArgumentResolvers(
+      @NonNull ArgumentResolverConfigurer configurer) {
+    configurer.addCustomResolver(new ApiVersionArgumentResolver());
+  }
 
-    @Override
-    public void configureHttpMessageCodecs(
-            @NonNull ServerCodecConfigurer configurer) {
-        configurer.customCodecs().register(new ProtobufDecoder());
-        configurer.customCodecs().register(new ProtobufEncoder());
-        configurer.customCodecs().register(new ProtobufJsonDecoder());
-    }
+  @Override
+  public void configureHttpMessageCodecs(
+      @NonNull ServerCodecConfigurer configurer) {
+    configurer.customCodecs().register(new ProtobufDecoder());
+    configurer.customCodecs().register(new ProtobufEncoder());
+    configurer.customCodecs().register(new ProtobufJsonDecoder());
+  }
 
 }

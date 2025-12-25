@@ -10,10 +10,10 @@ import reactor.core.publisher.Mono;
 
 @Repository
 public interface SchemaRepository
-        extends ReactiveCrudRepository<Schema, String> {
+    extends ReactiveCrudRepository<Schema, String> {
 
-    public Mono<Schema> findByIdAndDeletedAtIsNull(String id);
+  public Mono<Schema> findByIdAndDeletedAtIsNull(String id);
 
-    public Flux<Schema> findByProjectIdAndDeletedAtIsNull(String projectId);
+  public Flux<Schema> findByProjectIdAndDeletedAtIsNull(String projectId);
 
 }

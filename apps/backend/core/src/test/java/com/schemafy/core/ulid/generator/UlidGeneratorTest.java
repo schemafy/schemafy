@@ -12,70 +12,70 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 class UlidGeneratorTest {
 
-    @Test
-    void testGenerateUlid() {
-        String ulid = UlidGenerator.generate();
+  @Test
+  void testGenerateUlid() {
+    String ulid = UlidGenerator.generate();
 
-        assertNotNull(ulid);
-        assertEquals(26, ulid.length());
+    assertNotNull(ulid);
+    assertEquals(26, ulid.length());
 
-        String validChars = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-        for (char c : ulid.toCharArray()) {
-            assertTrue(validChars.indexOf(c) >= 0,
-                    "ULID contains invalid character: " + c);
-        }
+    String validChars = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    for (char c : ulid.toCharArray()) {
+      assertTrue(validChars.indexOf(c) >= 0,
+          "ULID contains invalid character: " + c);
+    }
+  }
+
+  @RepeatedTest(10)
+  void testGenerateUniqueUlids() {
+    String ulid1 = UlidGenerator.generate();
+    String ulid2 = UlidGenerator.generate();
+
+    assertNotEquals(ulid1, ulid2, "Generated ULIDs should be unique");
+  }
+
+  @Test
+  void testUlidSortability() {
+    String ulid1 = UlidGenerator.generate();
+
+    try {
+      Thread.sleep(1);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
 
-    @RepeatedTest(10)
-    void testGenerateUniqueUlids() {
-        String ulid1 = UlidGenerator.generate();
-        String ulid2 = UlidGenerator.generate();
+    String ulid2 = UlidGenerator.generate();
 
-        assertNotEquals(ulid1, ulid2, "Generated ULIDs should be unique");
-    }
+    assertTrue(ulid1.compareTo(ulid2) < 0,
+        "ULIDs should be sortable by generation time");
+  }
 
-    @Test
-    void testUlidSortability() {
-        String ulid1 = UlidGenerator.generate();
+  @Test
+  void testExtractTimestamp() {
+    String ulid = UlidGenerator.generate();
+    long timestamp = UlidGenerator.extractTimestamp(ulid);
 
-        try {
-            Thread.sleep(1);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    assertTrue(timestamp > 0, "Timestamp should be positive");
 
-        String ulid2 = UlidGenerator.generate();
+    long currentTime = System.currentTimeMillis();
+    long timeDiff = Math.abs(currentTime - timestamp);
+    assertTrue(timeDiff < 60000,
+        "Timestamp should be close to current time");
+  }
 
-        assertTrue(ulid1.compareTo(ulid2) < 0,
-                "ULIDs should be sortable by generation time");
-    }
+  @Test
+  void testExtractTimestampWithInvalidUlid() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      UlidGenerator.extractTimestamp("invalid");
+    });
 
-    @Test
-    void testExtractTimestamp() {
-        String ulid = UlidGenerator.generate();
-        long timestamp = UlidGenerator.extractTimestamp(ulid);
+    assertThrows(IllegalArgumentException.class, () -> {
+      UlidGenerator.extractTimestamp(null);
+    });
 
-        assertTrue(timestamp > 0, "Timestamp should be positive");
-
-        long currentTime = System.currentTimeMillis();
-        long timeDiff = Math.abs(currentTime - timestamp);
-        assertTrue(timeDiff < 60000,
-                "Timestamp should be close to current time");
-    }
-
-    @Test
-    void testExtractTimestampWithInvalidUlid() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            UlidGenerator.extractTimestamp("invalid");
-        });
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            UlidGenerator.extractTimestamp(null);
-        });
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            UlidGenerator.extractTimestamp("short");
-        });
-    }
+    assertThrows(IllegalArgumentException.class, () -> {
+      UlidGenerator.extractTimestamp("short");
+    });
+  }
 
 }

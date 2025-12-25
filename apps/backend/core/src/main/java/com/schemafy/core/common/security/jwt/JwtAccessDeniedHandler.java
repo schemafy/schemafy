@@ -14,17 +14,17 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class JwtAccessDeniedHandler implements ServerAccessDeniedHandler {
 
-    private final WebExchangeErrorWriter errorResponseWriter;
+  private final WebExchangeErrorWriter errorResponseWriter;
 
-    @Override
-    public Mono<Void> handle(ServerWebExchange exchange,
-            AccessDeniedException denied) {
-        ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
-        return errorResponseWriter.writeErrorResponse(
-                exchange,
-                errorCode.getStatus(),
-                errorCode.getCode(),
-                errorCode.getMessage());
-    }
+  @Override
+  public Mono<Void> handle(ServerWebExchange exchange,
+      AccessDeniedException denied) {
+    ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
+    return errorResponseWriter.writeErrorResponse(
+        exchange,
+        errorCode.getStatus(),
+        errorCode.getCode(),
+        errorCode.getMessage());
+  }
 
 }

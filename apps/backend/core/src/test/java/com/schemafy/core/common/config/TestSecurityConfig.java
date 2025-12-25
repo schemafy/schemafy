@@ -20,48 +20,48 @@ import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @Import({ JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class,
-    JwtAuthenticationFilter.class })
+  JwtAuthenticationFilter.class })
 public class TestSecurityConfig {
 
-    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
-    private final JwtAccessDeniedHandler accessDeniedHandler;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+  private final JwtAccessDeniedHandler accessDeniedHandler;
+  private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public TestSecurityConfig(
-            JwtAuthenticationEntryPoint authenticationEntryPoint,
-            JwtAccessDeniedHandler accessDeniedHandler,
-            JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.authenticationEntryPoint = authenticationEntryPoint;
-        this.accessDeniedHandler = accessDeniedHandler;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
+  public TestSecurityConfig(
+      JwtAuthenticationEntryPoint authenticationEntryPoint,
+      JwtAccessDeniedHandler accessDeniedHandler,
+      JwtAuthenticationFilter jwtAuthenticationFilter) {
+    this.authenticationEntryPoint = authenticationEntryPoint;
+    this.accessDeniedHandler = accessDeniedHandler;
+    this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+  }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 
-    @Bean
-    @Primary
-    public SecurityWebFilterChain testSecurityFilterChain(
-            ServerHttpSecurity http) {
-        return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .securityContextRepository(
-                        NoOpServerSecurityContextRepository.getInstance())
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .logout(ServerHttpSecurity.LogoutSpec::disable)
-                .exceptionHandling(exceptionHandling -> exceptionHandling
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler))
-                .addFilterAt(jwtAuthenticationFilter,
-                        SecurityWebFiltersOrder.AUTHENTICATION)
-                .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/public/api/**").permitAll()
-                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyExchange().authenticated())
-                .build();
-    }
+  @Bean
+  @Primary
+  public SecurityWebFilterChain testSecurityFilterChain(
+      ServerHttpSecurity http) {
+    return http
+        .csrf(ServerHttpSecurity.CsrfSpec::disable)
+        .securityContextRepository(
+            NoOpServerSecurityContextRepository.getInstance())
+        .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+        .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+        .logout(ServerHttpSecurity.LogoutSpec::disable)
+        .exceptionHandling(exceptionHandling -> exceptionHandling
+            .authenticationEntryPoint(authenticationEntryPoint)
+            .accessDeniedHandler(accessDeniedHandler))
+        .addFilterAt(jwtAuthenticationFilter,
+            SecurityWebFiltersOrder.AUTHENTICATION)
+        .authorizeExchange(exchanges -> exchanges
+            .pathMatchers("/public/api/**").permitAll()
+            .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .anyExchange().authenticated())
+        .build();
+  }
 
 }

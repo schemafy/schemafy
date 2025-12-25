@@ -11,26 +11,26 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public class PresenceCursorEvent extends PresenceEvent {
 
-    private CursorPosition cursor;
+  private CursorPosition cursor;
 
-    public static PresenceCursorEvent of(String sessionId,
-            CursorPosition cursor) {
-        return PresenceCursorEvent.builder()
-                .type(PresenceEventType.CURSOR)
-                .sessionId(sessionId)
-                .cursor(cursor)
-                .timestamp(System.currentTimeMillis())
-                .build();
-    }
+  public static PresenceCursorEvent of(String sessionId,
+      CursorPosition cursor) {
+    return PresenceCursorEvent.builder()
+        .type(PresenceEventType.CURSOR)
+        .sessionId(sessionId)
+        .cursor(cursor)
+        .timestamp(System.currentTimeMillis())
+        .build();
+  }
 
-    @Override
-    public PresenceCursorEvent withoutSessionId() {
-        return PresenceCursorEvent.builder()
-                .type(this.type)
-                .sessionId(null)
-                .cursor(this.cursor)
-                .timestamp(this.timestamp)
-                .build();
-    }
+  @Override
+  public PresenceCursorEvent withoutSessionId() {
+    return PresenceCursorEvent.builder()
+        .type(this.type)
+        .sessionId(null)
+        .cursor(this.cursor)
+        .timestamp(this.timestamp)
+        .build();
+  }
 
 }

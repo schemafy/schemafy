@@ -13,19 +13,19 @@ import reactor.core.publisher.Mono;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationEntryPoint
-        implements ServerAuthenticationEntryPoint {
+    implements ServerAuthenticationEntryPoint {
 
-    private final WebExchangeErrorWriter errorResponseWriter;
+  private final WebExchangeErrorWriter errorResponseWriter;
 
-    @Override
-    public Mono<Void> commence(ServerWebExchange exchange,
-            AuthenticationException ex) {
-        ErrorCode errorCode = ErrorCode.AUTHENTICATION_REQUIRED;
-        return errorResponseWriter.writeErrorResponse(
-                exchange,
-                errorCode.getStatus(),
-                errorCode.getCode(),
-                errorCode.getMessage());
-    }
+  @Override
+  public Mono<Void> commence(ServerWebExchange exchange,
+      AuthenticationException ex) {
+    ErrorCode errorCode = ErrorCode.AUTHENTICATION_REQUIRED;
+    return errorResponseWriter.writeErrorResponse(
+        exchange,
+        errorCode.getStatus(),
+        errorCode.getCode(),
+        errorCode.getMessage());
+  }
 
 }

@@ -5,9 +5,9 @@ import com.schemafy.core.common.exception.ErrorCode;
 
 public class GrpcConnectionException extends BusinessException {
 
-    public GrpcConnectionException(Throwable cause) {
-        super(ErrorCode.VALIDATION_SERVICE_UNAVAILABLE);
-        initCause(cause);
-    }
+  public GrpcConnectionException(Throwable cause) {
+    super(ErrorCode.VALIDATION_SERVICE_UNAVAILABLE);
+    initCause(cause);
+  }
 
 }

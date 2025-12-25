@@ -14,10 +14,10 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = CursorClientMessage.class, name = "CURSOR")
+  @JsonSubTypes.Type(value = CursorClientMessage.class, name = "CURSOR")
 })
 public abstract class ClientMessage {
 
-    protected PresenceEventType type;
+  protected PresenceEventType type;
 
 }

@@ -30,168 +30,168 @@ import validation.Validation;
 @RequiredArgsConstructor
 public class IndexService {
 
-    private static final Set<String> VALID_INDEX_TYPES = Set
-            .of("BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER");
-    private static final Set<String> VALID_SORT_DIRS = Set.of("ASC", "DESC");
+  private static final Set<String> VALID_INDEX_TYPES = Set
+      .of("BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER");
+  private static final Set<String> VALID_SORT_DIRS = Set.of("ASC", "DESC");
 
-    private final ValidationClient validationClient;
-    private final IndexRepository indexRepository;
-    private final IndexColumnRepository indexColumnRepository;
-    private final TransactionalOperator transactionalOperator;
+  private final ValidationClient validationClient;
+  private final IndexRepository indexRepository;
+  private final IndexColumnRepository indexColumnRepository;
+  private final TransactionalOperator transactionalOperator;
 
-    public Mono<AffectedMappingResponse> createIndex(
-            Validation.CreateIndexRequest request) {
-        return validationClient.createIndex(request)
-                .flatMap(database -> saveIndexWithColumns(request, database));
-    }
+  public Mono<AffectedMappingResponse> createIndex(
+      Validation.CreateIndexRequest request) {
+    return validationClient.createIndex(request)
+        .flatMap(database -> saveIndexWithColumns(request, database));
+  }
 
-    private Mono<AffectedMappingResponse> saveIndexWithColumns(
-            Validation.CreateIndexRequest request,
-            Validation.Database database) {
-        return transactionalOperator.transactional(
-                indexRepository
-                        .save(ErdMapper.toEntity(request.getIndex()))
-                        .flatMap(savedIndex -> {
-                            Validation.Database updatedDatabase = AffectedMappingResponse
-                                    .updateEntityIdInDatabase(
-                                            database,
-                                            EntityType.INDEX,
-                                            request.getIndex().getId(),
-                                            savedIndex.getId());
+  private Mono<AffectedMappingResponse> saveIndexWithColumns(
+      Validation.CreateIndexRequest request,
+      Validation.Database database) {
+    return transactionalOperator.transactional(
+        indexRepository
+            .save(ErdMapper.toEntity(request.getIndex()))
+            .flatMap(savedIndex -> {
+              Validation.Database updatedDatabase = AffectedMappingResponse
+                  .updateEntityIdInDatabase(
+                      database,
+                      EntityType.INDEX,
+                      request.getIndex().getId(),
+                      savedIndex.getId());
 
-                            return saveIndexColumns(
-                                    request.getIndex().getColumnsList(),
-                                    savedIndex.getId())
-                                    .then(Mono.just(AffectedMappingResponse.of(
-                                            request,
-                                            request.getDatabase(),
-                                            updatedDatabase)));
-                        }));
-    }
+              return saveIndexColumns(
+                  request.getIndex().getColumnsList(),
+                  savedIndex.getId())
+                  .then(Mono.just(AffectedMappingResponse.of(
+                      request,
+                      request.getDatabase(),
+                      updatedDatabase)));
+            }));
+  }
 
-    private Mono<Void> saveIndexColumns(
-            List<Validation.IndexColumn> columns,
-            String indexId) {
-        return Flux.fromIterable(columns)
-                .flatMap(column -> {
-                    IndexColumn entity = ErdMapper.toEntity(column);
-                    entity.setIndexId(indexId);
-                    return indexColumnRepository.save(entity);
-                })
-                .then();
-    }
+  private Mono<Void> saveIndexColumns(
+      List<Validation.IndexColumn> columns,
+      String indexId) {
+    return Flux.fromIterable(columns)
+        .flatMap(column -> {
+          IndexColumn entity = ErdMapper.toEntity(column);
+          entity.setIndexId(indexId);
+          return indexColumnRepository.save(entity);
+        })
+        .then();
+  }
 
-    public Mono<IndexResponse> getIndex(String id) {
-        return indexRepository.findByIdAndDeletedAtIsNull(id)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
-                .flatMap(index -> indexColumnRepository
-                        .findByIndexIdAndDeletedAtIsNull(id)
-                        .collectList()
-                        .map(columns -> IndexResponse.from(index, columns)));
-    }
+  public Mono<IndexResponse> getIndex(String id) {
+    return indexRepository.findByIdAndDeletedAtIsNull(id)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
+        .flatMap(index -> indexColumnRepository
+            .findByIndexIdAndDeletedAtIsNull(id)
+            .collectList()
+            .map(columns -> IndexResponse.from(index, columns)));
+  }
 
-    public Flux<IndexResponse> getIndexesByTableId(String tableId) {
-        return indexRepository.findByTableIdAndDeletedAtIsNull(tableId)
-                .flatMap(index -> indexColumnRepository
-                        .findByIndexIdAndDeletedAtIsNull(index.getId())
-                        .collectList()
-                        .map(columns -> IndexResponse.from(index, columns)));
-    }
+  public Flux<IndexResponse> getIndexesByTableId(String tableId) {
+    return indexRepository.findByTableIdAndDeletedAtIsNull(tableId)
+        .flatMap(index -> indexColumnRepository
+            .findByIndexIdAndDeletedAtIsNull(index.getId())
+            .collectList()
+            .map(columns -> IndexResponse.from(index, columns)));
+  }
 
-    public Mono<IndexResponse> updateIndexName(
-            Validation.ChangeIndexNameRequest request) {
-        return indexRepository
-                .findByIdAndDeletedAtIsNull(request.getIndexId())
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient.changeIndexName(request))
-                .doOnNext(index -> index.setName(request.getNewName()))
-                .flatMap(indexRepository::save)
-                .map(IndexResponse::from);
-    }
+  public Mono<IndexResponse> updateIndexName(
+      Validation.ChangeIndexNameRequest request) {
+    return indexRepository
+        .findByIdAndDeletedAtIsNull(request.getIndexId())
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
+        .delayUntil(ignore -> validationClient.changeIndexName(request))
+        .doOnNext(index -> index.setName(request.getNewName()))
+        .flatMap(indexRepository::save)
+        .map(IndexResponse::from);
+  }
 
-    public Mono<IndexResponse> updateIndexType(
-            String indexId,
-            UpdateIndexTypeRequest request) {
-        return normalizeValue(request.type(), VALID_INDEX_TYPES)
-                .flatMap(normalizedType -> indexRepository
-                        .findByIdAndDeletedAtIsNull(indexId)
-                        .switchIfEmpty(Mono.error(new BusinessException(
-                                ErrorCode.ERD_INDEX_NOT_FOUND)))
-                        .doOnNext(index -> index.setType(normalizedType))
-                        .flatMap(indexRepository::save)
-                        .map(IndexResponse::from));
-    }
+  public Mono<IndexResponse> updateIndexType(
+      String indexId,
+      UpdateIndexTypeRequest request) {
+    return normalizeValue(request.type(), VALID_INDEX_TYPES)
+        .flatMap(normalizedType -> indexRepository
+            .findByIdAndDeletedAtIsNull(indexId)
+            .switchIfEmpty(Mono.error(new BusinessException(
+                ErrorCode.ERD_INDEX_NOT_FOUND)))
+            .doOnNext(index -> index.setType(normalizedType))
+            .flatMap(indexRepository::save)
+            .map(IndexResponse::from));
+  }
 
-    public Mono<IndexColumnResponse> addColumnToIndex(
-            Validation.AddColumnToIndexRequest request) {
-        return validationClient.addColumnToIndex(request)
-                .then(indexColumnRepository
-                        .save(ErdMapper.toEntity(request.getIndexColumn())))
-                .map(IndexColumnResponse::from);
-    }
+  public Mono<IndexColumnResponse> addColumnToIndex(
+      Validation.AddColumnToIndexRequest request) {
+    return validationClient.addColumnToIndex(request)
+        .then(indexColumnRepository
+            .save(ErdMapper.toEntity(request.getIndexColumn())))
+        .map(IndexColumnResponse::from);
+  }
 
-    public Mono<IndexColumnResponse> updateIndexColumnSortDir(
-            String indexId,
-            String indexColumnId,
-            UpdateIndexColumnSortDirRequest request) {
-        return normalizeValue(request.sortDir(), VALID_SORT_DIRS)
-                .flatMap(normalizedSortDir -> indexColumnRepository
-                        .findByIdAndDeletedAtIsNull(indexColumnId)
-                        .switchIfEmpty(Mono.error(new BusinessException(
-                                ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
-                        .flatMap(indexColumn -> {
-                            if (!indexId.equals(indexColumn.getIndexId())) {
-                                return Mono.error(new BusinessException(
-                                        ErrorCode.COMMON_INVALID_PARAMETER));
-                            }
-
-                            indexColumn.setSortDir(normalizedSortDir);
-                            return indexColumnRepository.save(indexColumn);
-                        })
-                        .map(IndexColumnResponse::from));
-    }
-
-    public Mono<Void> removeColumnFromIndex(
-            Validation.RemoveColumnFromIndexRequest request) {
-        return indexColumnRepository
-                .findByIdAndDeletedAtIsNull(request.getIndexColumnId())
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(
-                                ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient
-                        .removeColumnFromIndex(request))
-                .doOnNext(IndexColumn::delete)
-                .flatMap(indexColumnRepository::save)
-                .then();
-    }
-
-    private Mono<String> normalizeValue(String value,
-            Set<String> validValues) {
-        if (value == null || value.isBlank()) {
-            return Mono.error(new BusinessException(
+  public Mono<IndexColumnResponse> updateIndexColumnSortDir(
+      String indexId,
+      String indexColumnId,
+      UpdateIndexColumnSortDirRequest request) {
+    return normalizeValue(request.sortDir(), VALID_SORT_DIRS)
+        .flatMap(normalizedSortDir -> indexColumnRepository
+            .findByIdAndDeletedAtIsNull(indexColumnId)
+            .switchIfEmpty(Mono.error(new BusinessException(
+                ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
+            .flatMap(indexColumn -> {
+              if (!indexId.equals(indexColumn.getIndexId())) {
+                return Mono.error(new BusinessException(
                     ErrorCode.COMMON_INVALID_PARAMETER));
-        }
+              }
 
-        String normalized = value.trim().toUpperCase();
-        if (!validValues.contains(normalized)) {
-            return Mono.error(new BusinessException(
-                    ErrorCode.COMMON_INVALID_PARAMETER));
-        }
+              indexColumn.setSortDir(normalizedSortDir);
+              return indexColumnRepository.save(indexColumn);
+            })
+            .map(IndexColumnResponse::from));
+  }
 
-        return Mono.just(normalized);
+  public Mono<Void> removeColumnFromIndex(
+      Validation.RemoveColumnFromIndexRequest request) {
+    return indexColumnRepository
+        .findByIdAndDeletedAtIsNull(request.getIndexColumnId())
+        .switchIfEmpty(Mono.error(
+            new BusinessException(
+                ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)))
+        .delayUntil(ignore -> validationClient
+            .removeColumnFromIndex(request))
+        .doOnNext(IndexColumn::delete)
+        .flatMap(indexColumnRepository::save)
+        .then();
+  }
+
+  private Mono<String> normalizeValue(String value,
+      Set<String> validValues) {
+    if (value == null || value.isBlank()) {
+      return Mono.error(new BusinessException(
+          ErrorCode.COMMON_INVALID_PARAMETER));
     }
 
-    public Mono<Void> deleteIndex(
-            Validation.DeleteIndexRequest request) {
-        return indexRepository.findByIdAndDeletedAtIsNull(request.getIndexId())
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient.deleteIndex(request))
-                .doOnNext(Index::delete)
-                .flatMap(indexRepository::save)
-                .then();
+    String normalized = value.trim().toUpperCase();
+    if (!validValues.contains(normalized)) {
+      return Mono.error(new BusinessException(
+          ErrorCode.COMMON_INVALID_PARAMETER));
     }
+
+    return Mono.just(normalized);
+  }
+
+  public Mono<Void> deleteIndex(
+      Validation.DeleteIndexRequest request) {
+    return indexRepository.findByIdAndDeletedAtIsNull(request.getIndexId())
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_INDEX_NOT_FOUND)))
+        .delayUntil(ignore -> validationClient.deleteIndex(request))
+        .doOnNext(Index::delete)
+        .flatMap(indexRepository::save)
+        .then();
+  }
 
 }

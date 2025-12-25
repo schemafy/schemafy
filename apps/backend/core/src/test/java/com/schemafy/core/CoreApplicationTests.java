@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 @ActiveProfiles("test")
 class CoreApplicationTests {
 
-    @Test
-    void contextLoads() {}
+  @Test
+  void contextLoads() {}
 
 }

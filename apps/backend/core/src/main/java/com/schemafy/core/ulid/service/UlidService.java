@@ -12,14 +12,14 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UlidService {
 
-    private final CacheService cacheService;
+  private final CacheService cacheService;
 
-    private static final String ULID_PREFIX = "ulid::";
+  private static final String ULID_PREFIX = "ulid::";
 
-    public Mono<String> generateTemporaryUlid() {
-        return Mono.fromCallable(UlidGenerator::generate)
-                .flatMap(ulid -> cacheService.put(ULID_PREFIX + ulid, "valid")
-                        .thenReturn(ulid));
-    }
+  public Mono<String> generateTemporaryUlid() {
+    return Mono.fromCallable(UlidGenerator::generate)
+        .flatMap(ulid -> cacheService.put(ULID_PREFIX + ulid, "valid")
+            .thenReturn(ulid));
+  }
 
 }

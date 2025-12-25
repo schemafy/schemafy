@@ -28,41 +28,41 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @Import(TestSecurityConfig.class)
 class UlidControllerTest {
 
-    private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
-            "{version}",
-            "v1.0");
+  private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
+      "{version}",
+      "v1.0");
 
-    @MockitoBean
-    WebExchangeErrorWriter errorResponseWriter;
+  @MockitoBean
+  WebExchangeErrorWriter errorResponseWriter;
 
-    @MockitoBean
-    JwtProvider jwtProvider;
+  @MockitoBean
+  JwtProvider jwtProvider;
 
-    @Autowired
-    private WebTestClient webTestClient;
+  @Autowired
+  private WebTestClient webTestClient;
 
-    @MockitoBean
-    private UlidService ulidService;
+  @MockitoBean
+  private UlidService ulidService;
 
-    @Test
-    void generateTemporaryUlid() {
-        String mockUlid = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        when(ulidService.generateTemporaryUlid())
-                .thenReturn(Mono.just(mockUlid));
+  @Test
+  void generateTemporaryUlid() {
+    String mockUlid = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+    when(ulidService.generateTemporaryUlid())
+        .thenReturn(Mono.just(mockUlid));
 
-        webTestClient
-                .get()
-                .uri(API_BASE_PATH + "/ulid/generate")
-                .header("Accept", "application/json")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.ulid").isEqualTo(mockUlid)
-                .consumeWith(document("ulid-generate",
-                        generateUlidRequestHeaders(),
-                        generateUlidResponseHeaders(),
-                        generateUlidResponse()));
-    }
+    webTestClient
+        .get()
+        .uri(API_BASE_PATH + "/ulid/generate")
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.ulid").isEqualTo(mockUlid)
+        .consumeWith(document("ulid-generate",
+            generateUlidRequestHeaders(),
+            generateUlidResponseHeaders(),
+            generateUlidResponse()));
+  }
 
 }

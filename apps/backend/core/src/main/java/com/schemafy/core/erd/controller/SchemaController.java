@@ -36,68 +36,68 @@ import validation.Validation.DeleteSchemaRequest;
 @RequestMapping(ApiPath.API)
 public class SchemaController {
 
-    private final SchemaService schemaService;
-    private final TableService tableService;
-    private final MemoService memoService;
+  private final SchemaService schemaService;
+  private final TableService tableService;
+  private final MemoService memoService;
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-    @PostMapping("/schemas")
-    public Mono<BaseResponse<AffectedMappingResponse>> createSchema(
-            @RequestBody CreateSchemaRequest request) {
-        return schemaService.createSchema(request)
-                .map(BaseResponse::success);
-    }
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PostMapping("/schemas")
+  public Mono<BaseResponse<AffectedMappingResponse>> createSchema(
+      @RequestBody CreateSchemaRequest request) {
+    return schemaService.createSchema(request)
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/schemas/{schemaId}")
-    public Mono<BaseResponse<SchemaDetailResponse>> getSchema(
-            @PathVariable String schemaId) {
-        return schemaService.getSchema(schemaId)
-                .map(BaseResponse::success);
-    }
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/schemas/{schemaId}")
+  public Mono<BaseResponse<SchemaDetailResponse>> getSchema(
+      @PathVariable String schemaId) {
+    return schemaService.getSchema(schemaId)
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/schemas/{schemaId}/tables")
-    public Mono<BaseResponse<List<TableResponse>>> getTablesBySchemaId(
-            @PathVariable String schemaId) {
-        return tableService.getTablesBySchemaId(schemaId)
-                .collectList()
-                .map(BaseResponse::success);
-    }
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/schemas/{schemaId}/tables")
+  public Mono<BaseResponse<List<TableResponse>>> getTablesBySchemaId(
+      @PathVariable String schemaId) {
+    return tableService.getTablesBySchemaId(schemaId)
+        .collectList()
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/schemas/{schemaId}/memos")
-    public Mono<BaseResponse<List<MemoResponse>>> getMemosBySchemaId(
-            @PathVariable String schemaId) {
-        return memoService.getMemosBySchemaId(schemaId)
-                .collectList()
-                .map(BaseResponse::success);
-    }
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/schemas/{schemaId}/memos")
+  public Mono<BaseResponse<List<MemoResponse>>> getMemosBySchemaId(
+      @PathVariable String schemaId) {
+    return memoService.getMemosBySchemaId(schemaId)
+        .collectList()
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-    @PutMapping("/schemas/{schemaId}/name")
-    public Mono<BaseResponse<SchemaResponse>> updateSchemaName(
-            @PathVariable String schemaId,
-            @RequestBody ChangeSchemaNameRequest request) {
-        if (!schemaId.equals(request.getSchemaId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-        return schemaService.updateSchemaName(request)
-                .map(BaseResponse::success);
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PutMapping("/schemas/{schemaId}/name")
+  public Mono<BaseResponse<SchemaResponse>> updateSchemaName(
+      @PathVariable String schemaId,
+      @RequestBody ChangeSchemaNameRequest request) {
+    if (!schemaId.equals(request.getSchemaId())) {
+      return Mono.error(
+          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
     }
+    return schemaService.updateSchemaName(request)
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-    @DeleteMapping("/schemas/{schemaId}")
-    public Mono<BaseResponse<Void>> deleteSchema(
-            @PathVariable String schemaId,
-            @RequestBody DeleteSchemaRequest request) {
-        if (!schemaId.equals(request.getSchemaId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-        return schemaService.deleteSchema(request)
-                .then(Mono.just(BaseResponse.success(null)));
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @DeleteMapping("/schemas/{schemaId}")
+  public Mono<BaseResponse<Void>> deleteSchema(
+      @PathVariable String schemaId,
+      @RequestBody DeleteSchemaRequest request) {
+    if (!schemaId.equals(request.getSchemaId())) {
+      return Mono.error(
+          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
     }
+    return schemaService.deleteSchema(request)
+        .then(Mono.just(BaseResponse.success(null)));
+  }
 
 }

@@ -12,20 +12,20 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class IndexColumnResponse {
 
-    private String id;
-    private String indexId;
-    private String columnId;
-    private Integer seqNo;
-    private String sortDir;
+  private String id;
+  private String indexId;
+  private String columnId;
+  private Integer seqNo;
+  private String sortDir;
 
-    public static IndexColumnResponse from(IndexColumn indexColumn) {
-        return IndexColumnResponse.builder()
-                .id(indexColumn.getId())
-                .indexId(indexColumn.getIndexId())
-                .columnId(indexColumn.getColumnId())
-                .seqNo(indexColumn.getSeqNo())
-                .sortDir(indexColumn.getSortDir())
-                .build();
-    }
+  public static IndexColumnResponse from(IndexColumn indexColumn) {
+    return IndexColumnResponse.builder()
+        .id(indexColumn.getId())
+        .indexId(indexColumn.getIndexId())
+        .columnId(indexColumn.getColumnId())
+        .seqNo(indexColumn.getSeqNo())
+        .sortDir(indexColumn.getSortDir())
+        .build();
+  }
 
 }
