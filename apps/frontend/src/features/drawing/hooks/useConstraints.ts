@@ -66,10 +66,7 @@ export const useConstraints = ({
     }
   };
 
-  const saveConstraintName = async (
-    constraintId: string,
-    newName: string,
-  ) => {
+  const saveConstraintName = async (constraintId: string, newName: string) => {
     try {
       await constraintService.updateConstraintName(
         schemaId,

@@ -27,6 +27,7 @@ export interface CreateConstraintRequest {
     id: ULID;
     tableId: ULID;
     name: string;
+    kind: string;
     columns: {
       id: ULID;
       constraintId: ULID;

@@ -1,6 +1,5 @@
 import type { PropagatedEntities } from '../api/types/common';
 import { ErdStore } from '@/store/erd.store';
-import { findTempIdByRealId } from './idRemapping';
 import { findTableInDatabase } from './entityValidators';
 
 const getErdStore = () => ErdStore.getInstance();
@@ -121,53 +120,98 @@ export function handlePropagatedConstraintColumns(
 ) {
   const erdStore = getErdStore();
 
+  const propConstColsByConstraintId = new Map<
+    string,
+    (typeof propagated.constraintColumns)[0][]
+  >();
+
   propagated.constraintColumns.forEach((propConstCol) => {
     if (propConstCol.sourceId === finalRelationshipId) {
-      const table = erdStore.database?.schemas
-        .find((s) => s.id === schemaId)
-        ?.tables.find((t) =>
-          t.constraints.some((c) => c.id === propConstCol.constraintId),
-        );
-
-      if (table) {
-        const constraint = table.constraints.find(
-          (c) => c.id === propConstCol.constraintId,
-        );
-
-        if (constraint) {
-          const tempColumnId = findTempIdByRealId(
-            Object.fromEntries(tempToRealColumnIdMap),
-            propConstCol.columnId,
-          );
-
-          const tempConstCol = constraint.columns.find(
-            (cc) => cc.columnId === tempColumnId,
-          );
-
-          if (tempConstCol) {
-            if (tempConstCol.id !== propConstCol.constraintColumnId) {
-              erdStore.replaceConstraintColumnId(
-                schemaId,
-                table.id,
-                propConstCol.constraintId,
-                tempConstCol.id,
-                propConstCol.constraintColumnId,
-              );
-            }
-
-            if (tempColumnId && tempColumnId !== propConstCol.columnId) {
-              erdStore.replaceConstraintColumnColumnId(
-                schemaId,
-                table.id,
-                propConstCol.constraintId,
-                propConstCol.constraintColumnId,
-                propConstCol.columnId,
-              );
-            }
-          }
-        }
+      if (!propConstColsByConstraintId.has(propConstCol.constraintId)) {
+        propConstColsByConstraintId.set(propConstCol.constraintId, []);
       }
+      propConstColsByConstraintId
+        .get(propConstCol.constraintId)!
+        .push(propConstCol);
     }
+  });
+
+  propConstColsByConstraintId.forEach((propConstCols, realConstraintId) => {
+    const propConstraint = propagated.constraints.find(
+      (c) =>
+        c.constraintId === realConstraintId &&
+        c.sourceId === finalRelationshipId,
+    );
+
+    if (!propConstraint) {
+      return;
+    }
+
+    const table = erdStore.database?.schemas
+      .find((s) => s.id === schemaId)
+      ?.tables.find((t) => t.id === propConstraint.tableId);
+
+    if (!table) {
+      return;
+    }
+
+    const tempConstraint = table.constraints.find(
+      (c) => c.name === propConstraint.name && c.kind === propConstraint.kind,
+    );
+
+    if (!tempConstraint) {
+      return;
+    }
+
+    const tempConstColsSnapshot = tempConstraint.columns.map((cc) => ({
+      id: cc.id,
+      columnId: cc.columnId,
+      seqNo: cc.seqNo,
+    }));
+
+    const sortedTempConstCols = [...tempConstColsSnapshot].sort(
+      (a, b) => a.seqNo - b.seqNo,
+    );
+
+    const sortedPropConstCols = [...propConstCols].sort((a, b) => {
+      const aTempCol = tempConstColsSnapshot.find((tc) => {
+        const realColumnId = tempToRealColumnIdMap.get(tc.columnId);
+        return realColumnId === a.columnId;
+      });
+      const bTempCol = tempConstColsSnapshot.find((tc) => {
+        const realColumnId = tempToRealColumnIdMap.get(tc.columnId);
+        return realColumnId === b.columnId;
+      });
+      return (aTempCol?.seqNo ?? 0) - (bTempCol?.seqNo ?? 0);
+    });
+
+    sortedTempConstCols.forEach((tempConstCol, index) => {
+      const propConstCol = sortedPropConstCols[index];
+
+      if (!propConstCol) {
+        return;
+      }
+
+      if (tempConstCol.id !== propConstCol.constraintColumnId) {
+        erdStore.replaceConstraintColumnId(
+          schemaId,
+          table.id,
+          tempConstraint.id,
+          tempConstCol.id,
+          propConstCol.constraintColumnId,
+        );
+      }
+
+      if (tempConstCol.columnId !== propConstCol.columnId) {
+        erdStore.replaceConstraintColumnColumnId(
+          schemaId,
+          table.id,
+          tempConstraint.id,
+          propConstCol.constraintColumnId,
+          propConstCol.columnId,
+        );
+      }
+    });
   });
 }
 

@@ -73,6 +73,7 @@ export async function createConstraint(
           id: constraintId,
           tableId,
           name,
+          kind: kind as Constraint['kind'],
           columns: constraintColumns.map((col) => ({
             id: col.id,
             constraintId,
