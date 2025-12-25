@@ -703,6 +703,33 @@ class PropagationE2ETest {
                 .isFalse();
     }
 
+    @Test
+    @DisplayName("PK 컬럼 삭제 시 전파된 FK 컬럼도 제거되어야 한다 (Cascade 지원 확인)")
+    void deletePkColumnRemovesPropagatedFkColumn() throws Exception {
+        SetupState state = setupIdentifyingRelationship().state();
+
+        Validation.Database database = buildDatabaseWithRelationship(state);
+        Validation.DeleteColumnRequest deleteRequest = Validation.DeleteColumnRequest
+                .newBuilder()
+                .setDatabase(database)
+                .setSchemaId(state.schemaId())
+                .setTableId(state.parentTableId())
+                .setColumnId(state.parentColumnId())
+                .build();
+
+        JsonNode deleteResponse = deleteJson(
+                "/columns/" + state.parentColumnId(),
+                toJson(deleteRequest));
+        assertThat(deleteResponse.path("success").asBoolean()).isTrue();
+
+        JsonNode childTableResponse = getJson(
+                "/tables/" + state.childTableId());
+        JsonNode columns = childTableResponse.path("result")
+                .path("columns");
+
+        assertThat(containsId(columns, state.propagatedColumnId())).isFalse();
+    }
+
     private JsonNode postJson(String path, String body) throws Exception {
         String responseBody = webTestClient.post()
                 .uri(API_BASE_PATH + path)
