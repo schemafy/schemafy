@@ -20,10 +20,15 @@ spring:
       schema-locations: classpath:db/schema/mariadb/**/*.sql
 
 cache:
-  type: CAFFEINE
-  maximum-size: 10000
-  expire-after-write-minutes: 30
-  expire-after-access-minutes: 10
+  caffeine:
+    enabled: true
+    maximum-size: 10000
+    expire-after-write-minutes: 30
+    expire-after-access-minutes: 10
+  redis:
+    enabled: true
+    default-ttl-minutes: 30
+    key-prefix: "cache::"
 
 jwt:
   secret: ${JWT_SECRET:my-super-secret-key-for-jwt-token-generation-min-256-bits-required}
