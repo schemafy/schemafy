@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { ErdStore } from '@/store';
 import * as schemaService from '../services/schema.service';
+import * as tableService from '../services/table.service';
 import { toast } from 'sonner';
 
 interface ToolbarProps {
@@ -93,7 +94,7 @@ export const Toolbar = ({
     }
   };
 
-  const handleFetchTableList = async () => {
+  const handleFetchTableConstraints = async () => {
     const schemaId = erdStore.selectedSchemaId;
     if (!schemaId) {
       toast.error('No schema selected');
@@ -102,10 +103,17 @@ export const Toolbar = ({
 
     try {
       const tables = await schemaService.getSchemaTableList(schemaId);
-      console.log('Fetched table list:', tables);
-      toast.success(`Fetched ${tables?.length || 0} tables`);
+      if (!tables || tables.length === 0) {
+        toast.error('No tables found in schema');
+        return;
+      }
+
+      const firstTableId = tables[0].id;
+      const constraints = await tableService.getTableConstraintList(firstTableId);
+      console.log('Fetched constraints for first table:', constraints);
+      toast.success(`Fetched ${constraints?.length || 0} constraints from ${tables[0].name}`);
     } catch (error) {
-      toast.error('Failed to fetch table list');
+      toast.error('Failed to fetch constraints');
       console.error(error);
     }
   };
@@ -131,12 +139,12 @@ export const Toolbar = ({
         <div className="w-px h-6 bg-schemafy-light-gray" />
 
         <Button
-          onClick={handleFetchTableList}
+          onClick={handleFetchTableConstraints}
           variant="none"
           size="none"
           className="px-3 py-1.5 rounded-md bg-schemafy-primary hover:bg-schemafy-primary/90 text-white text-xs font-medium transition-colors"
         >
-          Fetch Tables
+          Fetch Constraints
         </Button>
 
         {activeTool &&

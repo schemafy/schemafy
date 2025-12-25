@@ -9,6 +9,11 @@ import {
   deleteSchemaAPI,
 } from '../api/schema.api';
 import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import {
+  validateDatabase,
+  validateAndGetSchema,
+} from '../utils/entityValidators';
+import { handleSchemaIdRemapping } from '../utils/idRemapping';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -24,11 +29,7 @@ export async function getSchemaTableList(schemaId: string) {
 
 export async function createSchema(name: string) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
+  const database = validateDatabase();
 
   if (database.schemas.length === 0) {
     throw new Error('No existing schema to copy defaults from');
@@ -67,27 +68,12 @@ export async function createSchema(name: string) {
     () => erdStore.deleteSchema(schemaId),
   );
 
-  const realId = response.result?.schemas[schemaId];
-  if (realId && realId !== schemaId) {
-    erdStore.replaceSchemaId(schemaId, realId);
-    return realId;
-  }
-
-  return schemaId;
+  return handleSchemaIdRemapping(response.result ?? {}, schemaId);
 }
 
 export async function updateSchemaName(schemaId: string, newName: string) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = findSchema(schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
+  const { database, schema } = validateAndGetSchema(schemaId);
 
   await withOptimisticUpdate(
     () => {
@@ -107,19 +93,10 @@ export async function updateSchemaName(schemaId: string, newName: string) {
 
 export async function deleteSchema(schemaId: string) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
+  const { database, schema } = validateAndGetSchema(schemaId);
 
   if (database.schemas.length <= 1) {
     throw new Error('Cannot delete the last schema');
-  }
-
-  const schema = findSchema(schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
   }
 
   await withOptimisticUpdate(
@@ -135,11 +112,4 @@ export async function deleteSchema(schemaId: string) {
       }),
     (schemaSnapshot) => erdStore.createSchema(schemaSnapshot),
   );
-}
-
-function findSchema(schemaId: string) {
-  const erdStore = getErdStore();
-  const database = erdStore.database;
-  if (!database) return undefined;
-  return database.schemas.find((s) => s.id === schemaId);
 }

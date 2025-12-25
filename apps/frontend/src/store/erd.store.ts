@@ -347,6 +347,44 @@ export class ErdStore {
     }));
   }
 
+  replaceConstraintColumnColumnId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    constraintColumnId: ConstraintColumn['id'],
+    newColumnId: Column['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) =>
+                table.id !== tableId
+                  ? table
+                  : {
+                      ...table,
+                      constraints: table.constraints.map((constraint) =>
+                        constraint.id !== constraintId
+                          ? constraint
+                          : {
+                              ...constraint,
+                              columns: constraint.columns.map((col) =>
+                                col.id === constraintColumnId
+                                  ? { ...col, columnId: newColumnId }
+                                  : col,
+                              ),
+                            },
+                      ),
+                    },
+              ),
+            },
+      ),
+    }));
+  }
+
   replaceIndexColumnId(
     schemaId: Schema['id'],
     tableId: Table['id'],
@@ -383,6 +421,70 @@ export class ErdStore {
     }));
   }
 
+  replaceRelationshipColumnId(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    oldId: RelationshipColumn['id'],
+    newId: RelationshipColumn['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) => ({
+                ...table,
+                relationships: table.relationships.map((relationship) =>
+                  relationship.id !== relationshipId
+                    ? relationship
+                    : {
+                        ...relationship,
+                        columns: relationship.columns.map((col) =>
+                          col.id === oldId ? { ...col, id: newId } : col,
+                        ),
+                      },
+                ),
+              })),
+            },
+      ),
+    }));
+  }
+
+  replaceRelationshipColumnFkId(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    relationshipColumnId: RelationshipColumn['id'],
+    newFkColumnId: Column['id'],
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId
+          ? schema
+          : {
+              ...schema,
+              tables: schema.tables.map((table) => ({
+                ...table,
+                relationships: table.relationships.map((relationship) =>
+                  relationship.id !== relationshipId
+                    ? relationship
+                    : {
+                        ...relationship,
+                        columns: relationship.columns.map((col) =>
+                          col.id === relationshipColumnId
+                            ? { ...col, fkColumnId: newFkColumnId }
+                            : col,
+                        ),
+                      },
+                ),
+              })),
+            },
+      ),
+    }));
+  }
+
   replaceRelationshipId(
     schemaId: Schema['id'],
     oldId: Relationship['id'],
@@ -397,10 +499,17 @@ export class ErdStore {
               ...schema,
               tables: schema.tables.map((table) => ({
                 ...table,
-                relationships: this.replaceIdInArray(
-                  table.relationships,
-                  oldId,
-                  newId,
+                relationships: table.relationships.map((relationship) =>
+                  relationship.id !== oldId
+                    ? relationship
+                    : {
+                        ...relationship,
+                        id: newId,
+                        columns: relationship.columns.map((col) => ({
+                          ...col,
+                          relationshipId: newId,
+                        })),
+                      },
                 ),
               })),
             },

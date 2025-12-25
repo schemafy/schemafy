@@ -13,6 +13,11 @@ import {
   deleteTableAPI,
 } from '../api/table.api';
 import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import {
+  validateAndGetSchema,
+  validateAndGetTable,
+} from '../utils/entityValidators';
+import { handleTableIdRemapping } from '../utils/idRemapping';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -49,16 +54,7 @@ export async function createTable(
   extra?: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
+  const { database } = validateAndGetSchema(schemaId);
 
   const tableId = ulid();
 
@@ -95,13 +91,7 @@ export async function createTable(
     () => erdStore.deleteTable(schemaId, tableId),
   );
 
-  const realId = response.result?.tables[tableId];
-  if (realId && realId !== tableId) {
-    erdStore.replaceTableId(schemaId, tableId, realId);
-    return realId;
-  }
-
-  return tableId;
+  return handleTableIdRemapping(response.result ?? {}, schemaId, tableId);
 }
 
 export async function updateTableName(
@@ -110,21 +100,7 @@ export async function updateTableName(
   newName: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
+  const { database, table } = validateAndGetTable(schemaId, tableId);
 
   await withOptimisticUpdate(
     () => {
@@ -149,16 +125,7 @@ export async function updateTableExtra(
   extra: unknown,
 ) {
   const erdStore = getErdStore();
-
-  const schema = erdStore.database?.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
+  const { table } = validateAndGetTable(schemaId, tableId);
 
   await withOptimisticUpdate(
     () => {
@@ -176,21 +143,7 @@ export async function updateTableExtra(
 
 export async function deleteTable(schemaId: string, tableId: string) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
+  const { database, table } = validateAndGetTable(schemaId, tableId);
 
   await withOptimisticUpdate(
     () => {

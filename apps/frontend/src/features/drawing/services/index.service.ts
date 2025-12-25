@@ -12,6 +12,11 @@ import {
   deleteIndexAPI,
 } from '../api/index.api';
 import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import {
+  validateAndGetTable,
+  validateAndGetIndex,
+} from '../utils/entityValidators';
+import { handleIndexIdRemapping } from '../utils/idRemapping';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -33,21 +38,7 @@ export async function createIndex(
   comment?: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
+  const { database } = validateAndGetTable(schemaId, tableId);
 
   const indexId = ulid();
 
@@ -94,13 +85,12 @@ export async function createIndex(
     () => erdStore.deleteIndex(schemaId, tableId, indexId),
   );
 
-  const realId = response.result?.indexes[tableId]?.[indexId];
-  if (realId && realId !== indexId) {
-    erdStore.replaceIndexId(schemaId, tableId, indexId, realId);
-    return realId;
-  }
-
-  return indexId;
+  return handleIndexIdRemapping(
+    response.result ?? {},
+    schemaId,
+    tableId,
+    indexId,
+  );
 }
 
 export async function updateIndexName(
@@ -110,26 +100,7 @@ export async function updateIndexName(
   newName: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const index = table.indexes.find((i) => i.id === indexId);
-  if (!index) {
-    throw new Error(`Index ${indexId} not found`);
-  }
+  const { database, index } = validateAndGetIndex(schemaId, tableId, indexId);
 
   await withOptimisticUpdate(
     () => {
@@ -156,26 +127,7 @@ export async function updateIndexType(
   newType: Index['type'],
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const index = table.indexes.find((i) => i.id === indexId);
-  if (!index) {
-    throw new Error(`Index ${indexId} not found`);
-  }
+  const { index } = validateAndGetIndex(schemaId, tableId, indexId);
 
   await withOptimisticUpdate(
     () => {
@@ -200,26 +152,7 @@ export async function addColumnToIndex(
   sortDir?: 'ASC' | 'DESC',
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const index = table.indexes.find((i) => i.id === indexId);
-  if (!index) {
-    throw new Error(`Index ${indexId} not found`);
-  }
+  const { database } = validateAndGetIndex(schemaId, tableId, indexId);
 
   const indexColumnId = ulid();
 
@@ -276,26 +209,7 @@ export async function updateIndexColumnSortDir(
   newSortDir: 'ASC' | 'DESC',
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const index = table.indexes.find((i) => i.id === indexId);
-  if (!index) {
-    throw new Error(`Index ${indexId} not found`);
-  }
+  const { index } = validateAndGetIndex(schemaId, tableId, indexId);
 
   const indexColumn = index.columns.find((c) => c.id === indexColumnId);
   if (!indexColumn) {
@@ -336,26 +250,7 @@ export async function removeColumnFromIndex(
   indexColumnId: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const index = table.indexes.find((i) => i.id === indexId);
-  if (!index) {
-    throw new Error(`Index ${indexId} not found`);
-  }
+  const { database, index } = validateAndGetIndex(schemaId, tableId, indexId);
 
   const indexColumn = index.columns.find((c) => c.id === indexColumnId);
 
@@ -388,26 +283,7 @@ export async function deleteIndex(
   indexId: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const index = table.indexes.find((i) => i.id === indexId);
-  if (!index) {
-    throw new Error(`Index ${indexId} not found`);
-  }
+  const { database, index } = validateAndGetIndex(schemaId, tableId, indexId);
 
   await withOptimisticUpdate(
     () => {

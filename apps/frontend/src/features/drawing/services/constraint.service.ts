@@ -10,6 +10,14 @@ import {
   deleteConstraintAPI,
 } from '../api/constraint.api';
 import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import {
+  validateAndGetTable,
+  validateAndGetConstraint,
+} from '../utils/entityValidators';
+import {
+  handleConstraintIdRemapping,
+  handleConstraintColumnIdRemapping,
+} from '../utils/idRemapping';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -31,21 +39,7 @@ export async function createConstraint(
   defaultExpr?: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
+  const { database } = validateAndGetTable(schemaId, tableId);
 
   const constraintId = ulid();
 
@@ -90,13 +84,12 @@ export async function createConstraint(
     () => erdStore.deleteConstraint(schemaId, tableId, constraintId),
   );
 
-  const realId = response.result?.constraints[tableId]?.[constraintId];
-  if (realId && realId !== constraintId) {
-    erdStore.replaceConstraintId(schemaId, tableId, constraintId, realId);
-    return realId;
-  }
-
-  return constraintId;
+  return handleConstraintIdRemapping(
+    response.result ?? {},
+    schemaId,
+    tableId,
+    constraintId,
+  );
 }
 
 export async function updateConstraintName(
@@ -106,26 +99,11 @@ export async function updateConstraintName(
   newName: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const constraint = table.constraints.find((c) => c.id === constraintId);
-  if (!constraint) {
-    throw new Error(`Constraint ${constraintId} not found`);
-  }
+  const { database, constraint } = validateAndGetConstraint(
+    schemaId,
+    tableId,
+    constraintId,
+  );
 
   await withOptimisticUpdate(
     () => {
@@ -154,26 +132,11 @@ export async function addColumnToConstraint(
   seqNo: number,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const constraint = table.constraints.find((c) => c.id === constraintId);
-  if (!constraint) {
-    throw new Error(`Constraint ${constraintId} not found`);
-  }
+  const { database } = validateAndGetConstraint(
+    schemaId,
+    tableId,
+    constraintId,
+  );
 
   const constraintColumnId = ulid();
 
@@ -215,21 +178,13 @@ export async function addColumnToConstraint(
       ),
   );
 
-  const realId =
-    response.result?.constraintColumns?.[constraintId]?.[constraintColumnId];
-
-  if (realId && realId !== constraintColumnId) {
-    erdStore.replaceConstraintColumnId(
-      schemaId,
-      tableId,
-      constraintId,
-      constraintColumnId,
-      realId,
-    );
-    return realId;
-  }
-
-  return constraintColumnId;
+  return handleConstraintColumnIdRemapping(
+    response.result ?? {},
+    schemaId,
+    tableId,
+    constraintId,
+    constraintColumnId,
+  );
 }
 
 export async function removeColumnFromConstraint(
@@ -239,26 +194,11 @@ export async function removeColumnFromConstraint(
   constraintColumnId: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const constraint = table.constraints.find((c) => c.id === constraintId);
-  if (!constraint) {
-    throw new Error(`Constraint ${constraintId} not found`);
-  }
+  const { database, constraint } = validateAndGetConstraint(
+    schemaId,
+    tableId,
+    constraintId,
+  );
 
   const constraintColumn = constraint.columns.find(
     (c) => c.id === constraintColumnId,
@@ -266,6 +206,10 @@ export async function removeColumnFromConstraint(
 
   if (!constraintColumn) {
     throw new Error(`Constraint column ${constraintColumnId} not found`);
+  }
+
+  if (constraint.columns.length === 1) {
+    return deleteConstraint(schemaId, tableId, constraintId);
   }
 
   await withOptimisticUpdate(
@@ -303,26 +247,11 @@ export async function deleteConstraint(
   constraintId: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const constraint = table.constraints.find((c) => c.id === constraintId);
-  if (!constraint) {
-    throw new Error(`Constraint ${constraintId} not found`);
-  }
+  const { database, constraint } = validateAndGetConstraint(
+    schemaId,
+    tableId,
+    constraintId,
+  );
 
   await withOptimisticUpdate(
     () => {

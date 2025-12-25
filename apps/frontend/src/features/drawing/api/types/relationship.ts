@@ -33,9 +33,14 @@ export interface CreateRelationshipRequest {
     tgtTableId: ULID;
     name: string;
     kind: string;
-    cardinality: string;
+    cardinality: 'ONE_TO_ONE' | 'ONE_TO_MANY';
     onDelete: string;
-    onUpdate: string;
+    onUpdate:
+      | 'NO_ACTION_UPDATE'
+      | 'RESTRICT_UPDATE'
+      | 'CASCADE_UPDATE'
+      | 'SET_NULL_UPDATE'
+      | 'SET_DEFAULT_UPDATE';
     columns: {
       id: ULID;
       relationshipId: ULID;
@@ -63,7 +68,7 @@ export interface UpdateRelationshipCardinalityRequest {
   database: DatabaseContext;
   schemaId: ULID;
   relationshipId: ULID;
-  cardinality: string;
+  cardinality: 'ONE_TO_ONE' | 'ONE_TO_MANY';
 }
 
 export interface AddColumnToRelationshipRequest {

@@ -23,6 +23,8 @@ export interface AffectedMappingResponse {
 
 export interface PropagatedEntities {
   columns: PropagatedColumn[];
+  relationshipColumns: PropagatedRelationshipColumn[];
+  constraints: PropagatedConstraint[];
   constraintColumns: PropagatedConstraintColumn[];
   indexColumns: PropagatedIndexColumn[];
 }
@@ -33,6 +35,25 @@ export interface PropagatedColumn {
   sourceType: string;
   sourceId: string;
   sourceColumnId: string;
+}
+
+export interface PropagatedRelationshipColumn {
+  relationshipColumnId: string;
+  relationshipId: string;
+  fkColumnId: string;
+  refColumnId: string;
+  seqNo: number;
+  sourceType: string;
+  sourceId: string;
+}
+
+export interface PropagatedConstraint {
+  constraintId: string;
+  tableId: string;
+  name: string;
+  kind: string;
+  sourceType: string;
+  sourceId: string;
 }
 
 export interface PropagatedConstraintColumn {

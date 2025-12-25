@@ -10,6 +10,11 @@ import {
   deleteColumnAPI,
 } from '../api/column.api';
 import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import {
+  validateAndGetTable,
+  validateAndGetColumn,
+} from '../utils/entityValidators';
+import { handleColumnIdRemapping } from '../utils/idRemapping';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -31,21 +36,7 @@ export async function createColumn(
   comment?: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
+  const { database } = validateAndGetTable(schemaId, tableId);
 
   const columnId = ulid();
 
@@ -85,13 +76,12 @@ export async function createColumn(
     () => erdStore.deleteColumn(schemaId, tableId, columnId),
   );
 
-  const realId = response.result?.columns[tableId]?.[columnId];
-  if (realId && realId !== columnId) {
-    erdStore.replaceColumnId(schemaId, tableId, columnId, realId);
-    return realId;
-  }
-
-  return columnId;
+  return handleColumnIdRemapping(
+    response.result ?? {},
+    schemaId,
+    tableId,
+    columnId,
+  );
 }
 
 export async function updateColumnName(
@@ -101,26 +91,11 @@ export async function updateColumnName(
   newName: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const column = table.columns.find((c) => c.id === columnId);
-  if (!column) {
-    throw new Error(`Column ${columnId} not found`);
-  }
+  const { database, column } = validateAndGetColumn(
+    schemaId,
+    tableId,
+    columnId,
+  );
 
   await withOptimisticUpdate(
     () => {
@@ -136,7 +111,8 @@ export async function updateColumnName(
         columnId,
         newName,
       }),
-    (oldName) => erdStore.changeColumnName(schemaId, tableId, columnId, oldName),
+    (oldName) =>
+      erdStore.changeColumnName(schemaId, tableId, columnId, oldName),
   );
 }
 
@@ -148,26 +124,11 @@ export async function updateColumnType(
   lengthScale?: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const column = table.columns.find((c) => c.id === columnId);
-  if (!column) {
-    throw new Error(`Column ${columnId} not found`);
-  }
+  const { database, column } = validateAndGetColumn(
+    schemaId,
+    tableId,
+    columnId,
+  );
 
   await withOptimisticUpdate(
     () => {
@@ -209,26 +170,11 @@ export async function updateColumnPosition(
   newPosition: number,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const column = table.columns.find((c) => c.id === columnId);
-  if (!column) {
-    throw new Error(`Column ${columnId} not found`);
-  }
+  const { database, column } = validateAndGetColumn(
+    schemaId,
+    tableId,
+    columnId,
+  );
 
   await withOptimisticUpdate(
     () => {
@@ -255,26 +201,11 @@ export async function deleteColumn(
   columnId: string,
 ) {
   const erdStore = getErdStore();
-  const database = erdStore.database;
-
-  if (!database) {
-    throw new Error('Database not loaded');
-  }
-
-  const schema = database.schemas.find((s) => s.id === schemaId);
-  if (!schema) {
-    throw new Error(`Schema ${schemaId} not found`);
-  }
-
-  const table = schema.tables.find((t) => t.id === tableId);
-  if (!table) {
-    throw new Error(`Table ${tableId} not found`);
-  }
-
-  const column = table.columns.find((c) => c.id === columnId);
-  if (!column) {
-    throw new Error(`Column ${columnId} not found`);
-  }
+  const { database, column } = validateAndGetColumn(
+    schemaId,
+    tableId,
+    columnId,
+  );
 
   await withOptimisticUpdate(
     () => {

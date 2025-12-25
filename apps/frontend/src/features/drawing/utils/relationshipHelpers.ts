@@ -162,3 +162,34 @@ export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
 
   return allRelationships;
 };
+
+export const convertCardinality = (
+  cardinality: '1:1' | '1:N',
+): 'ONE_TO_ONE' | 'ONE_TO_MANY' => {
+  return cardinality === '1:1' ? 'ONE_TO_ONE' : 'ONE_TO_MANY';
+};
+
+export const convertOnUpdate = (
+  onUpdate: 'NO_ACTION' | 'RESTRICT' | 'CASCADE' | 'SET_NULL' | 'SET_DEFAULT',
+):
+  | 'NO_ACTION_UPDATE'
+  | 'RESTRICT_UPDATE'
+  | 'CASCADE_UPDATE'
+  | 'SET_NULL_UPDATE'
+  | 'SET_DEFAULT_UPDATE' => {
+  const mapping: Record<
+    string,
+    | 'NO_ACTION_UPDATE'
+    | 'RESTRICT_UPDATE'
+    | 'CASCADE_UPDATE'
+    | 'SET_NULL_UPDATE'
+    | 'SET_DEFAULT_UPDATE'
+  > = {
+    NO_ACTION: 'NO_ACTION_UPDATE',
+    RESTRICT: 'RESTRICT_UPDATE',
+    CASCADE: 'CASCADE_UPDATE',
+    SET_NULL: 'SET_NULL_UPDATE',
+    SET_DEFAULT: 'SET_DEFAULT_UPDATE',
+  };
+  return mapping[onUpdate];
+};
