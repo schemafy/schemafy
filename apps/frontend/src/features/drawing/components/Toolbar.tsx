@@ -20,10 +20,6 @@ import {
   MousePointer2,
   Hand,
 } from 'lucide-react';
-import { ErdStore } from '@/store';
-import * as schemaService from '../services/schema.service';
-import * as tableService from '../services/table.service';
-import { toast } from 'sonner';
 
 interface ToolbarProps {
   setActiveTool: (toolId: string) => void;
@@ -80,7 +76,6 @@ export const Toolbar = ({
   onRelationshipConfigChange,
 }: ToolbarProps) => {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
-  const erdStore = ErdStore.getInstance();
 
   const handleToolClick = (toolId: string) => {
     if (toolId === 'search') {
@@ -91,30 +86,6 @@ export const Toolbar = ({
       setActiveTool('pointer');
     } else {
       setActiveTool(toolId);
-    }
-  };
-
-  const handleFetchTableConstraints = async () => {
-    const schemaId = erdStore.selectedSchemaId;
-    if (!schemaId) {
-      toast.error('No schema selected');
-      return;
-    }
-
-    try {
-      const tables = await schemaService.getSchemaTableList(schemaId);
-      if (!tables || tables.length === 0) {
-        toast.error('No tables found in schema');
-        return;
-      }
-
-      const firstTableId = tables[0].id;
-      const constraints = await tableService.getTableConstraintList(firstTableId);
-      console.log('Fetched constraints for first table:', constraints);
-      toast.success(`Fetched ${constraints?.length || 0} constraints from ${tables[0].name}`);
-    } catch (error) {
-      toast.error('Failed to fetch constraints');
-      console.error(error);
     }
   };
 
@@ -135,17 +106,6 @@ export const Toolbar = ({
             isActive={activeTool === tool.id}
           />
         ))}
-
-        <div className="w-px h-6 bg-schemafy-light-gray" />
-
-        <Button
-          onClick={handleFetchTableConstraints}
-          variant="none"
-          size="none"
-          className="px-3 py-1.5 rounded-md bg-schemafy-primary hover:bg-schemafy-primary/90 text-white text-xs font-medium transition-colors"
-        >
-          Fetch Constraints
-        </Button>
 
         {activeTool &&
           TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
