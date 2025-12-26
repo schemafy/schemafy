@@ -2,8 +2,6 @@ import type { PropagatedEntities } from '../api/types/common';
 import type { Constraint, Relationship } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
 
-const getConstraintKey = (name: string, kind: string) => `${name}:${kind}`;
-
 export function handlePropagatedData(
   propagated: PropagatedEntities | undefined,
   schemaId: string,
@@ -45,18 +43,31 @@ export function handlePropagatedData(
     );
   }
 
-  if (propConstraints.length > 0) {
-    const targetTableId = propConstraints[0].tableId;
-    const targetTable = schema.tables.find((t) => t.id === targetTableId);
+  if (propConstraintCols.length > 0) {
+    const targetTable = schema.tables.find(
+      (t) => t.id === propColumns[0].tableId,
+    );
 
     if (targetTable) {
-      syncConstraints(
-        erdStore,
-        schemaId,
-        targetTable,
-        propConstraints,
-        propConstraintCols,
+      if (propConstraints.length > 0) {
+        syncConstraints(erdStore, schemaId, targetTable, propConstraints);
+      }
+
+      const updatedSchema = erdStore.database?.schemas.find(
+        (s) => s.id === schemaId,
       );
+      const updatedTable = updatedSchema?.tables.find(
+        (t) => t.id === targetTable.id,
+      );
+
+      if (updatedTable) {
+        syncConstraintsColumns(
+          erdStore,
+          schemaId,
+          updatedTable,
+          propConstraintCols,
+        );
+      }
     }
   }
 }
@@ -98,59 +109,60 @@ function syncConstraints(
   schemaId: string,
   targetTable: { id: string; constraints: Constraint[] },
   propConstraints: PropagatedEntities['constraints'],
-  allPropConstraintCols: PropagatedEntities['constraintColumns'],
 ) {
-  const existingConstraintMap = new Map(
-    targetTable.constraints.map((c) => [getConstraintKey(c.name, c.kind), c]),
-  );
-
-  const propColsByConstraintId = new Map<
-    string,
-    PropagatedEntities['constraintColumns']
-  >();
-  allPropConstraintCols.forEach((pc) => {
-    const cols = propColsByConstraintId.get(pc.constraintId);
-    if (cols) {
-      cols.push(pc);
-    } else {
-      propColsByConstraintId.set(pc.constraintId, [pc]);
-    }
-  });
-
   propConstraints.forEach((propConstraint) => {
-    const key = getConstraintKey(propConstraint.name, propConstraint.kind);
-    const existingConstraint = existingConstraintMap.get(key);
+    const existingConstraint = targetTable.constraints.find(
+      (c) => c.name === propConstraint.name && c.kind === propConstraint.kind,
+    );
 
-    if (!existingConstraint) return;
-
-    if (existingConstraint.id !== propConstraint.constraintId) {
+    if (existingConstraint) {
       store.replaceConstraintId(
         schemaId,
-        propConstraint.tableId,
+        targetTable.id,
         existingConstraint.id,
         propConstraint.constraintId,
       );
     }
+  });
+}
 
-    const propConstCols = propColsByConstraintId.get(
-      propConstraint.constraintId,
+function syncConstraintsColumns(
+  store: ErdStore,
+  schemaId: string,
+  targetTable: { id: string; constraints: Constraint[] },
+  propConstraintCols: PropagatedEntities['constraintColumns'],
+) {
+  const groupedByConstraint = propConstraintCols.reduce(
+    (acc, propCol) => {
+      if (!acc[propCol.constraintId]) {
+        acc[propCol.constraintId] = [];
+      }
+      acc[propCol.constraintId].push(propCol);
+      return acc;
+    },
+    {} as Record<string, typeof propConstraintCols>,
+  );
+
+  Object.entries(groupedByConstraint).forEach(([constraintId, propCols]) => {
+    const existingConstraint = targetTable.constraints.find(
+      (c) => c.id === constraintId,
     );
 
-    if (!propConstCols || propConstCols.length === 0) return;
+    if (!existingConstraint) return;
 
-    const sortedTempCols = [...existingConstraint.columns].sort(
-      (a, b) => a.seqNo - b.seqNo,
+    const tempCols = existingConstraint.columns.slice(
+      existingConstraint.columns.length - propCols.length,
     );
 
-    sortedTempCols.forEach((tempCol, index) => {
-      const propCol = propConstCols[index];
+    tempCols.forEach((tempCol, index) => {
+      const propCol = propCols[index];
       if (!propCol) return;
 
       if (tempCol.id !== propCol.constraintColumnId) {
         store.replaceConstraintColumnId(
           schemaId,
-          propConstraint.tableId,
-          propConstraint.constraintId,
+          targetTable.id,
+          constraintId,
           tempCol.id,
           propCol.constraintColumnId,
         );
@@ -159,8 +171,8 @@ function syncConstraints(
       if (tempCol.columnId !== propCol.columnId) {
         store.replaceConstraintColumnColumnId(
           schemaId,
-          propConstraint.tableId,
-          propConstraint.constraintId,
+          targetTable.id,
+          constraintId,
           propCol.constraintColumnId,
           propCol.columnId,
         );
