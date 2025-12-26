@@ -4,10 +4,6 @@ import type { Memo as ApiMemo } from '@/lib/api/memo';
 export interface MemoData extends Record<string, unknown> {
   content: string;
   comments: ApiMemo['comments'];
-  createComment?: (content: string) => Promise<void>;
-  updateComment?: (content: string) => Promise<void>;
-  deleteMemo?: () => Promise<void>;
-  deleteComment?: (commentId: string) => Promise<void>;
 }
 
 export const safeParsePosition = (
@@ -37,7 +33,7 @@ export const transformApiMemoToNode = (memo: ApiMemo): Node<MemoData> => {
   const position = safeParsePosition(memo.positions);
   const lastCommentBody =
     memo.comments && memo.comments.length > 0
-      ? (memo.comments[memo.comments.length - 1]?.body ?? '')
+      ? (memo.comments[memo.comments.length - 1].body ?? '')
       : '';
   return {
     id: memo.id,

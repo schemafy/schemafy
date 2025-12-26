@@ -3,11 +3,13 @@ import { useState } from 'react';
 import { Avatar } from '@/components';
 import { cn, formatDate } from '@/lib';
 import { CircleCheck, MoveUp, Trash, X } from 'lucide-react';
-import type { MemoData } from '../hooks/useMemos';
+import type { MemoData } from '../hooks/memo.helper';
 import type { MemoComment } from '@/lib/api/memo/types';
 import type { Point } from '../types';
+import { useMemoStore } from '@/store';
 
 interface MemoProps {
+  id: string;
   data: MemoData;
 }
 
@@ -46,15 +48,26 @@ const ReplyItem = ({
   );
 };
 
-export const Memo = ({ data }: MemoProps) => {
+export const Memo = ({ id, data }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [replyInput, setReplyInput] = useState('');
 
+  const createMemoComment = useMemoStore((state) => state.createMemoComment);
+  const deleteMemoComment = useMemoStore((state) => state.deleteMemoComment);
+  const deleteMemoFromStore = useMemoStore((state) => state.deleteMemo);
+  
+  // Find schemaId for this memo to call deleteMemo
+  const schemaId = useMemoStore((state) => 
+    Object.keys(state.memosBySchema).find(sid => 
+      state.memosBySchema[sid]?.some(m => m.id === id)
+    )
+  );
+
   const comments = data.comments ?? [];
 
-  const handleDeleteMemo = () => {
-    if (data.deleteMemo) {
-      data.deleteMemo();
+  const handleDeleteMemo = async () => {
+    if (schemaId) {
+      await deleteMemoFromStore(id, schemaId);
     }
   };
 
@@ -64,11 +77,8 @@ export const Memo = ({ data }: MemoProps) => {
 
   const handleAddReply = async () => {
     if (!replyInput.trim()) return;
-
-    if (data.createComment) {
-      await data.createComment(replyInput.trim());
-      setReplyInput('');
-    }
+    await createMemoComment(id, { body: replyInput.trim() });
+    setReplyInput('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -125,11 +135,11 @@ export const Memo = ({ data }: MemoProps) => {
           </div>
 
           <ul className="flex flex-col gap-4">
-            {comments.map((comment) => (
+            {comments.map((comment: MemoComment) => (
               <ReplyItem
                 key={comment.id}
                 comment={comment}
-                onDelete={() => data.deleteComment?.(comment.id)}
+                onDelete={() => deleteMemoComment(id, comment.id)}
               />
             ))}
           </ul>

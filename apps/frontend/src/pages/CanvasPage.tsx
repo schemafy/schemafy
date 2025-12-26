@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ulid } from 'ulid';
 import {
@@ -87,29 +87,10 @@ const CanvasPageComponent = () => {
 
   const { tables, addTable, onTablesChange } = useTables();
   const {
-    memos: memosFromHook,
+    memos,
     addMemo,
     onMemosChange,
-    createComment,
-    updateComment,
-    deleteMemo,
-    deleteComment,
   } = useMemos();
-
-  const memos = useMemo(
-    () =>
-      memosFromHook.map((m) => ({
-        ...m,
-        data: {
-          ...m.data,
-          createComment: (content: string) => createComment(m.id, content),
-          updateComment: (content: string) => updateComment(m.id, content),
-          deleteMemo: () => deleteMemo(m.id),
-          deleteComment: (commentId: string) => deleteComment(m.id, commentId),
-        },
-      })),
-    [memosFromHook, createComment, updateComment, deleteMemo, deleteComment],
-  );
   const {
     relationships,
     selectedRelationship,

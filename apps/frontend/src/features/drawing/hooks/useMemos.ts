@@ -7,8 +7,6 @@ import {
   stringifyPosition,
 } from './memo.helper';
 
-export type { MemoData };
-
 export const useMemos = () => {
   const schemaId = '06DJEMTB2H3BE7JS6S0789B2FW';
 
