@@ -23,15 +23,13 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
 import com.schemafy.core.project.docs.ShareLinkApiSnippets;
-import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.ShareLinkAccessLogRepository;
-import com.schemafy.core.project.repository.ShareLinkRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
+import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
@@ -76,6 +74,9 @@ class ShareLinkControllerTest {
     private WorkspaceMemberRepository workspaceMemberRepository;
 
     @Autowired
+    private ProjectMemberRepository projectMemberRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -94,6 +95,7 @@ class ShareLinkControllerTest {
         // Clean up in order of dependencies
         Mono.when(accessLogRepository.deleteAll(),
                 shareLinkRepository.deleteAll(),
+                projectMemberRepository.deleteAll(),
                 projectRepository.deleteAll(),
                 workspaceMemberRepository.deleteAll(),
                 workspaceRepository.deleteAll(), userRepository.deleteAll())
@@ -127,11 +129,16 @@ class ShareLinkControllerTest {
                 testUser2.getId(), WorkspaceRole.MEMBER);
         workspaceMemberRepository.save(member2).block();
 
-        // Create project owned by testUser
-        testProject = Project.create(testWorkspace.getId(), testUser.getId(),
+        // Create project
+        testProject = Project.create(testWorkspace.getId(),
                 "Test Project", "Description",
                 ProjectSettings.defaultSettings());
         testProject = projectRepository.save(testProject).block();
+
+        // Add project member (testUser as ADMIN)
+        ProjectMember projectMember = ProjectMember.create(testProject.getId(),
+                testUser.getId(), ProjectRole.ADMIN);
+        projectMemberRepository.save(projectMember).block();
 
         apiBasePath = ApiPath.API.replace("{version}", "v1.0") + "/workspaces/"
                 + testWorkspace.getId() + "/projects/" + testProject.getId()

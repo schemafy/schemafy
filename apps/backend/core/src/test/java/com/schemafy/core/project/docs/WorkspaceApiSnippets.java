@@ -14,14 +14,6 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 
 /**
  * Workspace API 문서화를 위한 스니펫 제공 클래스
- *
- * <p>비즈니스 규칙 & 보안 정책:</p>
- * <ul>
- *   <li>워크스페이스 생성 시 요청자가 자동으로 OWNER가 됨</li>
- *   <li>워크스페이스 조회는 멤버(OWNER, ADMIN, MEMBER)만 가능</li>
- *   <li>워크스페이스 수정/삭제는 OWNER 또는 ADMIN만 가능</li>
- *   <li>멤버 목록 조회는 워크스페이스 멤버만 가능</li>
- * </ul>
  */
 public class WorkspaceApiSnippets extends RestDocsSnippets {
 
@@ -88,20 +80,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
 
     /**
      * 워크스페이스 생성 요청 바디
-     *
-     * <p>사용 예시:</p>
-     * <pre>
-     * POST /api/workspaces
-     * Authorization: Bearer {accessToken}
-     * </pre>
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>워크스페이스 이름은 1-255자 필수</li>
-     *   <li>설명은 최대 1000자</li>
-     *   <li>생성자가 자동으로 OWNER 역할로 등록됨</li>
-     *   <li>settings가 null이면 기본값 사용</li>
-     * </ul>
      */
     public static Snippet createWorkspaceRequest() {
         return requestFields(
@@ -143,13 +121,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
 
     /**
      * 워크스페이스 목록 조회 요청 헤더
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>현재 사용자가 멤버로 속한 워크스페이스만 조회</li>
-     *   <li>페이징 지원 (기본값: page=0, size=20)</li>
-     *   <li>역할 정보 및 멤버 수 포함</li>
-     * </ul>
      */
     public static Snippet getWorkspacesRequestHeaders() {
         return createRequestHeadersSnippet(authorizationHeader());
@@ -203,12 +174,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
 
     /**
      * 워크스페이스 상세 조회 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>워크스페이스 멤버만 조회 가능</li>
-     *   <li>설정 정보 포함</li>
-     * </ul>
      */
     public static Snippet getWorkspacePathParameters() {
         return pathParameters(
@@ -241,13 +206,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
 
     /**
      * 워크스페이스 수정 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>워크스페이스 이름은 1-255자 필수</li>
-     *   <li>설명은 최대 1000자</li>
-     *   <li>settings가 null이면 기본값 사용</li>
-     * </ul>
      */
     public static Snippet updateWorkspacePathParameters() {
         return pathParameters(
@@ -297,12 +255,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
 
     /**
      * 워크스페이스 삭제 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>워크스페이스 삭제 시 하위 프로젝트도 모두 삭제됨</li>
-     *   <li>복구 불가능</li>
-     * </ul>
      */
     public static Snippet deleteWorkspacePathParameters() {
         return pathParameters(
@@ -328,13 +280,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
 
     /**
      * 워크스페이스 멤버 조회 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>워크스페이스 멤버 목록 조회</li>
-     *   <li>페이징 지원 (기본값: page=0, size=20)</li>
-     *   <li>사용자 정보 및 역할 포함</li>
-     * </ul>
      */
     public static Snippet getWorkspaceMembersPathParameters() {
         return pathParameters(

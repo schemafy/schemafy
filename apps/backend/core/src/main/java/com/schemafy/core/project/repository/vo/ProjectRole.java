@@ -60,4 +60,8 @@ public enum ProjectRole {
         throw new IllegalArgumentException("Invalid project role: " + value);
     }
 
+    public boolean isHigherOrEqualThan(ProjectRole other) {
+        return this.level >= other.level;
+    }
+
 }

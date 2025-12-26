@@ -113,10 +113,10 @@ public class ProjectController {
             @PathVariable String memberId,
             @Valid @RequestBody UpdateProjectMemberRoleRequest request,
             Authentication authentication) {
-        String userId = authentication.getName();
+        String requesterId = authentication.getName();
         return projectService
                 .updateMemberRole(workspaceId, projectId, memberId, request,
-                        userId)
+                        requesterId)
                 .map(BaseResponse::success);
     }
 
@@ -126,9 +126,9 @@ public class ProjectController {
     public Mono<Void> removeMember(@PathVariable String workspaceId,
             @PathVariable String projectId, @PathVariable String memberId,
             Authentication authentication) {
-        String userId = authentication.getName();
+        String requester = authentication.getName();
         return projectService.removeMember(workspaceId, projectId, memberId,
-                userId);
+                requester);
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")

@@ -31,7 +31,6 @@ CREATE INDEX IF NOT EXISTS idx_workspace_members_deleted_at ON workspace_members
 CREATE TABLE IF NOT EXISTS projects (
     id           CHAR(26)     NOT NULL,
     workspace_id CHAR(26)     NOT NULL,
-    owner_id     CHAR(26)     NOT NULL,
     name         VARCHAR(255) NOT NULL,
     description  CLOB         NULL,
     settings     CLOB         NULL,
@@ -41,7 +40,6 @@ CREATE TABLE IF NOT EXISTS projects (
     CONSTRAINT pk_projects PRIMARY KEY (id)
     );
 CREATE INDEX IF NOT EXISTS idx_projects_workspace_id ON projects(workspace_id);
-CREATE INDEX IF NOT EXISTS idx_projects_owner_id ON projects(owner_id);
 CREATE INDEX IF NOT EXISTS idx_projects_deleted_at ON projects(deleted_at);
 
 CREATE TABLE IF NOT EXISTS project_members (

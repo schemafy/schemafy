@@ -17,6 +17,10 @@ public interface ProjectMemberRepository
     Mono<ProjectMember> findByProjectIdAndUserIdAndNotDeleted(String projectId,
             String userId);
 
+    @Query("SELECT * FROM project_members WHERE project_id = :projectId AND id = :memberId AND deleted_at IS NULL")
+    Mono<ProjectMember> findByProjectIdAndMemberIdAndNotDeleted(
+            String projectId, String memberId);
+
     @Query("SELECT * FROM project_members WHERE project_id = :projectId AND deleted_at IS NULL ORDER BY joined_at LIMIT :limit OFFSET :offset")
     Flux<ProjectMember> findByProjectIdAndNotDeleted(String projectId,
             int limit, int offset);

@@ -20,9 +20,11 @@ import com.schemafy.core.project.controller.dto.response.ShareLinkAccessResponse
 import com.schemafy.core.project.controller.dto.response.ShareLinkResponse;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
+import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
@@ -63,6 +65,9 @@ class ShareLinkServiceTest {
     private WorkspaceMemberRepository workspaceMemberRepository;
 
     @Autowired
+    private ProjectMemberRepository projectMemberRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     private User testUser;
@@ -75,6 +80,7 @@ class ShareLinkServiceTest {
         // Clean up in order of dependencies
         Mono.when(accessLogRepository.deleteAll(),
                 shareLinkRepository.deleteAll(),
+                projectMemberRepository.deleteAll(),
                 projectRepository.deleteAll(),
                 workspaceMemberRepository.deleteAll(),
                 workspaceRepository.deleteAll(), userRepository.deleteAll())
@@ -105,11 +111,16 @@ class ShareLinkServiceTest {
                 testUser2.getId(), WorkspaceRole.MEMBER);
         workspaceMemberRepository.save(member2).block();
 
-        // Create project owned by testUser
-        testProject = Project.create(testWorkspace.getId(), testUser.getId(),
+        // Create project
+        testProject = Project.create(testWorkspace.getId(),
                 "Test Project", "Description",
                 ProjectSettings.defaultSettings());
         testProject = projectRepository.save(testProject).block();
+
+        // Add project member (testUser as ADMIN)
+        ProjectMember projectMember = ProjectMember.create(testProject.getId(),
+                testUser.getId(), ProjectRole.ADMIN);
+        projectMemberRepository.save(projectMember).block();
     }
 
     @Nested
@@ -168,7 +179,7 @@ class ShareLinkServiceTest {
             StepVerifier.create(result)
                     .expectErrorMatches(e -> e instanceof BusinessException &&
                             ((BusinessException) e)
-                                    .getErrorCode() == ErrorCode.PROJECT_OWNER_ONLY)
+                                    .getErrorCode() == ErrorCode.PROJECT_ACCESS_DENIED)
                     .verify();
         }
 

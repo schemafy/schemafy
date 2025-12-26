@@ -124,7 +124,6 @@ class ProjectServiceTest {
 
         testProject = Project.create(
                 testWorkspace.getId(),
-                ownerUser.getId(),
                 "Test Project",
                 "Test Description",
                 ProjectSettings.defaultSettings());

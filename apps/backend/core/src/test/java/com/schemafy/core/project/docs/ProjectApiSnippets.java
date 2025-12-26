@@ -14,13 +14,6 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 
 /**
  * Project API 문서화를 위한 스니펫 제공 클래스
- *
- * <p>비즈니스 규칙 & 보안 정책:</p>
- * <ul>
- *   <li>프로젝트 생성/수정/삭제는 워크스페이스의 OWNER/ADMIN만 가능</li>
- *   <li>프로젝트 조회는 워크스페이스 멤버 + 프로젝트 멤버(OWNER, ADMIN, EDITOR, COMMENTER, VIEWER) 모두 가능</li>
- *   <li>프로젝트는 워크스페이스 내에 종속됨</li>
- * </ul>
  */
 public class ProjectApiSnippets extends RestDocsSnippets {
 
@@ -49,8 +42,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                     fieldWithPath("result.workspaceId")
                             .type(JsonFieldType.STRING)
                             .description("소속 워크스페이스 ID (ULID)"),
-                    fieldWithPath("result.ownerId").type(JsonFieldType.STRING)
-                            .description("프로젝트 소유자 ID (ULID)"),
                     fieldWithPath("result.name").type(JsonFieldType.STRING)
                             .description("프로젝트 이름"),
                     fieldWithPath("result.description")
@@ -95,14 +86,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 프로젝트 생성 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>프로젝트 이름은 필수</li>
-     *   <li>생성자가 자동으로 OWNER 역할로 등록됨</li>
-     *   <li>settings가 null이면 기본값 사용</li>
-     *   <li>워크스페이스에 종속됨</li>
-     * </ul>
      */
     public static Snippet createProjectPathParameters() {
         return pathParameters(
@@ -155,13 +138,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 프로젝트 목록 조회 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>워크스페이스 내 프로젝트 목록 조회</li>
-     *   <li>페이징 지원 (기본값: page=0, size=20)</li>
-     *   <li>역할 정보 및 멤버 수 포함</li>
-     * </ul>
      */
     public static Snippet getProjectsPathParameters() {
         return pathParameters(
@@ -224,12 +200,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 프로젝트 상세 조회 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>프로젝트 상세 정보 조회</li>
-     *   <li>설정 정보 포함</li>
-     * </ul>
      */
     public static Snippet getProjectPathParameters() {
         return pathParameters(
@@ -264,12 +234,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 프로젝트 수정 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>프로젝트 이름은 필수</li>
-     *   <li>settings가 null이면 기본값 사용</li>
-     * </ul>
      */
     public static Snippet updateProjectPathParameters() {
         return pathParameters(
@@ -321,12 +285,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 프로젝트 삭제 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>프로젝트 삭제 시 하위 리소스도 모두 삭제됨</li>
-     *   <li>복구 불가능</li>
-     * </ul>
      */
     public static Snippet deleteProjectPathParameters() {
         return pathParameters(
@@ -354,13 +312,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 프로젝트 멤버 조회 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>프로젝트 멤버 목록 조회</li>
-     *   <li>페이징 지원 (기본값: page=0, size=20)</li>
-     *   <li>사용자 정보 및 역할 포함</li>
-     * </ul>
      */
     public static Snippet getProjectMembersPathParameters() {
         return pathParameters(
@@ -438,14 +389,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * ShareLink로 프로젝트 참여 요청 헤더
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>유효한 ShareLink 토큰 필요</li>
-     *   <li>워크스페이스 멤버만 참여 가능</li>
-     *   <li>이미 멤버인 경우 역할 업그레이드 가능 (멱등성)</li>
-     *   <li>최대 30명까지 참여 가능</li>
-     * </ul>
      */
     public static Snippet joinProjectByShareLinkRequestHeaders() {
         return createRequestHeadersSnippet(authorizationHeader());
@@ -496,13 +439,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 멤버 역할 변경 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>OWNER 또는 ADMIN만 변경 가능</li>
-     *   <li>자신의 역할은 변경 불가</li>
-     *   <li>마지막 OWNER/ADMIN의 권한 변경 불가</li>
-     * </ul>
      */
     public static Snippet updateMemberRolePathParameters() {
         return pathParameters(
@@ -564,13 +500,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 멤버 제거 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>OWNER 또는 ADMIN만 제거 가능</li>
-     *   <li>마지막 OWNER/ADMIN은 제거 불가</li>
-     *   <li>제거된 멤버는 ShareLink로 재참여 가능</li>
-     * </ul>
      */
     public static Snippet removeMemberPathParameters() {
         return pathParameters(
@@ -598,13 +527,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
     /**
      * 프로젝트 탈퇴 경로 파라미터
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>마지막 OWNER/ADMIN은 탈퇴 불가</li>
-     *   <li>마지막 멤버 탈퇴 시 프로젝트도 삭제</li>
-     *   <li>탈퇴 후 ShareLink로 재참여 가능</li>
-     * </ul>
      */
     public static Snippet leaveProjectPathParameters() {
         return pathParameters(

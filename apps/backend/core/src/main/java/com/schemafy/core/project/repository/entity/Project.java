@@ -19,17 +19,15 @@ public class Project extends BaseEntity {
 
     private String workspaceId;
 
-    private String ownerId;
-
     private String name;
 
     private String description;
 
     private String settings;
 
-    public static Project create(String workspaceId, String ownerId,
+    public static Project create(String workspaceId,
             String name, String description, ProjectSettings settings) {
-        Project project = new Project(workspaceId, ownerId, name, description,
+        Project project = new Project(workspaceId, name, description,
                 settings.toJson());
         project.setId(UlidGenerator.generate());
         return project;
@@ -44,10 +42,6 @@ public class Project extends BaseEntity {
 
     public ProjectSettings getSettingsAsVo() {
         return ProjectSettings.fromJson(this.settings);
-    }
-
-    public boolean isOwner(String userId) {
-        return this.ownerId.equals(userId);
     }
 
     public boolean belongsToWorkspace(String workspaceId) {

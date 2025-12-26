@@ -469,13 +469,6 @@ ShareLink를 통해 프로젝트에 참여합니다.
 POST /api/v1.0/projects/join
 ----
 
-**비즈니스 규칙:**
-
-* 유효한 ShareLink 토큰 필요
-* 워크스페이스 멤버만 참여 가능
-* 이미 멤버인 경우 역할 업그레이드 가능 (멱등성)
-* 최대 30명까지 참여 가능
-
 [discrete]
 ==== 요청
 
@@ -506,12 +499,6 @@ include::{snippets}/project-join-by-sharelink/response-fields.adoc[]
 ----
 PATCH /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role
 ----
-
-**비즈니스 규칙:**
-
-* OWNER 또는 ADMIN만 변경 가능
-* 자신의 역할은 변경 불가
-* 마지막 OWNER/ADMIN의 권한 변경 불가
 
 [discrete]
 ==== 요청
@@ -545,12 +532,6 @@ include::{snippets}/project-member-update-role/response-fields.adoc[]
 DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}
 ----
 
-**비즈니스 규칙:**
-
-* OWNER 또는 ADMIN만 제거 가능
-* 마지막 OWNER/ADMIN은 제거 불가
-* 제거된 멤버는 ShareLink로 재참여 가능
-
 [discrete]
 ==== 요청
 
@@ -576,12 +557,6 @@ NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다
 ----
 DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/me
 ----
-
-**비즈니스 규칙:**
-
-* 마지막 OWNER/ADMIN은 탈퇴 불가
-* 마지막 멤버 탈퇴 시 프로젝트도 삭제
-* 탈퇴 후 ShareLink로 재참여 가능
 
 [discrete]
 ==== 요청

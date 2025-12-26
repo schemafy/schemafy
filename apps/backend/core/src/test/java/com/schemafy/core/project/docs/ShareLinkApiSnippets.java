@@ -14,15 +14,6 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 
 /**
  * ShareLink API 문서화를 위한 스니펫 제공 클래스
- *
- * <p>비즈니스 규칙 & 보안 정책:</p>
- * <ul>
- *   <li>공유 링크는 토큰 기반으로 프로젝트에 접근 권한 부여</li>
- *   <li>공유 링크에는 만료 시간 설정 가능 (expiresAt)</li>
- *   <li>공유 링크는 revoke 가능 (isRevoked)</li>
- *   <li>공유 링크는 역할(VIEWER, COMMENTER, EDITOR) 지정 가능</li>
- *   <li>공유 링크 생성/조회/삭제/비활성화는 프로젝트 멤버만 가능</li>
- * </ul>
  */
 public class ShareLinkApiSnippets extends RestDocsSnippets {
 
@@ -82,33 +73,6 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
 
     /**
      * 공유 링크 생성 경로 파라미터
-     *
-     * <p>사용 예시:</p>
-     * <pre>
-     * POST /api/workspaces/{workspaceId}/projects/{projectId}/share-links
-     * Authorization: Bearer {accessToken}
-     *
-     * {
-     *   "role": "viewer",
-     *   "expiresAt": "2025-12-31T23:59:59Z"
-     * }
-     * </pre>
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>역할(role)은 필수: viewer, commenter, editor 중 하나</li>
-     *   <li>만료 시간(expiresAt)은 선택 사항 (null이면 무제한)</li>
-     *   <li>생성 시 고유 토큰이 자동 발급됨</li>
-     *   <li>초기 상태는 활성(isRevoked=false)</li>
-     *   <li>accessCount는 0으로 초기화</li>
-     * </ul>
-     *
-     * <p>보안 정책:</p>
-     * <ul>
-     *   <li>JWT 인증 필수</li>
-     *   <li>프로젝트 멤버만 생성 가능</li>
-     *   <li>토큰은 암호화되어 저장됨</li>
-     * </ul>
      */
     public static Snippet createShareLinkPathParameters() {
         return pathParameters(
@@ -155,27 +119,6 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
 
     /**
      * 공유 링크 목록 조회 경로 파라미터
-     *
-     * <p>사용 예시:</p>
-     * <pre>
-     * GET /api/workspaces/{workspaceId}/projects/{projectId}/share-links?page=0&size=20
-     * Authorization: Bearer {accessToken}
-     * </pre>
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>프로젝트의 모든 공유 링크 조회</li>
-     *   <li>페이징 지원 (기본값: page=0, size=20)</li>
-     *   <li>비활성화된 링크도 포함</li>
-     *   <li>보안상 토큰은 목록에서 제외됨</li>
-     * </ul>
-     *
-     * <p>보안 정책:</p>
-     * <ul>
-     *   <li>JWT 인증 필수</li>
-     *   <li>프로젝트 멤버만 조회 가능</li>
-     *   <li>토큰 정보는 상세 조회에서만 제공</li>
-     * </ul>
      */
     public static Snippet getShareLinksPathParameters() {
         return pathParameters(
@@ -239,26 +182,6 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
 
     /**
      * 공유 링크 상세 조회 경로 파라미터
-     *
-     * <p>사용 예시:</p>
-     * <pre>
-     * GET /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}
-     * Authorization: Bearer {accessToken}
-     * </pre>
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>특정 공유 링크의 상세 정보 조회</li>
-     *   <li>토큰 정보 포함 (암호화된 형태)</li>
-     *   <li>접근 통계 포함 (lastAccessedAt, accessCount)</li>
-     * </ul>
-     *
-     * <p>보안 정책:</p>
-     * <ul>
-     *   <li>JWT 인증 필수</li>
-     *   <li>프로젝트 멤버만 조회 가능</li>
-     *   <li>토큰은 암호화된 형태로 반환</li>
-     * </ul>
      */
     public static Snippet getShareLinkPathParameters() {
         return pathParameters(
@@ -295,28 +218,6 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
 
     /**
      * 공유 링크 비활성화 경로 파라미터
-     *
-     * <p>사용 예시:</p>
-     * <pre>
-     * PATCH /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke
-     * Authorization: Bearer {accessToken}
-     * </pre>
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>공유 링크를 비활성화(revoke)함</li>
-     *   <li>isRevoked를 true로 설정</li>
-     *   <li>비활성화된 링크는 더 이상 접근 불가</li>
-     *   <li>삭제와 달리 이력은 보존됨</li>
-     *   <li>재활성화는 불가능 (새로 생성해야 함)</li>
-     * </ul>
-     *
-     * <p>보안 정책:</p>
-     * <ul>
-     *   <li>JWT 인증 필수</li>
-     *   <li>프로젝트 멤버만 비활성화 가능</li>
-     *   <li>비활성화 즉시 토큰 접근이 차단됨</li>
-     * </ul>
      */
     public static Snippet revokeShareLinkPathParameters() {
         return pathParameters(
@@ -353,27 +254,6 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
 
     /**
      * 공유 링크 삭제 경로 파라미터
-     *
-     * <p>사용 예시:</p>
-     * <pre>
-     * DELETE /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}
-     * Authorization: Bearer {accessToken}
-     * </pre>
-     *
-     * <p>비즈니스 규칙:</p>
-     * <ul>
-     *   <li>공유 링크를 완전히 삭제</li>
-     *   <li>이력이 모두 제거됨</li>
-     *   <li>복구 불가능</li>
-     *   <li>일반적으로 비활성화(revoke)를 권장</li>
-     * </ul>
-     *
-     * <p>보안 정책:</p>
-     * <ul>
-     *   <li>JWT 인증 필수</li>
-     *   <li>프로젝트 멤버만 삭제 가능</li>
-     *   <li>삭제 즉시 토큰 접근이 차단됨</li>
-     * </ul>
      */
     public static Snippet deleteShareLinkPathParameters() {
         return pathParameters(

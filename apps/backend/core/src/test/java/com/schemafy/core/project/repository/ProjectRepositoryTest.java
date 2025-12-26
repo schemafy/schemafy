@@ -26,13 +26,12 @@ class ProjectRepositoryTest {
 
     private Project testProject;
     private String testWorkspaceId = "workspace123";
-    private String testOwnerId = "owner123";
 
     @BeforeEach
     void setUp() {
         projectRepository.deleteAll().block();
 
-        testProject = Project.create(testWorkspaceId, testOwnerId,
+        testProject = Project.create(testWorkspaceId,
                 "Test Project", "Test Description",
                 ProjectSettings.defaultSettings());
     }
@@ -46,7 +45,6 @@ class ProjectRepositoryTest {
                     assertThat(project.getName()).isEqualTo("Test Project");
                     assertThat(project.getWorkspaceId())
                             .isEqualTo(testWorkspaceId);
-                    assertThat(project.getOwnerId()).isEqualTo(testOwnerId);
                     assertThat(project.getDescription())
                             .isEqualTo("Test Description");
                 }).verifyComplete();
@@ -94,20 +92,6 @@ class ProjectRepositoryTest {
     }
 
     @Test
-    @DisplayName("Owner로 프로젝트 조회")
-    void findByOwnerIdAndNotDeleted() {
-        projectRepository.save(testProject).block();
-
-        StepVerifier
-                .create(projectRepository
-                        .findByOwnerIdAndNotDeleted(testOwnerId))
-                .assertNext(project -> {
-                    assertThat(project.getOwnerId()).isEqualTo(testOwnerId);
-                    assertThat(project.getName()).isEqualTo("Test Project");
-                }).verifyComplete();
-    }
-
-    @Test
     @DisplayName("프로젝트 수정 테스트")
     void updateProject() {
         Project saved = projectRepository.save(testProject).block();
@@ -129,7 +113,7 @@ class ProjectRepositoryTest {
     void countByWorkspaceIdAndNotDeleted() {
         projectRepository.save(testProject).block();
 
-        Project anotherProject = Project.create(testWorkspaceId, testOwnerId,
+        Project anotherProject = Project.create(testWorkspaceId,
                 "Another Project", "Description",
                 ProjectSettings.defaultSettings());
         projectRepository.save(anotherProject).block();
@@ -154,7 +138,7 @@ class ProjectRepositoryTest {
                 .create(projectRepository
                         .countByWorkspaceIdAndNotDeleted(testWorkspaceId))
                 .assertNext(count -> {
-                    assertThat(count).isEqualTo(0L);
+                    assertThat(count).isZero();
                 }).verifyComplete();
     }
 

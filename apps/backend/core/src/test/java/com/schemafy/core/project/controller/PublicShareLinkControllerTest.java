@@ -105,7 +105,7 @@ class PublicShareLinkControllerTest {
         workspaceMemberRepository.save(member).block();
 
         // Create project owned by testUser
-        testProject = Project.create(testWorkspace.getId(), testUser.getId(),
+        testProject = Project.create(testWorkspace.getId(),
                 "Test Project", "Description",
                 ProjectSettings.defaultSettings());
         testProject = projectRepository.save(testProject).block();

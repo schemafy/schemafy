@@ -32,7 +32,6 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 CREATE TABLE IF NOT EXISTS projects (
     id           CHAR(26)     NOT NULL,
     workspace_id CHAR(26)     NOT NULL,
-    owner_id     CHAR(26)     NOT NULL,
     name         VARCHAR(255) NOT NULL,
     description  TEXT         NULL,
     settings     TEXT         NULL,
@@ -41,7 +40,6 @@ CREATE TABLE IF NOT EXISTS projects (
     deleted_at   TIMESTAMP    NULL,
     CONSTRAINT pk_projects PRIMARY KEY (id),
     INDEX idx_projects_workspace_id (workspace_id),
-    INDEX idx_projects_owner_id (owner_id),
     INDEX idx_projects_deleted_at (deleted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

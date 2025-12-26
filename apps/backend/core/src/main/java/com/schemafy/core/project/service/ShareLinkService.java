@@ -1,7 +1,5 @@
 package com.schemafy.core.project.service;
 
-import java.time.Instant;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -11,11 +9,9 @@ import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
 import com.schemafy.core.project.controller.dto.response.ShareLinkAccessResponse;
 import com.schemafy.core.project.controller.dto.response.ShareLinkResponse;
-import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.ShareLinkAccessLogRepository;
-import com.schemafy.core.project.repository.ShareLinkRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
+import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.ShareLinkAccessLog;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
@@ -30,17 +26,17 @@ import reactor.core.publisher.Mono;
 public class ShareLinkService {
 
     private final TransactionalOperator transactionalOperator;
-    private final TransactionalOperator readOnlyTransactionalOperator;
     private final ShareLinkRepository shareLinkRepository;
     private final ShareLinkAccessLogRepository accessLogRepository;
     private final ProjectRepository projectRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final ProjectMemberRepository projectMemberRepository;
     private final ShareLinkTokenService tokenService;
 
     public Mono<ShareLinkResponse> createShareLink(String workspaceId,
             String projectId, CreateShareLinkRequest request, String userId) {
-        return validateWorkspaceMemberAccess(workspaceId, userId)
-                .then(validateProjectOwnerAccess(workspaceId, projectId,
+        return validateWorkspaceMember(workspaceId, userId)
+                .then(validateProjectAdmin(workspaceId, projectId,
                         userId))
                 .then(Mono.defer(() -> {
                     String token = tokenService.generateToken();
@@ -48,10 +44,9 @@ public class ShareLinkService {
 
                     ShareLinkRole role = ShareLinkRole
                             .fromString(request.role());
-                    Instant expiresAt = request.expiresAt();
 
                     ShareLink shareLink = ShareLink.create(projectId, tokenHash,
-                            role, expiresAt);
+                            role, request.expiresAt());
 
                     return shareLinkRepository.save(shareLink)
                             .map(saved -> ShareLinkResponse.of(saved, token));
@@ -62,26 +57,23 @@ public class ShareLinkService {
     public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
             String workspaceId,
             String projectId, String userId, int page, int size) {
-        return validateWorkspaceMemberAccess(workspaceId, userId)
-                .then(validateProjectOwnerAccess(workspaceId, projectId,
+        return validateWorkspaceMember(workspaceId, userId)
+                .then(validateProjectAdmin(workspaceId, projectId,
                         userId))
                 .then(shareLinkRepository
                         .countByProjectIdAndNotDeleted(projectId))
-                .flatMap(total -> {
-                    int offset = page * size;
-                    return shareLinkRepository
-                            .findByProjectIdAndNotDeleted(projectId, size,
-                                    offset)
-                            .map(ShareLinkResponse::from)
-                            .collectList()
-                            .map(list -> PageResponse.of(list, page, size,
-                                    total));
-                });
+                .flatMap(total -> shareLinkRepository
+                        .findByProjectIdAndNotDeleted(projectId, size,
+                                page * size)
+                        .map(ShareLinkResponse::from)
+                        .collectList()
+                        .map(list -> PageResponse.of(list, page, size,
+                                total)));
     }
 
     public Mono<ShareLinkResponse> getShareLink(String workspaceId,
             String projectId, String shareLinkId, String userId) {
-        return validateWorkspaceMemberAccess(workspaceId, userId)
+        return validateWorkspaceMember(workspaceId, userId)
                 .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
@@ -90,7 +82,7 @@ public class ShareLinkService {
                         return Mono.error(new BusinessException(
                                 ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
-                    return validateProjectOwnerAccess(workspaceId,
+                    return validateProjectAdmin(workspaceId,
                             shareLink.getProjectId(), userId)
                             .thenReturn(ShareLinkResponse.from(shareLink));
                 });
@@ -98,7 +90,7 @@ public class ShareLinkService {
 
     public Mono<Void> revokeShareLink(String workspaceId, String projectId,
             String shareLinkId, String userId) {
-        return validateWorkspaceMemberAccess(workspaceId, userId)
+        return validateWorkspaceMember(workspaceId, userId)
                 .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
@@ -107,7 +99,7 @@ public class ShareLinkService {
                         return Mono.error(new BusinessException(
                                 ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
-                    return validateProjectOwnerAccess(workspaceId,
+                    return validateProjectAdmin(workspaceId,
                             shareLink.getProjectId(), userId)
                             .then(Mono.defer(() -> {
                                 shareLink.revoke();
@@ -120,7 +112,7 @@ public class ShareLinkService {
 
     public Mono<Void> deleteShareLink(String workspaceId, String projectId,
             String shareLinkId, String userId) {
-        return validateWorkspaceMemberAccess(workspaceId, userId)
+        return validateWorkspaceMember(workspaceId, userId)
                 .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
@@ -129,7 +121,7 @@ public class ShareLinkService {
                         return Mono.error(new BusinessException(
                                 ErrorCode.PROJECT_WORKSPACE_MISMATCH));
                     }
-                    return validateProjectOwnerAccess(workspaceId,
+                    return validateProjectAdmin(workspaceId,
                             shareLink.getProjectId(), userId)
                             .then(Mono.defer(() -> {
                                 shareLink.delete();
@@ -178,7 +170,7 @@ public class ShareLinkService {
                 });
     }
 
-    private Mono<Void> validateWorkspaceMemberAccess(String workspaceId,
+    private Mono<Boolean> validateWorkspaceMember(String workspaceId,
             String userId) {
         return workspaceMemberRepository
                 .existsByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
@@ -191,23 +183,23 @@ public class ShareLinkService {
                 });
     }
 
-    private Mono<Void> validateProjectOwnerAccess(String workspaceId,
+    private Mono<Void> validateProjectAdmin(String workspaceId,
             String projectId, String userId) {
         return projectRepository.findByIdAndNotDeleted(projectId)
-                .switchIfEmpty(
-                        Mono.error(new BusinessException(
-                                ErrorCode.PROJECT_NOT_FOUND)))
-                .flatMap(project -> {
-                    if (!project.belongsToWorkspace(workspaceId)) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
-                    }
-                    if (!project.isOwner(userId)) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.PROJECT_OWNER_ONLY));
-                    }
-                    return Mono.empty();
-                });
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.PROJECT_NOT_FOUND)))
+                .filter(project -> project.belongsToWorkspace(workspaceId))
+                .switchIfEmpty(Mono.error(new BusinessException(
+                        ErrorCode.PROJECT_WORKSPACE_MISMATCH)))
+                .flatMap(project -> projectMemberRepository
+                        .findByProjectIdAndUserIdAndNotDeleted(projectId,
+                                userId))
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+                .filter(ProjectMember::isAdmin)
+                .switchIfEmpty(Mono.error(new BusinessException(
+                        ErrorCode.PROJECT_ADMIN_REQUIRED)))
+                .then();
     }
 
 }
