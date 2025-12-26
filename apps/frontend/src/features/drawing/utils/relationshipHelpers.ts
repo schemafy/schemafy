@@ -129,7 +129,10 @@ export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
       const baseConfig = RELATIONSHIP_TYPES[relationshipType];
       const isNonIdentifying = rel.kind === 'NON_IDENTIFYING';
       const style = getRelationshipStyle(isNonIdentifying);
-      const extra = (rel.extra || {}) as RelationshipExtra;
+      const extra =
+        typeof rel.extra === 'string'
+          ? (JSON.parse(rel.extra) as RelationshipExtra)
+          : ((rel.extra || {}) as RelationshipExtra);
 
       const edge: Edge = {
         id: rel.id,

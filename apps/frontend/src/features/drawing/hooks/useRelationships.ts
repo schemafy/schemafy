@@ -14,7 +14,6 @@ import {
   convertRelationshipsToEdges,
   createRelationshipFromConnection,
   findRelationshipInSchema,
-  shouldRecreateRelationship,
 } from '../utils/relationshipHelpers';
 import * as relationshipService from '../services/relationship.service';
 
@@ -25,7 +24,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   >(null);
   const relationshipReconnectSuccessful = useRef(true);
 
-  const updateRelationshipControlPoint = (
+  const updateRelationshipControlPoint = async (
     relationshipId: string,
     controlPoint1: Point,
     controlPoint2?: Point,
@@ -41,7 +40,10 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     );
     if (!currentRelationship) return;
 
-    const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
+    const currentExtra =
+      typeof currentRelationship.extra === 'string'
+        ? (JSON.parse(currentRelationship.extra) as RelationshipExtra)
+        : ((currentRelationship.extra || {}) as RelationshipExtra);
 
     const updatedExtra: RelationshipExtra = {
       ...currentExtra,
@@ -52,11 +54,16 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       updatedExtra.controlPoint2 = controlPoint2;
     }
 
-    erdStore.updateRelationshipExtra(
-      selectedSchemaId,
-      relationshipId,
-      updatedExtra,
-    );
+    try {
+      await relationshipService.updateRelationshipExtra(
+        selectedSchemaId,
+        relationshipId,
+        updatedExtra,
+      );
+    } catch (error) {
+      toast.error('Failed to update relationship control point');
+      console.error(error);
+    }
   };
 
   const getRelationships = (): Edge[] => {
@@ -257,41 +264,28 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
     const typeConfig = RELATIONSHIP_TYPES[config.type];
     const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
-    const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
+    const newCardinality = typeConfig.cardinality;
 
-    if (
-      shouldRecreateRelationship(
-        currentRelationship,
-        newKind,
-        typeConfig.cardinality,
-      )
-    ) {
-      try {
-        await relationshipService.deleteRelationship(
+    const kindChanged = currentRelationship.kind !== newKind;
+    const cardinalityChanged = currentRelationship.cardinality !== newCardinality;
+
+    try {
+      if (kindChanged) {
+        await relationshipService.updateRelationshipKind(
           selectedSchemaId,
           relationshipId,
-        );
-        await relationshipService.createRelationship(
-          selectedSchemaId,
-          currentRelationship.srcTableId,
-          currentRelationship.tgtTableId,
-          currentRelationship.name,
           newKind,
-          typeConfig.cardinality,
-          currentRelationship.onDelete,
-          currentRelationship.onUpdate,
-          currentRelationship.fkEnforced,
-          currentRelationship.columns.map((col) => ({
-            fkColumnId: col.fkColumnId,
-            refColumnId: col.refColumnId,
-            seqNo: col.seqNo,
-          })),
-          JSON.stringify(currentExtra),
         );
-      } catch (error) {
-        toast.error('Failed to update relationship configuration');
-        console.error(error);
+      } else if (cardinalityChanged) {
+        await relationshipService.updateRelationshipCardinality(
+          selectedSchemaId,
+          relationshipId,
+          newCardinality,
+        );
       }
+    } catch (error) {
+      toast.error('Failed to update relationship configuration');
+      console.error(error);
     }
   };
 

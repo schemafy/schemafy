@@ -78,6 +78,7 @@ export async function createRelationship(
     fkEnforced,
     columns: relationshipColumns,
     isAffected: false,
+    extra,
   };
 
   const response = await withOptimisticUpdate(
@@ -196,6 +197,81 @@ export async function updateRelationshipCardinality(
         relationshipId,
         oldCardinality,
       ),
+  );
+}
+
+export async function updateRelationshipKind(
+  schemaId: string,
+  relationshipId: string,
+  kind: 'IDENTIFYING' | 'NON_IDENTIFYING',
+) {
+  // TODO: relationship kind 업데이트 API 연결
+  const erdStore = getErdStore();
+  const { database, relationship } = validateAndGetRelationship(
+    schemaId,
+    relationshipId,
+  );
+
+  const currentExtra =
+    typeof relationship.extra === 'string'
+      ? JSON.parse(relationship.extra)
+      : relationship.extra;
+
+  await withOptimisticUpdate(
+    () => {
+      const relationshipSnapshot = structuredClone(relationship);
+      erdStore.deleteRelationship(schemaId, relationshipId);
+      return relationshipSnapshot;
+    },
+    async () => {
+      await deleteRelationshipAPI(relationshipId, {
+        database,
+        schemaId,
+        relationshipId,
+      });
+
+      const response = await createRelationshipAPI(
+        {
+          database,
+          schemaId,
+          relationship: {
+            id: relationshipId,
+            srcTableId: relationship.srcTableId,
+            tgtTableId: relationship.tgtTableId,
+            name: relationship.name,
+            kind,
+            cardinality: convertCardinality(relationship.cardinality),
+            onDelete: relationship.onDelete,
+            onUpdate: convertOnUpdate(relationship.onUpdate),
+            columns: relationship.columns.map((col) => ({
+              id: col.id,
+              relationshipId,
+              fkColumnId: col.fkColumnId,
+              refColumnId: col.refColumnId,
+              seqNo: col.seqNo,
+            })),
+          },
+        },
+        currentExtra ? JSON.stringify(currentExtra) : undefined,
+      );
+
+      handleRelationshipIdRemapping(
+        response.result ?? {},
+        schemaId,
+        relationship.srcTableId,
+        relationshipId,
+      );
+
+      handleBatchRelationshipColumnRemapping(
+        response.result ?? {},
+        schemaId,
+        relationshipId,
+      );
+
+      return response;
+    },
+    (relationshipSnapshot) =>
+      erdStore.createRelationship(schemaId, relationshipSnapshot),
   );
 }
 
