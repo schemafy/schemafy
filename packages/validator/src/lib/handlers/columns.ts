@@ -187,9 +187,21 @@ export const columnHandlers: ColumnHandlers = {
         : { ...t, isAffected: true },
     );
 
-    const changeSchemas: Schema[] = database.schemas.map((s) =>
+    let changeSchemas: Schema[] = database.schemas.map((s) =>
       s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
     );
+
+    const updatedSchema = changeSchemas.find((s) => s.id === schemaId);
+    if (updatedSchema) {
+      const cascadedSchema = helper.deleteCascadingForeignKeys(
+        updatedSchema,
+        tableId,
+        columnId,
+      );
+      changeSchemas = changeSchemas.map((s) =>
+        s.id === schemaId ? cascadedSchema : s,
+      );
+    }
 
     return {
       ...database,

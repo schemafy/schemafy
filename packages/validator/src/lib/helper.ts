@@ -392,7 +392,7 @@ export const deleteCascadingForeignKeys = (
         for (const fkColumnId of fkColumnsToDelete) {
           updatedSchema = deleteCascadingForeignKeys(
             structuredClone(updatedSchema),
-            rel.tgtTableId,
+            rel.srcTableId,
             fkColumnId,
             new Set(visited),
           );
