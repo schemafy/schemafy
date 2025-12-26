@@ -15,9 +15,9 @@ import com.schemafy.core.collaboration.constant.CollaborationConstants;
 import com.schemafy.core.collaboration.dto.BroadcastMessage;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
 import com.schemafy.core.collaboration.dto.CursorPosition;
-import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.service.handler.InboundMessageHandler;
 import com.schemafy.core.collaboration.service.handler.MessageContext;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
@@ -66,7 +66,8 @@ public class CollaborationService {
         }
         cursorDedupeCache.put(sessionId, cursor);
 
-        return serializeToJson(CollaborationOutboundFactory.cursor(sessionId, cursor))
+        return serializeToJson(
+                CollaborationOutboundFactory.cursor(sessionId, cursor))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
                 .doOnError(e -> log.warn(
@@ -98,8 +99,9 @@ public class CollaborationService {
         return Mono
                 .fromRunnable(() -> sessionRegistry.removeSession(projectId,
                         sessionId))
-                .then(serializeToJson(CollaborationOutboundFactory.leave(sessionId,
-                        userId, userName)))
+                .then(serializeToJson(
+                        CollaborationOutboundFactory.leave(sessionId,
+                                userId, userName)))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
                 .then();
@@ -145,7 +147,8 @@ public class CollaborationService {
                     return handler.handle(context, message);
                 })
                 .onErrorResume(e -> {
-                    log.warn("[CollaborationService] Message handling failed: {}",
+                    log.warn(
+                            "[CollaborationService] Message handling failed: {}",
                             e.getMessage());
                     return Mono.empty();
                 });
@@ -168,14 +171,17 @@ public class CollaborationService {
     private void broadcastEvent(String projectId, String excludeSessionId,
             CollaborationEventType eventType, String json) {
         if (eventType == null) {
-            log.warn("[CollaborationService] Event type is null, using best effort");
+            log.warn(
+                    "[CollaborationService] Event type is null, using best effort");
             sessionRegistry.broadcast(
                     BroadcastMessage.of(projectId, excludeSessionId, json));
             return;
         }
 
-        String exclude = eventType.shouldIncludeSender() ? null : excludeSessionId;
-        sessionRegistry.broadcast(BroadcastMessage.of(projectId, exclude, json));
+        String exclude = eventType.shouldIncludeSender() ? null
+                : excludeSessionId;
+        sessionRegistry
+                .broadcast(BroadcastMessage.of(projectId, exclude, json));
     }
 
     private <T> Mono<String> serializeToJson(T object) {
@@ -205,4 +211,3 @@ public class CollaborationService {
     }
 
 }
-

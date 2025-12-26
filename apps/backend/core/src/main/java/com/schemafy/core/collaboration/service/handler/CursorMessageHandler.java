@@ -28,9 +28,11 @@ public class CursorMessageHandler implements InboundMessageHandler {
     }
 
     @Override
-    public Mono<Void> handle(MessageContext context, CollaborationInbound message) {
+    public Mono<Void> handle(MessageContext context,
+            CollaborationInbound message) {
         if (!(message instanceof CursorEvent.Inbound cursorMessage)) {
-            log.warn("[CursorMessageHandler] Invalid message format: sessionId={}",
+            log.warn(
+                    "[CursorMessageHandler] Invalid message format: sessionId={}",
                     context.sessionId());
             return Mono.empty();
         }

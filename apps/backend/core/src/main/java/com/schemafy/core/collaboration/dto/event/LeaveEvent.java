@@ -29,6 +29,7 @@ public final class LeaveEvent {
         public Outbound withoutSessionId() {
             return new Outbound(null, userId, userName, timestamp);
         }
+
     }
 
 }

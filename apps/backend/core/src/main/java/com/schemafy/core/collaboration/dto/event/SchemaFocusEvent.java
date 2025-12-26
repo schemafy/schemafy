@@ -14,6 +14,7 @@ public final class SchemaFocusEvent {
         public CollaborationEventType type() {
             return CollaborationEventType.SCHEMA_FOCUS;
         }
+
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -39,6 +40,7 @@ public final class SchemaFocusEvent {
         public Outbound withoutSessionId() {
             return new Outbound(null, userId, userName, schemaId, timestamp);
         }
+
     }
 
 }

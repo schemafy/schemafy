@@ -14,6 +14,7 @@ public final class ChatEvent {
         public CollaborationEventType type() {
             return CollaborationEventType.CHAT;
         }
+
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,6 +42,7 @@ public final class ChatEvent {
             return new Outbound(null, messageId, userId, userName, content,
                     timestamp);
         }
+
     }
 
 }

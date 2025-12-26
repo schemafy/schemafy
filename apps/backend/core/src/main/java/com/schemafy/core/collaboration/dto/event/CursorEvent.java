@@ -9,12 +9,14 @@ public final class CursorEvent {
     private CursorEvent() {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Inbound(CursorPosition cursor) implements CollaborationInbound {
+    public record Inbound(CursorPosition cursor)
+            implements CollaborationInbound {
 
         @Override
         public CollaborationEventType type() {
             return CollaborationEventType.CURSOR;
         }
+
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -36,6 +38,7 @@ public final class CursorEvent {
         public Outbound withoutSessionId() {
             return new Outbound(null, cursor, timestamp);
         }
+
     }
 
 }

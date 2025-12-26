@@ -16,7 +16,7 @@ import com.schemafy.core.collaboration.dto.CollaborationEventType;
 })
 public sealed interface CollaborationOutbound
         permits JoinEvent.Outbound, LeaveEvent.Outbound, CursorEvent.Outbound,
-                SchemaFocusEvent.Outbound, ChatEvent.Outbound {
+        SchemaFocusEvent.Outbound, ChatEvent.Outbound {
 
     CollaborationEventType type();
 

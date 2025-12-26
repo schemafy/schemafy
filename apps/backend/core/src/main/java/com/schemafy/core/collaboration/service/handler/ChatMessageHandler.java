@@ -29,9 +29,11 @@ public class ChatMessageHandler implements InboundMessageHandler {
     }
 
     @Override
-    public Mono<Void> handle(MessageContext context, CollaborationInbound message) {
+    public Mono<Void> handle(MessageContext context,
+            CollaborationInbound message) {
         if (!(message instanceof ChatEvent.Inbound chatMessage)) {
-            log.warn("[ChatMessageHandler] Invalid message format: sessionId={}",
+            log.warn(
+                    "[ChatMessageHandler] Invalid message format: sessionId={}",
                     context.sessionId());
             return Mono.empty();
         }

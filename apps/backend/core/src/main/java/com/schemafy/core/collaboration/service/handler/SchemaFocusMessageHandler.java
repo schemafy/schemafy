@@ -7,8 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.collaboration.constant.CollaborationConstants;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
-import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.SchemaFocusEvent;
 import com.schemafy.core.collaboration.service.SessionRegistry;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
@@ -34,7 +34,8 @@ public class SchemaFocusMessageHandler implements InboundMessageHandler {
     }
 
     @Override
-    public Mono<Void> handle(MessageContext context, CollaborationInbound message) {
+    public Mono<Void> handle(MessageContext context,
+            CollaborationInbound message) {
         if (!(message instanceof SchemaFocusEvent.Inbound schemaFocusMessage)) {
             log.warn(
                     "[SchemaFocusMessageHandler] Invalid message format: sessionId={}",
@@ -55,7 +56,8 @@ public class SchemaFocusMessageHandler implements InboundMessageHandler {
                 .orElse(null);
 
         if (entry == null) {
-            log.warn("[SchemaFocusMessageHandler] Session not found: sessionId={}",
+            log.warn(
+                    "[SchemaFocusMessageHandler] Session not found: sessionId={}",
                     context.sessionId());
             return Mono.empty();
         }

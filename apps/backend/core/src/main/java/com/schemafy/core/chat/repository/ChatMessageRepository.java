@@ -19,4 +19,3 @@ public interface ChatMessageRepository
             String projectId, String beforeId, int limit);
 
 }
-

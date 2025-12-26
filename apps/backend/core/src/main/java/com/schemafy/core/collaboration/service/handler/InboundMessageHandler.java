@@ -12,4 +12,3 @@ public interface InboundMessageHandler {
     Mono<Void> handle(MessageContext context, CollaborationInbound message);
 
 }
-
