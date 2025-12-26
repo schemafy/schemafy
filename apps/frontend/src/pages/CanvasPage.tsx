@@ -32,6 +32,7 @@ import {
   Memo,
   TempMemoPreview,
 } from '@/features/drawing';
+import { ApiTester } from '@/features/drawing/temp/ApiTester';
 import { ErdStore } from '@/store/erd.store';
 
 const NODE_TYPES = {
@@ -271,6 +272,7 @@ const CanvasPageComponent = () => {
         </div>
       </div>
       <FloatingButtons />
+      <ApiTester />
     </>
   );
 };
