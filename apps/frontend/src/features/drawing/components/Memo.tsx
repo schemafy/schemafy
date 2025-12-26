@@ -55,12 +55,12 @@ export const Memo = ({ id, data }: MemoProps) => {
   const createMemoComment = useMemoStore((state) => state.createMemoComment);
   const deleteMemoComment = useMemoStore((state) => state.deleteMemoComment);
   const deleteMemoFromStore = useMemoStore((state) => state.deleteMemo);
-  
+
   // Find schemaId for this memo to call deleteMemo
-  const schemaId = useMemoStore((state) => 
-    Object.keys(state.memosBySchema).find(sid => 
-      state.memosBySchema[sid]?.some(m => m.id === id)
-    )
+  const schemaId = useMemoStore((state) =>
+    Object.keys(state.memosBySchema).find((sid) =>
+      state.memosBySchema[sid]?.some((m) => m.id === id),
+    ),
   );
 
   const comments = data.comments ?? [];

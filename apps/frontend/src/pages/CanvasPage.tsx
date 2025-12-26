@@ -86,11 +86,7 @@ const CanvasPageComponent = () => {
   }, [erdStore]);
 
   const { tables, addTable, onTablesChange } = useTables();
-  const {
-    memos,
-    addMemo,
-    onMemosChange,
-  } = useMemos();
+  const { memos, addMemo, onMemosChange } = useMemos();
   const {
     relationships,
     selectedRelationship,

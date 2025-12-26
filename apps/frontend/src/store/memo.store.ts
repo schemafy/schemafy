@@ -54,7 +54,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
     try {
       const res = await memoApi.getSchemaMemos(schemaId);
       if (!res.success || !res.result) {
-        set({ error: res.error?.message ?? 'Failed to fetch memos', isLoading: false });
+        set({
+          error: res.error?.message ?? 'Failed to fetch memos',
+          isLoading: false,
+        });
         return;
       }
       const memos = res.result;
@@ -103,7 +106,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
     try {
       const res = await memoApi.createMemo(data);
       if (!res.success || !res.result) {
-        set({ error: res.error?.message ?? 'Failed to create memo', isLoading: false });
+        set({
+          error: res.error?.message ?? 'Failed to create memo',
+          isLoading: false,
+        });
         return null;
       }
       const memo = res.result;
@@ -118,7 +124,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
       });
       return memo;
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : 'Failed to create memo', isLoading: false });
+      set({
+        error: e instanceof Error ? e.message : 'Failed to create memo',
+        isLoading: false,
+      });
       return null;
     }
   },
@@ -132,7 +141,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
     try {
       const res = await memoApi.updateMemo(memoId, data);
       if (!res.success || !res.result) {
-        set({ error: res.error?.message ?? 'Failed to update memo', isLoading: false });
+        set({
+          error: res.error?.message ?? 'Failed to update memo',
+          isLoading: false,
+        });
         return null;
       }
       const updated = res.result;
@@ -158,7 +170,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
       }
       return updated;
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : 'Failed to update memo', isLoading: false });
+      set({
+        error: e instanceof Error ? e.message : 'Failed to update memo',
+        isLoading: false,
+      });
       return null;
     }
   },
@@ -168,7 +183,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
     try {
       const res = await memoApi.deleteMemo(memoId);
       if (!res.success) {
-        set({ error: res.error?.message ?? 'Failed to delete memo', isLoading: false });
+        set({
+          error: res.error?.message ?? 'Failed to delete memo',
+          isLoading: false,
+        });
         return false;
       }
       set((state) => {
@@ -185,7 +203,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
       });
       return true;
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : 'Failed to delete memo', isLoading: false });
+      set({
+        error: e instanceof Error ? e.message : 'Failed to delete memo',
+        isLoading: false,
+      });
       return false;
     }
   },
@@ -195,7 +216,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
     try {
       const res = await memoApi.getMemoComments(memoId);
       if (!res.success || !res.result) {
-        set({ error: res.error?.message ?? 'Failed to fetch comments', isLoading: false });
+        set({
+          error: res.error?.message ?? 'Failed to fetch comments',
+          isLoading: false,
+        });
         return;
       }
       set((state) => ({
@@ -203,7 +227,9 @@ export const useMemoStore = create<MemoState>((set, get) => ({
       }));
     } catch (e) {
       set({
-        error: e instanceof Error ? e.message : 'Failed to fetch comments', isLoading: false });
+        error: e instanceof Error ? e.message : 'Failed to fetch comments',
+        isLoading: false,
+      });
     }
   },
 
@@ -212,7 +238,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
     try {
       const res = await memoApi.createMemoComment(memoId, data);
       if (!res.success || !res.result) {
-        set({ error: res.error?.message ?? 'Failed to create comment', isLoading: false });
+        set({
+          error: res.error?.message ?? 'Failed to create comment',
+          isLoading: false,
+        });
         return null;
       }
       const comment = res.result;
@@ -263,7 +292,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
     try {
       const res = await memoApi.updateMemoComment(memoId, commentId, data);
       if (!res.success || !res.result) {
-        set({ error: res.error?.message ?? 'Failed to update comment', isLoading: false });
+        set({
+          error: res.error?.message ?? 'Failed to update comment',
+          isLoading: false,
+        });
         return null;
       }
       const updated = res.result;
@@ -318,7 +350,10 @@ export const useMemoStore = create<MemoState>((set, get) => ({
     try {
       const res = await memoApi.deleteMemoComment(memoId, commentId);
       if (!res.success) {
-        set({ error: res.error?.message ?? 'Failed to delete comment', isLoading: false });
+        set({
+          error: res.error?.message ?? 'Failed to delete comment',
+          isLoading: false,
+        });
         return false;
       }
       set((state) => {
