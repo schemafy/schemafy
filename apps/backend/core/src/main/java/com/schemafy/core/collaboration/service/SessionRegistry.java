@@ -16,7 +16,7 @@ import reactor.core.publisher.Sinks;
 
 @Slf4j
 @Service
-public class SessionService {
+public class SessionRegistry {
 
     // projectId -> (sessionId -> SessionEntry)
     private final Map<String, Map<String, SessionEntry>> projectSessions = new ConcurrentHashMap<>();
@@ -28,7 +28,7 @@ public class SessionService {
                 .computeIfAbsent(projectId, k -> new ConcurrentHashMap<>())
                 .put(sessionId, entry);
         log.info(
-                "[SessionService] Session added: projectId={}, sessionId={}, current session count={}",
+                "[SessionRegistry] Session added: projectId={}, sessionId={}, current session count={}",
                 projectId, sessionId, getSessionCount(projectId));
         return entry;
     }
@@ -42,7 +42,7 @@ public class SessionService {
             return sessions.isEmpty() ? null : sessions;
         });
         log.info(
-                "[SessionService] Session removed: projectId={}, sessionId={}, current session count={}",
+                "[SessionRegistry] Session removed: projectId={}, sessionId={}, current session count={}",
                 projectId, sessionId, getSessionCount(projectId));
     }
 
@@ -89,3 +89,4 @@ public class SessionService {
     }
 
 }
+

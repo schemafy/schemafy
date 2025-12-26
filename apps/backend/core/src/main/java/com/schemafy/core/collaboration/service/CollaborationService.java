@@ -1,7 +1,10 @@
 package com.schemafy.core.collaboration.service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -10,49 +13,47 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.collaboration.constant.CollaborationConstants;
 import com.schemafy.core.collaboration.dto.BroadcastMessage;
-import com.schemafy.core.collaboration.dto.ClientMessage;
-import com.schemafy.core.collaboration.dto.CursorClientMessage;
+import com.schemafy.core.collaboration.dto.CollaborationEventType;
 import com.schemafy.core.collaboration.dto.CursorPosition;
-import com.schemafy.core.collaboration.dto.PresenceEvent;
-import com.schemafy.core.collaboration.dto.PresenceEventFactory;
-import com.schemafy.core.collaboration.dto.PresenceEventType;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
+import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
+import com.schemafy.core.collaboration.service.handler.InboundMessageHandler;
+import com.schemafy.core.collaboration.service.handler.MessageContext;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @ConditionalOnRedisEnabled
-public class PresenceService {
+public class CollaborationService {
 
     private static final double CURSOR_POSITION_EPS = 0.5;
 
-    private final SessionService sessionService;
+    private final SessionRegistry sessionRegistry;
     private final ReactiveStringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final Map<CollaborationEventType, InboundMessageHandler> handlers;
     private final Map<String, CursorPosition> cursorDedupeCache = new ConcurrentHashMap<>();
 
-    public void pushCursorToSink(String projectId, String sessionId,
-            CursorPosition cursor) {
-        SessionEntry entry = sessionService
-                .getSessionEntry(projectId, sessionId)
-                .orElse(null);
+    public CollaborationService(
+            SessionRegistry sessionRegistry,
+            ReactiveStringRedisTemplate redisTemplate,
+            ObjectMapper objectMapper,
+            List<InboundMessageHandler> handlerList) {
+        this.sessionRegistry = sessionRegistry;
+        this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
+        this.handlers = handlerList.stream()
+                .collect(Collectors.toMap(
+                        InboundMessageHandler::supportedType,
+                        Function.identity()));
 
-        if (entry == null) {
-            log.warn(
-                    "[PresenceService] Session not found for cursor push: sessionId={}",
-                    sessionId);
-            return;
-        }
-
-        String userName = entry.authInfo().getUserName();
-        CursorPosition cursorWithUserName = cursor.withUserName(userName);
-
-        entry.pushCursor(cursorWithUserName);
+        log.info("[CollaborationService] Registered {} message handlers: {}",
+                handlers.size(), handlers.keySet());
     }
 
     public Mono<Void> publishCursorToRedis(String projectId, String sessionId,
@@ -65,11 +66,11 @@ public class PresenceService {
         }
         cursorDedupeCache.put(sessionId, cursor);
 
-        return serializeToJson(PresenceEventFactory.cursor(sessionId, cursor))
+        return serializeToJson(CollaborationOutboundFactory.cursor(sessionId, cursor))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
                 .doOnError(e -> log.warn(
-                        "[PresenceService] Failed to publish cursor: sessionId={}, error={}",
+                        "[CollaborationService] Failed to publish cursor: sessionId={}, error={}",
                         sessionId, e.getMessage()))
                 .onErrorResume(e -> Mono.empty())
                 .then();
@@ -79,15 +80,15 @@ public class PresenceService {
         String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
         cursorDedupeCache.remove(sessionId);
 
-        SessionEntry entry = sessionService
+        SessionEntry entry = sessionRegistry
                 .getSessionEntry(projectId, sessionId)
                 .orElse(null);
         if (entry == null) {
             log.warn(
-                    "[PresenceService] Session not found for removal: sessionId={}",
+                    "[CollaborationService] Session not found for removal: sessionId={}",
                     sessionId);
             return Mono.fromRunnable(
-                    () -> sessionService.removeSession(projectId, sessionId))
+                    () -> sessionRegistry.removeSession(projectId, sessionId))
                     .then();
         }
 
@@ -95,9 +96,9 @@ public class PresenceService {
         String userName = entry.authInfo().getUserName();
 
         return Mono
-                .fromRunnable(() -> sessionService.removeSession(projectId,
+                .fromRunnable(() -> sessionRegistry.removeSession(projectId,
                         sessionId))
-                .then(serializeToJson(PresenceEventFactory.leave(sessionId,
+                .then(serializeToJson(CollaborationOutboundFactory.leave(sessionId,
                         userId, userName)))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
                         eventJson))
@@ -109,7 +110,7 @@ public class PresenceService {
         String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
 
         return serializeToJson(
-                PresenceEventFactory.join(sessionId, userId, userName))
+                CollaborationOutboundFactory.join(sessionId, userId, userName))
                 .flatMap(eventJson -> redisTemplate.convertAndSend(
                         channelName,
                         eventJson))
@@ -117,101 +118,71 @@ public class PresenceService {
     }
 
     /**
-     * handle WebSocket messages (generic handler)
+     * handle inbound message
      */
     public Mono<Void> handleMessage(String projectId, String sessionId,
             String payload) {
-        return deserializeFromJson(payload, ClientMessage.class)
+        return deserializeFromJson(payload, CollaborationInbound.class)
                 .flatMap(message -> {
-                    PresenceEventType type = message.getType();
+                    CollaborationEventType type = message.type();
                     if (type == null) {
                         log.warn(
-                                "[PresenceService] No message type: sessionId={}",
+                                "[CollaborationService] No message type: sessionId={}",
                                 sessionId);
                         return Mono.empty();
                     }
 
-                    return switch (type) {
-                    case CURSOR -> {
-                        if (!(message instanceof CursorClientMessage cursorMessage)) {
-                            log.warn(
-                                    "[PresenceService] Invalid message format: sessionId={}",
-                                    sessionId);
-                            yield Mono.<Void>empty();
-                        }
-                        CursorPosition cursor = cursorMessage.getCursor();
-                        if (cursor == null) {
-                            log.warn(
-                                    "[PresenceService] No cursor data: sessionId={}",
-                                    sessionId);
-                            yield Mono.<Void>empty();
-                        }
-                        pushCursorToSink(projectId, sessionId, cursor);
-                        yield Mono.<Void>empty();
-                    }
-                    default -> {
+                    InboundMessageHandler handler = handlers.get(type);
+                    if (handler == null) {
                         log.warn(
-                                "[PresenceService] Unhandled message type: type={}, sessionId={}",
-                                type,
-                                sessionId);
-                        yield Mono.empty();
+                                "[CollaborationService] No handler for message type: type={}, sessionId={}",
+                                type, sessionId);
+                        return Mono.empty();
                     }
-                    };
+
+                    MessageContext context = MessageContext.of(projectId,
+                            sessionId);
+                    return handler.handle(context, message);
                 })
                 .onErrorResume(e -> {
-                    log.warn("[PresenceService] Message handling failed: {}",
+                    log.warn("[CollaborationService] Message handling failed: {}",
                             e.getMessage());
                     return Mono.empty();
                 });
     }
 
     /**
-     * handle Redis messages received from Redis and broadcast to local WebSocket clients.
+     * handle redis message
      */
     public Mono<Void> handleRedisMessage(String projectId, String message) {
-        return deserializeFromJson(message, PresenceEvent.class)
+        return deserializeFromJson(message, CollaborationOutbound.class)
                 .flatMap(event -> serializeToJson(event.withoutSessionId())
-                        .doOnNext(json -> broadcastByEventType(
+                        .doOnNext(json -> broadcastEvent(
                                 projectId,
-                                event.getSessionId(),
-                                event.getType(),
+                                event.sessionId(),
+                                event.type(),
                                 json))
                         .then());
     }
 
-    private void broadcastByEventType(String projectId, String excludeSessionId,
-            PresenceEventType eventType, String json) {
+    private void broadcastEvent(String projectId, String excludeSessionId,
+            CollaborationEventType eventType, String json) {
         if (eventType == null) {
-            log.warn("[PresenceService] Event type is null, using best effort");
-            sessionService.broadcast(
+            log.warn("[CollaborationService] Event type is null, using best effort");
+            sessionRegistry.broadcast(
                     BroadcastMessage.of(projectId, excludeSessionId, json));
             return;
         }
 
-        switch (eventType) {
-        case JOIN, LEAVE -> {
-            sessionService.broadcast(
-                    BroadcastMessage.of(projectId, excludeSessionId, json));
-        }
-        case CURSOR -> {
-            sessionService.broadcast(
-                    BroadcastMessage.of(projectId, excludeSessionId, json));
-        }
-        default -> {
-            log.warn(
-                    "[PresenceService] Unknown event type: {}, using best effort",
-                    eventType);
-            sessionService.broadcast(
-                    BroadcastMessage.of(projectId, excludeSessionId, json));
-        }
-        }
+        String exclude = eventType.shouldIncludeSender() ? null : excludeSessionId;
+        sessionRegistry.broadcast(BroadcastMessage.of(projectId, exclude, json));
     }
 
     private <T> Mono<String> serializeToJson(T object) {
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(object))
                 .onErrorMap(JsonProcessingException.class,
                         e -> new RuntimeException(
-                                "[PresenceService] failed to serialize JSON",
+                                "[CollaborationService] failed to serialize JSON",
                                 e));
     }
 
@@ -219,7 +190,7 @@ public class PresenceService {
         return Mono.fromCallable(() -> objectMapper.readValue(json, clazz))
                 .onErrorMap(JsonProcessingException.class,
                         e -> new RuntimeException(
-                                "[PresenceService] failed to deserialize JSON",
+                                "[CollaborationService] failed to deserialize JSON",
                                 e));
     }
 
@@ -234,3 +205,4 @@ public class PresenceService {
     }
 
 }
+
