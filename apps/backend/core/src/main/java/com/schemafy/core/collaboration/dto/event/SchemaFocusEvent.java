@@ -1,7 +1,6 @@
 package com.schemafy.core.collaboration.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
 
 public final class SchemaFocusEvent {
@@ -12,7 +11,6 @@ public final class SchemaFocusEvent {
     public record Inbound(String schemaId) implements CollaborationInbound {
 
         @Override
-        @JsonProperty("type")
         public CollaborationEventType type() {
             return CollaborationEventType.SCHEMA_FOCUS;
         }
@@ -33,7 +31,6 @@ public final class SchemaFocusEvent {
         }
 
         @Override
-        @JsonProperty("type")
         public CollaborationEventType type() {
             return CollaborationEventType.SCHEMA_FOCUS;
         }

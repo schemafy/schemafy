@@ -1,7 +1,6 @@
 package com.schemafy.core.collaboration.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
 import com.schemafy.core.collaboration.dto.CursorPosition;
 
@@ -13,7 +12,6 @@ public final class CursorEvent {
     public record Inbound(CursorPosition cursor) implements CollaborationInbound {
 
         @Override
-        @JsonProperty("type")
         public CollaborationEventType type() {
             return CollaborationEventType.CURSOR;
         }
@@ -30,7 +28,6 @@ public final class CursorEvent {
         }
 
         @Override
-        @JsonProperty("type")
         public CollaborationEventType type() {
             return CollaborationEventType.CURSOR;
         }

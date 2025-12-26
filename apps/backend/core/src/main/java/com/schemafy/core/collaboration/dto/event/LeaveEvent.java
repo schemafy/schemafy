@@ -1,7 +1,6 @@
 package com.schemafy.core.collaboration.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
 
 public final class LeaveEvent {
@@ -22,7 +21,6 @@ public final class LeaveEvent {
         }
 
         @Override
-        @JsonProperty("type")
         public CollaborationEventType type() {
             return CollaborationEventType.LEAVE;
         }

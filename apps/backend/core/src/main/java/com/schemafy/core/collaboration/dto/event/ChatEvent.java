@@ -1,7 +1,6 @@
 package com.schemafy.core.collaboration.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
 
 public final class ChatEvent {
@@ -12,7 +11,6 @@ public final class ChatEvent {
     public record Inbound(String content) implements CollaborationInbound {
 
         @Override
-        @JsonProperty("type")
         public CollaborationEventType type() {
             return CollaborationEventType.CHAT;
         }
@@ -34,7 +32,6 @@ public final class ChatEvent {
         }
 
         @Override
-        @JsonProperty("type")
         public CollaborationEventType type() {
             return CollaborationEventType.CHAT;
         }
