@@ -1,8 +1,9 @@
 import { Avatar } from '@/components';
-import { useAuthStore } from '@/store';
+import { AuthStore } from '@/store/auth.store';
+import { observer } from 'mobx-react-lite';
 
-export const UserMenu = () => {
-  const user = useAuthStore((s) => s.user);
+export const UserMenu = observer(() => {
+  const user = AuthStore.getInstance().user;
 
   if (!user) {
     return null;
@@ -14,4 +15,4 @@ export const UserMenu = () => {
       <Avatar src="https://picsum.photos/200/300?random=2" />
     </div>
   );
-};
+});

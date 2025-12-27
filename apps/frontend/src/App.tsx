@@ -5,31 +5,29 @@ import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { TooltipProvider } from '@/components';
 import { LandingPage, SignInPage, SignUpPage, CanvasPage } from '@/pages';
 import { useEffect } from 'react';
-import { useAuthStore } from '@/store';
+import { AuthStore } from '@/store/auth.store';
 import { getMyInfo, refreshToken } from '@/lib/api';
 import { RequireAuth } from '@/features/auth';
 
 function App() {
-  const setUser = useAuthStore((s) => s.setUser);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
-  const setAuthLoading = useAuthStore((s) => s.setAuthLoading);
+  const authStore = AuthStore.getInstance();
 
   useEffect(() => {
     const bootstrapAuth = async () => {
       try {
-        setAuthLoading(true);
+        authStore.setAuthLoading(true);
         await refreshToken();
 
         const res = await getMyInfo();
         if (res.success && res.result) {
-          setUser(res.result);
+          authStore.setUser(res.result);
         } else {
-          clearAuth();
+          authStore.clearAuth();
         }
       } catch {
-        clearAuth();
+        authStore.clearAuth();
       } finally {
-        setAuthLoading(false);
+        authStore.setAuthLoading(false);
       }
     };
     bootstrapAuth();

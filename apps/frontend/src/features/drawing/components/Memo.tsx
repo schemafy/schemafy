@@ -1,86 +1,91 @@
 import { useStore } from '@xyflow/react';
 import { useState } from 'react';
-import { ulid } from 'ulid';
 import { Avatar } from '@/components';
 import { cn, formatDate } from '@/lib';
 import { CircleCheck, MoveUp, Trash, X } from 'lucide-react';
-import type { MemoData } from '../hooks/useMemos';
-import type { Memo as MemoType } from '../types/memo';
+import type { MemoData } from '../hooks/memo.helper';
+import type { MemoComment } from '@/lib/api/memo/types';
 import type { Point } from '../types';
+import { MemoStore } from '@/store';
+import { observer } from 'mobx-react-lite';
 
 interface MemoProps {
-  data: MemoData;
   id: string;
+  data: MemoData;
 }
 
 interface MemoPreviewProps {
   mousePosition: Point | null;
 }
 
-const ReplyItem = ({ memo }: { memo: MemoType }) => {
+const ReplyItem = ({
+  comment,
+  onDelete,
+}: {
+  comment: MemoComment;
+  onDelete: () => void;
+}) => {
   return (
-    <li className="flex gap-2 text-schemafy-text">
+    <li className="flex gap-2 text-schemafy-text group">
       <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
       <div>
         <div className="flex items-center gap-2">
-          <span className="font-overline-sm">{memo.userId}</span>
+          <span className="font-overline-sm">{comment.authorId}</span>
           <span className="font-body-xs text-schemafy-dark-gray">
-            {formatDate(memo.updatedAt)}
+            {formatDate(
+              new Date(comment.updatedAt ?? comment.createdAt ?? new Date()),
+            )}
           </span>
+          <Trash
+            size={14}
+            color="var(--color-schemafy-dark-gray)"
+            onClick={onDelete}
+            className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+          />
         </div>
-        <p className="font-body-sm mt-1">{memo.content}</p>
+        <p className="font-body-sm mt-1">{comment.body}</p>
       </div>
     </li>
   );
 };
 
-export const Memo = ({ data, id }: MemoProps) => {
+export const Memo = observer(({ id, data }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [replyInput, setReplyInput] = useState('');
 
-  const [replies, setReplies] = useState<MemoType[]>([
-    {
-      id: `${id}-reply-1`,
-      schemaId: 'schema-id',
-      elementType: 'SCHEMA',
-      elementId: 'schema-id',
-      userId: 'user',
-      content: data.content,
-      parentMemoId: id,
-      resolvedAt: null,
-      createdAt: new Date(Date.now()),
-      updatedAt: new Date(Date.now()),
-    },
-  ]);
+  const memoStore = MemoStore.getInstance();
+
+  const schemaId = Object.keys(memoStore.memosBySchema).find((sid) =>
+    memoStore.memosBySchema[sid]?.some((m) => m.id === id),
+  );
+
+  const comments = data.comments ?? [];
+
+  const handleDeleteMemo = async () => {
+    if (schemaId) {
+      await memoStore.deleteMemo(id, schemaId);
+    }
+  };
 
   const handleIconClick = () => {
     setShowThread(!showThread);
   };
 
-  const handleAddReply = () => {
+  const handleAddReply = async () => {
     if (!replyInput.trim()) return;
-
-    const newReply: MemoType = {
-      id: ulid(),
-      schemaId: 'schema-id',
-      elementType: 'SCHEMA',
-      elementId: 'schema-id',
-      userId: 'user',
-      content: replyInput.trim(),
-      parentMemoId: id,
-      resolvedAt: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    setReplies([...replies, newReply]);
+    await memoStore.createMemoComment(id, { body: replyInput.trim() });
     setReplyInput('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter') {
       handleAddReply();
     }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    memoStore.deleteMemoComment(id, commentId);
   };
 
   return (
@@ -105,7 +110,7 @@ export const Memo = ({ data, id }: MemoProps) => {
             <div className="flex gap-2">
               <button
                 title="Resolved Memo"
-                onClick={() => {}}
+                onClick={handleDeleteMemo}
                 className="text-schemafy-dark-gray hover:text-schemafy-text cursor-pointer transition-colors duration-200 hover:bg-schemafy-light-gray rounded-sm p-1"
               >
                 <Trash size={14} color="var(--color-schemafy-dark-gray)" />
@@ -130,8 +135,12 @@ export const Memo = ({ data, id }: MemoProps) => {
           </div>
 
           <ul className="flex flex-col gap-4">
-            {replies.map((reply) => (
-              <ReplyItem key={reply.id} memo={reply} />
+            {comments.map((comment) => (
+              <ReplyItem
+                key={comment.id}
+                comment={comment}
+                onDelete={() => handleDeleteComment(comment.id)}
+              />
             ))}
           </ul>
 
@@ -159,7 +168,7 @@ export const Memo = ({ data, id }: MemoProps) => {
       )}
     </div>
   );
-};
+});
 
 export const MemoPrivew = ({ mousePosition }: MemoPreviewProps) => {
   const zoom = useStore((state) => state.transform[2]);

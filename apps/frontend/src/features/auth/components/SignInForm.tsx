@@ -4,7 +4,7 @@ import { useFormState } from '../hooks';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn } from '@/lib/api';
-import { useAuthStore } from '@/store';
+import { AuthStore } from '@/store/auth.store';
 
 const formFields = [
   {
@@ -49,7 +49,7 @@ export const SignInForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
   const navigate = useNavigate();
-  const setUser = useAuthStore((s) => s.setUser);
+  const authStore = AuthStore.getInstance();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -69,7 +69,7 @@ export const SignInForm = () => {
 
       if (response.success) {
         if (response.result) {
-          setUser(response.result);
+          authStore.setUser(response.result);
         }
         resetForm();
         navigate('/');
