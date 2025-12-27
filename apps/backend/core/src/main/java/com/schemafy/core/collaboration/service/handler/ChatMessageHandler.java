@@ -2,13 +2,15 @@ package com.schemafy.core.collaboration.service.handler;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.core.chat.service.ChatService;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
 import com.schemafy.core.collaboration.dto.event.ChatEvent;
 import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
+import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.collaboration.service.SessionRegistry;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.ulid.generator.UlidGenerator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +23,7 @@ import reactor.core.publisher.Mono;
 public class ChatMessageHandler implements InboundMessageHandler {
 
     private final SessionRegistry sessionRegistry;
-    private final ChatService chatService;
+    private final CollaborationEventPublisher eventPublisher;
 
     @Override
     public CollaborationEventType supportedType() {
@@ -57,11 +59,14 @@ public class ChatMessageHandler implements InboundMessageHandler {
 
         String authorId = entry.authInfo().getUserId();
         String authorName = entry.authInfo().getUserName();
+        String messageId = UlidGenerator.generate();
 
-        return chatService
-                .saveAndPublish(context.projectId(), context.sessionId(),
-                        authorId, authorName, content)
-                .then();
+        return eventPublisher.publish(context.projectId(),
+                CollaborationOutboundFactory.chat(context.sessionId(),
+                        messageId, authorId, authorName, content))
+                .doOnSuccess(v -> log.debug(
+                        "[ChatMessageHandler] Message published: messageId={}, projectId={}",
+                        messageId, context.projectId()));
     }
 
 }

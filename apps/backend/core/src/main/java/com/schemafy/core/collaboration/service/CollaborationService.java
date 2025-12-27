@@ -6,12 +6,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.schemafy.core.collaboration.constant.CollaborationConstants;
 import com.schemafy.core.collaboration.dto.BroadcastMessage;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
 import com.schemafy.core.collaboration.dto.CursorPosition;
@@ -34,18 +32,18 @@ public class CollaborationService {
     private static final double CURSOR_POSITION_EPS = 0.5;
 
     private final SessionRegistry sessionRegistry;
-    private final ReactiveStringRedisTemplate redisTemplate;
+    private final CollaborationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
     private final Map<CollaborationEventType, InboundMessageHandler> handlers;
     private final Map<String, CursorPosition> cursorDedupeCache = new ConcurrentHashMap<>();
 
     public CollaborationService(
             SessionRegistry sessionRegistry,
-            ReactiveStringRedisTemplate redisTemplate,
+            CollaborationEventPublisher eventPublisher,
             ObjectMapper objectMapper,
             List<InboundMessageHandler> handlerList) {
         this.sessionRegistry = sessionRegistry;
-        this.redisTemplate = redisTemplate;
+        this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
         this.handlers = handlerList.stream()
                 .collect(Collectors.toMap(
@@ -58,27 +56,17 @@ public class CollaborationService {
 
     public Mono<Void> publishCursorToRedis(String projectId, String sessionId,
             CursorPosition cursor) {
-        String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
-
         CursorPosition previousCursor = cursorDedupeCache.get(sessionId);
         if (isDuplicateCursor(previousCursor, cursor)) {
             return Mono.empty();
         }
         cursorDedupeCache.put(sessionId, cursor);
 
-        return serializeToJson(
-                CollaborationOutboundFactory.cursor(sessionId, cursor))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
-                        eventJson))
-                .doOnError(e -> log.warn(
-                        "[CollaborationService] Failed to publish cursor: sessionId={}, error={}",
-                        sessionId, e.getMessage()))
-                .onErrorResume(e -> Mono.empty())
-                .then();
+        return eventPublisher.publish(projectId,
+                CollaborationOutboundFactory.cursor(sessionId, cursor));
     }
 
     public Mono<Void> removeSession(String projectId, String sessionId) {
-        String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
         cursorDedupeCache.remove(sessionId);
 
         SessionEntry entry = sessionRegistry
@@ -99,24 +87,15 @@ public class CollaborationService {
         return Mono
                 .fromRunnable(() -> sessionRegistry.removeSession(projectId,
                         sessionId))
-                .then(serializeToJson(
-                        CollaborationOutboundFactory.leave(sessionId,
-                                userId, userName)))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
-                        eventJson))
-                .then();
+                .then(eventPublisher.publish(projectId,
+                        CollaborationOutboundFactory.leave(sessionId, userId,
+                                userName)));
     }
 
     public Mono<Void> notifyJoin(String projectId, String sessionId,
             String userId, String userName) {
-        String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
-
-        return serializeToJson(
-                CollaborationOutboundFactory.join(sessionId, userId, userName))
-                .flatMap(eventJson -> redisTemplate.convertAndSend(
-                        channelName,
-                        eventJson))
-                .then();
+        return eventPublisher.publish(projectId,
+                CollaborationOutboundFactory.join(sessionId, userId, userName));
     }
 
     /**
