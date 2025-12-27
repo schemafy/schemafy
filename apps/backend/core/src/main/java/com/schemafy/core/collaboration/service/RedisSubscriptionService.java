@@ -28,7 +28,7 @@ public class RedisSubscriptionService {
     private static final Duration MAX_BACKOFF = Duration.ofSeconds(30);
 
     private final ReactiveStringRedisTemplate redisTemplate;
-    private final PresenceService presenceService;
+    private final CollaborationService collaborationService;
 
     private Disposable subscription;
 
@@ -57,7 +57,7 @@ public class RedisSubscriptionService {
                         return Mono.empty();
                     }
 
-                    return presenceService
+                    return collaborationService
                             .handleRedisMessage(projectId, payload)
                             .doOnError(e -> log.error(
                                     "[RedisSubscriptionService] Failed to handle message for project {}: {}",

@@ -15,8 +15,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.schemafy.core.collaboration.security.ProjectAccessValidator;
 import com.schemafy.core.collaboration.security.WebSocketAuthInfo;
-import com.schemafy.core.collaboration.service.PresenceService;
-import com.schemafy.core.collaboration.service.SessionService;
+import com.schemafy.core.collaboration.service.CollaborationService;
+import com.schemafy.core.collaboration.service.SessionRegistry;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
@@ -31,8 +31,8 @@ import reactor.core.publisher.Mono;
 @ConditionalOnRedisEnabled
 public class CollaborationWebSocketHandler implements WebSocketHandler {
 
-    private final PresenceService presenceService;
-    private final SessionService sessionService;
+    private final CollaborationService collaborationService;
+    private final SessionRegistry sessionRegistry;
     private final ProjectAccessValidator projectAccessValidator;
 
     @Override
@@ -114,10 +114,10 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 "[CollaborationWebSocketHandler] WebSocket connected: sessionId={}, projectId={}, userId={}",
                 sessionId, projectId, userId);
 
-        SessionEntry entry = sessionService.addSession(projectId, sessionId,
+        SessionEntry entry = sessionRegistry.addSession(projectId, sessionId,
                 session, authInfo);
 
-        Mono<Void> notifyJoin = presenceService
+        Mono<Void> notifyJoin = collaborationService
                 .notifyJoin(projectId, sessionId, userId, userName)
                 .doOnError(e -> log.warn(
                         "[CollaborationWebSocketHandler] Failed to notify join: sessionId={}, error={}",
@@ -126,7 +126,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
 
         Mono<Void> inbound = session.receive()
                 .map(WebSocketMessage::getPayloadAsText)
-                .flatMap(payload -> presenceService
+                .flatMap(payload -> collaborationService
                         .handleMessage(projectId, sessionId, payload)
                         .doOnError(e -> log.warn(
                                 "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
@@ -145,7 +145,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         Mono<Void> closeSignal = session.closeStatus().then();
         Mono<Void> cursorPipeline = entry.sampledCursorFlux()
                 .takeUntilOther(closeSignal)
-                .flatMap(cursor -> presenceService
+                .flatMap(cursor -> collaborationService
                         .publishCursorToRedis(projectId, sessionId, cursor))
                 .doOnError(error -> log.error(
                         "[CollaborationWebSocketHandler] Cursor pipeline error: sessionId={}",
@@ -158,7 +158,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                     log.info(
                             "[CollaborationWebSocketHandler] WebSocket disconnected: sessionId={}, signal={}",
                             sessionId, signalType);
-                    presenceService.removeSession(projectId, sessionId)
+                    collaborationService.removeSession(projectId, sessionId)
                             .timeout(Duration.ofSeconds(5))
                             .doOnError(e -> log.warn(
                                     "[CollaborationWebSocketHandler] Failed to remove session: sessionId={}, error={}",
