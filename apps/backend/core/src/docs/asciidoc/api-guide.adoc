@@ -2219,53 +2219,6 @@ HTTP 헤더에 토큰을 포함할 수 없는 환경(브라우저 등)에서는 
 
 ---
 
-==== 채팅 히스토리 조회
-
-WebSocket 연결 전 또는 스크롤 시 이전 채팅 메시지를 조회합니다.
-
-[source]
-----
-GET /api/v1.0/projects/{projectId}/chat/messages
-----
-
-쿼리 파라미터
-
-[cols="1,2,1,1"]
-|===
-|파라미터 |설명 |타입 |기본값
-
-|`before`
-|이 메시지 ID 이전의 메시지 조회 (페이지네이션)
-|String (ULID)
-|없음
-
-|`limit`
-|조회할 메시지 수 (최대 100)
-|Number
-|50
-|===
-
-응답 예시
-
-[source,json]
-----
-{
-  "success": true,
-  "result": [
-    {
-      "id": "01HNQF...",
-      "projectId": "01HNQD...",
-      "authorId": "01HNQA...",
-      "body": "안녕하세요!",
-      "createdAt": "2024-01-01T12:00:00Z"
-    }
-  ],
-  "error": null
-}
-----
-
----
-
 ==== 이벤트 타입 요약
 
 [cols="1,1,2"]
