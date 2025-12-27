@@ -6,7 +6,8 @@ import { CircleCheck, MoveUp, Trash, X } from 'lucide-react';
 import type { MemoData } from '../hooks/memo.helper';
 import type { MemoComment } from '@/lib/api/memo/types';
 import type { Point } from '../types';
-import { useMemoStore } from '@/store';
+import { MemoStore } from '@/store';
+import { observer } from 'mobx-react-lite';
 
 interface MemoProps {
   id: string;
@@ -22,7 +23,7 @@ const ReplyItem = ({
   onDelete,
 }: {
   comment: MemoComment;
-  onDelete?: () => void;
+  onDelete: () => void;
 }) => {
   return (
     <li className="flex gap-2 text-schemafy-text group">
@@ -48,26 +49,21 @@ const ReplyItem = ({
   );
 };
 
-export const Memo = ({ id, data }: MemoProps) => {
+export const Memo = observer(({ id, data }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [replyInput, setReplyInput] = useState('');
 
-  const createMemoComment = useMemoStore((state) => state.createMemoComment);
-  const deleteMemoComment = useMemoStore((state) => state.deleteMemoComment);
-  const deleteMemoFromStore = useMemoStore((state) => state.deleteMemo);
+  const memoStore = MemoStore.getInstance();
 
-  // Find schemaId for this memo to call deleteMemo
-  const schemaId = useMemoStore((state) =>
-    Object.keys(state.memosBySchema).find((sid) =>
-      state.memosBySchema[sid]?.some((m) => m.id === id),
-    ),
-  );
+  const schemaId = Object.keys(memoStore.memosBySchema).find(sid => 
+      memoStore.memosBySchema[sid]?.some(m => m.id === id)
+    );
 
   const comments = data.comments ?? [];
 
   const handleDeleteMemo = async () => {
     if (schemaId) {
-      await deleteMemoFromStore(id, schemaId);
+      await memoStore.deleteMemo(id, schemaId);
     }
   };
 
@@ -77,7 +73,7 @@ export const Memo = ({ id, data }: MemoProps) => {
 
   const handleAddReply = async () => {
     if (!replyInput.trim()) return;
-    await createMemoComment(id, { body: replyInput.trim() });
+    await memoStore.createMemoComment(id, { body: replyInput.trim() });
     setReplyInput('');
   };
 
@@ -86,6 +82,10 @@ export const Memo = ({ id, data }: MemoProps) => {
     if (e.key === 'Enter') {
       handleAddReply();
     }
+  };
+  
+  const handleDeleteComment = (commentId: string) => {
+    memoStore.deleteMemoComment(id, commentId);
   };
 
   return (
@@ -135,11 +135,11 @@ export const Memo = ({ id, data }: MemoProps) => {
           </div>
 
           <ul className="flex flex-col gap-4">
-            {comments.map((comment: MemoComment) => (
+            {comments.map((comment) => (
               <ReplyItem
                 key={comment.id}
                 comment={comment}
-                onDelete={() => deleteMemoComment(id, comment.id)}
+                onDelete={() => handleDeleteComment(comment.id)}
               />
             ))}
           </ul>
@@ -168,7 +168,7 @@ export const Memo = ({ id, data }: MemoProps) => {
       )}
     </div>
   );
-};
+});
 
 export const MemoPrivew = ({ mousePosition }: MemoPreviewProps) => {
   const zoom = useStore((state) => state.transform[2]);

@@ -1,11 +1,11 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/store';
+import { AuthStore } from '@/store/auth.store';
 import type { PropsWithChildren } from 'react';
+import { observer } from 'mobx-react-lite';
 
-export const RequireAuth = ({ children }: PropsWithChildren) => {
-  const accessToken = useAuthStore((s) => s.accessToken);
-  const user = useAuthStore((s) => s.user);
-  const isAuthLoading = useAuthStore((s) => s.isAuthLoading);
+export const RequireAuth = observer(({ children }: PropsWithChildren) => {
+  const authStore = AuthStore.getInstance();
+  const { accessToken, user, isAuthLoading } = authStore;
   const location = useLocation();
 
   // 로딩 중에는 헤더의 스피너가 노출되므로, 여기서는 그대로 children을 잠시 덮어두는 간단 스켈레톤만 표시
@@ -23,4 +23,4 @@ export const RequireAuth = ({ children }: PropsWithChildren) => {
   }
 
   return <>{children}</>;
-};
+});

@@ -1,26 +1,46 @@
-import { create } from 'zustand';
+import { makeAutoObservable } from 'mobx';
 import type { AuthResponse } from '../lib/api/auth/types';
 
-interface AuthState {
-  accessToken: string | null;
-  user: AuthResponse | null;
-  isAuthLoading: boolean;
-  setAccessToken: (token: string | null) => void;
-  setUser: (user: AuthResponse | null) => void;
-  setAuthLoading: (value: boolean) => void;
-  clearAccessToken: () => void;
-  clearUser: () => void;
-  clearAuth: () => void;
-}
+export class AuthStore {
+  private static instance: AuthStore;
 
-export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
-  user: null,
-  isAuthLoading: true,
-  setAccessToken: (token) => set({ accessToken: token }),
-  setUser: (user) => set({ user }),
-  setAuthLoading: (value) => set({ isAuthLoading: value }),
-  clearAccessToken: () => set({ accessToken: null }),
-  clearUser: () => set({ user: null }),
-  clearAuth: () => set({ accessToken: null, user: null }),
-}));
+  accessToken: string | null = null;
+  user: AuthResponse | null = null;
+  isAuthLoading: boolean = true;
+
+  private constructor() {
+    makeAutoObservable(this);
+  }
+
+  static getInstance(): AuthStore {
+    if (!AuthStore.instance) {
+      AuthStore.instance = new AuthStore();
+    }
+    return AuthStore.instance;
+  }
+
+  setAccessToken(token: string | null) {
+    this.accessToken = token;
+  }
+
+  setUser(user: AuthResponse | null) {
+    this.user = user;
+  }
+
+  setAuthLoading(value: boolean) {
+    this.isAuthLoading = value;
+  }
+
+  clearAccessToken() {
+    this.accessToken = null;
+  }
+
+  clearUser() {
+    this.user = null;
+  }
+
+  clearAuth() {
+    this.accessToken = null;
+    this.user = null;
+  }
+}
