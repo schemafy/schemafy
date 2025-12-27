@@ -179,6 +179,21 @@ export function handleIndexColumnIdRemapping(
   );
 }
 
+export function handleBatchChildIdRemapping(
+  result: Record<string, IdMappingResult> | undefined,
+  parentId: string,
+  replaceIdFn: (tempId: string, realId: string) => void,
+) {
+  const mapping = result?.[parentId];
+  if (!mapping) return;
+
+  Object.entries(mapping).forEach(([tempId, realId]) => {
+    if (tempId !== realId) {
+      replaceIdFn(tempId, realId);
+    }
+  });
+}
+
 export function createReverseMapping(mapping: IdMappingResult) {
   const reverseMap = new Map<string, string>();
   Object.entries(mapping).forEach(([tempId, realId]) => {

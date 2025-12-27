@@ -21,6 +21,7 @@ import {
 import {
   handleConstraintIdRemapping,
   handleConstraintColumnIdRemapping,
+  handleBatchChildIdRemapping,
 } from '../utils/idRemapping';
 import { handlePropagatedData } from '../utils/propagatedDataHandler';
 
@@ -97,22 +98,19 @@ export async function createConstraint(
     constraintId,
   );
 
-  if (response.result?.constraintColumns?.[finalConstraintId]) {
-    const constraintColumnMapping =
-      response.result.constraintColumns[finalConstraintId];
-
-    Object.entries(constraintColumnMapping).forEach(([tempId, realId]) => {
-      if (tempId !== realId) {
-        erdStore.replaceConstraintColumnId(
-          schemaId,
-          tableId,
-          finalConstraintId,
-          tempId,
-          realId,
-        );
-      }
-    });
-  }
+  handleBatchChildIdRemapping(
+    response.result?.constraintColumns,
+    finalConstraintId,
+    (tempId, realId) => {
+      erdStore.replaceConstraintColumnId(
+        schemaId,
+        tableId,
+        finalConstraintId,
+        tempId,
+        realId,
+      );
+    },
+  );
 
   return finalConstraintId;
 }

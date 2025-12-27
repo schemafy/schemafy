@@ -178,6 +178,77 @@ export class ErdStore {
     );
   }
 
+  private updateSchema(
+    schemaId: Schema['id'],
+    updateFn: (schema: Schema) => Schema,
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId ? schema : updateFn(schema),
+      ),
+    }));
+  }
+
+  private updateTable(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    updateFn: (table: Table) => Table,
+  ) {
+    this.updateSchema(schemaId, (schema) => ({
+      ...schema,
+      tables: schema.tables.map((table) =>
+        table.id !== tableId ? table : updateFn(table),
+      ),
+    }));
+  }
+
+  private updateConstraint(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    updateFn: (constraint: Constraint) => Constraint,
+  ) {
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      constraints: table.constraints.map((constraint) =>
+        constraint.id !== constraintId ? constraint : updateFn(constraint),
+      ),
+    }));
+  }
+
+  private updateIndex(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    updateFn: (index: Index) => Index,
+  ) {
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      indexes: table.indexes.map((index) =>
+        index.id !== indexId ? index : updateFn(index),
+      ),
+    }));
+  }
+
+  private updateRelationshipInSchema(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    updateFn: (relationship: Relationship) => Relationship,
+  ) {
+    this.updateSchema(schemaId, (schema) => ({
+      ...schema,
+      tables: schema.tables.map((table) => ({
+        ...table,
+        relationships: table.relationships.map((relationship) =>
+          relationship.id !== relationshipId
+            ? relationship
+            : updateFn(relationship),
+        ),
+      })),
+    }));
+  }
+
   // replace ID
   replaceSchemaId(oldId: Schema['id'], newId: Schema['id']) {
     this.update((db) => {
@@ -201,16 +272,9 @@ export class ErdStore {
     oldId: Table['id'],
     newId: Table['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: this.replaceIdInArray(schema.tables, oldId, newId),
-            },
-      ),
+    this.updateSchema(schemaId, (schema) => ({
+      ...schema,
+      tables: this.replaceIdInArray(schema.tables, oldId, newId),
     }));
   }
 
@@ -220,27 +284,9 @@ export class ErdStore {
     oldId: Column['id'],
     newId: Column['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: schema.tables.map((table) =>
-                table.id !== tableId
-                  ? table
-                  : {
-                      ...table,
-                      columns: this.replaceIdInArray(
-                        table.columns,
-                        oldId,
-                        newId,
-                      ),
-                    },
-              ),
-            },
-      ),
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      columns: this.replaceIdInArray(table.columns, oldId, newId),
     }));
   }
 
@@ -250,27 +296,9 @@ export class ErdStore {
     oldId: Index['id'],
     newId: Index['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: schema.tables.map((table) =>
-                table.id !== tableId
-                  ? table
-                  : {
-                      ...table,
-                      indexes: this.replaceIdInArray(
-                        table.indexes,
-                        oldId,
-                        newId,
-                      ),
-                    },
-              ),
-            },
-      ),
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      indexes: this.replaceIdInArray(table.indexes, oldId, newId),
     }));
   }
 
@@ -280,32 +308,18 @@ export class ErdStore {
     oldId: Constraint['id'],
     newId: Constraint['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      constraints: table.constraints.map((constraint) =>
+        constraint.id !== oldId
+          ? constraint
           : {
-              ...schema,
-              tables: schema.tables.map((table) =>
-                table.id !== tableId
-                  ? table
-                  : {
-                      ...table,
-                      constraints: table.constraints.map((constraint) =>
-                        constraint.id !== oldId
-                          ? constraint
-                          : {
-                              ...constraint,
-                              id: newId,
-                              columns: constraint.columns.map((col) => ({
-                                ...col,
-                                constraintId: newId,
-                              })),
-                            },
-                      ),
-                    },
-              ),
+              ...constraint,
+              id: newId,
+              columns: constraint.columns.map((col) => ({
+                ...col,
+                constraintId: newId,
+              })),
             },
       ),
     }));
@@ -318,31 +332,10 @@ export class ErdStore {
     oldId: ConstraintColumn['id'],
     newId: ConstraintColumn['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: schema.tables.map((table) =>
-                table.id !== tableId
-                  ? table
-                  : {
-                      ...table,
-                      constraints: table.constraints.map((constraint) =>
-                        constraint.id !== constraintId
-                          ? constraint
-                          : {
-                              ...constraint,
-                              columns: constraint.columns.map((col) =>
-                                col.id === oldId ? { ...col, id: newId } : col,
-                              ),
-                            },
-                      ),
-                    },
-              ),
-            },
+    this.updateConstraint(schemaId, tableId, constraintId, (constraint) => ({
+      ...constraint,
+      columns: constraint.columns.map((col) =>
+        col.id === oldId ? { ...col, id: newId } : col,
       ),
     }));
   }
@@ -354,33 +347,10 @@ export class ErdStore {
     constraintColumnId: ConstraintColumn['id'],
     newColumnId: Column['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: schema.tables.map((table) =>
-                table.id !== tableId
-                  ? table
-                  : {
-                      ...table,
-                      constraints: table.constraints.map((constraint) =>
-                        constraint.id !== constraintId
-                          ? constraint
-                          : {
-                              ...constraint,
-                              columns: constraint.columns.map((col) =>
-                                col.id === constraintColumnId
-                                  ? { ...col, columnId: newColumnId }
-                                  : col,
-                              ),
-                            },
-                      ),
-                    },
-              ),
-            },
+    this.updateConstraint(schemaId, tableId, constraintId, (constraint) => ({
+      ...constraint,
+      columns: constraint.columns.map((col) =>
+        col.id === constraintColumnId ? { ...col, columnId: newColumnId } : col,
       ),
     }));
   }
@@ -392,31 +362,10 @@ export class ErdStore {
     oldId: IndexColumn['id'],
     newId: IndexColumn['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: schema.tables.map((table) =>
-                table.id !== tableId
-                  ? table
-                  : {
-                      ...table,
-                      indexes: table.indexes.map((index) =>
-                        index.id !== indexId
-                          ? index
-                          : {
-                              ...index,
-                              columns: index.columns.map((col) =>
-                                col.id === oldId ? { ...col, id: newId } : col,
-                              ),
-                            },
-                      ),
-                    },
-              ),
-            },
+    this.updateIndex(schemaId, tableId, indexId, (index) => ({
+      ...index,
+      columns: index.columns.map((col) =>
+        col.id === oldId ? { ...col, id: newId } : col,
       ),
     }));
   }
@@ -427,29 +376,16 @@ export class ErdStore {
     oldId: RelationshipColumn['id'],
     newId: RelationshipColumn['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: schema.tables.map((table) => ({
-                ...table,
-                relationships: table.relationships.map((relationship) =>
-                  relationship.id !== relationshipId
-                    ? relationship
-                    : {
-                        ...relationship,
-                        columns: relationship.columns.map((col) =>
-                          col.id === oldId ? { ...col, id: newId } : col,
-                        ),
-                      },
-                ),
-              })),
-            },
-      ),
-    }));
+    this.updateRelationshipInSchema(
+      schemaId,
+      relationshipId,
+      (relationship) => ({
+        ...relationship,
+        columns: relationship.columns.map((col) =>
+          col.id === oldId ? { ...col, id: newId } : col,
+        ),
+      }),
+    );
   }
 
   replaceRelationshipColumnFkId(
@@ -458,31 +394,18 @@ export class ErdStore {
     relationshipColumnId: RelationshipColumn['id'],
     newFkColumnId: Column['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: schema.tables.map((table) => ({
-                ...table,
-                relationships: table.relationships.map((relationship) =>
-                  relationship.id !== relationshipId
-                    ? relationship
-                    : {
-                        ...relationship,
-                        columns: relationship.columns.map((col) =>
-                          col.id === relationshipColumnId
-                            ? { ...col, fkColumnId: newFkColumnId }
-                            : col,
-                        ),
-                      },
-                ),
-              })),
-            },
-      ),
-    }));
+    this.updateRelationshipInSchema(
+      schemaId,
+      relationshipId,
+      (relationship) => ({
+        ...relationship,
+        columns: relationship.columns.map((col) =>
+          col.id === relationshipColumnId
+            ? { ...col, fkColumnId: newFkColumnId }
+            : col,
+        ),
+      }),
+    );
   }
 
   replaceRelationshipId(
@@ -490,30 +413,23 @@ export class ErdStore {
     oldId: Relationship['id'],
     newId: Relationship['id'],
   ) {
-    this.update((db) => ({
-      ...db,
-      schemas: db.schemas.map((schema) =>
-        schema.id !== schemaId
-          ? schema
-          : {
-              ...schema,
-              tables: schema.tables.map((table) => ({
-                ...table,
-                relationships: table.relationships.map((relationship) =>
-                  relationship.id !== oldId
-                    ? relationship
-                    : {
-                        ...relationship,
-                        id: newId,
-                        columns: relationship.columns.map((col) => ({
-                          ...col,
-                          relationshipId: newId,
-                        })),
-                      },
-                ),
-              })),
-            },
-      ),
+    this.updateSchema(schemaId, (schema) => ({
+      ...schema,
+      tables: schema.tables.map((table) => ({
+        ...table,
+        relationships: table.relationships.map((relationship) =>
+          relationship.id !== oldId
+            ? relationship
+            : {
+                ...relationship,
+                id: newId,
+                columns: relationship.columns.map((col) => ({
+                  ...col,
+                  relationshipId: newId,
+                })),
+              },
+        ),
+      })),
     }));
   }
 
