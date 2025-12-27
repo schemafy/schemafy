@@ -1,107 +1,222 @@
 import type { PropagatedEntities } from '../api/types/common';
-import type { Constraint, Relationship } from '@schemafy/validator';
+import type { Constraint, Schema, Table } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
+
+type PropagatedData = {
+  columns: PropagatedEntities['columns'];
+  constraints: PropagatedEntities['constraints'];
+  constraintColumns: PropagatedEntities['constraintColumns'];
+  relationshipColumns: PropagatedEntities['relationshipColumns'];
+};
 
 export function handlePropagatedData(
   propagated: PropagatedEntities | undefined,
   schemaId: string,
   srcTableId: string,
-  finalRelationshipId: string,
+  sourceId: string,
 ) {
   if (!propagated) return;
 
   const erdStore = ErdStore.getInstance();
+  const schema = findSchema(erdStore, schemaId);
+  if (!schema) return;
 
+  const table = schema.tables.find((t) => t.id === srcTableId);
+  const filteredData = filterPropagatedDataBySource(propagated, sourceId);
+
+  handleRelationshipColumns(erdStore, schemaId, table, filteredData);
+
+  handleStandaloneColumns(erdStore, schemaId, table, sourceId, filteredData);
+
+  handleConstraintsAndColumns(erdStore, schemaId, schema, filteredData);
+}
+
+function findSchema(erdStore: ErdStore, schemaId: string): Schema | undefined {
   const schema = erdStore.database?.schemas.find((s) => s.id === schemaId);
   if (!schema) {
     console.error(`Schema ${schemaId} not found in database`);
-    return;
   }
+  return schema;
+}
 
-  const table = schema.tables.find((t) => t.id === srcTableId);
+function filterPropagatedDataBySource(
+  propagated: PropagatedEntities,
+  sourceId: string,
+): PropagatedData {
+  return {
+    columns: propagated.columns.filter((c) => c.sourceId === sourceId),
+    constraints: propagated.constraints.filter((c) => c.sourceId === sourceId),
+    constraintColumns: propagated.constraintColumns.filter(
+      (c) => c.sourceId === sourceId,
+    ),
+    relationshipColumns: propagated.relationshipColumns.filter(
+      (c) => c.sourceId === sourceId,
+    ),
+  };
+}
+
+function handleRelationshipColumns(
+  erdStore: ErdStore,
+  schemaId: string,
+  table: Table | undefined,
+  data: PropagatedData,
+) {
+  const { relationshipColumns, columns } = data;
+  if (relationshipColumns.length === 0) return;
+
+  const relationshipId = relationshipColumns[0].relationshipId;
   const relationship = table?.relationships.find(
-    (r) => r.id === finalRelationshipId,
+    (r) => r.id === relationshipId,
   );
 
-  const propColumns = propagated.columns.filter(
-    (c) => c.sourceId === finalRelationshipId,
-  );
-  const propConstraints = propagated.constraints.filter(
-    (c) => c.sourceId === finalRelationshipId,
-  );
-  const propConstraintCols = propagated.constraintColumns.filter(
-    (c) => c.sourceId === finalRelationshipId,
-  );
+  if (!relationship) return;
 
-  if (relationship && propColumns.length > 0) {
-    syncRelationshipColumns(
+  relationshipColumns.forEach((propRelCol) => {
+    syncRelationshipColumn(
       erdStore,
       schemaId,
-      finalRelationshipId,
+      relationshipId,
       relationship,
-      propColumns,
+      propRelCol,
+      columns,
     );
-  }
+  });
+}
 
-  if (propConstraintCols.length > 0) {
-    const targetTable = schema.tables.find(
-      (t) => t.id === propColumns[0].tableId,
+function syncRelationshipColumn(
+  erdStore: ErdStore,
+  schemaId: string,
+  relationshipId: string,
+  relationship: {
+    columns: { id: string; refColumnId: string; fkColumnId: string }[];
+  },
+  propRelCol: PropagatedData['relationshipColumns'][number],
+  propColumns: PropagatedData['columns'],
+) {
+  const existingRelCol = relationship.columns.find(
+    (rc) => rc.refColumnId === propRelCol.refColumnId,
+  );
+
+  if (!existingRelCol) return;
+
+  erdStore.replaceRelationshipColumnId(
+    schemaId,
+    relationshipId,
+    existingRelCol.id,
+    propRelCol.relationshipColumnId,
+  );
+
+  const propCol = propColumns.find(
+    (pc) => pc.sourceColumnId === propRelCol.refColumnId,
+  );
+
+  if (propCol && existingRelCol.fkColumnId !== propRelCol.fkColumnId) {
+    erdStore.replaceRelationshipColumnFkId(
+      schemaId,
+      relationshipId,
+      propRelCol.relationshipColumnId,
+      propRelCol.fkColumnId,
     );
 
-    if (targetTable) {
-      if (propConstraints.length > 0) {
-        syncConstraints(erdStore, schemaId, targetTable, propConstraints);
-      }
-
-      const updatedSchema = erdStore.database?.schemas.find(
-        (s) => s.id === schemaId,
-      );
-      const updatedTable = updatedSchema?.tables.find(
-        (t) => t.id === targetTable.id,
-      );
-
-      if (updatedTable) {
-        syncConstraintsColumns(
-          erdStore,
-          schemaId,
-          updatedTable,
-          propConstraintCols,
-        );
-      }
-    }
+    erdStore.replaceColumnId(
+      schemaId,
+      propCol.tableId,
+      existingRelCol.fkColumnId,
+      propRelCol.fkColumnId,
+    );
   }
 }
 
-function syncRelationshipColumns(
-  store: ErdStore,
+function handleStandaloneColumns(
+  erdStore: ErdStore,
   schemaId: string,
-  finalRelationshipId: string,
-  relationshipInDb: Relationship,
-  propColumns: PropagatedEntities['columns'],
+  table: Table | undefined,
+  sourceId: string,
+  data: PropagatedData,
 ) {
-  const relColMap = new Map(
-    relationshipInDb.columns.map((rc) => [rc.refColumnId, rc]),
+  const { columns, relationshipColumns } = data;
+  if (columns.length === 0 || relationshipColumns.length > 0) return;
+
+  const relationship = table?.relationships.find((r) => r.id === sourceId);
+  if (!relationship) return;
+
+  columns.forEach((propCol) => {
+    syncStandaloneColumn(erdStore, schemaId, sourceId, relationship, propCol);
+  });
+}
+
+function syncStandaloneColumn(
+  erdStore: ErdStore,
+  schemaId: string,
+  relationshipId: string,
+  relationship: {
+    columns: { id: string; refColumnId: string; fkColumnId: string }[];
+  },
+  propCol: PropagatedData['columns'][number],
+) {
+  const relCol = relationship.columns.find(
+    (rc) => rc.refColumnId === propCol.sourceColumnId,
   );
 
-  propColumns.forEach((propCol) => {
-    const relCol = relColMap.get(propCol.sourceColumnId);
+  if (!relCol || relCol.fkColumnId === propCol.columnId) return;
 
-    if (relCol && relCol.fkColumnId !== propCol.columnId) {
-      store.replaceRelationshipColumnFkId(
-        schemaId,
-        finalRelationshipId,
-        relCol.id,
-        propCol.columnId,
-      );
+  erdStore.replaceRelationshipColumnFkId(
+    schemaId,
+    relationshipId,
+    relCol.id,
+    propCol.columnId,
+  );
 
-      store.replaceColumnId(
-        schemaId,
-        propCol.tableId,
-        relCol.fkColumnId,
-        propCol.columnId,
-      );
-    }
-  });
+  erdStore.replaceColumnId(
+    schemaId,
+    propCol.tableId,
+    relCol.fkColumnId,
+    propCol.columnId,
+  );
+}
+
+function handleConstraintsAndColumns(
+  erdStore: ErdStore,
+  schemaId: string,
+  schema: Schema,
+  data: PropagatedData,
+) {
+  const { constraintColumns, constraints, columns } = data;
+  if (constraintColumns.length === 0) return;
+
+  const targetTableId = findTargetTableId(columns, constraints);
+  if (!targetTableId) return;
+
+  const targetTable = schema.tables.find((t) => t.id === targetTableId);
+  if (!targetTable) return;
+
+  if (constraints.length > 0) {
+    syncConstraints(erdStore, schemaId, targetTable, constraints);
+  }
+
+  const updatedSchema = erdStore.database?.schemas.find(
+    (s) => s.id === schemaId,
+  );
+  const updatedTable = updatedSchema?.tables.find(
+    (t) => t.id === targetTable.id,
+  );
+
+  if (updatedTable) {
+    syncConstraintsColumns(erdStore, schemaId, updatedTable, constraintColumns);
+  }
+}
+
+function findTargetTableId(
+  columns: PropagatedData['columns'],
+  constraints: PropagatedData['constraints'],
+): string | undefined {
+  if (columns.length > 0) {
+    return columns[0].tableId;
+  }
+  if (constraints.length > 0) {
+    return constraints[0].tableId;
+  }
+  return undefined;
 }
 
 function syncConstraints(
