@@ -123,7 +123,7 @@ export class MemoStore {
         return null;
       }
       const updated = res.result;
-      
+
       runInAction(() => {
         const memoKeys = Object.keys(this.memosBySchema);
         const effectiveSchemaId =
@@ -163,7 +163,7 @@ export class MemoStore {
       runInAction(() => {
         const list = this.memosBySchema[schemaId] ?? [];
         this.memosBySchema[schemaId] = list.filter((m) => m.id !== memoId);
-        
+
         const nextCommentsByMemo = { ...this.commentsByMemo };
         delete nextCommentsByMemo[memoId];
         this.commentsByMemo = nextCommentsByMemo;
@@ -194,7 +194,8 @@ export class MemoStore {
       });
     } catch (e) {
       runInAction(() => {
-        this.error = e instanceof Error ? e.message : 'Failed to fetch comments';
+        this.error =
+          e instanceof Error ? e.message : 'Failed to fetch comments';
         this.isLoading = false;
       });
     }
@@ -236,7 +237,8 @@ export class MemoStore {
       return comment;
     } catch (e) {
       runInAction(() => {
-        this.error = e instanceof Error ? e.message : 'Failed to create comment';
+        this.error =
+          e instanceof Error ? e.message : 'Failed to create comment';
         this.isLoading = false;
       });
       return null;
@@ -287,7 +289,8 @@ export class MemoStore {
       return updated;
     } catch (e) {
       runInAction(() => {
-        this.error = e instanceof Error ? e.message : 'Failed to update comment';
+        this.error =
+          e instanceof Error ? e.message : 'Failed to update comment';
         this.isLoading = false;
       });
       return null;
@@ -332,7 +335,8 @@ export class MemoStore {
       return true;
     } catch (e) {
       runInAction(() => {
-        this.error = e instanceof Error ? e.message : 'Failed to delete comment';
+        this.error =
+          e instanceof Error ? e.message : 'Failed to delete comment';
         this.isLoading = false;
       });
       return false;

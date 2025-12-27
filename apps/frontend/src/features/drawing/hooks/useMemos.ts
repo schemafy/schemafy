@@ -51,10 +51,10 @@ export const useMemos = () => {
   const onMemosChange = useCallback(
     (changes: NodeChange[]) => {
       if (!schemaId) return;
-      
+
       setMemos((nds) => {
         const updatedMemos = applyNodeChanges(changes, nds) as Node<MemoData>[];
-        
+
         changes.forEach((change) => {
           if (
             change.type === 'position' &&

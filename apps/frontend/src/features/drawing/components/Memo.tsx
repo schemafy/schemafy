@@ -55,9 +55,9 @@ export const Memo = observer(({ id, data }: MemoProps) => {
 
   const memoStore = MemoStore.getInstance();
 
-  const schemaId = Object.keys(memoStore.memosBySchema).find(sid => 
-      memoStore.memosBySchema[sid]?.some(m => m.id === id)
-    );
+  const schemaId = Object.keys(memoStore.memosBySchema).find((sid) =>
+    memoStore.memosBySchema[sid]?.some((m) => m.id === id),
+  );
 
   const comments = data.comments ?? [];
 
@@ -83,7 +83,7 @@ export const Memo = observer(({ id, data }: MemoProps) => {
       handleAddReply();
     }
   };
-  
+
   const handleDeleteComment = (commentId: string) => {
     memoStore.deleteMemoComment(id, commentId);
   };
