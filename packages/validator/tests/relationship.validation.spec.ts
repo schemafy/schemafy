@@ -284,6 +284,133 @@ describe('Relationship validation', () => {
     expect(pkColumnIds).not.toContain(fkColumnId);
   });
 
+  test('관계 종류 변경 시 하위 관계가 삭제되지 않는다', () => {
+    const schemaId = 'schema-1';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const grandchildTableId = 'grandchild-table';
+    const parentPkColumnId = 'parent-id';
+    const childPkColumnId = 'child-id';
+    const childFkColumnId = 'child-parent-fk';
+    const grandchildPkColumnId = 'grandchild-id';
+    const grandchildFkColumnId = 'grandchild-child-fk';
+    const parentChildRelationshipId = 'rel-parent-child';
+    const grandchildRelationshipId = 'rel-grandchild-child';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c.withId(parentPkColumnId).withName('id2').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_parent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(parentPkColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c.withId(childPkColumnId).withName('id2').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_child')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(childPkColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(grandchildTableId)
+              .withName('grandchild')
+              .withColumn((c) =>
+                c
+                  .withId(grandchildPkColumnId)
+                  .withName('id2')
+                  .withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_grandchild')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(grandchildPkColumnId))
+              )
+          )
+      )
+      .build();
+
+    const parentChildRelationship = createRelationshipBuilder()
+      .withId(parentChildRelationshipId)
+      .withSrcTableId(childTableId)
+      .withName('fk_parent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(parentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentPkColumnId)
+      )
+      .build();
+
+    const databaseWithParentRelationship = ERD_VALIDATOR.createRelationship(
+      baseDatabase,
+      schemaId,
+      parentChildRelationship
+    );
+
+    const grandchildRelationship = createRelationshipBuilder()
+      .withId(grandchildRelationshipId)
+      .withSrcTableId(grandchildTableId)
+      .withName('fk_child_parent')
+      .withKind('NON_IDENTIFYING')
+      .withTgtTableId(childTableId)
+      .withColumn((rc) =>
+        rc
+          .withFkColumnId(grandchildFkColumnId)
+          .withRefColumnId(childFkColumnId)
+      )
+      .build();
+
+    const databaseWithGrandchildRelationship = ERD_VALIDATOR.createRelationship(
+      databaseWithParentRelationship,
+      schemaId,
+      grandchildRelationship
+    );
+
+    const updatedDatabase = ERD_VALIDATOR.changeRelationshipKind(
+      databaseWithGrandchildRelationship,
+      schemaId,
+      parentChildRelationshipId,
+      'NON_IDENTIFYING'
+    );
+
+    const updatedChildTable = updatedDatabase.schemas[0].tables.find(
+      (t) => t.id === childTableId
+    );
+    const updatedGrandchildTable = updatedDatabase.schemas[0].tables.find(
+      (t) => t.id === grandchildTableId
+    );
+    const remainingRelationship = updatedGrandchildTable?.relationships.find(
+      (r) => r.id === grandchildRelationshipId
+    );
+
+    expect(updatedChildTable?.columns.some((c) => c.id === childFkColumnId)).toBe(
+      true
+    );
+    expect(
+      updatedGrandchildTable?.columns.some((c) => c.id === grandchildFkColumnId)
+    ).toBe(true);
+    expect(remainingRelationship).toBeDefined();
+  });
+
   test('존재하지 않는 대상 테이블로는 관계를 생성할 수 없다.', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
