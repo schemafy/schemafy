@@ -87,6 +87,19 @@ public class RelationshipController {
     }
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+    @PutMapping("/relationships/{relationshipId}/kind")
+    public Mono<BaseResponse<RelationshipResponse>> updateRelationshipKind(
+            @PathVariable String relationshipId,
+            @RequestBody Validation.ChangeRelationshipKindRequest request) {
+        if (!relationshipId.equals(request.getRelationshipId())) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+        return relationshipService.updateRelationshipKind(request)
+                .map(BaseResponse::success);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PostMapping("/relationships/{relationshipId}/columns")
     public Mono<BaseResponse<AffectedMappingResponse>> addColumnToRelationship(
             @PathVariable String relationshipId,

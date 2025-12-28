@@ -170,6 +170,39 @@ public class RelationshipService {
                 .map(RelationshipResponse::from);
     }
 
+    public Mono<RelationshipResponse> updateRelationshipKind(
+            Validation.ChangeRelationshipKindRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
+        return relationshipRepository
+                .findByIdAndDeletedAtIsNull(request.getRelationshipId())
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
+                .flatMap(relationship -> validationClient
+                        .changeRelationshipKind(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(relationship)
+                                        .doOnNext(entity -> entity.setKind(
+                                                request.getKind().name()))
+                                        .flatMap(relationshipRepository::save)
+                                        .flatMap(
+                                                savedRelationship -> affectedEntitiesSoftDeleter
+                                                        .softDeleteRemovedEntities(
+                                                                request.getDatabase(),
+                                                                afterDatabase)
+                                                        .then(affectedEntitiesSaver
+                                                                .saveAffectedEntitiesResult(
+                                                                        request.getDatabase(),
+                                                                        afterDatabase))
+                                                        .thenReturn(
+                                                                savedRelationship)))))
+                .map(RelationshipResponse::from);
+    }
+
     public Mono<AffectedMappingResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
