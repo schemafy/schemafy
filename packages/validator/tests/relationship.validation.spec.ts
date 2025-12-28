@@ -112,6 +112,178 @@ describe('Relationship validation', () => {
     );
   });
 
+  test('관계 종류를 IDENTIFYING으로 변경하면 FK 컬럼이 PK에 포함된다', () => {
+    const schemaId = 'schema-1';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const parentColumnId = 'parent-id';
+    const childPkColumnId = 'child-id';
+    const fkColumnId = 'child-fk';
+    const relationshipId = 'rel-1';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c.withId(parentColumnId).withName('id2').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_parent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(parentColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c.withId(childPkColumnId).withName('id2').withDataType('INT')
+              )
+              .withColumn((c) =>
+                c.withId(fkColumnId).withName('parent_id').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_child')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(childPkColumnId))
+              )
+          )
+      )
+      .build();
+
+    const relationship = createRelationshipBuilder()
+      .withId(relationshipId)
+      .withSrcTableId(childTableId)
+      .withName('fk_parent')
+      .withKind('NON_IDENTIFYING')
+      .withTgtTableId(parentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(fkColumnId).withRefColumnId(parentColumnId)
+      )
+      .build();
+
+    const databaseWithRelationship = ERD_VALIDATOR.createRelationship(
+      baseDatabase,
+      schemaId,
+      relationship
+    );
+
+    const updatedDatabase = ERD_VALIDATOR.changeRelationshipKind(
+      databaseWithRelationship,
+      schemaId,
+      relationshipId,
+      'IDENTIFYING'
+    );
+
+    const childTable = updatedDatabase.schemas[0].tables.find(
+      (t) => t.id === childTableId
+    );
+    const updatedRelationship = childTable?.relationships.find(
+      (r) => r.id === relationshipId
+    );
+    const childPk = childTable?.constraints.find(
+      (c) => c.kind === 'PRIMARY_KEY'
+    );
+    const pkColumnIds = childPk?.columns.map((cc) => cc.columnId) ?? [];
+
+    expect(updatedRelationship?.kind).toBe('IDENTIFYING');
+    expect(pkColumnIds).toContain(fkColumnId);
+  });
+
+  test('관계 종류를 NON_IDENTIFYING으로 변경하면 FK 컬럼이 PK에서 제거된다', () => {
+    const schemaId = 'schema-1';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const parentColumnId = 'parent-id';
+    const childPkColumnId = 'child-id';
+    const fkColumnId = 'child-fk';
+    const relationshipId = 'rel-1';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c.withId(parentColumnId).withName('id2').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_parent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(parentColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c.withId(childPkColumnId).withName('id2').withDataType('INT')
+              )
+              .withColumn((c) =>
+                c.withId(fkColumnId).withName('parent_id').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_child')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(childPkColumnId))
+              )
+          )
+      )
+      .build();
+
+    const relationship = createRelationshipBuilder()
+      .withId(relationshipId)
+      .withSrcTableId(childTableId)
+      .withName('fk_parent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(parentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(fkColumnId).withRefColumnId(parentColumnId)
+      )
+      .build();
+
+    const databaseWithRelationship = ERD_VALIDATOR.createRelationship(
+      baseDatabase,
+      schemaId,
+      relationship
+    );
+
+    const updatedDatabase = ERD_VALIDATOR.changeRelationshipKind(
+      databaseWithRelationship,
+      schemaId,
+      relationshipId,
+      'NON_IDENTIFYING'
+    );
+
+    const childTable = updatedDatabase.schemas[0].tables.find(
+      (t) => t.id === childTableId
+    );
+    const updatedRelationship = childTable?.relationships.find(
+      (r) => r.id === relationshipId
+    );
+    const childPk = childTable?.constraints.find(
+      (c) => c.kind === 'PRIMARY_KEY'
+    );
+    const pkColumnIds = childPk?.columns.map((cc) => cc.columnId) ?? [];
+
+    expect(updatedRelationship?.kind).toBe('NON_IDENTIFYING');
+    expect(pkColumnIds).not.toContain(fkColumnId);
+  });
+
   test('존재하지 않는 대상 테이블로는 관계를 생성할 수 없다.', () => {
     const database = createTestDatabase()
       .withSchema((s) =>

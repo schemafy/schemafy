@@ -1,4 +1,8 @@
-import { createColumnBuilder, createTestDatabase } from '../src/lib/builder';
+import {
+  createColumnBuilder,
+  createRelationshipBuilder,
+  createTestDatabase,
+} from '../src/lib/builder';
 import {
   ColumnDataTypeInvalidError,
   ColumnDataTypeRequiredError,
@@ -246,6 +250,81 @@ describe('Column validation', () => {
       .build();
 
     // expect(() => ERD_VALIDATOR.validate(db)).toThrow(AutoIncrementNonPrimaryKeyError);
+  });
+
+  test('PK 타입 변경 시 FK 컬럼 타입이 함께 변경된다', () => {
+    const schemaId = 'schema-1';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const parentColumnId = 'parent-id';
+    const fkColumnId = 'child-fk';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c.withId(parentColumnId).withName('id').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_parent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(parentColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c.withId(fkColumnId).withName('parent_id').withDataType('INT')
+              )
+          )
+      )
+      .build();
+
+    const relationship = createRelationshipBuilder()
+      .withId('rel-1')
+      .withSrcTableId(childTableId)
+      .withName('fk_parent')
+      .withKind('NON_IDENTIFYING')
+      .withTgtTableId(parentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(fkColumnId).withRefColumnId(parentColumnId)
+      )
+      .build();
+
+    const databaseWithRelationship = ERD_VALIDATOR.createRelationship(
+      baseDatabase,
+      schemaId,
+      relationship
+    );
+
+    const updatedDatabase = ERD_VALIDATOR.changeColumnType(
+      databaseWithRelationship,
+      schemaId,
+      parentTableId,
+      parentColumnId,
+      'VARCHAR',
+      '50'
+    );
+
+    const updatedParentColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === parentTableId)
+      ?.columns.find((c) => c.id === parentColumnId);
+    const updatedFkColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === childTableId)
+      ?.columns.find((c) => c.id === fkColumnId);
+
+    expect(updatedParentColumn?.dataType).toBe('VARCHAR');
+    expect(updatedParentColumn?.lengthScale).toBe('50');
+    expect(updatedFkColumn?.dataType).toBe('VARCHAR');
+    expect(updatedFkColumn?.lengthScale).toBe('50');
   });
 
   test('일반 컬럼을 삭제할 수 있다', () => {
