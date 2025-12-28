@@ -7,7 +7,7 @@ import {
   RelationshipEmptyError,
   RelationshipCyclicReferenceError,
 } from "../errors";
-import {
+import type {
   Database,
   Schema,
   Relationship,
@@ -38,6 +38,12 @@ export interface RelationshipHandlers {
     schemaId: Schema["id"],
     relationshipId: Relationship["id"],
     cardinality: Relationship["cardinality"],
+  ) => Database;
+  changeRelationshipKind: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    kind: Relationship["kind"],
   ) => Database;
   addColumnToRelationship: (
     database: Database,
@@ -251,6 +257,50 @@ export const relationshipHandlers: RelationshipHandlers = {
       ...relationship,
       isAffected: true,
       cardinality,
+    };
+
+    let currentDatabase = relationshipHandlers.deleteRelationship(
+      structuredClone(database),
+      schemaId,
+      relationshipId,
+    );
+
+    currentDatabase = relationshipHandlers.createRelationship(
+      structuredClone(currentDatabase),
+      schemaId,
+      updatedRelationship,
+    );
+
+    return currentDatabase;
+  },
+  changeRelationshipKind: (database, schemaId, relationshipId, kind) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
+
+    const relationship: Relationship | undefined = schema.tables
+      .find((t) => t.relationships.some((r) => r.id === relationshipId))
+      ?.relationships.find((r) => r.id === relationshipId);
+
+    if (!relationship) throw new RelationshipNotExistError(relationshipId);
+
+    if (
+      kind === "IDENTIFYING" &&
+      helper.detectCircularReference(
+        schema,
+        relationship.tgtTableId,
+        relationship.srcTableId,
+      )
+    ) {
+      throw new RelationshipCyclicReferenceError(
+        relationship.tgtTableId,
+        relationship.srcTableId,
+      );
+    }
+
+    const updatedRelationship: Relationship = {
+      ...relationship,
+      isAffected: true,
+      kind,
     };
 
     let currentDatabase = relationshipHandlers.deleteRelationship(

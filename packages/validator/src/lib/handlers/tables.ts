@@ -4,7 +4,8 @@ import {
   TableNotExistError,
   TableNameNotInvalidError,
 } from "../errors";
-import { Database, Schema, TABLE, Table } from "../types";
+import { TABLE } from "../types";
+import type { Database, Schema, Table } from "../types";
 import { relationshipHandlers } from "./relationships";
 
 export interface TableHandlers {

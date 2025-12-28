@@ -1,5 +1,5 @@
 import { ulid } from "ulid";
-import {
+import type {
   Column,
   Constraint,
   Index,
