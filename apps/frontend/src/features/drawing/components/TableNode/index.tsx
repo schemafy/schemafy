@@ -16,6 +16,7 @@ import {
 import { ErdStore } from '@/store/erd.store';
 import { ConnectionHandles } from './ConnectionHandles';
 import * as columnService from '../../services/column.service';
+import { isForeignKeyColumn } from '../../utils/columnValidators';
 
 const TableNodeComponent = ({ data, id }: TableProps) => {
   const erdStore = ErdStore.getInstance();
@@ -24,6 +25,23 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const columns = data.columns || [];
   const indexes = data.indexes || [];
   const constraints = data.constraints || [];
+  const schema =
+    erdStore.erdState.state !== 'loaded'
+      ? null
+      : erdStore.erdState.database.schemas.find((s) => s.id === data.schemaId);
+
+  const getColumnRestrictions = (columnId: string) => {
+    if (!schema) return { isFKColumn: false, reason: undefined };
+
+    const isFKColumn = isForeignKeyColumn(schema, id, columnId);
+
+    return {
+      isFKColumn,
+      reason: isFKColumn
+        ? 'This column is used as a foreign key in a relationship'
+        : undefined,
+    };
+  };
 
   const { updateColumn, saveAllPendingChanges } = useColumn(
     erdStore,
@@ -103,23 +121,29 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         onDeleteTable={tableActions.deleteTable}
       />
       <div className="max-h-96 overflow-y-auto">
-        {columns.map((column) => (
-          <ColumnRow
-            key={column.id}
-            column={column}
-            isEditMode={isColumnEditMode}
-            isLastColumn={columns.length === 1}
-            draggedItem={dragAndDrop.draggedItem}
-            dragOverItem={dragAndDrop.dragOverItem}
-            onDragStart={dragAndDrop.handleDragStart}
-            onDragOver={dragAndDrop.handleDragOver}
-            onDragLeave={dragAndDrop.handleDragLeave}
-            onDrop={dragAndDrop.handleDrop}
-            onDragEnd={dragAndDrop.handleDragEnd}
-            onUpdateColumn={updateColumn}
-            onRemoveColumn={columnActions.removeColumn}
-          />
-        ))}
+        {columns.map((column) => {
+          const restrictions = getColumnRestrictions(column.id);
+          const isFKColumn = restrictions.isFKColumn;
+          return (
+            <ColumnRow
+              key={column.id}
+              column={column}
+              isEditMode={isColumnEditMode}
+              isLastColumn={columns.length === 1}
+              draggedItem={dragAndDrop.draggedItem}
+              dragOverItem={dragAndDrop.dragOverItem}
+              onDragStart={dragAndDrop.handleDragStart}
+              onDragOver={dragAndDrop.handleDragOver}
+              onDragLeave={dragAndDrop.handleDragLeave}
+              onDrop={dragAndDrop.handleDrop}
+              onDragEnd={dragAndDrop.handleDragEnd}
+              onUpdateColumn={updateColumn}
+              onRemoveColumn={columnActions.removeColumn}
+              isFKColumn={isFKColumn}
+              restrictionReason={restrictions?.reason}
+            />
+          );
+        })}
       </div>
       {columns.length === 0 && (
         <div className="p-4 text-center text-schemafy-dark-gray text-sm">
