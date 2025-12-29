@@ -74,9 +74,27 @@ public interface WorkspaceMemberRepository
 
     @Query("""
             SELECT * FROM workspace_members
-            WHERE id = :id
+            WHERE id = :memberId
+              AND workspace_id = :workspaceId
               AND deleted_at IS NULL
             """)
-    Mono<WorkspaceMember> findByIdAndNotDeleted(String id);
+    Mono<WorkspaceMember> findByIdAndWorkspaceIdAndNotDeleted(String memberId, String workspaceId);
 
+    @Query("""
+            SELECT * FROM workspace_members
+            WHERE workspace_id = :workspaceId
+              AND user_id = :userId
+            ORDER BY created_at DESC
+            LIMIT 1
+            """)
+    Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(String workspaceId, String userId);
+
+    @Query("""
+            UPDATE workspace_members
+            SET deleted_at = NULL,
+                role = :role,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = :memberId
+            """)
+    Mono<Void> reactivateMember(String memberId, String role);
 }

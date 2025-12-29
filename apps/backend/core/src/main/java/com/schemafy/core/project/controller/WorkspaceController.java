@@ -34,8 +34,8 @@ public class WorkspaceController {
     public Mono<BaseResponse<WorkspaceResponse>> createWorkspace(
             @Valid @RequestBody CreateWorkspaceRequest request,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.createWorkspace(request, userId)
+        String requesterId = authentication.getName();
+        return workspaceService.createWorkspace(request, requesterId)
                 .map(BaseResponse::success);
     }
 
@@ -44,8 +44,8 @@ public class WorkspaceController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.getWorkspaces(userId, page, size)
+        String requesterId = authentication.getName();
+        return workspaceService.getWorkspaces(requesterId, page, size)
                 .map(BaseResponse::success);
     }
 
@@ -53,8 +53,8 @@ public class WorkspaceController {
     @GetMapping("/workspaces/{id}")
     public Mono<BaseResponse<WorkspaceResponse>> getWorkspace(
             @PathVariable String id, Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.getWorkspace(id, userId)
+        String requesterId = authentication.getName();
+        return workspaceService.getWorkspace(id, requesterId)
                 .map(BaseResponse::success);
     }
 
@@ -64,8 +64,8 @@ public class WorkspaceController {
             @PathVariable String id,
             @Valid @RequestBody UpdateWorkspaceRequest request,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.updateWorkspace(id, request, userId)
+        String requesterId = authentication.getName();
+        return workspaceService.updateWorkspace(id, request, requesterId)
                 .map(BaseResponse::success);
     }
 
@@ -74,8 +74,8 @@ public class WorkspaceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> deleteWorkspace(@PathVariable String id,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.deleteWorkspace(id, userId);
+        String requesterId = authentication.getName();
+        return workspaceService.deleteWorkspace(id, requesterId);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
@@ -84,8 +84,8 @@ public class WorkspaceController {
             @PathVariable String id, @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.getMembers(id, userId, page, size)
+        String requesterId = authentication.getName();
+        return workspaceService.getMembers(id, requesterId, page, size)
                 .map(BaseResponse::success);
     }
 
@@ -96,8 +96,8 @@ public class WorkspaceController {
             @PathVariable String workspaceId,
             @Valid @RequestBody AddWorkspaceMemberRequest request,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.addMember(workspaceId, request, userId)
+        String requesterId = authentication.getName();
+        return workspaceService.addMember(workspaceId, request, requesterId)
                 .map(BaseResponse::success);
     }
 
@@ -108,8 +108,8 @@ public class WorkspaceController {
             @PathVariable String workspaceId,
             @PathVariable String memberId,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.removeMember(workspaceId, memberId, userId);
+        String requesterId = authentication.getName();
+        return workspaceService.removeMember(workspaceId, memberId, requesterId);
     }
 
     @DeleteMapping("/workspaces/{workspaceId}/members/me")
@@ -117,8 +117,8 @@ public class WorkspaceController {
     public Mono<Void> leaveMember(
             @PathVariable String workspaceId,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return workspaceService.leaveMember(workspaceId, userId);
+        String requesterId = authentication.getName();
+        return workspaceService.leaveMember(workspaceId, requesterId);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -128,9 +128,9 @@ public class WorkspaceController {
             @PathVariable String memberId,
             @Valid @RequestBody UpdateMemberRoleRequest request,
             Authentication authentication) {
-        String userId = authentication.getName();
+        String requesterId = authentication.getName();
         return workspaceService
-                .updateMemberRole(workspaceId, memberId, request, userId)
+                .updateMemberRole(workspaceId, memberId, request, requesterId)
                 .map(BaseResponse::success);
     }
 
