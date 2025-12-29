@@ -78,7 +78,8 @@ public interface WorkspaceMemberRepository
               AND workspace_id = :workspaceId
               AND deleted_at IS NULL
             """)
-    Mono<WorkspaceMember> findByIdAndWorkspaceIdAndNotDeleted(String memberId, String workspaceId);
+    Mono<WorkspaceMember> findByIdAndWorkspaceIdAndNotDeleted(String memberId,
+            String workspaceId);
 
     @Query("""
             SELECT * FROM workspace_members
@@ -87,7 +88,8 @@ public interface WorkspaceMemberRepository
             ORDER BY created_at DESC
             LIMIT 1
             """)
-    Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(String workspaceId, String userId);
+    Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(String workspaceId,
+            String userId);
 
     @Query("""
             UPDATE workspace_members
@@ -97,4 +99,5 @@ public interface WorkspaceMemberRepository
             WHERE id = :memberId
             """)
     Mono<Void> reactivateMember(String memberId, String role);
+
 }

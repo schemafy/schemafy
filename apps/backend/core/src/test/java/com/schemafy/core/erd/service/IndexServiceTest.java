@@ -1,5 +1,7 @@
 package com.schemafy.core.erd.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -11,6 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexColumnSortDirRequest;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexTypeRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
@@ -22,6 +26,8 @@ import com.schemafy.core.validation.client.ValidationClient;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple3;
+import reactor.util.function.Tuples;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,6 +84,20 @@ class IndexServiceTest {
                         .setTableId("table-1")
                         .setName("idx_test")
                         .setType(Validation.IndexType.BTREE)
+                        .addColumns(Validation.IndexColumn.newBuilder()
+                                .setId("fe-index-column-1")
+                                .setIndexId("fe-index-id")
+                                .setColumnId("column-1")
+                                .setSeqNo(1)
+                                .setSortDir(Validation.IndexSortDir.ASC)
+                                .build())
+                        .addColumns(Validation.IndexColumn.newBuilder()
+                                .setId("fe-index-column-2")
+                                .setIndexId("fe-index-id")
+                                .setColumnId("column-2")
+                                .setSeqNo(2)
+                                .setSortDir(Validation.IndexSortDir.DESC)
+                                .build())
                         .build())
                 .setDatabase(Validation.Database.newBuilder()
                         .setId("proj-1")
@@ -105,12 +125,34 @@ class IndexServiceTest {
                                 .setName("test-table")
                                 .setIsAffected(true)
                                 .addIndexes(Validation.Index.newBuilder()
-                                        .setId("be-index-id")
+                                        .setId("validator-index-id")
                                         .setTableId("table-1")
                                         .setName("idx_test")
                                         .setType(Validation.IndexType.BTREE)
                                         .setComment("")
                                         .setIsAffected(true)
+                                        .addColumns(Validation.IndexColumn
+                                                .newBuilder()
+                                                .setId("validator-index-column-1")
+                                                .setIndexId(
+                                                        "validator-index-id")
+                                                .setColumnId("column-1")
+                                                .setSeqNo(1)
+                                                .setSortDir(
+                                                        Validation.IndexSortDir.ASC)
+                                                .setIsAffected(true)
+                                                .build())
+                                        .addColumns(Validation.IndexColumn
+                                                .newBuilder()
+                                                .setId("validator-index-column-2")
+                                                .setIndexId(
+                                                        "validator-index-id")
+                                                .setColumnId("column-2")
+                                                .setSeqNo(2)
+                                                .setSortDir(
+                                                        Validation.IndexSortDir.DESC)
+                                                .setIsAffected(true)
+                                                .build())
                                         .build())
                                 .build())
                         .build())
@@ -121,23 +163,56 @@ class IndexServiceTest {
                 .willReturn(Mono.just(mockResponse));
 
         // when
-        Mono<AffectedMappingResponse> result = indexService
-                .createIndex(request);
+        Mono<Tuple3<AffectedMappingResponse, Index, List<IndexColumn>>> result = indexService
+                .createIndex(request)
+                .flatMap(response -> indexRepository.findAll().single()
+                        .flatMap(savedIndex -> indexColumnRepository
+                                .findByIndexIdAndDeletedAtIsNull(
+                                        savedIndex.getId())
+                                .collectList()
+                                .map(savedIndexColumns -> Tuples.of(
+                                        response,
+                                        savedIndex,
+                                        savedIndexColumns))));
 
         // then
         StepVerifier.create(result)
-                .assertNext(response -> {
+                .assertNext(tuple -> {
+                    AffectedMappingResponse response = tuple.getT1();
+                    Index savedIndex = tuple.getT2();
+                    var savedIndexColumns = tuple.getT3();
+
+                    String savedIndexId = savedIndex.getId();
+                    assertThat(savedIndexColumns).hasSize(2);
+
+                    String savedIndexColumnId1 = savedIndexColumns.stream()
+                            .filter(c -> c.getColumnId().equals("column-1"))
+                            .findFirst()
+                            .orElseThrow()
+                            .getId();
+                    String savedIndexColumnId2 = savedIndexColumns.stream()
+                            .filter(c -> c.getColumnId().equals("column-2"))
+                            .findFirst()
+                            .orElseThrow()
+                            .getId();
+
                     // 인덱스 매핑 정보 확인 (FE-ID → BE-ID 매핑)
                     // indexes는 tableId로 그룹핑된 nested map
                     assertThat(response.indexes()).hasSize(1);
                     assertThat(response.indexes().get("table-1"))
-                            .containsEntry("fe-index-id", "be-index-id");
+                            .containsEntry("fe-index-id", savedIndexId);
 
                     // 다른 매핑들은 비어있어야 함 (인덱스만 생성했으므로)
                     assertThat(response.schemas()).isEmpty();
                     assertThat(response.tables()).isEmpty();
                     assertThat(response.columns()).isEmpty();
-                    assertThat(response.indexColumns()).isEmpty();
+                    assertThat(response.indexColumns())
+                            .containsKey(savedIndexId);
+                    assertThat(response.indexColumns().get(savedIndexId))
+                            .containsEntry("fe-index-column-1",
+                                    savedIndexColumnId1)
+                            .containsEntry("fe-index-column-2",
+                                    savedIndexColumnId2);
                     assertThat(response.constraints()).isEmpty();
                     assertThat(response.constraintColumns()).isEmpty();
                     assertThat(response.relationships()).isEmpty();
@@ -241,6 +316,66 @@ class IndexServiceTest {
     }
 
     @Test
+    @DisplayName("updateIndexType: 존재하면 타입을 변경한다")
+    void updateIndexType_success() {
+        Index saved = indexRepository.save(
+                Index.builder()
+                        .tableId("table-1")
+                        .name("idx_test")
+                        .type("BTREE")
+                        .comment("")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexType(
+                saved.getId(),
+                new UpdateIndexTypeRequest("hash")))
+                .assertNext(updated -> {
+                    assertThat(updated.getId()).isEqualTo(saved.getId());
+                    assertThat(updated.getType()).isEqualTo("HASH");
+                })
+                .verifyComplete();
+
+        StepVerifier.create(indexRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.getType())
+                        .isEqualTo("HASH"))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("updateIndexType: 존재하지 않으면 에러를 반환한다")
+    void updateIndexType_notFound() {
+        StepVerifier.create(indexService.updateIndexType(
+                "non-existent",
+                new UpdateIndexTypeRequest("BTREE")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ERD_INDEX_NOT_FOUND)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("updateIndexType: 유효하지 않은 타입이면 에러를 반환한다")
+    void updateIndexType_invalidType() {
+        Index saved = indexRepository.save(
+                Index.builder()
+                        .tableId("table-1")
+                        .name("idx_test")
+                        .type("BTREE")
+                        .comment("")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexType(
+                saved.getId(),
+                new UpdateIndexTypeRequest("INVALID")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+                .verify();
+    }
+
+    @Test
     @DisplayName("addColumnToIndex: 인덱스에 컬럼을 추가한다")
     void addColumnToIndex_success() {
         Validation.AddColumnToIndexRequest request = Validation.AddColumnToIndexRequest
@@ -279,6 +414,91 @@ class IndexServiceTest {
     }
 
     @Test
+    @DisplayName("updateIndexColumnSortDir: 존재하면 정렬 방향을 변경한다")
+    void updateIndexColumnSortDir_success() {
+        IndexColumn saved = indexColumnRepository.save(
+                IndexColumn.builder()
+                        .indexId("index-1")
+                        .columnId("column-1")
+                        .seqNo(1)
+                        .sortDir("ASC")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexColumnSortDir(
+                "index-1",
+                saved.getId(),
+                new UpdateIndexColumnSortDirRequest("DESC")))
+                .assertNext(updated -> {
+                    assertThat(updated.getId()).isEqualTo(saved.getId());
+                    assertThat(updated.getSortDir()).isEqualTo("DESC");
+                })
+                .verifyComplete();
+
+        StepVerifier.create(indexColumnRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.getSortDir())
+                        .isEqualTo("DESC"))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("updateIndexColumnSortDir: 존재하지 않으면 에러를 반환한다")
+    void updateIndexColumnSortDir_notFound() {
+        StepVerifier.create(indexService.updateIndexColumnSortDir(
+                "index-1",
+                "non-existent",
+                new UpdateIndexColumnSortDirRequest("ASC")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("updateIndexColumnSortDir: indexId가 일치하지 않으면 에러를 반환한다")
+    void updateIndexColumnSortDir_mismatchIndexId() {
+        IndexColumn saved = indexColumnRepository.save(
+                IndexColumn.builder()
+                        .indexId("index-1")
+                        .columnId("column-1")
+                        .seqNo(1)
+                        .sortDir("ASC")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexColumnSortDir(
+                "index-2",
+                saved.getId(),
+                new UpdateIndexColumnSortDirRequest("DESC")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("updateIndexColumnSortDir: 유효하지 않은 정렬 방향이면 에러를 반환한다")
+    void updateIndexColumnSortDir_invalidSortDir() {
+        IndexColumn saved = indexColumnRepository.save(
+                IndexColumn.builder()
+                        .indexId("index-1")
+                        .columnId("column-1")
+                        .seqNo(1)
+                        .sortDir("ASC")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.updateIndexColumnSortDir(
+                "index-1",
+                saved.getId(),
+                new UpdateIndexColumnSortDirRequest("INVALID")))
+                .expectErrorMatches(e -> e instanceof BusinessException
+                        && ((BusinessException) e)
+                                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+                .verify();
+    }
+
+    @Test
     @DisplayName("removeColumnFromIndex: 인덱스에서 컬럼을 제거한다 (소프트 삭제)")
     void removeColumnFromIndex_success() {
         IndexColumn saved = indexColumnRepository.save(
@@ -292,12 +512,52 @@ class IndexServiceTest {
 
         StepVerifier.create(indexService.removeColumnFromIndex(
                 Validation.RemoveColumnFromIndexRequest.newBuilder()
+                        .setIndexId("index-1")
                         .setIndexColumnId(saved.getId())
                         .build()))
                 .verifyComplete();
 
         // 삭제 플래그 확인 (deletedAt not null)
         StepVerifier.create(indexColumnRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("removeColumnFromIndex: 마지막 컬럼 제거 시 인덱스도 소프트 삭제된다")
+    void removeColumnFromIndex_lastColumnAlsoDeletesIndex() {
+        Index savedIndex = indexRepository.save(
+                Index.builder()
+                        .tableId("table-1")
+                        .name("idx_to_delete")
+                        .type("BTREE")
+                        .comment("")
+                        .build())
+                .block();
+
+        IndexColumn savedIndexColumn = indexColumnRepository.save(
+                IndexColumn.builder()
+                        .indexId(savedIndex.getId())
+                        .columnId("column-1")
+                        .seqNo(1)
+                        .sortDir("ASC")
+                        .build())
+                .block();
+
+        StepVerifier.create(indexService.removeColumnFromIndex(
+                Validation.RemoveColumnFromIndexRequest.newBuilder()
+                        .setIndexId(savedIndex.getId())
+                        .setIndexColumnId(savedIndexColumn.getId())
+                        .build()))
+                .verifyComplete();
+
+        StepVerifier.create(indexRepository.findById(savedIndex.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier
+                .create(indexColumnRepository
+                        .findById(savedIndexColumn.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
                 .verifyComplete();
     }

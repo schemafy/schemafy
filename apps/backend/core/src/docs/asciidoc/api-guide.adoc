@@ -749,6 +749,7 @@ POST /api/v1.0/schemas
 
 include::{snippets}/schema-create/http-request.adoc[]
 include::{snippets}/schema-create/request-headers.adoc[]
+include::{snippets}/schema-create/request-fields.adoc[]
 include::{snippets}/schema-create/curl-request.adoc[]
 
 [discrete]
@@ -811,6 +812,7 @@ PUT /api/v1.0/schemas/{schemaId}/name
 include::{snippets}/schema-update-name/http-request.adoc[]
 include::{snippets}/schema-update-name/request-headers.adoc[]
 include::{snippets}/schema-update-name/path-parameters.adoc[]
+include::{snippets}/schema-update-name/request-fields.adoc[]
 include::{snippets}/schema-update-name/curl-request.adoc[]
 
 [discrete]
@@ -842,6 +844,7 @@ DELETE /api/v1.0/schemas/{schemaId}
 include::{snippets}/schema-delete/http-request.adoc[]
 include::{snippets}/schema-delete/request-headers.adoc[]
 include::{snippets}/schema-delete/path-parameters.adoc[]
+include::{snippets}/schema-delete/request-fields.adoc[]
 include::{snippets}/schema-delete/curl-request.adoc[]
 
 [discrete]
@@ -905,6 +908,7 @@ POST /api/v1.0/tables
 
 include::{snippets}/table-create/http-request.adoc[]
 include::{snippets}/table-create/request-headers.adoc[]
+include::{snippets}/table-create/request-fields.adoc[]
 include::{snippets}/table-create/curl-request.adoc[]
 
 [discrete]
@@ -967,6 +971,7 @@ PUT /api/v1.0/tables/{tableId}/name
 include::{snippets}/table-update-name/http-request.adoc[]
 include::{snippets}/table-update-name/request-headers.adoc[]
 include::{snippets}/table-update-name/path-parameters.adoc[]
+include::{snippets}/table-update-name/request-fields.adoc[]
 include::{snippets}/table-update-name/curl-request.adoc[]
 
 [discrete]
@@ -980,6 +985,38 @@ include::{snippets}/table-update-name/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/table-update-name/response-fields.adoc[]
+
+---
+
+==== Table extra 정보 변경
+
+테이블의 extra 정보를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/tables/{tableId}/extra
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-update-extra/http-request.adoc[]
+include::{snippets}/table-update-extra/request-headers.adoc[]
+include::{snippets}/table-update-extra/path-parameters.adoc[]
+include::{snippets}/table-update-extra/request-fields.adoc[]
+include::{snippets}/table-update-extra/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-update-extra/response-headers.adoc[]
+include::{snippets}/table-update-extra/response-body.adoc[]
+include::{snippets}/table-update-extra/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-update-extra/response-fields.adoc[]
 
 ---
 
@@ -998,6 +1035,7 @@ DELETE /api/v1.0/tables/{tableId}
 include::{snippets}/table-delete/http-request.adoc[]
 include::{snippets}/table-delete/request-headers.adoc[]
 include::{snippets}/table-delete/path-parameters.adoc[]
+include::{snippets}/table-delete/request-fields.adoc[]
 include::{snippets}/table-delete/curl-request.adoc[]
 
 [discrete]
@@ -1154,6 +1192,7 @@ POST /api/v1.0/columns
 
 include::{snippets}/column-create/http-request.adoc[]
 include::{snippets}/column-create/request-headers.adoc[]
+include::{snippets}/column-create/request-fields.adoc[]
 include::{snippets}/column-create/curl-request.adoc[]
 
 [discrete]
@@ -1216,6 +1255,7 @@ PUT /api/v1.0/columns/{columnId}/name
 include::{snippets}/column-update-name/http-request.adoc[]
 include::{snippets}/column-update-name/request-headers.adoc[]
 include::{snippets}/column-update-name/path-parameters.adoc[]
+include::{snippets}/column-update-name/request-fields.adoc[]
 include::{snippets}/column-update-name/curl-request.adoc[]
 
 [discrete]
@@ -1247,6 +1287,7 @@ PUT /api/v1.0/columns/{columnId}/type
 include::{snippets}/column-update-type/http-request.adoc[]
 include::{snippets}/column-update-type/request-headers.adoc[]
 include::{snippets}/column-update-type/path-parameters.adoc[]
+include::{snippets}/column-update-type/request-fields.adoc[]
 include::{snippets}/column-update-type/curl-request.adoc[]
 
 [discrete]
@@ -1278,6 +1319,7 @@ PUT /api/v1.0/columns/{columnId}/position
 include::{snippets}/column-update-position/http-request.adoc[]
 include::{snippets}/column-update-position/request-headers.adoc[]
 include::{snippets}/column-update-position/path-parameters.adoc[]
+include::{snippets}/column-update-position/request-fields.adoc[]
 include::{snippets}/column-update-position/curl-request.adoc[]
 
 [discrete]
@@ -1309,6 +1351,7 @@ DELETE /api/v1.0/columns/{columnId}
 include::{snippets}/column-delete/http-request.adoc[]
 include::{snippets}/column-delete/request-headers.adoc[]
 include::{snippets}/column-delete/path-parameters.adoc[]
+include::{snippets}/column-delete/request-fields.adoc[]
 include::{snippets}/column-delete/curl-request.adoc[]
 
 [discrete]
@@ -1341,6 +1384,7 @@ POST /api/v1.0/relationships
 
 include::{snippets}/relationship-create/http-request.adoc[]
 include::{snippets}/relationship-create/request-headers.adoc[]
+include::{snippets}/relationship-create/request-fields.adoc[]
 include::{snippets}/relationship-create/curl-request.adoc[]
 
 [discrete]
@@ -1403,6 +1447,7 @@ PUT /api/v1.0/relationships/{relationshipId}/name
 include::{snippets}/relationship-update-name/http-request.adoc[]
 include::{snippets}/relationship-update-name/path-parameters.adoc[]
 include::{snippets}/relationship-update-name/request-headers.adoc[]
+include::{snippets}/relationship-update-name/request-fields.adoc[]
 include::{snippets}/relationship-update-name/curl-request.adoc[]
 
 [discrete]
@@ -1416,6 +1461,38 @@ include::{snippets}/relationship-update-name/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/relationship-update-name/response-fields.adoc[]
+
+---
+
+==== Relationship extra 정보 변경
+
+관계의 extra 정보를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/relationships/{relationshipId}/extra
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-update-extra/http-request.adoc[]
+include::{snippets}/relationship-update-extra/path-parameters.adoc[]
+include::{snippets}/relationship-update-extra/request-headers.adoc[]
+include::{snippets}/relationship-update-extra/request-fields.adoc[]
+include::{snippets}/relationship-update-extra/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-update-extra/response-headers.adoc[]
+include::{snippets}/relationship-update-extra/response-body.adoc[]
+include::{snippets}/relationship-update-extra/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-update-extra/response-fields.adoc[]
 
 ---
 
@@ -1434,6 +1511,7 @@ PUT /api/v1.0/relationships/{relationshipId}/cardinality
 include::{snippets}/relationship-update-cardinality/http-request.adoc[]
 include::{snippets}/relationship-update-cardinality/path-parameters.adoc[]
 include::{snippets}/relationship-update-cardinality/request-headers.adoc[]
+include::{snippets}/relationship-update-cardinality/request-fields.adoc[]
 include::{snippets}/relationship-update-cardinality/curl-request.adoc[]
 
 [discrete]
@@ -1465,6 +1543,7 @@ POST /api/v1.0/relationships/{relationshipId}/columns
 include::{snippets}/relationship-add-column/http-request.adoc[]
 include::{snippets}/relationship-add-column/path-parameters.adoc[]
 include::{snippets}/relationship-add-column/request-headers.adoc[]
+include::{snippets}/relationship-add-column/request-fields.adoc[]
 include::{snippets}/relationship-add-column/curl-request.adoc[]
 
 [discrete]
@@ -1487,7 +1566,7 @@ include::{snippets}/relationship-add-column/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/relationships/{relationshipId}/columns/{relationshipColumnId}
+DELETE /api/v1.0/relationships/{relationshipId}/columns/{columnId}
 ----
 
 [discrete]
@@ -1496,6 +1575,7 @@ DELETE /api/v1.0/relationships/{relationshipId}/columns/{relationshipColumnId}
 include::{snippets}/relationship-remove-column/http-request.adoc[]
 include::{snippets}/relationship-remove-column/path-parameters.adoc[]
 include::{snippets}/relationship-remove-column/request-headers.adoc[]
+include::{snippets}/relationship-remove-column/request-fields.adoc[]
 include::{snippets}/relationship-remove-column/curl-request.adoc[]
 
 [discrete]
@@ -1527,6 +1607,7 @@ DELETE /api/v1.0/relationships/{relationshipId}
 include::{snippets}/relationship-delete/http-request.adoc[]
 include::{snippets}/relationship-delete/path-parameters.adoc[]
 include::{snippets}/relationship-delete/request-headers.adoc[]
+include::{snippets}/relationship-delete/request-fields.adoc[]
 include::{snippets}/relationship-delete/curl-request.adoc[]
 
 [discrete]
@@ -1559,6 +1640,7 @@ POST /api/v1.0/constraints
 
 include::{snippets}/constraint-create/http-request.adoc[]
 include::{snippets}/constraint-create/request-headers.adoc[]
+include::{snippets}/constraint-create/request-fields.adoc[]
 include::{snippets}/constraint-create/curl-request.adoc[]
 
 [discrete]
@@ -1621,6 +1703,7 @@ PUT /api/v1.0/constraints/{constraintId}/name
 include::{snippets}/constraint-update-name/http-request.adoc[]
 include::{snippets}/constraint-update-name/path-parameters.adoc[]
 include::{snippets}/constraint-update-name/request-headers.adoc[]
+include::{snippets}/constraint-update-name/request-fields.adoc[]
 include::{snippets}/constraint-update-name/curl-request.adoc[]
 
 [discrete]
@@ -1652,6 +1735,7 @@ POST /api/v1.0/constraints/{constraintId}/columns
 include::{snippets}/constraint-add-column/http-request.adoc[]
 include::{snippets}/constraint-add-column/path-parameters.adoc[]
 include::{snippets}/constraint-add-column/request-headers.adoc[]
+include::{snippets}/constraint-add-column/request-fields.adoc[]
 include::{snippets}/constraint-add-column/curl-request.adoc[]
 
 [discrete]
@@ -1674,7 +1758,7 @@ include::{snippets}/constraint-add-column/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/constraints/{constraintId}/columns/{constraintColumnId}
+DELETE /api/v1.0/constraints/{constraintId}/columns/{columnId}
 ----
 
 [discrete]
@@ -1683,6 +1767,7 @@ DELETE /api/v1.0/constraints/{constraintId}/columns/{constraintColumnId}
 include::{snippets}/constraint-remove-column/http-request.adoc[]
 include::{snippets}/constraint-remove-column/path-parameters.adoc[]
 include::{snippets}/constraint-remove-column/request-headers.adoc[]
+include::{snippets}/constraint-remove-column/request-fields.adoc[]
 include::{snippets}/constraint-remove-column/curl-request.adoc[]
 
 [discrete]
@@ -1714,6 +1799,7 @@ DELETE /api/v1.0/constraints/{constraintId}
 include::{snippets}/constraint-delete/http-request.adoc[]
 include::{snippets}/constraint-delete/path-parameters.adoc[]
 include::{snippets}/constraint-delete/request-headers.adoc[]
+include::{snippets}/constraint-delete/request-fields.adoc[]
 include::{snippets}/constraint-delete/curl-request.adoc[]
 
 [discrete]
@@ -1746,6 +1832,7 @@ POST /api/v1.0/indexes
 
 include::{snippets}/index-create/http-request.adoc[]
 include::{snippets}/index-create/request-headers.adoc[]
+include::{snippets}/index-create/request-fields.adoc[]
 include::{snippets}/index-create/curl-request.adoc[]
 
 [discrete]
@@ -1808,6 +1895,7 @@ PUT /api/v1.0/indexes/{indexId}/name
 include::{snippets}/index-update-name/http-request.adoc[]
 include::{snippets}/index-update-name/path-parameters.adoc[]
 include::{snippets}/index-update-name/request-headers.adoc[]
+include::{snippets}/index-update-name/request-fields.adoc[]
 include::{snippets}/index-update-name/curl-request.adoc[]
 
 [discrete]
@@ -1821,6 +1909,38 @@ include::{snippets}/index-update-name/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/index-update-name/response-fields.adoc[]
+
+---
+
+==== Index 타입 변경
+
+인덱스 타입을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/indexes/{indexId}/type
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-update-type/http-request.adoc[]
+include::{snippets}/index-update-type/path-parameters.adoc[]
+include::{snippets}/index-update-type/request-headers.adoc[]
+include::{snippets}/index-update-type/request-fields.adoc[]
+include::{snippets}/index-update-type/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-update-type/response-headers.adoc[]
+include::{snippets}/index-update-type/response-body.adoc[]
+include::{snippets}/index-update-type/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-update-type/response-fields.adoc[]
 
 ---
 
@@ -1839,6 +1959,7 @@ POST /api/v1.0/indexes/{indexId}/columns
 include::{snippets}/index-add-column/http-request.adoc[]
 include::{snippets}/index-add-column/path-parameters.adoc[]
 include::{snippets}/index-add-column/request-headers.adoc[]
+include::{snippets}/index-add-column/request-fields.adoc[]
 include::{snippets}/index-add-column/curl-request.adoc[]
 
 [discrete]
@@ -1852,6 +1973,38 @@ include::{snippets}/index-add-column/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/index-add-column/response-fields.adoc[]
+
+---
+
+==== Index 컬럼 정렬 방향 변경
+
+인덱스 컬럼의 정렬 방향을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/indexes/{indexId}/columns/{indexColumnId}/sort-dir
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-column-update-sort-dir/http-request.adoc[]
+include::{snippets}/index-column-update-sort-dir/path-parameters.adoc[]
+include::{snippets}/index-column-update-sort-dir/request-headers.adoc[]
+include::{snippets}/index-column-update-sort-dir/request-fields.adoc[]
+include::{snippets}/index-column-update-sort-dir/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-column-update-sort-dir/response-headers.adoc[]
+include::{snippets}/index-column-update-sort-dir/response-body.adoc[]
+include::{snippets}/index-column-update-sort-dir/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-column-update-sort-dir/response-fields.adoc[]
 
 ---
 
@@ -1870,6 +2023,7 @@ DELETE /api/v1.0/indexes/{indexId}/columns/{indexColumnId}
 include::{snippets}/index-remove-column/http-request.adoc[]
 include::{snippets}/index-remove-column/path-parameters.adoc[]
 include::{snippets}/index-remove-column/request-headers.adoc[]
+include::{snippets}/index-remove-column/request-fields.adoc[]
 include::{snippets}/index-remove-column/curl-request.adoc[]
 
 [discrete]
@@ -1901,6 +2055,7 @@ DELETE /api/v1.0/indexes/{indexId}
 include::{snippets}/index-delete/http-request.adoc[]
 include::{snippets}/index-delete/path-parameters.adoc[]
 include::{snippets}/index-delete/request-headers.adoc[]
+include::{snippets}/index-delete/request-fields.adoc[]
 include::{snippets}/index-delete/curl-request.adoc[]
 
 [discrete]
@@ -1933,6 +2088,7 @@ POST /api/v1.0/memos
 
 include::{snippets}/memo-create/http-request.adoc[]
 include::{snippets}/memo-create/request-headers.adoc[]
+include::{snippets}/memo-create/request-fields.adoc[]
 include::{snippets}/memo-create/curl-request.adoc[]
 
 [discrete]
@@ -2026,6 +2182,7 @@ PUT /api/v1.0/memos/{memoId}
 include::{snippets}/memo-update/http-request.adoc[]
 include::{snippets}/memo-update/request-headers.adoc[]
 include::{snippets}/memo-update/path-parameters.adoc[]
+include::{snippets}/memo-update/request-fields.adoc[]
 include::{snippets}/memo-update/curl-request.adoc[]
 
 [discrete]
@@ -2088,6 +2245,7 @@ POST /api/v1.0/memos/{memoId}/comments
 include::{snippets}/memo-comment-create/http-request.adoc[]
 include::{snippets}/memo-comment-create/request-headers.adoc[]
 include::{snippets}/memo-comment-create/path-parameters.adoc[]
+include::{snippets}/memo-comment-create/request-fields.adoc[]
 include::{snippets}/memo-comment-create/curl-request.adoc[]
 
 [discrete]
@@ -2150,6 +2308,7 @@ PUT /api/v1.0/memos/{memoId}/comments/{commentId}
 include::{snippets}/memo-comment-update/http-request.adoc[]
 include::{snippets}/memo-comment-update/request-headers.adoc[]
 include::{snippets}/memo-comment-update/path-parameters.adoc[]
+include::{snippets}/memo-comment-update/request-fields.adoc[]
 include::{snippets}/memo-comment-update/curl-request.adoc[]
 
 [discrete]
@@ -2213,12 +2372,14 @@ POST /public/api/v1.0/users/signup
 
 include::{snippets}/user-signup/http-request.adoc[]
 include::{snippets}/user-signup/request-fields.adoc[]
+include::{snippets}/user-signup/curl-request.adoc[]
 
 [discrete]
 ==== 응답
 
-include::{snippets}/user-signup/http-response.adoc[]
 include::{snippets}/user-signup/response-headers.adoc[]
+include::{snippets}/user-signup/response-body.adoc[]
+include::{snippets}/user-signup/http-response.adoc[]
 include::{snippets}/user-signup/response-fields.adoc[]
 
 ---
@@ -2237,12 +2398,14 @@ POST /public/api/v1.0/users/login
 
 include::{snippets}/user-login/http-request.adoc[]
 include::{snippets}/user-login/request-fields.adoc[]
+include::{snippets}/user-login/curl-request.adoc[]
 
 [discrete]
 ==== 응답
 
-include::{snippets}/user-login/http-response.adoc[]
 include::{snippets}/user-login/response-headers.adoc[]
+include::{snippets}/user-login/response-body.adoc[]
+include::{snippets}/user-login/http-response.adoc[]
 include::{snippets}/user-login/response-fields.adoc[]
 
 ---
@@ -2261,12 +2424,14 @@ GET /public/api/v1.0/users
 
 include::{snippets}/user-get-me/http-request.adoc[]
 include::{snippets}/user-get-me/request-headers.adoc[]
+include::{snippets}/user-get-me/curl-request.adoc[]
 
 [discrete]
 ==== 응답
 
-include::{snippets}/user-get-me/http-response.adoc[]
 include::{snippets}/user-get-me/response-headers.adoc[]
+include::{snippets}/user-get-me/response-body.adoc[]
+include::{snippets}/user-get-me/http-response.adoc[]
 include::{snippets}/user-get-me/response-fields.adoc[]
 
 ---
@@ -2286,12 +2451,14 @@ GET /public/api/v1.0/users/{userId}
 include::{snippets}/user-get/http-request.adoc[]
 include::{snippets}/user-get/path-parameters.adoc[]
 include::{snippets}/user-get/request-headers.adoc[]
+include::{snippets}/user-get/curl-request.adoc[]
 
 [discrete]
 ==== 응답
 
-include::{snippets}/user-get/http-response.adoc[]
 include::{snippets}/user-get/response-headers.adoc[]
+include::{snippets}/user-get/response-body.adoc[]
+include::{snippets}/user-get/http-response.adoc[]
 include::{snippets}/user-get/response-fields.adoc[]
 
 ---
@@ -2310,12 +2477,14 @@ POST /public/api/v1.0/users/refresh
 
 include::{snippets}/user-refresh/http-request.adoc[]
 include::{snippets}/user-refresh/request-cookies.adoc[]
+include::{snippets}/user-refresh/curl-request.adoc[]
 
 [discrete]
 ==== 응답
 
-include::{snippets}/user-refresh/http-response.adoc[]
 include::{snippets}/user-refresh/response-headers.adoc[]
+include::{snippets}/user-refresh/response-body.adoc[]
+include::{snippets}/user-refresh/http-response.adoc[]
 include::{snippets}/user-refresh/response-fields.adoc[]
 
 ---
@@ -2351,4 +2520,3 @@ API 호출이 실패한 경우 다음과 같은 형식으로 에러 응답을 �
 |`INTERNAL_ERROR`
 |서버 내부 오류
 |===
-

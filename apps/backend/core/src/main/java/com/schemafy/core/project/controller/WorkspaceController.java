@@ -109,7 +109,8 @@ public class WorkspaceController {
             @PathVariable String memberId,
             Authentication authentication) {
         String requesterId = authentication.getName();
-        return workspaceService.removeMember(workspaceId, memberId, requesterId);
+        return workspaceService.removeMember(workspaceId, memberId,
+                requesterId);
     }
 
     @DeleteMapping("/workspaces/{workspaceId}/members/me")

@@ -31,6 +31,8 @@ jwt:
   refresh-token-expiration: 604800000
   issuer: schemafy-test
   audience: schemafy-test-audience
+  cookie:
+    secure: true
 
 cors:
   allowed-origins: ${JWT_ALLOWED_ORIGINS:http://localhost:3000}

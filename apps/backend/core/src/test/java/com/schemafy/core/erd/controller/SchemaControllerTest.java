@@ -38,6 +38,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -121,6 +122,7 @@ class SchemaControllerTest {
                                                 "relationshipColumns": {},
                                                 "propagated": {
                                                     "columns": [],
+                                                    "relationshipColumns": [],
                                                     "constraintColumns": [],
                                                     "indexColumns": []
                                                 }
@@ -153,6 +155,21 @@ class SchemaControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schema.id")
+                                        .description("스키마 ID (FE ID)"),
+                                fieldWithPath("schema.projectId")
+                                        .description("프로젝트 ID"),
+                                fieldWithPath("schema.dbVendorId")
+                                        .description("데이터베이스 벤더 ID"),
+                                fieldWithPath("schema.name")
+                                        .description("스키마 이름"),
+                                fieldWithPath("schema.charset")
+                                        .description("문자 집합"),
+                                fieldWithPath("schema.collation")
+                                        .description("정렬 규칙")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -183,6 +200,9 @@ class SchemaControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
@@ -361,6 +381,13 @@ class SchemaControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("변경할 스키마 ID"),
+                                fieldWithPath("newName")
+                                        .description("새 스키마 이름")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -464,6 +491,11 @@ class SchemaControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("삭제할 스키마 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -582,7 +614,10 @@ class SchemaControllerTest {
                         {
                             "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "authorId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                            "author": {
+                                "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                                "name": "testuser"
+                            },
                             "positions": "{}",
                             "createdAt": "2025-11-23T10:00:00Z",
                             "updatedAt": "2025-11-23T10:00:00Z"
@@ -619,8 +654,12 @@ class SchemaControllerTest {
                                         .description("메모 ID"),
                                 fieldWithPath("result[].schemaId")
                                         .description("스키마 ID"),
-                                fieldWithPath("result[].authorId")
+                                fieldWithPath("result[].author")
+                                        .description("작성자 정보"),
+                                fieldWithPath("result[].author.id")
                                         .description("작성자 ID"),
+                                fieldWithPath("result[].author.name")
+                                        .description("작성자 이름"),
                                 fieldWithPath("result[].positions")
                                         .description("메모 위치"),
                                 fieldWithPath("result[].createdAt")

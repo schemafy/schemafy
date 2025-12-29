@@ -4,6 +4,15 @@ spring:
   application:
     name: core
 
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+
+  data:
+    redis:
+      enabled: false
+
   sql:
     init:
       schema-locations: classpath:ddl/h2/**/*.sql
@@ -18,16 +27,6 @@ spring:
       initial-size: 5
       max-size: 20
 
-jwt:
-  secret: my-super-secret-key-for-jwt-token-generation-min-256-bits-required
-  access-token-expiration: 7200000
-  refresh-token-expiration: 604800000
-  issuer: schemafy-test
-  audience: schemafy-test-audience
-
-cors:
-  allowed-origins: http://localhost:3000
-
   security:
     user:
       name: test
@@ -36,6 +35,18 @@ cors:
   output:
     ansi:
       enabled: always
+
+jwt:
+  secret: my-super-secret-key-for-jwt-token-generation-min-256-bits-required
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+  issuer: schemafy-test
+  audience: schemafy-test-audience
+  cookie:
+    secure: false
+
+cors:
+  allowed-origins: http://localhost:3000
 
 cache:
   type: CAFFEINE

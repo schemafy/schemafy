@@ -1,5 +1,7 @@
 package com.schemafy.core.project.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,8 +34,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -333,32 +333,37 @@ class WorkspaceServiceTest {
         void addMember_ConcurrentDuplicateUser_OnlyOneSucceeds() {
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
             User newUser = User.signUp(
-                    new UserInfo("concurrent@test.com", "Concurrent User", "password"),
+                    new UserInfo("concurrent@test.com", "Concurrent User",
+                            "password"),
                     encoder).flatMap(userRepository::save).block();
 
             AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
                     newUser.getId(), WorkspaceRole.MEMBER);
 
             Mono<Long> resultMono = Flux.range(0, 30)
-                    .flatMap(i -> workspaceService.addMember(testWorkspace.getId(), request, adminUser.getId())
-                                    .subscribeOn(Schedulers.parallel()) // 각 요청을 별도 스레드에서 시작
-                                    .map(response -> 1) // 성공 시 1 반환
-                                    .onErrorResume(e -> {
-                                        // R2DBC에서 Unique Key 위반 시 DataIntegrityViolationException 발생
-                                        if (e instanceof DataIntegrityViolationException) {
-                                            return Mono.just(0); // 중복 에러는 '성공 횟수 0'으로 처리 (정상적인 방어)
-                                        }
+                    .flatMap(i -> workspaceService
+                            .addMember(testWorkspace.getId(), request,
+                                    adminUser.getId())
+                            .subscribeOn(Schedulers.parallel())
+                            .map(response -> 1) // 성공 시 1 반환
+                            .onErrorResume(e -> {
+                                // R2DBC에서 Unique Key 위반 시 DataIntegrityViolationException 발생
+                                if (e instanceof DataIntegrityViolationException) {
+                                    return Mono.just(0); // 중복 에러는 '성공 횟수 0'으로 처리 (정상적인 방어)
+                                }
 
-                                        if (e instanceof BusinessException &&
-                                                ((BusinessException) e).getErrorCode() == ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS) {
-                                            return Mono.just(0);
-                                        }
+                                if (e instanceof BusinessException &&
+                                        ((BusinessException) e)
+                                                .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS) {
+                                    return Mono.just(0);
+                                }
 
-                                        // 그 외 에러(NPE, Connection 등)는 테스트 실패로 간주해야 함
-                                        System.err.println("Unexpected error: " + e.getMessage());
-                                        return Mono.error(e);
-                                    }),
-                            10 // flatMap의 동시성 레벨 명시
+                                // 그 외 에러(NPE, Connection 등)는 테스트 실패로 간주해야 함
+                                System.err.println(
+                                        "Unexpected error: " + e.getMessage());
+                                return Mono.error(e);
+                            }),
+                            30 // flatMap의 동시성 레벨 명시
                     )
                     .reduce(0, Integer::sum)
                     .map(Long::valueOf);
@@ -400,36 +405,38 @@ class WorkspaceServiceTest {
                     .block();
             assertThat(count).isEqualTo(29L);
 
-            // 10명의 신규 유저를 동시에 추가 시도 (하나만 성공해야 함)
-            Flux<User> newUsers = Flux.range(0, 20)
+            // 30명의 신규 유저를 동시에 추가 시도 (하나만 성공해야 함)
+            Flux<User> newUsers = Flux.range(0, 30)
                     .flatMap(i -> User.signUp(
                             new UserInfo("race" + i + "@test.com",
                                     "Race " + i, "password"),
                             encoder)
                             .flatMap(userRepository::save),
-                            10);
+                            30);
 
             List<User> userList = newUsers.collectList().block();
 
-            Flux<WorkspaceMemberResponse> concurrentAdds = Flux.fromIterable(userList)
+            Flux<WorkspaceMemberResponse> concurrentAdds = Flux
+                    .fromIterable(userList)
                     .flatMap(user -> {
                         AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
                                 user.getId(), WorkspaceRole.MEMBER);
                         return workspaceService.addMember(
-                                testWorkspace.getId(), request, adminUser.getId())
+                                testWorkspace.getId(), request,
+                                adminUser.getId())
                                 .onErrorResume(error -> Mono.empty());
                     }, 50);
 
             Long successCount = concurrentAdds.count().block();
 
-            // 최대 1개만 성공해야 함 (30명 제한)
-            assertThat(successCount).isLessThanOrEqualTo(1L);
+            // 1개만 성공해야 함 (30명 제한)
+            assertThat(successCount).isEqualTo(1L);
 
             // 최종 멤버 수가 30명을 초과하지 않아야 함
             Long finalCount = workspaceMemberRepository
                     .countByWorkspaceIdAndNotDeleted(testWorkspace.getId())
                     .block();
-            assertThat(finalCount).isLessThanOrEqualTo(30L);
+            assertThat(finalCount).isEqualTo(30L);
         }
 
         @Test
@@ -438,7 +445,8 @@ class WorkspaceServiceTest {
             // 멤버를 추가하고 삭제
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
             User newUser = User.signUp(
-                    new UserInfo("reactivate@test.com", "Reactivate User", "password"),
+                    new UserInfo("reactivate@test.com", "Reactivate User",
+                            "password"),
                     encoder).flatMap(userRepository::save).block();
 
             AddWorkspaceMemberRequest addRequest = new AddWorkspaceMemberRequest(
@@ -446,17 +454,20 @@ class WorkspaceServiceTest {
 
             // 멤버 추가
             WorkspaceMemberResponse added = workspaceService.addMember(
-                    testWorkspace.getId(), addRequest, adminUser.getId()).block();
+                    testWorkspace.getId(), addRequest, adminUser.getId())
+                    .block();
             assertThat(added).isNotNull();
 
             // 멤버 삭제
             workspaceService.removeMember(
-                    testWorkspace.getId(), added.id(), adminUser.getId()).block();
+                    testWorkspace.getId(), added.id(), adminUser.getId())
+                    .block();
 
             // 삭제 확인
             Boolean existsAfterDelete = workspaceMemberRepository
                     .existsByWorkspaceIdAndUserIdAndNotDeleted(
-                            testWorkspace.getId(), newUser.getId()).block();
+                            testWorkspace.getId(), newUser.getId())
+                    .block();
             assertThat(existsAfterDelete).isFalse();
 
             // 동일 멤버 재초대
@@ -464,17 +475,20 @@ class WorkspaceServiceTest {
                     newUser.getId(), WorkspaceRole.ADMIN); // 다른 role로 재초대
 
             WorkspaceMemberResponse readded = workspaceService.addMember(
-                    testWorkspace.getId(), readdRequest, adminUser.getId()).block();
+                    testWorkspace.getId(), readdRequest, adminUser.getId())
+                    .block();
 
             // 재활성화 성공
             assertThat(readded).isNotNull();
             assertThat(readded.userId()).isEqualTo(newUser.getId());
-            assertThat(readded.role()).isEqualTo(WorkspaceRole.ADMIN.getValue());
+            assertThat(readded.role())
+                    .isEqualTo(WorkspaceRole.ADMIN.getValue());
 
             // 활성 멤버로 존재 확인
             Boolean existsAfterReadd = workspaceMemberRepository
                     .existsByWorkspaceIdAndUserIdAndNotDeleted(
-                            testWorkspace.getId(), newUser.getId()).block();
+                            testWorkspace.getId(), newUser.getId())
+                    .block();
             assertThat(existsAfterReadd).isTrue();
         }
 

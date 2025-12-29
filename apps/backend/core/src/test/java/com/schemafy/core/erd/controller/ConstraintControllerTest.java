@@ -34,6 +34,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -129,15 +130,15 @@ class ConstraintControllerTest {
                             },
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
                             "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                            "constraint": {
-                                "id": "06D5XSF8RRRKMCHVNX68TDX1K4",
-                                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                "name": "PK",
-                                "type": "PRIMARY_KEY",
-                                "columns": [
-                                    {
-                                        "id": "06D5XST4N38Z9QANKMEDMCXAYG",
-                                        "constraintId": "06D5XSF8RRRKMCHVNX68TDX1K4",
+                             "constraint": {
+                                 "id": "06D5XSF8RRRKMCHVNX68TDX1K4",
+                                 "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                 "name": "PK",
+                                 "kind": "PRIMARY_KEY",
+                                 "columns": [
+                                     {
+                                         "id": "06D5XST4N38Z9QANKMEDMCXAYG",
+                                         "constraintId": "06D5XSF8RRRKMCHVNX68TDX1K4",
                                         "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                         "seqNo": 1
                                     }
@@ -191,6 +192,28 @@ class ConstraintControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("constraint.id")
+                                        .description("제약조건 ID (FE ID)"),
+                                fieldWithPath("constraint.tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("constraint.name")
+                                        .description("제약조건 이름"),
+                                fieldWithPath("constraint.kind")
+                                        .type(JsonFieldType.STRING)
+                                        .description("제약조건 타입"),
+                                fieldWithPath("constraint.columns")
+                                        .description("제약조건 컬럼 목록"),
+                                fieldWithPath("constraint.columns[].columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("constraint.columns[].seqNo")
+                                        .description("순서 번호")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -229,6 +252,9 @@ class ConstraintControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
@@ -425,6 +451,17 @@ class ConstraintControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("constraintId")
+                                        .description("변경할 제약조건 ID"),
+                                fieldWithPath("newName")
+                                        .description("새 제약조건 이름")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -579,6 +616,23 @@ class ConstraintControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("constraintId")
+                                        .description("제약조건 ID"),
+                                fieldWithPath("constraintColumn.id")
+                                        .description("제약조건 컬럼 ID (FE ID)"),
+                                fieldWithPath("constraintColumn.constraintId")
+                                        .description("제약조건 ID"),
+                                fieldWithPath("constraintColumn.columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("constraintColumn.seqNo")
+                                        .description("순서 번호")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -618,6 +672,9 @@ class ConstraintControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
@@ -743,6 +800,17 @@ class ConstraintControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("constraintId")
+                                        .description("제약조건 ID"),
+                                fieldWithPath("constraintColumnId")
+                                        .description("삭제할 제약조건 컬럼 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -847,6 +915,15 @@ class ConstraintControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("constraintId")
+                                        .description("삭제할 제약조건 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),

@@ -19,6 +19,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
+import com.schemafy.core.erd.controller.dto.request.UpdateTableExtraRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
@@ -37,12 +38,15 @@ import reactor.core.publisher.Mono;
 import validation.Validation;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -148,6 +152,7 @@ class TableControllerTest {
                                                 "relationshipColumns": {},
                                                 "propagated": {
                                                     "columns": [],
+                                                    "relationshipColumns": [],
                                                     "constraintColumns": [],
                                                     "indexColumns": []
                                                 }
@@ -179,6 +184,21 @@ class TableControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("table.id")
+                                        .description("테이블 ID (FE ID)"),
+                                fieldWithPath("table.schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("table.name")
+                                        .description("테이블 이름"),
+                                fieldWithPath("table.comment")
+                                        .description("테이블 설명"),
+                                fieldWithPath("table.tableOptions")
+                                        .description("테이블 옵션")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -210,6 +230,9 @@ class TableControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
@@ -402,6 +425,15 @@ class TableControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("변경할 테이블 ID"),
+                                fieldWithPath("newName")
+                                        .description("새 테이블 이름")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -416,6 +448,92 @@ class TableControllerTest {
                                         .description("스키마 ID"),
                                 fieldWithPath("result.name")
                                         .description("변경된 테이블 이름"),
+                                fieldWithPath("result.comment")
+                                        .description("테이블 설명"),
+                                fieldWithPath("result.tableOptions")
+                                        .description("테이블 옵션"),
+                                fieldWithPath("result.extra")
+                                        .description("추가 정보"),
+                                fieldWithPath("result.createdAt")
+                                        .description("생성 일시"),
+                                fieldWithPath("result.updatedAt")
+                                        .description("수정 일시"))));
+    }
+
+    @Test
+    @DisplayName("테이블 추가 정보 변경 API 문서화")
+    void updateTableExtra() throws Exception {
+        String tableId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+        String extra = """
+                {"uiColor":"blue"}
+                """;
+
+        UpdateTableExtraRequest request = new UpdateTableExtraRequest(extra);
+
+        TableResponse mockResponse = objectMapper.treeToValue(
+                objectMapper
+                        .readTree(
+                                """
+                                        {
+                                            "success": true,
+                                            "result": {
+                                                "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "extra": "{\\"uiColor\\":\\"blue\\"}",
+                                                "createdAt": "2025-11-10T13:48:01Z",
+                                                "updatedAt": "2025-11-10T14:15:08.399530Z"
+                                            }
+                                        }
+                                        """)
+                        .get("result"),
+                TableResponse.class);
+
+        given(tableService.updateTableExtra(eq(tableId), eq(extra)))
+                .willReturn(Mono.just(mockResponse));
+
+        webTestClient.put()
+                .uri(API_BASE_PATH + "/tables/{tableId}/extra", tableId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo("06D6W1GAHD51T5NJPK29Q6BCR8")
+                .jsonPath("$.result.extra").isEqualTo("{\"uiColor\":\"blue\"}")
+                .consumeWith(document("table-update-extra",
+                        pathParameters(
+                                parameterWithName("tableId")
+                                        .description("테이블 ID")),
+                        requestHeaders(
+                                headerWithName("Content-Type")
+                                        .description(
+                                                "요청 본문 타입 (application/json)"),
+                                headerWithName("Accept")
+                                        .description(
+                                                "응답 포맷 (application/json)")),
+                        requestFields(
+                                fieldWithPath("extra")
+                                        .type(JsonFieldType.STRING)
+                                        .description("추가 정보(JSON 문자열)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("수정된 테이블 정보"),
+                                fieldWithPath("result.id")
+                                        .description("테이블 ID"),
+                                fieldWithPath("result.schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("result.name")
+                                        .description("테이블 이름"),
                                 fieldWithPath("result.comment")
                                         .description("테이블 설명"),
                                 fieldWithPath("result.tableOptions")
@@ -495,6 +613,13 @@ class TableControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("삭제할 테이블 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),

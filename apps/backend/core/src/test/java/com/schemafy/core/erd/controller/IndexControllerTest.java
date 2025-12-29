@@ -18,6 +18,8 @@ import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexColumnSortDirRequest;
+import com.schemafy.core.erd.controller.dto.request.UpdateIndexTypeRequest;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
@@ -32,6 +34,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -165,6 +168,7 @@ class IndexControllerTest {
                     "relationshipColumns": {},
                     "propagated": {
                         "columns": [],
+                        "relationshipColumns": [],
                         "constraintColumns": [],
                         "indexColumns": []
                     }
@@ -199,6 +203,29 @@ class IndexControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("index.id")
+                                        .description("인덱스 ID (FE ID)"),
+                                fieldWithPath("index.tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("index.name")
+                                        .description("인덱스 이름"),
+                                fieldWithPath("index.type")
+                                        .description("인덱스 타입"),
+                                fieldWithPath("index.columns")
+                                        .description("인덱스 컬럼 목록"),
+                                fieldWithPath("index.columns[].columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("index.columns[].seqNo")
+                                        .description("순서 번호"),
+                                fieldWithPath("index.columns[].sortDir")
+                                        .description("정렬 방향 (ASC/DESC)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -233,6 +260,9 @@ class IndexControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
@@ -437,6 +467,17 @@ class IndexControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("indexId")
+                                        .description("변경할 인덱스 ID"),
+                                fieldWithPath("newName")
+                                        .description("새 인덱스 이름")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -453,6 +494,74 @@ class IndexControllerTest {
                                         .description("변경된 인덱스 이름"),
                                 fieldWithPath("result.type")
                                         .description("인덱스 타입"),
+                                fieldWithPath("result.comment")
+                                        .description("인덱스 설명"),
+                                fieldWithPath("result.columns")
+                                        .description("인덱스 컬럼 목록"))));
+    }
+
+    @Test
+    @DisplayName("인덱스 타입 변경 API 문서화")
+    void updateIndexType() throws Exception {
+        String indexId = "06D6WNJS8XWZT41HWZ226ZS904";
+        UpdateIndexTypeRequest request = new UpdateIndexTypeRequest("HASH");
+
+        String mockResponseJson = """
+                {
+                    "id": "06D6WNJS8XWZT41HWZ226ZS904",
+                    "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "name": "IDX1",
+                    "type": "HASH",
+                    "comment": "",
+                    "columns": []
+                }
+                """;
+
+        when(indexService.updateIndexType(any(String.class),
+                any(UpdateIndexTypeRequest.class)))
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        IndexResponse.class)));
+
+        webTestClient.put()
+                .uri(API_BASE_PATH + "/indexes/{indexId}/type", indexId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo(indexId)
+                .jsonPath("$.result.type").isEqualTo("HASH")
+                .consumeWith(document("index-update-type",
+                        pathParameters(
+                                parameterWithName("indexId")
+                                        .description("인덱스 ID")),
+                        requestHeaders(
+                                headerWithName("Content-Type")
+                                        .description("요청 본문 타입"),
+                                headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("type")
+                                        .type(JsonFieldType.STRING)
+                                        .description(
+                                                "변경할 인덱스 타입 (BTREE, HASH, FULLTEXT, SPATIAL, OTHER)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("수정된 인덱스 정보"),
+                                fieldWithPath("result.id")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("result.tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("result.name")
+                                        .description("인덱스 이름"),
+                                fieldWithPath("result.type")
+                                        .description("변경된 인덱스 타입"),
                                 fieldWithPath("result.comment")
                                         .description("인덱스 설명"),
                                 fieldWithPath("result.columns")
@@ -588,6 +697,23 @@ class IndexControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("indexColumn.indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("indexColumn.columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("indexColumn.seqNo")
+                                        .description("순서 번호"),
+                                fieldWithPath("indexColumn.sortDir")
+                                        .description("정렬 방향 (ASC/DESC)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -606,6 +732,78 @@ class IndexControllerTest {
                                         .description("순서 번호"),
                                 fieldWithPath("result.sortDir")
                                         .description("정렬 방향 (ASC, DESC)"))));
+    }
+
+    @Test
+    @DisplayName("인덱스 컬럼 정렬 방향 변경 API 문서화")
+    void updateIndexColumnSortDir() throws Exception {
+        String indexId = "06D6WNJS8XWZT41HWZ226ZS904";
+        String indexColumnId = "06D6WPTT2EJ7S1CJATWGEYPNS4";
+        UpdateIndexColumnSortDirRequest request = new UpdateIndexColumnSortDirRequest(
+                "DESC");
+
+        String mockResponseJson = """
+                {
+                    "id": "06D6WPTT2EJ7S1CJATWGEYPNS4",
+                    "indexId": "06D6WNJS8XWZT41HWZ226ZS904",
+                    "columnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                    "seqNo": 1,
+                    "sortDir": "DESC"
+                }
+                """;
+
+        when(indexService.updateIndexColumnSortDir(any(String.class),
+                any(String.class), any(UpdateIndexColumnSortDirRequest.class)))
+                .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
+                        IndexColumnResponse.class)));
+
+        webTestClient.put()
+                .uri(API_BASE_PATH
+                        + "/indexes/{indexId}/columns/{indexColumnId}/sort-dir",
+                        indexId, indexColumnId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo(indexColumnId)
+                .jsonPath("$.result.sortDir").isEqualTo("DESC")
+                .consumeWith(document("index-column-update-sort-dir",
+                        pathParameters(
+                                parameterWithName("indexId")
+                                        .description("인덱스 ID"),
+                                parameterWithName("indexColumnId")
+                                        .description("인덱스 컬럼 ID")),
+                        requestHeaders(
+                                headerWithName("Content-Type")
+                                        .description("요청 본문 타입"),
+                                headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("sortDir")
+                                        .type(JsonFieldType.STRING)
+                                        .description(
+                                                "변경할 정렬 방향 (ASC/DESC)")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("수정된 인덱스 컬럼 정보"),
+                                fieldWithPath("result.id")
+                                        .description("인덱스 컬럼 ID"),
+                                fieldWithPath("result.indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("result.columnId")
+                                        .description("컬럼 ID"),
+                                fieldWithPath("result.seqNo")
+                                        .description("순서 번호"),
+                                fieldWithPath("result.sortDir")
+                                        .description(
+                                                "정렬 방향 (ASC, DESC)"))));
     }
 
     @Test
@@ -725,6 +923,17 @@ class IndexControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("indexId")
+                                        .description("인덱스 ID"),
+                                fieldWithPath("indexColumnId")
+                                        .description("삭제할 인덱스 컬럼 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -839,6 +1048,15 @@ class IndexControllerTest {
                                 headerWithName("Content-Type")
                                         .description("요청 본문 타입"),
                                 headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("indexId")
+                                        .description("삭제할 인덱스 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),

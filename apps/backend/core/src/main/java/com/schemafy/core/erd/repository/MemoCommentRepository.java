@@ -14,7 +14,7 @@ public interface MemoCommentRepository
 
     Mono<MemoComment> findByIdAndDeletedAtIsNull(String id);
 
-    Flux<MemoComment> findByMemoIdAndDeletedAtIsNullOrderByCreatedAtAscIdAsc(
+    Flux<MemoComment> findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
             String memoId);
 
 }

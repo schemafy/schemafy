@@ -32,6 +32,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
@@ -142,6 +143,7 @@ class ColumnControllerTest {
                                                 "relationshipColumns": {},
                                                 "propagated": {
                                                     "columns": [],
+                                                    "relationshipColumns": [],
                                                     "constraintColumns": [],
                                                     "indexColumns": []
                                                 }
@@ -175,6 +177,35 @@ class ColumnControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("column.id")
+                                        .description("컬럼 ID (FE ID)"),
+                                fieldWithPath("column.tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("column.name")
+                                        .description("컬럼 이름"),
+                                fieldWithPath("column.dataType")
+                                        .description("데이터 타입"),
+                                fieldWithPath("column.ordinalPosition")
+                                        .description("컬럼 위치"),
+                                fieldWithPath("column.lengthScale")
+                                        .description("길이/스케일"),
+                                fieldWithPath("column.charset")
+                                        .description("문자 집합"),
+                                fieldWithPath("column.collation")
+                                        .description("정렬 규칙"),
+                                fieldWithPath("column.comment")
+                                        .description("컬럼 설명"),
+                                fieldWithPath("column.isAutoIncrement")
+                                        .type(JsonFieldType.BOOLEAN)
+                                        .optional()
+                                        .description("자동 증가 여부")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -207,6 +238,9 @@ class ColumnControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
@@ -406,6 +440,17 @@ class ColumnControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("columnId")
+                                        .description("변경할 컬럼 ID"),
+                                fieldWithPath("newName")
+                                        .description("새 컬럼 이름")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -545,6 +590,17 @@ class ColumnControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("columnId")
+                                        .description("변경할 컬럼 ID"),
+                                fieldWithPath("dataType")
+                                        .description("변경할 데이터 타입")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -684,6 +740,17 @@ class ColumnControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("columnId")
+                                        .description("변경할 컬럼 ID"),
+                                fieldWithPath("newPosition")
+                                        .description("변경할 컬럼 위치(1부터 시작)")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
@@ -795,6 +862,15 @@ class ColumnControllerTest {
                                 headerWithName("Accept")
                                         .description(
                                                 "응답 포맷 (application/json)")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("tableId")
+                                        .description("테이블 ID"),
+                                fieldWithPath("columnId")
+                                        .description("삭제할 컬럼 ID")),
                         responseHeaders(
                                 headerWithName("Content-Type")
                                         .description("응답 컨텐츠 타입")),
