@@ -6,31 +6,45 @@ import type { TableData, Point } from '../types';
 import { transformTableToNode } from '../utils/tableHelpers';
 import { generateUniqueName } from '../utils/nameGenerator';
 import * as tableService from '../services/table.service';
+import { useViewportContext } from '../contexts';
 
 export const useTables = () => {
   const erdStore = ErdStore.getInstance();
-
-  const getTablesFromStore = (): Node<TableData>[] => {
-    const selectedSchema = erdStore.selectedSchema;
-
-    if (!selectedSchema) return [];
-
-    return selectedSchema.tables.map((table) =>
-      transformTableToNode(table, selectedSchema.id),
-    );
-  };
-
-  const [tables, setTables] = useState<Node<TableData>[]>(getTablesFromStore());
+  const { selectedSchemaId } = useViewportContext();
+  const [tables, setTables] = useState<Node<TableData>[]>([]);
 
   useEffect(() => {
-    setTables(getTablesFromStore());
-  }, [erdStore.erdState, erdStore.selectedSchemaId]);
+    if (erdStore.erdState.state !== 'loaded' || !selectedSchemaId) {
+      setTables([]);
+      return;
+    }
+
+    const selectedSchema = erdStore.erdState.database.schemas.find(
+      (s) => s.id === selectedSchemaId,
+    );
+
+    if (!selectedSchema) {
+      setTables([]);
+      return;
+    }
+
+    const newTables = selectedSchema.tables.map((table) =>
+      transformTableToNode(table, selectedSchema.id),
+    );
+    setTables(newTables);
+  }, [erdStore.erdState, selectedSchemaId]);
 
   const addTable = async (position: Point) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    if (erdStore.erdState.state !== 'loaded' || !selectedSchemaId) {
+      toast.error('No schema selected');
+      return;
+    }
 
-    if (!selectedSchemaId || !selectedSchema) {
+    const selectedSchema = erdStore.erdState.database.schemas.find(
+      (s) => s.id === selectedSchemaId,
+    );
+
+    if (!selectedSchema) {
       toast.error('No schema selected');
       return;
     }
@@ -70,13 +84,9 @@ export const useTables = () => {
         if (!table) return;
 
         try {
-          await tableService.updateTableExtra(
-            table.data.schemaId,
-            change.id,
-            {
-              position: change.position,
-            },
-          );
+          await tableService.updateTableExtra(table.data.schemaId, change.id, {
+            position: change.position,
+          });
         } catch (error) {
           console.error('Failed to update table position:', error);
         }

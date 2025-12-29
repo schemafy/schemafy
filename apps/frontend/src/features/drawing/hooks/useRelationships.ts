@@ -16,21 +16,31 @@ import {
   findRelationshipInSchema,
 } from '../utils/relationshipHelpers';
 import * as relationshipService from '../services/relationship.service';
+import { useViewportContext } from '../contexts';
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const erdStore = ErdStore.getInstance();
+  const { selectedSchemaId } = useViewportContext();
   const [selectedRelationship, setSelectedRelationship] = useState<
     string | null
   >(null);
   const relationshipReconnectSuccessful = useRef(true);
+
+  const getSelectedSchema = () => {
+    if (erdStore.erdState.state !== 'loaded' || !selectedSchemaId) return null;
+    return (
+      erdStore.erdState.database.schemas.find(
+        (s) => s.id === selectedSchemaId,
+      ) || null
+    );
+  };
 
   const updateRelationshipControlPoint = async (
     relationshipId: string,
     controlPoint1: Point,
     controlPoint2?: Point,
   ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = getSelectedSchema();
 
     if (!selectedSchemaId || !selectedSchema) return;
 
@@ -67,7 +77,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const getRelationships = (): Edge[] => {
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = getSelectedSchema();
     if (!selectedSchema) return [];
 
     const edges = convertRelationshipsToEdges(selectedSchema);
@@ -88,17 +98,16 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   useEffect(() => {
     const dispose = autorun(() => {
       const state = erdStore.erdState;
-      if (state.state === 'loaded') {
+      if (state.state === 'loaded' && selectedSchemaId) {
         setRelationships(getRelationships());
       }
     });
 
     return () => dispose();
-  }, []);
+  }, [selectedSchemaId]);
 
   const onConnect = async (params: Connection) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = getSelectedSchema();
 
     if (
       !selectedSchemaId ||
@@ -142,7 +151,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const onRelationshipsChange = (changes: EdgeChange[]) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
     if (!selectedSchemaId) return;
 
     changes
@@ -175,8 +183,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     oldRelationship: Edge,
     newConnection: Connection,
   ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = getSelectedSchema();
 
     if (!selectedSchemaId || !selectedSchema) return;
 
@@ -223,8 +230,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     _: MouseEvent | TouchEvent,
     relationship: Edge,
   ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
     if (!selectedSchemaId) return;
 
     if (!relationshipReconnectSuccessful.current) {
@@ -245,8 +250,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipId: string,
     config: RelationshipConfig,
   ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = getSelectedSchema();
 
     if (!selectedSchemaId || !selectedSchema) {
       toast.error('No schema selected');
@@ -267,7 +271,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const newCardinality = typeConfig.cardinality;
 
     const kindChanged = currentRelationship.kind !== newKind;
-    const cardinalityChanged = currentRelationship.cardinality !== newCardinality;
+    const cardinalityChanged =
+      currentRelationship.cardinality !== newCardinality;
 
     try {
       if (kindChanged) {
@@ -290,8 +295,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const deleteRelationship = async (relationshipId: string) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
     if (!selectedSchemaId) {
       toast.error('No schema selected');
       return;
@@ -313,8 +316,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipId: string,
     newName: string,
   ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
     if (!selectedSchemaId) {
       toast.error('No schema selected');
       return;

@@ -9,9 +9,11 @@ import { SchemaInput } from './SchemaInput';
 import { SchemaListItem } from './SchemaListItem';
 import { useSchemaEditor } from '../hooks';
 import { validateSchemaName } from '../utils/validateSchemaName';
+import { useViewportContext } from '../contexts';
 
 export const SchemaSelector = observer(() => {
   const erdStore = ErdStore.getInstance();
+  const { selectedSchemaId, updateSelectedSchema } = useViewportContext();
   const [isAdding, setIsAdding] = useState(false);
   const [newSchemaName, setNewSchemaName] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -28,13 +30,12 @@ export const SchemaSelector = observer(() => {
   }
 
   const { database } = erdStore.erdState;
-  const selectedSchemaId = erdStore.selectedSchemaId;
   const selectedSchemaName =
     database.schemas.find((schema) => schema.id === selectedSchemaId)?.name ||
     '';
 
   const handleSchemaChange = (value: string) => {
-    erdStore.selectSchema(value);
+    updateSelectedSchema(value);
   };
 
   const handleAddSchema = async () => {
@@ -46,7 +47,7 @@ export const SchemaSelector = observer(() => {
 
     try {
       const newSchemaId = await schemaService.createSchema(trimmedName);
-      erdStore.selectSchema(newSchemaId);
+      updateSelectedSchema(newSchemaId);
 
       setNewSchemaName('');
       setIsAdding(false);
@@ -86,7 +87,7 @@ export const SchemaSelector = observer(() => {
     if (selectedSchemaId === schemaId) {
       const otherSchema = database.schemas.find((s) => s.id !== schemaId);
       if (otherSchema) {
-        erdStore.selectSchema(otherSchema.id);
+        updateSelectedSchema(otherSchema.id);
       }
     }
 

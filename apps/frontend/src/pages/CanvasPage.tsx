@@ -32,6 +32,7 @@ import {
   Memo,
   TempMemoPreview,
 } from '@/features/drawing';
+import { ViewportProvider } from '@/features/drawing/contexts';
 import { ApiTester } from '@/features/drawing/temp/ApiTester';
 import { ErdStore } from '@/store/erd.store';
 
@@ -44,7 +45,11 @@ const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
-const CanvasPageComponent = () => {
+interface CanvasPageContentProps {
+  handleMoveEnd: () => void;
+}
+
+const CanvasPageContent = ({ handleMoveEnd }: CanvasPageContentProps) => {
   const erdStore = ErdStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
 
@@ -59,8 +64,6 @@ const CanvasPageComponent = () => {
     flow: Point;
     screen: Point;
   } | null>(null);
-
-  const { handleMoveEnd } = useViewport();
 
   useEffect(() => {
     if (erdStore.erdState.state === 'idle') {
@@ -274,6 +277,22 @@ const CanvasPageComponent = () => {
       <FloatingButtons />
       <ApiTester />
     </>
+  );
+};
+
+const CanvasPageComponent = () => {
+  const { selectedSchemaId, updateSelectedSchema, handleMoveEnd } =
+    useViewport();
+
+  return (
+    <ViewportProvider
+      value={{
+        selectedSchemaId,
+        updateSelectedSchema,
+      }}
+    >
+      <CanvasPageContent handleMoveEnd={handleMoveEnd} />
+    </ViewportProvider>
   );
 };
 

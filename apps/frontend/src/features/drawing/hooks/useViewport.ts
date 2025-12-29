@@ -1,123 +1,135 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useReactFlow, type Viewport } from '@xyflow/react';
 import { ErdStore } from '@/store/erd.store';
 
-const SESSION_STORAGE_KEY = 'schemafy-viewport';
+const LOCAL_STORAGE_KEY = 'schemafy-viewport';
+
+type ViewportData = {
+  selectedSchema: string;
+  viewports: Record<string, Viewport>;
+};
+
+type ProjectViewports = Record<string, ViewportData>;
 
 export const useViewport = () => {
   const erdStore = ErdStore.getInstance();
   const { setViewport, getViewport } = useReactFlow();
-  const previousSchemaIdRef = useRef<string | null>(null);
+  const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
 
   useEffect(() => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    if (!selectedSchemaId) return;
+    if (erdStore.erdState.state !== 'loaded') return;
 
-    const sessionData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (sessionData) {
-      try {
-        const viewportData = JSON.parse(sessionData) as Record<
-          string,
-          Viewport
-        >;
-        const viewport = viewportData[selectedSchemaId];
-        if (viewport) {
-          setViewport(viewport, { duration: 0 });
+    const projectId = erdStore.erdState.database.id;
+    const schemas = erdStore.erdState.database.schemas;
+    if (schemas.length === 0) return;
+
+    try {
+      const storageData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (storageData) {
+        const allProjects = JSON.parse(storageData) as ProjectViewports;
+        const projectData = allProjects[projectId];
+        const storedSchemaId = projectData?.selectedSchema;
+        const schemaExists = schemas.some((s) => s.id === storedSchemaId);
+
+        if (storedSchemaId && schemaExists) {
+          setSelectedSchemaId(storedSchemaId);
           return;
         }
-      } catch (e) {
-        console.error('Failed to parse viewport from session storage', e);
       }
+    } catch (e) {
+      console.error('Failed to get stored selected schema', e);
     }
 
-    const selectedSchema = erdStore.selectedSchema;
-    if (!selectedSchema) return;
+    setSelectedSchemaId(schemas[0].id);
+  }, [erdStore.erdState]);
 
-    const extra = selectedSchema.extra as { viewport?: Viewport } | undefined;
-    if (extra?.viewport) {
-      setViewport(extra.viewport, { duration: 0 });
+  useEffect(() => {
+    if (erdStore.erdState.state !== 'loaded' || !selectedSchemaId) return;
+
+    const projectId = erdStore.erdState.database.id;
+
+    try {
+      const storageData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (!storageData) return;
+
+      const allProjects = JSON.parse(storageData) as ProjectViewports;
+      const projectData = allProjects[projectId];
+      if (!projectData) return;
+
+      const viewport = projectData.viewports[selectedSchemaId];
+      if (viewport) {
+        setViewport(viewport, { duration: 0 });
+      }
+    } catch (e) {
+      console.error('Failed to load viewport from localStorage', e);
     }
-  }, [erdStore.selectedSchemaId, erdStore.selectedSchema, setViewport]);
+  }, [selectedSchemaId, erdStore.erdState, setViewport]);
 
   const handleMoveEnd = useCallback(() => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    if (!selectedSchemaId) return;
+    if (erdStore.erdState.state !== 'loaded' || !selectedSchemaId) return;
 
+    const projectId = erdStore.erdState.database.id;
     const viewport = getViewport();
 
-    const sessionData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    let viewportData: Record<string, Viewport> = {};
-    if (sessionData) {
-      try {
-        viewportData = JSON.parse(sessionData);
-      } catch (e) {
-        console.error('Failed to parse viewport from session storage', e);
+    try {
+      const storageData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      let allProjects: ProjectViewports = {};
+
+      if (storageData) {
+        allProjects = JSON.parse(storageData);
       }
+
+      if (!allProjects[projectId]) {
+        allProjects[projectId] = {
+          selectedSchema: selectedSchemaId,
+          viewports: {},
+        };
+      }
+
+      allProjects[projectId].selectedSchema = selectedSchemaId;
+      allProjects[projectId].viewports[selectedSchemaId] = viewport;
+
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allProjects));
+    } catch (e) {
+      console.error('Failed to save viewport to localStorage', e);
     }
+  }, [selectedSchemaId, erdStore.erdState, getViewport]);
 
-    viewportData[selectedSchemaId] = viewport;
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(viewportData));
-  }, [erdStore.selectedSchemaId, getViewport]);
-
-  const saveViewportToStore = useCallback(
+  const updateSelectedSchema = useCallback(
     (schemaId: string) => {
-      const sessionData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-      if (!sessionData) return;
+      if (erdStore.erdState.state !== 'loaded') return;
+
+      const projectId = erdStore.erdState.database.id;
+      setSelectedSchemaId(schemaId);
 
       try {
-        const viewportData = JSON.parse(sessionData) as Record<
-          string,
-          Viewport
-        >;
-        const viewport = viewportData[schemaId];
-        if (!viewport) return;
+        const storageData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        let allProjects: ProjectViewports = {};
 
-        const schema =
-          erdStore.erdState.state === 'loaded'
-            ? erdStore.erdState.database.schemas.find((s) => s.id === schemaId)
-            : null;
-
-        if (schema) {
-          const currentExtra =
-            (schema.extra as { viewport?: Viewport } | undefined) || {};
-          erdStore.updateSchemaExtra(schemaId, {
-            ...currentExtra,
-            viewport,
-          });
+        if (storageData) {
+          allProjects = JSON.parse(storageData);
         }
+
+        if (!allProjects[projectId]) {
+          allProjects[projectId] = {
+            selectedSchema: schemaId,
+            viewports: {},
+          };
+        } else {
+          allProjects[projectId].selectedSchema = schemaId;
+        }
+
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allProjects));
       } catch (e) {
-        console.error('Failed to save viewport to erdStore', e);
+        console.error('Failed to update selected schema', e);
       }
     },
-    [erdStore],
+    [erdStore.erdState],
   );
 
-  useEffect(() => {
-    const currentSchemaId = erdStore.selectedSchemaId;
-    const previousSchemaId = previousSchemaIdRef.current;
-
-    if (previousSchemaId && previousSchemaId !== currentSchemaId) {
-      saveViewportToStore(previousSchemaId);
-    }
-
-    previousSchemaIdRef.current = currentSchemaId;
-  }, [erdStore.selectedSchemaId, saveViewportToStore]);
-
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      const selectedSchemaId = erdStore.selectedSchemaId;
-      if (selectedSchemaId) {
-        saveViewportToStore(selectedSchemaId);
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [erdStore, saveViewportToStore]);
-
   return {
+    selectedSchemaId,
+    updateSelectedSchema,
     handleMoveEnd,
   };
 };
