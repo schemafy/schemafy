@@ -1,6 +1,8 @@
 back-end:
   - changed-files:
-      - any-glob-to-any-file: "apps/backend/**"
+      - any-glob-to-any-file:
+          - "apps/backend/**"
+          - "apps/validation-server/**"
 
 front-end:
   - changed-files:
