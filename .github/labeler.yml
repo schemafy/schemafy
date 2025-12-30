@@ -1,0 +1,14 @@
+back-end:
+  - changed-files:
+      - any-glob-to-any-file: "apps/backend/**"
+
+front-end:
+  - changed-files:
+      - any-glob-to-any-file: "apps/frontend/**"
+
+shared:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**"
+          - "!apps/backend/**"
+          - "!apps/frontend/**"
