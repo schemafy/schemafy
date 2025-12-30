@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS share_links (
     CONSTRAINT ck_share_links_role CHECK (role IN ('viewer','commenter','editor')),
     INDEX idx_share_links_project_active (project_id, deleted_at),
     INDEX idx_share_links_expires_at (expires_at),
-    CONSTRAINT fk_share_links_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS share_link_access_logs (
@@ -28,5 +27,4 @@ CREATE TABLE IF NOT EXISTS share_link_access_logs (
     CONSTRAINT pk_share_link_access_logs PRIMARY KEY (id),
     INDEX idx_access_logs_link_time (share_link_id, accessed_at DESC),
     INDEX idx_access_logs_user_id (user_id),
-    CONSTRAINT fk_access_logs_share_link FOREIGN KEY (share_link_id) REFERENCES share_links(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
