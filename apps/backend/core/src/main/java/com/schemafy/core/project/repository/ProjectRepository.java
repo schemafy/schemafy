@@ -19,9 +19,6 @@ public interface ProjectRepository
     @Query("SELECT * FROM projects WHERE workspace_id = :workspaceId AND deleted_at IS NULL")
     Flux<Project> findByWorkspaceIdAndNotDeleted(String workspaceId);
 
-    @Query("SELECT * FROM projects WHERE owner_id = :ownerId AND deleted_at IS NULL")
-    Flux<Project> findByOwnerIdAndNotDeleted(String ownerId);
-
     @Query("SELECT COUNT(*) FROM projects WHERE workspace_id = :workspaceId AND deleted_at IS NULL")
     Mono<Long> countByWorkspaceIdAndNotDeleted(String workspaceId);
 

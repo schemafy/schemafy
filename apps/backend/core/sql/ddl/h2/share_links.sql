@@ -27,4 +27,3 @@ CREATE TABLE IF NOT EXISTS share_link_access_logs (
     CONSTRAINT pk_share_link_access_logs PRIMARY KEY (id)
     );
 CREATE INDEX IF NOT EXISTS idx_access_logs_link_time ON share_link_access_logs(share_link_id, accessed_at);
-CREATE INDEX IF NOT EXISTS idx_access_logs_user_id ON share_link_access_logs(user_id);

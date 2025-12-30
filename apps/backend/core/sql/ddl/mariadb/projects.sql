@@ -8,8 +8,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMP    NULL,
     CONSTRAINT pk_workspaces PRIMARY KEY (id),
-    INDEX idx_workspaces_owner_id (owner_id),
-    INDEX idx_workspaces_deleted_at (deleted_at)
+    INDEX idx_workspaces_owner_deleted (owner_id, deleted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS workspace_members (
@@ -22,10 +21,8 @@ CREATE TABLE IF NOT EXISTS workspace_members (
     deleted_at  TIMESTAMP    NULL,
     CONSTRAINT pk_workspace_members PRIMARY KEY (id),
     CONSTRAINT uq_workspace_members_workspace_user UNIQUE (workspace_id, user_id),
-    INDEX idx_workspace_members_user_id (user_id),
-    INDEX idx_workspace_members_workspace_id (workspace_id),
     INDEX idx_workspace_members_user_deleted (user_id, deleted_at),
-    INDEX idx_workspace_members_deleted_at (deleted_at),
+    INDEX idx_workspace_members_workspace_deleted (workspace_id, deleted_at),
     CONSTRAINT ck_workspace_members_role CHECK (role IN ('admin','member'))
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -39,8 +36,7 @@ CREATE TABLE IF NOT EXISTS projects (
     updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at   TIMESTAMP    NULL,
     CONSTRAINT pk_projects PRIMARY KEY (id),
-    INDEX idx_projects_workspace_id (workspace_id),
-    INDEX idx_projects_deleted_at (deleted_at)
+    INDEX idx_projects_workspace_deleted (workspace_id, deleted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS project_members (
@@ -54,9 +50,7 @@ CREATE TABLE IF NOT EXISTS project_members (
     deleted_at TIMESTAMP   NULL,
     CONSTRAINT pk_project_members PRIMARY KEY (id),
     CONSTRAINT uq_project_members_project_user UNIQUE (project_id, user_id),
-    INDEX idx_project_members_user_id (user_id),
-    INDEX idx_project_members_project_id (project_id),
     INDEX idx_project_members_user_deleted (user_id, deleted_at),
-    INDEX idx_project_members_deleted_at (deleted_at),
+    INDEX idx_project_members_project_deleted (project_id, deleted_at),
     CONSTRAINT ck_project_members_role CHECK (role IN ('owner','admin','editor','viewer', 'commenter'))
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

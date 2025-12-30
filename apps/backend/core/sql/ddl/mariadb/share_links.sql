@@ -25,6 +25,5 @@ CREATE TABLE IF NOT EXISTS share_link_access_logs (
     user_agent    VARCHAR(500) NULL,
     accessed_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_share_link_access_logs PRIMARY KEY (id),
-    INDEX idx_access_logs_link_time (share_link_id, accessed_at DESC),
-    INDEX idx_access_logs_user_id (user_id),
+    INDEX idx_access_logs_link_time (share_link_id, accessed_at DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

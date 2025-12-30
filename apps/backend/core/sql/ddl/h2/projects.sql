@@ -9,8 +9,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     deleted_at  TIMESTAMP    NULL,
     CONSTRAINT pk_workspaces PRIMARY KEY (id)
     );
-CREATE INDEX IF NOT EXISTS idx_workspaces_owner_id ON workspaces(owner_id);
-CREATE INDEX IF NOT EXISTS idx_workspaces_deleted_at ON workspaces(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_workspaces_owner_deleted ON workspaces(owner_id, deleted_at);
 
 CREATE TABLE IF NOT EXISTS workspace_members (
     id           CHAR(26)     NOT NULL,
@@ -24,9 +23,8 @@ CREATE TABLE IF NOT EXISTS workspace_members (
     CONSTRAINT uq_workspace_members_workspace_user UNIQUE (workspace_id, user_id),
     CONSTRAINT ck_workspace_members_role CHECK (role IN ('admin','member'))
     );
-CREATE INDEX IF NOT EXISTS idx_workspace_members_user_id ON workspace_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_workspace_members_workspace_id ON workspace_members(workspace_id);
-CREATE INDEX IF NOT EXISTS idx_workspace_members_deleted_at ON workspace_members(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_workspace_members_user_deleted ON workspace_members(user_id, deleted_at);
+CREATE INDEX IF NOT EXISTS idx_workspace_members_workspace_deleted ON workspace_members(workspace_id, deleted_at);
 
 CREATE TABLE IF NOT EXISTS projects (
     id           CHAR(26)     NOT NULL,
@@ -39,8 +37,7 @@ CREATE TABLE IF NOT EXISTS projects (
     deleted_at   TIMESTAMP    NULL,
     CONSTRAINT pk_projects PRIMARY KEY (id)
     );
-CREATE INDEX IF NOT EXISTS idx_projects_workspace_id ON projects(workspace_id);
-CREATE INDEX IF NOT EXISTS idx_projects_deleted_at ON projects(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_projects_workspace_deleted ON projects(workspace_id, deleted_at);
 
 CREATE TABLE IF NOT EXISTS project_members (
     id         CHAR(26)    NOT NULL,
@@ -56,6 +53,5 @@ CREATE TABLE IF NOT EXISTS project_members (
     CONSTRAINT ck_project_members_role CHECK (role IN ('owner','admin','editor','viewer', 'commenter'))
     );
 
-CREATE INDEX IF NOT EXISTS idx_project_members_user_id ON project_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_project_members_project_id ON project_members(project_id);
-CREATE INDEX IF NOT EXISTS idx_project_members_deleted_at ON project_members(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_project_members_user_deleted ON project_members(user_id, deleted_at);
+CREATE INDEX IF NOT EXISTS idx_project_members_project_deleted ON project_members(project_id, deleted_at);
