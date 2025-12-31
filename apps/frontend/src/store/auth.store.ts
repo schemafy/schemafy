@@ -6,7 +6,8 @@ export class AuthStore {
 
   accessToken: string | null = null;
   user: AuthResponse | null = null;
-  isAuthLoading: boolean = true;
+  isAuthLoading: boolean = false;
+  isInitialized: boolean = false;
 
   private constructor() {
     makeAutoObservable(this);
@@ -29,6 +30,10 @@ export class AuthStore {
 
   setAuthLoading(value: boolean) {
     this.isAuthLoading = value;
+  }
+
+  setInitialized(value: boolean) {
+    this.isInitialized = value;
   }
 
   clearAccessToken() {

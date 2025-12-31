@@ -7,27 +7,20 @@ import { AuthStore } from '@/store/auth.store';
 import { useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 
-export const Header = observer(
-  ({ isCanvasPage }: { isCanvasPage: boolean }) => {
-    const authStore = AuthStore.getInstance();
-    // isAuthLoading is primitive, so destructuring removes reactivity?
-    // No, properties are getters/setters in MobX.
-    // Accessing authStore.isAuthLoading inside useMemo/render is safer.
+export const Header = observer(({ isCanvasPage }: { isCanvasPage: boolean }) => {
+  const authStore = AuthStore.getInstance();
 
-    const contents = useMemo(() => {
-      if (isCanvasPage) return <CanvasContents />;
-      if (authStore.isAuthLoading)
-        return (
-          <div className="h-5 w-5 border-2 border-schemafy-light-gray border-t-black rounded-full animate-spin" />
-        );
-      if (authStore.accessToken && authStore.user) return <UserMenu />;
-      return <LandingContents />;
-    }, [
-      isCanvasPage,
-      authStore.isAuthLoading,
-      authStore.accessToken,
-      authStore.user,
-    ]);
+  const { isAuthLoading, accessToken, user, isInitialized } = authStore;
+
+  const contents = useMemo(() => {
+    if (isCanvasPage) return <CanvasContents />;
+    if (isAuthLoading || !isInitialized)
+      return (
+        <div className="h-5 w-5 border-2 border-schemafy-light-gray border-t-black rounded-full animate-spin" />
+      );
+    if (accessToken && user) return <UserMenu />;
+    return <LandingContents />;
+  }, [isCanvasPage, isAuthLoading, accessToken, user, isInitialized]);
 
     return (
       <header className="w-full border-b border-schemafy-light-gray flex justify-center sticky">

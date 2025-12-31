@@ -8,6 +8,7 @@ import type {
   CreateMemoCommentRequest,
   UpdateMemoCommentRequest,
 } from '@/lib/api/memo/types';
+import type { ApiResponse } from '@/lib/api/types';
 
 type MemosBySchema = Record<string, Memo[]>;
 type CommentsByMemo = Record<string, MemoComment[]>;
@@ -17,7 +18,9 @@ export class MemoStore {
 
   memosBySchema: MemosBySchema = {};
   commentsByMemo: CommentsByMemo = {};
-  isLoading: boolean = false;
+  
+  private _loadingStates: Record<string, boolean> = {};
+  
   error: string | null = null;
 
   private constructor() {
@@ -31,15 +34,55 @@ export class MemoStore {
     return MemoStore.instance;
   }
 
+  isLoading(operation: string): boolean {
+    return !!this._loadingStates[operation];
+  }
+
+  private async handleAsync<T>(
+    operation: string,
+    apiCall: () => Promise<ApiResponse<T>>,
+    onSuccess: (result: T) => void,
+    defaultErrorMessage: string,
+  ): Promise<{ success: boolean; data: T | null }> {
+    this._loadingStates[operation] = true;
+    this.error = null;
+
+    try {
+      const res = await apiCall();
+      if (!res.success) {
+        runInAction(() => {
+          this.error = res.error?.message ?? defaultErrorMessage;
+          this._loadingStates[operation] = false;
+        });
+        return { success: false, data: null };
+      }
+
+      runInAction(() => {
+        // Safe to call onSuccess inside runInAction as it modifies state
+        onSuccess(res.result as T);
+        this._loadingStates[operation] = false;
+      });
+
+      return { success: true, data: res.result as T };
+    } catch (e) {
+      runInAction(() => {
+        this.error = e instanceof Error ? e.message : defaultErrorMessage;
+        this._loadingStates[operation] = false;
+      });
+      return { success: false, data: null };
+    }
+  }
+
   async fetchSchemaMemos(schemaId: string) {
-    this.isLoading = true;
+    // 복합적으로 처리되는 함수이기에 handleAsync를 사용할 수 없음
+    this._loadingStates['fetchSchemaMemos'] = true;
     this.error = null;
     try {
       const res = await memoApi.getSchemaMemos(schemaId);
       if (!res.success || !res.result) {
         runInAction(() => {
           this.error = res.error?.message ?? 'Failed to fetch memos';
-          this.isLoading = false;
+          this._loadingStates['fetchSchemaMemos'] = false;
         });
         return;
       }
@@ -71,40 +114,27 @@ export class MemoStore {
           ...this.commentsByMemo,
           ...newCommentsByMemo,
         };
-        this.isLoading = false;
+        this._loadingStates['fetchSchemaMemos'] = false;
       });
     } catch (e) {
       runInAction(() => {
-        this.isLoading = false;
+        this._loadingStates['fetchSchemaMemos'] = false;
         this.error = e instanceof Error ? e.message : 'Failed to fetch memos';
       });
     }
   }
 
   async createMemo(data: CreateMemoRequest): Promise<Memo | null> {
-    this.error = null;
-    try {
-      const res = await memoApi.createMemo(data);
-      if (!res.success || !res.result) {
-        runInAction(() => {
-          this.error = res.error?.message ?? 'Failed to create memo';
-          this.isLoading = false;
-        });
-        return null;
-      }
-      const memo = res.result;
-      runInAction(() => {
+    const { data: memo } = await this.handleAsync(
+      'createMemo',
+      () => memoApi.createMemo(data),
+      (memo) => {
         const list = this.memosBySchema[data.schemaId] ?? [];
         this.memosBySchema[data.schemaId] = [memo, ...list];
-      });
-      return memo;
-    } catch (e) {
-      runInAction(() => {
-        this.error = e instanceof Error ? e.message : 'Failed to create memo';
-        this.isLoading = false;
-      });
-      return null;
-    }
+      },
+      'Failed to create memo',
+    );
+    return memo;
   }
 
   async updateMemo(
@@ -112,19 +142,10 @@ export class MemoStore {
     data: UpdateMemoRequest,
     schemaId?: string,
   ): Promise<Memo | null> {
-    this.error = null;
-    try {
-      const res = await memoApi.updateMemo(memoId, data);
-      if (!res.success || !res.result) {
-        runInAction(() => {
-          this.error = res.error?.message ?? 'Failed to update memo';
-          this.isLoading = false;
-        });
-        return null;
-      }
-      const updated = res.result;
-
-      runInAction(() => {
+    const { data: updated } = await this.handleAsync(
+      'updateMemo',
+      () => memoApi.updateMemo(memoId, data),
+      (updated) => {
         const memoKeys = Object.keys(this.memosBySchema);
         const effectiveSchemaId =
           schemaId ||
@@ -138,86 +159,49 @@ export class MemoStore {
             m.id === memoId ? updated : m,
           );
         }
-      });
-      return updated;
-    } catch (e) {
-      runInAction(() => {
-        this.error = e instanceof Error ? e.message : 'Failed to update memo';
-        this.isLoading = false;
-      });
-      return null;
-    }
+      },
+      'Failed to update memo',
+    );
+    return updated;
   }
 
   async deleteMemo(memoId: string, schemaId: string): Promise<boolean> {
-    this.error = null;
-    try {
-      const res = await memoApi.deleteMemo(memoId);
-      if (!res.success) {
-        runInAction(() => {
-          this.error = res.error?.message ?? 'Failed to delete memo';
-          this.isLoading = false;
-        });
-        return false;
-      }
-      runInAction(() => {
+    const { success } = await this.handleAsync(
+      'deleteMemo',
+      () => memoApi.deleteMemo(memoId),
+      () => {
         const list = this.memosBySchema[schemaId] ?? [];
         this.memosBySchema[schemaId] = list.filter((m) => m.id !== memoId);
+
 
         const nextCommentsByMemo = { ...this.commentsByMemo };
         delete nextCommentsByMemo[memoId];
         this.commentsByMemo = nextCommentsByMemo;
-      });
-      return true;
-    } catch (e) {
-      runInAction(() => {
-        this.error = e instanceof Error ? e.message : 'Failed to delete memo';
-        this.isLoading = false;
-      });
-      return false;
-    }
+      },
+      'Failed to delete memo',
+    );
+    return success;
   }
 
   async fetchMemoComments(memoId: string) {
-    this.error = null;
-    try {
-      const res = await memoApi.getMemoComments(memoId);
-      if (!res.success || !res.result) {
-        runInAction(() => {
-          this.error = res.error?.message ?? 'Failed to fetch comments';
-          this.isLoading = false;
-        });
-        return;
-      }
-      runInAction(() => {
-        this.commentsByMemo[memoId] = res.result!;
-      });
-    } catch (e) {
-      runInAction(() => {
-        this.error =
-          e instanceof Error ? e.message : 'Failed to fetch comments';
-        this.isLoading = false;
-      });
-    }
+    await this.handleAsync(
+      'fetchMemoComments',
+      () => memoApi.getMemoComments(memoId),
+      (comments) => {
+        this.commentsByMemo[memoId] = comments;
+      },
+      'Failed to fetch comments'
+    );
   }
 
   async createMemoComment(
     memoId: string,
     data: CreateMemoCommentRequest,
   ): Promise<MemoComment | null> {
-    this.error = null;
-    try {
-      const res = await memoApi.createMemoComment(memoId, data);
-      if (!res.success || !res.result) {
-        runInAction(() => {
-          this.error = res.error?.message ?? 'Failed to create comment';
-          this.isLoading = false;
-        });
-        return null;
-      }
-      const comment = res.result;
-
-      runInAction(() => {
+    const { data: comment } = await this.handleAsync(
+      'createMemoComment',
+      () => memoApi.createMemoComment(memoId, data),
+      (comment) => {
         const list = this.commentsByMemo[memoId] ?? [];
         this.commentsByMemo[memoId] = [...list, comment];
 
@@ -233,16 +217,10 @@ export class MemoStore {
               : m,
           );
         }
-      });
-      return comment;
-    } catch (e) {
-      runInAction(() => {
-        this.error =
-          e instanceof Error ? e.message : 'Failed to create comment';
-        this.isLoading = false;
-      });
-      return null;
-    }
+      },
+      'Failed to create comment',
+    );
+    return comment;
   }
 
   async updateMemoComment(
@@ -250,19 +228,10 @@ export class MemoStore {
     commentId: string,
     data: UpdateMemoCommentRequest,
   ): Promise<MemoComment | null> {
-    this.error = null;
-    try {
-      const res = await memoApi.updateMemoComment(memoId, commentId, data);
-      if (!res.success || !res.result) {
-        runInAction(() => {
-          this.error = res.error?.message ?? 'Failed to update comment';
-          this.isLoading = false;
-        });
-        return null;
-      }
-      const updated = res.result;
-
-      runInAction(() => {
+    const { data: updated } = await this.handleAsync(
+      'updateMemoComment',
+      () => memoApi.updateMemoComment(memoId, commentId, data),
+      (updated) => {
         const list = this.commentsByMemo[memoId] ?? [];
         this.commentsByMemo[memoId] = list.map((c) =>
           c.id === commentId ? updated : c,
@@ -285,31 +254,17 @@ export class MemoStore {
               : m,
           );
         }
-      });
-      return updated;
-    } catch (e) {
-      runInAction(() => {
-        this.error =
-          e instanceof Error ? e.message : 'Failed to update comment';
-        this.isLoading = false;
-      });
-      return null;
-    }
+      },
+      'Failed to update comment',
+    );
+    return updated;
   }
 
   async deleteMemoComment(memoId: string, commentId: string): Promise<boolean> {
-    this.error = null;
-    try {
-      const res = await memoApi.deleteMemoComment(memoId, commentId);
-      if (!res.success) {
-        runInAction(() => {
-          this.error = res.error?.message ?? 'Failed to delete comment';
-          this.isLoading = false;
-        });
-        return false;
-      }
-
-      runInAction(() => {
+    const { success } = await this.handleAsync(
+      'deleteMemoComment',
+      () => memoApi.deleteMemoComment(memoId, commentId),
+      () => {
         const list = this.commentsByMemo[memoId] ?? [];
         this.commentsByMemo[memoId] = list.filter((c) => c.id !== commentId);
 
@@ -331,16 +286,10 @@ export class MemoStore {
             return acc;
           }, [] as Memo[]);
         }
-      });
-      return true;
-    } catch (e) {
-      runInAction(() => {
-        this.error =
-          e instanceof Error ? e.message : 'Failed to delete comment';
-        this.isLoading = false;
-      });
-      return false;
-    }
+      },
+      'Failed to delete comment',
+    );
+    return success;
   }
 
   clearError() {

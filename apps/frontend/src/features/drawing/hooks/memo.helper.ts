@@ -1,10 +1,16 @@
 import { type Node } from '@xyflow/react';
 import type { Memo as ApiMemo } from '@/lib/api/memo';
+import { z } from 'zod';
 
 export interface MemoData extends Record<string, unknown> {
   content: string;
   comments: ApiMemo['comments'];
 }
+
+const PositionSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+});
 
 export const safeParsePosition = (
   positions: string,
@@ -12,13 +18,9 @@ export const safeParsePosition = (
   if (!positions) return { x: 0, y: 0 };
   try {
     const parsed = JSON.parse(positions);
-    if (
-      parsed &&
-      typeof parsed === 'object' &&
-      typeof parsed.x === 'number' &&
-      typeof parsed.y === 'number'
-    ) {
-      return { x: parsed.x, y: parsed.y };
+    const result = PositionSchema.safeParse(parsed);
+    if (result.success) {
+      return result.data;
     }
   } catch {
     console.error('Failed to parse positions');

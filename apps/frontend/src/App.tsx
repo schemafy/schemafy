@@ -28,6 +28,7 @@ function App() {
         authStore.clearAuth();
       } finally {
         authStore.setAuthLoading(false);
+        authStore.setInitialized(true);
       }
     };
     bootstrapAuth();
