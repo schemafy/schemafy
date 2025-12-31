@@ -18,9 +18,9 @@ export class MemoStore {
 
   memosBySchema: MemosBySchema = {};
   commentsByMemo: CommentsByMemo = {};
-  
+
   private _loadingStates: Record<string, boolean> = {};
-  
+
   error: string | null = null;
 
   private constructor() {
@@ -173,7 +173,6 @@ export class MemoStore {
         const list = this.memosBySchema[schemaId] ?? [];
         this.memosBySchema[schemaId] = list.filter((m) => m.id !== memoId);
 
-
         const nextCommentsByMemo = { ...this.commentsByMemo };
         delete nextCommentsByMemo[memoId];
         this.commentsByMemo = nextCommentsByMemo;
@@ -190,7 +189,7 @@ export class MemoStore {
       (comments) => {
         this.commentsByMemo[memoId] = comments;
       },
-      'Failed to fetch comments'
+      'Failed to fetch comments',
     );
   }
 
