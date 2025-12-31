@@ -118,7 +118,16 @@ export const constraintHandlers: ConstraintHandlers = {
             isAffected: true,
             constraints: [
               ...t.constraints,
-              { ...constraint, isAffected: true, tableId },
+              {
+                ...constraint,
+                tableId,
+                isAffected: true,
+                columns: constraint.columns.map((column) => ({
+                  ...column,
+                  constraintId: constraint.id,
+                  isAffected: true,
+                })),
+              },
             ],
           }
         : { ...t, isAffected: true },

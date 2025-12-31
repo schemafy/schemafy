@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -9,7 +10,6 @@ import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.ColumnRepository;
-import com.schemafy.core.erd.repository.entity.Column;
 import com.schemafy.core.validation.client.ValidationClient;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +23,8 @@ public class ColumnService {
 
     private final ValidationClient validationClient;
     private final ColumnRepository columnRepository;
+    private final AffectedEntitiesSoftDeleter affectedEntitiesSoftDeleter;
+    private final TransactionalOperator transactionalOperator;
 
     public Mono<AffectedMappingResponse> createColumn(
             Validation.CreateColumnRequest request) {
@@ -94,13 +96,24 @@ public class ColumnService {
     }
 
     public Mono<Void> deleteColumn(Validation.DeleteColumnRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_COLUMN_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient.deleteColumn(request))
-                .doOnNext(Column::delete)
-                .flatMap(columnRepository::save)
+                .flatMap(column -> validationClient.deleteColumn(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(column)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(columnRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase)))))
                 .then();
     }
 

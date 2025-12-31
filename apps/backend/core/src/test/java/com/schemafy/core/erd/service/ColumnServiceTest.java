@@ -309,9 +309,45 @@ class ColumnServiceTest {
                         .build())
                 .block();
 
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setSchemaId("schema-1")
+                                .setName("table")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(saved.getId())
+                                        .setTableId("table-1")
+                                        .setName("to_delete")
+                                        .setOrdinalPosition(1)
+                                        .setDataType("VARCHAR(255)")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database afterDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setSchemaId("schema-1")
+                                .setName("table")
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient
+                .deleteColumn(any(Validation.DeleteColumnRequest.class)))
+                .willReturn(Mono.just(afterDatabase));
+
         StepVerifier.create(columnService.deleteColumn(
                 Validation.DeleteColumnRequest.newBuilder()
                         .setColumnId(saved.getId())
+                        .setDatabase(beforeDatabase)
                         .build()))
                 .verifyComplete();
 
