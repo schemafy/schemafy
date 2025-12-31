@@ -2,7 +2,7 @@ import { useStore } from '@xyflow/react';
 import { useState } from 'react';
 import { Avatar } from '@/components';
 import { cn, formatDate } from '@/lib';
-import { CircleCheck, MoveUp, Trash, X } from 'lucide-react';
+import { CircleCheck, MoveUp, Trash, X, Pencil } from 'lucide-react';
 import type { MemoData } from '../hooks/memo.helper';
 import type { MemoComment } from '@/lib/api/memo/types';
 import type { Point } from '../types';
@@ -21,14 +21,36 @@ interface MemoPreviewProps {
 const ReplyItem = ({
   comment,
   onDelete,
+  onUpdate,
 }: {
   comment: MemoComment;
   onDelete: () => void;
+  onUpdate: (newBody: string) => void;
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editInput, setEditInput] = useState(comment.body);
+
+  const handleSave = () => {
+    if (!editInput.trim()) return;
+    onUpdate(editInput.trim());
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === 'Enter') {
+      handleSave();
+    }
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditInput(comment.body);
+    }
+  };
+
   return (
     <li className="flex gap-2 text-schemafy-text group">
       <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
-      <div>
+      <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className="font-overline-sm">{comment.authorId}</span>
           <span className="font-body-xs text-schemafy-dark-gray">
@@ -36,14 +58,54 @@ const ReplyItem = ({
               new Date(comment.updatedAt ?? comment.createdAt ?? new Date()),
             )}
           </span>
-          <Trash
-            size={14}
-            color="var(--color-schemafy-dark-gray)"
-            onClick={onDelete}
-            className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-          />
+          {!isEditing && (
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Pencil
+                size={14}
+                color="var(--color-schemafy-dark-gray)"
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditInput(comment.body);
+                }}
+                className="cursor-pointer hover:text-schemafy-text"
+              />
+              <Trash
+                size={14}
+                color="var(--color-schemafy-dark-gray)"
+                onClick={onDelete}
+                className="cursor-pointer hover:text-red-500"
+              />
+            </div>
+          )}
         </div>
-        <p className="font-body-sm mt-1">{comment.body}</p>
+
+        {isEditing ? (
+          <div className="mt-1 flex flex-col gap-2">
+            <input
+              value={editInput}
+              onChange={(e) => setEditInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full bg-schemafy-secondary px-2 py-1 text-schemafy-text font-body-sm rounded outline-none border border-schemafy-blue"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setIsEditing(false)}
+                className="text-xs text-schemafy-dark-gray hover:text-schemafy-text"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="text-xs text-schemafy-blue hover:text-blue-400 font-medium"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="font-body-sm mt-1">{comment.body}</p>
+        )}
       </div>
     </li>
   );
@@ -75,6 +137,10 @@ export const Memo = observer(({ id, data }: MemoProps) => {
     if (!replyInput.trim()) return;
     await memoStore.createMemoComment(id, { body: replyInput.trim() });
     setReplyInput('');
+  };
+
+  const handleUpdateComment = async (commentId: string, newBody: string) => {
+    await memoStore.updateMemoComment(id, commentId, { body: newBody });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -140,6 +206,7 @@ export const Memo = observer(({ id, data }: MemoProps) => {
                 key={comment.id}
                 comment={comment}
                 onDelete={() => handleDeleteComment(comment.id)}
+                onUpdate={(newBody) => handleUpdateComment(comment.id, newBody)}
               />
             ))}
           </ul>
