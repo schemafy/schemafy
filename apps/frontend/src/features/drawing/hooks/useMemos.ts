@@ -14,20 +14,17 @@ export const useMemos = () => {
 
   const [memos, setMemos] = useState<Node<MemoData>[]>([]);
 
-  // MobX Store -> Local State Sync
   useEffect(() => {
     if (!schemaId) {
       setMemos([]);
       return;
     }
 
-    // Reactive sync using autorun
     const dispose = autorun(() => {
       const storeMemos = memoStore.memosBySchema[schemaId] ?? [];
       setMemos(storeMemos.map(transformApiMemoToNode));
     });
 
-    // Initial fetch
     memoStore.fetchSchemaMemos(schemaId).catch((error) => {
       console.error('Failed to fetch memos:', error);
     });
@@ -79,16 +76,9 @@ export const useMemos = () => {
     [schemaId, memoStore],
   );
 
-  // Deprecated handlers (comment actions) are moved to MemoNode internal logic with direct store access,
-  // but we can keep them here if needed for transitions or remove them.
-  // User asked to clean up the store usage, so let's stick to core logic.
-  // The previous refactoring removed createComment etc from CanvasPage usage.
-  // We can remove them from here too to keep it clean.
-
   return {
     memos,
     addMemo,
     onMemosChange,
-    // Provide additional helpers if needed, but Memo component uses store directly now.
   };
 };

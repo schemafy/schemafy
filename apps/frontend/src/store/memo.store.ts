@@ -58,7 +58,6 @@ export class MemoStore {
       }
 
       runInAction(() => {
-        // Safe to call onSuccess inside runInAction as it modifies state
         onSuccess(res.result as T);
         this._loadingStates[operation] = false;
       });
