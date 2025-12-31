@@ -1,13 +1,21 @@
 package com.schemafy.core.cache.service;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.cache.config.CacheType;
+import com.schemafy.core.cache.service.dto.CacheStatsDto;
 
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -15,6 +23,10 @@ class CacheRouterTest {
 
     @Autowired
     private CacheRouter cacheRouter;
+
+    @MockitoBean
+    @Qualifier("redisCacheService")
+    private CacheService redisCacheService;
 
     @Test
     void testPutAndGetWithCaffeine() {
@@ -29,10 +41,14 @@ class CacheRouterTest {
     }
 
     @Test
-    void testPutAndGetWithRedis_ShouldFallbackToCaffeine() {
-        // Redis is disabled in test, should fallback to Caffeine
+    void testPutAndGetWithRedis() {
         String key = "test-redis-key";
         String value = "test-redis-value";
+
+        // Mock Redis 동작
+        when(redisCacheService.put(anyString(), anyString()))
+                .thenReturn(Mono.empty());
+        when(redisCacheService.get(anyString())).thenReturn(Mono.just(value));
 
         StepVerifier.create(
                 cacheRouter.put(key, value, CacheType.REDIS)
@@ -70,6 +86,16 @@ class CacheRouterTest {
     void testGetStats() {
         StepVerifier.create(cacheRouter.getStats(CacheType.CAFFEINE))
                 .expectNextMatches(stats -> stats != null)
+                .verifyComplete();
+    }
+
+    @Test
+    void testGetStatsWithRedis() {
+        CacheStatsDto mockStats = new CacheStatsDto(100L, 10L, 0.9, 50L);
+        when(redisCacheService.getStats()).thenReturn(Mono.just(mockStats));
+
+        StepVerifier.create(cacheRouter.getStats(CacheType.REDIS))
+                .expectNext(mockStats)
                 .verifyComplete();
     }
 

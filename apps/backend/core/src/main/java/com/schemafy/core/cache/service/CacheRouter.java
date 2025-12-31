@@ -1,8 +1,6 @@
 package com.schemafy.core.cache.service;
 
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.cache.config.CacheType;
@@ -16,13 +14,13 @@ import reactor.core.publisher.Mono;
 public class CacheRouter {
 
     private final CacheService caffeineCacheService;
-    private final ObjectProvider<CacheService> redisCacheServiceProvider;
+    private final CacheService redisCacheService;
 
     public CacheRouter(
             CacheService caffeineCacheService,
-            @Lazy @Qualifier("redisCacheService") ObjectProvider<CacheService> redisCacheServiceProvider) {
+            @Qualifier("redisCacheService") CacheService redisCacheService) {
         this.caffeineCacheService = caffeineCacheService;
-        this.redisCacheServiceProvider = redisCacheServiceProvider;
+        this.redisCacheService = redisCacheService;
         log.info("CacheRouter initialized with Caffeine and Redis caches");
     }
 
@@ -49,8 +47,7 @@ public class CacheRouter {
     private CacheService selectCache(CacheType cacheType) {
         return switch (cacheType) {
         case CAFFEINE -> caffeineCacheService;
-        case REDIS -> redisCacheServiceProvider
-                .getIfAvailable(() -> caffeineCacheService);
+        case REDIS -> redisCacheService;
         };
     }
 
