@@ -140,6 +140,8 @@ public class AffectedEntitiesSaver {
             Set<String> excludedPropagatedIds = excludePropagatedEntityIds != null
                     ? excludePropagatedEntityIds
                     : Set.of();
+            boolean isPropagationContext = sourceId != null
+                    && sourceType != null;
 
             List<PropagatedColumn> propagatedColumns = new ArrayList<>();
             List<PropagatedRelationshipColumn> propagatedRelationshipColumns = new ArrayList<>();
@@ -285,11 +287,10 @@ public class AffectedEntitiesSaver {
                                             columnIdMap.put(column.getId(),
                                                     savedColumn.getId());
 
-                                            if (sourceId != null
-                                                    && sourceType != null
-                                                    && !excludedPropagatedIds
-                                                            .contains(
-                                                                    column.getId())) {
+                                            if (shouldTrackPropagation(
+                                                    isPropagationContext,
+                                                    excludedPropagatedIds,
+                                                    column.getId())) {
                                                 savedPropagatedColumns.add(
                                                         new SavedPropagatedColumn(
                                                                 savedColumn
@@ -304,7 +305,7 @@ public class AffectedEntitiesSaver {
 
             Mono<Void> populatePropagatedColumnsTask = saveColumnsTask.then(
                     Mono.fromRunnable(() -> {
-                        if (sourceId == null || sourceType == null) {
+                        if (!isPropagationContext) {
                             return;
                         }
 
@@ -354,11 +355,10 @@ public class AffectedEntitiesSaver {
                                                     constraint.getId(),
                                                     savedConstraint.getId());
 
-                                            if (sourceId != null
-                                                    && sourceType != null
-                                                    && !excludedPropagatedIds
-                                                            .contains(constraint
-                                                                    .getId())) {
+                                            if (shouldTrackPropagation(
+                                                    isPropagationContext,
+                                                    excludedPropagatedIds,
+                                                    constraint.getId())) {
                                                 propagatedConstraints
                                                         .add(new PropagatedConstraint(
                                                                 savedConstraint
@@ -415,12 +415,10 @@ public class AffectedEntitiesSaver {
                                             indexColumnIdMap.put(
                                                     indexColumn.getId(),
                                                     savedIndexColumn.getId());
-                                            if (sourceId != null
-                                                    && sourceType != null
-                                                    && !excludedPropagatedIds
-                                                            .contains(
-                                                                    indexColumn
-                                                                            .getId())) {
+                                            if (shouldTrackPropagation(
+                                                    isPropagationContext,
+                                                    excludedPropagatedIds,
+                                                    indexColumn.getId())) {
                                                 propagatedIndexColumns
                                                         .add(new PropagatedIndexColumn(
                                                                 savedIndexColumn
@@ -458,12 +456,10 @@ public class AffectedEntitiesSaver {
                                                     constraintColumn.getId(),
                                                     savedConstraintColumn
                                                             .getId());
-                                            if (sourceId != null
-                                                    && sourceType != null
-                                                    && !excludedPropagatedIds
-                                                            .contains(
-                                                                    constraintColumn
-                                                                            .getId())) {
+                                            if (shouldTrackPropagation(
+                                                    isPropagationContext,
+                                                    excludedPropagatedIds,
+                                                    constraintColumn.getId())) {
                                                 propagatedConstraintColumns
                                                         .add(new PropagatedConstraintColumn(
                                                                 savedConstraintColumn
@@ -511,12 +507,11 @@ public class AffectedEntitiesSaver {
                                                     relationshipColumn.getId(),
                                                     savedRelationshipColumn
                                                             .getId());
-                                            if (sourceId != null
-                                                    && sourceType != null
-                                                    && !excludedPropagatedIds
-                                                            .contains(
-                                                                    relationshipColumn
-                                                                            .getId())) {
+                                            if (shouldTrackPropagation(
+                                                    isPropagationContext,
+                                                    excludedPropagatedIds,
+                                                    relationshipColumn
+                                                            .getId())) {
                                                 propagatedRelationshipColumns
                                                         .add(new PropagatedRelationshipColumn(
                                                                 savedRelationshipColumn
@@ -569,6 +564,14 @@ public class AffectedEntitiesSaver {
             Map<String, String> idMap) {
         String mappedId = idMap.get(originalId);
         return mappedId != null ? mappedId : originalId;
+    }
+
+    private static boolean shouldTrackPropagation(
+            boolean isPropagationContext,
+            Set<String> excludedPropagatedIds,
+            String entityId) {
+        return isPropagationContext
+                && !excludedPropagatedIds.contains(entityId);
     }
 
     private Set<String> collectAllEntityIds(
@@ -654,15 +657,7 @@ public class AffectedEntitiesSaver {
 
             for (Validation.RelationshipColumn relationshipColumn : relationship
                     .getColumnsList()) {
-                if (relationshipColumn.getFkColumnId().isBlank()) {
-                    continue;
-                }
-
-                fkToRefMap.put(
-                        remapId(relationshipColumn.getFkColumnId(),
-                                columnIdMap),
-                        remapId(relationshipColumn.getRefColumnId(),
-                                columnIdMap));
+                addFkToRefMapping(fkToRefMap, relationshipColumn, columnIdMap);
             }
             return fkToRefMap;
         }
@@ -689,16 +684,8 @@ public class AffectedEntitiesSaver {
                                 continue;
                             }
 
-                            if (relationshipColumn.getFkColumnId().isBlank()) {
-                                continue;
-                            }
-
-                            fkToRefMap.put(remapId(
-                                    relationshipColumn.getFkColumnId(),
-                                    columnIdMap),
-                                    remapId(
-                                            relationshipColumn.getRefColumnId(),
-                                            columnIdMap));
+                            addFkToRefMapping(fkToRefMap, relationshipColumn,
+                                    columnIdMap);
                         }
                     }
                 }
@@ -706,6 +693,20 @@ public class AffectedEntitiesSaver {
         }
 
         return fkToRefMap;
+    }
+
+    private static void addFkToRefMapping(
+            Map<String, String> fkToRefMap,
+            Validation.RelationshipColumn relationshipColumn,
+            Map<String, String> columnIdMap) {
+        String fkColumnId = relationshipColumn.getFkColumnId();
+        if (fkColumnId.isBlank()) {
+            return;
+        }
+
+        fkToRefMap.put(
+                remapId(fkColumnId, columnIdMap),
+                remapId(relationshipColumn.getRefColumnId(), columnIdMap));
     }
 
     private static Validation.Relationship findRelationshipById(
