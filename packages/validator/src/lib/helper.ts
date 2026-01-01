@@ -702,12 +702,12 @@ export const deleteRelatedColumns = (
 
               const finalColumns =
                 constraint.kind === "PRIMARY_KEY"
-              ? remainingColumns.map((cc, index) => ({
-                  ...cc,
-                  seqNo: index,
-                  isAffected: true,
-                }))
-              : remainingColumns;
+                  ? remainingColumns.map((cc, index) => ({
+                      ...cc,
+                      seqNo: index,
+                      isAffected: true,
+                    }))
+                  : remainingColumns;
 
               return {
                 ...constraint,
