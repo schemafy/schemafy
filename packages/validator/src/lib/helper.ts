@@ -9,6 +9,74 @@ import type {
   Table,
 } from "..";
 
+export const detectIdentifyingCycleInSchema = (
+  schema: Schema,
+  pendingRelationshipChange?: { relationshipId: string; newKind: string },
+  newRelationship?: { srcTableId: string; tgtTableId: string; kind: string },
+): [Table["id"], Table["id"]] | null => {
+  const graph = new Map<string, string[]>();
+
+  for (const table of schema.tables) {
+    for (const rel of table.relationships) {
+      let effectiveKind = rel.kind;
+      if (
+        pendingRelationshipChange &&
+        rel.id === pendingRelationshipChange.relationshipId
+      ) {
+        effectiveKind = pendingRelationshipChange.newKind as typeof rel.kind;
+      }
+
+      if (effectiveKind !== "IDENTIFYING") continue;
+
+      if (!graph.has(rel.srcTableId)) {
+        graph.set(rel.srcTableId, []);
+      }
+      graph.get(rel.srcTableId)!.push(rel.tgtTableId);
+    }
+  }
+
+  if (newRelationship && newRelationship.kind === "IDENTIFYING") {
+    if (!graph.has(newRelationship.srcTableId)) {
+      graph.set(newRelationship.srcTableId, []);
+    }
+    graph.get(newRelationship.srcTableId)!.push(newRelationship.tgtTableId);
+  }
+
+  const visited = new Set<string>();
+  const recursionStack = new Set<string>();
+
+  const dfs = (
+    tableId: string,
+    path: string[],
+  ): [string, string] | null => {
+    if (recursionStack.has(tableId)) {
+      return [path[path.length - 1], tableId];
+    }
+    if (visited.has(tableId)) return null;
+
+    visited.add(tableId);
+    recursionStack.add(tableId);
+
+    const neighbors = graph.get(tableId) ?? [];
+    for (const neighbor of neighbors) {
+      const cycle = dfs(neighbor, [...path, tableId]);
+      if (cycle) return cycle;
+    }
+
+    recursionStack.delete(tableId);
+    return null;
+  };
+
+  for (const tableId of graph.keys()) {
+    if (!visited.has(tableId)) {
+      const cycle = dfs(tableId, []);
+      if (cycle) return cycle;
+    }
+  }
+
+  return null;
+};
+
 export const detectCircularReference = (
   schema: Schema,
   fromTableId: Table["id"],

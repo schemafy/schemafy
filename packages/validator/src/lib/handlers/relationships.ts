@@ -88,18 +88,19 @@ export const relationshipHandlers: RelationshipHandlers = {
         relationship.tgtTableId,
       );
 
-    if (
-      relationship.kind === "IDENTIFYING" &&
-      helper.detectCircularReference(
+    if (relationship.kind === "IDENTIFYING") {
+      const cycle = helper.detectIdentifyingCycleInSchema(
         schema,
-        relationship.tgtTableId,
-        relationship.srcTableId,
-      )
-    ) {
-      throw new RelationshipCyclicReferenceError(
-        relationship.tgtTableId,
-        relationship.srcTableId,
+        undefined,
+        {
+          srcTableId: relationship.srcTableId,
+          tgtTableId: relationship.tgtTableId,
+          kind: relationship.kind,
+        },
       );
+      if (cycle) {
+        throw new RelationshipCyclicReferenceError(cycle[0], cycle[1]);
+      }
     }
 
     const duplicateRelationship = sourceTable.relationships.find(
@@ -285,18 +286,14 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
-    if (
-      kind === "IDENTIFYING" &&
-      helper.detectCircularReference(
-        schema,
-        relationship.tgtTableId,
-        relationship.srcTableId,
-      )
-    ) {
-      throw new RelationshipCyclicReferenceError(
-        relationship.tgtTableId,
-        relationship.srcTableId,
-      );
+    if (kind === "IDENTIFYING") {
+      const cycle = helper.detectIdentifyingCycleInSchema(schema, {
+        relationshipId,
+        newKind: kind,
+      });
+      if (cycle) {
+        throw new RelationshipCyclicReferenceError(cycle[0], cycle[1]);
+      }
     }
 
     const updatedRelationship: Relationship = {

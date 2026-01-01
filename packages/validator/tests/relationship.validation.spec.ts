@@ -682,5 +682,618 @@ describe('Relationship validation', () => {
       // 같은 테이블에 대한 여러 자기 참조 관계는 허용되어야 함
       expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', updatedByRelationship)).not.toThrow();
     });
+
+    describe('다단계 관계 체인에서 순환 검증', () => {
+      test('4단계 체인: 중간 관계를 IDENTIFYING으로 변경 시 순환이 발생하면 에러', () => {
+        const schemaId = 'schema-1';
+
+        // 4개 테이블 생성
+        const db = createTestDatabase()
+          .withSchema((s) =>
+            s
+              .withId(schemaId)
+              .withTable((t) =>
+                t
+                  .withId('table-a')
+                  .withName('table_a')
+                  .withColumn((c) => c.withId('a-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_a').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('a-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-b')
+                  .withName('table_b')
+                  .withColumn((c) => c.withId('b-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_b').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('b-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-c')
+                  .withName('table_c')
+                  .withColumn((c) => c.withId('c-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_c').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('c-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-d')
+                  .withName('table_d')
+                  .withColumn((c) => c.withId('d-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_d').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('d-id'))
+                  )
+              )
+          )
+          .build();
+
+        // Step 1: 모든 관계를 NON_IDENTIFYING으로 먼저 생성
+        // B → A (NON_IDENTIFYING)
+        let currentDb = ERD_VALIDATOR.createRelationship(
+          db,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-b-a')
+            .withSrcTableId('table-b')
+            .withTgtTableId('table-a')
+            .withName('fk_b_to_a')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .build()
+        );
+
+        // C → B (NON_IDENTIFYING)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-c-b')
+            .withSrcTableId('table-c')
+            .withTgtTableId('table-b')
+            .withName('fk_c_to_b')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .build()
+        );
+
+        // D → C (NON_IDENTIFYING)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-d-c')
+            .withSrcTableId('table-d')
+            .withTgtTableId('table-c')
+            .withName('fk_d_to_c')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .build()
+        );
+
+        // A → D (NON_IDENTIFYING) - 순환 고리 완성 (but NON_ID라 허용)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-a-d')
+            .withSrcTableId('table-a')
+            .withTgtTableId('table-d')
+            .withName('fk_a_to_d')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('d-id'))
+            .build()
+        );
+
+        // Step 2: 순차적으로 IDENTIFYING으로 변경
+        // B→A: IDENTIFYING으로 변경 (OK)
+        currentDb = ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-b-a', 'IDENTIFYING');
+
+        // D→C: IDENTIFYING으로 변경 (OK)
+        currentDb = ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-d-c', 'IDENTIFYING');
+
+        // A→D: IDENTIFYING으로 변경 (OK - 아직 C→B가 NON_ID라 순환 끊김)
+        currentDb = ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-a-d', 'IDENTIFYING');
+
+        // Step 3: C→B를 IDENTIFYING으로 변경 시도 → 순환 에러 발생해야 함
+        expect(() =>
+          ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-c-b', 'IDENTIFYING')
+        ).toThrow(RelationshipCyclicReferenceError);
+      });
+
+      test('5단계 체인: 중간 관계를 IDENTIFYING으로 변경 시 순환이 발생하면 에러', () => {
+        const schemaId = 'schema-1';
+
+        const db = createTestDatabase()
+          .withSchema((s) =>
+            s
+              .withId(schemaId)
+              .withTable((t) =>
+                t
+                  .withId('table-a')
+                  .withName('table_a')
+                  .withColumn((c) => c.withId('a-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_a').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('a-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-b')
+                  .withName('table_b')
+                  .withColumn((c) => c.withId('b-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_b').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('b-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-c')
+                  .withName('table_c')
+                  .withColumn((c) => c.withId('c-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_c').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('c-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-d')
+                  .withName('table_d')
+                  .withColumn((c) => c.withId('d-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_d').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('d-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-e')
+                  .withName('table_e')
+                  .withColumn((c) => c.withId('e-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_e').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('e-id'))
+                  )
+              )
+          )
+          .build();
+
+        // 모든 관계를 NON_IDENTIFYING으로 먼저 생성
+        let currentDb = ERD_VALIDATOR.createRelationship(
+          db,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-b-a')
+            .withSrcTableId('table-b')
+            .withTgtTableId('table-a')
+            .withName('fk_b_to_a')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .build()
+        );
+
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-c-b')
+            .withSrcTableId('table-c')
+            .withTgtTableId('table-b')
+            .withName('fk_c_to_b')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .build()
+        );
+
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-d-c')
+            .withSrcTableId('table-d')
+            .withTgtTableId('table-c')
+            .withName('fk_d_to_c')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .build()
+        );
+
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-e-d')
+            .withSrcTableId('table-e')
+            .withTgtTableId('table-d')
+            .withName('fk_e_to_d')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('d-id'))
+            .build()
+        );
+
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-a-e')
+            .withSrcTableId('table-a')
+            .withTgtTableId('table-e')
+            .withName('fk_a_to_e')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('e-id'))
+            .build()
+        );
+
+        // 순차적으로 IDENTIFYING으로 변경 (마지막 하나 빼고)
+        currentDb = ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-b-a', 'IDENTIFYING');
+        currentDb = ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-d-c', 'IDENTIFYING');
+        currentDb = ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-e-d', 'IDENTIFYING');
+        currentDb = ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-a-e', 'IDENTIFYING');
+
+        // C→B를 IDENTIFYING으로 변경 시도 → 순환 에러 발생해야 함
+        expect(() =>
+          ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-c-b', 'IDENTIFYING')
+        ).toThrow(RelationshipCyclicReferenceError);
+      });
+
+      test('분기 구조: 여러 경로 중 하나가 순환을 형성하면 에러', () => {
+        const schemaId = 'schema-1';
+
+        const db = createTestDatabase()
+          .withSchema((s) =>
+            s
+              .withId(schemaId)
+              .withTable((t) =>
+                t
+                  .withId('table-a')
+                  .withName('table_a')
+                  .withColumn((c) => c.withId('a-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_a').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('a-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-b')
+                  .withName('table_b')
+                  .withColumn((c) => c.withId('b-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_b').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('b-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-c')
+                  .withName('table_c')
+                  .withColumn((c) => c.withId('c-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_c').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('c-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-d')
+                  .withName('table_d')
+                  .withColumn((c) => c.withId('d-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_d').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('d-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-e')
+                  .withName('table_e')
+                  .withColumn((c) => c.withId('e-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_e').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('e-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-f')
+                  .withName('table_f')
+                  .withColumn((c) => c.withId('f-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_f').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('f-id'))
+                  )
+              )
+          )
+          .build();
+
+        // B → A (IDENTIFYING)
+        let currentDb = ERD_VALIDATOR.createRelationship(
+          db,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-b-a')
+            .withSrcTableId('table-b')
+            .withTgtTableId('table-a')
+            .withName('fk_b_to_a')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .build()
+        );
+
+        // C → B (IDENTIFYING) - 분기 1
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-c-b')
+            .withSrcTableId('table-c')
+            .withTgtTableId('table-b')
+            .withName('fk_c_to_b')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .build()
+        );
+
+        // D → C (IDENTIFYING)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-d-c')
+            .withSrcTableId('table-d')
+            .withTgtTableId('table-c')
+            .withName('fk_d_to_c')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .build()
+        );
+
+        // E → B (IDENTIFYING) - 분기 2
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-e-b')
+            .withSrcTableId('table-e')
+            .withTgtTableId('table-b')
+            .withName('fk_e_to_b')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .build()
+        );
+
+        // F → E (IDENTIFYING)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-f-e')
+            .withSrcTableId('table-f')
+            .withTgtTableId('table-e')
+            .withName('fk_f_to_e')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('e-id'))
+            .build()
+        );
+
+        // A → F (NON_IDENTIFYING) - 순환 끊는 지점
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-a-f')
+            .withSrcTableId('table-a')
+            .withTgtTableId('table-f')
+            .withName('fk_a_to_f')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('f-id'))
+            .build()
+        );
+
+        // A-F 관계를 IDENTIFYING으로 변경 시도 → 순환 에러 발생해야 함
+        expect(() =>
+          ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-a-f', 'IDENTIFYING')
+        ).toThrow(RelationshipCyclicReferenceError);
+      });
+
+      test('순환 없는 4단계 체인: IDENTIFYING으로 변경 허용', () => {
+        const schemaId = 'schema-1';
+
+        const db = createTestDatabase()
+          .withSchema((s) =>
+            s
+              .withId(schemaId)
+              .withTable((t) =>
+                t
+                  .withId('table-a')
+                  .withName('table_a')
+                  .withColumn((c) => c.withId('a-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_a').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('a-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-b')
+                  .withName('table_b')
+                  .withColumn((c) => c.withId('b-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_b').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('b-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-c')
+                  .withName('table_c')
+                  .withColumn((c) => c.withId('c-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_c').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('c-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-d')
+                  .withName('table_d')
+                  .withColumn((c) => c.withId('d-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_d').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('d-id'))
+                  )
+              )
+          )
+          .build();
+
+        // B → A (IDENTIFYING)
+        let currentDb = ERD_VALIDATOR.createRelationship(
+          db,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-b-a')
+            .withSrcTableId('table-b')
+            .withTgtTableId('table-a')
+            .withName('fk_b_to_a')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .build()
+        );
+
+        // C → B (NON_IDENTIFYING)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-c-b')
+            .withSrcTableId('table-c')
+            .withTgtTableId('table-b')
+            .withName('fk_c_to_b')
+            .withKind('NON_IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .build()
+        );
+
+        // D → C (IDENTIFYING)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-d-c')
+            .withSrcTableId('table-d')
+            .withTgtTableId('table-c')
+            .withName('fk_d_to_c')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .build()
+        );
+
+        // C-B 관계를 IDENTIFYING으로 변경 → 순환 없으므로 허용
+        expect(() =>
+          ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-c-b', 'IDENTIFYING')
+        ).not.toThrow();
+
+        const updatedDb = ERD_VALIDATOR.changeRelationshipKind(currentDb, schemaId, 'rel-c-b', 'IDENTIFYING');
+        const tableC = updatedDb.schemas[0].tables.find((t) => t.id === 'table-c');
+        const relCB = tableC?.relationships.find((r) => r.id === 'rel-c-b');
+        expect(relCB?.kind).toBe('IDENTIFYING');
+      });
+
+      test('createRelationship: 4단계 체인에서 마지막 IDENTIFYING 관계 생성 시 순환이 발생하면 에러', () => {
+        const schemaId = 'schema-1';
+
+        const db = createTestDatabase()
+          .withSchema((s) =>
+            s
+              .withId(schemaId)
+              .withTable((t) =>
+                t
+                  .withId('table-a')
+                  .withName('table_a')
+                  .withColumn((c) => c.withId('a-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_a').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('a-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-b')
+                  .withName('table_b')
+                  .withColumn((c) => c.withId('b-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_b').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('b-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-c')
+                  .withName('table_c')
+                  .withColumn((c) => c.withId('c-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_c').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('c-id'))
+                  )
+              )
+              .withTable((t) =>
+                t
+                  .withId('table-d')
+                  .withName('table_d')
+                  .withColumn((c) => c.withId('d-id').withName('id').withDataType('INT'))
+                  .withConstraint((c) =>
+                    c.withName('pk_d').withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('d-id'))
+                  )
+              )
+          )
+          .build();
+
+        // B → A (IDENTIFYING)
+        let currentDb = ERD_VALIDATOR.createRelationship(
+          db,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-b-a')
+            .withSrcTableId('table-b')
+            .withTgtTableId('table-a')
+            .withName('fk_b_to_a')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .build()
+        );
+
+        // C → B (IDENTIFYING)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-c-b')
+            .withSrcTableId('table-c')
+            .withTgtTableId('table-b')
+            .withName('fk_c_to_b')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .build()
+        );
+
+        // D → C (IDENTIFYING)
+        currentDb = ERD_VALIDATOR.createRelationship(
+          currentDb,
+          schemaId,
+          createRelationshipBuilder()
+            .withId('rel-d-c')
+            .withSrcTableId('table-d')
+            .withTgtTableId('table-c')
+            .withName('fk_d_to_c')
+            .withKind('IDENTIFYING')
+            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .build()
+        );
+
+        // A → D (IDENTIFYING) - 순환 발생
+        expect(() =>
+          ERD_VALIDATOR.createRelationship(
+            currentDb,
+            schemaId,
+            createRelationshipBuilder()
+              .withId('rel-a-d')
+              .withSrcTableId('table-a')
+              .withTgtTableId('table-d')
+              .withName('fk_a_to_d')
+              .withKind('IDENTIFYING')
+              .withColumn((rc) => rc.withRefColumnId('d-id'))
+              .build()
+          )
+        ).toThrow(RelationshipCyclicReferenceError);
+      });
+    });
   });
 });
