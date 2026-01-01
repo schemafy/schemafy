@@ -297,8 +297,8 @@ describe('Column validation', () => {
                 r
                   .withName('fk_child_parent')
                   .withKind('NON_IDENTIFYING')
-                  .withTgtTableId('parent-table')
-                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withRefColumnId('parent-id'))
+                  .withPkTableId('parent-table')
+                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withPkColumnId('parent-id'))
               )
           )
       )
