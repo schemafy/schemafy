@@ -1336,7 +1336,7 @@ describe('Relationship validation', () => {
                   c
                     .withName('pk_child')
                     .withKind('PRIMARY_KEY')
-                    .withColumn((cc) => cc.withColumnId(childOwnPkColumnId).withSeqNo(1))
+                    .withColumn((cc) => cc.withColumnId(childOwnPkColumnId).withSeqNo(0))
                 )
             )
         )
@@ -1370,7 +1370,7 @@ describe('Relationship validation', () => {
 
       expect(pkConstraint).toBeDefined();
       expect(pkConstraint?.columns).toHaveLength(1);
-      expect(pkConstraint?.columns[0].seqNo).toBe(1);
+      expect(pkConstraint?.columns[0].seqNo).toBe(0);
       expect(pkConstraint?.columns[0].columnId).toBe(childOwnPkColumnId);
     });
 
@@ -1398,8 +1398,8 @@ describe('Relationship validation', () => {
                 .withColumn((c) => c.withId('c2').withName('c2').withDataType('INT'))
                 .withConstraint((c) =>
                   c.withKind('PRIMARY_KEY')
-                    .withColumn((cc) => cc.withColumnId('c1').withSeqNo(1))
-                    .withColumn((cc) => cc.withColumnId('c2').withSeqNo(2))
+                    .withColumn((cc) => cc.withColumnId('c1').withSeqNo(0))
+                    .withColumn((cc) => cc.withColumnId('c2').withSeqNo(1))
                 )
             )
         )
@@ -1423,8 +1423,8 @@ describe('Relationship validation', () => {
       const pkConstraint = childTable?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
 
       expect(pkConstraint?.columns).toHaveLength(2);
-      expect(pkConstraint?.columns.find(c => c.columnId === 'c1')?.seqNo).toBe(1);
-      expect(pkConstraint?.columns.find(c => c.columnId === 'c2')?.seqNo).toBe(2);
+      expect(pkConstraint?.columns.find(c => c.columnId === 'c1')?.seqNo).toBe(0);
+      expect(pkConstraint?.columns.find(c => c.columnId === 'c2')?.seqNo).toBe(1);
     });
   });
 });

@@ -189,7 +189,7 @@ export const propagateNewPrimaryKey = (
         id: newFkColumnId,
         tableId: childTable.id,
         name: columnName,
-        ordinalPosition: childTable.columns.length + 1,
+        ordinalPosition: childTable.columns.length,
       };
 
       updatedSchema = {
@@ -216,7 +216,7 @@ export const propagateNewPrimaryKey = (
             id: `${ulid()}`,
             isAffected: true,
             columnId: newFkColumnId,
-            seqNo: childPkConstraint.columns.length + 1,
+            seqNo: childPkConstraint.columns.length,
             constraintId: childPkConstraint.id,
           };
 
@@ -252,7 +252,7 @@ export const propagateNewPrimaryKey = (
                 id: `${ulid()}`,
                 isAffected: true,
                 columnId: newFkColumnId,
-                seqNo: 1,
+                seqNo: 0,
                 constraintId: newPkConstraintId,
               },
             ],
@@ -283,7 +283,7 @@ export const propagateNewPrimaryKey = (
           relationshipId: rel.id,
           fkColumnId: newFkColumnId,
           refColumnId: newPkColumn.id,
-          seqNo: rel.columns.length + 1,
+          seqNo: rel.columns.length,
           isAffected: true,
         };
 
@@ -378,7 +378,7 @@ export const deleteCascadingForeignKeys = (
             constraint.kind === "PRIMARY_KEY"
               ? remainingColumns.map((cc, index) => ({
                   ...cc,
-                  seqNo: index + 1,
+                  seqNo: index,
                   isAffected: true,
                 }))
               : remainingColumns;
@@ -505,7 +505,7 @@ export const propagateKeysToChildren = (
           id: newColumnId,
           tableId: childTable.id,
           name: columnName,
-          ordinalPosition: childTable.columns.length + 1,
+          ordinalPosition: childTable.columns.length,
         };
 
         updatedChildTable = {
@@ -522,7 +522,7 @@ export const propagateKeysToChildren = (
             relationshipId: rel.id,
             fkColumnId: newColumnId,
             refColumnId: pkColumn.id,
-            seqNo: rel.columns.length + 1,
+            seqNo: rel.columns.length,
             isAffected: true,
           };
 
@@ -575,7 +575,7 @@ export const propagateKeysToChildren = (
             isAffected: true,
             constraintId: childPkConstraint.id,
             columnId: fkColumn.id,
-            seqNo: childPkConstraint.columns.length + newPkColumns.length + 1,
+            seqNo: childPkConstraint.columns.length + newPkColumns.length,
           });
         }
 
@@ -610,7 +610,7 @@ export const propagateKeysToChildren = (
             isAffected: true,
             constraintId: newPkConstraintId,
             columnId: fkColumn.id,
-            seqNo: newPkColumns.length + 1,
+            seqNo: newPkColumns.length,
           });
         }
 
@@ -702,12 +702,12 @@ export const deleteRelatedColumns = (
 
               const finalColumns =
                 constraint.kind === "PRIMARY_KEY"
-                  ? remainingColumns.map((cc, index) => ({
-                      ...cc,
-                      seqNo: index + 1,
-                      isAffected: true,
-                    }))
-                  : remainingColumns;
+              ? remainingColumns.map((cc, index) => ({
+                  ...cc,
+                  seqNo: index,
+                  isAffected: true,
+                }))
+              : remainingColumns;
 
               return {
                 ...constraint,

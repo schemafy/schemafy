@@ -328,7 +328,7 @@ export const relationshipHandlers: RelationshipHandlers = {
               isAffected: true,
               constraintId: pkConstraint.id,
               columnId,
-              seqNo: pkConstraint.columns.length + index + 1,
+              seqNo: pkConstraint.columns.length + index,
             }));
 
             const updatedPkConstraint: Constraint = {
@@ -347,7 +347,7 @@ export const relationshipHandlers: RelationshipHandlers = {
               isAffected: true,
               constraintId: newPkConstraintId,
               columnId,
-              seqNo: index + 1,
+              seqNo: index,
             }));
 
             const newPkConstraint: Constraint = {
@@ -380,7 +380,7 @@ export const relationshipHandlers: RelationshipHandlers = {
               const resequencedColumns = remainingColumns.map(
                 (column, index) => ({
                   ...column,
-                  seqNo: index + 1,
+                  seqNo: index,
                   isAffected: true,
                 }),
               );
