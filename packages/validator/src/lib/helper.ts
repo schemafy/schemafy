@@ -77,42 +77,6 @@ export const detectIdentifyingCycleInSchema = (
   return null;
 };
 
-export const detectCircularReference = (
-  schema: Schema,
-  fromTableId: Table["id"],
-  toTableId: Table["id"],
-  visited: Set<Table["id"]> = new Set(),
-): boolean => {
-  if (visited.has(fromTableId)) return true;
-  if (fromTableId === toTableId) return true;
-
-  visited.add(fromTableId);
-
-  const referencedTables = new Set<Table["id"]>();
-  schema.tables.forEach((table) => {
-    table.relationships.forEach((rel) => {
-      if (rel.srcTableId === fromTableId) {
-        referencedTables.add(rel.tgtTableId);
-      }
-    });
-  });
-
-  for (const referencedTableId of referencedTables) {
-    if (
-      detectCircularReference(
-        schema,
-        referencedTableId,
-        toTableId,
-        new Set(visited),
-      )
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
 export const isValidColumnName = (str: string): boolean => {
   if (/-/.test(str)) {
     return false;
