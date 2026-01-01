@@ -45,10 +45,7 @@ export const detectIdentifyingCycleInSchema = (
   const visited = new Set<string>();
   const recursionStack = new Set<string>();
 
-  const dfs = (
-    tableId: string,
-    path: string[],
-  ): [string, string] | null => {
+  const dfs = (tableId: string, path: string[]): [string, string] | null => {
     if (recursionStack.has(tableId)) {
       return [path[path.length - 1], tableId];
     }

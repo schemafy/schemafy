@@ -89,15 +89,11 @@ export const relationshipHandlers: RelationshipHandlers = {
       );
 
     if (relationship.kind === "IDENTIFYING") {
-      const cycle = helper.detectIdentifyingCycleInSchema(
-        schema,
-        undefined,
-        {
-          srcTableId: relationship.srcTableId,
-          tgtTableId: relationship.tgtTableId,
-          kind: relationship.kind,
-        },
-      );
+      const cycle = helper.detectIdentifyingCycleInSchema(schema, undefined, {
+        srcTableId: relationship.srcTableId,
+        tgtTableId: relationship.tgtTableId,
+        kind: relationship.kind,
+      });
       if (cycle) {
         throw new RelationshipCyclicReferenceError(cycle[0], cycle[1]);
       }
