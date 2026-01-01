@@ -83,7 +83,7 @@ class AffectedEntitiesSaverTest {
     }
 
     @Test
-    @DisplayName("RELATIONSHIP 전파 컬럼의 sourceColumnId는 relationshipColumn.refColumnId를 따른다")
+    @DisplayName("RELATIONSHIP 전파 컬럼의 sourceColumnId는 relationshipColumn.pkColumnId를 따른다")
     void saveAffectedEntities_relationshipSource_setsSourceColumnId() {
         String schemaId = "schema-1";
         String parentTableId = "parent-table";
@@ -103,7 +103,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(parentColumnId)
                                         .setTableId(parentTableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .build())
@@ -124,7 +124,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(parentColumnId)
                                         .setTableId(parentTableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .build())
@@ -135,15 +135,15 @@ class AffectedEntitiesSaverTest {
                                         .setId(fkColumnLogicalId)
                                         .setTableId(childTableId)
                                         .setName("parent_id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId(relationshipId)
-                                        .setSrcTableId(childTableId)
-                                        .setTgtTableId(parentTableId)
+                                        .setFkTableId(childTableId)
+                                        .setPkTableId(parentTableId)
                                         .setName("fk_child_parent")
                                         .setKind(
                                                 Validation.RelationshipKind.IDENTIFYING)
@@ -158,7 +158,7 @@ class AffectedEntitiesSaverTest {
                                                                 relationshipId)
                                                         .setFkColumnId(
                                                                 fkColumnLogicalId)
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 parentColumnId)
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
@@ -199,7 +199,7 @@ class AffectedEntitiesSaverTest {
                             .isEqualTo(relationshipId);
                     assertThat(propagatedRelationshipColumn.fkColumnId())
                             .isEqualTo(propagatedColumn.columnId());
-                    assertThat(propagatedRelationshipColumn.refColumnId())
+                    assertThat(propagatedRelationshipColumn.pkColumnId())
                             .isEqualTo(parentColumnId);
                     assertThat(propagatedRelationshipColumn.seqNo())
                             .isEqualTo(1);
@@ -307,8 +307,8 @@ class AffectedEntitiesSaverTest {
     }
 
     @Test
-    @DisplayName("저장된 relationshipColumn.srcColumnId는 실제 컬럼을 참조한다")
-    void saveAffectedEntities_relationshipColumnSrcColumnId_referencesSavedColumn() {
+    @DisplayName("저장된 relationshipColumn.fkColumnId는 실제 컬럼을 참조한다")
+    void saveAffectedEntities_relationshipColumnFkColumnId_referencesSavedColumn() {
         String schemaId = "schema-1";
         String parentTableId = "parent-table";
         String childTableId = "child-table";
@@ -327,7 +327,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(parentColumnId)
                                         .setTableId(parentTableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .build())
@@ -348,7 +348,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(parentColumnId)
                                         .setTableId(parentTableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .build())
@@ -359,15 +359,15 @@ class AffectedEntitiesSaverTest {
                                         .setId(fkColumnLogicalId)
                                         .setTableId(childTableId)
                                         .setName("parent_id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId(relationshipId)
-                                        .setSrcTableId(childTableId)
-                                        .setTgtTableId(parentTableId)
+                                        .setFkTableId(childTableId)
+                                        .setPkTableId(parentTableId)
                                         .setName("fk_child_parent")
                                         .setKind(
                                                 Validation.RelationshipKind.IDENTIFYING)
@@ -382,7 +382,7 @@ class AffectedEntitiesSaverTest {
                                                                 relationshipId)
                                                         .setFkColumnId(
                                                                 fkColumnLogicalId)
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 parentColumnId)
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
@@ -411,7 +411,7 @@ class AffectedEntitiesSaverTest {
                             .flatMap(savedRelationshipColumn -> columnRepository
                                     .findByIdAndDeletedAtIsNull(
                                             savedRelationshipColumn
-                                                    .getSrcColumnId())
+                                                    .getFkColumnId())
                                     .map(savedSrcColumn -> Tuples.of(
                                             propagated,
                                             savedRelationshipColumn,
@@ -429,11 +429,11 @@ class AffectedEntitiesSaverTest {
                     AffectedMappingResponse.PropagatedRelationshipColumn relationshipColumn = propagated
                             .relationshipColumns().get(0);
 
-                    assertThat(savedRelationshipColumn.getSrcColumnId())
+                    assertThat(savedRelationshipColumn.getFkColumnId())
                             .isEqualTo(relationshipColumn.fkColumnId());
                     assertThat(savedSrcColumn.getId())
                             .isEqualTo(
-                                    savedRelationshipColumn.getSrcColumnId());
+                                    savedRelationshipColumn.getFkColumnId());
                 })
                 .verifyComplete();
     }
@@ -461,7 +461,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(parentColumnId)
                                         .setTableId(parentTableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .build())
@@ -482,7 +482,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(parentColumnId)
                                         .setTableId(parentTableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .addConstraints(Validation.Constraint
@@ -513,15 +513,15 @@ class AffectedEntitiesSaverTest {
                                         .setId(fkColumnLogicalId)
                                         .setTableId(childTableId)
                                         .setName("parent_id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId(relationshipId)
-                                        .setSrcTableId(childTableId)
-                                        .setTgtTableId(parentTableId)
+                                        .setFkTableId(childTableId)
+                                        .setPkTableId(parentTableId)
                                         .setName("fk_child_parent")
                                         .setKind(
                                                 Validation.RelationshipKind.IDENTIFYING)
@@ -535,7 +535,7 @@ class AffectedEntitiesSaverTest {
                                                                 relationshipId)
                                                         .setFkColumnId(
                                                                 fkColumnLogicalId)
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 parentColumnId)
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
@@ -574,7 +574,7 @@ class AffectedEntitiesSaverTest {
                             .relationshipColumns().get(0);
                     assertThat(propagatedRelationshipColumn.fkColumnId())
                             .isEqualTo(propagatedColumn.columnId());
-                    assertThat(propagatedRelationshipColumn.refColumnId())
+                    assertThat(propagatedRelationshipColumn.pkColumnId())
                             .isEqualTo(parentColumnId);
                     assertThat(propagatedRelationshipColumn.sourceType())
                             .isEqualTo(EntityType.CONSTRAINT.name());
@@ -613,8 +613,8 @@ class AffectedEntitiesSaverTest {
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId(relationshipId)
-                                        .setSrcTableId(childTableId)
-                                        .setTgtTableId(parentTableId)
+                                        .setFkTableId(childTableId)
+                                        .setPkTableId(parentTableId)
                                         .setName("fk_child_parent")
                                         .setKind(
                                                 Validation.RelationshipKind.NON_IDENTIFYING)
@@ -637,7 +637,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(parentColumnId)
                                         .setTableId(parentTableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
@@ -651,7 +651,7 @@ class AffectedEntitiesSaverTest {
                                         .setId("child-fk-a")
                                         .setTableId(childTableId)
                                         .setName("parent_a")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
@@ -659,15 +659,15 @@ class AffectedEntitiesSaverTest {
                                         .setId("child-fk-b")
                                         .setTableId(childTableId)
                                         .setName("parent_b")
-                                        .setOrdinalPosition(2)
+                                        .setSeqNo(2)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId(relationshipId)
-                                        .setSrcTableId(childTableId)
-                                        .setTgtTableId(parentTableId)
+                                        .setFkTableId(childTableId)
+                                        .setPkTableId(parentTableId)
                                         .setName("fk_child_parent")
                                         .setKind(
                                                 Validation.RelationshipKind.NON_IDENTIFYING)
@@ -682,7 +682,7 @@ class AffectedEntitiesSaverTest {
                                                                 relationshipId)
                                                         .setFkColumnId(
                                                                 "child-fk-a")
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 parentColumnId)
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
@@ -695,7 +695,7 @@ class AffectedEntitiesSaverTest {
                                                                 relationshipId)
                                                         .setFkColumnId(
                                                                 "child-fk-b")
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 parentColumnId)
                                                         .setSeqNo(2)
                                                         .setIsAffected(true)
@@ -771,7 +771,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(columnIdA)
                                         .setTableId(tableId)
                                         .setName("a")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
@@ -779,7 +779,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(columnIdB)
                                         .setTableId(tableId)
                                         .setName("b")
-                                        .setOrdinalPosition(2)
+                                        .setSeqNo(2)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
@@ -891,7 +891,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(columnId)
                                         .setTableId(tableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
@@ -1010,7 +1010,7 @@ class AffectedEntitiesSaverTest {
                                         .setId(columnId)
                                         .setTableId(tableId)
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .setIsAffected(true)
                                         .build())
@@ -1052,8 +1052,8 @@ class AffectedEntitiesSaverTest {
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId(relationshipId)
-                                        .setSrcTableId(tableId)
-                                        .setTgtTableId(tableId)
+                                        .setFkTableId(tableId)
+                                        .setPkTableId(tableId)
                                         .setName("rel_test")
                                         .setKind(
                                                 Validation.RelationshipKind.NON_IDENTIFYING)
@@ -1066,7 +1066,7 @@ class AffectedEntitiesSaverTest {
                                                         .setRelationshipId(
                                                                 relationshipId)
                                                         .setFkColumnId(columnId)
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 columnId)
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
@@ -1117,9 +1117,9 @@ class AffectedEntitiesSaverTest {
                             .get(relationshipColumnId))
                             .isNotEqualTo(relationshipColumnId);
 
-                    assertThat(savedRelationshipColumn.getSrcColumnId())
+                    assertThat(savedRelationshipColumn.getFkColumnId())
                             .isEqualTo(savedColumn.getId());
-                    assertThat(savedRelationshipColumn.getTgtColumnId())
+                    assertThat(savedRelationshipColumn.getPkColumnId())
                             .isEqualTo(savedColumn.getId());
                 })
                 .verifyComplete();

@@ -131,8 +131,8 @@ class RelationshipServiceTest {
                 .newBuilder()
                 .setRelationship(Validation.Relationship.newBuilder()
                         .setId("fe-relationship-id")
-                        .setSrcTableId("table-1")
-                        .setTgtTableId("table-2")
+                        .setFkTableId("table-1")
+                        .setPkTableId("table-2")
                         .setName("fk_test")
                         .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
                         .setCardinality(
@@ -173,8 +173,8 @@ class RelationshipServiceTest {
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId("fe-relationship-id")
-                                        .setSrcTableId("table-1")
-                                        .setTgtTableId("table-2")
+                                        .setFkTableId("table-1")
+                                        .setPkTableId("table-2")
                                         .setName("fk_test")
                                         .setKind(
                                                 Validation.RelationshipKind.NON_IDENTIFYING)
@@ -246,8 +246,8 @@ class RelationshipServiceTest {
                 .newBuilder()
                 .setRelationship(Validation.Relationship.newBuilder()
                         .setId("fe-relationship-id")
-                        .setSrcTableId("table-1")
-                        .setTgtTableId("table-2")
+                        .setFkTableId("table-1")
+                        .setPkTableId("table-2")
                         .setName("fk_test")
                         .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
                         .setCardinality(
@@ -256,7 +256,7 @@ class RelationshipServiceTest {
                                 .setId("fe-relationship-col-1")
                                 .setRelationshipId("fe-relationship-id")
                                 .setFkColumnId("fk-col-id")
-                                .setRefColumnId("ref-col-id")
+                                .setPkColumnId("ref-col-id")
                                 .setSeqNo(1)
                                 .build())
                         .build())
@@ -273,7 +273,7 @@ class RelationshipServiceTest {
                                                 .setId("fk-col-id")
                                                 .setTableId("table-1")
                                                 .setName("fk")
-                                                .setOrdinalPosition(1)
+                                                .setSeqNo(1)
                                                 .setDataType("INT")
                                                 .build())
                                         .build())
@@ -285,7 +285,7 @@ class RelationshipServiceTest {
                                                 .setId("ref-col-id")
                                                 .setTableId("table-2")
                                                 .setName("id")
-                                                .setOrdinalPosition(1)
+                                                .setSeqNo(1)
                                                 .setDataType("INT")
                                                 .build())
                                         .build())
@@ -311,8 +311,8 @@ class RelationshipServiceTest {
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId("fe-relationship-id")
-                                        .setSrcTableId("table-1")
-                                        .setTgtTableId("table-2")
+                                        .setFkTableId("table-1")
+                                        .setPkTableId("table-2")
                                         .setName("fk_test")
                                         .setKind(
                                                 Validation.RelationshipKind.NON_IDENTIFYING)
@@ -327,7 +327,7 @@ class RelationshipServiceTest {
                                                                 "fe-relationship-id")
                                                         .setFkColumnId(
                                                                 "fk-col-id")
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 "ref-col-id")
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
@@ -410,8 +410,8 @@ class RelationshipServiceTest {
                 .newBuilder()
                 .setRelationship(Validation.Relationship.newBuilder()
                         .setId("fe-relationship-id")
-                        .setSrcTableId("child-table")
-                        .setTgtTableId("parent-table")
+                        .setFkTableId("child-table")
+                        .setPkTableId("parent-table")
                         .setName("fk_child_parent")
                         .setKind(Validation.RelationshipKind.IDENTIFYING)
                         .setCardinality(
@@ -420,7 +420,7 @@ class RelationshipServiceTest {
                                 .setId("fe-relationship-col-1")
                                 .setRelationshipId("fe-relationship-id")
                                 .setFkColumnId("fe-fk-column-id") // 자식 테이블에 생성될 FK 컬럼 ID
-                                .setRefColumnId("parent-id-col") // 부모 테이블의 PK 컬럼 ID
+                                .setPkColumnId("parent-id-col") // 부모 테이블의 PK 컬럼 ID
                                 .setSeqNo(1)
                                 .build())
                         .build())
@@ -578,8 +578,8 @@ class RelationshipServiceTest {
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId("fe-relationship-id")
-                                        .setSrcTableId("child-table")
-                                        .setTgtTableId("parent-table")
+                                        .setFkTableId("child-table")
+                                        .setPkTableId("parent-table")
                                         .setName("fk_child_parent")
                                         .setKind(
                                                 Validation.RelationshipKind.IDENTIFYING)
@@ -594,7 +594,7 @@ class RelationshipServiceTest {
                                                                 "fe-relationship-id")
                                                         .setFkColumnId(
                                                                 "fe-fk-column-id")
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 "parent-id-col")
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
@@ -714,8 +714,8 @@ class RelationshipServiceTest {
     void getRelationship_success() {
         Relationship saved = relationshipRepository.save(
                 Relationship.builder()
-                        .srcTableId("table-1")
-                        .tgtTableId("table-2")
+                        .fkTableId("table-1")
+                        .pkTableId("table-2")
                         .name("fk_test")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
@@ -743,17 +743,17 @@ class RelationshipServiceTest {
     @DisplayName("getRelationshipsByTableId: 테이블 기준으로 관계 목록을 조회한다")
     void getRelationshipsByTableId_success() {
         Relationship r1 = Relationship.builder()
-                .srcTableId("table-A").tgtTableId("table-B")
+                .fkTableId("table-A").pkTableId("table-B")
                 .name("fk_a_b").kind("NON_IDENTIFYING")
                 .cardinality("ONE_TO_MANY").onDelete("NO_ACTION")
                 .onUpdate("NO_ACTION").extra("").build();
         Relationship r2 = Relationship.builder()
-                .srcTableId("table-A").tgtTableId("table-C")
+                .fkTableId("table-A").pkTableId("table-C")
                 .name("fk_a_c").kind("IDENTIFYING")
                 .cardinality("ONE_TO_ONE").onDelete("NO_ACTION")
                 .onUpdate("NO_ACTION").extra("").build();
         Relationship rOther = Relationship.builder()
-                .srcTableId("table-B").tgtTableId("table-C")
+                .fkTableId("table-B").pkTableId("table-C")
                 .name("fk_b_c").kind("NON_IDENTIFYING")
                 .cardinality("ONE_TO_MANY").onDelete("NO_ACTION")
                 .onUpdate("NO_ACTION").extra("").build();
@@ -782,8 +782,8 @@ class RelationshipServiceTest {
     void updateRelationshipName_success() {
         Relationship saved = relationshipRepository.save(
                 Relationship.builder()
-                        .srcTableId("table-1")
-                        .tgtTableId("table-2")
+                        .fkTableId("table-1")
+                        .pkTableId("table-2")
                         .name("old_name")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
@@ -830,8 +830,8 @@ class RelationshipServiceTest {
     void updateRelationshipCardinality_success() {
         Relationship saved = relationshipRepository.save(
                 Relationship.builder()
-                        .srcTableId("table-1")
-                        .tgtTableId("table-2")
+                        .fkTableId("table-1")
+                        .pkTableId("table-2")
                         .name("fk_test")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
@@ -888,7 +888,7 @@ class RelationshipServiceTest {
                                 .setId("fe-relationship-column-1")
                                 .setRelationshipId("relationship-1")
                                 .setFkColumnId("src-column-1")
-                                .setRefColumnId("tgt-column-1")
+                                .setPkColumnId("tgt-column-1")
                                 .setSeqNo(1)
                                 .build())
                 .build();
@@ -916,7 +916,7 @@ class RelationshipServiceTest {
                                                                 "relationship-1")
                                                         .setFkColumnId(
                                                                 "src-column-1")
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 "tgt-column-1")
                                                         .setSeqNo(1)
                                                         .setIsAffected(true)
@@ -956,8 +956,8 @@ class RelationshipServiceTest {
         assertThat(savedColumns).hasSize(1);
         RelationshipColumn saved = savedColumns.get(0);
         assertThat(saved.getRelationshipId()).isEqualTo("relationship-1");
-        assertThat(saved.getSrcColumnId()).isEqualTo("src-column-1");
-        assertThat(saved.getTgtColumnId()).isEqualTo("tgt-column-1");
+        assertThat(saved.getFkColumnId()).isEqualTo("src-column-1");
+        assertThat(saved.getPkColumnId()).isEqualTo("tgt-column-1");
 
         // 응답의 매핑 정보 확인
         assertThat(response.relationshipColumns().get("relationship-1"))
@@ -971,7 +971,7 @@ class RelationshipServiceTest {
                 Column.builder()
                         .tableId("child-table")
                         .name("parent_a")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .dataType("INT")
                         .build())
                 .block();
@@ -979,7 +979,7 @@ class RelationshipServiceTest {
                 Column.builder()
                         .tableId("child-table")
                         .name("parent_b")
-                        .ordinalPosition(2)
+                        .seqNo(2)
                         .dataType("INT")
                         .build())
                 .block();
@@ -987,16 +987,16 @@ class RelationshipServiceTest {
         RelationshipColumn savedA = relationshipColumnRepository.save(
                 RelationshipColumn.builder()
                         .relationshipId("relationship-1")
-                        .srcColumnId(fkColumnA.getId())
-                        .tgtColumnId("parent-a")
+                        .fkColumnId(fkColumnA.getId())
+                        .pkColumnId("parent-a")
                         .seqNo(1)
                         .build())
                 .block();
         RelationshipColumn savedB = relationshipColumnRepository.save(
                 RelationshipColumn.builder()
                         .relationshipId("relationship-1")
-                        .srcColumnId(fkColumnB.getId())
-                        .tgtColumnId("parent-b")
+                        .fkColumnId(fkColumnB.getId())
+                        .pkColumnId("parent-b")
                         .seqNo(2)
                         .build())
                 .block();
@@ -1013,21 +1013,21 @@ class RelationshipServiceTest {
                                         .setId(fkColumnA.getId())
                                         .setTableId("child-table")
                                         .setName("parent_a")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .addColumns(Validation.Column.newBuilder()
                                         .setId(fkColumnB.getId())
                                         .setTableId("child-table")
                                         .setName("parent_b")
-                                        .setOrdinalPosition(2)
+                                        .setSeqNo(2)
                                         .setDataType("INT")
                                         .build())
                                 .addRelationships(
                                         Validation.Relationship.newBuilder()
                                                 .setId("relationship-1")
-                                                .setSrcTableId("child-table")
-                                                .setTgtTableId("parent-table")
+                                                .setFkTableId("child-table")
+                                                .setPkTableId("parent-table")
                                                 .setName("fk_parent")
                                                 .setKind(
                                                         Validation.RelationshipKind.NON_IDENTIFYING)
@@ -1041,7 +1041,7 @@ class RelationshipServiceTest {
                                                                 .setFkColumnId(
                                                                         fkColumnA
                                                                                 .getId())
-                                                                .setRefColumnId(
+                                                                .setPkColumnId(
                                                                         "parent-a")
                                                                 .setSeqNo(1)
                                                                 .build())
@@ -1055,7 +1055,7 @@ class RelationshipServiceTest {
                                                                 .setFkColumnId(
                                                                         fkColumnB
                                                                                 .getId())
-                                                                .setRefColumnId(
+                                                                .setPkColumnId(
                                                                         "parent-b")
                                                                 .setSeqNo(2)
                                                                 .build())
@@ -1076,14 +1076,14 @@ class RelationshipServiceTest {
                                         .setId(fkColumnA.getId())
                                         .setTableId("child-table")
                                         .setName("parent_a")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .addRelationships(
                                         Validation.Relationship.newBuilder()
                                                 .setId("relationship-1")
-                                                .setSrcTableId("child-table")
-                                                .setTgtTableId("parent-table")
+                                                .setFkTableId("child-table")
+                                                .setPkTableId("parent-table")
                                                 .setName("fk_parent")
                                                 .setKind(
                                                         Validation.RelationshipKind.NON_IDENTIFYING)
@@ -1097,7 +1097,7 @@ class RelationshipServiceTest {
                                                                 .setFkColumnId(
                                                                         fkColumnA
                                                                                 .getId())
-                                                                .setRefColumnId(
+                                                                .setPkColumnId(
                                                                         "parent-a")
                                                                 .setSeqNo(1)
                                                                 .build())
@@ -1144,15 +1144,15 @@ class RelationshipServiceTest {
                 Column.builder()
                         .tableId("table-1")
                         .name("table_2_id")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .dataType("INT")
                         .build())
                 .block();
 
         Relationship saved = relationshipRepository.save(
                 Relationship.builder()
-                        .srcTableId("table-1")
-                        .tgtTableId("table-2")
+                        .fkTableId("table-1")
+                        .pkTableId("table-2")
                         .name("to_delete")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
@@ -1174,14 +1174,14 @@ class RelationshipServiceTest {
                                         .setId(fkColumnToDelete.getId())
                                         .setTableId("table-1")
                                         .setName("table_2_id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .addRelationships(
                                         Validation.Relationship.newBuilder()
                                                 .setId(saved.getId())
-                                                .setSrcTableId("table-1")
-                                                .setTgtTableId("table-2")
+                                                .setFkTableId("table-1")
+                                                .setPkTableId("table-2")
                                                 .setName("to_delete")
                                                 .setKind(
                                                         Validation.RelationshipKind.NON_IDENTIFYING)
@@ -1197,7 +1197,7 @@ class RelationshipServiceTest {
                                                                 .setFkColumnId(
                                                                         fkColumnToDelete
                                                                                 .getId())
-                                                                .setRefColumnId(
+                                                                .setPkColumnId(
                                                                         "parent-id")
                                                                 .setSeqNo(1)
                                                                 .build())

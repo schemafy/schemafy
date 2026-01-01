@@ -72,7 +72,7 @@ class ColumnServiceTest {
                         .setDataType("VARCHAR(255)")
                         .setIsAutoIncrement(false)
                         .setComment("테스트 컬럼")
-                        .setOrdinalPosition(1)
+                        .setSeqNo(1)
                         .build())
                 .setDatabase(Validation.Database.newBuilder()
                         .setId("proj-1")
@@ -104,7 +104,7 @@ class ColumnServiceTest {
                                         .setDataType("VARCHAR(255)")
                                         .setIsAutoIncrement(false)
                                         .setComment("테스트 컬럼")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setIsAffected(true)
                                         .build())
                                 .build())
@@ -150,7 +150,7 @@ class ColumnServiceTest {
                         .name("test_column")
                         .dataType("VARCHAR(255)")
                         .comment("테스트 컬럼")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .build())
                 .block();
 
@@ -169,12 +169,12 @@ class ColumnServiceTest {
     @DisplayName("getColumnsByTableId: 테이블 기준으로 컬럼 목록을 조회한다")
     void getColumnsByTableId_success() {
         Column c1 = Column.builder().tableId("table-A").name("column_a")
-                .dataType("INT").ordinalPosition(1).build();
+                .dataType("INT").seqNo(1).build();
         Column c2 = Column.builder().tableId("table-A").name("column_b")
-                .dataType("VARCHAR(100)").ordinalPosition(2)
+                .dataType("VARCHAR(100)").seqNo(2)
                 .build();
         Column cOther = Column.builder().tableId("table-B").name("column_c")
-                .dataType("TEXT").ordinalPosition(1).build();
+                .dataType("TEXT").seqNo(1).build();
 
         columnRepository.save(c1)
                 .then(columnRepository.save(c2))
@@ -201,7 +201,7 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("old_name")
                         .dataType("VARCHAR(255)")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .build())
                 .block();
 
@@ -245,7 +245,7 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("test_column")
                         .dataType("VARCHAR(255)")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .build())
                 .block();
 
@@ -275,7 +275,7 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("test_column")
                         .dataType("VARCHAR(255)")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .build())
                 .block();
 
@@ -286,13 +286,13 @@ class ColumnServiceTest {
                         .build()))
                 .assertNext(updated -> {
                     assertThat(updated.getId()).isEqualTo(saved.getId());
-                    assertThat(updated.getOrdinalPosition()).isEqualTo(3);
+                    assertThat(updated.getSeqNo()).isEqualTo(3);
                 })
                 .verifyComplete();
 
         // DB 반영 확인
         StepVerifier.create(columnRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.getOrdinalPosition())
+                .assertNext(found -> assertThat(found.getSeqNo())
                         .isEqualTo(3))
                 .verifyComplete();
     }
@@ -305,7 +305,7 @@ class ColumnServiceTest {
                         .tableId("table-1")
                         .name("to_delete")
                         .dataType("VARCHAR(255)")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .build())
                 .block();
 
@@ -321,7 +321,7 @@ class ColumnServiceTest {
                                         .setId(saved.getId())
                                         .setTableId("table-1")
                                         .setName("to_delete")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("VARCHAR(255)")
                                         .build())
                                 .build())

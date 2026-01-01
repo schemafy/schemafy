@@ -27,7 +27,7 @@ class ValidationDatabaseIdRewriterTest {
                                         .setId("col-old")
                                         .setTableId("table-old")
                                         .setName("col")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .addIndexes(Validation.Index.newBuilder()
@@ -66,8 +66,8 @@ class ValidationDatabaseIdRewriterTest {
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId("relationship-old")
-                                        .setSrcTableId("table-old")
-                                        .setTgtTableId("table-old")
+                                        .setFkTableId("table-old")
+                                        .setPkTableId("table-old")
                                         .setName("rel")
                                         .setKind(
                                                 Validation.RelationshipKind.NON_IDENTIFYING)
@@ -81,7 +81,7 @@ class ValidationDatabaseIdRewriterTest {
                                                                 "relationship-old")
                                                         .setFkColumnId(
                                                                 "col-old")
-                                                        .setRefColumnId(
+                                                        .setPkColumnId(
                                                                 "col-old")
                                                         .setSeqNo(1)
                                                         .build())
@@ -136,8 +136,8 @@ class ValidationDatabaseIdRewriterTest {
 
         Validation.Relationship relationship = table.getRelationships(0);
         assertThat(relationship.getId()).isEqualTo("relationship-new");
-        assertThat(relationship.getSrcTableId()).isEqualTo("table-new");
-        assertThat(relationship.getTgtTableId()).isEqualTo("table-new");
+        assertThat(relationship.getFkTableId()).isEqualTo("table-new");
+        assertThat(relationship.getPkTableId()).isEqualTo("table-new");
 
         Validation.RelationshipColumn relationshipColumn = relationship
                 .getColumns(0);
@@ -145,7 +145,7 @@ class ValidationDatabaseIdRewriterTest {
         assertThat(relationshipColumn.getRelationshipId())
                 .isEqualTo("relationship-new");
         assertThat(relationshipColumn.getFkColumnId()).isEqualTo("col-new");
-        assertThat(relationshipColumn.getRefColumnId()).isEqualTo("col-new");
+        assertThat(relationshipColumn.getPkColumnId()).isEqualTo("col-new");
     }
 
 }

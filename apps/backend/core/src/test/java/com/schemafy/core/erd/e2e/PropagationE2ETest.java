@@ -630,7 +630,7 @@ class PropagationE2ETest {
                 .isEqualTo(state.relationshipId());
         assertThat(propagatedRelationshipColumn.path("fkColumnId").asText())
                 .isEqualTo(propagatedColumnId);
-        assertThat(propagatedRelationshipColumn.path("refColumnId").asText())
+        assertThat(propagatedRelationshipColumn.path("pkColumnId").asText())
                 .isEqualTo(extraParentColumnId);
     }
 
@@ -791,7 +791,7 @@ class PropagationE2ETest {
     }
 
     private boolean containsRelationshipColumn(JsonNode relationships,
-            String fkColumnId, String refColumnId) {
+            String fkColumnId, String pkColumnId) {
         if (relationships == null || !relationships.isArray()) {
             return false;
         }
@@ -801,15 +801,15 @@ class PropagationE2ETest {
                 continue;
             }
             for (JsonNode column : columns) {
-                String fk = column.path("srcColumnId").asText();
+                String fk = column.path("fkColumnId").asText();
                 if (fk.isEmpty()) {
                     fk = column.path("fkColumnId").asText();
                 }
-                String ref = column.path("tgtColumnId").asText();
+                String ref = column.path("pkColumnId").asText();
                 if (ref.isEmpty()) {
-                    ref = column.path("refColumnId").asText();
+                    ref = column.path("pkColumnId").asText();
                 }
-                if (fkColumnId.equals(fk) && refColumnId.equals(ref)) {
+                if (fkColumnId.equals(fk) && pkColumnId.equals(ref)) {
                     return true;
                 }
             }
@@ -1012,12 +1012,12 @@ class PropagationE2ETest {
             String tableId,
             String columnId,
             String name,
-            int ordinalPosition,
+            int seqNo,
             boolean isAutoIncrement,
             List<Validation.Table> tables) {
         Validation.Database database = buildDatabase(schemaId, tables);
         Validation.Column column = buildColumn(columnId, tableId, name,
-                ordinalPosition, isAutoIncrement);
+                seqNo, isAutoIncrement);
         return Validation.CreateColumnRequest.newBuilder()
                 .setDatabase(database)
                 .setSchemaId(schemaId)
@@ -1068,15 +1068,15 @@ class PropagationE2ETest {
                 .setId(REL_COLUMN_REQUEST_ID)
                 .setRelationshipId(RELATIONSHIP_REQUEST_ID)
                 .setFkColumnId(FK_COLUMN_REQUEST_ID)
-                .setRefColumnId(parentColumnId)
+                .setPkColumnId(parentColumnId)
                 .setSeqNo(1)
                 .build();
 
         Validation.Relationship relationship = Validation.Relationship
                 .newBuilder()
                 .setId(RELATIONSHIP_REQUEST_ID)
-                .setSrcTableId(childTableId)
-                .setTgtTableId(parentTableId)
+                .setFkTableId(childTableId)
+                .setPkTableId(parentTableId)
                 .setName("FK_test")
                 .setKind(kind)
                 .setCardinality(
@@ -1131,12 +1131,12 @@ class PropagationE2ETest {
     }
 
     private Validation.Column buildColumn(String columnId, String tableId,
-            String name, int ordinalPosition, boolean isAutoIncrement) {
+            String name, int seqNo, boolean isAutoIncrement) {
         return Validation.Column.newBuilder()
                 .setId(columnId)
                 .setTableId(tableId)
                 .setName(name)
-                .setOrdinalPosition(ordinalPosition)
+                .setSeqNo(seqNo)
                 .setDataType("INT")
                 .setIsAutoIncrement(isAutoIncrement)
                 .build();
@@ -1180,8 +1180,8 @@ class PropagationE2ETest {
             List<Validation.RelationshipColumn> columns) {
         return Validation.Relationship.newBuilder()
                 .setId(state.relationshipId())
-                .setSrcTableId(state.childTableId())
-                .setTgtTableId(state.parentTableId())
+                .setFkTableId(state.childTableId())
+                .setPkTableId(state.parentTableId())
                 .setName("FK_test")
                 .setKind(state.relationshipKind())
                 .setCardinality(
@@ -1194,13 +1194,13 @@ class PropagationE2ETest {
     }
 
     private Validation.RelationshipColumn buildRelationshipColumn(String id,
-            String relationshipId, String fkColumnId, String refColumnId,
+            String relationshipId, String fkColumnId, String pkColumnId,
             int seqNo) {
         return Validation.RelationshipColumn.newBuilder()
                 .setId(id)
                 .setRelationshipId(relationshipId)
                 .setFkColumnId(fkColumnId)
-                .setRefColumnId(refColumnId)
+                .setPkColumnId(pkColumnId)
                 .setSeqNo(seqNo)
                 .build();
     }
