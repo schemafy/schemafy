@@ -419,16 +419,18 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     if (kind === "IDENTIFYING" && addedPkColumnIds.length > 0) {
       for (const columnId of addedPkColumnIds) {
-        const parentTable = updatedSchema.tables.find(
+        const tableWithNewPk = updatedSchema.tables.find(
           (t) => t.id === relationship.srcTableId,
         );
-        const pkColumn = parentTable?.columns.find((c) => c.id === columnId);
-        if (!pkColumn) continue;
+        const newPkColumn = tableWithNewPk?.columns.find(
+          (c) => c.id === columnId,
+        );
+        if (!newPkColumn) continue;
 
         updatedSchema = helper.propagateNewPrimaryKey(
           structuredClone(updatedSchema),
           relationship.srcTableId,
-          pkColumn,
+          newPkColumn,
         );
       }
     }
