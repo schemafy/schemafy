@@ -237,7 +237,7 @@ export const Memo = observer(({ id, data }: MemoProps) => {
   );
 });
 
-export const MemoPrivew = ({ mousePosition }: MemoPreviewProps) => {
+export const MemoPreview = ({ mousePosition }: MemoPreviewProps) => {
   const zoom = useStore((state) => state.transform[2]);
 
   if (!mousePosition) return null;

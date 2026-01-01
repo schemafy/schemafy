@@ -28,7 +28,7 @@ import {
   CustomConnectionLine,
   FloatingButtons,
   SchemaSelector,
-  MemoPrivew,
+  MemoPreview,
   Memo,
   TempMemoPreview,
 } from '@/features/drawing';
@@ -246,7 +246,7 @@ const CanvasPageComponent = () => {
               <TablePreview mousePosition={mousePosition} />
             )}
             {activeTool === 'memo' && (
-              <MemoPrivew mousePosition={mousePosition} />
+              <MemoPreview mousePosition={mousePosition} />
             )}
           </ReactFlow>
 
