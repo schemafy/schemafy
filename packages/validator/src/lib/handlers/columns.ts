@@ -303,9 +303,7 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId, tableId);
 
-    const sortedColumns = [...table.columns].sort(
-      (a, b) => a.seqNo - b.seqNo,
-    );
+    const sortedColumns = [...table.columns].sort((a, b) => a.seqNo - b.seqNo);
 
     const columnsWithoutTarget = sortedColumns.filter((c) => c.id !== columnId);
 

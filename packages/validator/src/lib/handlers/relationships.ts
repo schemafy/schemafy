@@ -62,18 +62,14 @@ export const relationshipHandlers: RelationshipHandlers = {
       throw new RelationshipEmptyError(relationship.name);
     }
 
-    const fkTable = schema.tables.find(
-      (t) => t.id === relationship.fkTableId,
-    );
+    const fkTable = schema.tables.find((t) => t.id === relationship.fkTableId);
     if (!fkTable)
       throw new RelationshipTargetTableNotExistError(
         relationship.name,
         relationship.fkTableId,
       );
 
-    const pkTable = schema.tables.find(
-      (t) => t.id === relationship.pkTableId,
-    );
+    const pkTable = schema.tables.find((t) => t.id === relationship.pkTableId);
     if (!pkTable)
       throw new RelationshipTargetTableNotExistError(
         relationship.name,
@@ -98,10 +94,7 @@ export const relationshipHandlers: RelationshipHandlers = {
       (r) => r.name === relationship.name,
     );
     if (duplicateRelationship)
-      throw new RelationshipNameNotUniqueError(
-        relationship.name,
-        fkTable.id,
-      );
+      throw new RelationshipNameNotUniqueError(relationship.name, fkTable.id);
 
     const changeTables: Table[] = schema.tables.map((t) =>
       t.id === relationship.fkTableId
