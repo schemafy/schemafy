@@ -6,6 +6,7 @@ import {
   RelationshipCyclicReferenceError,
 } from '../src/lib/errors';
 import { ERD_VALIDATOR } from '../src/lib/utils';
+import type { Table, Constraint } from '../src/lib/types';
 
 describe('Relationship validation', () => {
   test('관계는 반드시 하나 이상의 컬럼 매핑을 가져야 한다', () => {
@@ -1294,6 +1295,136 @@ describe('Relationship validation', () => {
           )
         ).toThrow(RelationshipCyclicReferenceError);
       });
+    });
+  });
+
+  describe('관계 삭제 검증', () => {
+    test('식별 관계 삭제 시 자식 테이블의 PK 순번이 재정렬된다', () => {
+      const schemaId = 'schema-1';
+      const parentTableId = 'parent-table';
+      const childTableId = 'child-table';
+      const parentColumnId = 'parent-id';
+      const childOwnPkColumnId = 'child-own-id';
+      const fkColumnId = 'child-fk';
+
+      const baseDatabase = createTestDatabase()
+        .withSchema((s) =>
+          s
+            .withId(schemaId)
+            .withTable((t) =>
+              t
+                .withId(parentTableId)
+                .withName('parent')
+                .withColumn((c) =>
+                  c.withId(parentColumnId).withName('id').withDataType('INT')
+                )
+                .withConstraint((c) =>
+                  c
+                    .withName('pk_parent')
+                    .withKind('PRIMARY_KEY')
+                    .withColumn((cc) => cc.withColumnId(parentColumnId))
+                )
+            )
+            .withTable((t) =>
+              t
+                .withId(childTableId)
+                .withName('child')
+                .withColumn((c) =>
+                  c.withId(childOwnPkColumnId).withName('id').withDataType('INT')
+                )
+                .withConstraint((c) =>
+                  c
+                    .withName('pk_child')
+                    .withKind('PRIMARY_KEY')
+                    .withColumn((cc) => cc.withColumnId(childOwnPkColumnId).withSeqNo(1))
+                )
+            )
+        )
+        .build();
+
+      const relationship = createRelationshipBuilder()
+        .withId('rel-1')
+        .withSrcTableId(childTableId)
+        .withName('fk_parent')
+        .withKind('IDENTIFYING')
+        .withTgtTableId(parentTableId)
+        .withColumn((rc) =>
+          rc.withFkColumnId(fkColumnId).withRefColumnId(parentColumnId)
+        )
+        .build();
+
+      const databaseWithRelationship = ERD_VALIDATOR.createRelationship(
+        baseDatabase,
+        schemaId,
+        relationship
+      );
+
+      const updatedDatabase = ERD_VALIDATOR.deleteRelationship(
+        databaseWithRelationship,
+        schemaId,
+        relationship.id
+      );
+
+      const childTable = updatedDatabase.schemas[0].tables.find((t: Table) => t.id === childTableId);
+      const pkConstraint = childTable?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+
+      expect(pkConstraint).toBeDefined();
+      expect(pkConstraint?.columns).toHaveLength(1);
+      expect(pkConstraint?.columns[0].seqNo).toBe(1);
+      expect(pkConstraint?.columns[0].columnId).toBe(childOwnPkColumnId);
+    });
+
+    test('중간 PK 컬럼 삭제 시 seqNo가 재정렬된다', () => {
+      const schemaId = 'schema-1';
+      const parentTableId = 'parent-table';
+      const childTableId = 'child-table';
+
+      const baseDatabase = createTestDatabase()
+        .withSchema((s) =>
+          s
+            .withId(schemaId)
+            .withTable((t) =>
+              t
+                .withId(parentTableId)
+                .withName('parent')
+                .withColumn((c) => c.withId('p1').withName('p1').withDataType('INT'))
+                .withConstraint((c) => c.withKind('PRIMARY_KEY').withColumn((cc) => cc.withColumnId('p1')))
+            )
+            .withTable((t) =>
+              t
+                .withId(childTableId)
+                .withName('child')
+                .withColumn((c) => c.withId('c1').withName('c1').withDataType('INT'))
+                .withColumn((c) => c.withId('c2').withName('c2').withDataType('INT'))
+                .withConstraint((c) =>
+                  c.withKind('PRIMARY_KEY')
+                    .withColumn((cc) => cc.withColumnId('c1').withSeqNo(1))
+                    .withColumn((cc) => cc.withColumnId('c2').withSeqNo(2))
+                )
+            )
+        )
+        .build();
+
+      const relationship = createRelationshipBuilder()
+        .withId('rel-1')
+        .withSrcTableId(childTableId)
+        .withName('fk_parent')
+        .withKind('IDENTIFYING')
+        .withTgtTableId(parentTableId)
+        .withColumn((rc) =>
+          rc.withFkColumnId('fk_p1').withRefColumnId('p1')
+        )
+        .build();
+
+      let database = ERD_VALIDATOR.createRelationship(baseDatabase, schemaId, relationship);
+      database = ERD_VALIDATOR.deleteRelationship(database, schemaId, relationship.id);
+
+      const childTable = database.schemas[0].tables.find((t: Table) => t.id === childTableId);
+      const pkConstraint = childTable?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+
+      expect(pkConstraint?.columns).toHaveLength(2);
+      expect(pkConstraint?.columns.find(c => c.columnId === 'c1')?.seqNo).toBe(1);
+      expect(pkConstraint?.columns.find(c => c.columnId === 'c2')?.seqNo).toBe(2);
     });
   });
 });

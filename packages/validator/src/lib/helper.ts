@@ -408,15 +408,28 @@ export const deleteCascadingForeignKeys = (
         .filter((idx) => idx.columns.length > 0);
 
       const updateConstraints: Constraint[] = childTable.constraints
-        .map((constraint) => ({
-          ...constraint,
-          isAffected: constraint.columns.some((cc) =>
-            fkColumnsToDelete.includes(cc.columnId),
-          ),
-          columns: constraint.columns.filter(
+        .map((constraint) => {
+          const remainingColumns = constraint.columns.filter(
             (cc) => !fkColumnsToDelete.includes(cc.columnId),
-          ),
-        }))
+          );
+
+          const finalColumns =
+            constraint.kind === "PRIMARY_KEY"
+              ? remainingColumns.map((cc, index) => ({
+                  ...cc,
+                  seqNo: index + 1,
+                  isAffected: true,
+                }))
+              : remainingColumns;
+
+          return {
+            ...constraint,
+            isAffected: constraint.columns.some((cc) =>
+              fkColumnsToDelete.includes(cc.columnId),
+            ),
+            columns: finalColumns,
+          };
+        })
         .filter((constraint) => constraint.columns.length > 0);
 
       const updateRelationships: Relationship[] = childTable.relationships
@@ -721,12 +734,25 @@ export const deleteRelatedColumns = (
             ),
           })),
           constraints: table.constraints
-            .map((constraint) => ({
-              ...constraint,
-              columns: constraint.columns.filter(
+            .map((constraint) => {
+              const remainingColumns = constraint.columns.filter(
                 (cc) => !fkColumnsToDelete.has(cc.columnId),
-              ),
-            }))
+              );
+
+              const finalColumns =
+                constraint.kind === "PRIMARY_KEY"
+                  ? remainingColumns.map((cc, index) => ({
+                      ...cc,
+                      seqNo: index + 1,
+                      isAffected: true,
+                    }))
+                  : remainingColumns;
+
+              return {
+                ...constraint,
+                columns: finalColumns,
+              };
+            })
             .filter((constraint) => constraint.columns.length > 0),
         };
       }
