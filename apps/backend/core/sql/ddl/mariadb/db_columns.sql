@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS db_columns (
     id                CHAR(26)     NOT NULL,
     table_id          CHAR(26)     NOT NULL,
     name              VARCHAR(255) NOT NULL,
-    ordinal_position  INT          NOT NULL,
+    seq_no  INT          NOT NULL,
     data_type         VARCHAR(64)  NOT NULL,
     length_scale      VARCHAR(64)  NULL,
     is_auto_increment BOOLEAN      NULL,

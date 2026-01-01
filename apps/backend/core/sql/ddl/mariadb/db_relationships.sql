@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS db_relationships (
     id           CHAR(26)     NOT NULL,
-    src_table_id CHAR(26)     NOT NULL,
-    tgt_table_id CHAR(26)     NOT NULL,
+    fk_table_id CHAR(26)     NOT NULL,
+    pk_table_id CHAR(26)     NOT NULL,
     name         VARCHAR(255) NOT NULL,
     kind         VARCHAR(32)  NOT NULL,
     cardinality  VARCHAR(16)  NOT NULL,
