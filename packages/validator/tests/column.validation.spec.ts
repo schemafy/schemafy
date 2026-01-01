@@ -327,6 +327,593 @@ describe('Column validation', () => {
     expect(updatedFkColumn?.lengthScale).toBe('50');
   });
 
+  test('PK 타입 변경 시 다단계 FK 컬럼 타입도 함께 변경된다', () => {
+    const schemaId = 'schema-1';
+    const grandparentTableId = 'grandparent-table';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const grandparentColumnId = 'grandparent-id';
+    const parentFkColumnId = 'parent-fk';
+    const childFkColumnId = 'child-fk';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(grandparentTableId)
+              .withName('grandparent')
+              .withColumn((c) =>
+                c
+                  .withId(grandparentColumnId)
+                  .withName('id')
+                  .withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_grandparent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(grandparentColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c
+                  .withId(parentFkColumnId)
+                  .withName('grandparent_id')
+                  .withDataType('INT')
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c
+                  .withId(childFkColumnId)
+                  .withName('grandparent_id')
+                  .withDataType('INT')
+              )
+          )
+      )
+      .build();
+
+    const parentRelationship = createRelationshipBuilder()
+      .withId('rel-1')
+      .withSrcTableId(parentTableId)
+      .withName('fk_grandparent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(grandparentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(parentFkColumnId).withRefColumnId(grandparentColumnId)
+      )
+      .build();
+
+    const dbWithParentRel = ERD_VALIDATOR.createRelationship(
+      baseDatabase,
+      schemaId,
+      parentRelationship
+    );
+
+    const childRelationship = createRelationshipBuilder()
+      .withId('rel-2')
+      .withSrcTableId(childTableId)
+      .withName('fk_parent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(parentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentFkColumnId)
+      )
+      .build();
+
+    const dbWithBothRels = ERD_VALIDATOR.createRelationship(
+      dbWithParentRel,
+      schemaId,
+      childRelationship
+    );
+
+    const updatedDatabase = ERD_VALIDATOR.changeColumnType(
+      dbWithBothRels,
+      schemaId,
+      grandparentTableId,
+      grandparentColumnId,
+      'BIGINT'
+    );
+
+    const updatedGrandparentColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === grandparentTableId)
+      ?.columns.find((c) => c.id === grandparentColumnId);
+    const updatedParentFkColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === parentTableId)
+      ?.columns.find((c) => c.id === parentFkColumnId);
+    const updatedChildFkColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === childTableId)
+      ?.columns.find((c) => c.id === childFkColumnId);
+
+    expect(updatedGrandparentColumn?.dataType).toBe('BIGINT');
+    expect(updatedParentFkColumn?.dataType).toBe('BIGINT');
+    expect(updatedChildFkColumn?.dataType).toBe('BIGINT');
+  });
+
+  test('중간 FK 컬럼 타입 변경 시 상위/하위 컬럼 타입도 함께 변경된다', () => {
+    const schemaId = 'schema-1';
+    const grandparentTableId = 'grandparent-table';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const grandparentColumnId = 'grandparent-id';
+    const parentFkColumnId = 'parent-fk';
+    const childFkColumnId = 'child-fk';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(grandparentTableId)
+              .withName('grandparent')
+              .withColumn((c) =>
+                c
+                  .withId(grandparentColumnId)
+                  .withName('id')
+                  .withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_grandparent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(grandparentColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c
+                  .withId(parentFkColumnId)
+                  .withName('grandparent_id')
+                  .withDataType('INT')
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c
+                  .withId(childFkColumnId)
+                  .withName('grandparent_id')
+                  .withDataType('INT')
+              )
+          )
+      )
+      .build();
+
+    const parentRelationship = createRelationshipBuilder()
+      .withId('rel-1')
+      .withSrcTableId(parentTableId)
+      .withName('fk_grandparent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(grandparentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(parentFkColumnId).withRefColumnId(grandparentColumnId)
+      )
+      .build();
+
+    const dbWithParentRel = ERD_VALIDATOR.createRelationship(
+      baseDatabase,
+      schemaId,
+      parentRelationship
+    );
+
+    const childRelationship = createRelationshipBuilder()
+      .withId('rel-2')
+      .withSrcTableId(childTableId)
+      .withName('fk_parent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(parentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentFkColumnId)
+      )
+      .build();
+
+    const dbWithBothRels = ERD_VALIDATOR.createRelationship(
+      dbWithParentRel,
+      schemaId,
+      childRelationship
+    );
+
+    const updatedDatabase = ERD_VALIDATOR.changeColumnType(
+      dbWithBothRels,
+      schemaId,
+      parentTableId,
+      parentFkColumnId,
+      'BIGINT'
+    );
+
+    const updatedGrandparentColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === grandparentTableId)
+      ?.columns.find((c) => c.id === grandparentColumnId);
+    const updatedParentFkColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === parentTableId)
+      ?.columns.find((c) => c.id === parentFkColumnId);
+    const updatedChildFkColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === childTableId)
+      ?.columns.find((c) => c.id === childFkColumnId);
+
+    // 상위(grandparent), 자신(parent), 하위(child) 모두 변경되어야 함
+    expect(updatedGrandparentColumn?.dataType).toBe('BIGINT');
+    expect(updatedParentFkColumn?.dataType).toBe('BIGINT');
+    expect(updatedChildFkColumn?.dataType).toBe('BIGINT');
+  });
+
+  test('최하위 FK 컬럼 타입 변경 시 상위 컬럼 타입도 함께 변경된다', () => {
+    const schemaId = 'schema-1';
+    const grandparentTableId = 'grandparent-table';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const grandparentColumnId = 'grandparent-id';
+    const parentFkColumnId = 'parent-fk';
+    const childFkColumnId = 'child-fk';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(grandparentTableId)
+              .withName('grandparent')
+              .withColumn((c) =>
+                c
+                  .withId(grandparentColumnId)
+                  .withName('id')
+                  .withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_grandparent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(grandparentColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c
+                  .withId(parentFkColumnId)
+                  .withName('grandparent_id')
+                  .withDataType('INT')
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c
+                  .withId(childFkColumnId)
+                  .withName('grandparent_id')
+                  .withDataType('INT')
+              )
+          )
+      )
+      .build();
+
+    const parentRelationship = createRelationshipBuilder()
+      .withId('rel-1')
+      .withSrcTableId(parentTableId)
+      .withName('fk_grandparent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(grandparentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(parentFkColumnId).withRefColumnId(grandparentColumnId)
+      )
+      .build();
+
+    const dbWithParentRel = ERD_VALIDATOR.createRelationship(
+      baseDatabase,
+      schemaId,
+      parentRelationship
+    );
+
+    const childRelationship = createRelationshipBuilder()
+      .withId('rel-2')
+      .withSrcTableId(childTableId)
+      .withName('fk_parent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(parentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentFkColumnId)
+      )
+      .build();
+
+    const dbWithBothRels = ERD_VALIDATOR.createRelationship(
+      dbWithParentRel,
+      schemaId,
+      childRelationship
+    );
+
+    // 최하위 FK 컬럼(childFkColumnId) 타입 변경
+    const updatedDatabase = ERD_VALIDATOR.changeColumnType(
+      dbWithBothRels,
+      schemaId,
+      childTableId,
+      childFkColumnId,
+      'BIGINT'
+    );
+
+    const updatedGrandparentColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === grandparentTableId)
+      ?.columns.find((c) => c.id === grandparentColumnId);
+    const updatedParentFkColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === parentTableId)
+      ?.columns.find((c) => c.id === parentFkColumnId);
+    const updatedChildFkColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === childTableId)
+      ?.columns.find((c) => c.id === childFkColumnId);
+
+    // 상위(grandparent, parent) 모두 변경되어야 함
+    expect(updatedGrandparentColumn?.dataType).toBe('BIGINT');
+    expect(updatedParentFkColumn?.dataType).toBe('BIGINT');
+    expect(updatedChildFkColumn?.dataType).toBe('BIGINT');
+  });
+
+  test('4단계 체인에서 중간 컬럼 타입 변경 시 전체 체인이 변경된다', () => {
+    const schemaId = 'schema-1';
+    const greatGrandparentTableId = 'great-grandparent-table';
+    const grandparentTableId = 'grandparent-table';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const greatGrandparentColumnId = 'great-grandparent-id';
+    const grandparentFkColumnId = 'grandparent-fk';
+    const parentFkColumnId = 'parent-fk';
+    const childFkColumnId = 'child-fk';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(greatGrandparentTableId)
+              .withName('great_grandparent')
+              .withColumn((c) =>
+                c
+                  .withId(greatGrandparentColumnId)
+                  .withName('id')
+                  .withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_great_grandparent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(greatGrandparentColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(grandparentTableId)
+              .withName('grandparent')
+              .withColumn((c) =>
+                c
+                  .withId(grandparentFkColumnId)
+                  .withName('great_grandparent_id')
+                  .withDataType('INT')
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c
+                  .withId(parentFkColumnId)
+                  .withName('grandparent_id')
+                  .withDataType('INT')
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c
+                  .withId(childFkColumnId)
+                  .withName('parent_id')
+                  .withDataType('INT')
+              )
+          )
+      )
+      .build();
+
+    // 관계 생성: great-grandparent → grandparent
+    const rel1 = createRelationshipBuilder()
+      .withId('rel-1')
+      .withSrcTableId(grandparentTableId)
+      .withName('fk_great_grandparent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(greatGrandparentTableId)
+      .withColumn((rc) =>
+        rc
+          .withFkColumnId(grandparentFkColumnId)
+          .withRefColumnId(greatGrandparentColumnId)
+      )
+      .build();
+
+    const db1 = ERD_VALIDATOR.createRelationship(baseDatabase, schemaId, rel1);
+
+    // 관계 생성: grandparent → parent
+    const rel2 = createRelationshipBuilder()
+      .withId('rel-2')
+      .withSrcTableId(parentTableId)
+      .withName('fk_grandparent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(grandparentTableId)
+      .withColumn((rc) =>
+        rc
+          .withFkColumnId(parentFkColumnId)
+          .withRefColumnId(grandparentFkColumnId)
+      )
+      .build();
+
+    const db2 = ERD_VALIDATOR.createRelationship(db1, schemaId, rel2);
+
+    // 관계 생성: parent → child
+    const rel3 = createRelationshipBuilder()
+      .withId('rel-3')
+      .withSrcTableId(childTableId)
+      .withName('fk_parent')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(parentTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentFkColumnId)
+      )
+      .build();
+
+    const db3 = ERD_VALIDATOR.createRelationship(db2, schemaId, rel3);
+
+    // 중간(grandparent) 컬럼 타입 변경
+    const updatedDatabase = ERD_VALIDATOR.changeColumnType(
+      db3,
+      schemaId,
+      grandparentTableId,
+      grandparentFkColumnId,
+      'BIGINT'
+    );
+
+    const updatedGreatGrandparentColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === greatGrandparentTableId)
+      ?.columns.find((c) => c.id === greatGrandparentColumnId);
+    const updatedGrandparentColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === grandparentTableId)
+      ?.columns.find((c) => c.id === grandparentFkColumnId);
+    const updatedParentColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === parentTableId)
+      ?.columns.find((c) => c.id === parentFkColumnId);
+    const updatedChildColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === childTableId)
+      ?.columns.find((c) => c.id === childFkColumnId);
+
+    // 4단계 체인 전체가 변경되어야 함
+    expect(updatedGreatGrandparentColumn?.dataType).toBe('BIGINT');
+    expect(updatedGrandparentColumn?.dataType).toBe('BIGINT');
+    expect(updatedParentColumn?.dataType).toBe('BIGINT');
+    expect(updatedChildColumn?.dataType).toBe('BIGINT');
+  });
+
+  test('분기 구조에서 한 분기 컬럼 변경 시 다른 분기도 변경된다', () => {
+    const schemaId = 'schema-1';
+    const rootTableId = 'root-table';
+    const branch1TableId = 'branch1-table';
+    const branch2TableId = 'branch2-table';
+    const rootColumnId = 'root-id';
+    const branch1FkColumnId = 'branch1-fk';
+    const branch2FkColumnId = 'branch2-fk';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(rootTableId)
+              .withName('root')
+              .withColumn((c) =>
+                c.withId(rootColumnId).withName('id').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_root')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(rootColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(branch1TableId)
+              .withName('branch1')
+              .withColumn((c) =>
+                c
+                  .withId(branch1FkColumnId)
+                  .withName('root_id')
+                  .withDataType('INT')
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(branch2TableId)
+              .withName('branch2')
+              .withColumn((c) =>
+                c
+                  .withId(branch2FkColumnId)
+                  .withName('root_id')
+                  .withDataType('INT')
+              )
+          )
+      )
+      .build();
+
+    // 관계 생성: root → branch1
+    const rel1 = createRelationshipBuilder()
+      .withId('rel-1')
+      .withSrcTableId(branch1TableId)
+      .withName('fk_root_1')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(rootTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(branch1FkColumnId).withRefColumnId(rootColumnId)
+      )
+      .build();
+
+    const db1 = ERD_VALIDATOR.createRelationship(baseDatabase, schemaId, rel1);
+
+    // 관계 생성: root → branch2
+    const rel2 = createRelationshipBuilder()
+      .withId('rel-2')
+      .withSrcTableId(branch2TableId)
+      .withName('fk_root_2')
+      .withKind('IDENTIFYING')
+      .withTgtTableId(rootTableId)
+      .withColumn((rc) =>
+        rc.withFkColumnId(branch2FkColumnId).withRefColumnId(rootColumnId)
+      )
+      .build();
+
+    const db2 = ERD_VALIDATOR.createRelationship(db1, schemaId, rel2);
+
+    // branch1의 FK 컬럼 타입 변경
+    const updatedDatabase = ERD_VALIDATOR.changeColumnType(
+      db2,
+      schemaId,
+      branch1TableId,
+      branch1FkColumnId,
+      'BIGINT'
+    );
+
+    const updatedRootColumn = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === rootTableId)
+      ?.columns.find((c) => c.id === rootColumnId);
+    const updatedBranch1Column = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === branch1TableId)
+      ?.columns.find((c) => c.id === branch1FkColumnId);
+    const updatedBranch2Column = updatedDatabase.schemas[0].tables
+      .find((t) => t.id === branch2TableId)
+      ?.columns.find((c) => c.id === branch2FkColumnId);
+
+    // root, branch1, branch2 모두 변경되어야 함
+    expect(updatedRootColumn?.dataType).toBe('BIGINT');
+    expect(updatedBranch1Column?.dataType).toBe('BIGINT');
+    expect(updatedBranch2Column?.dataType).toBe('BIGINT');
+  });
+
   test('일반 컬럼을 삭제할 수 있다', () => {
     const database = createTestDatabase()
       .withSchema((s) =>

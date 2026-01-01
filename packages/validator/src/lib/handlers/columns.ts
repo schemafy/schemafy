@@ -268,12 +268,29 @@ export const columnHandlers: ColumnHandlers = {
 
     const nextLengthScale = lengthScale ?? column.lengthScale;
 
-    const fkColumnIds = new Set<string>();
-    for (const currentTable of schema.tables) {
-      for (const relationship of currentTable.relationships) {
-        for (const relationshipColumn of relationship.columns) {
-          if (relationshipColumn.refColumnId === columnId) {
-            fkColumnIds.add(relationshipColumn.fkColumnId);
+    const allRelatedColumnIds = new Set<string>([columnId]);
+    const queue = [columnId];
+
+    while (queue.length > 0) {
+      const currentColumnId = queue.shift()!;
+
+      for (const currentTable of schema.tables) {
+        for (const relationship of currentTable.relationships) {
+          for (const relationshipColumn of relationship.columns) {
+            if (
+              relationshipColumn.refColumnId === currentColumnId &&
+              !allRelatedColumnIds.has(relationshipColumn.fkColumnId)
+            ) {
+              allRelatedColumnIds.add(relationshipColumn.fkColumnId);
+              queue.push(relationshipColumn.fkColumnId);
+            }
+            if (
+              relationshipColumn.fkColumnId === currentColumnId &&
+              !allRelatedColumnIds.has(relationshipColumn.refColumnId)
+            ) {
+              allRelatedColumnIds.add(relationshipColumn.refColumnId);
+              queue.push(relationshipColumn.refColumnId);
+            }
           }
         }
       }
@@ -282,7 +299,7 @@ export const columnHandlers: ColumnHandlers = {
     const changeTables: Table[] = schema.tables.map((t) => {
       let isTableAffected = false;
       const changeColumns: Column[] = t.columns.map((c) => {
-        if (c.id === columnId || fkColumnIds.has(c.id)) {
+        if (allRelatedColumnIds.has(c.id)) {
           isTableAffected = true;
           return {
             ...c,
