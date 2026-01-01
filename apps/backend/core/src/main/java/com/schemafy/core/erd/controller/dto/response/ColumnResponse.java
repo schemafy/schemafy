@@ -16,7 +16,7 @@ public class ColumnResponse {
     private String tableId;
     private String name;
     private String dataType;
-    private Integer ordinalPosition;
+    private Integer seqNo;
     private String lengthScale;
     private Boolean isAutoIncrement;
     private String charset;
@@ -29,7 +29,7 @@ public class ColumnResponse {
                 .tableId(column.getTableId())
                 .name(column.getName())
                 .dataType(column.getDataType())
-                .ordinalPosition(column.getOrdinalPosition())
+                .seqNo(column.getSeqNo())
                 .lengthScale(column.getLengthScale())
                 .isAutoIncrement(column.isAutoIncrement())
                 .charset(column.getCharset())

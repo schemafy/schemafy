@@ -134,9 +134,9 @@ public final class ValidationDatabaseIdRewriter {
         Validation.Relationship.Builder builder = relationship.toBuilder()
                 .setId(remapId(relationship.getId(),
                         idMappings.relationships()))
-                .setSrcTableId(remapId(relationship.getSrcTableId(),
+                .setFkTableId(remapId(relationship.getFkTableId(),
                         idMappings.tables()))
-                .setTgtTableId(remapId(relationship.getTgtTableId(),
+                .setPkTableId(remapId(relationship.getPkTableId(),
                         idMappings.tables()));
 
         builder.clearColumns();
@@ -160,7 +160,7 @@ public final class ValidationDatabaseIdRewriter {
                                 idMappings.relationships()))
                 .setFkColumnId(remapId(relationshipColumn.getFkColumnId(),
                         idMappings.columns()))
-                .setRefColumnId(remapId(relationshipColumn.getRefColumnId(),
+                .setPkColumnId(remapId(relationshipColumn.getPkColumnId(),
                         idMappings.columns()))
                 .build();
     }
