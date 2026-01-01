@@ -56,7 +56,7 @@ export interface ColumnHandlers {
     schemaId: Schema["id"],
     tableId: Table["id"],
     columnId: Column["id"],
-    newPosition: Column["ordinalPosition"],
+    newPosition: Column["seqNo"],
   ) => Database;
 }
 
@@ -166,10 +166,10 @@ export const columnHandlers: ColumnHandlers = {
       (rel) => ({
         ...rel,
         isAffected: rel.columns.some(
-          (rc) => rc.fkColumnId === columnId || rc.refColumnId === columnId,
+          (rc) => rc.fkColumnId === columnId || rc.pkColumnId === columnId,
         ),
         columns: rel.columns.filter(
-          (rc) => rc.fkColumnId !== columnId && rc.refColumnId !== columnId,
+          (rc) => rc.fkColumnId !== columnId && rc.pkColumnId !== columnId,
         ),
       }),
     );
@@ -304,7 +304,7 @@ export const columnHandlers: ColumnHandlers = {
     if (!column) throw new ColumnNotExistError(columnId, tableId);
 
     const sortedColumns = [...table.columns].sort(
-      (a, b) => a.ordinalPosition - b.ordinalPosition,
+      (a, b) => a.seqNo - b.seqNo,
     );
 
     const columnsWithoutTarget = sortedColumns.filter((c) => c.id !== columnId);
@@ -317,7 +317,7 @@ export const columnHandlers: ColumnHandlers = {
 
     const updatedColumns = reorderedColumns.map((col, index) => ({
       ...col,
-      ordinalPosition: index,
+      seqNo: index,
       isAffected: true,
     }));
 

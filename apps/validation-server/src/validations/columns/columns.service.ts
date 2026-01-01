@@ -129,7 +129,7 @@ export class ColumnsService {
     schemaId: Schema['id'],
     tableId: Table['id'],
     columnId: Column['id'],
-    newPosition: Column['ordinalPosition'],
+    newPosition: Column['seqNo'],
   ): ValidateResult {
     try {
       const updated = ERD_VALIDATOR.changeColumnPosition(

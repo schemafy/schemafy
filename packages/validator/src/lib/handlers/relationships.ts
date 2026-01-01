@@ -62,49 +62,49 @@ export const relationshipHandlers: RelationshipHandlers = {
       throw new RelationshipEmptyError(relationship.name);
     }
 
-    const sourceTable = schema.tables.find(
-      (t) => t.id === relationship.srcTableId,
+    const fkTable = schema.tables.find(
+      (t) => t.id === relationship.fkTableId,
     );
-    if (!sourceTable)
+    if (!fkTable)
       throw new RelationshipTargetTableNotExistError(
         relationship.name,
-        relationship.srcTableId,
+        relationship.fkTableId,
       );
 
-    const targetTable = schema.tables.find(
-      (t) => t.id === relationship.tgtTableId,
+    const pkTable = schema.tables.find(
+      (t) => t.id === relationship.pkTableId,
     );
-    if (!targetTable)
+    if (!pkTable)
       throw new RelationshipTargetTableNotExistError(
         relationship.name,
-        relationship.tgtTableId,
+        relationship.pkTableId,
       );
 
     if (
       relationship.kind === "IDENTIFYING" &&
       helper.detectCircularReference(
         schema,
-        relationship.tgtTableId,
-        relationship.srcTableId,
+        relationship.pkTableId,
+        relationship.fkTableId,
       )
     ) {
       throw new RelationshipCyclicReferenceError(
-        relationship.tgtTableId,
-        relationship.srcTableId,
+        relationship.pkTableId,
+        relationship.fkTableId,
       );
     }
 
-    const duplicateRelationship = sourceTable.relationships.find(
+    const duplicateRelationship = fkTable.relationships.find(
       (r) => r.name === relationship.name,
     );
     if (duplicateRelationship)
       throw new RelationshipNameNotUniqueError(
         relationship.name,
-        sourceTable.id,
+        fkTable.id,
       );
 
     const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === relationship.srcTableId
+      t.id === relationship.fkTableId
         ? {
             ...t,
             isAffected: true,
@@ -143,7 +143,7 @@ export const relationshipHandlers: RelationshipHandlers = {
     const updatedSchema = changeSchemas.find((s) => s.id === schemaId)!;
     const propagatedSchema = helper.propagateKeysToChildren(
       structuredClone(updatedSchema),
-      relationship.tgtTableId,
+      relationship.pkTableId,
     );
 
     updatedDatabase = {
@@ -203,7 +203,7 @@ export const relationshipHandlers: RelationshipHandlers = {
     if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
     const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === relationship.srcTableId || t.id === relationship.tgtTableId
+      t.id === relationship.fkTableId || t.id === relationship.pkTableId
         ? {
             ...t,
             isAffected: true,

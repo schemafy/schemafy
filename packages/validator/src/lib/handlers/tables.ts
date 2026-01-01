@@ -69,8 +69,8 @@ export const tableHandlers: TableHandlers = {
     for (const table of schema.tables) {
       for (const relationship of table.relationships) {
         if (
-          relationship.srcTableId === tableId ||
-          relationship.tgtTableId === tableId
+          relationship.fkTableId === tableId ||
+          relationship.pkTableId === tableId
         ) {
           relationshipsToDelete.add(relationship.id);
         }

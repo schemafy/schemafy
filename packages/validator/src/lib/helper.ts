@@ -23,8 +23,8 @@ export const detectCircularReference = (
   const referencedTables = new Set<Table["id"]>();
   schema.tables.forEach((table) => {
     table.relationships.forEach((rel) => {
-      if (rel.srcTableId === fromTableId) {
-        referencedTables.add(rel.tgtTableId);
+      if (rel.fkTableId === fromTableId) {
+        referencedTables.add(rel.pkTableId);
       }
     });
   });
@@ -126,10 +126,10 @@ export const propagateNewPrimaryKey = (
 
   for (const table of updatedSchema.tables) {
     for (const rel of table.relationships) {
-      if (rel.tgtTableId !== parentTableId) continue;
+      if (rel.pkTableId !== parentTableId) continue;
 
       const childTable = updatedSchema.tables.find(
-        (t) => t.id === rel.srcTableId,
+        (t) => t.id === rel.fkTableId,
       );
       if (!childTable) continue;
 
@@ -138,7 +138,7 @@ export const propagateNewPrimaryKey = (
       )!;
 
       const relColumn = rel.columns.find(
-        (rc) => rc.refColumnId === newPkColumn.id,
+        (rc) => rc.pkColumnId === newPkColumn.id,
       );
 
       if (relColumn && relColumn.fkColumnId && relColumn.fkColumnId !== "") {
@@ -160,7 +160,7 @@ export const propagateNewPrimaryKey = (
         id: newFkColumnId,
         tableId: childTable.id,
         name: columnName,
-        ordinalPosition: childTable.columns.length + 1,
+        seqNo: childTable.columns.length + 1,
       };
 
       updatedSchema = {
@@ -253,7 +253,7 @@ export const propagateNewPrimaryKey = (
           id: `${ulid()}`,
           relationshipId: rel.id,
           fkColumnId: newFkColumnId,
-          refColumnId: newPkColumn.id,
+          pkColumnId: newPkColumn.id,
           seqNo: rel.columns.length + 1,
           isAffected: true,
         };
@@ -289,7 +289,7 @@ export const propagateNewPrimaryKey = (
       if (rel.kind === "IDENTIFYING") {
         updatedSchema = propagateNewPrimaryKey(
           structuredClone(updatedSchema),
-          rel.srcTableId,
+          rel.fkTableId,
           newFkColumn,
           new Set(visited),
         );
@@ -313,16 +313,16 @@ export const deleteCascadingForeignKeys = (
 
   for (const table of updatedSchema.tables) {
     for (const rel of table.relationships) {
-      if (rel.tgtTableId !== parentTableId) continue;
+      if (rel.pkTableId !== parentTableId) continue;
 
       const childTable = updatedSchema.tables.find(
-        (t) => t.id === rel.srcTableId,
+        (t) => t.id === rel.fkTableId,
       );
 
       if (!childTable) continue;
 
       const fkColumnsToDelete = rel.columns
-        .filter((relCol) => relCol.refColumnId === deletedPkColumnId)
+        .filter((relCol) => relCol.pkColumnId === deletedPkColumnId)
         .map((relCol) => relCol.fkColumnId);
 
       if (fkColumnsToDelete.length === 0) continue;
@@ -357,12 +357,12 @@ export const deleteCascadingForeignKeys = (
           isAffected: relationship.columns.some(
             (rc) =>
               fkColumnsToDelete.includes(rc.fkColumnId) ||
-              fkColumnsToDelete.includes(rc.refColumnId),
+              fkColumnsToDelete.includes(rc.pkColumnId),
           ),
           columns: relationship.columns.filter(
             (rc) =>
               !fkColumnsToDelete.includes(rc.fkColumnId) &&
-              !fkColumnsToDelete.includes(rc.refColumnId),
+              !fkColumnsToDelete.includes(rc.pkColumnId),
           ),
         }))
         .filter((relationship) => relationship.columns.length > 0);
@@ -392,7 +392,7 @@ export const deleteCascadingForeignKeys = (
         for (const fkColumnId of fkColumnsToDelete) {
           updatedSchema = deleteCascadingForeignKeys(
             structuredClone(updatedSchema),
-            rel.srcTableId,
+            rel.fkTableId,
             fkColumnId,
             new Set(visited),
           );
@@ -429,10 +429,10 @@ export const propagateKeysToChildren = (
 
   for (const table of updatedSchema.tables) {
     for (const rel of table.relationships) {
-      if (rel.tgtTableId !== parentTableId) continue;
+      if (rel.pkTableId !== parentTableId) continue;
 
       const childTable = updatedSchema.tables.find(
-        (t) => t.id === rel.srcTableId,
+        (t) => t.id === rel.fkTableId,
       );
       if (!childTable) continue;
 
@@ -441,7 +441,7 @@ export const propagateKeysToChildren = (
 
       for (const pkColumn of pkColumns) {
         const relColumn = rel.columns.find(
-          (rc) => rc.refColumnId === pkColumn.id,
+          (rc) => rc.pkColumnId === pkColumn.id,
         );
 
         if (relColumn && relColumn.fkColumnId && relColumn.fkColumnId !== "") {
@@ -463,7 +463,7 @@ export const propagateKeysToChildren = (
           id: newColumnId,
           tableId: childTable.id,
           name: columnName,
-          ordinalPosition: childTable.columns.length + 1,
+          seqNo: childTable.columns.length + 1,
         };
 
         updatedChildTable = {
@@ -479,7 +479,7 @@ export const propagateKeysToChildren = (
             id: `${ulid()}`,
             relationshipId: rel.id,
             fkColumnId: newColumnId,
-            refColumnId: pkColumn.id,
+            pkColumnId: pkColumn.id,
             seqNo: rel.columns.length + 1,
             isAffected: true,
           };
@@ -598,7 +598,7 @@ export const propagateKeysToChildren = (
 
       updatedSchema = propagateKeysToChildren(
         structuredClone(updatedSchema),
-        rel.srcTableId,
+        rel.fkTableId,
         new Set(visited),
       );
     }
@@ -627,7 +627,7 @@ export const deleteRelatedColumns = (
     ...updatedSchema,
     isAffected: true,
     tables: updatedSchema.tables.map((table) => {
-      if (table.id === relationshipToDelete.srcTableId) {
+      if (table.id === relationshipToDelete.fkTableId) {
         const isAffected =
           table.relationships.some((r) => r.id === relationshipToDelete.id) ||
           table.columns.some((col) => fkColumnsToDelete.has(col.id)) ||
@@ -670,7 +670,7 @@ export const deleteRelatedColumns = (
     for (const table of updatedSchema.tables) {
       const relationshipsToDelete = table.relationships.filter((rel) => {
         return rel.columns.some((relCol) =>
-          fkColumnsToDelete.has(relCol.refColumnId),
+          fkColumnsToDelete.has(relCol.pkColumnId),
         );
       });
 
