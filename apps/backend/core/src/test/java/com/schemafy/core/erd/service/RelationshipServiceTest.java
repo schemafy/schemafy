@@ -629,6 +629,7 @@ class RelationshipServiceTest {
                                             "propagated-constraint-col",
                                             "child-pk-constraint",
                                             "be-fk-column-id",
+                                            1,
                                             EntityType.RELATIONSHIP.name(),
                                             sourceId)),
                                     List.of()),
