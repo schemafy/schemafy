@@ -36,10 +36,15 @@ grpc:
     deadline-seconds: 30
 
 cache:
-  type: CAFFEINE
-  maximum-size: 10000
-  expire-after-write-minutes: 30
-  expire-after-access-minutes: 10
+  caffeine:
+    enabled: true
+    maximum-size: 10000
+    expire-after-write-minutes: 30
+    expire-after-access-minutes: 10
+  redis:
+    enabled: true
+    default-ttl-minutes: 30
+    key-prefix: "cache::"
 
 management:
   endpoints:
