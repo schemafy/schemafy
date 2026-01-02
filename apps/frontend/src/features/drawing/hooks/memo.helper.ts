@@ -5,6 +5,7 @@ import { z } from 'zod';
 export interface MemoData extends Record<string, unknown> {
   content: string;
   comments: ApiMemo['comments'];
+  deleteFunc?: () => void;
 }
 
 const PositionSchema = z.object({

@@ -12,6 +12,7 @@ import { observer } from 'mobx-react-lite';
 interface MemoProps {
   id: string;
   data: MemoData;
+  deleteFunc: (id: string) => void;
 }
 
 interface MemoPreviewProps {
@@ -111,22 +112,16 @@ const ReplyItem = ({
   );
 };
 
-export const Memo = observer(({ id, data }: MemoProps) => {
+export const Memo = observer(({ id, data, deleteFunc }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [replyInput, setReplyInput] = useState('');
 
   const memoStore = MemoStore.getInstance();
 
-  const schemaId = Object.keys(memoStore.memosBySchema).find((sid) =>
-    memoStore.memosBySchema[sid]?.some((m) => m.id === id),
-  );
-
   const comments = data.comments ?? [];
 
-  const handleDeleteMemo = async () => {
-    if (schemaId) {
-      await memoStore.deleteMemo(id, schemaId);
-    }
+  const handleDeleteMemo = () => {
+    deleteFunc(id);
   };
 
   const handleIconClick = () => {

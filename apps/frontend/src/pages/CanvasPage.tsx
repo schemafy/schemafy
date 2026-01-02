@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ulid } from 'ulid';
 import {
@@ -33,11 +33,6 @@ import {
   TempMemoPreview,
 } from '@/features/drawing';
 import { ErdStore } from '@/store/erd.store';
-
-const NODE_TYPES = {
-  table: TableNode,
-  memo: Memo,
-};
 
 const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
@@ -86,7 +81,7 @@ const CanvasPageComponent = () => {
   }, [erdStore]);
 
   const { tables, addTable, onTablesChange } = useTables();
-  const { memos, addMemo, onMemosChange } = useMemos();
+  const { memos, addMemo, deleteMemo, onMemosChange } = useMemos();
   const {
     relationships,
     selectedRelationship,
@@ -101,6 +96,14 @@ const CanvasPageComponent = () => {
     changeRelationshipName,
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
+
+  const nodeTypes = useMemo(
+    () => ({
+      table: TableNode,
+      memo: (props: any) => <Memo {...props} deleteFunc={deleteMemo} />,
+    }),
+    [deleteMemo],
+  );
 
   const nodes = [...tables, ...memos];
 
@@ -214,7 +217,7 @@ const CanvasPageComponent = () => {
             onReconnect={onReconnect}
             onReconnectStart={onReconnectStart}
             onReconnectEnd={onReconnectEnd}
-            nodeTypes={NODE_TYPES}
+            nodeTypes={nodeTypes}
             edgeTypes={EDGE_TYPES}
             connectionLineComponent={CustomConnectionLine}
             proOptions={{ hideAttribution: true }}

@@ -45,6 +45,14 @@ export const useMemos = () => {
     [schemaId, memoStore],
   );
 
+  const deleteMemo = useCallback(
+    (id: string) => {
+      if (!schemaId) return;
+      memoStore.deleteMemo(id, schemaId);
+    },
+    [schemaId, memoStore],
+  );
+
   const onMemosChange = useCallback(
     (changes: NodeChange[]) => {
       if (!schemaId) return;
@@ -79,6 +87,7 @@ export const useMemos = () => {
   return {
     memos,
     addMemo,
+    deleteMemo,
     onMemosChange,
   };
 };
