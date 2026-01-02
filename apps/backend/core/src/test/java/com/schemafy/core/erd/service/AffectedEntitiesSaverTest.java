@@ -854,6 +854,10 @@ class AffectedEntitiesSaverTest {
                             .get(0)
                             .constraintId())
                             .isEqualTo(savedConstraintId);
+                    assertThat(saveResult.propagated().constraintColumns()
+                            .get(0)
+                            .seqNo())
+                            .isEqualTo(2);
                 })
                 .verifyComplete();
     }
@@ -955,6 +959,8 @@ class AffectedEntitiesSaverTest {
                             .isEqualTo(savedIndexId);
                     assertThat(propagatedIndexColumn.columnId())
                             .isEqualTo(savedColumnId);
+                    assertThat(propagatedIndexColumn.seqNo())
+                            .isEqualTo(1);
                     assertThat(propagatedIndexColumn.sourceType())
                             .isEqualTo(EntityType.RELATIONSHIP.name());
                     assertThat(propagatedIndexColumn.sourceId())

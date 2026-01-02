@@ -427,6 +427,8 @@ public class AffectedEntitiesSaver {
                                                                         .getIndexId(),
                                                                 entity
                                                                         .getColumnId(),
+                                                                entity
+                                                                        .getSeqNo(),
                                                                 sourceType,
                                                                 sourceId));
                                             }
@@ -468,6 +470,8 @@ public class AffectedEntitiesSaver {
                                                                         .getConstraintId(),
                                                                 entity
                                                                         .getColumnId(),
+                                                                entity
+                                                                        .getSeqNo(),
                                                                 sourceType,
                                                                 sourceId));
                                             }
@@ -742,3 +746,4 @@ public class AffectedEntitiesSaver {
     }
 
 }
+
