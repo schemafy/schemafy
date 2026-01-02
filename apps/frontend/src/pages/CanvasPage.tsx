@@ -87,9 +87,9 @@ const CanvasContent = () => {
   }, [erdStore]);
 
   const { tables, addTable, onTablesChange } = useTables();
-  
+
   const { memos, onMemosChange, createMemo } = useMemoContext();
-  
+
   const {
     relationships,
     selectedRelationship,
