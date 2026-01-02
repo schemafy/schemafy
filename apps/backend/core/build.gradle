@@ -178,6 +178,37 @@ tasks.named('check') {
 	dependsOn 'spotlessCheck'
 }
 
+// Create symlink to shared proto files
+tasks.register('linkProtos') {
+	doLast {
+		def sharedProtoDir = file('../../../packages/proto-validation/protos')
+		def targetProtoDir = file('src/main/proto')
+
+		targetProtoDir.mkdirs()
+
+		def sourceFile = new File(sharedProtoDir, 'validation.proto')
+		def targetFile = new File(targetProtoDir, 'validation.proto')
+
+		if (!targetFile.exists()) {
+			if (System.properties['os.name'].toLowerCase().contains('windows')) {
+				exec {
+					commandLine 'cmd', '/c', 'mklink',
+						targetFile.absolutePath, sourceFile.absolutePath
+				}
+			} else {
+				exec {
+					commandLine 'ln', '-sf',
+						sourceFile.absolutePath, targetFile.absolutePath
+				}
+			}
+		}
+	}
+}
+
+tasks.named('generateProto') {
+	dependsOn 'linkProtos'
+}
+
 // Protobuf configuration
 protobuf {
 	protoc {
