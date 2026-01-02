@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ulid } from 'ulid';
 import {
@@ -14,7 +14,6 @@ import '@xyflow/react/dist/style.css';
 import {
   useRelationships,
   useTables,
-  useMemos,
   useViewport,
   TableNode,
   RelationshipMarker,
@@ -31,14 +30,21 @@ import {
   MemoPreview,
   Memo,
   TempMemoPreview,
+  MemoProvider,
+  useMemoContext,
 } from '@/features/drawing';
 import { ErdStore } from '@/store/erd.store';
+
+const NODE_TYPES = {
+  table: TableNode,
+  memo: Memo,
+};
 
 const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
-const CanvasPageComponent = () => {
+const CanvasContent = () => {
   const erdStore = ErdStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
 
@@ -81,7 +87,9 @@ const CanvasPageComponent = () => {
   }, [erdStore]);
 
   const { tables, addTable, onTablesChange } = useTables();
-  const { memos, addMemo, deleteMemo, onMemosChange } = useMemos();
+  
+  const { memos, onMemosChange, createMemo } = useMemoContext();
+  
   const {
     relationships,
     selectedRelationship,
@@ -96,14 +104,6 @@ const CanvasPageComponent = () => {
     changeRelationshipName,
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
-
-  const nodeTypes = useMemo(
-    () => ({
-      table: TableNode,
-      memo: (props: any) => <Memo {...props} deleteFunc={deleteMemo} />,
-    }),
-    [deleteMemo],
-  );
 
   const nodes = [...tables, ...memos];
 
@@ -139,7 +139,7 @@ const CanvasPageComponent = () => {
 
   const handleMemoCreate = (content: string) => {
     if (tempMemoPosition) {
-      addMemo(tempMemoPosition.flow, content.trim());
+      createMemo(tempMemoPosition.flow, content.trim());
       setTempMemoPosition(null);
     }
   };
@@ -217,7 +217,7 @@ const CanvasPageComponent = () => {
             onReconnect={onReconnect}
             onReconnectStart={onReconnectStart}
             onReconnectEnd={onReconnectEnd}
-            nodeTypes={nodeTypes}
+            nodeTypes={NODE_TYPES}
             edgeTypes={EDGE_TYPES}
             connectionLineComponent={CustomConnectionLine}
             proOptions={{ hideAttribution: true }}
@@ -275,6 +275,14 @@ const CanvasPageComponent = () => {
       </div>
       <FloatingButtons />
     </>
+  );
+};
+
+const CanvasPageComponent = () => {
+  return (
+    <MemoProvider>
+      <CanvasContent />
+    </MemoProvider>
   );
 };
 

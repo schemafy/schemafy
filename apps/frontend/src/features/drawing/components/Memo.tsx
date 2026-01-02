@@ -6,13 +6,12 @@ import { CircleCheck, MoveUp, Trash, X, Pencil } from 'lucide-react';
 import type { MemoData } from '../hooks/memo.helper';
 import type { MemoComment } from '@/lib/api/memo/types';
 import type { Point } from '../types';
-import { MemoStore } from '@/store';
 import { observer } from 'mobx-react-lite';
+import { useMemoContext } from '../context/MemoContext';
 
 interface MemoProps {
   id: string;
   data: MemoData;
-  deleteFunc: (id: string) => void;
 }
 
 interface MemoPreviewProps {
@@ -112,16 +111,17 @@ const ReplyItem = ({
   );
 };
 
-export const Memo = observer(({ id, data, deleteFunc }: MemoProps) => {
+export const Memo = observer(({ id, data }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [replyInput, setReplyInput] = useState('');
 
-  const memoStore = MemoStore.getInstance();
+  const { deleteMemo, createComment, updateComment, deleteComment } =
+    useMemoContext();
 
   const comments = data.comments ?? [];
 
-  const handleDeleteMemo = () => {
-    deleteFunc(id);
+  const handleDeleteMemo = async () => {
+    await deleteMemo(id);
   };
 
   const handleIconClick = () => {
@@ -130,12 +130,12 @@ export const Memo = observer(({ id, data, deleteFunc }: MemoProps) => {
 
   const handleAddReply = async () => {
     if (!replyInput.trim()) return;
-    await memoStore.createMemoComment(id, { body: replyInput.trim() });
+    await createComment(id, replyInput.trim());
     setReplyInput('');
   };
 
   const handleUpdateComment = async (commentId: string, newBody: string) => {
-    await memoStore.updateMemoComment(id, commentId, { body: newBody });
+    await updateComment(id, commentId, newBody);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -146,7 +146,7 @@ export const Memo = observer(({ id, data, deleteFunc }: MemoProps) => {
   };
 
   const handleDeleteComment = (commentId: string) => {
-    memoStore.deleteMemoComment(id, commentId);
+    deleteComment(id, commentId);
   };
 
   return (
