@@ -1,11 +1,2 @@
 # Symlinked proto files from shared package
 src/main/proto/validation.proto
-
-# Gradle build artifacts
-.gradle
-build/
-
-# IDE
-.idea/
-*.iml
-.vscode/
