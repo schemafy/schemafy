@@ -287,7 +287,8 @@ public class MemoService {
         return memoCommentRepository.save(comment).then();
     }
 
-    private Mono<Boolean> isLastRemainingComment(String memoId, String commentId) {
+    private Mono<Boolean> isLastRemainingComment(String memoId,
+            String commentId) {
         return memoCommentRepository
                 .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(memoId)
                 .collectList()
