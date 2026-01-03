@@ -62,7 +62,7 @@ jobs:
       continue-on-error: true
     
     - name: Apply formatting (no cache)
-      run: npx turbo run format --force
+      run: npm run format -- --force
       continue-on-error: true
     
     - name: Check for changes
