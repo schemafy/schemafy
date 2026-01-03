@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS users (
     created_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMP  NULL,
-    CONSTRAINT pk_users PRIMARY KEY (id)
+    CONSTRAINT pk_users PRIMARY KEY (id),
+    CONSTRAINT uq_users_email UNIQUE (email)
 );

@@ -268,25 +268,20 @@ class UserServiceTest {
         @Test
         @DisplayName("회원가입 성공 시 User, Workspace, WorkspaceMember가 모두 생성된다")
         void signUp_CreatesAllEntitiesAtomically() {
-            // given
             SignUpRequest request = new SignUpRequest("atomic@example.com",
                     "Atomic User", "password");
 
-            // when
             User user = userService.signUp(request.toCommand()).block();
 
-            // then - 모든 엔티티 생성 확인
             assertThat(user).isNotNull();
             assertThat(user.getId()).isNotNull();
 
-            // User 확인
             StepVerifier
                     .create(userRepository.findByEmail("atomic@example.com"))
                     .assertNext(u -> assertThat(u.getName())
                             .isEqualTo("Atomic User"))
                     .verifyComplete();
 
-            // Workspace 확인
             StepVerifier.create(
                     workspaceRepository
                             .findByOwnerIdAndNotDeleted(user.getId()))
@@ -298,7 +293,6 @@ class UserServiceTest {
                     })
                     .verifyComplete();
 
-            // WorkspaceMember 확인
             StepVerifier.create(
                     workspaceMemberRepository.findByUserIdAndNotDeleted(
                             user.getId()))
@@ -312,14 +306,12 @@ class UserServiceTest {
         @Test
         @DisplayName("동시에 같은 이메일로 가입 시도해도 orphan이 생성되지 않는다")
         void signUp_ConcurrentDuplicateEmailTest() {
-            // given
             String email = "concurrent@example.com";
             SignUpRequest request1 = new SignUpRequest(email, "User 1",
                     "password");
             SignUpRequest request2 = new SignUpRequest(email, "User 2",
                     "password");
 
-            // when - 동시에 두 개의 가입 요청
             Mono<User> result1 = userService.signUp(request1.toCommand());
             Mono<User> result2 = userService.signUp(request2.toCommand());
 
@@ -333,7 +325,7 @@ class UserServiceTest {
                         long matchingUsers = users.stream()
                                 .filter(u -> email.equals(u.getEmail()))
                                 .count();
-                        assertThat(matchingUsers).isLessThanOrEqualTo(1);
+                        assertThat(matchingUsers).isEqualTo(1);
                     })
                     .verifyComplete();
 
