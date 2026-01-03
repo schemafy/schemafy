@@ -17,7 +17,7 @@ import {
   validateAndGetSchema,
   validateAndGetTable,
 } from '../utils/entityValidators';
-import { handleTableIdRemapping } from '../utils/idRemapping';
+import { handleServerResponse } from '../utils/sync';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -91,7 +91,9 @@ export async function createTable(
     () => erdStore.deleteTable(schemaId, tableId),
   );
 
-  return handleTableIdRemapping(response.result ?? {}, schemaId, tableId);
+  handleServerResponse(response, { schemaId, tableId });
+
+  return tableId;
 }
 
 export async function updateTableName(

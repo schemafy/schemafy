@@ -13,7 +13,7 @@ import {
   validateDatabase,
   validateAndGetSchema,
 } from '../utils/entityValidators';
-import { handleSchemaIdRemapping } from '../utils/idRemapping';
+import { handleServerResponse } from '../utils/sync';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -68,7 +68,9 @@ export async function createSchema(name: string) {
     () => erdStore.deleteSchema(schemaId),
   );
 
-  return handleSchemaIdRemapping(response.result ?? {}, schemaId);
+  handleServerResponse(response, { schemaId });
+
+  return schemaId;
 }
 
 export async function updateSchemaName(schemaId: string, newName: string) {

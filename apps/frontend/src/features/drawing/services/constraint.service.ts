@@ -2,7 +2,6 @@ import { ulid } from 'ulid';
 import type {
   Constraint,
   ConstraintColumn,
-  Relationship,
 } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
 import {
@@ -18,12 +17,7 @@ import {
   validateAndGetTable,
   validateAndGetConstraint,
 } from '../utils/entityValidators';
-import {
-  handleConstraintIdRemapping,
-  handleConstraintColumnIdRemapping,
-  handleBatchChildIdRemapping,
-} from '../utils/idRemapping';
-import { handlePropagatedData } from '../utils/propagatedDataHandler';
+import { handleServerResponse } from '../utils/sync';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -91,28 +85,13 @@ export async function createConstraint(
     () => erdStore.deleteConstraint(schemaId, tableId, constraintId),
   );
 
-  const finalConstraintId = handleConstraintIdRemapping(
-    response.result ?? {},
+  handleServerResponse(response, {
     schemaId,
     tableId,
     constraintId,
-  );
+  });
 
-  handleBatchChildIdRemapping(
-    response.result?.constraintColumns,
-    finalConstraintId,
-    (tempId, realId) => {
-      erdStore.replaceConstraintColumnId(
-        schemaId,
-        tableId,
-        finalConstraintId,
-        tempId,
-        realId,
-      );
-    },
-  );
-
-  return finalConstraintId;
+  return constraintId;
 }
 
 export async function updateConstraintName(
@@ -201,45 +180,13 @@ export async function addColumnToConstraint(
       ),
   );
 
-  const finalConstraintColumnId = handleConstraintColumnIdRemapping(
-    response.result ?? {},
+  handleServerResponse(response, {
     schemaId,
     tableId,
     constraintId,
-    constraintColumnId,
-  );
+  });
 
-  if (response.result?.propagated) {
-    const erdStore = getErdStore();
-    const schema = erdStore.database?.schemas.find((s) => s.id === schemaId);
-
-    const relationships: Array<{
-      srcTableId: string;
-      relationship: Relationship;
-    }> = [];
-
-    schema?.tables.forEach((table) => {
-      table.relationships.forEach((rel) => {
-        if (rel.tgtTableId === tableId) {
-          relationships.push({
-            srcTableId: table.id,
-            relationship: rel,
-          });
-        }
-      });
-    });
-
-    relationships.forEach(({ srcTableId }) => {
-      handlePropagatedData(
-        response.result?.propagated,
-        schemaId,
-        srcTableId,
-        constraintId,
-      );
-    });
-  }
-
-  return finalConstraintColumnId;
+  return constraintColumnId;
 }
 
 export async function removeColumnFromConstraint(

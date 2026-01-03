@@ -16,10 +16,7 @@ import {
   validateAndGetTable,
   validateAndGetIndex,
 } from '../utils/entityValidators';
-import {
-  handleIndexIdRemapping,
-  handleBatchChildIdRemapping,
-} from '../utils/idRemapping';
+import { handleServerResponse } from '../utils/sync';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -88,28 +85,13 @@ export async function createIndex(
     () => erdStore.deleteIndex(schemaId, tableId, indexId),
   );
 
-  const finalIndexId = handleIndexIdRemapping(
-    response.result ?? {},
+  handleServerResponse(response, {
     schemaId,
     tableId,
     indexId,
-  );
+  });
 
-  handleBatchChildIdRemapping(
-    response.result?.indexColumns,
-    finalIndexId,
-    (tempId, realId) => {
-      erdStore.replaceIndexColumnId(
-        schemaId,
-        tableId,
-        finalIndexId,
-        tempId,
-        realId,
-      );
-    },
-  );
-
-  return finalIndexId;
+  return indexId;
 }
 
 export async function updateIndexName(

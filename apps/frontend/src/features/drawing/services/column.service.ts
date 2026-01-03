@@ -14,7 +14,7 @@ import {
   validateAndGetTable,
   validateAndGetColumn,
 } from '../utils/entityValidators';
-import { handleColumnIdRemapping } from '../utils/idRemapping';
+import { handleServerResponse } from '../utils/sync';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -76,12 +76,12 @@ export async function createColumn(
     () => erdStore.deleteColumn(schemaId, tableId, columnId),
   );
 
-  return handleColumnIdRemapping(
-    response.result ?? {},
+  handleServerResponse(response, {
     schemaId,
     tableId,
-    columnId,
-  );
+  });
+
+  return columnId;
 }
 
 export async function updateColumnName(

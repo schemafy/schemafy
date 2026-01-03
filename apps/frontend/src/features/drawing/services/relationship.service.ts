@@ -21,12 +21,7 @@ import {
   validateAndGetRelationship,
   ERROR_MESSAGES,
 } from '../utils/entityValidators';
-import {
-  handleRelationshipIdRemapping,
-  handleRelationshipColumnIdRemapping,
-  handleBatchRelationshipColumnRemapping,
-} from '../utils/idRemapping';
-import { handlePropagatedData } from '../utils/propagatedDataHandler';
+import { handleServerResponse } from '../utils/sync';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -111,27 +106,13 @@ export async function createRelationship(
     () => erdStore.deleteRelationship(schemaId, relationshipId),
   );
 
-  const finalRelationshipId = handleRelationshipIdRemapping(
-    response.result ?? {},
+  handleServerResponse(response, {
     schemaId,
-    srcTableId,
+    tableId: srcTableId,
     relationshipId,
-  );
+  });
 
-  handleBatchRelationshipColumnRemapping(
-    response.result ?? {},
-    schemaId,
-    finalRelationshipId,
-  );
-
-  handlePropagatedData(
-    response.result?.propagated,
-    schemaId,
-    srcTableId,
-    finalRelationshipId,
-  );
-
-  return finalRelationshipId;
+  return relationshipId;
 }
 
 export async function updateRelationshipName(
@@ -255,18 +236,11 @@ export async function updateRelationshipKind(
         currentExtra ? JSON.stringify(currentExtra) : undefined,
       );
 
-      handleRelationshipIdRemapping(
-        response.result ?? {},
+      handleServerResponse(response, {
         schemaId,
-        relationship.srcTableId,
+        tableId: relationship.srcTableId,
         relationshipId,
-      );
-
-      handleBatchRelationshipColumnRemapping(
-        response.result ?? {},
-        schemaId,
-        relationshipId,
-      );
+      });
 
       return response;
     },
@@ -347,12 +321,12 @@ export async function addColumnToRelationship(
       ),
   );
 
-  return handleRelationshipColumnIdRemapping(
-    response.result ?? {},
+  handleServerResponse(response, {
     schemaId,
     relationshipId,
-    relationshipColumnId,
-  );
+  });
+
+  return relationshipColumnId;
 }
 
 export async function removeColumnFromRelationship(
