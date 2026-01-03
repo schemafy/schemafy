@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS share_links (
     id               CHAR(26)      NOT NULL,
     project_id       CHAR(26)      NOT NULL,
     token_hash       VARBINARY(32) NOT NULL,
-    role             VARCHAR(20)   NOT NULL DEFAULT 'viewer',
+    role             VARCHAR(20)   NOT NULL,
     expires_at       TIMESTAMP     NULL,
     is_revoked       BOOLEAN       NOT NULL DEFAULT FALSE,
     last_accessed_at TIMESTAMP     NULL,
@@ -10,11 +10,7 @@ CREATE TABLE IF NOT EXISTS share_links (
     created_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at       TIMESTAMP     NULL,
-    CONSTRAINT pk_share_links PRIMARY KEY (id),
-    CONSTRAINT uk_share_links_token_hash UNIQUE (token_hash),
-    CONSTRAINT ck_share_links_role CHECK (role IN ('viewer','commenter','editor')),
-    INDEX idx_share_links_project_active (project_id, deleted_at),
-    INDEX idx_share_links_expires_at (expires_at),
+    CONSTRAINT pk_share_links PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS share_link_access_logs (
@@ -24,6 +20,5 @@ CREATE TABLE IF NOT EXISTS share_link_access_logs (
     ip_address    VARCHAR(45)  NOT NULL,
     user_agent    VARCHAR(500) NULL,
     accessed_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_share_link_access_logs PRIMARY KEY (id),
-    INDEX idx_access_logs_link_time (share_link_id, accessed_at DESC)
+    CONSTRAINT pk_share_link_access_logs PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

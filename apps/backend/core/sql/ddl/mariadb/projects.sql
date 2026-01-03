@@ -7,8 +7,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMP    NULL,
-    CONSTRAINT pk_workspaces PRIMARY KEY (id),
-    INDEX idx_workspaces_owner_deleted (owner_id, deleted_at)
+    CONSTRAINT pk_workspaces PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS workspace_members (
@@ -17,13 +16,10 @@ CREATE TABLE IF NOT EXISTS workspace_members (
     user_id      CHAR(26)     NOT NULL,
     role         VARCHAR(32)  NOT NULL,
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMP    NULL,
     CONSTRAINT pk_workspace_members PRIMARY KEY (id),
-    CONSTRAINT uq_workspace_members_workspace_user UNIQUE (workspace_id, user_id),
-    INDEX idx_workspace_members_user_deleted (user_id, deleted_at),
-    INDEX idx_workspace_members_workspace_deleted (workspace_id, deleted_at),
-    CONSTRAINT ck_workspace_members_role CHECK (role IN ('admin','member'))
+    INDEX idx_workspace_members_access (workspace_id, user_id, deleted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS projects (
@@ -35,8 +31,7 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at   TIMESTAMP    NULL,
-    CONSTRAINT pk_projects PRIMARY KEY (id),
-    INDEX idx_projects_workspace_deleted (workspace_id, deleted_at)
+    CONSTRAINT pk_projects PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS project_members (
@@ -49,8 +44,5 @@ CREATE TABLE IF NOT EXISTS project_members (
     updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP   NULL,
     CONSTRAINT pk_project_members PRIMARY KEY (id),
-    CONSTRAINT uq_project_members_project_user UNIQUE (project_id, user_id),
-    INDEX idx_project_members_user_deleted (user_id, deleted_at),
-    INDEX idx_project_members_project_deleted (project_id, deleted_at),
-    CONSTRAINT ck_project_members_role CHECK (role IN ('owner','admin','editor','viewer', 'commenter'))
+    INDEX idx_project_members_access (project_id, user_id, deleted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

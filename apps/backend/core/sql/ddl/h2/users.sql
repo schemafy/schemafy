@@ -7,7 +7,5 @@ CREATE TABLE IF NOT EXISTS users (
     created_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMP  NULL,
-    CONSTRAINT pk_users PRIMARY KEY (id),
-    CONSTRAINT ux_users_email UNIQUE (email),
-    CONSTRAINT ck_users_status CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED'))
+    CONSTRAINT pk_users PRIMARY KEY (id)
 );
