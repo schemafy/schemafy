@@ -271,8 +271,8 @@ public class MemoService {
                 .findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
-                .flatMap(memo -> isFirstComment(memoId, commentId)
-                        .flatMap(isFirst -> isFirst
+                .flatMap(memo -> isLastRemainingComment(memoId, commentId)
+                        .flatMap(isLast -> isLast
                                 ? deleteMemo(memo)
                                 : deleteCommentOnly(comment)));
     }
@@ -287,11 +287,12 @@ public class MemoService {
         return memoCommentRepository.save(comment).then();
     }
 
-    private Mono<Boolean> isFirstComment(String memoId, String commentId) {
+    private Mono<Boolean> isLastRemainingComment(String memoId, String commentId) {
         return memoCommentRepository
                 .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(memoId)
-                .next()
-                .map(first -> first.getId().equals(commentId))
+                .collectList()
+                .map(comments -> comments.size() == 1
+                        && comments.get(0).getId().equals(commentId))
                 .defaultIfEmpty(false);
     }
 
