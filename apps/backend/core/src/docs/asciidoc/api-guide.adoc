@@ -886,6 +886,38 @@ include::{snippets}/relationship-update-cardinality/response-fields.adoc[]
 
 ---
 
+==== Relationship 종류 변경
+
+Relationship의 종류(식별/비식별)를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/relationships/{relationshipId}/kind
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-update-kind/http-request.adoc[]
+include::{snippets}/relationship-update-kind/path-parameters.adoc[]
+include::{snippets}/relationship-update-kind/request-headers.adoc[]
+include::{snippets}/relationship-update-kind/request-fields.adoc[]
+include::{snippets}/relationship-update-kind/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-update-kind/response-headers.adoc[]
+include::{snippets}/relationship-update-kind/response-body.adoc[]
+include::{snippets}/relationship-update-kind/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-update-kind/response-fields.adoc[]
+
+---
+
 ==== Relationship에 컬럼 추가
 
 관계에 컬럼을 추가합니다.

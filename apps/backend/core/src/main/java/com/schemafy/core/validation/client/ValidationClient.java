@@ -31,6 +31,7 @@ import validation.Validation.ChangeColumnTypeRequest;
 import validation.Validation.ChangeConstraintNameRequest;
 import validation.Validation.ChangeIndexNameRequest;
 import validation.Validation.ChangeRelationshipCardinalityRequest;
+import validation.Validation.ChangeRelationshipKindRequest;
 import validation.Validation.ChangeRelationshipNameRequest;
 import validation.Validation.ChangeSchemaNameRequest;
 import validation.Validation.ChangeTableNameRequest;
@@ -187,6 +188,13 @@ public class ValidationClient {
         return executeValidation(
                 () -> withDeadline().changeRelationshipCardinality(request),
                 "changeRelationshipCardinality");
+    }
+
+    public Mono<Database> changeRelationshipKind(
+            ChangeRelationshipKindRequest request) {
+        return executeValidation(
+                () -> withDeadline().changeRelationshipKind(request),
+                "changeRelationshipKind");
     }
 
     public Mono<Database> addColumnToRelationship(

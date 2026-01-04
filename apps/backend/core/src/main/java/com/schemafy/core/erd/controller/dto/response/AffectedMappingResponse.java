@@ -69,6 +69,7 @@ public record AffectedMappingResponse(
             String constraintColumnId,
             String constraintId,
             String columnId,
+            int seqNo,
             String sourceType,
             String sourceId) {
     }
@@ -77,6 +78,7 @@ public record AffectedMappingResponse(
             String indexColumnId,
             String indexId,
             String columnId,
+            int seqNo,
             String sourceType,
             String sourceId) {
     }

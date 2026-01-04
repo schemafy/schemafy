@@ -16,6 +16,7 @@ import com.schemafy.core.erd.mapper.ErdMapper;
 import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
+import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.validation.client.ValidationClient;
 
 import lombok.RequiredArgsConstructor;
@@ -168,6 +169,45 @@ public class RelationshipService {
                         .setCardinality(request.getCardinality().name()))
                 .flatMap(relationshipRepository::save)
                 .map(RelationshipResponse::from);
+    }
+
+    public Mono<RelationshipResponse> updateRelationshipKind(
+            Validation.ChangeRelationshipKindRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
+        return relationshipRepository
+                .findByIdAndDeletedAtIsNull(request.getRelationshipId())
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
+                .flatMap(relationship -> validationClient
+                        .changeRelationshipKind(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(
+                                        updateRelationshipKindTransaction(
+                                                request,
+                                                afterDatabase,
+                                                relationship))))
+                .map(RelationshipResponse::from);
+    }
+
+    private Mono<Relationship> updateRelationshipKindTransaction(
+            Validation.ChangeRelationshipKindRequest request,
+            Validation.Database afterDatabase,
+            Relationship relationship) {
+        relationship.setKind(request.getKind().name());
+
+        return relationshipRepository.save(relationship)
+                .flatMap(savedRelationship -> affectedEntitiesSoftDeleter
+                        .softDeleteRemovedEntities(request.getDatabase(),
+                                afterDatabase)
+                        .then(affectedEntitiesSaver
+                                .saveAffectedEntitiesResult(
+                                        request.getDatabase(), afterDatabase))
+                        .thenReturn(savedRelationship));
     }
 
     public Mono<AffectedMappingResponse> addColumnToRelationship(

@@ -328,6 +328,13 @@ message ChangeRelationshipCardinalityRequest {
     RelationshipCardinality cardinality = 4;
 }
 
+message ChangeRelationshipKindRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string relationshipId = 3;
+    RelationshipKind kind = 4;
+}
+
 message AddColumnToRelationshipRequest {
     Database database = 1;
     string schemaId = 2;
@@ -426,6 +433,7 @@ service ValidationService {
     rpc DeleteRelationship (DeleteRelationshipRequest) returns (ValidateResult);
     rpc ChangeRelationshipName (ChangeRelationshipNameRequest) returns (ValidateResult);
     rpc ChangeRelationshipCardinality (ChangeRelationshipCardinalityRequest) returns (ValidateResult);
+    rpc ChangeRelationshipKind (ChangeRelationshipKindRequest) returns (ValidateResult);
     rpc AddColumnToRelationship (AddColumnToRelationshipRequest) returns (ValidateResult);
     rpc RemoveColumnFromRelationship (RemoveColumnFromRelationshipRequest) returns (ValidateResult);
 

@@ -1,3 +1,4 @@
+import { ulid } from "ulid";
 import {
   SchemaNotExistError,
   RelationshipNotExistError,
@@ -7,11 +8,12 @@ import {
   RelationshipEmptyError,
   RelationshipCyclicReferenceError,
 } from "../errors";
-import {
+import type {
   Database,
   Schema,
   Relationship,
   RelationshipColumn,
+  Constraint,
   Table,
 } from "../types";
 import * as helper from "../helper";
@@ -38,6 +40,12 @@ export interface RelationshipHandlers {
     schemaId: Schema["id"],
     relationshipId: Relationship["id"],
     cardinality: Relationship["cardinality"],
+  ) => Database;
+  changeRelationshipKind: (
+    database: Database,
+    schemaId: Schema["id"],
+    relationshipId: Relationship["id"],
+    kind: Relationship["kind"],
   ) => Database;
   addColumnToRelationship: (
     database: Database,
@@ -76,18 +84,15 @@ export const relationshipHandlers: RelationshipHandlers = {
         relationship.pkTableId,
       );
 
-    if (
-      relationship.kind === "IDENTIFYING" &&
-      helper.detectCircularReference(
-        schema,
-        relationship.pkTableId,
-        relationship.fkTableId,
-      )
-    ) {
-      throw new RelationshipCyclicReferenceError(
-        relationship.pkTableId,
-        relationship.fkTableId,
-      );
+    if (relationship.kind === "IDENTIFYING") {
+      const cycle = helper.detectIdentifyingCycleInSchema(schema, undefined, {
+        fkTableId: relationship.fkTableId,
+        pkTableId: relationship.pkTableId,
+        kind: relationship.kind,
+      });
+      if (cycle) {
+        throw new RelationshipCyclicReferenceError(cycle[0], cycle[1]);
+      }
     }
 
     const duplicateRelationship = fkTable.relationships.find(
@@ -259,6 +264,173 @@ export const relationshipHandlers: RelationshipHandlers = {
     );
 
     return currentDatabase;
+  },
+  changeRelationshipKind: (database, schemaId, relationshipId, kind) => {
+    const schema = database.schemas.find((s) => s.id === schemaId);
+    if (!schema) throw new SchemaNotExistError(schemaId);
+
+    const relationship: Relationship | undefined = schema.tables
+      .find((t) => t.relationships.some((r) => r.id === relationshipId))
+      ?.relationships.find((r) => r.id === relationshipId);
+
+    if (!relationship) throw new RelationshipNotExistError(relationshipId);
+
+    if (kind === "IDENTIFYING") {
+      const cycle = helper.detectIdentifyingCycleInSchema(schema, {
+        relationshipId,
+        newKind: kind,
+      });
+      if (cycle) {
+        throw new RelationshipCyclicReferenceError(cycle[0], cycle[1]);
+      }
+    }
+
+    const updatedRelationship: Relationship = {
+      ...relationship,
+      isAffected: true,
+      kind,
+    };
+
+    const fkColumnIds = relationship.columns.map((rc) => rc.fkColumnId);
+    let addedPkColumnIds: string[] = [];
+
+    const changeTables: Table[] = schema.tables.map((t) => {
+      if (t.id !== relationship.fkTableId) return t;
+
+      const updatedRelationships = t.relationships.map((r) =>
+        r.id === relationshipId ? updatedRelationship : r,
+      );
+
+      let updatedConstraints = t.constraints;
+
+      if (kind === "IDENTIFYING") {
+        const pkConstraint = t.constraints.find(
+          (c) => c.kind === "PRIMARY_KEY",
+        );
+        const existingPkColumnIds = new Set(
+          pkConstraint?.columns.map((cc) => cc.columnId) ?? [],
+        );
+        addedPkColumnIds = fkColumnIds.filter(
+          (columnId) => !existingPkColumnIds.has(columnId),
+        );
+
+        if (addedPkColumnIds.length > 0) {
+          if (pkConstraint) {
+            const newPkColumns = addedPkColumnIds.map((columnId, index) => ({
+              id: `${ulid()}`,
+              isAffected: true,
+              constraintId: pkConstraint.id,
+              columnId,
+              seqNo: pkConstraint.columns.length + index,
+            }));
+
+            const updatedPkConstraint: Constraint = {
+              ...pkConstraint,
+              isAffected: true,
+              columns: [...pkConstraint.columns, ...newPkColumns],
+            };
+
+            updatedConstraints = t.constraints.map((c) =>
+              c.id === pkConstraint.id ? updatedPkConstraint : c,
+            );
+          } else {
+            const newPkConstraintId = `${ulid()}`;
+            const newPkColumns = addedPkColumnIds.map((columnId, index) => ({
+              id: `${ulid()}`,
+              isAffected: true,
+              constraintId: newPkConstraintId,
+              columnId,
+              seqNo: index,
+            }));
+
+            const newPkConstraint: Constraint = {
+              id: newPkConstraintId,
+              name: `pk_${t.name}`,
+              columns: newPkColumns,
+              tableId: t.id,
+              kind: "PRIMARY_KEY",
+              isAffected: true,
+            };
+
+            updatedConstraints = [...t.constraints, newPkConstraint];
+          }
+        }
+      } else {
+        const pkConstraint = t.constraints.find(
+          (c) => c.kind === "PRIMARY_KEY",
+        );
+        if (pkConstraint) {
+          const remainingColumns = pkConstraint.columns.filter(
+            (cc) => !fkColumnIds.includes(cc.columnId),
+          );
+
+          if (remainingColumns.length !== pkConstraint.columns.length) {
+            if (remainingColumns.length === 0) {
+              updatedConstraints = t.constraints.filter(
+                (c) => c.id !== pkConstraint.id,
+              );
+            } else {
+              const resequencedColumns = remainingColumns.map(
+                (column, index) => ({
+                  ...column,
+                  seqNo: index,
+                  isAffected: true,
+                }),
+              );
+
+              const updatedPkConstraint: Constraint = {
+                ...pkConstraint,
+                isAffected: true,
+                columns: resequencedColumns,
+              };
+
+              updatedConstraints = t.constraints.map((c) =>
+                c.id === pkConstraint.id ? updatedPkConstraint : c,
+              );
+            }
+          }
+        }
+      }
+
+      return {
+        ...t,
+        isAffected: true,
+        relationships: updatedRelationships,
+        constraints: updatedConstraints,
+      };
+    });
+
+    let updatedSchema: Schema = {
+      ...schema,
+      isAffected: true,
+      tables: changeTables,
+    };
+
+    if (kind === "IDENTIFYING" && addedPkColumnIds.length > 0) {
+      for (const columnId of addedPkColumnIds) {
+        const tableWithNewPk = updatedSchema.tables.find(
+          (t) => t.id === relationship.fkTableId,
+        );
+        const newPkColumn = tableWithNewPk?.columns.find(
+          (c) => c.id === columnId,
+        );
+        if (!newPkColumn) continue;
+
+        updatedSchema = helper.propagateNewPrimaryKey(
+          structuredClone(updatedSchema),
+          relationship.fkTableId,
+          newPkColumn,
+        );
+      }
+    }
+
+    return {
+      ...database,
+      isAffected: true,
+      schemas: database.schemas.map((s) =>
+        s.id === schemaId ? { ...updatedSchema, isAffected: true } : s,
+      ),
+    };
   },
   addColumnToRelationship: (
     database,

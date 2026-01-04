@@ -14,6 +14,7 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseResponse;
+import com.schemafy.core.erd.controller.dto.response.AffectedColumnsResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.service.ColumnService;
@@ -64,7 +65,7 @@ public class ColumnController {
 
     @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
     @PutMapping("/columns/{columnId}/type")
-    public Mono<BaseResponse<ColumnResponse>> updateColumnType(
+    public Mono<BaseResponse<AffectedColumnsResponse>> updateColumnType(
             @PathVariable String columnId,
             @RequestBody ChangeColumnTypeRequest request) {
         if (!columnId.equals(request.getColumnId())) {

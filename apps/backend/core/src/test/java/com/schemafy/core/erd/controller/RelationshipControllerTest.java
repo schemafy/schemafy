@@ -209,9 +209,9 @@ class RelationshipControllerTest {
                                 fieldWithPath("relationship.id")
                                         .description("관계 ID (FE ID)"),
                                 fieldWithPath("relationship.fkTableId")
-                                        .description("출발 테이블 ID"),
+                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("relationship.pkTableId")
-                                        .description("도착 테이블 ID"),
+                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("relationship.name")
                                         .description("관계 이름"),
                                 fieldWithPath("relationship.kind")
@@ -339,9 +339,9 @@ class RelationshipControllerTest {
                                 fieldWithPath("result").description("관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
                                 fieldWithPath("result.fkTableId")
-                                        .description("소스 테이블 ID (FK를 가진 테이블)"),
+                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("result.pkTableId")
-                                        .description("타겟 테이블 ID (PK를 가진 테이블)"),
+                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind").description(
@@ -361,9 +361,9 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.columns[].relationshipId")
                                         .description("관계 ID"),
                                 fieldWithPath("result.columns[].fkColumnId")
-                                        .description("소스 컬럼 ID (FK 컬럼)"),
+                                        .description("FK 컬럼 ID (자식 테이블의 외래키 컬럼)"),
                                 fieldWithPath("result.columns[].pkColumnId")
-                                        .description("타겟 컬럼 ID (참조되는 컬럼)"),
+                                        .description("PK 컬럼 ID (부모 테이블의 참조되는 컬럼)"),
                                 fieldWithPath("result.columns[].seqNo")
                                         .description("순서 번호"))));
     }
@@ -508,9 +508,9 @@ class RelationshipControllerTest {
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
                                 fieldWithPath("result.fkTableId")
-                                        .description("소스 테이블 ID"),
+                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("result.pkTableId")
-                                        .description("타겟 테이블 ID"),
+                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("변경된 관계 이름"),
                                 fieldWithPath("result.kind")
@@ -595,9 +595,9 @@ class RelationshipControllerTest {
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
                                 fieldWithPath("result.fkTableId")
-                                        .description("소스 테이블 ID"),
+                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("result.pkTableId")
-                                        .description("타겟 테이블 ID"),
+                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind")
@@ -756,15 +756,140 @@ class RelationshipControllerTest {
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
                                 fieldWithPath("result.fkTableId")
-                                        .description("소스 테이블 ID"),
+                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("result.pkTableId")
-                                        .description("타겟 테이블 ID"),
+                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind")
                                         .description("관계 종류"),
                                 fieldWithPath("result.cardinality")
                                         .description("변경된 카디널리티"),
+                                fieldWithPath("result.onDelete")
+                                        .description("DELETE 액션"),
+                                fieldWithPath("result.onUpdate")
+                                        .description("UPDATE 액션"),
+                                fieldWithPath("result.extra")
+                                        .description("추가 정보"),
+                                fieldWithPath("result.columns")
+                                        .description("관계 컬럼 목록"))));
+    }
+
+    @Test
+    @DisplayName("관계 종류 변경 API 문서화")
+    void updateRelationshipKind() throws Exception {
+        Validation.ChangeRelationshipKindRequest.Builder builder = Validation.ChangeRelationshipKindRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "vendorOption": "",
+                                        "canvasViewport": null,
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [],
+                                                "indexes": [],
+                                                "constraints": [],
+                                                "relationships": []
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "kind": "IDENTIFYING"
+                        }
+                        """,
+                        builder);
+        Validation.ChangeRelationshipKindRequest request = builder.build();
+
+        String mockResponseJson = """
+                {
+                    "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                    "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "name": "FK_recommend_other_user",
+                    "kind": "IDENTIFYING",
+                    "cardinality": "ONE_TO_ONE",
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE_UPDATE",
+                    "extra": "{}",
+                    "columns": []
+                }
+                """;
+
+        when(relationshipService.updateRelationshipKind(
+                any(Validation.ChangeRelationshipKindRequest.class)))
+                .thenReturn(Mono
+                        .just(objectMapper.readValue(mockResponseJson,
+                                RelationshipResponse.class)));
+
+        webTestClient.put()
+                .uri(API_BASE_PATH + "/relationships/{relationshipId}/kind",
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(toJson(request))
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .jsonPath("$.result.kind").isEqualTo("IDENTIFYING")
+                .jsonPath("$.result.name").isEqualTo("FK_recommend_other_user")
+                .consumeWith(document("relationship-update-kind",
+                        pathParameters(
+                                parameterWithName("relationshipId")
+                                        .description("관계 ID")),
+                        requestHeaders(
+                                headerWithName("Content-Type")
+                                        .description("요청 본문 타입"),
+                                headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("relationshipId")
+                                        .description("변경할 관계 ID"),
+                                fieldWithPath("kind")
+                                        .description("변경할 관계 종류")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("수정된 관계 정보"),
+                                fieldWithPath("result.id").description("관계 ID"),
+                                fieldWithPath("result.fkTableId")
+                                        .description("FK 테이블 ID"),
+                                fieldWithPath("result.pkTableId")
+                                        .description("PK 테이블 ID"),
+                                fieldWithPath("result.name")
+                                        .description("관계 이름"),
+                                fieldWithPath("result.kind")
+                                        .description("변경된 관계 종류"),
+                                fieldWithPath("result.cardinality")
+                                        .description("카디널리티"),
                                 fieldWithPath("result.onDelete")
                                         .description("DELETE 액션"),
                                 fieldWithPath("result.onUpdate")
