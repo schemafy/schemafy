@@ -1,22 +1,21 @@
 import { ulid } from 'ulid';
 import type { Index, IndexColumn } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
-import {
-  createIndexAPI,
-  getIndexAPI,
-  updateIndexNameAPI,
-  updateIndexTypeAPI,
-  addColumnToIndexAPI,
-  updateIndexColumnSortDirAPI,
-  removeColumnFromIndexAPI,
-  deleteIndexAPI,
-} from '../api/index.api';
-import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import { getIndexAPI } from '../api/index.api';
 import {
   validateAndGetTable,
   validateAndGetIndex,
 } from '../utils/entityValidators';
-import { handleServerResponse } from '../utils/sync';
+import { executeCommandWithValidation } from '../utils/commandQueueHelper';
+import {
+  CreateIndexCommand,
+  UpdateIndexNameCommand,
+  UpdateIndexTypeCommand,
+  AddColumnToIndexCommand,
+  UpdateIndexColumnSortDirCommand,
+  RemoveColumnFromIndexCommand,
+  DeleteIndexCommand,
+} from '../queue/commands/IndexCommands';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -25,7 +24,7 @@ export async function getIndex(indexId: string) {
   return response.result;
 }
 
-export async function createIndex(
+export function createIndex(
   schemaId: string,
   tableId: string,
   name: string,
@@ -38,7 +37,7 @@ export async function createIndex(
   comment?: string,
 ) {
   const erdStore = getErdStore();
-  const { database } = validateAndGetTable(schemaId, tableId);
+  validateAndGetTable(schemaId, tableId);
 
   const indexId = ulid();
 
@@ -60,91 +59,58 @@ export async function createIndex(
     isAffected: false,
   };
 
-  const response = await withOptimisticUpdate(
-    () => erdStore.createIndex(schemaId, tableId, newIndex),
-    () =>
-      createIndexAPI({
-        database,
-        schemaId,
-        tableId,
-        index: {
-          id: indexId,
-          tableId,
-          name,
-          type,
-          comment: comment ?? '',
-          columns: indexColumns.map((col) => ({
-            id: col.id,
-            indexId,
-            columnId: col.columnId,
-            seqNo: col.seqNo,
-            sortDir: col.sortDir,
-          })),
-        },
-      }),
-    () => erdStore.deleteIndex(schemaId, tableId, indexId),
-  );
+  const command = new CreateIndexCommand(schemaId, tableId, newIndex);
 
-  handleServerResponse(response, {
-    schemaId,
-    tableId,
-    indexId,
+  executeCommandWithValidation(command, () => {
+    erdStore.createIndex(schemaId, tableId, newIndex);
   });
 
   return indexId;
 }
 
-export async function updateIndexName(
+export function updateIndexName(
   schemaId: string,
   tableId: string,
   indexId: string,
   newName: string,
 ) {
   const erdStore = getErdStore();
-  const { database, index } = validateAndGetIndex(schemaId, tableId, indexId);
+  validateAndGetIndex(schemaId, tableId, indexId);
 
-  await withOptimisticUpdate(
-    () => {
-      const oldName = index.name;
-      erdStore.changeIndexName(schemaId, tableId, indexId, newName);
-      return oldName;
-    },
-    () =>
-      updateIndexNameAPI(indexId, {
-        database,
-        schemaId,
-        tableId,
-        indexId,
-        newName,
-      }),
-    (oldName) => erdStore.changeIndexName(schemaId, tableId, indexId, oldName),
+  const command = new UpdateIndexNameCommand(
+    schemaId,
+    tableId,
+    indexId,
+    newName,
   );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.changeIndexName(schemaId, tableId, indexId, newName);
+  });
 }
 
-export async function updateIndexType(
+export function updateIndexType(
   schemaId: string,
   tableId: string,
   indexId: string,
   newType: Index['type'],
 ) {
   const erdStore = getErdStore();
-  const { index } = validateAndGetIndex(schemaId, tableId, indexId);
+  validateAndGetIndex(schemaId, tableId, indexId);
 
-  await withOptimisticUpdate(
-    () => {
-      const oldType = index.type;
-      erdStore.changeIndexType(schemaId, tableId, indexId, newType);
-      return oldType;
-    },
-    () =>
-      updateIndexTypeAPI(indexId, {
-        type: newType,
-      }),
-    (oldType) => erdStore.changeIndexType(schemaId, tableId, indexId, oldType),
+  const command = new UpdateIndexTypeCommand(
+    schemaId,
+    tableId,
+    indexId,
+    newType,
   );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.changeIndexType(schemaId, tableId, indexId, newType);
+  });
 }
 
-export async function addColumnToIndex(
+export function addColumnToIndex(
   schemaId: string,
   tableId: string,
   indexId: string,
@@ -153,7 +119,7 @@ export async function addColumnToIndex(
   sortDir?: 'ASC' | 'DESC',
 ) {
   const erdStore = getErdStore();
-  const { database } = validateAndGetIndex(schemaId, tableId, indexId);
+  validateAndGetIndex(schemaId, tableId, indexId);
 
   const indexColumnId = ulid();
 
@@ -166,43 +132,21 @@ export async function addColumnToIndex(
     isAffected: false,
   };
 
-  const response = await withOptimisticUpdate(
-    () => erdStore.addColumnToIndex(schemaId, tableId, indexId, newIndexColumn),
-    () =>
-      addColumnToIndexAPI(indexId, {
-        database,
-        schemaId,
-        tableId,
-        indexId,
-        indexColumn: {
-          id: indexColumnId,
-          indexId,
-          columnId,
-          seqNo,
-          sortDir: sortDir ?? 'ASC',
-        },
-      }),
-    () =>
-      erdStore.removeColumnFromIndex(schemaId, tableId, indexId, indexColumnId),
+  const command = new AddColumnToIndexCommand(
+    schemaId,
+    tableId,
+    indexId,
+    newIndexColumn,
   );
 
-  const realId = response.result?.id;
-
-  if (realId && realId !== indexColumnId) {
-    erdStore.replaceIndexColumnId(
-      schemaId,
-      tableId,
-      indexId,
-      indexColumnId,
-      realId,
-    );
-    return realId;
-  }
+  executeCommandWithValidation(command, () => {
+    erdStore.addColumnToIndex(schemaId, tableId, indexId, newIndexColumn);
+  });
 
   return indexColumnId;
 }
 
-export async function updateIndexColumnSortDir(
+export function updateIndexColumnSortDir(
   schemaId: string,
   tableId: string,
   indexId: string,
@@ -217,41 +161,33 @@ export async function updateIndexColumnSortDir(
     throw new Error(`Index column ${indexColumnId} not found`);
   }
 
-  await withOptimisticUpdate(
-    () => {
-      const oldSortDir = indexColumn.sortDir;
-      erdStore.changeIndexColumnSortDir(
-        schemaId,
-        tableId,
-        indexId,
-        indexColumnId,
-        newSortDir,
-      );
-      return oldSortDir;
-    },
-    () =>
-      updateIndexColumnSortDirAPI(indexId, indexColumnId, {
-        sortDir: newSortDir,
-      }),
-    (oldSortDir) =>
-      erdStore.changeIndexColumnSortDir(
-        schemaId,
-        tableId,
-        indexId,
-        indexColumnId,
-        oldSortDir,
-      ),
+  const command = new UpdateIndexColumnSortDirCommand(
+    schemaId,
+    tableId,
+    indexId,
+    indexColumnId,
+    newSortDir,
   );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.changeIndexColumnSortDir(
+      schemaId,
+      tableId,
+      indexId,
+      indexColumnId,
+      newSortDir,
+    );
+  });
 }
 
-export async function removeColumnFromIndex(
+export function removeColumnFromIndex(
   schemaId: string,
   tableId: string,
   indexId: string,
   indexColumnId: string,
 ) {
   const erdStore = getErdStore();
-  const { database, index } = validateAndGetIndex(schemaId, tableId, indexId);
+  const { index } = validateAndGetIndex(schemaId, tableId, indexId);
 
   const indexColumn = index.columns.find((c) => c.id === indexColumnId);
 
@@ -259,46 +195,29 @@ export async function removeColumnFromIndex(
     throw new Error(`Index column ${indexColumnId} not found`);
   }
 
-  await withOptimisticUpdate(
-    () => {
-      const columnSnapshot = structuredClone(indexColumn);
-      erdStore.removeColumnFromIndex(schemaId, tableId, indexId, indexColumnId);
-      return columnSnapshot;
-    },
-    () =>
-      removeColumnFromIndexAPI(indexId, indexColumnId, {
-        database,
-        schemaId,
-        tableId,
-        indexId,
-        indexColumnId,
-      }),
-    (columnSnapshot) =>
-      erdStore.addColumnToIndex(schemaId, tableId, indexId, columnSnapshot),
+  const command = new RemoveColumnFromIndexCommand(
+    schemaId,
+    tableId,
+    indexId,
+    indexColumnId,
   );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.removeColumnFromIndex(schemaId, tableId, indexId, indexColumnId);
+  });
 }
 
-export async function deleteIndex(
+export function deleteIndex(
   schemaId: string,
   tableId: string,
   indexId: string,
 ) {
   const erdStore = getErdStore();
-  const { database, index } = validateAndGetIndex(schemaId, tableId, indexId);
+  validateAndGetIndex(schemaId, tableId, indexId);
 
-  await withOptimisticUpdate(
-    () => {
-      const indexSnapshot = structuredClone(index);
-      erdStore.deleteIndex(schemaId, tableId, indexId);
-      return indexSnapshot;
-    },
-    () =>
-      deleteIndexAPI(indexId, {
-        database,
-        schemaId,
-        tableId,
-        indexId,
-      }),
-    (indexSnapshot) => erdStore.createIndex(schemaId, tableId, indexSnapshot),
-  );
+  const command = new DeleteIndexCommand(schemaId, tableId, indexId);
+
+  executeCommandWithValidation(command, () => {
+    erdStore.deleteIndex(schemaId, tableId, indexId);
+  });
 }

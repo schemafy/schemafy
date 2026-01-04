@@ -1,6 +1,5 @@
 import type { Database, Column } from '@schemafy/validator';
 import { BaseCommand, type IdMapping } from '../Command';
-import type { SyncContext } from '../../types';
 import type { ErdStore } from '@/store/erd.store';
 import {
   createColumnAPI,
@@ -19,7 +18,7 @@ export class CreateColumnCommand extends BaseCommand {
     super('CREATE_COLUMN', 'column', columnData.id);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.createColumn(this.schemaId, this.tableId, this.columnData);
   }
 
@@ -44,7 +43,7 @@ export class CreateColumnCommand extends BaseCommand {
     return response.result ?? {};
   }
 
-  withMappedIds(mapping: IdMapping): CreateColumnCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
     const mappedColumnId = mapping[this.columnData.id] || this.columnData.id;
@@ -56,7 +55,7 @@ export class CreateColumnCommand extends BaseCommand {
     });
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableId,
@@ -75,7 +74,7 @@ export class UpdateColumnNameCommand extends BaseCommand {
     super('UPDATE_COLUMN_NAME', 'column', columnId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.changeColumnName(
       this.schemaId,
       this.tableId,
@@ -95,7 +94,7 @@ export class UpdateColumnNameCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): UpdateColumnNameCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
     const mappedColumnId = mapping[this.columnId] || this.columnId;
@@ -108,7 +107,7 @@ export class UpdateColumnNameCommand extends BaseCommand {
     );
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableId,
@@ -128,7 +127,7 @@ export class UpdateColumnTypeCommand extends BaseCommand {
     super('UPDATE_COLUMN_TYPE', 'column', columnId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.changeColumnType(
       this.schemaId,
       this.tableId,
@@ -150,7 +149,7 @@ export class UpdateColumnTypeCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): UpdateColumnTypeCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
     const mappedColumnId = mapping[this.columnId] || this.columnId;
@@ -164,7 +163,7 @@ export class UpdateColumnTypeCommand extends BaseCommand {
     );
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableId,
@@ -183,7 +182,7 @@ export class UpdateColumnPositionCommand extends BaseCommand {
     super('UPDATE_COLUMN_POSITION', 'column', columnId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.changeColumnPosition(
       this.schemaId,
       this.tableId,
@@ -203,7 +202,7 @@ export class UpdateColumnPositionCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): UpdateColumnPositionCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
     const mappedColumnId = mapping[this.columnId] || this.columnId;
@@ -216,7 +215,7 @@ export class UpdateColumnPositionCommand extends BaseCommand {
     );
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableId,
@@ -234,7 +233,7 @@ export class DeleteColumnCommand extends BaseCommand {
     super('DELETE_COLUMN', 'column', columnId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.deleteColumn(this.schemaId, this.tableId, this.columnId);
   }
 
@@ -248,7 +247,7 @@ export class DeleteColumnCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): DeleteColumnCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
     const mappedColumnId = mapping[this.columnId] || this.columnId;
@@ -260,7 +259,7 @@ export class DeleteColumnCommand extends BaseCommand {
     );
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableId,

@@ -1,6 +1,5 @@
 import type { Database, Schema } from '@schemafy/validator';
 import { BaseCommand, type IdMapping } from '../Command';
-import type { SyncContext } from '../../types';
 import type { ErdStore } from '@/store/erd.store';
 import {
   createSchemaAPI,
@@ -13,7 +12,7 @@ export class CreateSchemaCommand extends BaseCommand {
     super('CREATE_SCHEMA', 'schema', schemaData.id);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.createSchema(this.schemaData);
   }
 
@@ -34,7 +33,7 @@ export class CreateSchemaCommand extends BaseCommand {
     return response.result ?? {};
   }
 
-  withMappedIds(mapping: IdMapping): CreateSchemaCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaData.id] || this.schemaData.id;
 
     return new CreateSchemaCommand({
@@ -43,7 +42,7 @@ export class CreateSchemaCommand extends BaseCommand {
     });
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaData.id,
     };
@@ -58,7 +57,7 @@ export class UpdateSchemaNameCommand extends BaseCommand {
     super('UPDATE_SCHEMA_NAME', 'schema', schemaId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.changeSchemaName(this.schemaId, this.newName);
   }
 
@@ -71,13 +70,13 @@ export class UpdateSchemaNameCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): UpdateSchemaNameCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
 
     return new UpdateSchemaNameCommand(mappedSchemaId, this.newName);
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
     };
@@ -89,7 +88,7 @@ export class DeleteSchemaCommand extends BaseCommand {
     super('DELETE_SCHEMA', 'schema', schemaId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.deleteSchema(this.schemaId);
   }
 
@@ -101,13 +100,13 @@ export class DeleteSchemaCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): DeleteSchemaCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
 
     return new DeleteSchemaCommand(mappedSchemaId);
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
     };

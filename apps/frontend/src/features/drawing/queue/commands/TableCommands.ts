@@ -1,6 +1,5 @@
 import type { Database, Table } from '@schemafy/validator';
 import { BaseCommand, type IdMapping } from '../Command';
-import type { SyncContext } from '../../types';
 import type { ErdStore } from '@/store/erd.store';
 import {
   createTableAPI,
@@ -17,7 +16,7 @@ export class CreateTableCommand extends BaseCommand {
     super('CREATE_TABLE', 'table', tableData.id);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.createTable(this.schemaId, this.tableData);
   }
 
@@ -40,7 +39,7 @@ export class CreateTableCommand extends BaseCommand {
     return response.result ?? {};
   }
 
-  withMappedIds(mapping: IdMapping): CreateTableCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableData.id] || this.tableData.id;
 
@@ -50,7 +49,7 @@ export class CreateTableCommand extends BaseCommand {
     });
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableData.id,
@@ -67,7 +66,7 @@ export class UpdateTableNameCommand extends BaseCommand {
     super('UPDATE_TABLE_NAME', 'table', tableId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.changeTableName(this.schemaId, this.tableId, this.newName);
   }
 
@@ -81,7 +80,7 @@ export class UpdateTableNameCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): UpdateTableNameCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
 
@@ -92,7 +91,7 @@ export class UpdateTableNameCommand extends BaseCommand {
     );
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableId,
@@ -109,7 +108,7 @@ export class UpdateTableExtraCommand extends BaseCommand {
     super('UPDATE_TABLE_EXTRA', 'table', tableId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.updateTableExtra(this.schemaId, this.tableId, this.newExtra);
   }
 
@@ -120,7 +119,7 @@ export class UpdateTableExtraCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): UpdateTableExtraCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
 
@@ -131,7 +130,7 @@ export class UpdateTableExtraCommand extends BaseCommand {
     );
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableId,
@@ -147,7 +146,7 @@ export class DeleteTableCommand extends BaseCommand {
     super('DELETE_TABLE', 'table', tableId);
   }
 
-  applyToSyncedStore(syncedStore: ErdStore): void {
+  applyToSyncedStore(syncedStore: ErdStore) {
     syncedStore.deleteTable(this.schemaId, this.tableId);
   }
 
@@ -160,14 +159,14 @@ export class DeleteTableCommand extends BaseCommand {
     return {};
   }
 
-  withMappedIds(mapping: IdMapping): DeleteTableCommand {
+  withMappedIds(mapping: IdMapping) {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
 
     return new DeleteTableCommand(mappedSchemaId, mappedTableId);
   }
 
-  getContext(): SyncContext {
+  getContext() {
     return {
       schemaId: this.schemaId,
       tableId: this.tableId,
