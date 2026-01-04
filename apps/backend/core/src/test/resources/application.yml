@@ -60,6 +60,9 @@ cache:
   redis:
     enabled: false
 
+sharelink:
+  pepper: test-pepper-value
+
 logging:
   level:
     com:

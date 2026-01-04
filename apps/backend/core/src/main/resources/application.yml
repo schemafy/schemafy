@@ -46,6 +46,9 @@ cache:
     default-ttl-minutes: 30
     key-prefix: "cache::"
 
+sharelink:
+  pepper: ${SHARELINK_PEPPER:default-pepper-change-me}
+
 management:
   endpoints:
     web:
