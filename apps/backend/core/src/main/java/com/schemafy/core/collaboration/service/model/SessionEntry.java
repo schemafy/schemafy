@@ -24,9 +24,12 @@ public class SessionEntry {
 
     private final Sinks.Many<CursorPosition> cursorSink;
 
+    private String currentSchemaId;
+
     public SessionEntry(WebSocketSession session, WebSocketAuthInfo authInfo) {
         this.session = session;
         this.authInfo = authInfo;
+        this.currentSchemaId = null;
 
         this.outboundSink = Sinks.many()
                 .unicast()
@@ -70,5 +73,11 @@ public class SessionEntry {
     }
 
     public boolean isOpen() { return session.isOpen(); }
+
+    public String getCurrentSchemaId() { return currentSchemaId; }
+
+    public void setCurrentSchemaId(String schemaId) {
+        this.currentSchemaId = schemaId;
+    }
 
 }
