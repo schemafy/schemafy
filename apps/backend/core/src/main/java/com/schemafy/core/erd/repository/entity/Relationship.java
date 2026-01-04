@@ -20,11 +20,11 @@ import lombok.Setter;
 @Table("db_relationships")
 public class Relationship extends BaseEntity {
 
-    @Column("src_table_id")
-    private String srcTableId;
+    @Column("fk_table_id")
+    private String fkTableId;
 
-    @Column("tgt_table_id")
-    private String tgtTableId;
+    @Column("pk_table_id")
+    private String pkTableId;
 
     @Column("name")
     private String name;
@@ -45,11 +45,11 @@ public class Relationship extends BaseEntity {
     private String extra;
 
     @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Relationship newRelationship(String srcTableId,
-            String tgtTableId,
+    private static Relationship newRelationship(String fkTableId,
+            String pkTableId,
             String name, String kind, String cardinality, String onDelete,
             String onUpdate, String extra) {
-        Relationship relationship = new Relationship(srcTableId, tgtTableId,
+        Relationship relationship = new Relationship(fkTableId, pkTableId,
                 name,
                 kind, cardinality, onDelete, onUpdate, extra);
         relationship.setId(UlidGenerator.generate());

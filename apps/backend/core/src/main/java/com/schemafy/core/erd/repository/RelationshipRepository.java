@@ -13,7 +13,7 @@ public interface RelationshipRepository
 
     public Mono<Relationship> findByIdAndDeletedAtIsNull(String id);
 
-    @Query("SELECT * FROM db_relationships WHERE deleted_at IS NULL AND src_table_id = :tableId OR tgt_table_id = :tableId")
+    @Query("SELECT * FROM db_relationships WHERE deleted_at IS NULL AND (fk_table_id = :tableId OR pk_table_id = :tableId)")
     public Flux<Relationship> findByTableIdAndDeletedAtIsNull(String tableId);
 
 }

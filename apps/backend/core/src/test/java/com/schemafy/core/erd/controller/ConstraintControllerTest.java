@@ -99,7 +99,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -111,7 +111,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "visit_count",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -253,6 +253,9 @@ class ConstraintControllerTest {
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
+                                fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
@@ -359,7 +362,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -371,7 +374,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "visit_count",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -512,7 +515,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -524,7 +527,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "visit_count",
-                                                        "ordinalPosition": 2,
+                                                        "seqNo": 2,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -670,6 +673,9 @@ class ConstraintControllerTest {
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
+                                fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
@@ -709,7 +715,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -721,7 +727,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "visit_count",
-                                                        "ordinalPosition": 2,
+                                                        "seqNo": 2,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -847,7 +853,7 @@ class ConstraintControllerTest {
                                                         "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",

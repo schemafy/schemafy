@@ -152,6 +152,7 @@ class TableControllerTest {
                                                 "relationshipColumns": {},
                                                 "propagated": {
                                                     "columns": [],
+                                                    "relationshipColumns": [],
                                                     "constraintColumns": [],
                                                     "indexColumns": []
                                                 }
@@ -229,6 +230,9 @@ class TableControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
@@ -643,7 +647,7 @@ class TableControllerTest {
                                             "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                             "name": "user_id",
                                             "dataType": "BIGINT",
-                                            "ordinalPosition": 1,
+                                            "seqNo": 1,
                                             "lengthScale": "20",
                                             "isAutoIncrement": false,
                                             "charset": "utf8mb4",
@@ -704,7 +708,7 @@ class TableControllerTest {
                                         .description("정렬 규칙"),
                                 fieldWithPath("result[].comment")
                                         .description("컬럼 설명"),
-                                fieldWithPath("result[].ordinalPosition")
+                                fieldWithPath("result[].seqNo")
                                         .description("컬럼 위치"))));
     }
 
@@ -719,8 +723,8 @@ class TableControllerTest {
                                 """
                                         {
                                             "id": "06D6WJQP78M1RKSJMT8JWKNJNG",
-                                            "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX5",
+                                            "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                            "pkTableId": "06D6W8HDY79QFZX39RMX62KSX5",
                                             "name": "fk_users_orders",
                                             "kind": "FOREIGN_KEY",
                                             "cardinality": "ONE_TO_MANY",
@@ -761,9 +765,9 @@ class TableControllerTest {
                                 fieldWithPath("result").description("관계 목록"),
                                 fieldWithPath("result[].id")
                                         .description("관계 ID"),
-                                fieldWithPath("result[].srcTableId")
+                                fieldWithPath("result[].fkTableId")
                                         .description("소스 테이블 ID"),
-                                fieldWithPath("result[].tgtTableId")
+                                fieldWithPath("result[].pkTableId")
                                         .description("타겟 테이블 ID"),
                                 fieldWithPath("result[].name")
                                         .description("관계 이름"),

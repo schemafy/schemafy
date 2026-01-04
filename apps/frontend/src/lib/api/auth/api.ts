@@ -51,9 +51,8 @@ export const refreshToken = async (): Promise<ApiResponse<null>> => {
 };
 
 export const getMyInfo = async (): Promise<ApiResponse<AuthResponse>> => {
-  const response = await apiClient.get<ApiResponse<AuthResponse>>(
-    `/public/api/v1.0/users`,
-  );
+  const response =
+    await apiClient.get<ApiResponse<AuthResponse>>(`/api/v1.0/users`);
 
   if (!response.data.success) {
     throw new Error('Failed to get my info');

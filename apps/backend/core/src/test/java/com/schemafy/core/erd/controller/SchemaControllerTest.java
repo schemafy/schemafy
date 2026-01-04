@@ -122,6 +122,7 @@ class SchemaControllerTest {
                                                 "relationshipColumns": {},
                                                 "propagated": {
                                                     "columns": [],
+                                                    "relationshipColumns": [],
                                                     "constraintColumns": [],
                                                     "indexColumns": []
                                                 }
@@ -199,6 +200,9 @@ class SchemaControllerTest {
                                         .description("전파된 엔티티 정보"),
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
+                                fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
                                 fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),

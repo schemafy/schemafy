@@ -15,7 +15,11 @@ import com.schemafy.core.erd.controller.dto.request.CreateTableRequestWithExtra;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.TableResponse;
+import com.schemafy.core.erd.repository.ColumnRepository;
+import com.schemafy.core.erd.repository.RelationshipRepository;
 import com.schemafy.core.erd.repository.TableRepository;
+import com.schemafy.core.erd.repository.entity.Column;
+import com.schemafy.core.erd.repository.entity.Relationship;
 import com.schemafy.core.erd.repository.entity.Table;
 import com.schemafy.core.validation.client.ValidationClient;
 
@@ -38,20 +42,29 @@ class TableServiceTest {
     @Autowired
     TableRepository tableRepository;
 
+    @Autowired
+    ColumnRepository columnRepository;
+
+    @Autowired
+    RelationshipRepository relationshipRepository;
+
     @MockitoBean
     ValidationClient validationClient;
 
     @BeforeEach
     void setUp() {
         tableRepository.deleteAll().block();
+        relationshipRepository.deleteAll().block();
+        columnRepository.deleteAll().block();
+
         given(validationClient
                 .changeTableName(any(Validation.ChangeTableNameRequest.class)))
                 .willReturn(Mono.just(
-                        validation.Validation.Database.newBuilder().build()));
+                        Validation.Database.newBuilder().build()));
         given(validationClient
                 .deleteTable(any(Validation.DeleteTableRequest.class)))
                 .willReturn(Mono.just(
-                        validation.Validation.Database.newBuilder().build()));
+                        Validation.Database.newBuilder().build()));
     }
 
     @Test
@@ -59,16 +72,16 @@ class TableServiceTest {
     void createTable_mappingResponse_success() {
         Validation.CreateTableRequest request = Validation.CreateTableRequest
                 .newBuilder()
-                .setTable(validation.Validation.Table.newBuilder()
+                .setTable(Validation.Table.newBuilder()
                         .setId("fe-table-id")
                         .setSchemaId("schema-1")
                         .setName("test-table")
                         .setComment("테스트 테이블")
                         .setTableOptions("ENGINE=InnoDB")
                         .build())
-                .setDatabase(validation.Validation.Database.newBuilder()
+                .setDatabase(Validation.Database.newBuilder()
                         .setId("proj-1")
-                        .addSchemas(validation.Validation.Schema.newBuilder()
+                        .addSchemas(Validation.Schema.newBuilder()
                                 .setId("schema-1")
                                 .setName("test-schema")
                                 .build())
@@ -79,15 +92,15 @@ class TableServiceTest {
                 request, "extra-data");
 
         // ValidationClient 모킹
-        validation.Validation.Database mockResponse = validation.Validation.Database
+        Validation.Database mockResponse = Validation.Database
                 .newBuilder()
                 .setId("proj-1")
                 .setIsAffected(true)
-                .addSchemas(validation.Validation.Schema.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
                         .setId("schema-1")
                         .setName("test-schema")
                         .setIsAffected(true)
-                        .addTables(validation.Validation.Table.newBuilder()
+                        .addTables(Validation.Table.newBuilder()
                                 .setId("be-table-id")
                                 .setSchemaId("schema-1")
                                 .setName("test-table")
@@ -230,6 +243,8 @@ class TableServiceTest {
     @Test
     @DisplayName("deleteTable: 소프트 삭제가 수행된다")
     void deleteTable_softDelete() {
+        String childTableId = "child-table";
+
         Table saved = tableRepository.save(
                 Table.builder()
                         .schemaId("schema-1")
@@ -240,17 +255,138 @@ class TableServiceTest {
                         .build())
                 .block();
 
+        Column tableOwnedColumn = columnRepository.save(
+                Column.builder()
+                        .tableId(saved.getId())
+                        .name("owned_col")
+                        .seqNo(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+
+        Column fkColumnToDelete = columnRepository.save(
+                Column.builder()
+                        .tableId(childTableId)
+                        .name("parent_id")
+                        .seqNo(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+
+        Relationship relationship = relationshipRepository.save(
+                Relationship.builder()
+                        .fkTableId(childTableId)
+                        .pkTableId(saved.getId())
+                        .name("fk_child_parent")
+                        .kind("NON_IDENTIFYING")
+                        .cardinality("ONE_TO_MANY")
+                        .onDelete("NO_ACTION")
+                        .onUpdate("NO_ACTION")
+                        .extra("")
+                        .build())
+                .block();
+
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(saved.getId())
+                                .setSchemaId("schema-1")
+                                .setName("to-delete")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(tableOwnedColumn.getId())
+                                        .setTableId(saved.getId())
+                                        .setName("owned_col")
+                                        .setSeqNo(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(childTableId)
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnToDelete.getId())
+                                        .setTableId(childTableId)
+                                        .setName("parent_id")
+                                        .setSeqNo(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .addRelationships(
+                                        Validation.Relationship.newBuilder()
+                                                .setId(relationship.getId())
+                                                .setFkTableId(childTableId)
+                                                .setPkTableId(saved.getId())
+                                                .setName("fk_child_parent")
+                                                .setKind(
+                                                        Validation.RelationshipKind.NON_IDENTIFYING)
+                                                .setCardinality(
+                                                        Validation.RelationshipCardinality.ONE_TO_MANY)
+                                                .addColumns(
+                                                        Validation.RelationshipColumn
+                                                                .newBuilder()
+                                                                .setId(
+                                                                        "relcol-1")
+                                                                .setRelationshipId(
+                                                                        relationship
+                                                                                .getId())
+                                                                .setFkColumnId(
+                                                                        fkColumnToDelete
+                                                                                .getId())
+                                                                .setPkColumnId(
+                                                                        tableOwnedColumn
+                                                                                .getId())
+                                                                .setSeqNo(1)
+                                                                .build())
+                                                .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database afterDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId(childTableId)
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient
+                .deleteTable(any(Validation.DeleteTableRequest.class)))
+                .willReturn(Mono.just(afterDatabase));
+
         StepVerifier
                 .create(tableService
                         .deleteTable(Validation.DeleteTableRequest.newBuilder()
                                 .setTableId(saved.getId())
                                 .setSchemaId("schema-1")
+                                .setDatabase(beforeDatabase)
                                 .build()))
                 .verifyComplete();
 
         // 삭제 플래그 확인 (deletedAt not null)
         StepVerifier.create(tableRepository.findById(saved.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(
+                relationshipRepository.findById(relationship.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(
+                columnRepository.findById(fkColumnToDelete.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(
+                columnRepository.findById(tableOwnedColumn.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isFalse())
                 .verifyComplete();
     }
 

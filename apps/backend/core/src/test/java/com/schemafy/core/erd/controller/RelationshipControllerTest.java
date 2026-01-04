@@ -103,7 +103,7 @@ class RelationshipControllerTest {
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "user_id",
                                                         "dataType": "BIGINT",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
                                                         "collation": "utf8mb4_unicode_ci",
@@ -122,8 +122,8 @@ class RelationshipControllerTest {
                             "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
                             "relationship": {
                                 "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                                "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                 "name": "FK_recommend_user",
                                 "kind": "NON_IDENTIFYING",
                                 "cardinality": "ONE_TO_MANY",
@@ -134,7 +134,7 @@ class RelationshipControllerTest {
                                     "id": "06D4YK995770K0J8539XGNHNW0",
                                     "relationshipId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                                     "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                    "refColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                    "pkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                     "seqNo": 1
                                 }]
                             }
@@ -164,6 +164,7 @@ class RelationshipControllerTest {
                     },
                     "propagated": {
                         "columns": [],
+                        "relationshipColumns": [],
                         "constraintColumns": [],
                         "indexColumns": []
                     }
@@ -207,10 +208,12 @@ class RelationshipControllerTest {
                                         .description("스키마 ID"),
                                 fieldWithPath("relationship.id")
                                         .description("관계 ID (FE ID)"),
-                                fieldWithPath("relationship.srcTableId")
-                                        .description("출발 테이블 ID"),
-                                fieldWithPath("relationship.tgtTableId")
-                                        .description("도착 테이블 ID"),
+                                fieldWithPath("relationship.fkTableId")
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                fieldWithPath("relationship.pkTableId")
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("relationship.name")
                                         .description("관계 이름"),
                                 fieldWithPath("relationship.kind")
@@ -227,7 +230,7 @@ class RelationshipControllerTest {
                                         "relationship.columns[].fkColumnId")
                                         .description("FK 컬럼 ID"),
                                 fieldWithPath(
-                                        "relationship.columns[].refColumnId")
+                                        "relationship.columns[].pkColumnId")
                                         .description("참조 컬럼 ID"),
                                 fieldWithPath("relationship.columns[].seqNo")
                                         .description("순서 번호")),
@@ -271,6 +274,9 @@ class RelationshipControllerTest {
                                         .description(
                                                 "전파된 컬럼 목록 (식별 관계 시 자식 테이블로 전파)"),
                                 fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
+                                fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
@@ -283,8 +289,8 @@ class RelationshipControllerTest {
         String mockResponseJson = """
                 {
                     "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                    "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                    "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                     "name": "FK_recommend_user",
                     "kind": "NON_IDENTIFYING",
                     "cardinality": "ONE_TO_MANY",
@@ -295,8 +301,8 @@ class RelationshipControllerTest {
                         {
                             "id": "06D6WCH68V89ZSPWVZ8WMBQWW8",
                             "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                            "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                            "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                            "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                            "pkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                             "seqNo": 1
                         }
                     ]
@@ -334,10 +340,12 @@ class RelationshipControllerTest {
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result").description("관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
-                                fieldWithPath("result.srcTableId")
-                                        .description("소스 테이블 ID (FK를 가진 테이블)"),
-                                fieldWithPath("result.tgtTableId")
-                                        .description("타겟 테이블 ID (PK를 가진 테이블)"),
+                                fieldWithPath("result.fkTableId")
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                fieldWithPath("result.pkTableId")
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind").description(
@@ -356,10 +364,12 @@ class RelationshipControllerTest {
                                         .description("관계 컬럼 ID"),
                                 fieldWithPath("result.columns[].relationshipId")
                                         .description("관계 ID"),
-                                fieldWithPath("result.columns[].srcColumnId")
-                                        .description("소스 컬럼 ID (FK 컬럼)"),
-                                fieldWithPath("result.columns[].tgtColumnId")
-                                        .description("타겟 컬럼 ID (참조되는 컬럼)"),
+                                fieldWithPath("result.columns[].fkColumnId")
+                                        .description(
+                                                "FK 컬럼 ID (자식 테이블의 외래키 컬럼)"),
+                                fieldWithPath("result.columns[].pkColumnId")
+                                        .description(
+                                                "PK 컬럼 ID (부모 테이블의 참조되는 컬럼)"),
                                 fieldWithPath("result.columns[].seqNo")
                                         .description("순서 번호"))));
     }
@@ -398,7 +408,7 @@ class RelationshipControllerTest {
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "user_id",
                                                         "dataType": "BIGINT",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
                                                         "collation": "utf8mb4_unicode_ci",
@@ -411,8 +421,8 @@ class RelationshipControllerTest {
                                                 "relationships": [
                                                     {
                                                         "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "FK_recommend_user",
                                                         "kind": "NON_IDENTIFYING",
                                                         "cardinality": "ONE_TO_MANY",
@@ -424,7 +434,7 @@ class RelationshipControllerTest {
                                                                 "id": "06D4YK995770K0J8539XGNHNW0",
                                                                 "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
                                                                 "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                                "refColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "pkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                                 "seqNo": 1
                                                             }
                                                         ]
@@ -446,8 +456,8 @@ class RelationshipControllerTest {
         String mockResponseJson = """
                 {
                     "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                    "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                    "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                     "name": "FK_recommend_other_user",
                     "kind": "NON_IDENTIFYING",
                     "cardinality": "ONE_TO_MANY",
@@ -503,10 +513,12 @@ class RelationshipControllerTest {
                                 fieldWithPath("result")
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
-                                fieldWithPath("result.srcTableId")
-                                        .description("소스 테이블 ID"),
-                                fieldWithPath("result.tgtTableId")
-                                        .description("타겟 테이블 ID"),
+                                fieldWithPath("result.fkTableId")
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                fieldWithPath("result.pkTableId")
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("변경된 관계 이름"),
                                 fieldWithPath("result.kind")
@@ -537,8 +549,8 @@ class RelationshipControllerTest {
                 """
                         {
                             "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                            "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                            "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                            "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                             "name": "FK_recommend_user",
                             "kind": "NON_IDENTIFYING",
                             "cardinality": "ONE_TO_MANY",
@@ -590,10 +602,12 @@ class RelationshipControllerTest {
                                 fieldWithPath("result")
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
-                                fieldWithPath("result.srcTableId")
-                                        .description("소스 테이블 ID"),
-                                fieldWithPath("result.tgtTableId")
-                                        .description("타겟 테이블 ID"),
+                                fieldWithPath("result.fkTableId")
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                fieldWithPath("result.pkTableId")
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind")
@@ -644,7 +658,7 @@ class RelationshipControllerTest {
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "user_id",
                                                         "dataType": "BIGINT",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
                                                         "collation": "utf8mb4_unicode_ci",
@@ -657,8 +671,8 @@ class RelationshipControllerTest {
                                                 "relationships": [
                                                     {
                                                         "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "FK_recommend_other_user",
                                                         "kind": "NON_IDENTIFYING",
                                                         "cardinality": "ONE_TO_MANY",
@@ -670,7 +684,7 @@ class RelationshipControllerTest {
                                                                 "id": "06D4YK995770K0J8539XGNHNW0",
                                                                 "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
                                                                 "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                                "refColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "pkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                                 "seqNo": 1
                                                             }
                                                         ]
@@ -693,8 +707,8 @@ class RelationshipControllerTest {
         String mockResponseJson = """
                 {
                     "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                    "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                    "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                     "name": "FK_recommend_other_user",
                     "kind": "NON_IDENTIFYING",
                     "cardinality": "ONE_TO_ONE",
@@ -751,16 +765,143 @@ class RelationshipControllerTest {
                                 fieldWithPath("result")
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
-                                fieldWithPath("result.srcTableId")
-                                        .description("소스 테이블 ID"),
-                                fieldWithPath("result.tgtTableId")
-                                        .description("타겟 테이블 ID"),
+                                fieldWithPath("result.fkTableId")
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                fieldWithPath("result.pkTableId")
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind")
                                         .description("관계 종류"),
                                 fieldWithPath("result.cardinality")
                                         .description("변경된 카디널리티"),
+                                fieldWithPath("result.onDelete")
+                                        .description("DELETE 액션"),
+                                fieldWithPath("result.onUpdate")
+                                        .description("UPDATE 액션"),
+                                fieldWithPath("result.extra")
+                                        .description("추가 정보"),
+                                fieldWithPath("result.columns")
+                                        .description("관계 컬럼 목록"))));
+    }
+
+    @Test
+    @DisplayName("관계 종류 변경 API 문서화")
+    void updateRelationshipKind() throws Exception {
+        Validation.ChangeRelationshipKindRequest.Builder builder = Validation.ChangeRelationshipKindRequest
+                .newBuilder();
+        JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge("""
+                        {
+                            "database": {
+                                "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                "schemas": [
+                                    {
+                                        "id": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                        "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
+                                        "dbVendorId": "MYSQL",
+                                        "name": "test",
+                                        "charset": "utf8mb4",
+                                        "collation": "utf8mb4_unicode_ci",
+                                        "vendorOption": "",
+                                        "canvasViewport": null,
+                                        "tables": [
+                                            {
+                                                "id": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                                                "name": "users",
+                                                "comment": "사용자 테이블",
+                                                "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+                                                "columns": [],
+                                                "indexes": [],
+                                                "constraints": [],
+                                                "relationships": []
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                            "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                            "kind": "IDENTIFYING"
+                        }
+                        """,
+                        builder);
+        Validation.ChangeRelationshipKindRequest request = builder.build();
+
+        String mockResponseJson = """
+                {
+                    "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
+                    "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                    "name": "FK_recommend_other_user",
+                    "kind": "IDENTIFYING",
+                    "cardinality": "ONE_TO_ONE",
+                    "onDelete": "CASCADE",
+                    "onUpdate": "CASCADE_UPDATE",
+                    "extra": "{}",
+                    "columns": []
+                }
+                """;
+
+        when(relationshipService.updateRelationshipKind(
+                any(Validation.ChangeRelationshipKindRequest.class)))
+                .thenReturn(Mono
+                        .just(objectMapper.readValue(mockResponseJson,
+                                RelationshipResponse.class)));
+
+        webTestClient.put()
+                .uri(API_BASE_PATH + "/relationships/{relationshipId}/kind",
+                        "06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(toJson(request))
+                .header("Accept", "application/json")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.result.id").isEqualTo("06D6WCH677C3FCC2Q9SD5M1Y5W")
+                .jsonPath("$.result.kind").isEqualTo("IDENTIFYING")
+                .jsonPath("$.result.name").isEqualTo("FK_recommend_other_user")
+                .consumeWith(document("relationship-update-kind",
+                        pathParameters(
+                                parameterWithName("relationshipId")
+                                        .description("관계 ID")),
+                        requestHeaders(
+                                headerWithName("Content-Type")
+                                        .description("요청 본문 타입"),
+                                headerWithName("Accept").description("응답 포맷")),
+                        relaxedRequestFields(
+                                fieldWithPath("database.id")
+                                        .description("데이터베이스 ID"),
+                                fieldWithPath("schemaId")
+                                        .description("스키마 ID"),
+                                fieldWithPath("relationshipId")
+                                        .description("변경할 관계 ID"),
+                                fieldWithPath("kind")
+                                        .description("변경할 관계 종류")),
+                        responseHeaders(
+                                headerWithName("Content-Type")
+                                        .description("응답 컨텐츠 타입")),
+                        responseFields(
+                                fieldWithPath("success")
+                                        .description("요청 성공 여부"),
+                                fieldWithPath("result")
+                                        .description("수정된 관계 정보"),
+                                fieldWithPath("result.id").description("관계 ID"),
+                                fieldWithPath("result.fkTableId")
+                                        .description("FK 테이블 ID"),
+                                fieldWithPath("result.pkTableId")
+                                        .description("PK 테이블 ID"),
+                                fieldWithPath("result.name")
+                                        .description("관계 이름"),
+                                fieldWithPath("result.kind")
+                                        .description("변경된 관계 종류"),
+                                fieldWithPath("result.cardinality")
+                                        .description("카디널리티"),
                                 fieldWithPath("result.onDelete")
                                         .description("DELETE 액션"),
                                 fieldWithPath("result.onUpdate")
@@ -802,7 +943,7 @@ class RelationshipControllerTest {
                                                         "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -814,7 +955,7 @@ class RelationshipControllerTest {
                                                         "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "visit_count",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -826,8 +967,8 @@ class RelationshipControllerTest {
                                                 "relationships": [
                                                     {
                                                         "id": "06D590QBYGE6K2TQ8JK514GGP4",
-                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "FK_recommend_users",
                                                         "kind": "NON_IDENTIFYING",
                                                         "cardinality": "ONE_TO_ONE",
@@ -838,8 +979,8 @@ class RelationshipControllerTest {
                                                             {
                                                                 "id": "06D590QC452PA8W5NQ2BDXNEDG",
                                                                 "relationshipId": "06D590QBYGE6K2TQ8JK514GGP4",
-                                                                "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                                "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "pkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                                 "seqNo": 1
                                                             }
                                                         ]
@@ -856,7 +997,7 @@ class RelationshipControllerTest {
                                 "id": "06D5JGQY03RKQPMC9CJ3B0EGM8",
                                 "relationshipId": "06D590QBYGE6K2TQ8JK514GGP4",
                                 "fkColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                                "refColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                "pkColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                 "seqNo": 2
                             }
                         }
@@ -920,7 +1061,7 @@ class RelationshipControllerTest {
                                         .description("관계 ID"),
                                 fieldWithPath("relationshipColumn.fkColumnId")
                                         .description("FK 컬럼 ID"),
-                                fieldWithPath("relationshipColumn.refColumnId")
+                                fieldWithPath("relationshipColumn.pkColumnId")
                                         .description("참조 컬럼 ID"),
                                 fieldWithPath("relationshipColumn.seqNo")
                                         .description("순서 번호")),
@@ -964,6 +1105,9 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.propagated.columns")
                                         .description("전파된 컬럼 목록"),
                                 fieldWithPath(
+                                        "result.propagated.relationshipColumns")
+                                        .description("전파된 관계 컬럼 목록"),
+                                fieldWithPath(
                                         "result.propagated.constraintColumns")
                                         .description("전파된 제약조건 컬럼 목록"),
                                 fieldWithPath("result.propagated.indexColumns")
@@ -1001,7 +1145,7 @@ class RelationshipControllerTest {
                                                         "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -1013,7 +1157,7 @@ class RelationshipControllerTest {
                                                         "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "visit_count",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -1025,8 +1169,8 @@ class RelationshipControllerTest {
                                                 "relationships": [
                                                     {
                                                         "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "FK_recommend_users",
                                                         "kind": "NON_IDENTIFYING",
                                                         "cardinality": "ONE_TO_ONE",
@@ -1037,15 +1181,15 @@ class RelationshipControllerTest {
                                                             {
                                                                 "id": "06D6WCH68V89ZSPWVZ8WMBQWW8",
                                                                 "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                                                                "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                                "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "pkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                                 "seqNo": 1
                                                             },
                                                             {
                                                                 "id": "06D6WH7CC5YVNWKVB888ZB42EM",
                                                                 "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                                                                "srcColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                                                                "tgtColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                                "fkColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
+                                                                "pkColumnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                                                 "seqNo": 2
                                                             }
                                                         ]
@@ -1144,7 +1288,7 @@ class RelationshipControllerTest {
                                                         "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -1156,7 +1300,7 @@ class RelationshipControllerTest {
                                                         "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "visit_count",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "dataType": "INTEGER",
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
@@ -1168,8 +1312,8 @@ class RelationshipControllerTest {
                                                 "relationships": [
                                                     {
                                                         "id": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                                                        "srcTableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                                        "tgtTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "fkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
+                                                        "pkTableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "FK_recommend_users",
                                                         "kind": "NON_IDENTIFYING",
                                                         "cardinality": "ONE_TO_ONE",
@@ -1180,8 +1324,8 @@ class RelationshipControllerTest {
                                                             {
                                                                 "id": "06D6WCH68V89ZSPWVZ8WMBQWW8",
                                                                 "relationshipId": "06D6WCH677C3FCC2Q9SD5M1Y5W",
-                                                                "srcColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                                "tgtColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "fkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
+                                                                "pkColumnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
                                                                 "seqNo": 1
                                                             }
                                                         ]

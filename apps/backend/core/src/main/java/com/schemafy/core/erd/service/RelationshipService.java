@@ -1,5 +1,9 @@
 package com.schemafy.core.erd.service;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -13,7 +17,6 @@ import com.schemafy.core.erd.model.EntityType;
 import com.schemafy.core.erd.repository.RelationshipColumnRepository;
 import com.schemafy.core.erd.repository.RelationshipRepository;
 import com.schemafy.core.erd.repository.entity.Relationship;
-import com.schemafy.core.erd.repository.entity.RelationshipColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,7 @@ public class RelationshipService {
     private final RelationshipRepository relationshipRepository;
     private final RelationshipColumnRepository relationshipColumnRepository;
     private final AffectedEntitiesSaver affectedEntitiesSaver;
+    private final AffectedEntitiesSoftDeleter affectedEntitiesSoftDeleter;
     private final TransactionalOperator transactionalOperator;
 
     public Mono<AffectedMappingResponse> createRelationship(
@@ -55,45 +59,52 @@ public class RelationshipService {
                                                     .getId(),
                                             savedRelationship.getId());
 
-                            return saveRelationshipColumns(
-                                    request.request().getRelationship()
-                                            .getColumnsList(),
-                                    savedRelationship.getId())
-                                    .then(saveAffectedEntitiesAndBuildResponse(
-                                            request,
+                            Set<String> excludePropagatedIds = request.request()
+                                    .getRelationship()
+                                    .getColumnsList()
+                                    .stream()
+                                    .map(Validation.RelationshipColumn::getId)
+                                    .collect(Collectors.toSet());
+
+                            return affectedEntitiesSaver
+                                    .saveAffectedEntitiesResult(
+                                            request.request().getDatabase(),
                                             updatedDatabase,
-                                            savedRelationship.getId()));
+                                            savedRelationship.getId(),
+                                            savedRelationship.getId(),
+                                            EntityType.RELATIONSHIP.name(),
+                                            Set.of(),
+                                            excludePropagatedIds)
+                                    .map(saveResult -> {
+                                        Validation.Database afterDatabase = applyRelationshipColumnMappings(
+                                                updatedDatabase,
+                                                saveResult.idMappings()
+                                                        .relationshipColumns());
+                                        return AffectedMappingResponse
+                                                .of(request.request(),
+                                                        request.request()
+                                                                .getDatabase(),
+                                                        afterDatabase,
+                                                        saveResult
+                                                                .propagated());
+                                    });
                         }));
     }
 
-    private Mono<Void> saveRelationshipColumns(
-            java.util.List<Validation.RelationshipColumn> columns,
-            String relationshipId) {
-        return Flux.fromIterable(columns)
-                .flatMap(column -> {
-                    RelationshipColumn entity = ErdMapper.toEntity(column);
-                    entity.setRelationshipId(relationshipId);
-                    return relationshipColumnRepository.save(entity);
-                })
-                .then();
-    }
-
-    private Mono<AffectedMappingResponse> saveAffectedEntitiesAndBuildResponse(
-            CreateRelationshipRequestWithExtra request,
-            Validation.Database updatedDatabase,
-            String relationshipId) {
-        return affectedEntitiesSaver
-                .saveAffectedEntities(
-                        request.request().getDatabase(),
-                        updatedDatabase,
-                        relationshipId,
-                        relationshipId,
-                        "RELATIONSHIP")
-                .map(propagated -> AffectedMappingResponse.of(
-                        request.request(),
-                        request.request().getDatabase(),
-                        updatedDatabase,
-                        propagated));
+    private static Validation.Database applyRelationshipColumnMappings(
+            Validation.Database database,
+            Map<String, String> relationshipColumnMappings) {
+        Validation.Database updatedDatabase = database;
+        for (Map.Entry<String, String> mapping : relationshipColumnMappings
+                .entrySet()) {
+            updatedDatabase = AffectedMappingResponse
+                    .updateEntityIdInDatabase(
+                            updatedDatabase,
+                            EntityType.RELATIONSHIP_COLUMN,
+                            mapping.getKey(),
+                            mapping.getValue());
+        }
+        return updatedDatabase;
     }
 
     public Mono<RelationshipResponse> getRelationship(String id) {
@@ -160,6 +171,45 @@ public class RelationshipService {
                 .map(RelationshipResponse::from);
     }
 
+    public Mono<RelationshipResponse> updateRelationshipKind(
+            Validation.ChangeRelationshipKindRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
+        return relationshipRepository
+                .findByIdAndDeletedAtIsNull(request.getRelationshipId())
+                .switchIfEmpty(Mono.error(
+                        new BusinessException(
+                                ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
+                .flatMap(relationship -> validationClient
+                        .changeRelationshipKind(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(
+                                        updateRelationshipKindTransaction(
+                                                request,
+                                                afterDatabase,
+                                                relationship))))
+                .map(RelationshipResponse::from);
+    }
+
+    private Mono<Relationship> updateRelationshipKindTransaction(
+            Validation.ChangeRelationshipKindRequest request,
+            Validation.Database afterDatabase,
+            Relationship relationship) {
+        relationship.setKind(request.getKind().name());
+
+        return relationshipRepository.save(relationship)
+                .flatMap(savedRelationship -> affectedEntitiesSoftDeleter
+                        .softDeleteRemovedEntities(request.getDatabase(),
+                                afterDatabase)
+                        .then(affectedEntitiesSaver
+                                .saveAffectedEntitiesResult(
+                                        request.getDatabase(), afterDatabase))
+                        .thenReturn(savedRelationship));
+    }
+
     public Mono<AffectedMappingResponse> addColumnToRelationship(
             Validation.AddColumnToRelationshipRequest request) {
         return validationClient.addColumnToRelationship(request)
@@ -189,7 +239,7 @@ public class RelationshipService {
                                             updatedDatabase,
                                             savedRelationshipColumn.getId(),
                                             request.getRelationshipId(),
-                                            "RELATIONSHIP")
+                                            EntityType.RELATIONSHIP.name())
                                     .map(propagated -> AffectedMappingResponse
                                             .of(
                                                     request,
@@ -201,29 +251,62 @@ public class RelationshipService {
 
     public Mono<Void> removeColumnFromRelationship(
             Validation.RemoveColumnFromRelationshipRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return relationshipColumnRepository
                 .findByIdAndDeletedAtIsNull(request.getRelationshipColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND)))
-                .delayUntil(ignore -> validationClient
-                        .removeColumnFromRelationship(request))
-                .doOnNext(RelationshipColumn::delete)
-                .flatMap(relationshipColumnRepository::save)
+                .flatMap(relationshipColumn -> validationClient
+                        .removeColumnFromRelationship(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(relationshipColumn)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(
+                                                relationshipColumnRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase))
+                                        .then(affectedEntitiesSaver
+                                                .saveAffectedEntitiesResult(
+                                                        request.getDatabase(),
+                                                        afterDatabase)
+                                                .then()))))
                 .then();
     }
 
     public Mono<Void> deleteRelationship(
             Validation.DeleteRelationshipRequest request) {
+        if (!request.hasDatabase()) {
+            return Mono.error(
+                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+        }
+
         return relationshipRepository
                 .findByIdAndDeletedAtIsNull(request.getRelationshipId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(
                                 ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)))
-                .delayUntil(
-                        ignore -> validationClient.deleteRelationship(request))
-                .doOnNext(Relationship::delete)
-                .flatMap(relationshipRepository::save)
+                .flatMap(relationship -> validationClient
+                        .deleteRelationship(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(Mono.just(relationship)
+                                        .doOnNext(entity -> entity.delete())
+                                        .flatMap(relationshipRepository::save)
+                                        .then(affectedEntitiesSoftDeleter
+                                                .softDeleteRemovedEntities(
+                                                        request.getDatabase(),
+                                                        afterDatabase))
+                                        .then(affectedEntitiesSaver
+                                                .saveAffectedEntitiesResult(
+                                                        request.getDatabase(),
+                                                        afterDatabase)
+                                                .then()))))
                 .then();
     }
 

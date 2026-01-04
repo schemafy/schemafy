@@ -46,12 +46,12 @@ class SchemaServiceTest {
         given(validationClient
                 .changeSchemaName(
                         any(Validation.ChangeSchemaNameRequest.class)))
-                .willReturn(Mono.just(validation.Validation.Database
-                        .newBuilder().build()));
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient
                 .deleteSchema(any(Validation.DeleteSchemaRequest.class)))
                 .willReturn(Mono.just(
-                        validation.Validation.Database.newBuilder().build()));
+                        Validation.Database.newBuilder().build()));
     }
 
     @Test
@@ -177,28 +177,27 @@ class SchemaServiceTest {
     void createSchema_mappingResponse_success() {
         Validation.CreateSchemaRequest request = Validation.CreateSchemaRequest
                 .newBuilder()
-                .setSchema(validation.Validation.Schema.newBuilder()
+                .setSchema(Validation.Schema.newBuilder()
                         .setId("fe-schema-id")
                         .setProjectId("proj-1")
-                        .setDbVendorId(validation.Validation.DbVendor.MYSQL)
+                        .setDbVendorId(Validation.DbVendor.MYSQL)
                         .setName("test-schema")
                         .setCharset("utf8mb4")
                         .setCollation("utf8mb4_general_ci")
                         .setVendorOption("ENGINE=InnoDB")
                         .build())
-                .setDatabase(validation.Validation.Database.newBuilder()
+                .setDatabase(Validation.Database.newBuilder()
                         .setId("proj-1")
                         .build())
                 .build();
 
         // ValidationClient 모킹
-        validation.Validation.Database mockResponse = validation.Validation.Database
-                .newBuilder()
+        Validation.Database mockResponse = Validation.Database.newBuilder()
                 .setId("proj-1")
-                .addSchemas(validation.Validation.Schema.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
                         .setId("be-schema-id")
                         .setProjectId("proj-1")
-                        .setDbVendorId(validation.Validation.DbVendor.MYSQL)
+                        .setDbVendorId(Validation.DbVendor.MYSQL)
                         .setName("test-schema")
                         .setCharset("utf8mb4")
                         .setCollation("utf8mb4_general_ci")

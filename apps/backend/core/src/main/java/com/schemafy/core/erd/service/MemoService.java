@@ -12,7 +12,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.common.security.principal.ProjectRole;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -25,6 +24,7 @@ import com.schemafy.core.erd.repository.MemoRepository;
 import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.user.controller.dto.response.UserSummaryResponse;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -271,8 +271,8 @@ public class MemoService {
                 .findByIdAndDeletedAtIsNull(memoId)
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
-                .flatMap(memo -> isFirstComment(memoId, commentId)
-                        .flatMap(isFirst -> isFirst
+                .flatMap(memo -> isLastRemainingComment(memoId, commentId)
+                        .flatMap(isLast -> isLast
                                 ? deleteMemo(memo)
                                 : deleteCommentOnly(comment)));
     }
@@ -287,11 +287,13 @@ public class MemoService {
         return memoCommentRepository.save(comment).then();
     }
 
-    private Mono<Boolean> isFirstComment(String memoId, String commentId) {
+    private Mono<Boolean> isLastRemainingComment(String memoId,
+            String commentId) {
         return memoCommentRepository
                 .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(memoId)
-                .next()
-                .map(first -> first.getId().equals(commentId))
+                .collectList()
+                .map(comments -> comments.size() == 1
+                        && comments.get(0).getId().equals(commentId))
                 .defaultIfEmpty(false);
     }
 

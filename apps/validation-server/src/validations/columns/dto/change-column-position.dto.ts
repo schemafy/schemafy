@@ -5,5 +5,5 @@ export interface ChangeColumnPositionDto {
   schemaId: Schema['id'];
   tableId: Table['id'];
   columnId: Column['id'];
-  newPosition: Column['ordinalPosition'];
+  newPosition: Column['seqNo'];
 }

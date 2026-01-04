@@ -45,7 +45,7 @@ public final class ErdMapper {
         return Column.builder()
                 .tableId(column.getTableId())
                 .name(column.getName())
-                .ordinalPosition(column.getOrdinalPosition())
+                .seqNo(column.getSeqNo())
                 .dataType(column.getDataType())
                 .lengthScale(column.getLengthScale())
                 .isAutoIncrement(column.getIsAutoIncrement())
@@ -102,8 +102,8 @@ public final class ErdMapper {
     public static Relationship toEntity(Validation.Relationship relationship,
             String extra) {
         return Relationship.builder()
-                .srcTableId(relationship.getSrcTableId())
-                .tgtTableId(relationship.getTgtTableId())
+                .fkTableId(relationship.getFkTableId())
+                .pkTableId(relationship.getPkTableId())
                 .name(relationship.getName())
                 .kind(relationship.getKind().name())
                 .cardinality(relationship.getCardinality().name())
@@ -117,8 +117,8 @@ public final class ErdMapper {
             Validation.RelationshipColumn relationshipColumn) {
         return RelationshipColumn.builder()
                 .relationshipId(relationshipColumn.getRelationshipId())
-                .srcColumnId(relationshipColumn.getFkColumnId())
-                .tgtColumnId(relationshipColumn.getRefColumnId())
+                .fkColumnId(relationshipColumn.getFkColumnId())
+                .pkColumnId(relationshipColumn.getPkColumnId())
                 .seqNo((int) relationshipColumn.getSeqNo())
                 .build();
     }

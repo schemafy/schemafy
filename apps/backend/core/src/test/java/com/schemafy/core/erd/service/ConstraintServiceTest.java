@@ -1,6 +1,8 @@
 package com.schemafy.core.erd.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,24 +12,33 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.core.erd.model.EntityType;
+import com.schemafy.core.erd.repository.ColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintColumnRepository;
 import com.schemafy.core.erd.repository.ConstraintRepository;
+import com.schemafy.core.erd.repository.entity.Column;
 import com.schemafy.core.erd.repository.entity.Constraint;
 import com.schemafy.core.erd.repository.entity.ConstraintColumn;
 import com.schemafy.core.validation.client.ValidationClient;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import validation.Validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -43,6 +54,9 @@ class ConstraintServiceTest {
     @Autowired
     ConstraintColumnRepository constraintColumnRepository;
 
+    @Autowired
+    ColumnRepository columnRepository;
+
     @MockitoBean
     ValidationClient validationClient;
 
@@ -53,6 +67,7 @@ class ConstraintServiceTest {
     void setUp() {
         constraintColumnRepository.deleteAll().block();
         constraintRepository.deleteAll().block();
+        columnRepository.deleteAll().block();
 
         given(validationClient.changeConstraintName(
                 any(Validation.ChangeConstraintNameRequest.class)))
@@ -70,12 +85,36 @@ class ConstraintServiceTest {
                 any(Validation.DeleteConstraintRequest.class)))
                 .willReturn(Mono.just(
                         Validation.Database.newBuilder().build()));
+
+        AffectedEntitiesSaver.SaveResult emptySaveResult = new AffectedEntitiesSaver.SaveResult(
+                AffectedMappingResponse.PropagatedEntities.empty(),
+                new IdMappings(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
+                        Map.of(), Map.of(), Map.of(), Map.of()));
+
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class)))
+                .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any()))
+                .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any(), any()))
+                .willReturn(Mono.just(emptySaveResult));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+                any(Validation.Database.class), any(), any(), any(), any(),
+                any()))
+                .willReturn(Mono.just(emptySaveResult));
+
         given(affectedEntitiesSaver.saveAffectedEntities(any(),
                 any(Validation.Database.class)))
                 .willReturn(Mono.just(
                         AffectedMappingResponse.PropagatedEntities.empty()));
         given(affectedEntitiesSaver.saveAffectedEntities(any(),
                 any(Validation.Database.class), any(), any(), any()))
+                .willReturn(Mono.just(
+                        AffectedMappingResponse.PropagatedEntities.empty()));
+        given(affectedEntitiesSaver.saveAffectedEntities(any(),
+                any(Validation.Database.class), any(), any(), any(), any()))
                 .willReturn(Mono.just(
                         AffectedMappingResponse.PropagatedEntities.empty()));
     }
@@ -116,7 +155,7 @@ class ConstraintServiceTest {
                                 .setName("test-table")
                                 .addConstraints(Validation.Constraint
                                         .newBuilder()
-                                        .setId("be-constraint-id")
+                                        .setId("fe-constraint-id")
                                         .setTableId("table-1")
                                         .setName("pk_test")
                                         .setKind(
@@ -130,27 +169,39 @@ class ConstraintServiceTest {
         given(validationClient.createConstraint(
                 any(Validation.CreateConstraintRequest.class)))
                 .willReturn(Mono.just(mockResponse));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
-                any(), any()))
-                .willReturn(Mono
-                        .just(AffectedMappingResponse.PropagatedEntities
-                                .empty()));
 
         // when
         Mono<AffectedMappingResponse> result = constraintService
                 .createConstraint(request);
 
         // then
-        StepVerifier.create(result)
-                .assertNext(response -> {
-                    // 제약조건 매핑 정보 확인 (FE-ID → BE-ID 매핑)
-                    // constraints는 tableId로 그룹핑된 nested map
-                    assertThat(response.constraints()).hasSize(1);
-                    assertThat(response.constraints().get("table-1"))
-                            .containsEntry("fe-constraint-id",
-                                    "be-constraint-id");
+        Mono<Tuple2<AffectedMappingResponse, Constraint>> composed = result
+                .flatMap(response -> {
+                    String savedConstraintId = response.constraints()
+                            .get("table-1")
+                            .get("fe-constraint-id");
 
-                    // 다른 매핑들은 비어있어야 함 (제약조건만 생성했으므로)
+                    return constraintRepository
+                            .findByIdAndDeletedAtIsNull(savedConstraintId)
+                            .map(savedConstraint -> Tuples.of(response,
+                                    savedConstraint));
+                });
+
+        StepVerifier.create(composed)
+                .assertNext(tuple -> {
+                    AffectedMappingResponse response = tuple.getT1();
+                    Constraint savedConstraint = tuple.getT2();
+
+                    assertThat(response.constraints()).hasSize(1);
+                    String savedConstraintId = response.constraints()
+                            .get("table-1")
+                            .get("fe-constraint-id");
+                    assertThat(savedConstraintId).isNotNull();
+                    assertThat(savedConstraintId)
+                            .isNotEqualTo("fe-constraint-id");
+                    assertThat(savedConstraint.getId())
+                            .isEqualTo(savedConstraintId);
+
                     assertThat(response.schemas()).isEmpty();
                     assertThat(response.tables()).isEmpty();
                     assertThat(response.columns()).isEmpty();
@@ -161,6 +212,139 @@ class ConstraintServiceTest {
                     assertThat(response.relationshipColumns()).isEmpty();
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("createConstraint: constraintColumns 매핑이 FE-ID -> BE-ID로 반환된다")
+    void createConstraint_constraintColumns_mapping_notIdentity() {
+        // given
+        Validation.CreateConstraintRequest request = Validation.CreateConstraintRequest
+                .newBuilder()
+                .setConstraint(Validation.Constraint.newBuilder()
+                        .setId("fe-constraint-id")
+                        .setTableId("table-1")
+                        .setName("pk_test")
+                        .setKind(Validation.ConstraintKind.PRIMARY_KEY)
+                        .addColumns(Validation.ConstraintColumn.newBuilder()
+                                .setId("fe-constraint-col-1")
+                                .setConstraintId("fe-constraint-id")
+                                .setColumnId("col-1")
+                                .setSeqNo(1)
+                                .build())
+                        .build())
+                .setDatabase(Validation.Database.newBuilder()
+                        .setId("proj-1")
+                        .addSchemas(Validation.Schema.newBuilder()
+                                .setId("schema-1")
+                                .setName("test-schema")
+                                .addTables(Validation.Table.newBuilder()
+                                        .setId("table-1")
+                                        .setName("test-table")
+                                        .addColumns(Validation.Column
+                                                .newBuilder()
+                                                .setId("col-1")
+                                                .setTableId("table-1")
+                                                .setName("id")
+                                                .setSeqNo(1)
+                                                .setDataType("INT")
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        // validator는 요청으로 받은 FE id를 그대로 after DB에 포함한다.
+        Validation.Database mockResponse = Validation.Database.newBuilder()
+                .setId("proj-1")
+                .setIsAffected(true)
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("test-schema")
+                        .setIsAffected(true)
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setName("test-table")
+                                .setIsAffected(true)
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId("fe-constraint-id")
+                                        .setTableId("table-1")
+                                        .setName("pk_test")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .setIsAffected(true)
+                                        .addColumns(
+                                                Validation.ConstraintColumn
+                                                        .newBuilder()
+                                                        .setId("fe-constraint-col-1")
+                                                        .setConstraintId(
+                                                                "fe-constraint-id")
+                                                        .setColumnId("col-1")
+                                                        .setSeqNo(1)
+                                                        .setIsAffected(true)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.createConstraint(
+                any(Validation.CreateConstraintRequest.class)))
+                .willReturn(Mono.just(mockResponse));
+
+        // when
+        Mono<AffectedMappingResponse> result = constraintService
+                .createConstraint(request);
+
+        // then
+        String persistedConstraintColumnId = "be-constraint-col-1";
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
+                any(), any(), eq(EntityType.CONSTRAINT.name()), any(), any()))
+                .willReturn(Mono.just(
+                        new AffectedEntitiesSaver.SaveResult(
+                                AffectedMappingResponse.PropagatedEntities
+                                        .empty(),
+                                new IdMappings(Map.of(), Map.of(), Map.of(),
+                                        Map.of(), Map.of(), Map.of(), Map.of(
+                                                "fe-constraint-col-1",
+                                                persistedConstraintColumnId),
+                                        Map.of(), Map.of()))));
+
+        StepVerifier.create(result)
+                .assertNext(response -> {
+                    String savedConstraintId = response.constraints()
+                            .get("table-1")
+                            .get("fe-constraint-id");
+
+                    assertThat(savedConstraintId).isNotNull();
+                    assertThat(savedConstraintId)
+                            .isNotEqualTo("fe-constraint-id");
+
+                    assertThat(response.constraintColumns())
+                            .containsKey(savedConstraintId);
+                    assertThat(
+                            response.constraintColumns().get(savedConstraintId))
+                            .containsEntry("fe-constraint-col-1",
+                                    persistedConstraintColumnId);
+                })
+                .verifyComplete();
+
+        ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
+                .forClass(Validation.Database.class);
+
+        ArgumentCaptor<Set<String>> excludePropagatedCaptor = ArgumentCaptor
+                .forClass(Set.class);
+
+        verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
+                afterDbCaptor.capture(), anyString(), anyString(),
+                eq(EntityType.CONSTRAINT.name()), any(),
+                excludePropagatedCaptor.capture());
+
+        assertThat(containsConstraintColumnId(afterDbCaptor.getValue(),
+                "fe-constraint-col-1"))
+                .isTrue();
+        assertThat(excludePropagatedCaptor.getValue())
+                .contains("fe-constraint-col-1");
     }
 
     @Test
@@ -228,9 +412,9 @@ class ConstraintServiceTest {
                                                 Validation.Relationship
                                                         .newBuilder()
                                                         .setId("identifying-rel")
-                                                        .setSrcTableId(
+                                                        .setFkTableId(
                                                                 "child-table")
-                                                        .setTgtTableId(
+                                                        .setPkTableId(
                                                                 "parent-table")
                                                         .setName(
                                                                 "fk_child_parent")
@@ -262,7 +446,7 @@ class ConstraintServiceTest {
                                         .build())
                                 .addConstraints(Validation.Constraint
                                         .newBuilder()
-                                        .setId("be-constraint-id")
+                                        .setId("fe-constraint-id")
                                         .setTableId("parent-table")
                                         .setName("pk_parent")
                                         .setKind(
@@ -270,9 +454,9 @@ class ConstraintServiceTest {
                                         .setIsAffected(true)
                                         .addColumns(Validation.ConstraintColumn
                                                 .newBuilder()
-                                                .setId("be-constraint-col-1")
+                                                .setId("fe-constraint-col-1")
                                                 .setConstraintId(
-                                                        "be-constraint-id")
+                                                        "fe-constraint-id")
                                                 .setColumnId("parent-id-col")
                                                 .setSeqNo(1)
                                                 .setIsAffected(true)
@@ -329,8 +513,8 @@ class ConstraintServiceTest {
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId("identifying-rel")
-                                        .setSrcTableId("child-table")
-                                        .setTgtTableId("parent-table")
+                                        .setFkTableId("child-table")
+                                        .setPkTableId("parent-table")
                                         .setName("fk_child_parent")
                                         .setKind(
                                                 Validation.RelationshipKind.IDENTIFYING)
@@ -340,34 +524,35 @@ class ConstraintServiceTest {
                         .build())
                 .build();
 
-        // 전파된 엔티티 정보 모킹
-        AffectedMappingResponse.PropagatedEntities propagatedEntities = new AffectedMappingResponse.PropagatedEntities(
-                List.of(
-                        // 전파된 컬럼
-                        new AffectedMappingResponse.PropagatedColumn(
-                                "propagated-parent-id-col",
-                                "child-table",
-                                "CONSTRAINT",
-                                "be-constraint-id",
-                                "parent-id-col" // 원본 컬럼 ID
-                        )),
-                List.of(
-                        // 전파된 제약조건 컬럼
-                        new AffectedMappingResponse.PropagatedConstraintColumn(
-                                "propagated-constraint-col",
-                                "child-pk-constraint",
-                                "propagated-parent-id-col",
-                                "CONSTRAINT",
-                                "be-constraint-id")),
-                List.of() // 전파된 인덱스 컬럼 없음
-        );
-
         given(validationClient.createConstraint(
                 any(Validation.CreateConstraintRequest.class)))
                 .willReturn(Mono.just(mockResponse));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(), any(), any(),
-                any(), any()))
-                .willReturn(Mono.just(propagatedEntities));
+        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
+                any(), any(), any(), any(), any()))
+                .willAnswer(invocation -> {
+                    String sourceId = invocation.getArgument(3);
+                    return Mono.just(new AffectedEntitiesSaver.SaveResult(
+                            new AffectedMappingResponse.PropagatedEntities(
+                                    List.of(new AffectedMappingResponse.PropagatedColumn(
+                                            "propagated-parent-id-col",
+                                            "child-table",
+                                            EntityType.CONSTRAINT.name(),
+                                            sourceId,
+                                            "parent-id-col")),
+                                    List.of(),
+                                    List.of(),
+                                    List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
+                                            "propagated-constraint-col",
+                                            "child-pk-constraint",
+                                            "propagated-parent-id-col",
+                                            1,
+                                            EntityType.CONSTRAINT.name(),
+                                            sourceId)),
+                                    List.of()),
+                            new IdMappings(Map.of(), Map.of(), Map.of(),
+                                    Map.of(), Map.of(), Map.of(), Map.of(),
+                                    Map.of(), Map.of())));
+                });
 
         // when
         Mono<AffectedMappingResponse> result = constraintService
@@ -378,9 +563,15 @@ class ConstraintServiceTest {
                 .assertNext(response -> {
                     // 원본 제약조건 매핑 확인
                     assertThat(response.constraints()).hasSize(1);
+                    String savedConstraintId = response.constraints()
+                            .get("parent-table")
+                            .get("fe-constraint-id");
+                    assertThat(savedConstraintId).isNotNull();
+                    assertThat(savedConstraintId)
+                            .isNotEqualTo("fe-constraint-id");
                     assertThat(response.constraints().get("parent-table"))
                             .containsEntry("fe-constraint-id",
-                                    "be-constraint-id");
+                                    savedConstraintId);
 
                     // 전파된 엔티티 정보 확인
                     assertThat(response.propagated()).isNotNull();
@@ -392,9 +583,9 @@ class ConstraintServiceTest {
                     assertThat(propagatedColumn.tableId())
                             .isEqualTo("child-table");
                     assertThat(propagatedColumn.sourceType())
-                            .isEqualTo("CONSTRAINT");
+                            .isEqualTo(EntityType.CONSTRAINT.name());
                     assertThat(propagatedColumn.sourceId())
-                            .isEqualTo("be-constraint-id");
+                            .isEqualTo(savedConstraintId);
                     assertThat(propagatedColumn.sourceColumnId())
                             .isEqualTo("parent-id-col");
 
@@ -409,9 +600,9 @@ class ConstraintServiceTest {
                     assertThat(propagatedConstraintColumn.columnId())
                             .isEqualTo("propagated-parent-id-col");
                     assertThat(propagatedConstraintColumn.sourceType())
-                            .isEqualTo("CONSTRAINT");
+                            .isEqualTo(EntityType.CONSTRAINT.name());
                     assertThat(propagatedConstraintColumn.sourceId())
-                            .isEqualTo("be-constraint-id");
+                            .isEqualTo(savedConstraintId);
 
                     // 전파된 인덱스 컬럼은 없음
                     assertThat(response.propagated().indexColumns())
@@ -573,6 +764,8 @@ class ConstraintServiceTest {
         AffectedMappingResponse.PropagatedEntities propagatedEntities = new AffectedMappingResponse.PropagatedEntities(
                 List.of(),
                 List.of(),
+                List.of(),
+                List.of(),
                 List.of());
 
         given(validationClient.addColumnToConstraint(
@@ -615,29 +808,150 @@ class ConstraintServiceTest {
     @Test
     @DisplayName("removeColumnFromConstraint: 제약조건에서 컬럼을 제거한다 (소프트 삭제)")
     void removeColumnFromConstraint_success() {
+        Column pkColumn = columnRepository.save(
+                Column.builder()
+                        .tableId("parent-table")
+                        .name("id")
+                        .seqNo(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+        Column fkColumnToDelete = columnRepository.save(
+                Column.builder()
+                        .tableId("child-table")
+                        .name("parent_id")
+                        .seqNo(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+
         ConstraintColumn saved = constraintColumnRepository.save(
                 ConstraintColumn.builder()
                         .constraintId("constraint-1")
-                        .columnId("column-1")
+                        .columnId(pkColumn.getId())
                         .seqNo(1)
                         .build())
                 .block();
 
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("parent-table")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(pkColumn.getId())
+                                        .setTableId("parent-table")
+                                        .setName("id")
+                                        .setSeqNo(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId("constraint-1")
+                                        .setTableId("parent-table")
+                                        .setName("pk_parent")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .addColumns(
+                                                Validation.ConstraintColumn
+                                                        .newBuilder()
+                                                        .setId(saved.getId())
+                                                        .setConstraintId(
+                                                                "constraint-1")
+                                                        .setColumnId(
+                                                                pkColumn.getId())
+                                                        .setSeqNo(1)
+                                                        .build())
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnToDelete.getId())
+                                        .setTableId("child-table")
+                                        .setName("parent_id")
+                                        .setSeqNo(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database afterDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("parent-table")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(pkColumn.getId())
+                                        .setTableId("parent-table")
+                                        .setName("id")
+                                        .setSeqNo(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId("constraint-1")
+                                        .setTableId("parent-table")
+                                        .setName("pk_parent")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.removeColumnFromConstraint(
+                any(Validation.RemoveColumnFromConstraintRequest.class)))
+                .willReturn(Mono.just(afterDatabase));
+
         StepVerifier.create(constraintService.removeColumnFromConstraint(
                 Validation.RemoveColumnFromConstraintRequest.newBuilder()
+                        .setConstraintId("constraint-1")
                         .setConstraintColumnId(saved.getId())
+                        .setDatabase(beforeDatabase)
                         .build()))
                 .verifyComplete();
 
-        // 삭제 플래그 확인 (deletedAt not null)
         StepVerifier.create(constraintColumnRepository.findById(saved.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(
+                columnRepository.findById(fkColumnToDelete.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+
+        StepVerifier.create(columnRepository.findById(pkColumn.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isFalse())
                 .verifyComplete();
     }
 
     @Test
     @DisplayName("deleteConstraint: 소프트 삭제가 수행된다")
     void deleteConstraint_softDelete() {
+        Column fkColumnToDelete = columnRepository.save(
+                Column.builder()
+                        .tableId("child-table")
+                        .name("parent_id")
+                        .seqNo(1)
+                        .dataType("INT")
+                        .build())
+                .block();
+
         Constraint saved = constraintRepository.save(
                 Constraint.builder()
                         .tableId("table-1")
@@ -646,16 +960,93 @@ class ConstraintServiceTest {
                         .build())
                 .block();
 
+        Validation.Database beforeDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .addConstraints(Validation.Constraint
+                                        .newBuilder()
+                                        .setId(saved.getId())
+                                        .setTableId("table-1")
+                                        .setName("pk_parent")
+                                        .setKind(
+                                                Validation.ConstraintKind.PRIMARY_KEY)
+                                        .build())
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(fkColumnToDelete.getId())
+                                        .setTableId("child-table")
+                                        .setName("parent_id")
+                                        .setSeqNo(1)
+                                        .setDataType("INT")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        Validation.Database afterDatabase = Validation.Database.newBuilder()
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .setName("schema")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .setSchemaId("schema-1")
+                                .setName("parent")
+                                .build())
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("child-table")
+                                .setSchemaId("schema-1")
+                                .setName("child")
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.deleteConstraint(
+                any(Validation.DeleteConstraintRequest.class)))
+                .willReturn(Mono.just(afterDatabase));
+
         StepVerifier.create(constraintService.deleteConstraint(
                 Validation.DeleteConstraintRequest.newBuilder()
                         .setConstraintId(saved.getId())
+                        .setDatabase(beforeDatabase)
                         .build()))
                 .verifyComplete();
 
-        // 삭제 플래그 확인 (deletedAt not null)
         StepVerifier.create(constraintRepository.findById(saved.getId()))
                 .assertNext(found -> assertThat(found.isDeleted()).isTrue())
                 .verifyComplete();
+
+        StepVerifier.create(
+                columnRepository.findById(fkColumnToDelete.getId()))
+                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+                .verifyComplete();
+    }
+
+    private static boolean containsConstraintColumnId(
+            Validation.Database database, String constraintColumnId) {
+        for (Validation.Schema schema : database.getSchemasList()) {
+            for (Validation.Table table : schema.getTablesList()) {
+                for (Validation.Constraint constraint : table
+                        .getConstraintsList()) {
+                    for (Validation.ConstraintColumn constraintColumn : constraint
+                            .getColumnsList()) {
+                        if (constraintColumn.getId()
+                                .equals(constraintColumnId)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 }

@@ -3,6 +3,7 @@ package com.schemafy.core.cache.service;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -13,18 +14,20 @@ import com.schemafy.core.cache.service.dto.CacheStatsDto;
 
 import reactor.core.publisher.Mono;
 
-@Service
-@ConditionalOnProperty(name = "cache.type", havingValue = "CAFFEINE", matchIfMissing = true)
+@Primary
+@Service("caffeineCacheService")
+@ConditionalOnProperty(name = "cache.caffeine.enabled", havingValue = "true", matchIfMissing = true)
 public class CaffeineCacheService implements CacheService {
 
     private final Cache<String, String> cache;
 
     public CaffeineCacheService(CacheProperties properties) {
+        CacheProperties.CaffeineProperties caffeine = properties.getCaffeine();
         this.cache = Caffeine.newBuilder()
-                .maximumSize(properties.getMaximumSize())
-                .expireAfterWrite(properties.getExpireAfterWriteMinutes(),
+                .maximumSize(caffeine.getMaximumSize())
+                .expireAfterWrite(caffeine.getExpireAfterWriteMinutes(),
                         TimeUnit.MINUTES)
-                .expireAfterAccess(properties.getExpireAfterAccessMinutes(),
+                .expireAfterAccess(caffeine.getExpireAfterAccessMinutes(),
                         TimeUnit.MINUTES)
                 .recordStats()
                 .build();

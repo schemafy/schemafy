@@ -14,7 +14,6 @@ import com.schemafy.core.common.TestFixture;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.common.security.principal.ProjectRole;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -26,6 +25,7 @@ import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
 import com.schemafy.core.erd.repository.entity.Schema;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 
@@ -547,54 +547,6 @@ class MemoServiceTest {
         // 메모 생존 확인
         StepVerifier.create(memoRepository.findById(memo.getId()))
                 .assertNext(m -> assertThat(m.getDeletedAt()).isNull())
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("deleteComment: 첫 댓글 삭제 시 메모만 삭제된다 (댓글은 유지)")
-    void deleteComment_firstCommentDeletesMemo() {
-        String authorId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-        Memo memo = memoRepository.save(Memo.builder()
-                .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
-                .authorId(authorId)
-                .positions("{}")
-                .build()).block();
-
-        MemoComment firstComment = memoCommentRepository.save(
-                MemoComment.builder()
-                        .memoId(memo.getId())
-                        .authorId(authorId)
-                        .body("본문")
-                        .build())
-                .block();
-
-        MemoComment reply = memoCommentRepository.save(MemoComment.builder()
-                .memoId(memo.getId())
-                .authorId("06D6W8HDY79QFZX39RMX62KSX4")
-                .body("답글")
-                .build()).block();
-
-        AuthenticatedUser user = AuthenticatedUser.of(authorId);
-
-        StepVerifier.create(
-                memoService.deleteComment(memo.getId(), firstComment.getId(),
-                        user))
-                .verifyComplete();
-
-        // 메모 삭제 확인
-        StepVerifier.create(memoRepository.findById(memo.getId()))
-                .assertNext(m -> assertThat(m.getDeletedAt()).isNotNull())
-                .verifyComplete();
-
-        // 첫 댓글은 삭제되지 않음 (상위 계층 삭제 시 하위 계층 유지 정책)
-        StepVerifier
-                .create(memoCommentRepository.findById(firstComment.getId()))
-                .assertNext(c -> assertThat(c.getDeletedAt()).isNull())
-                .verifyComplete();
-
-        // 나머지 댓글도 삭제되지 않음
-        StepVerifier.create(memoCommentRepository.findById(reply.getId()))
-                .assertNext(c -> assertThat(c.getDeletedAt()).isNull())
                 .verifyComplete();
     }
 
