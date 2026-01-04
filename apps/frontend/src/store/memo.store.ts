@@ -104,7 +104,7 @@ export class MemoStore {
         });
 
         const newCommentsByMemo = combinedMemos.reduce((acc, memo) => {
-          acc[memo.id] = memo.comments ?? [];
+          acc[memo.id] = memo.comments;
           return acc;
         }, {} as CommentsByMemo);
 
@@ -211,7 +211,7 @@ export class MemoStore {
           const listMemos = this.memosBySchema[schemaId] ?? [];
           this.memosBySchema[schemaId] = listMemos.map((m) =>
             m.id === memoId
-              ? { ...m, comments: [...(m.comments ?? []), comment] }
+              ? { ...m, comments: [...m.comments, comment] }
               : m,
           );
         }
@@ -245,7 +245,7 @@ export class MemoStore {
             m.id === memoId
               ? {
                   ...m,
-                  comments: (m.comments ?? []).map((c) =>
+                  comments: m.comments.map((c) =>
                     c.id === commentId ? updated : c,
                   ),
                 }
@@ -277,7 +277,7 @@ export class MemoStore {
               acc.push(m);
               return acc;
             }
-            const updatedComments = (m.comments ?? []).filter(
+            const updatedComments = m.comments.filter(
               (c) => c.id !== commentId,
             );
             acc.push({ ...m, comments: updatedComments });

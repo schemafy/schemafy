@@ -14,7 +14,7 @@ export type Memo = {
   positions: string;
   createdAt?: string;
   updatedAt?: string;
-  comments?: MemoComment[];
+  comments: MemoComment[];
 };
 
 export type CreateMemoRequest = {

@@ -19,20 +19,20 @@ interface MemoPreviewProps {
 }
 
 const ReplyItem = ({
+  memoId,
   comment,
-  onDelete,
-  onUpdate,
 }: {
+  memoId: string;
   comment: MemoComment;
-  onDelete: () => void;
-  onUpdate: (newBody: string) => void;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editInput, setEditInput] = useState(comment.body);
 
+  const { updateComment, deleteComment } = useMemoContext();
+
   const handleSave = () => {
     if (!editInput.trim()) return;
-    onUpdate(editInput.trim());
+    updateComment(memoId, comment.id, editInput.trim());
     setIsEditing(false);
   };
 
@@ -72,7 +72,7 @@ const ReplyItem = ({
               <Trash
                 size={14}
                 color="var(--color-schemafy-dark-gray)"
-                onClick={onDelete}
+                onClick={() => deleteComment(memoId, comment.id)}
                 className="cursor-pointer hover:text-red-500"
               />
             </div>
@@ -115,10 +115,9 @@ export const Memo = observer(({ id, data }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [replyInput, setReplyInput] = useState('');
 
-  const { deleteMemo, createComment, updateComment, deleteComment } =
-    useMemoContext();
+  const { deleteMemo, createComment } = useMemoContext();
 
-  const comments = data.comments ?? [];
+  const comments = data.comments;
 
   const handleDeleteMemo = async () => {
     await deleteMemo(id);
@@ -134,19 +133,11 @@ export const Memo = observer(({ id, data }: MemoProps) => {
     setReplyInput('');
   };
 
-  const handleUpdateComment = async (commentId: string, newBody: string) => {
-    await updateComment(id, commentId, newBody);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter') {
       handleAddReply();
     }
-  };
-
-  const handleDeleteComment = (commentId: string) => {
-    deleteComment(id, commentId);
   };
 
   return (
@@ -199,9 +190,8 @@ export const Memo = observer(({ id, data }: MemoProps) => {
             {comments.map((comment) => (
               <ReplyItem
                 key={comment.id}
+                memoId={id}
                 comment={comment}
-                onDelete={() => handleDeleteComment(comment.id)}
-                onUpdate={(newBody) => handleUpdateComment(comment.id, newBody)}
               />
             ))}
           </ul>
@@ -245,9 +235,11 @@ export const MemoPreview = ({ mousePosition }: MemoPreviewProps) => {
         pointerEvents: 'none',
         zIndex: 999,
         opacity: 0.4,
-        width: `${24 * zoom}px`,
-        height: `${24 * zoom}px`,
-        transform: `translate(${mousePosition.x}px, ${mousePosition.y - 48}px)`,
+        width: '24px',
+        height: '24px',
+        transform: `translate3d(${mousePosition.x}px, ${mousePosition.y - 48}px, 0) scale(${zoom})`,
+        transformOrigin: 'top left',
+        willChange: 'transform',
       }}
     />
   );
