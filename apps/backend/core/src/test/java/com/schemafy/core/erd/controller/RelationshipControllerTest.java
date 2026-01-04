@@ -209,9 +209,11 @@ class RelationshipControllerTest {
                                 fieldWithPath("relationship.id")
                                         .description("관계 ID (FE ID)"),
                                 fieldWithPath("relationship.fkTableId")
-                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("relationship.pkTableId")
-                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("relationship.name")
                                         .description("관계 이름"),
                                 fieldWithPath("relationship.kind")
@@ -339,9 +341,11 @@ class RelationshipControllerTest {
                                 fieldWithPath("result").description("관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
                                 fieldWithPath("result.fkTableId")
-                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("result.pkTableId")
-                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind").description(
@@ -361,9 +365,11 @@ class RelationshipControllerTest {
                                 fieldWithPath("result.columns[].relationshipId")
                                         .description("관계 ID"),
                                 fieldWithPath("result.columns[].fkColumnId")
-                                        .description("FK 컬럼 ID (자식 테이블의 외래키 컬럼)"),
+                                        .description(
+                                                "FK 컬럼 ID (자식 테이블의 외래키 컬럼)"),
                                 fieldWithPath("result.columns[].pkColumnId")
-                                        .description("PK 컬럼 ID (부모 테이블의 참조되는 컬럼)"),
+                                        .description(
+                                                "PK 컬럼 ID (부모 테이블의 참조되는 컬럼)"),
                                 fieldWithPath("result.columns[].seqNo")
                                         .description("순서 번호"))));
     }
@@ -508,9 +514,11 @@ class RelationshipControllerTest {
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
                                 fieldWithPath("result.fkTableId")
-                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("result.pkTableId")
-                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("변경된 관계 이름"),
                                 fieldWithPath("result.kind")
@@ -595,9 +603,11 @@ class RelationshipControllerTest {
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
                                 fieldWithPath("result.fkTableId")
-                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("result.pkTableId")
-                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind")
@@ -756,9 +766,11 @@ class RelationshipControllerTest {
                                         .description("수정된 관계 정보"),
                                 fieldWithPath("result.id").description("관계 ID"),
                                 fieldWithPath("result.fkTableId")
-                                        .description("FK 테이블 ID (FK를 가진 자식 테이블)"),
+                                        .description(
+                                                "FK 테이블 ID (FK를 가진 자식 테이블)"),
                                 fieldWithPath("result.pkTableId")
-                                        .description("PK 테이블 ID (PK를 가진 부모 테이블)"),
+                                        .description(
+                                                "PK 테이블 ID (PK를 가진 부모 테이블)"),
                                 fieldWithPath("result.name")
                                         .description("관계 이름"),
                                 fieldWithPath("result.kind")
