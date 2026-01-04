@@ -11,6 +11,7 @@ front-end:
 shared:
   - changed-files:
       - any-glob-to-any-file:
-          - "**"
           - "!apps/backend/**"
+          - "!apps/validation-server/**"
           - "!apps/frontend/**"
+          - "**"

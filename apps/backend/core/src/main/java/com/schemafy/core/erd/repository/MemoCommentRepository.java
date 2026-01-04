@@ -10,11 +10,11 @@ import reactor.core.publisher.Mono;
 
 @Repository
 public interface MemoCommentRepository
-        extends ReactiveCrudRepository<MemoComment, String> {
+    extends ReactiveCrudRepository<MemoComment, String> {
 
-    Mono<MemoComment> findByIdAndDeletedAtIsNull(String id);
+  Mono<MemoComment> findByIdAndDeletedAtIsNull(String id);
 
-    Flux<MemoComment> findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
-            String memoId);
+  Flux<MemoComment> findByMemoIdAndDeletedAtIsNullOrderByIdAsc(
+      String memoId);
 
 }

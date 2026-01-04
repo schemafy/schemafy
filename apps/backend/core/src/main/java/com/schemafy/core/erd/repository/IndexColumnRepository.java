@@ -8,10 +8,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface IndexColumnRepository
-        extends ReactiveCrudRepository<IndexColumn, String> {
+    extends ReactiveCrudRepository<IndexColumn, String> {
 
-    public Mono<IndexColumn> findByIdAndDeletedAtIsNull(String id);
+  public Mono<IndexColumn> findByIdAndDeletedAtIsNull(String id);
 
-    public Flux<IndexColumn> findByIndexIdAndDeletedAtIsNull(String indexId);
+  public Flux<IndexColumn> findByIndexIdAndDeletedAtIsNull(String indexId);
 
 }

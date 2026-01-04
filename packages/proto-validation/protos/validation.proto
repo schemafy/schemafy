@@ -77,7 +77,7 @@ message Column {
     string id = 1;
     string tableId = 2;
     string name = 3;
-    uint32 ordinalPosition = 4;
+    uint32 seqNo = 4;
     string dataType = 5;
     optional string lengthScale = 6;
     bool isAutoIncrement = 7;
@@ -129,15 +129,15 @@ message RelationshipColumn {
     string id = 1;
     string relationshipId = 2;
     string fkColumnId = 3;
-    string refColumnId = 4;
+    string pkColumnId = 4;
     uint32 seqNo = 5;
     bool isAffected = 6;
 }
 
 message Relationship {
     string id = 1;
-    string srcTableId = 2;
-    string tgtTableId = 3;
+    string fkTableId = 2;
+    string pkTableId = 3;
     string name = 4;
     RelationshipKind kind = 5;
     RelationshipCardinality cardinality = 6;
@@ -328,6 +328,13 @@ message ChangeRelationshipCardinalityRequest {
     RelationshipCardinality cardinality = 4;
 }
 
+message ChangeRelationshipKindRequest {
+    Database database = 1;
+    string schemaId = 2;
+    string relationshipId = 3;
+    RelationshipKind kind = 4;
+}
+
 message AddColumnToRelationshipRequest {
     Database database = 1;
     string schemaId = 2;
@@ -426,6 +433,7 @@ service ValidationService {
     rpc DeleteRelationship (DeleteRelationshipRequest) returns (ValidateResult);
     rpc ChangeRelationshipName (ChangeRelationshipNameRequest) returns (ValidateResult);
     rpc ChangeRelationshipCardinality (ChangeRelationshipCardinalityRequest) returns (ValidateResult);
+    rpc ChangeRelationshipKind (ChangeRelationshipKindRequest) returns (ValidateResult);
     rpc AddColumnToRelationship (AddColumnToRelationshipRequest) returns (ValidateResult);
     rpc RemoveColumnFromRelationship (RemoveColumnFromRelationshipRequest) returns (ValidateResult);
 

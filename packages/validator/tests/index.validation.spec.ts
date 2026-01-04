@@ -88,7 +88,7 @@ describe('Index validation', () => {
     expect(() =>
       ERD_VALIDATOR.addColumnToIndex(db, 'schema-1', 'table-1', 'index-1', {
         columnId: 'column-1',
-        seqNo: 1,
+        seqNo: 0,
         sortDir: 'ASC',
         id: 'index-column-1',
         isAffected: false,
@@ -115,8 +115,8 @@ describe('Index validation', () => {
     // 동일한 인덱스는 조회 성능에 이점 없이 쓰기 성능 저하와 공간 낭비만 유발하므로 금지해야 한다.
     const newIndex = createIndexBuilder()
       .withName('idx_name_2')
-      .withColumn((ic) => ic.withColumnId('name-col').withSeqNo(1))
-      .withColumn((ic) => ic.withColumnId('email-col').withSeqNo(2))
+      .withColumn((ic) => ic.withColumnId('name-col').withSeqNo(0))
+      .withColumn((ic) => ic.withColumnId('email-col').withSeqNo(1))
       .build();
 
     const db = createTestDatabase()
@@ -130,8 +130,8 @@ describe('Index validation', () => {
             .withIndex((i) =>
               i
                 .withName('idx_name_1')
-                .withColumn((ic) => ic.withColumnId('name-col').withSeqNo(1))
-                .withColumn((ic) => ic.withColumnId('email-col').withSeqNo(2))
+                .withColumn((ic) => ic.withColumnId('name-col').withSeqNo(0))
+                .withColumn((ic) => ic.withColumnId('email-col').withSeqNo(1))
             )
         )
       )

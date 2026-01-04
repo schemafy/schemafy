@@ -56,7 +56,7 @@ export interface ColumnHandlers {
     schemaId: Schema["id"],
     tableId: Table["id"],
     columnId: Column["id"],
-    newPosition: Column["ordinalPosition"],
+    newPosition: Column["seqNo"],
   ) => Database;
 }
 
@@ -166,10 +166,10 @@ export const columnHandlers: ColumnHandlers = {
       (rel) => ({
         ...rel,
         isAffected: rel.columns.some(
-          (rc) => rc.fkColumnId === columnId || rc.refColumnId === columnId,
+          (rc) => rc.fkColumnId === columnId || rc.pkColumnId === columnId,
         ),
         columns: rel.columns.filter(
-          (rc) => rc.fkColumnId !== columnId && rc.refColumnId !== columnId,
+          (rc) => rc.fkColumnId !== columnId && rc.pkColumnId !== columnId,
         ),
       }),
     );
@@ -266,20 +266,55 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId, tableId);
 
-    const changeColumns: Column[] = table.columns.map((c) =>
-      c.id === columnId
-        ? {
+    const nextLengthScale = lengthScale ?? column.lengthScale;
+
+    const allRelatedColumnIds = new Set<string>([columnId]);
+    const queue = [columnId];
+
+    while (queue.length > 0) {
+      const currentColumnId = queue.shift()!;
+
+      for (const currentTable of schema.tables) {
+        for (const relationship of currentTable.relationships) {
+          for (const relationshipColumn of relationship.columns) {
+            if (
+              relationshipColumn.pkColumnId === currentColumnId &&
+              !allRelatedColumnIds.has(relationshipColumn.fkColumnId)
+            ) {
+              allRelatedColumnIds.add(relationshipColumn.fkColumnId);
+              queue.push(relationshipColumn.fkColumnId);
+            }
+            if (
+              relationshipColumn.fkColumnId === currentColumnId &&
+              !allRelatedColumnIds.has(relationshipColumn.pkColumnId)
+            ) {
+              allRelatedColumnIds.add(relationshipColumn.pkColumnId);
+              queue.push(relationshipColumn.pkColumnId);
+            }
+          }
+        }
+      }
+    }
+
+    const changeTables: Table[] = schema.tables.map((t) => {
+      let isTableAffected = false;
+      const changeColumns: Column[] = t.columns.map((c) => {
+        if (allRelatedColumnIds.has(c.id)) {
+          isTableAffected = true;
+          return {
             ...c,
             isAffected: true,
             dataType,
-            lengthScale: lengthScale || c.lengthScale,
-          }
-        : c,
-    );
+            lengthScale: nextLengthScale,
+          };
+        }
+        return c;
+      });
 
-    const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === tableId ? { ...t, isAffected: true, columns: changeColumns } : t,
-    );
+      return isTableAffected
+        ? { ...t, isAffected: true, columns: changeColumns }
+        : t;
+    });
 
     const changeSchemas: Schema[] = database.schemas.map((s) =>
       s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
@@ -303,9 +338,7 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId, tableId);
 
-    const sortedColumns = [...table.columns].sort(
-      (a, b) => a.ordinalPosition - b.ordinalPosition,
-    );
+    const sortedColumns = [...table.columns].sort((a, b) => a.seqNo - b.seqNo);
 
     const columnsWithoutTarget = sortedColumns.filter((c) => c.id !== columnId);
 
@@ -317,7 +350,7 @@ export const columnHandlers: ColumnHandlers = {
 
     const updatedColumns = reorderedColumns.map((col, index) => ({
       ...col,
-      ordinalPosition: index,
+      seqNo: index,
       isAffected: true,
     }));
 

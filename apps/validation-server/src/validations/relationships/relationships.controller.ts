@@ -6,6 +6,7 @@ import { RelationshipsService } from './relationships.service';
 import type {
   AddColumnToRelationshipDto,
   ChangeRelationshipCardinalityDto,
+  ChangeRelationshipKindDto,
   ChangeRelationshipNameDto,
   CreateRelationshipDto,
   DeleteRelationshipDto,
@@ -50,6 +51,17 @@ export class RelationshipsController {
       schemaId,
       relationshipId,
       cardinality,
+    );
+  }
+
+  @GrpcMethod('ValidationService', 'ChangeRelationshipKind')
+  changeRelationshipKind(req: ChangeRelationshipKindDto): ValidateResult {
+    const { database, schemaId, relationshipId, kind } = req;
+    return this.service.changeRelationshipKind(
+      database,
+      schemaId,
+      relationshipId,
+      kind,
     );
   }
 

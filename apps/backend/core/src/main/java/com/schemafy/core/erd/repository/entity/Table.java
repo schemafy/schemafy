@@ -19,27 +19,27 @@ import lombok.Setter;
 @org.springframework.data.relational.core.mapping.Table("db_tables")
 public class Table extends BaseEntity {
 
-    @Column("schema_id")
-    private String schemaId;
+  @Column("schema_id")
+  private String schemaId;
 
-    @Column("name")
-    private String name;
+  @Column("name")
+  private String name;
 
-    @Column("comment")
-    private String comment;
+  @Column("comment")
+  private String comment;
 
-    @Column("table_options")
-    private String tableOptions;
+  @Column("table_options")
+  private String tableOptions;
 
-    @Column("extra")
-    private String extra;
+  @Column("extra")
+  private String extra;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Table newTable(String schemaId, String name, String comment,
-            String tableOptions, String extra) {
-        Table table = new Table(schemaId, name, comment, tableOptions, extra);
-        table.setId(UlidGenerator.generate());
-        return table;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static Table newTable(String schemaId, String name, String comment,
+      String tableOptions, String extra) {
+    Table table = new Table(schemaId, name, comment, tableOptions, extra);
+    table.setId(UlidGenerator.generate());
+    return table;
+  }
 
 }

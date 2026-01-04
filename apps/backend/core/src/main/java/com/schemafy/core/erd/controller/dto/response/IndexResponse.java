@@ -16,35 +16,35 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class IndexResponse {
 
-    private String id;
-    private String tableId;
-    private String name;
-    private String type;
-    private String comment;
-    private List<IndexColumnResponse> columns;
+  private String id;
+  private String tableId;
+  private String name;
+  private String type;
+  private String comment;
+  private List<IndexColumnResponse> columns;
 
-    public static IndexResponse from(Index index) {
-        return IndexResponse.builder()
-                .id(index.getId())
-                .tableId(index.getTableId())
-                .name(index.getName())
-                .type(index.getType())
-                .comment(index.getComment())
-                .columns(Collections.emptyList())
-                .build();
-    }
+  public static IndexResponse from(Index index) {
+    return IndexResponse.builder()
+        .id(index.getId())
+        .tableId(index.getTableId())
+        .name(index.getName())
+        .type(index.getType())
+        .comment(index.getComment())
+        .columns(Collections.emptyList())
+        .build();
+  }
 
-    public static IndexResponse from(Index index, List<IndexColumn> columns) {
-        return IndexResponse.builder()
-                .id(index.getId())
-                .tableId(index.getTableId())
-                .name(index.getName())
-                .type(index.getType())
-                .comment(index.getComment())
-                .columns(columns.stream()
-                        .map(IndexColumnResponse::from)
-                        .toList())
-                .build();
-    }
+  public static IndexResponse from(Index index, List<IndexColumn> columns) {
+    return IndexResponse.builder()
+        .id(index.getId())
+        .tableId(index.getTableId())
+        .name(index.getName())
+        .type(index.getType())
+        .comment(index.getComment())
+        .columns(columns.stream()
+            .map(IndexColumnResponse::from)
+            .toList())
+        .build();
+  }
 
 }

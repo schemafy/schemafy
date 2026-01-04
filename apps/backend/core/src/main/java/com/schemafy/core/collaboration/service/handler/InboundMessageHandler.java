@@ -7,8 +7,8 @@ import reactor.core.publisher.Mono;
 
 public interface InboundMessageHandler {
 
-    CollaborationEventType supportedType();
+  CollaborationEventType supportedType();
 
-    Mono<Void> handle(MessageContext context, CollaborationInbound message);
+  Mono<Void> handle(MessageContext context, CollaborationInbound message);
 
 }

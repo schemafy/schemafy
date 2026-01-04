@@ -116,6 +116,32 @@ export class RelationshipsService {
     }
   }
 
+  changeRelationshipKind(
+    database: Database,
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    kind: Relationship['kind'],
+  ): ValidateResult {
+    try {
+      const updated = ERD_VALIDATOR.changeRelationshipKind(
+        database,
+        schemaId,
+        relationshipId,
+        kind,
+      );
+      this.logger.log(
+        `ChangeRelationshipKind request successfully validated, schemaId: ${schemaId}, relationshipId: ${relationshipId}, kind: ${kind}`,
+      );
+      return { success: { database: updated } };
+    } catch (err) {
+      this.logger.error(
+        `ChangeRelationshipKind request failed, schemaId: ${schemaId}, relationshipId: ${relationshipId}, kind: ${kind}`,
+        err,
+      );
+      return { failure: { errors: toErrorDetails(err) } };
+    }
+  }
+
   addColumnToRelationship(
     database: Database,
     schemaId: Schema['id'],
