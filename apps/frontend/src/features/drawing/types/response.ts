@@ -13,6 +13,7 @@ export type PropagatedEntitiesGroup = {
 export type SyncContext = {
   schemaId: string;
   tableId?: string;
+  columnId?: string;
   relationshipId?: string;
   constraintId?: string;
   indexId?: string;

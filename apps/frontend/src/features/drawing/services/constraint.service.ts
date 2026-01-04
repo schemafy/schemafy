@@ -1,23 +1,19 @@
 import { ulid } from 'ulid';
-import type {
-  Constraint,
-  ConstraintColumn,
-} from '@schemafy/validator';
+import type { Constraint, ConstraintColumn } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
-import {
-  createConstraintAPI,
-  getConstraintAPI,
-  updateConstraintNameAPI,
-  addColumnToConstraintAPI,
-  removeColumnFromConstraintAPI,
-  deleteConstraintAPI,
-} from '../api/constraint.api';
-import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import { getConstraintAPI } from '../api/constraint.api';
 import {
   validateAndGetTable,
   validateAndGetConstraint,
 } from '../utils/entityValidators';
-import { handleServerResponse } from '../utils/sync';
+import { executeCommandWithValidation } from '../utils/commandQueueHelper';
+import {
+  CreateConstraintCommand,
+  UpdateConstraintNameCommand,
+  AddColumnToConstraintCommand,
+  RemoveColumnFromConstraintCommand,
+  DeleteConstraintCommand,
+} from '../queue/commands/ConstraintCommands';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -26,7 +22,7 @@ export async function getConstraint(constraintId: string) {
   return response.result;
 }
 
-export async function createConstraint(
+export function createConstraint(
   schemaId: string,
   tableId: string,
   name: string,
@@ -39,7 +35,7 @@ export async function createConstraint(
   defaultExpr?: string,
 ) {
   const erdStore = getErdStore();
-  const { database } = validateAndGetTable(schemaId, tableId);
+  validateAndGetTable(schemaId, tableId);
 
   const constraintId = ulid();
 
@@ -62,71 +58,37 @@ export async function createConstraint(
     isAffected: false,
   };
 
-  const response = await withOptimisticUpdate(
-    () => erdStore.createConstraint(schemaId, tableId, newConstraint),
-    () =>
-      createConstraintAPI({
-        database,
-        schemaId,
-        tableId,
-        constraint: {
-          id: constraintId,
-          tableId,
-          name,
-          kind: kind as Constraint['kind'],
-          columns: constraintColumns.map((col) => ({
-            id: col.id,
-            constraintId,
-            columnId: col.columnId,
-            seqNo: col.seqNo,
-          })),
-        },
-      }),
-    () => erdStore.deleteConstraint(schemaId, tableId, constraintId),
-  );
+  const command = new CreateConstraintCommand(schemaId, tableId, newConstraint);
 
-  handleServerResponse(response, {
-    schemaId,
-    tableId,
-    constraintId,
+  executeCommandWithValidation(command, () => {
+    erdStore.createConstraint(schemaId, tableId, newConstraint);
   });
 
   return constraintId;
 }
 
-export async function updateConstraintName(
+export function updateConstraintName(
   schemaId: string,
   tableId: string,
   constraintId: string,
   newName: string,
 ) {
   const erdStore = getErdStore();
-  const { database, constraint } = validateAndGetConstraint(
+  validateAndGetConstraint(schemaId, tableId, constraintId);
+
+  const command = new UpdateConstraintNameCommand(
     schemaId,
     tableId,
     constraintId,
+    newName,
   );
 
-  await withOptimisticUpdate(
-    () => {
-      const oldName = constraint.name;
-      erdStore.changeConstraintName(schemaId, tableId, constraintId, newName);
-      return oldName;
-    },
-    () =>
-      updateConstraintNameAPI(constraintId, {
-        database,
-        schemaId,
-        tableId,
-        constraintId,
-        newName,
-      }),
-    (oldName) =>
-      erdStore.changeConstraintName(schemaId, tableId, constraintId, oldName),
-  );
+  executeCommandWithValidation(command, () => {
+    erdStore.changeConstraintName(schemaId, tableId, constraintId, newName);
+  });
 }
 
-export async function addColumnToConstraint(
+export function addColumnToConstraint(
   schemaId: string,
   tableId: string,
   constraintId: string,
@@ -134,11 +96,7 @@ export async function addColumnToConstraint(
   seqNo: number,
 ) {
   const erdStore = getErdStore();
-  const { database } = validateAndGetConstraint(
-    schemaId,
-    tableId,
-    constraintId,
-  );
+  validateAndGetConstraint(schemaId, tableId, constraintId);
 
   const constraintColumnId = ulid();
 
@@ -150,53 +108,33 @@ export async function addColumnToConstraint(
     isAffected: false,
   };
 
-  const response = await withOptimisticUpdate(
-    () =>
-      erdStore.addColumnToConstraint(
-        schemaId,
-        tableId,
-        constraintId,
-        newConstraintColumn,
-      ),
-    () =>
-      addColumnToConstraintAPI(constraintId, {
-        database,
-        schemaId,
-        tableId,
-        constraintId,
-        constraintColumn: {
-          id: constraintColumnId,
-          constraintId,
-          columnId,
-          seqNo,
-        },
-      }),
-    () =>
-      erdStore.removeColumnFromConstraint(
-        schemaId,
-        tableId,
-        constraintId,
-        constraintColumnId,
-      ),
-  );
-
-  handleServerResponse(response, {
+  const command = new AddColumnToConstraintCommand(
     schemaId,
     tableId,
     constraintId,
+    newConstraintColumn,
+  );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.addColumnToConstraint(
+      schemaId,
+      tableId,
+      constraintId,
+      newConstraintColumn,
+    );
   });
 
   return constraintColumnId;
 }
 
-export async function removeColumnFromConstraint(
+export function removeColumnFromConstraint(
   schemaId: string,
   tableId: string,
   constraintId: string,
   constraintColumnId: string,
 ) {
   const erdStore = getErdStore();
-  const { database, constraint } = validateAndGetConstraint(
+  const { constraint } = validateAndGetConstraint(
     schemaId,
     tableId,
     constraintId,
@@ -214,61 +152,34 @@ export async function removeColumnFromConstraint(
     return deleteConstraint(schemaId, tableId, constraintId);
   }
 
-  await withOptimisticUpdate(
-    () => {
-      const columnSnapshot = structuredClone(constraintColumn);
-      erdStore.removeColumnFromConstraint(
-        schemaId,
-        tableId,
-        constraintId,
-        constraintColumnId,
-      );
-      return columnSnapshot;
-    },
-    () =>
-      removeColumnFromConstraintAPI(constraintId, constraintColumnId, {
-        database,
-        schemaId,
-        tableId,
-        constraintId,
-        constraintColumnId,
-      }),
-    (columnSnapshot) =>
-      erdStore.addColumnToConstraint(
-        schemaId,
-        tableId,
-        constraintId,
-        columnSnapshot,
-      ),
+  const command = new RemoveColumnFromConstraintCommand(
+    schemaId,
+    tableId,
+    constraintId,
+    constraintColumnId,
   );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.removeColumnFromConstraint(
+      schemaId,
+      tableId,
+      constraintId,
+      constraintColumnId,
+    );
+  });
 }
 
-export async function deleteConstraint(
+export function deleteConstraint(
   schemaId: string,
   tableId: string,
   constraintId: string,
 ) {
   const erdStore = getErdStore();
-  const { database, constraint } = validateAndGetConstraint(
-    schemaId,
-    tableId,
-    constraintId,
-  );
+  validateAndGetConstraint(schemaId, tableId, constraintId);
 
-  await withOptimisticUpdate(
-    () => {
-      const constraintSnapshot = structuredClone(constraint);
-      erdStore.deleteConstraint(schemaId, tableId, constraintId);
-      return constraintSnapshot;
-    },
-    () =>
-      deleteConstraintAPI(constraintId, {
-        database,
-        schemaId,
-        tableId,
-        constraintId,
-      }),
-    (constraintSnapshot) =>
-      erdStore.createConstraint(schemaId, tableId, constraintSnapshot),
-  );
+  const command = new DeleteConstraintCommand(schemaId, tableId, constraintId);
+
+  executeCommandWithValidation(command, () => {
+    erdStore.deleteConstraint(schemaId, tableId, constraintId);
+  });
 }

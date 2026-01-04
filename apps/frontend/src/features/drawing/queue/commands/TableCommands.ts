@@ -143,7 +143,6 @@ export class DeleteTableCommand extends BaseCommand {
   constructor(
     private schemaId: string,
     private tableId: string,
-    private tableSnapshot: Omit<Table, 'schemaId'>,
   ) {
     super('DELETE_TABLE', 'table', tableId);
   }
@@ -165,11 +164,7 @@ export class DeleteTableCommand extends BaseCommand {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
     const mappedTableId = mapping[this.tableId] || this.tableId;
 
-    return new DeleteTableCommand(
-      mappedSchemaId,
-      mappedTableId,
-      this.tableSnapshot,
-    );
+    return new DeleteTableCommand(mappedSchemaId, mappedTableId);
   }
 
   getContext(): SyncContext {

@@ -85,10 +85,7 @@ export class UpdateSchemaNameCommand extends BaseCommand {
 }
 
 export class DeleteSchemaCommand extends BaseCommand {
-  constructor(
-    private schemaId: string,
-    private schemaSnapshot: Schema,
-  ) {
+  constructor(private schemaId: string) {
     super('DELETE_SCHEMA', 'schema', schemaId);
   }
 
@@ -107,7 +104,7 @@ export class DeleteSchemaCommand extends BaseCommand {
   withMappedIds(mapping: IdMapping): DeleteSchemaCommand {
     const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
 
-    return new DeleteSchemaCommand(mappedSchemaId, this.schemaSnapshot);
+    return new DeleteSchemaCommand(mappedSchemaId);
   }
 
   getContext(): SyncContext {

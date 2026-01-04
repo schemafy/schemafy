@@ -47,15 +47,26 @@ export function syncTempToRealIds(
   }
 
   if (constraintId && tableId) {
-    replaceNestedIds(result.constraintColumns, constraintId, (t, r) => {
-      erdStore.replaceConstraintColumnId(schemaId, tableId, constraintId, t, r);
+    const realConstraintId =
+      result.constraints?.[tableId]?.[constraintId] || constraintId;
+
+    replaceNestedIds(result.constraintColumns, realConstraintId, (t, r) => {
+      erdStore.replaceConstraintColumnId(
+        schemaId,
+        tableId,
+        realConstraintId,
+        t,
+        r,
+      );
       idMap.set(t, { realId: r, type: 'constraintColumn' });
     });
   }
 
   if (indexId && tableId) {
-    replaceNestedIds(result.indexColumns, indexId, (t, r) => {
-      erdStore.replaceIndexColumnId(schemaId, tableId, indexId, t, r);
+    const realIndexId = result.indexes?.[tableId]?.[indexId] || indexId;
+
+    replaceNestedIds(result.indexColumns, realIndexId, (t, r) => {
+      erdStore.replaceIndexColumnId(schemaId, tableId, realIndexId, t, r);
       idMap.set(t, { realId: r, type: 'indexColumn' });
     });
   }

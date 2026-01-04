@@ -112,11 +112,10 @@ export function updateTableExtra(
 }
 
 export function deleteTable(schemaId: string, tableId: string) {
-  const { table } = validateAndGetTable(schemaId, tableId);
+  validateAndGetTable(schemaId, tableId);
 
   const erdStore = getErdStore();
-  const tableSnapshot = structuredClone(table);
-  const command = new DeleteTableCommand(schemaId, tableId, tableSnapshot);
+  const command = new DeleteTableCommand(schemaId, tableId);
 
   executeCommandWithValidation(command, () => {
     erdStore.deleteTable(schemaId, tableId);

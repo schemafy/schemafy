@@ -69,15 +69,14 @@ export function updateSchemaName(schemaId: string, newName: string) {
 }
 
 export function deleteSchema(schemaId: string) {
-  const { database, schema } = validateAndGetSchema(schemaId);
+  const { database } = validateAndGetSchema(schemaId);
 
   if (database.schemas.length <= 1) {
     throw new Error('Cannot delete the last schema');
   }
 
   const erdStore = getErdStore();
-  const schemaSnapshot = structuredClone(schema);
-  const command = new DeleteSchemaCommand(schemaId, schemaSnapshot);
+  const command = new DeleteSchemaCommand(schemaId);
 
   executeCommandWithValidation(command, () => {
     erdStore.deleteSchema(schemaId);

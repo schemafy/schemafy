@@ -32,8 +32,8 @@ export class CreateColumnCommand extends BaseCommand {
         id: this.columnData.id,
         tableId: this.tableId,
         name: this.columnData.name,
-        seqNo: this.columnData.seqNo,
-        dataType: this.columnData.dataType,
+        ordinalPosition: this.columnData.ordinalPosition,
+        dataType: this.columnData.dataType ?? '',
         lengthScale: this.columnData.lengthScale ?? '',
         charset: this.columnData.charset ?? '',
         collation: this.columnData.collation ?? '',
@@ -230,7 +230,6 @@ export class DeleteColumnCommand extends BaseCommand {
     private schemaId: string,
     private tableId: string,
     private columnId: string,
-    private columnSnapshot: Column,
   ) {
     super('DELETE_COLUMN', 'column', columnId);
   }
@@ -258,7 +257,6 @@ export class DeleteColumnCommand extends BaseCommand {
       mappedSchemaId,
       mappedTableId,
       mappedColumnId,
-      this.columnSnapshot,
     );
   }
 

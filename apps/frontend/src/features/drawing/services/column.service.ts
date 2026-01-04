@@ -138,16 +138,10 @@ export function deleteColumn(
   tableId: string,
   columnId: string,
 ) {
-  const { column } = validateAndGetColumn(schemaId, tableId, columnId);
+  validateAndGetColumn(schemaId, tableId, columnId);
 
   const erdStore = getErdStore();
-  const columnSnapshot = structuredClone(column);
-  const command = new DeleteColumnCommand(
-    schemaId,
-    tableId,
-    columnId,
-    columnSnapshot,
-  );
+  const command = new DeleteColumnCommand(schemaId, tableId, columnId);
 
   executeCommandWithValidation(command, () => {
     erdStore.deleteColumn(schemaId, tableId, columnId);
