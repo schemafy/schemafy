@@ -20,27 +20,27 @@ import lombok.Setter;
 @Table("db_relationship_columns")
 public class RelationshipColumn extends BaseEntity {
 
-    @Column("relationship_id")
-    private String relationshipId;
+  @Column("relationship_id")
+  private String relationshipId;
 
-    @Column("fk_column_id")
-    private String fkColumnId;
+  @Column("fk_column_id")
+  private String fkColumnId;
 
-    @Column("pk_column_id")
-    private String pkColumnId;
+  @Column("pk_column_id")
+  private String pkColumnId;
 
-    @Column("seq_no")
-    private int seqNo;
+  @Column("seq_no")
+  private int seqNo;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static RelationshipColumn newRelationshipColumn(
-            String relationshipId,
-            String fkColumnId, String pkColumnId, int seqNo) {
-        RelationshipColumn relationshipColumn = new RelationshipColumn(
-                relationshipId,
-                fkColumnId, pkColumnId, seqNo);
-        relationshipColumn.setId(UlidGenerator.generate());
-        return relationshipColumn;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static RelationshipColumn newRelationshipColumn(
+      String relationshipId,
+      String fkColumnId, String pkColumnId, int seqNo) {
+    RelationshipColumn relationshipColumn = new RelationshipColumn(
+        relationshipId,
+        fkColumnId, pkColumnId, seqNo);
+    relationshipColumn.setId(UlidGenerator.generate());
+    return relationshipColumn;
+  }
 
 }

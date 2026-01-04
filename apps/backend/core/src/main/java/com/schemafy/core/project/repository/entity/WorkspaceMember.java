@@ -17,40 +17,38 @@ import lombok.NoArgsConstructor;
 @Table("workspace_members")
 public class WorkspaceMember extends BaseEntity {
 
-    private String workspaceId;
+  private String workspaceId;
 
-    private String userId;
+  private String userId;
 
-    private String role;
+  private String role;
 
-    public static WorkspaceMember create(String workspaceId, String userId,
-            WorkspaceRole role) {
-        WorkspaceMember workspaceMember = new WorkspaceMember(
-                workspaceId,
-                userId,
-                role.getValue());
-        workspaceMember.setId(UlidGenerator.generate());
-        return workspaceMember;
-    }
+  public static WorkspaceMember create(String workspaceId, String userId,
+      WorkspaceRole role) {
+    WorkspaceMember workspaceMember = new WorkspaceMember(
+        workspaceId,
+        userId,
+        role.getValue());
+    workspaceMember.setId(UlidGenerator.generate());
+    return workspaceMember;
+  }
 
-    @Override
-    public boolean isDeleted() { return deletedAt != null; }
+  @Override
+  public boolean isDeleted() { return deletedAt != null; }
 
-    @Override
-    public String getId() { return id; }
+  @Override
+  public String getId() { return id; }
 
-    public WorkspaceRole getRoleAsEnum() {
-        return WorkspaceRole.fromValue(this.role);
-    }
+  public WorkspaceRole getRoleAsEnum() { return WorkspaceRole.fromValue(this.role); }
 
-    public boolean isAdmin() { return getRoleAsEnum().isAdmin(); }
+  public boolean isAdmin() { return getRoleAsEnum().isAdmin(); }
 
-    public boolean belongsToWorkspace(String workspaceId) {
-        return this.workspaceId.equals(workspaceId);
-    }
+  public boolean belongsToWorkspace(String workspaceId) {
+    return this.workspaceId.equals(workspaceId);
+  }
 
-    public void updateRole(WorkspaceRole newRole) {
-        this.role = newRole.getValue();
-    }
+  public void updateRole(WorkspaceRole newRole) {
+    this.role = newRole.getValue();
+  }
 
 }

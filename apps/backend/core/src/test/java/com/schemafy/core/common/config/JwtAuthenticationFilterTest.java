@@ -26,52 +26,52 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class JwtAuthenticationFilterTest {
 
-    @Mock
-    JwtProvider jwtProvider;
+  @Mock
+  JwtProvider jwtProvider;
 
-    @Mock
-    WebFilterChain filterChain;
+  @Mock
+  WebFilterChain filterChain;
 
-    JwtAuthenticationFilter jwtAuthenticationFilter;
+  JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    WebExchangeErrorWriter errorResponseWriter;
+  WebExchangeErrorWriter errorResponseWriter;
 
-    @BeforeEach
-    void setUp() {
-        errorResponseWriter = new WebExchangeErrorWriter(new ObjectMapper());
-        jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider,
-                errorResponseWriter);
-    }
+  @BeforeEach
+  void setUp() {
+    errorResponseWriter = new WebExchangeErrorWriter(new ObjectMapper());
+    jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider,
+        errorResponseWriter);
+  }
 
-    @Test
-    @DisplayName("유효한 JWT 토큰으로 인증에 성공한다")
-    void authenticateValidToken() {
-        String token = "valid-token";
-        String userId = "user123";
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+  @Test
+  @DisplayName("유효한 JWT 토큰으로 인증에 성공한다")
+  void authenticateValidToken() {
+    String token = "valid-token";
+    String userId = "user123";
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token))
-                .thenReturn(JwtProvider.ACCESS_TOKEN);
-        when(jwtProvider.validateToken(token, userId)).thenReturn(true);
+    when(jwtProvider.extractUserId(token)).thenReturn(userId);
+    when(jwtProvider.getTokenType(token))
+        .thenReturn(JwtProvider.ACCESS_TOKEN);
+    when(jwtProvider.validateToken(token, userId)).thenReturn(true);
 
-        StepVerifier
-                .create(jwtAuthenticationFilter.filter(exchange, filterChain)
-                        .contextWrite(ctx -> {
-                            return ctx;
-                        })
-                        .then(Mono.deferContextual(Mono::just))
-                        .flatMap(ctx -> ReactiveSecurityContextHolder
-                                .getContext()))
-                .expectNextCount(0)
-                .verifyComplete();
-    }
+    StepVerifier
+        .create(jwtAuthenticationFilter.filter(exchange, filterChain)
+            .contextWrite(ctx -> {
+              return ctx;
+            })
+            .then(Mono.deferContextual(Mono::just))
+            .flatMap(ctx -> ReactiveSecurityContextHolder
+                .getContext()))
+        .expectNextCount(0)
+        .verifyComplete();
+  }
 
-    @Test
+  @Test
     @DisplayName("Authorization 헤더가 없는 요청을 거부한다")
     void rejectRequestWithoutAuthHeader() {
         when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
@@ -85,7 +85,7 @@ class JwtAuthenticationFilterTest {
                 .verifyComplete();
     }
 
-    @Test
+  @Test
     @DisplayName("잘못된 형식의 Authorization 헤더를 거부한다")
     void rejectMalformedAuthHeader() {
         when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
@@ -100,80 +100,80 @@ class JwtAuthenticationFilterTest {
                 .verifyComplete();
     }
 
-    @Test
-    @DisplayName("만료된 토큰을 거부한다")
-    void rejectExpiredToken() {
-        String token = "expired-token";
-        String userId = "user123";
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+  @Test
+  @DisplayName("만료된 토큰을 거부한다")
+  void rejectExpiredToken() {
+    String token = "expired-token";
+    String userId = "user123";
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token))
-                .thenReturn(JwtProvider.ACCESS_TOKEN);
-        when(jwtProvider.validateToken(token, userId)).thenReturn(false);
+    when(jwtProvider.extractUserId(token)).thenReturn(userId);
+    when(jwtProvider.getTokenType(token))
+        .thenReturn(JwtProvider.ACCESS_TOKEN);
+    when(jwtProvider.validateToken(token, userId)).thenReturn(false);
 
-        StepVerifier
-                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
-                .verifyComplete();
-    }
+    StepVerifier
+        .create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("REFRESH 토큰 타입을 거부한다")
-    void rejectRefreshTokenType() {
-        String token = "refresh-token";
-        String userId = "user123";
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+  @Test
+  @DisplayName("REFRESH 토큰 타입을 거부한다")
+  void rejectRefreshTokenType() {
+    String token = "refresh-token";
+    String userId = "user123";
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        when(jwtProvider.extractUserId(token)).thenReturn(userId);
-        when(jwtProvider.getTokenType(token))
-                .thenReturn(JwtProvider.REFRESH_TOKEN);
+    when(jwtProvider.extractUserId(token)).thenReturn(userId);
+    when(jwtProvider.getTokenType(token))
+        .thenReturn(JwtProvider.REFRESH_TOKEN);
 
-        StepVerifier
-                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
-                .verifyComplete();
-    }
+    StepVerifier
+        .create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("토큰 검증 중 발생한 예외를 처리한다")
-    void handleTokenValidationException() {
-        String token = "invalid-token";
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+  @Test
+  @DisplayName("토큰 검증 중 발생한 예외를 처리한다")
+  void handleTokenValidationException() {
+    String token = "invalid-token";
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        when(jwtProvider.extractUserId(token))
-                .thenThrow(new RuntimeException("Invalid token"));
+    when(jwtProvider.extractUserId(token))
+        .thenThrow(new RuntimeException("Invalid token"));
 
-        StepVerifier
-                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
-                .verifyComplete();
-    }
+    StepVerifier
+        .create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
 
-    @Test
-    @DisplayName("Bearer 접두사 뒤에 빈 토큰을 처리한다")
-    void handleEmptyTokenAfterBearer() {
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer ")
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+  @Test
+  @DisplayName("Bearer 접두사 뒤에 빈 토큰을 처리한다")
+  void handleEmptyTokenAfterBearer() {
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer ")
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        StepVerifier
-                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
-                .verifyComplete();
-    }
+    StepVerifier
+        .create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
 
-    @Test
+  @Test
     @DisplayName("대소문자가 다른 Bearer 접두사를 처리한다")
     void handleBearerPrefixCasing() {
         when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
@@ -188,18 +188,18 @@ class JwtAuthenticationFilterTest {
                 .verifyComplete();
     }
 
-    @Test
-    @DisplayName("공백만 있는 토큰을 거부한다")
-    void rejectWhitespaceToken() {
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer    ")
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+  @Test
+  @DisplayName("공백만 있는 토큰을 거부한다")
+  void rejectWhitespaceToken() {
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer    ")
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        StepVerifier
-                .create(jwtAuthenticationFilter.filter(exchange, filterChain))
-                .verifyComplete();
-    }
+    StepVerifier
+        .create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
 
 }

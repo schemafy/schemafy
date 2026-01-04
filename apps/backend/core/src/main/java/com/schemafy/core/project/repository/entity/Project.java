@@ -17,35 +17,33 @@ import lombok.NoArgsConstructor;
 @Table("projects")
 public class Project extends BaseEntity {
 
-    private String workspaceId;
+  private String workspaceId;
 
-    private String name;
+  private String name;
 
-    private String description;
+  private String description;
 
-    private String settings;
+  private String settings;
 
-    public static Project create(String workspaceId,
-            String name, String description, ProjectSettings settings) {
-        Project project = new Project(workspaceId, name, description,
-                settings.toJson());
-        project.setId(UlidGenerator.generate());
-        return project;
-    }
+  public static Project create(String workspaceId,
+      String name, String description, ProjectSettings settings) {
+    Project project = new Project(workspaceId, name, description,
+        settings.toJson());
+    project.setId(UlidGenerator.generate());
+    return project;
+  }
 
-    public void update(String name, String description,
-            ProjectSettings settings) {
-        this.name = name;
-        this.description = description;
-        this.settings = settings.toJson();
-    }
+  public void update(String name, String description,
+      ProjectSettings settings) {
+    this.name = name;
+    this.description = description;
+    this.settings = settings.toJson();
+  }
 
-    public ProjectSettings getSettingsAsVo() {
-        return ProjectSettings.fromJson(this.settings);
-    }
+  public ProjectSettings getSettingsAsVo() { return ProjectSettings.fromJson(this.settings); }
 
-    public boolean belongsToWorkspace(String workspaceId) {
-        return this.workspaceId.equals(workspaceId);
-    }
+  public boolean belongsToWorkspace(String workspaceId) {
+    return this.workspaceId.equals(workspaceId);
+  }
 
 }

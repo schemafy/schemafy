@@ -46,1250 +46,1250 @@ import static org.mockito.Mockito.verify;
 @DisplayName("RelationshipService 테스트")
 class RelationshipServiceTest {
 
-    @Autowired
-    RelationshipService relationshipService;
+  @Autowired
+  RelationshipService relationshipService;
 
-    @Autowired
-    RelationshipRepository relationshipRepository;
+  @Autowired
+  RelationshipRepository relationshipRepository;
 
-    @Autowired
-    RelationshipColumnRepository relationshipColumnRepository;
+  @Autowired
+  RelationshipColumnRepository relationshipColumnRepository;
 
-    @Autowired
-    ColumnRepository columnRepository;
+  @Autowired
+  ColumnRepository columnRepository;
 
-    @MockitoBean
-    ValidationClient validationClient;
+  @MockitoBean
+  ValidationClient validationClient;
 
-    @MockitoBean
-    AffectedEntitiesSaver affectedEntitiesSaver;
+  @MockitoBean
+  AffectedEntitiesSaver affectedEntitiesSaver;
 
-    @BeforeEach
-    void setUp() {
-        relationshipColumnRepository.deleteAll().block();
-        relationshipRepository.deleteAll().block();
-        columnRepository.deleteAll().block();
+  @BeforeEach
+  void setUp() {
+    relationshipColumnRepository.deleteAll().block();
+    relationshipRepository.deleteAll().block();
+    columnRepository.deleteAll().block();
 
-        given(validationClient.changeRelationshipName(
-                any(Validation.ChangeRelationshipNameRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-        given(validationClient.changeRelationshipCardinality(
-                any(Validation.ChangeRelationshipCardinalityRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-        given(validationClient.changeRelationshipKind(
-                any(Validation.ChangeRelationshipKindRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-        given(validationClient.addColumnToRelationship(
-                any(Validation.AddColumnToRelationshipRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-        given(validationClient.removeColumnFromRelationship(
-                any(Validation.RemoveColumnFromRelationshipRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
-        given(validationClient.deleteRelationship(
-                any(Validation.DeleteRelationshipRequest.class)))
-                .willReturn(Mono.just(
-                        Validation.Database.newBuilder().build()));
+    given(validationClient.changeRelationshipName(
+        any(Validation.ChangeRelationshipNameRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+    given(validationClient.changeRelationshipCardinality(
+        any(Validation.ChangeRelationshipCardinalityRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+    given(validationClient.changeRelationshipKind(
+        any(Validation.ChangeRelationshipKindRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+    given(validationClient.addColumnToRelationship(
+        any(Validation.AddColumnToRelationshipRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+    given(validationClient.removeColumnFromRelationship(
+        any(Validation.RemoveColumnFromRelationshipRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
+    given(validationClient.deleteRelationship(
+        any(Validation.DeleteRelationshipRequest.class)))
+        .willReturn(Mono.just(
+            Validation.Database.newBuilder().build()));
 
-        AffectedEntitiesSaver.SaveResult emptySaveResult = new AffectedEntitiesSaver.SaveResult(
-                AffectedMappingResponse.PropagatedEntities.empty(),
-                new IdMappings(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
-                        Map.of(), Map.of(), Map.of(), Map.of()));
+    AffectedEntitiesSaver.SaveResult emptySaveResult = new AffectedEntitiesSaver.SaveResult(
+        AffectedMappingResponse.PropagatedEntities.empty(),
+        new IdMappings(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
+            Map.of(), Map.of(), Map.of(), Map.of()));
 
-        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
-                any(Validation.Database.class)))
-                .willReturn(Mono.just(emptySaveResult));
-        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
-                any(Validation.Database.class), any(), any(), any()))
-                .willReturn(Mono.just(emptySaveResult));
-        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
-                any(Validation.Database.class), any(), any(), any(), any()))
-                .willReturn(Mono.just(emptySaveResult));
-        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
-                any(Validation.Database.class), any(), any(), any(), any(),
-                any()))
-                .willReturn(Mono.just(emptySaveResult));
+    given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+        any(Validation.Database.class)))
+        .willReturn(Mono.just(emptySaveResult));
+    given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+        any(Validation.Database.class), any(), any(), any()))
+        .willReturn(Mono.just(emptySaveResult));
+    given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+        any(Validation.Database.class), any(), any(), any(), any()))
+        .willReturn(Mono.just(emptySaveResult));
+    given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(),
+        any(Validation.Database.class), any(), any(), any(), any(),
+        any()))
+        .willReturn(Mono.just(emptySaveResult));
 
-        given(affectedEntitiesSaver.saveAffectedEntities(any(),
-                any(Validation.Database.class)))
-                .willReturn(Mono.just(
-                        AffectedMappingResponse.PropagatedEntities.empty()));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(),
-                any(Validation.Database.class), any(), any(), any()))
-                .willReturn(Mono.just(
-                        AffectedMappingResponse.PropagatedEntities.empty()));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(),
-                any(Validation.Database.class), any(), any(), any(), any()))
-                .willReturn(Mono.just(
-                        AffectedMappingResponse.PropagatedEntities.empty()));
-    }
+    given(affectedEntitiesSaver.saveAffectedEntities(any(),
+        any(Validation.Database.class)))
+        .willReturn(Mono.just(
+            AffectedMappingResponse.PropagatedEntities.empty()));
+    given(affectedEntitiesSaver.saveAffectedEntities(any(),
+        any(Validation.Database.class), any(), any(), any()))
+        .willReturn(Mono.just(
+            AffectedMappingResponse.PropagatedEntities.empty()));
+    given(affectedEntitiesSaver.saveAffectedEntities(any(),
+        any(Validation.Database.class), any(), any(), any(), any()))
+        .willReturn(Mono.just(
+            AffectedMappingResponse.PropagatedEntities.empty()));
+  }
 
-    @Test
-    @DisplayName("createRelationship: 관계 생성 시 매핑 정보가 올바르게 반환된다")
-    void createRelationship_mappingResponse_success() {
-        Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
-                .newBuilder()
-                .setRelationship(Validation.Relationship.newBuilder()
-                        .setId("fe-relationship-id")
-                        .setFkTableId("table-1")
-                        .setPkTableId("table-2")
-                        .setName("fk_test")
-                        .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
-                        .setCardinality(
-                                Validation.RelationshipCardinality.ONE_TO_MANY)
-                        .build())
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("proj-1")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("schema-1")
-                                .setName("test-schema")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("table-1")
-                                        .setName("parent-table")
-                                        .build())
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("table-2")
-                                        .setName("child-table")
-                                        .build())
-                                .build())
-                        .build())
-                .build();
+  @Test
+  @DisplayName("createRelationship: 관계 생성 시 매핑 정보가 올바르게 반환된다")
+  void createRelationship_mappingResponse_success() {
+    Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
+        .newBuilder()
+        .setRelationship(Validation.Relationship.newBuilder()
+            .setId("fe-relationship-id")
+            .setFkTableId("table-1")
+            .setPkTableId("table-2")
+            .setName("fk_test")
+            .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
+            .setCardinality(
+                Validation.RelationshipCardinality.ONE_TO_MANY)
+            .build())
+        .setDatabase(Validation.Database.newBuilder()
+            .setId("proj-1")
+            .addSchemas(Validation.Schema.newBuilder()
+                .setId("schema-1")
+                .setName("test-schema")
+                .addTables(Validation.Table.newBuilder()
+                    .setId("table-1")
+                    .setName("parent-table")
+                    .build())
+                .addTables(Validation.Table.newBuilder()
+                    .setId("table-2")
+                    .setName("child-table")
+                    .build())
+                .build())
+            .build())
+        .build();
 
-        CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
-                request, "extra-data");
+    CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
+        request, "extra-data");
 
-        // ValidationClient 모킹
-        Validation.Database mockResponse = Validation.Database.newBuilder()
-                .setId("proj-1")
+    // ValidationClient 모킹
+    Validation.Database mockResponse = Validation.Database.newBuilder()
+        .setId("proj-1")
+        .setIsAffected(true)
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setName("test-schema")
+            .setIsAffected(true)
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-1")
+                .setName("parent-table")
                 .setIsAffected(true)
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setName("test-schema")
-                        .setIsAffected(true)
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-1")
-                                .setName("parent-table")
-                                .setIsAffected(true)
-                                .addRelationships(Validation.Relationship
-                                        .newBuilder()
-                                        .setId("fe-relationship-id")
-                                        .setFkTableId("table-1")
-                                        .setPkTableId("table-2")
-                                        .setName("fk_test")
-                                        .setKind(
-                                                Validation.RelationshipKind.NON_IDENTIFYING)
-                                        .setCardinality(
-                                                Validation.RelationshipCardinality.ONE_TO_MANY)
-                                        .setIsAffected(true)
-                                        .build())
-                                .build())
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-2")
-                                .setName("child-table")
-                                .build())
+                .addRelationships(Validation.Relationship
+                    .newBuilder()
+                    .setId("fe-relationship-id")
+                    .setFkTableId("table-1")
+                    .setPkTableId("table-2")
+                    .setName("fk_test")
+                    .setKind(
+                        Validation.RelationshipKind.NON_IDENTIFYING)
+                    .setCardinality(
+                        Validation.RelationshipCardinality.ONE_TO_MANY)
+                    .setIsAffected(true)
+                    .build())
+                .build())
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-2")
+                .setName("child-table")
+                .build())
+            .build())
+        .build();
+
+    given(validationClient.createRelationship(
+        any(Validation.CreateRelationshipRequest.class)))
+        .willReturn(Mono.just(mockResponse));
+
+    // when
+    Mono<AffectedMappingResponse> result = relationshipService
+        .createRelationship(requestWithExtra);
+
+    // then
+    Mono<Tuple2<AffectedMappingResponse, Relationship>> composed = result
+        .flatMap(response -> {
+          String savedRelationshipId = response.relationships()
+              .get("table-1")
+              .get("fe-relationship-id");
+
+          return relationshipRepository
+              .findByIdAndDeletedAtIsNull(savedRelationshipId)
+              .map(savedRelationship -> Tuples.of(response,
+                  savedRelationship));
+        });
+
+    StepVerifier.create(composed)
+        .assertNext(tuple -> {
+          AffectedMappingResponse response = tuple.getT1();
+          Relationship savedRelationship = tuple.getT2();
+
+          assertThat(response.relationships()).hasSize(1);
+          String savedRelationshipId = response.relationships()
+              .get("table-1")
+              .get("fe-relationship-id");
+          assertThat(savedRelationshipId).isNotNull();
+          assertThat(savedRelationshipId)
+              .isNotEqualTo("fe-relationship-id");
+          assertThat(savedRelationship.getId())
+              .isEqualTo(savedRelationshipId);
+
+          assertThat(response.schemas()).isEmpty();
+          assertThat(response.tables()).isEmpty();
+          assertThat(response.columns()).isEmpty();
+          assertThat(response.indexes()).isEmpty();
+          assertThat(response.indexColumns()).isEmpty();
+          assertThat(response.constraints()).isEmpty();
+          assertThat(response.constraintColumns()).isEmpty();
+          assertThat(response.relationshipColumns()).isEmpty();
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("createRelationship: relationshipColumns 매핑이 FE-ID -> BE-ID로 반환된다")
+  void createRelationship_relationshipColumns_mapping_notIdentity() {
+    // given
+    Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
+        .newBuilder()
+        .setRelationship(Validation.Relationship.newBuilder()
+            .setId("fe-relationship-id")
+            .setFkTableId("table-1")
+            .setPkTableId("table-2")
+            .setName("fk_test")
+            .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
+            .setCardinality(
+                Validation.RelationshipCardinality.ONE_TO_MANY)
+            .addColumns(Validation.RelationshipColumn.newBuilder()
+                .setId("fe-relationship-col-1")
+                .setRelationshipId("fe-relationship-id")
+                .setFkColumnId("fk-col-id")
+                .setPkColumnId("ref-col-id")
+                .setSeqNo(1)
+                .build())
+            .build())
+        .setDatabase(Validation.Database.newBuilder()
+            .setId("proj-1")
+            .addSchemas(Validation.Schema.newBuilder()
+                .setId("schema-1")
+                .setName("test-schema")
+                .addTables(Validation.Table.newBuilder()
+                    .setId("table-1")
+                    .setName("child-table")
+                    .addColumns(Validation.Column
+                        .newBuilder()
+                        .setId("fk-col-id")
+                        .setTableId("table-1")
+                        .setName("fk")
+                        .setSeqNo(1)
+                        .setDataType("INT")
                         .build())
-                .build();
+                    .build())
+                .addTables(Validation.Table.newBuilder()
+                    .setId("table-2")
+                    .setName("parent-table")
+                    .addColumns(Validation.Column
+                        .newBuilder()
+                        .setId("ref-col-id")
+                        .setTableId("table-2")
+                        .setName("id")
+                        .setSeqNo(1)
+                        .setDataType("INT")
+                        .build())
+                    .build())
+                .build())
+            .build())
+        .build();
 
-        given(validationClient.createRelationship(
-                any(Validation.CreateRelationshipRequest.class)))
-                .willReturn(Mono.just(mockResponse));
+    CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
+        request, "extra-data");
 
-        // when
-        Mono<AffectedMappingResponse> result = relationshipService
-                .createRelationship(requestWithExtra);
+    // validator는 요청으로 받은 FE id를 그대로 after DB에 포함한다.
+    Validation.Database mockResponse = Validation.Database.newBuilder()
+        .setId("proj-1")
+        .setIsAffected(true)
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setName("test-schema")
+            .setIsAffected(true)
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-1")
+                .setName("child-table")
+                .setIsAffected(true)
+                .addRelationships(Validation.Relationship
+                    .newBuilder()
+                    .setId("fe-relationship-id")
+                    .setFkTableId("table-1")
+                    .setPkTableId("table-2")
+                    .setName("fk_test")
+                    .setKind(
+                        Validation.RelationshipKind.NON_IDENTIFYING)
+                    .setCardinality(
+                        Validation.RelationshipCardinality.ONE_TO_MANY)
+                    .setIsAffected(true)
+                    .addColumns(
+                        Validation.RelationshipColumn
+                            .newBuilder()
+                            .setId("fe-relationship-col-1")
+                            .setRelationshipId(
+                                "fe-relationship-id")
+                            .setFkColumnId(
+                                "fk-col-id")
+                            .setPkColumnId(
+                                "ref-col-id")
+                            .setSeqNo(1)
+                            .setIsAffected(true)
+                            .build())
+                    .build())
+                .build())
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-2")
+                .setName("parent-table")
+                .build())
+            .build())
+        .build();
 
-        // then
-        Mono<Tuple2<AffectedMappingResponse, Relationship>> composed = result
-                .flatMap(response -> {
-                    String savedRelationshipId = response.relationships()
-                            .get("table-1")
-                            .get("fe-relationship-id");
+    given(validationClient.createRelationship(
+        any(Validation.CreateRelationshipRequest.class)))
+        .willReturn(Mono.just(mockResponse));
 
-                    return relationshipRepository
-                            .findByIdAndDeletedAtIsNull(savedRelationshipId)
-                            .map(savedRelationship -> Tuples.of(response,
-                                    savedRelationship));
-                });
+    // when
+    Mono<AffectedMappingResponse> result = relationshipService
+        .createRelationship(requestWithExtra);
 
-        StepVerifier.create(composed)
-                .assertNext(tuple -> {
-                    AffectedMappingResponse response = tuple.getT1();
-                    Relationship savedRelationship = tuple.getT2();
+    // then
+    String persistedRelationshipColumnId = "be-relationship-col-1";
+    given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
+        any(), any(), eq(EntityType.RELATIONSHIP.name()), any(),
+        any()))
+        .willReturn(Mono.just(
+            new AffectedEntitiesSaver.SaveResult(
+                AffectedMappingResponse.PropagatedEntities
+                    .empty(),
+                new IdMappings(Map.of(), Map.of(), Map.of(),
+                    Map.of(), Map.of(), Map.of(), Map.of(),
+                    Map.of(),
+                    Map.of("fe-relationship-col-1",
+                        persistedRelationshipColumnId)))));
 
-                    assertThat(response.relationships()).hasSize(1);
-                    String savedRelationshipId = response.relationships()
-                            .get("table-1")
-                            .get("fe-relationship-id");
-                    assertThat(savedRelationshipId).isNotNull();
-                    assertThat(savedRelationshipId)
-                            .isNotEqualTo("fe-relationship-id");
-                    assertThat(savedRelationship.getId())
-                            .isEqualTo(savedRelationshipId);
+    StepVerifier.create(result)
+        .assertNext(response -> {
+          String savedRelationshipId = response.relationships()
+              .get("table-1")
+              .get("fe-relationship-id");
 
-                    assertThat(response.schemas()).isEmpty();
-                    assertThat(response.tables()).isEmpty();
-                    assertThat(response.columns()).isEmpty();
-                    assertThat(response.indexes()).isEmpty();
-                    assertThat(response.indexColumns()).isEmpty();
-                    assertThat(response.constraints()).isEmpty();
-                    assertThat(response.constraintColumns()).isEmpty();
-                    assertThat(response.relationshipColumns()).isEmpty();
-                })
-                .verifyComplete();
-    }
+          assertThat(savedRelationshipId).isNotNull();
+          assertThat(savedRelationshipId)
+              .isNotEqualTo("fe-relationship-id");
 
-    @Test
-    @DisplayName("createRelationship: relationshipColumns 매핑이 FE-ID -> BE-ID로 반환된다")
-    void createRelationship_relationshipColumns_mapping_notIdentity() {
-        // given
-        Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
-                .newBuilder()
-                .setRelationship(Validation.Relationship.newBuilder()
-                        .setId("fe-relationship-id")
-                        .setFkTableId("table-1")
-                        .setPkTableId("table-2")
-                        .setName("fk_test")
-                        .setKind(Validation.RelationshipKind.NON_IDENTIFYING)
-                        .setCardinality(
-                                Validation.RelationshipCardinality.ONE_TO_MANY)
-                        .addColumns(Validation.RelationshipColumn.newBuilder()
-                                .setId("fe-relationship-col-1")
-                                .setRelationshipId("fe-relationship-id")
-                                .setFkColumnId("fk-col-id")
-                                .setPkColumnId("ref-col-id")
+          assertThat(response.relationshipColumns())
+              .containsKey(savedRelationshipId);
+          assertThat(response.relationshipColumns()
+              .get(savedRelationshipId))
+              .containsEntry("fe-relationship-col-1",
+                  persistedRelationshipColumnId);
+        })
+        .verifyComplete();
+
+    ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
+        .forClass(Validation.Database.class);
+
+    ArgumentCaptor<Set<String>> excludePropagatedCaptor = ArgumentCaptor
+        .forClass(Set.class);
+
+    verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
+        afterDbCaptor.capture(), anyString(), anyString(),
+        eq(EntityType.RELATIONSHIP.name()), any(),
+        excludePropagatedCaptor.capture());
+
+    assertThat(containsRelationshipColumnId(afterDbCaptor.getValue(),
+        "fe-relationship-col-1"))
+        .isTrue();
+    assertThat(excludePropagatedCaptor.getValue())
+        .contains("fe-relationship-col-1");
+  }
+
+  @Test
+  @DisplayName("createRelationship: 식별 관계 생성 시 하위 테이블로 전파가 올바르게 반영된다")
+  void createRelationship_propagation_success() {
+    // given
+    // 부모 테이블에 PK 제약조건이 있고, 자식 테이블에 식별 관계를 생성하는 상황
+    Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
+        .newBuilder()
+        .setRelationship(Validation.Relationship.newBuilder()
+            .setId("fe-relationship-id")
+            .setFkTableId("child-table")
+            .setPkTableId("parent-table")
+            .setName("fk_child_parent")
+            .setKind(Validation.RelationshipKind.IDENTIFYING)
+            .setCardinality(
+                Validation.RelationshipCardinality.ONE_TO_MANY)
+            .addColumns(Validation.RelationshipColumn.newBuilder()
+                .setId("fe-relationship-col-1")
+                .setRelationshipId("fe-relationship-id")
+                .setFkColumnId("fe-fk-column-id") // 자식 테이블에 생성될 FK 컬럼 ID
+                .setPkColumnId("parent-id-col") // 부모 테이블의 PK 컬럼 ID
+                .setSeqNo(1)
+                .build())
+            .build())
+        .setDatabase(Validation.Database.newBuilder()
+            .setId("proj-1")
+            .addSchemas(Validation.Schema.newBuilder()
+                .setId("schema-1")
+                .setName("test-schema")
+                .addTables(Validation.Table.newBuilder()
+                    .setId("parent-table")
+                    .setName("parent")
+                    .addColumns(
+                        Validation.Column.newBuilder()
+                            .setId("parent-id-col")
+                            .setName("id")
+                            .setDataType("INT")
+                            .build())
+                    .addConstraints(Validation.Constraint
+                        .newBuilder()
+                        .setId("parent-pk-constraint")
+                        .setTableId("parent-table")
+                        .setName("pk_parent")
+                        .setKind(
+                            Validation.ConstraintKind.PRIMARY_KEY)
+                        .addColumns(
+                            Validation.ConstraintColumn
+                                .newBuilder()
+                                .setId("parent-constraint-col-1")
+                                .setConstraintId(
+                                    "parent-pk-constraint")
+                                .setColumnId(
+                                    "parent-id-col")
                                 .setSeqNo(1)
                                 .build())
                         .build())
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("proj-1")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("schema-1")
-                                .setName("test-schema")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("table-1")
-                                        .setName("child-table")
-                                        .addColumns(Validation.Column
-                                                .newBuilder()
-                                                .setId("fk-col-id")
-                                                .setTableId("table-1")
-                                                .setName("fk")
-                                                .setSeqNo(1)
-                                                .setDataType("INT")
-                                                .build())
-                                        .build())
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("table-2")
-                                        .setName("parent-table")
-                                        .addColumns(Validation.Column
-                                                .newBuilder()
-                                                .setId("ref-col-id")
-                                                .setTableId("table-2")
-                                                .setName("id")
-                                                .setSeqNo(1)
-                                                .setDataType("INT")
-                                                .build())
-                                        .build())
+                    .build())
+                .addTables(Validation.Table.newBuilder()
+                    .setId("child-table")
+                    .setName("child")
+                    .addColumns(
+                        Validation.Column.newBuilder()
+                            .setId("child-id-col")
+                            .setName("id")
+                            .setDataType("INT")
+                            .build())
+                    .addConstraints(Validation.Constraint
+                        .newBuilder()
+                        .setId("child-pk-constraint")
+                        .setTableId("child-table")
+                        .setName("pk_child")
+                        .setKind(
+                            Validation.ConstraintKind.PRIMARY_KEY)
+                        .addColumns(
+                            Validation.ConstraintColumn
+                                .newBuilder()
+                                .setId("child-constraint-col-1")
+                                .setConstraintId(
+                                    "child-pk-constraint")
+                                .setColumnId(
+                                    "child-id-col")
+                                .setSeqNo(1)
                                 .build())
                         .build())
-                .build();
+                    .build())
+                .build())
+            .build())
+        .build();
 
-        CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
-                request, "extra-data");
+    CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
+        request, "extra-data");
 
-        // validator는 요청으로 받은 FE id를 그대로 after DB에 포함한다.
-        Validation.Database mockResponse = Validation.Database.newBuilder()
-                .setId("proj-1")
+    // ValidationClient 응답: 식별 관계 생성 후 전파된 컬럼과 제약조건 컬럼이 포함됨
+    Validation.Database mockResponse = Validation.Database.newBuilder()
+        .setId("proj-1")
+        .setIsAffected(true)
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setName("test-schema")
+            .setIsAffected(true)
+            .addTables(Validation.Table.newBuilder()
+                .setId("parent-table")
+                .setName("parent")
+                .setIsAffected(false)
+                .addColumns(Validation.Column.newBuilder()
+                    .setId("parent-id-col")
+                    .setName("id")
+                    .setDataType("INT")
+                    .setIsAffected(false)
+                    .build())
+                .addConstraints(Validation.Constraint
+                    .newBuilder()
+                    .setId("parent-pk-constraint")
+                    .setTableId("parent-table")
+                    .setName("pk_parent")
+                    .setKind(
+                        Validation.ConstraintKind.PRIMARY_KEY)
+                    .setIsAffected(false)
+                    .addColumns(Validation.ConstraintColumn
+                        .newBuilder()
+                        .setId("parent-constraint-col-1")
+                        .setConstraintId(
+                            "parent-pk-constraint")
+                        .setColumnId("parent-id-col")
+                        .setSeqNo(1)
+                        .setIsAffected(false)
+                        .build())
+                    .build())
+                .build())
+            // 전파된 엔티티들: 자식 테이블에 FK 컬럼이 생성되고 PK 제약조건에 추가됨
+            .addTables(Validation.Table.newBuilder()
+                .setId("child-table")
+                .setName("child")
                 .setIsAffected(true)
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setName("test-schema")
-                        .setIsAffected(true)
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-1")
-                                .setName("child-table")
-                                .setIsAffected(true)
-                                .addRelationships(Validation.Relationship
-                                        .newBuilder()
-                                        .setId("fe-relationship-id")
-                                        .setFkTableId("table-1")
-                                        .setPkTableId("table-2")
-                                        .setName("fk_test")
-                                        .setKind(
-                                                Validation.RelationshipKind.NON_IDENTIFYING)
-                                        .setCardinality(
-                                                Validation.RelationshipCardinality.ONE_TO_MANY)
-                                        .setIsAffected(true)
-                                        .addColumns(
-                                                Validation.RelationshipColumn
-                                                        .newBuilder()
-                                                        .setId("fe-relationship-col-1")
-                                                        .setRelationshipId(
-                                                                "fe-relationship-id")
-                                                        .setFkColumnId(
-                                                                "fk-col-id")
-                                                        .setPkColumnId(
-                                                                "ref-col-id")
-                                                        .setSeqNo(1)
-                                                        .setIsAffected(true)
-                                                        .build())
-                                        .build())
-                                .build())
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-2")
-                                .setName("parent-table")
-                                .build())
+                .addColumns(Validation.Column.newBuilder()
+                    .setId("child-id-col")
+                    .setName("id")
+                    .setDataType("INT")
+                    .setIsAffected(false)
+                    .build())
+                // 전파된 컬럼: 부모 테이블의 PK 컬럼이 자식 테이블로 전파
+                .addColumns(Validation.Column.newBuilder()
+                    .setId("be-fk-column-id")
+                    .setName("parent_id")
+                    .setDataType("INT")
+                    .setIsAffected(true) // 전파된 컬럼
+                    .build())
+                .addConstraints(Validation.Constraint
+                    .newBuilder()
+                    .setId("child-pk-constraint")
+                    .setTableId("child-table")
+                    .setName("pk_child")
+                    .setKind(
+                        Validation.ConstraintKind.PRIMARY_KEY)
+                    .setIsAffected(true)
+                    .addColumns(Validation.ConstraintColumn
+                        .newBuilder()
+                        .setId("child-constraint-col-1")
+                        .setConstraintId(
+                            "child-pk-constraint")
+                        .setColumnId("child-id-col")
+                        .setSeqNo(1)
+                        .setIsAffected(false)
                         .build())
-                .build();
+                    // 전파된 제약조건 컬럼: 전파된 FK 컬럼이 자식 PK에 추가됨
+                    .addColumns(Validation.ConstraintColumn
+                        .newBuilder()
+                        .setId("propagated-constraint-col")
+                        .setConstraintId(
+                            "child-pk-constraint")
+                        .setColumnId("be-fk-column-id")
+                        .setSeqNo(2)
+                        .setIsAffected(true) // 전파된 제약조건 컬럼
+                        .build())
+                    .build())
+                .addRelationships(Validation.Relationship
+                    .newBuilder()
+                    .setId("fe-relationship-id")
+                    .setFkTableId("child-table")
+                    .setPkTableId("parent-table")
+                    .setName("fk_child_parent")
+                    .setKind(
+                        Validation.RelationshipKind.IDENTIFYING)
+                    .setCardinality(
+                        Validation.RelationshipCardinality.ONE_TO_MANY)
+                    .setIsAffected(true)
+                    .addColumns(
+                        Validation.RelationshipColumn
+                            .newBuilder()
+                            .setId("fe-relationship-col-1")
+                            .setRelationshipId(
+                                "fe-relationship-id")
+                            .setFkColumnId(
+                                "fe-fk-column-id")
+                            .setPkColumnId(
+                                "parent-id-col")
+                            .setSeqNo(1)
+                            .setIsAffected(true)
+                            .build())
+                    .build())
+                .build())
+            .build())
+        .build();
 
-        given(validationClient.createRelationship(
-                any(Validation.CreateRelationshipRequest.class)))
-                .willReturn(Mono.just(mockResponse));
+    given(validationClient.createRelationship(
+        any(Validation.CreateRelationshipRequest.class)))
+        .willReturn(Mono.just(mockResponse));
+    given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
+        any(), any(), any(), any(), any()))
+        .willAnswer(invocation -> {
+          String sourceId = invocation.getArgument(3);
+          return Mono.just(new AffectedEntitiesSaver.SaveResult(
+              new AffectedMappingResponse.PropagatedEntities(
+                  List.of(new AffectedMappingResponse.PropagatedColumn(
+                      "be-fk-column-id",
+                      "child-table",
+                      EntityType.RELATIONSHIP.name(),
+                      sourceId,
+                      "parent-id-col")),
+                  List.of(),
+                  List.of(),
+                  List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
+                      "propagated-constraint-col",
+                      "child-pk-constraint",
+                      "be-fk-column-id",
+                      1,
+                      EntityType.RELATIONSHIP.name(),
+                      sourceId)),
+                  List.of()),
+              new IdMappings(Map.of(), Map.of(), Map.of(),
+                  Map.of(), Map.of(), Map.of(), Map.of(),
+                  Map.of(), Map.of())));
+        });
 
-        // when
-        Mono<AffectedMappingResponse> result = relationshipService
-                .createRelationship(requestWithExtra);
+    // when
+    Mono<AffectedMappingResponse> result = relationshipService
+        .createRelationship(requestWithExtra);
 
-        // then
-        String persistedRelationshipColumnId = "be-relationship-col-1";
-        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
-                any(), any(), eq(EntityType.RELATIONSHIP.name()), any(),
-                any()))
-                .willReturn(Mono.just(
-                        new AffectedEntitiesSaver.SaveResult(
-                                AffectedMappingResponse.PropagatedEntities
-                                        .empty(),
-                                new IdMappings(Map.of(), Map.of(), Map.of(),
-                                        Map.of(), Map.of(), Map.of(), Map.of(),
-                                        Map.of(),
-                                        Map.of("fe-relationship-col-1",
-                                                persistedRelationshipColumnId)))));
+    // then
+    StepVerifier.create(result)
+        .assertNext(response -> {
+          // 원본 관계 매핑 확인
+          assertThat(response.relationships()).hasSize(1);
+          String savedRelationshipId = response.relationships()
+              .get("child-table")
+              .get("fe-relationship-id");
+          assertThat(savedRelationshipId).isNotNull();
+          assertThat(savedRelationshipId)
+              .isNotEqualTo("fe-relationship-id");
+          assertThat(response.relationships().get("child-table"))
+              .containsEntry("fe-relationship-id",
+                  savedRelationshipId);
 
-        StepVerifier.create(result)
-                .assertNext(response -> {
-                    String savedRelationshipId = response.relationships()
-                            .get("table-1")
-                            .get("fe-relationship-id");
+          // 전파된 엔티티 정보 확인
+          assertThat(response.propagated()).isNotNull();
+          assertThat(response.propagated().columns()).hasSize(1);
+          AffectedMappingResponse.PropagatedColumn propagatedColumn = response
+              .propagated().columns().get(0);
+          assertThat(propagatedColumn.columnId())
+              .isEqualTo("be-fk-column-id");
+          assertThat(propagatedColumn.tableId())
+              .isEqualTo("child-table");
+          assertThat(propagatedColumn.sourceType())
+              .isEqualTo(EntityType.RELATIONSHIP.name());
+          assertThat(propagatedColumn.sourceId())
+              .isEqualTo(savedRelationshipId);
+          assertThat(propagatedColumn.sourceColumnId())
+              .isEqualTo("parent-id-col");
 
-                    assertThat(savedRelationshipId).isNotNull();
-                    assertThat(savedRelationshipId)
-                            .isNotEqualTo("fe-relationship-id");
+          assertThat(response.propagated().constraintColumns())
+              .hasSize(1);
+          AffectedMappingResponse.PropagatedConstraintColumn propagatedConstraintColumn = response
+              .propagated().constraintColumns().get(0);
+          assertThat(propagatedConstraintColumn.constraintColumnId())
+              .isEqualTo("propagated-constraint-col");
+          assertThat(propagatedConstraintColumn.constraintId())
+              .isEqualTo("child-pk-constraint");
+          assertThat(propagatedConstraintColumn.columnId())
+              .isEqualTo("be-fk-column-id");
+          assertThat(propagatedConstraintColumn.sourceType())
+              .isEqualTo(EntityType.RELATIONSHIP.name());
+          assertThat(propagatedConstraintColumn.sourceId())
+              .isEqualTo(savedRelationshipId);
 
-                    assertThat(response.relationshipColumns())
-                            .containsKey(savedRelationshipId);
-                    assertThat(response.relationshipColumns()
-                            .get(savedRelationshipId))
-                            .containsEntry("fe-relationship-col-1",
-                                    persistedRelationshipColumnId);
-                })
-                .verifyComplete();
+          // 전파된 인덱스 컬럼은 없음
+          assertThat(response.propagated().indexColumns())
+              .isEmpty();
+        })
+        .verifyComplete();
+  }
 
-        ArgumentCaptor<Validation.Database> afterDbCaptor = ArgumentCaptor
-                .forClass(Validation.Database.class);
-
-        ArgumentCaptor<Set<String>> excludePropagatedCaptor = ArgumentCaptor
-                .forClass(Set.class);
-
-        verify(affectedEntitiesSaver).saveAffectedEntitiesResult(any(),
-                afterDbCaptor.capture(), anyString(), anyString(),
-                eq(EntityType.RELATIONSHIP.name()), any(),
-                excludePropagatedCaptor.capture());
-
-        assertThat(containsRelationshipColumnId(afterDbCaptor.getValue(),
-                "fe-relationship-col-1"))
-                .isTrue();
-        assertThat(excludePropagatedCaptor.getValue())
-                .contains("fe-relationship-col-1");
+  private static boolean containsRelationshipColumnId(
+      Validation.Database database, String relationshipColumnId) {
+    for (Validation.Schema schema : database.getSchemasList()) {
+      for (Validation.Table table : schema.getTablesList()) {
+        for (Validation.Relationship relationship : table
+            .getRelationshipsList()) {
+          for (Validation.RelationshipColumn relationshipColumn : relationship
+              .getColumnsList()) {
+            if (relationshipColumn.getId()
+                .equals(relationshipColumnId)) {
+              return true;
+            }
+          }
+        }
+      }
     }
+    return false;
+  }
 
-    @Test
-    @DisplayName("createRelationship: 식별 관계 생성 시 하위 테이블로 전파가 올바르게 반영된다")
-    void createRelationship_propagation_success() {
-        // given
-        // 부모 테이블에 PK 제약조건이 있고, 자식 테이블에 식별 관계를 생성하는 상황
-        Validation.CreateRelationshipRequest request = Validation.CreateRelationshipRequest
-                .newBuilder()
-                .setRelationship(Validation.Relationship.newBuilder()
-                        .setId("fe-relationship-id")
+  @Test
+  @DisplayName("getRelationship: 저장된 관계를 조회한다")
+  void getRelationship_success() {
+    Relationship saved = relationshipRepository.save(
+        Relationship.builder()
+            .fkTableId("table-1")
+            .pkTableId("table-2")
+            .name("fk_test")
+            .kind("NON_IDENTIFYING")
+            .cardinality("ONE_TO_MANY")
+            .onDelete("NO_ACTION")
+            .onUpdate("NO_ACTION")
+            .extra("extra-data")
+            .build())
+        .block();
+
+    Mono<RelationshipResponse> result = relationshipService
+        .getRelationship(saved.getId());
+
+    StepVerifier.create(result)
+        .assertNext(found -> {
+          assertThat(found.getId()).isEqualTo(saved.getId());
+          assertThat(found.getName()).isEqualTo("fk_test");
+          assertThat(found.getKind()).isEqualTo("NON_IDENTIFYING");
+          assertThat(found.getCardinality()).isEqualTo("ONE_TO_MANY");
+          assertThat(found.getExtra()).isEqualTo("extra-data");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("getRelationshipsByTableId: 테이블 기준으로 관계 목록을 조회한다")
+  void getRelationshipsByTableId_success() {
+    Relationship r1 = Relationship.builder()
+        .fkTableId("table-A").pkTableId("table-B")
+        .name("fk_a_b").kind("NON_IDENTIFYING")
+        .cardinality("ONE_TO_MANY").onDelete("NO_ACTION")
+        .onUpdate("NO_ACTION").extra("").build();
+    Relationship r2 = Relationship.builder()
+        .fkTableId("table-A").pkTableId("table-C")
+        .name("fk_a_c").kind("IDENTIFYING")
+        .cardinality("ONE_TO_ONE").onDelete("NO_ACTION")
+        .onUpdate("NO_ACTION").extra("").build();
+    Relationship rOther = Relationship.builder()
+        .fkTableId("table-B").pkTableId("table-C")
+        .name("fk_b_c").kind("NON_IDENTIFYING")
+        .cardinality("ONE_TO_MANY").onDelete("NO_ACTION")
+        .onUpdate("NO_ACTION").extra("").build();
+
+    relationshipRepository.save(r1)
+        .then(relationshipRepository.save(r2))
+        .then(relationshipRepository.save(rOther))
+        .block();
+
+    StepVerifier
+        .create(relationshipService.getRelationshipsByTableId("table-A")
+            .collectList())
+        .assertNext(list -> {
+          assertThat(list).hasSize(2);
+          assertThat(
+              list.stream().map(RelationshipResponse::getName)
+                  .toList())
+              .containsExactlyInAnyOrder("fk_a_b",
+                  "fk_a_c");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("updateRelationshipName: 존재하면 이름을 변경한다")
+  void updateRelationshipName_success() {
+    Relationship saved = relationshipRepository.save(
+        Relationship.builder()
+            .fkTableId("table-1")
+            .pkTableId("table-2")
+            .name("old_name")
+            .kind("NON_IDENTIFYING")
+            .cardinality("ONE_TO_MANY")
+            .onDelete("NO_ACTION")
+            .onUpdate("NO_ACTION")
+            .extra("")
+            .build())
+        .block();
+
+    StepVerifier.create(relationshipService.updateRelationshipName(
+        Validation.ChangeRelationshipNameRequest.newBuilder()
+            .setRelationshipId(saved.getId())
+            .setNewName("new_name")
+            .build()))
+        .assertNext(updated -> {
+          assertThat(updated.getId()).isEqualTo(saved.getId());
+          assertThat(updated.getName()).isEqualTo("new_name");
+        })
+        .verifyComplete();
+
+    // DB 반영 확인
+    StepVerifier.create(relationshipRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.getName())
+            .isEqualTo("new_name"))
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("updateRelationshipName: 존재하지 않으면 에러를 반환한다")
+  void updateRelationshipName_notFound() {
+    StepVerifier.create(relationshipService.updateRelationshipName(
+        Validation.ChangeRelationshipNameRequest.newBuilder()
+            .setRelationshipId("non-existent")
+            .setNewName("new_name")
+            .build()))
+        .expectErrorMatches(e -> e instanceof BusinessException
+            && ((BusinessException) e)
+                .getErrorCode() == ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)
+        .verify();
+  }
+
+  @Test
+  @DisplayName("updateRelationshipCardinality: 카디널리티를 변경한다")
+  void updateRelationshipCardinality_success() {
+    Relationship saved = relationshipRepository.save(
+        Relationship.builder()
+            .fkTableId("table-1")
+            .pkTableId("table-2")
+            .name("fk_test")
+            .kind("NON_IDENTIFYING")
+            .cardinality("ONE_TO_MANY")
+            .onDelete("NO_ACTION")
+            .onUpdate("NO_ACTION")
+            .extra("")
+            .build())
+        .block();
+
+    StepVerifier.create(relationshipService.updateRelationshipCardinality(
+        Validation.ChangeRelationshipCardinalityRequest.newBuilder()
+            .setRelationshipId(saved.getId())
+            .setCardinality(
+                Validation.RelationshipCardinality.ONE_TO_ONE)
+            .build()))
+        .assertNext(updated -> {
+          assertThat(updated.getId()).isEqualTo(saved.getId());
+          assertThat(updated.getCardinality())
+              .isEqualTo("ONE_TO_ONE");
+        })
+        .verifyComplete();
+
+    // DB 반영 확인
+    StepVerifier.create(relationshipRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.getCardinality())
+            .isEqualTo("ONE_TO_ONE"))
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("updateRelationshipKind: 관계 종류를 변경한다")
+  void updateRelationshipKind_success() {
+    Relationship saved = relationshipRepository.save(
+        Relationship.builder()
+            .fkTableId("table-1")
+            .pkTableId("table-2")
+            .name("fk_test")
+            .kind("NON_IDENTIFYING")
+            .cardinality("ONE_TO_MANY")
+            .onDelete("NO_ACTION")
+            .onUpdate("NO_ACTION")
+            .extra("")
+            .build())
+        .block();
+
+    StepVerifier.create(relationshipService.updateRelationshipKind(
+        Validation.ChangeRelationshipKindRequest.newBuilder()
+            .setDatabase(
+                Validation.Database.newBuilder().setId("db-1")
+                    .build())
+            .setSchemaId("schema-1")
+            .setRelationshipId(saved.getId())
+            .setKind(Validation.RelationshipKind.IDENTIFYING)
+            .build()))
+        .assertNext(updated -> {
+          assertThat(updated.getId()).isEqualTo(saved.getId());
+          assertThat(updated.getKind()).isEqualTo("IDENTIFYING");
+        })
+        .verifyComplete();
+
+    StepVerifier.create(relationshipRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.getKind())
+            .isEqualTo("IDENTIFYING"))
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("addColumnToRelationship: 관계 컬럼 추가 시 매핑과 전파 정보가 반환된다")
+  void addColumnToRelationship_success() {
+    Validation.Database beforeDatabase = Validation.Database.newBuilder()
+        .setId("db-1")
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-1")
+                .addRelationships(Validation.Relationship
+                    .newBuilder()
+                    .setId("relationship-1")
+                    .setIsAffected(true)
+                    .build())
+                .build())
+            .build())
+        .build();
+
+    Validation.AddColumnToRelationshipRequest request = Validation.AddColumnToRelationshipRequest
+        .newBuilder()
+        .setRelationshipId("relationship-1")
+        .setDatabase(beforeDatabase)
+        .setRelationshipColumn(
+            Validation.RelationshipColumn.newBuilder()
+                .setId("fe-relationship-column-1")
+                .setRelationshipId("relationship-1")
+                .setFkColumnId("src-column-1")
+                .setPkColumnId("tgt-column-1")
+                .setSeqNo(1)
+                .build())
+        .build();
+
+    Validation.Database validationResponse = Validation.Database
+        .newBuilder()
+        .setId("db-1")
+        .setIsAffected(true)
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setIsAffected(true)
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-1")
+                .setIsAffected(true)
+                .addRelationships(Validation.Relationship
+                    .newBuilder()
+                    .setId("relationship-1")
+                    .setIsAffected(true)
+                    .addColumns(
+                        Validation.RelationshipColumn
+                            .newBuilder()
+                            .setId(
+                                "fe-relationship-column-1")
+                            .setRelationshipId(
+                                "relationship-1")
+                            .setFkColumnId(
+                                "src-column-1")
+                            .setPkColumnId(
+                                "tgt-column-1")
+                            .setSeqNo(1)
+                            .setIsAffected(true)
+                            .build())
+                    .build())
+                .build())
+            .build())
+        .build();
+
+    AffectedMappingResponse.PropagatedEntities propagatedEntities = AffectedMappingResponse.PropagatedEntities
+        .empty();
+
+    given(validationClient.addColumnToRelationship(
+        any(Validation.AddColumnToRelationshipRequest.class)))
+        .willReturn(Mono.just(validationResponse));
+    given(affectedEntitiesSaver.saveAffectedEntities(any(),
+        any(Validation.Database.class), any(), any(), any()))
+        .willReturn(Mono.just(propagatedEntities));
+
+    Mono<AffectedMappingResponse> result = relationshipService
+        .addColumnToRelationship(request);
+
+    AffectedMappingResponse response = result.block();
+
+    // 응답 검증
+    assertThat(response).isNotNull();
+    assertThat(response.relationshipColumns())
+        .containsKey("relationship-1");
+    assertThat(response.propagated()).isEqualTo(propagatedEntities);
+
+    // DB에 저장되었는지 확인
+    List<RelationshipColumn> savedColumns = relationshipColumnRepository
+        .findAll()
+        .collectList()
+        .block();
+    assertThat(savedColumns).isNotNull();
+    assertThat(savedColumns).hasSize(1);
+    RelationshipColumn saved = savedColumns.get(0);
+    assertThat(saved.getRelationshipId()).isEqualTo("relationship-1");
+    assertThat(saved.getFkColumnId()).isEqualTo("src-column-1");
+    assertThat(saved.getPkColumnId()).isEqualTo("tgt-column-1");
+
+    // 응답의 매핑 정보 확인
+    assertThat(response.relationshipColumns().get("relationship-1"))
+        .containsEntry("fe-relationship-column-1", saved.getId());
+  }
+
+  @Test
+  @DisplayName("removeColumnFromRelationship: 관계에서 컬럼을 제거한다 (소프트 삭제)")
+  void removeColumnFromRelationship_success() {
+    Column fkColumnA = columnRepository.save(
+        Column.builder()
+            .tableId("child-table")
+            .name("parent_a")
+            .seqNo(1)
+            .dataType("INT")
+            .build())
+        .block();
+    Column fkColumnB = columnRepository.save(
+        Column.builder()
+            .tableId("child-table")
+            .name("parent_b")
+            .seqNo(2)
+            .dataType("INT")
+            .build())
+        .block();
+
+    RelationshipColumn savedA = relationshipColumnRepository.save(
+        RelationshipColumn.builder()
+            .relationshipId("relationship-1")
+            .fkColumnId(fkColumnA.getId())
+            .pkColumnId("parent-a")
+            .seqNo(1)
+            .build())
+        .block();
+    RelationshipColumn savedB = relationshipColumnRepository.save(
+        RelationshipColumn.builder()
+            .relationshipId("relationship-1")
+            .fkColumnId(fkColumnB.getId())
+            .pkColumnId("parent-b")
+            .seqNo(2)
+            .build())
+        .block();
+
+    Validation.Database beforeDatabase = Validation.Database.newBuilder()
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setName("schema")
+            .addTables(Validation.Table.newBuilder()
+                .setId("child-table")
+                .setSchemaId("schema-1")
+                .setName("child")
+                .addColumns(Validation.Column.newBuilder()
+                    .setId(fkColumnA.getId())
+                    .setTableId("child-table")
+                    .setName("parent_a")
+                    .setSeqNo(1)
+                    .setDataType("INT")
+                    .build())
+                .addColumns(Validation.Column.newBuilder()
+                    .setId(fkColumnB.getId())
+                    .setTableId("child-table")
+                    .setName("parent_b")
+                    .setSeqNo(2)
+                    .setDataType("INT")
+                    .build())
+                .addRelationships(
+                    Validation.Relationship.newBuilder()
+                        .setId("relationship-1")
                         .setFkTableId("child-table")
                         .setPkTableId("parent-table")
-                        .setName("fk_child_parent")
-                        .setKind(Validation.RelationshipKind.IDENTIFYING)
-                        .setCardinality(
-                                Validation.RelationshipCardinality.ONE_TO_MANY)
-                        .addColumns(Validation.RelationshipColumn.newBuilder()
-                                .setId("fe-relationship-col-1")
-                                .setRelationshipId("fe-relationship-id")
-                                .setFkColumnId("fe-fk-column-id") // 자식 테이블에 생성될 FK 컬럼 ID
-                                .setPkColumnId("parent-id-col") // 부모 테이블의 PK 컬럼 ID
+                        .setName("fk_parent")
+                        .setKind(
+                            Validation.RelationshipKind.NON_IDENTIFYING)
+                        .addColumns(
+                            Validation.RelationshipColumn
+                                .newBuilder()
+                                .setId(savedA
+                                    .getId())
+                                .setRelationshipId(
+                                    "relationship-1")
+                                .setFkColumnId(
+                                    fkColumnA
+                                        .getId())
+                                .setPkColumnId(
+                                    "parent-a")
+                                .setSeqNo(1)
+                                .build())
+                        .addColumns(
+                            Validation.RelationshipColumn
+                                .newBuilder()
+                                .setId(savedB
+                                    .getId())
+                                .setRelationshipId(
+                                    "relationship-1")
+                                .setFkColumnId(
+                                    fkColumnB
+                                        .getId())
+                                .setPkColumnId(
+                                    "parent-b")
+                                .setSeqNo(2)
+                                .build())
+                        .build())
+                .build())
+            .build())
+        .build();
+
+    Validation.Database afterDatabase = Validation.Database.newBuilder()
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setName("schema")
+            .addTables(Validation.Table.newBuilder()
+                .setId("child-table")
+                .setSchemaId("schema-1")
+                .setName("child")
+                .addColumns(Validation.Column.newBuilder()
+                    .setId(fkColumnA.getId())
+                    .setTableId("child-table")
+                    .setName("parent_a")
+                    .setSeqNo(1)
+                    .setDataType("INT")
+                    .build())
+                .addRelationships(
+                    Validation.Relationship.newBuilder()
+                        .setId("relationship-1")
+                        .setFkTableId("child-table")
+                        .setPkTableId("parent-table")
+                        .setName("fk_parent")
+                        .setKind(
+                            Validation.RelationshipKind.NON_IDENTIFYING)
+                        .addColumns(
+                            Validation.RelationshipColumn
+                                .newBuilder()
+                                .setId(savedA
+                                    .getId())
+                                .setRelationshipId(
+                                    "relationship-1")
+                                .setFkColumnId(
+                                    fkColumnA
+                                        .getId())
+                                .setPkColumnId(
+                                    "parent-a")
                                 .setSeqNo(1)
                                 .build())
                         .build())
-                .setDatabase(Validation.Database.newBuilder()
-                        .setId("proj-1")
-                        .addSchemas(Validation.Schema.newBuilder()
-                                .setId("schema-1")
-                                .setName("test-schema")
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("parent-table")
-                                        .setName("parent")
-                                        .addColumns(
-                                                Validation.Column.newBuilder()
-                                                        .setId("parent-id-col")
-                                                        .setName("id")
-                                                        .setDataType("INT")
-                                                        .build())
-                                        .addConstraints(Validation.Constraint
-                                                .newBuilder()
-                                                .setId("parent-pk-constraint")
-                                                .setTableId("parent-table")
-                                                .setName("pk_parent")
-                                                .setKind(
-                                                        Validation.ConstraintKind.PRIMARY_KEY)
-                                                .addColumns(
-                                                        Validation.ConstraintColumn
-                                                                .newBuilder()
-                                                                .setId("parent-constraint-col-1")
-                                                                .setConstraintId(
-                                                                        "parent-pk-constraint")
-                                                                .setColumnId(
-                                                                        "parent-id-col")
-                                                                .setSeqNo(1)
-                                                                .build())
-                                                .build())
-                                        .build())
-                                .addTables(Validation.Table.newBuilder()
-                                        .setId("child-table")
-                                        .setName("child")
-                                        .addColumns(
-                                                Validation.Column.newBuilder()
-                                                        .setId("child-id-col")
-                                                        .setName("id")
-                                                        .setDataType("INT")
-                                                        .build())
-                                        .addConstraints(Validation.Constraint
-                                                .newBuilder()
-                                                .setId("child-pk-constraint")
-                                                .setTableId("child-table")
-                                                .setName("pk_child")
-                                                .setKind(
-                                                        Validation.ConstraintKind.PRIMARY_KEY)
-                                                .addColumns(
-                                                        Validation.ConstraintColumn
-                                                                .newBuilder()
-                                                                .setId("child-constraint-col-1")
-                                                                .setConstraintId(
-                                                                        "child-pk-constraint")
-                                                                .setColumnId(
-                                                                        "child-id-col")
-                                                                .setSeqNo(1)
-                                                                .build())
-                                                .build())
-                                        .build())
-                                .build())
-                        .build())
-                .build();
+                .build())
+            .build())
+        .build();
 
-        CreateRelationshipRequestWithExtra requestWithExtra = new CreateRelationshipRequestWithExtra(
-                request, "extra-data");
+    given(validationClient.removeColumnFromRelationship(
+        any(Validation.RemoveColumnFromRelationshipRequest.class)))
+        .willReturn(Mono.just(afterDatabase));
 
-        // ValidationClient 응답: 식별 관계 생성 후 전파된 컬럼과 제약조건 컬럼이 포함됨
-        Validation.Database mockResponse = Validation.Database.newBuilder()
-                .setId("proj-1")
-                .setIsAffected(true)
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setName("test-schema")
-                        .setIsAffected(true)
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("parent-table")
-                                .setName("parent")
-                                .setIsAffected(false)
-                                .addColumns(Validation.Column.newBuilder()
-                                        .setId("parent-id-col")
-                                        .setName("id")
-                                        .setDataType("INT")
-                                        .setIsAffected(false)
-                                        .build())
-                                .addConstraints(Validation.Constraint
-                                        .newBuilder()
-                                        .setId("parent-pk-constraint")
-                                        .setTableId("parent-table")
-                                        .setName("pk_parent")
-                                        .setKind(
-                                                Validation.ConstraintKind.PRIMARY_KEY)
-                                        .setIsAffected(false)
-                                        .addColumns(Validation.ConstraintColumn
-                                                .newBuilder()
-                                                .setId("parent-constraint-col-1")
-                                                .setConstraintId(
-                                                        "parent-pk-constraint")
-                                                .setColumnId("parent-id-col")
-                                                .setSeqNo(1)
-                                                .setIsAffected(false)
-                                                .build())
-                                        .build())
-                                .build())
-                        // 전파된 엔티티들: 자식 테이블에 FK 컬럼이 생성되고 PK 제약조건에 추가됨
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("child-table")
-                                .setName("child")
-                                .setIsAffected(true)
-                                .addColumns(Validation.Column.newBuilder()
-                                        .setId("child-id-col")
-                                        .setName("id")
-                                        .setDataType("INT")
-                                        .setIsAffected(false)
-                                        .build())
-                                // 전파된 컬럼: 부모 테이블의 PK 컬럼이 자식 테이블로 전파
-                                .addColumns(Validation.Column.newBuilder()
-                                        .setId("be-fk-column-id")
-                                        .setName("parent_id")
-                                        .setDataType("INT")
-                                        .setIsAffected(true) // 전파된 컬럼
-                                        .build())
-                                .addConstraints(Validation.Constraint
-                                        .newBuilder()
-                                        .setId("child-pk-constraint")
-                                        .setTableId("child-table")
-                                        .setName("pk_child")
-                                        .setKind(
-                                                Validation.ConstraintKind.PRIMARY_KEY)
-                                        .setIsAffected(true)
-                                        .addColumns(Validation.ConstraintColumn
-                                                .newBuilder()
-                                                .setId("child-constraint-col-1")
-                                                .setConstraintId(
-                                                        "child-pk-constraint")
-                                                .setColumnId("child-id-col")
-                                                .setSeqNo(1)
-                                                .setIsAffected(false)
-                                                .build())
-                                        // 전파된 제약조건 컬럼: 전파된 FK 컬럼이 자식 PK에 추가됨
-                                        .addColumns(Validation.ConstraintColumn
-                                                .newBuilder()
-                                                .setId("propagated-constraint-col")
-                                                .setConstraintId(
-                                                        "child-pk-constraint")
-                                                .setColumnId("be-fk-column-id")
-                                                .setSeqNo(2)
-                                                .setIsAffected(true) // 전파된 제약조건 컬럼
-                                                .build())
-                                        .build())
-                                .addRelationships(Validation.Relationship
-                                        .newBuilder()
-                                        .setId("fe-relationship-id")
-                                        .setFkTableId("child-table")
-                                        .setPkTableId("parent-table")
-                                        .setName("fk_child_parent")
-                                        .setKind(
-                                                Validation.RelationshipKind.IDENTIFYING)
-                                        .setCardinality(
-                                                Validation.RelationshipCardinality.ONE_TO_MANY)
-                                        .setIsAffected(true)
-                                        .addColumns(
-                                                Validation.RelationshipColumn
-                                                        .newBuilder()
-                                                        .setId("fe-relationship-col-1")
-                                                        .setRelationshipId(
-                                                                "fe-relationship-id")
-                                                        .setFkColumnId(
-                                                                "fe-fk-column-id")
-                                                        .setPkColumnId(
-                                                                "parent-id-col")
-                                                        .setSeqNo(1)
-                                                        .setIsAffected(true)
-                                                        .build())
-                                        .build())
-                                .build())
-                        .build())
-                .build();
+    StepVerifier.create(relationshipService.removeColumnFromRelationship(
+        Validation.RemoveColumnFromRelationshipRequest.newBuilder()
+            .setRelationshipId("relationship-1")
+            .setRelationshipColumnId(savedB.getId())
+            .setDatabase(beforeDatabase)
+            .build()))
+        .verifyComplete();
 
-        given(validationClient.createRelationship(
-                any(Validation.CreateRelationshipRequest.class)))
-                .willReturn(Mono.just(mockResponse));
-        given(affectedEntitiesSaver.saveAffectedEntitiesResult(any(), any(),
-                any(), any(), any(), any(), any()))
-                .willAnswer(invocation -> {
-                    String sourceId = invocation.getArgument(3);
-                    return Mono.just(new AffectedEntitiesSaver.SaveResult(
-                            new AffectedMappingResponse.PropagatedEntities(
-                                    List.of(new AffectedMappingResponse.PropagatedColumn(
-                                            "be-fk-column-id",
-                                            "child-table",
-                                            EntityType.RELATIONSHIP.name(),
-                                            sourceId,
-                                            "parent-id-col")),
-                                    List.of(),
-                                    List.of(),
-                                    List.of(new AffectedMappingResponse.PropagatedConstraintColumn(
-                                            "propagated-constraint-col",
-                                            "child-pk-constraint",
-                                            "be-fk-column-id",
-                                            1,
-                                            EntityType.RELATIONSHIP.name(),
-                                            sourceId)),
-                                    List.of()),
-                            new IdMappings(Map.of(), Map.of(), Map.of(),
-                                    Map.of(), Map.of(), Map.of(), Map.of(),
-                                    Map.of(), Map.of())));
-                });
+    StepVerifier.create(
+        relationshipColumnRepository.findById(savedB.getId()))
+        .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+        .verifyComplete();
 
-        // when
-        Mono<AffectedMappingResponse> result = relationshipService
-                .createRelationship(requestWithExtra);
+    StepVerifier.create(columnRepository.findById(fkColumnB.getId()))
+        .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+        .verifyComplete();
 
-        // then
-        StepVerifier.create(result)
-                .assertNext(response -> {
-                    // 원본 관계 매핑 확인
-                    assertThat(response.relationships()).hasSize(1);
-                    String savedRelationshipId = response.relationships()
-                            .get("child-table")
-                            .get("fe-relationship-id");
-                    assertThat(savedRelationshipId).isNotNull();
-                    assertThat(savedRelationshipId)
-                            .isNotEqualTo("fe-relationship-id");
-                    assertThat(response.relationships().get("child-table"))
-                            .containsEntry("fe-relationship-id",
-                                    savedRelationshipId);
+    StepVerifier.create(
+        relationshipColumnRepository.findById(savedA.getId()))
+        .assertNext(found -> assertThat(found.isDeleted()).isFalse())
+        .verifyComplete();
 
-                    // 전파된 엔티티 정보 확인
-                    assertThat(response.propagated()).isNotNull();
-                    assertThat(response.propagated().columns()).hasSize(1);
-                    AffectedMappingResponse.PropagatedColumn propagatedColumn = response
-                            .propagated().columns().get(0);
-                    assertThat(propagatedColumn.columnId())
-                            .isEqualTo("be-fk-column-id");
-                    assertThat(propagatedColumn.tableId())
-                            .isEqualTo("child-table");
-                    assertThat(propagatedColumn.sourceType())
-                            .isEqualTo(EntityType.RELATIONSHIP.name());
-                    assertThat(propagatedColumn.sourceId())
-                            .isEqualTo(savedRelationshipId);
-                    assertThat(propagatedColumn.sourceColumnId())
-                            .isEqualTo("parent-id-col");
+    StepVerifier.create(columnRepository.findById(fkColumnA.getId()))
+        .assertNext(found -> assertThat(found.isDeleted()).isFalse())
+        .verifyComplete();
+  }
 
-                    assertThat(response.propagated().constraintColumns())
-                            .hasSize(1);
-                    AffectedMappingResponse.PropagatedConstraintColumn propagatedConstraintColumn = response
-                            .propagated().constraintColumns().get(0);
-                    assertThat(propagatedConstraintColumn.constraintColumnId())
-                            .isEqualTo("propagated-constraint-col");
-                    assertThat(propagatedConstraintColumn.constraintId())
-                            .isEqualTo("child-pk-constraint");
-                    assertThat(propagatedConstraintColumn.columnId())
-                            .isEqualTo("be-fk-column-id");
-                    assertThat(propagatedConstraintColumn.sourceType())
-                            .isEqualTo(EntityType.RELATIONSHIP.name());
-                    assertThat(propagatedConstraintColumn.sourceId())
-                            .isEqualTo(savedRelationshipId);
+  @Test
+  @DisplayName("deleteRelationship: 소프트 삭제가 수행된다")
+  void deleteRelationship_softDelete() {
+    Column fkColumnToDelete = columnRepository.save(
+        Column.builder()
+            .tableId("table-1")
+            .name("table_2_id")
+            .seqNo(1)
+            .dataType("INT")
+            .build())
+        .block();
 
-                    // 전파된 인덱스 컬럼은 없음
-                    assertThat(response.propagated().indexColumns())
-                            .isEmpty();
-                })
-                .verifyComplete();
-    }
+    Relationship saved = relationshipRepository.save(
+        Relationship.builder()
+            .fkTableId("table-1")
+            .pkTableId("table-2")
+            .name("to_delete")
+            .kind("NON_IDENTIFYING")
+            .cardinality("ONE_TO_MANY")
+            .onDelete("NO_ACTION")
+            .onUpdate("NO_ACTION")
+            .extra("")
+            .build())
+        .block();
 
-    private static boolean containsRelationshipColumnId(
-            Validation.Database database, String relationshipColumnId) {
-        for (Validation.Schema schema : database.getSchemasList()) {
-            for (Validation.Table table : schema.getTablesList()) {
-                for (Validation.Relationship relationship : table
-                        .getRelationshipsList()) {
-                    for (Validation.RelationshipColumn relationshipColumn : relationship
-                            .getColumnsList()) {
-                        if (relationshipColumn.getId()
-                                .equals(relationshipColumnId)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    @Test
-    @DisplayName("getRelationship: 저장된 관계를 조회한다")
-    void getRelationship_success() {
-        Relationship saved = relationshipRepository.save(
-                Relationship.builder()
-                        .fkTableId("table-1")
-                        .pkTableId("table-2")
-                        .name("fk_test")
-                        .kind("NON_IDENTIFYING")
-                        .cardinality("ONE_TO_MANY")
-                        .onDelete("NO_ACTION")
-                        .onUpdate("NO_ACTION")
-                        .extra("extra-data")
-                        .build())
-                .block();
-
-        Mono<RelationshipResponse> result = relationshipService
-                .getRelationship(saved.getId());
-
-        StepVerifier.create(result)
-                .assertNext(found -> {
-                    assertThat(found.getId()).isEqualTo(saved.getId());
-                    assertThat(found.getName()).isEqualTo("fk_test");
-                    assertThat(found.getKind()).isEqualTo("NON_IDENTIFYING");
-                    assertThat(found.getCardinality()).isEqualTo("ONE_TO_MANY");
-                    assertThat(found.getExtra()).isEqualTo("extra-data");
-                })
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("getRelationshipsByTableId: 테이블 기준으로 관계 목록을 조회한다")
-    void getRelationshipsByTableId_success() {
-        Relationship r1 = Relationship.builder()
-                .fkTableId("table-A").pkTableId("table-B")
-                .name("fk_a_b").kind("NON_IDENTIFYING")
-                .cardinality("ONE_TO_MANY").onDelete("NO_ACTION")
-                .onUpdate("NO_ACTION").extra("").build();
-        Relationship r2 = Relationship.builder()
-                .fkTableId("table-A").pkTableId("table-C")
-                .name("fk_a_c").kind("IDENTIFYING")
-                .cardinality("ONE_TO_ONE").onDelete("NO_ACTION")
-                .onUpdate("NO_ACTION").extra("").build();
-        Relationship rOther = Relationship.builder()
-                .fkTableId("table-B").pkTableId("table-C")
-                .name("fk_b_c").kind("NON_IDENTIFYING")
-                .cardinality("ONE_TO_MANY").onDelete("NO_ACTION")
-                .onUpdate("NO_ACTION").extra("").build();
-
-        relationshipRepository.save(r1)
-                .then(relationshipRepository.save(r2))
-                .then(relationshipRepository.save(rOther))
-                .block();
-
-        StepVerifier
-                .create(relationshipService.getRelationshipsByTableId("table-A")
-                        .collectList())
-                .assertNext(list -> {
-                    assertThat(list).hasSize(2);
-                    assertThat(
-                            list.stream().map(RelationshipResponse::getName)
-                                    .toList())
-                            .containsExactlyInAnyOrder("fk_a_b",
-                                    "fk_a_c");
-                })
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("updateRelationshipName: 존재하면 이름을 변경한다")
-    void updateRelationshipName_success() {
-        Relationship saved = relationshipRepository.save(
-                Relationship.builder()
-                        .fkTableId("table-1")
-                        .pkTableId("table-2")
-                        .name("old_name")
-                        .kind("NON_IDENTIFYING")
-                        .cardinality("ONE_TO_MANY")
-                        .onDelete("NO_ACTION")
-                        .onUpdate("NO_ACTION")
-                        .extra("")
-                        .build())
-                .block();
-
-        StepVerifier.create(relationshipService.updateRelationshipName(
-                Validation.ChangeRelationshipNameRequest.newBuilder()
-                        .setRelationshipId(saved.getId())
-                        .setNewName("new_name")
-                        .build()))
-                .assertNext(updated -> {
-                    assertThat(updated.getId()).isEqualTo(saved.getId());
-                    assertThat(updated.getName()).isEqualTo("new_name");
-                })
-                .verifyComplete();
-
-        // DB 반영 확인
-        StepVerifier.create(relationshipRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.getName())
-                        .isEqualTo("new_name"))
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("updateRelationshipName: 존재하지 않으면 에러를 반환한다")
-    void updateRelationshipName_notFound() {
-        StepVerifier.create(relationshipService.updateRelationshipName(
-                Validation.ChangeRelationshipNameRequest.newBuilder()
-                        .setRelationshipId("non-existent")
-                        .setNewName("new_name")
-                        .build()))
-                .expectErrorMatches(e -> e instanceof BusinessException
-                        && ((BusinessException) e)
-                                .getErrorCode() == ErrorCode.ERD_RELATIONSHIP_NOT_FOUND)
-                .verify();
-    }
-
-    @Test
-    @DisplayName("updateRelationshipCardinality: 카디널리티를 변경한다")
-    void updateRelationshipCardinality_success() {
-        Relationship saved = relationshipRepository.save(
-                Relationship.builder()
-                        .fkTableId("table-1")
-                        .pkTableId("table-2")
-                        .name("fk_test")
-                        .kind("NON_IDENTIFYING")
-                        .cardinality("ONE_TO_MANY")
-                        .onDelete("NO_ACTION")
-                        .onUpdate("NO_ACTION")
-                        .extra("")
-                        .build())
-                .block();
-
-        StepVerifier.create(relationshipService.updateRelationshipCardinality(
-                Validation.ChangeRelationshipCardinalityRequest.newBuilder()
-                        .setRelationshipId(saved.getId())
+    Validation.Database beforeDatabase = Validation.Database.newBuilder()
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setName("schema")
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-1")
+                .setSchemaId("schema-1")
+                .setName("child")
+                .addColumns(Validation.Column.newBuilder()
+                    .setId(fkColumnToDelete.getId())
+                    .setTableId("table-1")
+                    .setName("table_2_id")
+                    .setSeqNo(1)
+                    .setDataType("INT")
+                    .build())
+                .addRelationships(
+                    Validation.Relationship.newBuilder()
+                        .setId(saved.getId())
+                        .setFkTableId("table-1")
+                        .setPkTableId("table-2")
+                        .setName("to_delete")
+                        .setKind(
+                            Validation.RelationshipKind.NON_IDENTIFYING)
                         .setCardinality(
-                                Validation.RelationshipCardinality.ONE_TO_ONE)
-                        .build()))
-                .assertNext(updated -> {
-                    assertThat(updated.getId()).isEqualTo(saved.getId());
-                    assertThat(updated.getCardinality())
-                            .isEqualTo("ONE_TO_ONE");
-                })
-                .verifyComplete();
-
-        // DB 반영 확인
-        StepVerifier.create(relationshipRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.getCardinality())
-                        .isEqualTo("ONE_TO_ONE"))
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("updateRelationshipKind: 관계 종류를 변경한다")
-    void updateRelationshipKind_success() {
-        Relationship saved = relationshipRepository.save(
-                Relationship.builder()
-                        .fkTableId("table-1")
-                        .pkTableId("table-2")
-                        .name("fk_test")
-                        .kind("NON_IDENTIFYING")
-                        .cardinality("ONE_TO_MANY")
-                        .onDelete("NO_ACTION")
-                        .onUpdate("NO_ACTION")
-                        .extra("")
-                        .build())
-                .block();
-
-        StepVerifier.create(relationshipService.updateRelationshipKind(
-                Validation.ChangeRelationshipKindRequest.newBuilder()
-                        .setDatabase(
-                                Validation.Database.newBuilder().setId("db-1")
-                                        .build())
-                        .setSchemaId("schema-1")
-                        .setRelationshipId(saved.getId())
-                        .setKind(Validation.RelationshipKind.IDENTIFYING)
-                        .build()))
-                .assertNext(updated -> {
-                    assertThat(updated.getId()).isEqualTo(saved.getId());
-                    assertThat(updated.getKind()).isEqualTo("IDENTIFYING");
-                })
-                .verifyComplete();
-
-        StepVerifier.create(relationshipRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.getKind())
-                        .isEqualTo("IDENTIFYING"))
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("addColumnToRelationship: 관계 컬럼 추가 시 매핑과 전파 정보가 반환된다")
-    void addColumnToRelationship_success() {
-        Validation.Database beforeDatabase = Validation.Database.newBuilder()
-                .setId("db-1")
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-1")
-                                .addRelationships(Validation.Relationship
-                                        .newBuilder()
-                                        .setId("relationship-1")
-                                        .setIsAffected(true)
-                                        .build())
-                                .build())
-                        .build())
-                .build();
-
-        Validation.AddColumnToRelationshipRequest request = Validation.AddColumnToRelationshipRequest
-                .newBuilder()
-                .setRelationshipId("relationship-1")
-                .setDatabase(beforeDatabase)
-                .setRelationshipColumn(
-                        Validation.RelationshipColumn.newBuilder()
-                                .setId("fe-relationship-column-1")
-                                .setRelationshipId("relationship-1")
-                                .setFkColumnId("src-column-1")
-                                .setPkColumnId("tgt-column-1")
+                            Validation.RelationshipCardinality.ONE_TO_MANY)
+                        .addColumns(
+                            Validation.RelationshipColumn
+                                .newBuilder()
+                                .setId(
+                                    "relcol-1")
+                                .setRelationshipId(
+                                    saved.getId())
+                                .setFkColumnId(
+                                    fkColumnToDelete
+                                        .getId())
+                                .setPkColumnId(
+                                    "parent-id")
                                 .setSeqNo(1)
                                 .build())
-                .build();
-
-        Validation.Database validationResponse = Validation.Database
-                .newBuilder()
-                .setId("db-1")
-                .setIsAffected(true)
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setIsAffected(true)
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-1")
-                                .setIsAffected(true)
-                                .addRelationships(Validation.Relationship
-                                        .newBuilder()
-                                        .setId("relationship-1")
-                                        .setIsAffected(true)
-                                        .addColumns(
-                                                Validation.RelationshipColumn
-                                                        .newBuilder()
-                                                        .setId(
-                                                                "fe-relationship-column-1")
-                                                        .setRelationshipId(
-                                                                "relationship-1")
-                                                        .setFkColumnId(
-                                                                "src-column-1")
-                                                        .setPkColumnId(
-                                                                "tgt-column-1")
-                                                        .setSeqNo(1)
-                                                        .setIsAffected(true)
-                                                        .build())
-                                        .build())
-                                .build())
                         .build())
-                .build();
+                .build())
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-2")
+                .setSchemaId("schema-1")
+                .setName("parent")
+                .build())
+            .build())
+        .build();
 
-        AffectedMappingResponse.PropagatedEntities propagatedEntities = AffectedMappingResponse.PropagatedEntities
-                .empty();
+    Validation.Database afterDatabase = Validation.Database.newBuilder()
+        .addSchemas(Validation.Schema.newBuilder()
+            .setId("schema-1")
+            .setName("schema")
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-1")
+                .setSchemaId("schema-1")
+                .setName("child")
+                .build())
+            .addTables(Validation.Table.newBuilder()
+                .setId("table-2")
+                .setSchemaId("schema-1")
+                .setName("parent")
+                .build())
+            .build())
+        .build();
 
-        given(validationClient.addColumnToRelationship(
-                any(Validation.AddColumnToRelationshipRequest.class)))
-                .willReturn(Mono.just(validationResponse));
-        given(affectedEntitiesSaver.saveAffectedEntities(any(),
-                any(Validation.Database.class), any(), any(), any()))
-                .willReturn(Mono.just(propagatedEntities));
+    given(validationClient.deleteRelationship(
+        any(Validation.DeleteRelationshipRequest.class)))
+        .willReturn(Mono.just(afterDatabase));
 
-        Mono<AffectedMappingResponse> result = relationshipService
-                .addColumnToRelationship(request);
+    StepVerifier.create(relationshipService.deleteRelationship(
+        Validation.DeleteRelationshipRequest.newBuilder()
+            .setRelationshipId(saved.getId())
+            .setDatabase(beforeDatabase)
+            .build()))
+        .verifyComplete();
 
-        AffectedMappingResponse response = result.block();
+    // 삭제 플래그 확인 (deletedAt not null)
+    StepVerifier.create(relationshipRepository.findById(saved.getId()))
+        .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+        .verifyComplete();
 
-        // 응답 검증
-        assertThat(response).isNotNull();
-        assertThat(response.relationshipColumns())
-                .containsKey("relationship-1");
-        assertThat(response.propagated()).isEqualTo(propagatedEntities);
-
-        // DB에 저장되었는지 확인
-        List<RelationshipColumn> savedColumns = relationshipColumnRepository
-                .findAll()
-                .collectList()
-                .block();
-        assertThat(savedColumns).isNotNull();
-        assertThat(savedColumns).hasSize(1);
-        RelationshipColumn saved = savedColumns.get(0);
-        assertThat(saved.getRelationshipId()).isEqualTo("relationship-1");
-        assertThat(saved.getFkColumnId()).isEqualTo("src-column-1");
-        assertThat(saved.getPkColumnId()).isEqualTo("tgt-column-1");
-
-        // 응답의 매핑 정보 확인
-        assertThat(response.relationshipColumns().get("relationship-1"))
-                .containsEntry("fe-relationship-column-1", saved.getId());
-    }
-
-    @Test
-    @DisplayName("removeColumnFromRelationship: 관계에서 컬럼을 제거한다 (소프트 삭제)")
-    void removeColumnFromRelationship_success() {
-        Column fkColumnA = columnRepository.save(
-                Column.builder()
-                        .tableId("child-table")
-                        .name("parent_a")
-                        .seqNo(1)
-                        .dataType("INT")
-                        .build())
-                .block();
-        Column fkColumnB = columnRepository.save(
-                Column.builder()
-                        .tableId("child-table")
-                        .name("parent_b")
-                        .seqNo(2)
-                        .dataType("INT")
-                        .build())
-                .block();
-
-        RelationshipColumn savedA = relationshipColumnRepository.save(
-                RelationshipColumn.builder()
-                        .relationshipId("relationship-1")
-                        .fkColumnId(fkColumnA.getId())
-                        .pkColumnId("parent-a")
-                        .seqNo(1)
-                        .build())
-                .block();
-        RelationshipColumn savedB = relationshipColumnRepository.save(
-                RelationshipColumn.builder()
-                        .relationshipId("relationship-1")
-                        .fkColumnId(fkColumnB.getId())
-                        .pkColumnId("parent-b")
-                        .seqNo(2)
-                        .build())
-                .block();
-
-        Validation.Database beforeDatabase = Validation.Database.newBuilder()
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setName("schema")
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("child-table")
-                                .setSchemaId("schema-1")
-                                .setName("child")
-                                .addColumns(Validation.Column.newBuilder()
-                                        .setId(fkColumnA.getId())
-                                        .setTableId("child-table")
-                                        .setName("parent_a")
-                                        .setSeqNo(1)
-                                        .setDataType("INT")
-                                        .build())
-                                .addColumns(Validation.Column.newBuilder()
-                                        .setId(fkColumnB.getId())
-                                        .setTableId("child-table")
-                                        .setName("parent_b")
-                                        .setSeqNo(2)
-                                        .setDataType("INT")
-                                        .build())
-                                .addRelationships(
-                                        Validation.Relationship.newBuilder()
-                                                .setId("relationship-1")
-                                                .setFkTableId("child-table")
-                                                .setPkTableId("parent-table")
-                                                .setName("fk_parent")
-                                                .setKind(
-                                                        Validation.RelationshipKind.NON_IDENTIFYING)
-                                                .addColumns(
-                                                        Validation.RelationshipColumn
-                                                                .newBuilder()
-                                                                .setId(savedA
-                                                                        .getId())
-                                                                .setRelationshipId(
-                                                                        "relationship-1")
-                                                                .setFkColumnId(
-                                                                        fkColumnA
-                                                                                .getId())
-                                                                .setPkColumnId(
-                                                                        "parent-a")
-                                                                .setSeqNo(1)
-                                                                .build())
-                                                .addColumns(
-                                                        Validation.RelationshipColumn
-                                                                .newBuilder()
-                                                                .setId(savedB
-                                                                        .getId())
-                                                                .setRelationshipId(
-                                                                        "relationship-1")
-                                                                .setFkColumnId(
-                                                                        fkColumnB
-                                                                                .getId())
-                                                                .setPkColumnId(
-                                                                        "parent-b")
-                                                                .setSeqNo(2)
-                                                                .build())
-                                                .build())
-                                .build())
-                        .build())
-                .build();
-
-        Validation.Database afterDatabase = Validation.Database.newBuilder()
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setName("schema")
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("child-table")
-                                .setSchemaId("schema-1")
-                                .setName("child")
-                                .addColumns(Validation.Column.newBuilder()
-                                        .setId(fkColumnA.getId())
-                                        .setTableId("child-table")
-                                        .setName("parent_a")
-                                        .setSeqNo(1)
-                                        .setDataType("INT")
-                                        .build())
-                                .addRelationships(
-                                        Validation.Relationship.newBuilder()
-                                                .setId("relationship-1")
-                                                .setFkTableId("child-table")
-                                                .setPkTableId("parent-table")
-                                                .setName("fk_parent")
-                                                .setKind(
-                                                        Validation.RelationshipKind.NON_IDENTIFYING)
-                                                .addColumns(
-                                                        Validation.RelationshipColumn
-                                                                .newBuilder()
-                                                                .setId(savedA
-                                                                        .getId())
-                                                                .setRelationshipId(
-                                                                        "relationship-1")
-                                                                .setFkColumnId(
-                                                                        fkColumnA
-                                                                                .getId())
-                                                                .setPkColumnId(
-                                                                        "parent-a")
-                                                                .setSeqNo(1)
-                                                                .build())
-                                                .build())
-                                .build())
-                        .build())
-                .build();
-
-        given(validationClient.removeColumnFromRelationship(
-                any(Validation.RemoveColumnFromRelationshipRequest.class)))
-                .willReturn(Mono.just(afterDatabase));
-
-        StepVerifier.create(relationshipService.removeColumnFromRelationship(
-                Validation.RemoveColumnFromRelationshipRequest.newBuilder()
-                        .setRelationshipId("relationship-1")
-                        .setRelationshipColumnId(savedB.getId())
-                        .setDatabase(beforeDatabase)
-                        .build()))
-                .verifyComplete();
-
-        StepVerifier.create(
-                relationshipColumnRepository.findById(savedB.getId()))
-                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
-                .verifyComplete();
-
-        StepVerifier.create(columnRepository.findById(fkColumnB.getId()))
-                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
-                .verifyComplete();
-
-        StepVerifier.create(
-                relationshipColumnRepository.findById(savedA.getId()))
-                .assertNext(found -> assertThat(found.isDeleted()).isFalse())
-                .verifyComplete();
-
-        StepVerifier.create(columnRepository.findById(fkColumnA.getId()))
-                .assertNext(found -> assertThat(found.isDeleted()).isFalse())
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("deleteRelationship: 소프트 삭제가 수행된다")
-    void deleteRelationship_softDelete() {
-        Column fkColumnToDelete = columnRepository.save(
-                Column.builder()
-                        .tableId("table-1")
-                        .name("table_2_id")
-                        .seqNo(1)
-                        .dataType("INT")
-                        .build())
-                .block();
-
-        Relationship saved = relationshipRepository.save(
-                Relationship.builder()
-                        .fkTableId("table-1")
-                        .pkTableId("table-2")
-                        .name("to_delete")
-                        .kind("NON_IDENTIFYING")
-                        .cardinality("ONE_TO_MANY")
-                        .onDelete("NO_ACTION")
-                        .onUpdate("NO_ACTION")
-                        .extra("")
-                        .build())
-                .block();
-
-        Validation.Database beforeDatabase = Validation.Database.newBuilder()
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setName("schema")
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-1")
-                                .setSchemaId("schema-1")
-                                .setName("child")
-                                .addColumns(Validation.Column.newBuilder()
-                                        .setId(fkColumnToDelete.getId())
-                                        .setTableId("table-1")
-                                        .setName("table_2_id")
-                                        .setSeqNo(1)
-                                        .setDataType("INT")
-                                        .build())
-                                .addRelationships(
-                                        Validation.Relationship.newBuilder()
-                                                .setId(saved.getId())
-                                                .setFkTableId("table-1")
-                                                .setPkTableId("table-2")
-                                                .setName("to_delete")
-                                                .setKind(
-                                                        Validation.RelationshipKind.NON_IDENTIFYING)
-                                                .setCardinality(
-                                                        Validation.RelationshipCardinality.ONE_TO_MANY)
-                                                .addColumns(
-                                                        Validation.RelationshipColumn
-                                                                .newBuilder()
-                                                                .setId(
-                                                                        "relcol-1")
-                                                                .setRelationshipId(
-                                                                        saved.getId())
-                                                                .setFkColumnId(
-                                                                        fkColumnToDelete
-                                                                                .getId())
-                                                                .setPkColumnId(
-                                                                        "parent-id")
-                                                                .setSeqNo(1)
-                                                                .build())
-                                                .build())
-                                .build())
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-2")
-                                .setSchemaId("schema-1")
-                                .setName("parent")
-                                .build())
-                        .build())
-                .build();
-
-        Validation.Database afterDatabase = Validation.Database.newBuilder()
-                .addSchemas(Validation.Schema.newBuilder()
-                        .setId("schema-1")
-                        .setName("schema")
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-1")
-                                .setSchemaId("schema-1")
-                                .setName("child")
-                                .build())
-                        .addTables(Validation.Table.newBuilder()
-                                .setId("table-2")
-                                .setSchemaId("schema-1")
-                                .setName("parent")
-                                .build())
-                        .build())
-                .build();
-
-        given(validationClient.deleteRelationship(
-                any(Validation.DeleteRelationshipRequest.class)))
-                .willReturn(Mono.just(afterDatabase));
-
-        StepVerifier.create(relationshipService.deleteRelationship(
-                Validation.DeleteRelationshipRequest.newBuilder()
-                        .setRelationshipId(saved.getId())
-                        .setDatabase(beforeDatabase)
-                        .build()))
-                .verifyComplete();
-
-        // 삭제 플래그 확인 (deletedAt not null)
-        StepVerifier.create(relationshipRepository.findById(saved.getId()))
-                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
-                .verifyComplete();
-
-        StepVerifier.create(
-                columnRepository.findById(fkColumnToDelete.getId()))
-                .assertNext(found -> assertThat(found.isDeleted()).isTrue())
-                .verifyComplete();
-    }
+    StepVerifier.create(
+        columnRepository.findById(fkColumnToDelete.getId()))
+        .assertNext(found -> assertThat(found.isDeleted()).isTrue())
+        .verifyComplete();
+  }
 
 }

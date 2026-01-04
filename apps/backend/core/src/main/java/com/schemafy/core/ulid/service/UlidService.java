@@ -13,15 +13,15 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UlidService {
 
-    private final CacheRouter cacheRouter;
+  private final CacheRouter cacheRouter;
 
-    private static final String ULID_PREFIX = "ulid::";
+  private static final String ULID_PREFIX = "ulid::";
 
-    public Mono<String> generateTemporaryUlid() {
-        return Mono.fromCallable(UlidGenerator::generate)
-                .flatMap(ulid -> cacheRouter
-                        .put(ULID_PREFIX + ulid, "valid", CacheType.CAFFEINE)
-                        .thenReturn(ulid));
-    }
+  public Mono<String> generateTemporaryUlid() {
+    return Mono.fromCallable(UlidGenerator::generate)
+        .flatMap(ulid -> cacheRouter
+            .put(ULID_PREFIX + ulid, "valid", CacheType.CAFFEINE)
+            .thenReturn(ulid));
+  }
 
 }

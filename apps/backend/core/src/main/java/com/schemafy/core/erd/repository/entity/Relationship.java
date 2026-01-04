@@ -20,40 +20,40 @@ import lombok.Setter;
 @Table("db_relationships")
 public class Relationship extends BaseEntity {
 
-    @Column("fk_table_id")
-    private String fkTableId;
+  @Column("fk_table_id")
+  private String fkTableId;
 
-    @Column("pk_table_id")
-    private String pkTableId;
+  @Column("pk_table_id")
+  private String pkTableId;
 
-    @Column("name")
-    private String name;
+  @Column("name")
+  private String name;
 
-    @Column("kind")
-    private String kind;
+  @Column("kind")
+  private String kind;
 
-    @Column("cardinality")
-    private String cardinality;
+  @Column("cardinality")
+  private String cardinality;
 
-    @Column("on_delete")
-    private String onDelete;
+  @Column("on_delete")
+  private String onDelete;
 
-    @Column("on_update")
-    private String onUpdate;
+  @Column("on_update")
+  private String onUpdate;
 
-    @Column("extra")
-    private String extra;
+  @Column("extra")
+  private String extra;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Relationship newRelationship(String fkTableId,
-            String pkTableId,
-            String name, String kind, String cardinality, String onDelete,
-            String onUpdate, String extra) {
-        Relationship relationship = new Relationship(fkTableId, pkTableId,
-                name,
-                kind, cardinality, onDelete, onUpdate, extra);
-        relationship.setId(UlidGenerator.generate());
-        return relationship;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static Relationship newRelationship(String fkTableId,
+      String pkTableId,
+      String name, String kind, String cardinality, String onDelete,
+      String onUpdate, String extra) {
+    Relationship relationship = new Relationship(fkTableId, pkTableId,
+        name,
+        kind, cardinality, onDelete, onUpdate, extra);
+    relationship.setId(UlidGenerator.generate());
+    return relationship;
+  }
 
 }

@@ -23,34 +23,34 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class PublicShareLinkController {
 
-    private final ShareLinkService shareLinkService;
+  private final ShareLinkService shareLinkService;
 
-    @GetMapping("/share/{token}")
-    public Mono<BaseResponse<ShareLinkAccessResponse>> accessByToken(
-            @PathVariable String token, ServerHttpRequest request,
-            @Nullable Authentication authentication) {
-        String userId = (authentication != null) ? authentication.getName()
-                : null;
-        String ipAddress = extractIpAddress(request);
-        String userAgent = request.getHeaders().getFirst("User-Agent");
+  @GetMapping("/share/{token}")
+  public Mono<BaseResponse<ShareLinkAccessResponse>> accessByToken(
+      @PathVariable String token, ServerHttpRequest request,
+      @Nullable Authentication authentication) {
+    String userId = (authentication != null) ? authentication.getName()
+        : null;
+    String ipAddress = extractIpAddress(request);
+    String userAgent = request.getHeaders().getFirst("User-Agent");
 
-        return shareLinkService
-                .accessByToken(token, userId, ipAddress, userAgent)
-                .map(BaseResponse::success);
+    return shareLinkService
+        .accessByToken(token, userId, ipAddress, userAgent)
+        .map(BaseResponse::success);
+  }
+
+  private String extractIpAddress(ServerHttpRequest request) {
+    String xForwardedFor = request.getHeaders().getFirst("X-Forwarded-For");
+    if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+      return xForwardedFor.split(",")[0].trim();
     }
 
-    private String extractIpAddress(ServerHttpRequest request) {
-        String xForwardedFor = request.getHeaders().getFirst("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-
-        InetSocketAddress remoteAddress = request.getRemoteAddress();
-        if (remoteAddress != null && remoteAddress.getAddress() != null) {
-            return remoteAddress.getAddress().getHostAddress();
-        }
-
-        return "unknown";
+    InetSocketAddress remoteAddress = request.getRemoteAddress();
+    if (remoteAddress != null && remoteAddress.getAddress() != null) {
+      return remoteAddress.getAddress().getHostAddress();
     }
+
+    return "unknown";
+  }
 
 }

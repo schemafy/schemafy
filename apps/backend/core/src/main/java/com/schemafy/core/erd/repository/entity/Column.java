@@ -20,47 +20,47 @@ import lombok.Setter;
 @Table("db_columns")
 public class Column extends BaseEntity {
 
-    @org.springframework.data.relational.core.mapping.Column("table_id")
-    private String tableId;
+  @org.springframework.data.relational.core.mapping.Column("table_id")
+  private String tableId;
 
-    @org.springframework.data.relational.core.mapping.Column("name")
-    private String name;
+  @org.springframework.data.relational.core.mapping.Column("name")
+  private String name;
 
-    @org.springframework.data.relational.core.mapping.Column("seq_no")
-    private int seqNo;
+  @org.springframework.data.relational.core.mapping.Column("seq_no")
+  private int seqNo;
 
-    @org.springframework.data.relational.core.mapping.Column("data_type")
-    private String dataType;
+  @org.springframework.data.relational.core.mapping.Column("data_type")
+  private String dataType;
 
-    @Nullable
-    @org.springframework.data.relational.core.mapping.Column("length_scale")
-    private String lengthScale;
+  @Nullable
+  @org.springframework.data.relational.core.mapping.Column("length_scale")
+  private String lengthScale;
 
-    @Nullable
-    @org.springframework.data.relational.core.mapping.Column("is_auto_increment")
-    private boolean isAutoIncrement;
+  @Nullable
+  @org.springframework.data.relational.core.mapping.Column("is_auto_increment")
+  private boolean isAutoIncrement;
 
-    @Nullable
-    @org.springframework.data.relational.core.mapping.Column("charset")
-    private String charset;
+  @Nullable
+  @org.springframework.data.relational.core.mapping.Column("charset")
+  private String charset;
 
-    @Nullable
-    @org.springframework.data.relational.core.mapping.Column("collation")
-    private String collation;
+  @Nullable
+  @org.springframework.data.relational.core.mapping.Column("collation")
+  private String collation;
 
-    @Nullable
-    @org.springframework.data.relational.core.mapping.Column("comment")
-    private String comment;
+  @Nullable
+  @org.springframework.data.relational.core.mapping.Column("comment")
+  private String comment;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Column newColumn(String tableId, String name,
-            int seqNo,
-            String dataType, String lengthScale, boolean isAutoIncrement,
-            String charset, String collation, String comment) {
-        Column column = new Column(tableId, name, seqNo, dataType,
-                lengthScale, isAutoIncrement, charset, collation, comment);
-        column.setId(UlidGenerator.generate());
-        return column;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static Column newColumn(String tableId, String name,
+      int seqNo,
+      String dataType, String lengthScale, boolean isAutoIncrement,
+      String charset, String collation, String comment) {
+    Column column = new Column(tableId, name, seqNo, dataType,
+        lengthScale, isAutoIncrement, charset, collation, comment);
+    column.setId(UlidGenerator.generate());
+    return column;
+  }
 
 }

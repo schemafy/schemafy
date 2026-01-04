@@ -8,8 +8,8 @@ import reactor.core.publisher.Mono;
 
 public interface UserRepository extends ReactiveCrudRepository<User, String> {
 
-    Mono<Boolean> existsByEmail(String email);
+  Mono<Boolean> existsByEmail(String email);
 
-    Mono<User> findByEmail(String email);
+  Mono<User> findByEmail(String email);
 
 }
