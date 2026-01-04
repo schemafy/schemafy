@@ -1,19 +1,17 @@
 import { ulid } from 'ulid';
 import type { Schema } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
-import {
-  createSchemaAPI,
-  getSchemaAPI,
-  getSchemaTableListAPI,
-  updateSchemaNameAPI,
-  deleteSchemaAPI,
-} from '../api/schema.api';
-import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import { getSchemaAPI, getSchemaTableListAPI } from '../api/schema.api';
 import {
   validateDatabase,
   validateAndGetSchema,
 } from '../utils/entityValidators';
-import { handleServerResponse } from '../utils/sync';
+import {
+  CreateSchemaCommand,
+  UpdateSchemaNameCommand,
+  DeleteSchemaCommand,
+} from '../queue/commands/SchemaCommands';
+import { executeCommandWithValidation } from '../utils/commandQueueHelper';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -27,14 +25,14 @@ export async function getSchemaTableList(schemaId: string) {
   return response.result;
 }
 
-export async function createSchema(name: string) {
-  const erdStore = getErdStore();
+export function createSchema(name: string) {
   const database = validateDatabase();
 
   if (database.schemas.length === 0) {
     throw new Error('No existing schema to copy defaults from');
   }
 
+  const erdStore = getErdStore();
   const schemaId = ulid();
   const firstSchema = database.schemas[0];
 
@@ -50,68 +48,38 @@ export async function createSchema(name: string) {
     vendorOption: firstSchema.vendorOption,
   };
 
-  const response = await withOptimisticUpdate(
-    () => erdStore.createSchema(newSchema),
-    () =>
-      createSchemaAPI({
-        database,
-        schema: {
-          id: schemaId,
-          projectId: firstSchema.projectId,
-          dbVendorId: firstSchema.dbVendorId,
-          name,
-          charset: firstSchema.charset ?? '',
-          collation: firstSchema.collation ?? '',
-          vendorOption: firstSchema.vendorOption ?? '',
-        },
-      }),
-    () => erdStore.deleteSchema(schemaId),
-  );
+  const command = new CreateSchemaCommand(newSchema);
 
-  handleServerResponse(response, { schemaId });
+  executeCommandWithValidation(command, () => {
+    erdStore.createSchema(newSchema);
+  });
 
   return schemaId;
 }
 
-export async function updateSchemaName(schemaId: string, newName: string) {
-  const erdStore = getErdStore();
-  const { database, schema } = validateAndGetSchema(schemaId);
+export function updateSchemaName(schemaId: string, newName: string) {
+  validateAndGetSchema(schemaId);
 
-  await withOptimisticUpdate(
-    () => {
-      const oldName = schema.name;
-      erdStore.changeSchemaName(schemaId, newName);
-      return oldName;
-    },
-    () =>
-      updateSchemaNameAPI(schemaId, {
-        database,
-        schemaId,
-        newName,
-      }),
-    (oldName) => erdStore.changeSchemaName(schemaId, oldName),
-  );
+  const erdStore = getErdStore();
+  const command = new UpdateSchemaNameCommand(schemaId, newName);
+
+  executeCommandWithValidation(command, () => {
+    erdStore.changeSchemaName(schemaId, newName);
+  });
 }
 
-export async function deleteSchema(schemaId: string) {
-  const erdStore = getErdStore();
+export function deleteSchema(schemaId: string) {
   const { database, schema } = validateAndGetSchema(schemaId);
 
   if (database.schemas.length <= 1) {
     throw new Error('Cannot delete the last schema');
   }
 
-  await withOptimisticUpdate(
-    () => {
-      const schemaSnapshot = structuredClone(schema);
-      erdStore.deleteSchema(schemaId);
-      return schemaSnapshot;
-    },
-    () =>
-      deleteSchemaAPI(schemaId, {
-        database,
-        schemaId,
-      }),
-    (schemaSnapshot) => erdStore.createSchema(schemaSnapshot),
-  );
+  const erdStore = getErdStore();
+  const schemaSnapshot = structuredClone(schema);
+  const command = new DeleteSchemaCommand(schemaId, schemaSnapshot);
+
+  executeCommandWithValidation(command, () => {
+    erdStore.deleteSchema(schemaId);
+  });
 }
