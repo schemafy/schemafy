@@ -1,7 +1,7 @@
 export type MemoComment = {
   id: string;
   memoId: string;
-  authorId: string;
+  author: Author;
   body: string;
   createdAt?: string;
   updatedAt?: string;
@@ -10,7 +10,7 @@ export type MemoComment = {
 export type Memo = {
   id: string;
   schemaId: string;
-  authorId: string;
+  author: Author;
   positions: string;
   createdAt?: string;
   updatedAt?: string;
@@ -33,4 +33,9 @@ export type CreateMemoCommentRequest = {
 
 export type UpdateMemoCommentRequest = {
   body: string;
+};
+
+type Author = {
+  id: string;
+  name: string;
 };

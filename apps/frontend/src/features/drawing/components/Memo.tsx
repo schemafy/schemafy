@@ -52,7 +52,7 @@ const ReplyItem = ({
       <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-overline-sm">{comment.authorId}</span>
+          <span className="font-overline-sm">{comment.author.name}</span>
           <span className="font-body-xs text-schemafy-dark-gray">
             {formatDate(
               new Date(comment.updatedAt ?? comment.createdAt ?? new Date()),
