@@ -1,20 +1,19 @@
 import { ulid } from 'ulid';
 import type { Column } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
-import {
-  createColumnAPI,
-  getColumnAPI,
-  updateColumnNameAPI,
-  updateColumnTypeAPI,
-  updateColumnPositionAPI,
-  deleteColumnAPI,
-} from '../api/column.api';
-import { withOptimisticUpdate } from '../utils/optimisticUpdate';
+import { getColumnAPI } from '../api/column.api';
 import {
   validateAndGetTable,
   validateAndGetColumn,
 } from '../utils/entityValidators';
-import { handleServerResponse } from '../utils/sync';
+import {
+  CreateColumnCommand,
+  UpdateColumnNameCommand,
+  UpdateColumnTypeCommand,
+  UpdateColumnPositionCommand,
+  DeleteColumnCommand,
+} from '../queue/commands/ColumnCommands';
+import { executeCommandWithValidation } from '../utils/commandQueueHelper';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -23,7 +22,7 @@ export async function getColumn(columnId: string) {
   return response.result;
 }
 
-export async function createColumn(
+export function createColumn(
   schemaId: string,
   tableId: string,
   name: string,
@@ -35,9 +34,9 @@ export async function createColumn(
   collation?: string,
   comment?: string,
 ) {
-  const erdStore = getErdStore();
-  const { database } = validateAndGetTable(schemaId, tableId);
+  validateAndGetTable(schemaId, tableId);
 
+  const erdStore = getErdStore();
   const columnId = ulid();
 
   const newColumn: Column = {
@@ -54,173 +53,103 @@ export async function createColumn(
     isAffected: false,
   };
 
-  const response = await withOptimisticUpdate(
-    () => erdStore.createColumn(schemaId, tableId, newColumn),
-    () =>
-      createColumnAPI({
-        database,
-        schemaId,
-        tableId,
-        column: {
-          id: columnId,
-          tableId,
-          name,
-          ordinalPosition,
-          dataType,
-          lengthScale: lengthScale ?? '',
-          charset: charset ?? '',
-          collation: collation ?? '',
-          comment: comment ?? '',
-        },
-      }),
-    () => erdStore.deleteColumn(schemaId, tableId, columnId),
-  );
+  const command = new CreateColumnCommand(schemaId, tableId, newColumn);
 
-  handleServerResponse(response, {
-    schemaId,
-    tableId,
+  executeCommandWithValidation(command, () => {
+    erdStore.createColumn(schemaId, tableId, newColumn);
   });
 
   return columnId;
 }
 
-export async function updateColumnName(
+export function updateColumnName(
   schemaId: string,
   tableId: string,
   columnId: string,
   newName: string,
 ) {
+  validateAndGetColumn(schemaId, tableId, columnId);
+
   const erdStore = getErdStore();
-  const { database, column } = validateAndGetColumn(
+  const command = new UpdateColumnNameCommand(
     schemaId,
     tableId,
     columnId,
+    newName,
   );
 
-  await withOptimisticUpdate(
-    () => {
-      const oldName = column.name;
-      erdStore.changeColumnName(schemaId, tableId, columnId, newName);
-      return oldName;
-    },
-    () =>
-      updateColumnNameAPI(columnId, {
-        database,
-        schemaId,
-        tableId,
-        columnId,
-        newName,
-      }),
-    (oldName) =>
-      erdStore.changeColumnName(schemaId, tableId, columnId, oldName),
-  );
+  executeCommandWithValidation(command, () => {
+    erdStore.changeColumnName(schemaId, tableId, columnId, newName);
+  });
 }
 
-export async function updateColumnType(
+export function updateColumnType(
   schemaId: string,
   tableId: string,
   columnId: string,
   dataType: string,
   lengthScale?: string,
 ) {
+  validateAndGetColumn(schemaId, tableId, columnId);
+
   const erdStore = getErdStore();
-  const { database, column } = validateAndGetColumn(
+  const command = new UpdateColumnTypeCommand(
     schemaId,
     tableId,
     columnId,
+    dataType,
+    lengthScale,
   );
 
-  await withOptimisticUpdate(
-    () => {
-      const oldDataType = column.dataType;
-      const oldLengthScale = column.lengthScale;
-      erdStore.changeColumnType(
-        schemaId,
-        tableId,
-        columnId,
-        dataType,
-        lengthScale ?? '',
-      );
-      return { oldDataType, oldLengthScale };
-    },
-    () =>
-      updateColumnTypeAPI(columnId, {
-        database,
-        schemaId,
-        tableId,
-        columnId,
-        dataType,
-        lengthScale,
-      }),
-    ({ oldDataType, oldLengthScale }) =>
-      erdStore.changeColumnType(
-        schemaId,
-        tableId,
-        columnId,
-        oldDataType,
-        oldLengthScale,
-      ),
-  );
+  executeCommandWithValidation(command, () => {
+    erdStore.changeColumnType(
+      schemaId,
+      tableId,
+      columnId,
+      dataType,
+      lengthScale ?? '',
+    );
+  });
 }
 
-export async function updateColumnPosition(
+export function updateColumnPosition(
   schemaId: string,
   tableId: string,
   columnId: string,
   newPosition: number,
 ) {
+  validateAndGetColumn(schemaId, tableId, columnId);
+
   const erdStore = getErdStore();
-  const { database, column } = validateAndGetColumn(
+  const command = new UpdateColumnPositionCommand(
     schemaId,
     tableId,
     columnId,
+    newPosition,
   );
 
-  await withOptimisticUpdate(
-    () => {
-      const oldPosition = column.ordinalPosition;
-      erdStore.changeColumnPosition(schemaId, tableId, columnId, newPosition);
-      return oldPosition;
-    },
-    () =>
-      updateColumnPositionAPI(columnId, {
-        database,
-        schemaId,
-        tableId,
-        columnId,
-        newPosition,
-      }),
-    (oldPosition) =>
-      erdStore.changeColumnPosition(schemaId, tableId, columnId, oldPosition),
-  );
+  executeCommandWithValidation(command, () => {
+    erdStore.changeColumnPosition(schemaId, tableId, columnId, newPosition);
+  });
 }
 
-export async function deleteColumn(
+export function deleteColumn(
   schemaId: string,
   tableId: string,
   columnId: string,
 ) {
+  const { column } = validateAndGetColumn(schemaId, tableId, columnId);
+
   const erdStore = getErdStore();
-  const { database, column } = validateAndGetColumn(
+  const columnSnapshot = structuredClone(column);
+  const command = new DeleteColumnCommand(
     schemaId,
     tableId,
     columnId,
+    columnSnapshot,
   );
 
-  await withOptimisticUpdate(
-    () => {
-      const columnSnapshot = structuredClone(column);
-      erdStore.deleteColumn(schemaId, tableId, columnId);
-      return columnSnapshot;
-    },
-    () =>
-      deleteColumnAPI(columnId, {
-        database,
-        schemaId,
-        tableId,
-        columnId,
-      }),
-    (columnSnapshot) =>
-      erdStore.createColumn(schemaId, tableId, columnSnapshot),
-  );
+  executeCommandWithValidation(command, () => {
+    erdStore.deleteColumn(schemaId, tableId, columnId);
+  });
 }
