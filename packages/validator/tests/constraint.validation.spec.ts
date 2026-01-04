@@ -125,15 +125,15 @@ describe('Constraint validation', () => {
     const ukConstraint1 = createConstraintBuilder()
       .withName('uk_1_2')
       .withKind('UNIQUE')
-      .withColumn((cc) => cc.withColumnId('col1').withSeqNo(1))
-      .withColumn((cc) => cc.withColumnId('col2').withSeqNo(2))
+      .withColumn((cc) => cc.withColumnId('col1').withSeqNo(0))
+      .withColumn((cc) => cc.withColumnId('col2').withSeqNo(1))
       .build();
 
     const ukConstraint2 = createConstraintBuilder()
       .withName('uk_2_1')
       .withKind('UNIQUE')
-      .withColumn((cc) => cc.withColumnId('col2').withSeqNo(1))
-      .withColumn((cc) => cc.withColumnId('col1').withSeqNo(2))
+      .withColumn((cc) => cc.withColumnId('col2').withSeqNo(0))
+      .withColumn((cc) => cc.withColumnId('col1').withSeqNo(1))
       .build();
 
     expect(() => ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', ukConstraint1)).not.toThrow();
@@ -155,15 +155,15 @@ describe('Constraint validation', () => {
     const ukConstraint1 = createConstraintBuilder()
       .withName('uk_duplicate_1')
       .withKind('UNIQUE')
-      .withColumn((cc) => cc.withColumnId('col1').withSeqNo(1))
-      .withColumn((cc) => cc.withColumnId('col2').withSeqNo(2))
+      .withColumn((cc) => cc.withColumnId('col1').withSeqNo(0))
+      .withColumn((cc) => cc.withColumnId('col2').withSeqNo(1))
       .build();
 
     const ukConstraint2 = createConstraintBuilder()
       .withName('uk_duplicate_2')
       .withKind('UNIQUE')
-      .withColumn((cc) => cc.withColumnId('col1').withSeqNo(1))
-      .withColumn((cc) => cc.withColumnId('col2').withSeqNo(2))
+      .withColumn((cc) => cc.withColumnId('col1').withSeqNo(0))
+      .withColumn((cc) => cc.withColumnId('col2').withSeqNo(1))
       .build();
 
     expect(() => ERD_VALIDATOR.createConstraint(db, 'schema-1', 'table-1', ukConstraint1)).not.toThrow();

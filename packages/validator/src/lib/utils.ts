@@ -1,18 +1,20 @@
 import {
   schemaHandlers,
-  SchemaHandlers,
   tableHandlers,
-  TableHandlers,
   columnHandlers,
-  ColumnHandlers,
   indexHandlers,
-  IndexHandlers,
   constraintHandlers,
-  ConstraintHandlers,
   relationshipHandlers,
+} from "./handlers";
+import type {
+  SchemaHandlers,
+  TableHandlers,
+  ColumnHandlers,
+  IndexHandlers,
+  ConstraintHandlers,
   RelationshipHandlers,
 } from "./handlers";
-import { Database } from "./types";
+import type { Database } from "./types";
 import {
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,

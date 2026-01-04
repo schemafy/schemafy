@@ -197,7 +197,7 @@ class ColumnBuilder {
   private charset: string = "utf8mb4";
   private collation: string = "utf8mb4_general_ci";
   private comment: string | null = null;
-  private ordinalPosition: number = 1;
+  private ordinalPosition: number = 0;
 
   constructor() {}
 
@@ -263,7 +263,7 @@ class ConstraintColumnBuilder {
   private constraintId: string;
   private columnName?: string;
   private columnId: string | null = null;
-  private seqNo: number = 1;
+  private seqNo: number = 0;
 
   constructor(constraintId: string) {
     this.constraintId = constraintId;
@@ -384,7 +384,7 @@ class IndexColumnBuilder {
   private indexId: string;
   private columnName?: string;
   private columnId: string | null = null;
-  private seqNo: number = 1;
+  private seqNo: number = 0;
   private sortDir: IndexSortDir = "ASC";
 
   constructor(indexId: string) {
@@ -504,7 +504,7 @@ class RelationshipColumnBuilder {
   private relationshipId: string;
   private fkColumnId: string | null = null;
   private refColumnId: string | null = null;
-  private seqNo: number = 1;
+  private seqNo: number = 0;
 
   constructor(relationshipId: string) {
     this.relationshipId = relationshipId;

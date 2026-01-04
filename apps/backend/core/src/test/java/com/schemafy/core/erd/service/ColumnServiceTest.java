@@ -249,14 +249,40 @@ class ColumnServiceTest {
                         .build())
                 .block();
 
+        Validation.Database validationResponse = Validation.Database
+                .newBuilder()
+                .setId("db-1")
+                .addSchemas(Validation.Schema.newBuilder()
+                        .setId("schema-1")
+                        .addTables(Validation.Table.newBuilder()
+                                .setId("table-1")
+                                .addColumns(Validation.Column.newBuilder()
+                                        .setId(saved.getId())
+                                        .setTableId("table-1")
+                                        .setName("test_column")
+                                        .setDataType("TEXT")
+                                        .setOrdinalPosition(1)
+                                        .setIsAffected(true)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        given(validationClient.changeColumnType(
+                any(Validation.ChangeColumnTypeRequest.class)))
+                .willReturn(Mono.just(validationResponse));
+
         StepVerifier.create(columnService.updateColumnType(
                 Validation.ChangeColumnTypeRequest.newBuilder()
                         .setColumnId(saved.getId())
                         .setDataType("TEXT")
                         .build()))
                 .assertNext(updated -> {
-                    assertThat(updated.getId()).isEqualTo(saved.getId());
-                    assertThat(updated.getDataType()).isEqualTo("TEXT");
+                    assertThat(updated.columns()).hasSize(1);
+                    assertThat(updated.columns().get(0).getId())
+                            .isEqualTo(saved.getId());
+                    assertThat(updated.columns().get(0).getDataType())
+                            .isEqualTo("TEXT");
                 })
                 .verifyComplete();
 

@@ -78,6 +78,10 @@ class RelationshipServiceTest {
                 any(Validation.ChangeRelationshipCardinalityRequest.class)))
                 .willReturn(Mono.just(
                         Validation.Database.newBuilder().build()));
+        given(validationClient.changeRelationshipKind(
+                any(Validation.ChangeRelationshipKindRequest.class)))
+                .willReturn(Mono.just(
+                        Validation.Database.newBuilder().build()));
         given(validationClient.addColumnToRelationship(
                 any(Validation.AddColumnToRelationshipRequest.class)))
                 .willReturn(Mono.just(
@@ -625,6 +629,7 @@ class RelationshipServiceTest {
                                             "propagated-constraint-col",
                                             "child-pk-constraint",
                                             "be-fk-column-id",
+                                            1,
                                             EntityType.RELATIONSHIP.name(),
                                             sourceId)),
                                     List.of()),
@@ -858,6 +863,43 @@ class RelationshipServiceTest {
         StepVerifier.create(relationshipRepository.findById(saved.getId()))
                 .assertNext(found -> assertThat(found.getCardinality())
                         .isEqualTo("ONE_TO_ONE"))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("updateRelationshipKind: 관계 종류를 변경한다")
+    void updateRelationshipKind_success() {
+        Relationship saved = relationshipRepository.save(
+                Relationship.builder()
+                        .srcTableId("table-1")
+                        .tgtTableId("table-2")
+                        .name("fk_test")
+                        .kind("NON_IDENTIFYING")
+                        .cardinality("ONE_TO_MANY")
+                        .onDelete("NO_ACTION")
+                        .onUpdate("NO_ACTION")
+                        .extra("")
+                        .build())
+                .block();
+
+        StepVerifier.create(relationshipService.updateRelationshipKind(
+                Validation.ChangeRelationshipKindRequest.newBuilder()
+                        .setDatabase(
+                                Validation.Database.newBuilder().setId("db-1")
+                                        .build())
+                        .setSchemaId("schema-1")
+                        .setRelationshipId(saved.getId())
+                        .setKind(Validation.RelationshipKind.IDENTIFYING)
+                        .build()))
+                .assertNext(updated -> {
+                    assertThat(updated.getId()).isEqualTo(saved.getId());
+                    assertThat(updated.getKind()).isEqualTo("IDENTIFYING");
+                })
+                .verifyComplete();
+
+        StepVerifier.create(relationshipRepository.findById(saved.getId()))
+                .assertNext(found -> assertThat(found.getKind())
+                        .isEqualTo("IDENTIFYING"))
                 .verifyComplete();
     }
 

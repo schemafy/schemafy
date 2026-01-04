@@ -1,10 +1,14 @@
 package com.schemafy.core.erd.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.erd.controller.dto.response.AffectedColumnsResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.mapper.ErdMapper;
@@ -67,17 +71,51 @@ public class ColumnService {
                 .map(ColumnResponse::from);
     }
 
-    public Mono<ColumnResponse> updateColumnType(
+    public Mono<AffectedColumnsResponse> updateColumnType(
             Validation.ChangeColumnTypeRequest request) {
         return columnRepository
                 .findByIdAndDeletedAtIsNull(request.getColumnId())
                 .switchIfEmpty(Mono.error(
                         new BusinessException(ErrorCode.ERD_COLUMN_NOT_FOUND)))
-                .delayUntil(
-                        ignore -> validationClient.changeColumnType(request))
-                .doOnNext(column -> column.setDataType(request.getDataType()))
-                .flatMap(columnRepository::save)
-                .map(ColumnResponse::from);
+                .flatMap(ignore -> validationClient.changeColumnType(request)
+                        .flatMap(afterDatabase -> transactionalOperator
+                                .transactional(saveAffectedColumns(
+                                        afterDatabase))));
+    }
+
+    private Mono<AffectedColumnsResponse> saveAffectedColumns(
+            Validation.Database afterDatabase) {
+        List<Validation.Column> affectedColumns = collectAffectedColumns(
+                afterDatabase);
+
+        return Flux.fromIterable(affectedColumns)
+                .concatMap(column -> columnRepository
+                        .findByIdAndDeletedAtIsNull(column.getId())
+                        .switchIfEmpty(Mono.error(new BusinessException(
+                                ErrorCode.ERD_COLUMN_NOT_FOUND)))
+                        .doOnNext(entity -> {
+                            entity.setDataType(column.getDataType());
+                            entity.setLengthScale(column.getLengthScale());
+                        })
+                        .flatMap(columnRepository::save)
+                        .map(ColumnResponse::from))
+                .collectList()
+                .map(AffectedColumnsResponse::new);
+    }
+
+    private static List<Validation.Column> collectAffectedColumns(
+            Validation.Database database) {
+        List<Validation.Column> affectedColumns = new ArrayList<>();
+        for (Validation.Schema schema : database.getSchemasList()) {
+            for (Validation.Table table : schema.getTablesList()) {
+                for (Validation.Column column : table.getColumnsList()) {
+                    if (column.getIsAffected()) {
+                        affectedColumns.add(column);
+                    }
+                }
+            }
+        }
+        return affectedColumns;
     }
 
     public Mono<ColumnResponse> updateColumnPosition(

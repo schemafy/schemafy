@@ -1,5 +1,7 @@
 package com.schemafy.core.erd.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -19,6 +21,7 @@ import com.google.protobuf.Message;
 import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
+import com.schemafy.core.erd.controller.dto.response.AffectedColumnsResponse;
 import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
 import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.service.ColumnService;
@@ -540,7 +543,7 @@ class ColumnControllerTest {
                         builder);
         Validation.ChangeColumnTypeRequest request = builder.build();
 
-        ColumnResponse mockResponse = objectMapper.treeToValue(
+        ColumnResponse columnResponse = objectMapper.treeToValue(
                 objectMapper
                         .readTree(
                                 """
@@ -563,6 +566,9 @@ class ColumnControllerTest {
                         .get("result"),
                 ColumnResponse.class);
 
+        AffectedColumnsResponse mockResponse = new AffectedColumnsResponse(
+                List.of(columnResponse));
+
         given(columnService.updateColumnType(request))
                 .willReturn(Mono.just(mockResponse));
 
@@ -576,9 +582,11 @@ class ColumnControllerTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.result.id").isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
-                .jsonPath("$.result.name").isEqualTo("uid")
-                .jsonPath("$.result.dataType").isEqualTo("INTEGER")
+                .jsonPath("$.result.columns[0].id")
+                .isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
+                .jsonPath("$.result.columns[0].name").isEqualTo("uid")
+                .jsonPath("$.result.columns[0].dataType")
+                .isEqualTo("INTEGER")
                 .consumeWith(document("column-update-type",
                         pathParameters(
                                 parameterWithName("columnId")
@@ -608,26 +616,30 @@ class ColumnControllerTest {
                                 fieldWithPath("success")
                                         .description("요청 성공 여부"),
                                 fieldWithPath("result")
-                                        .description("수정된 컬럼 정보"),
-                                fieldWithPath("result.id")
+                                        .description("변경된 컬럼 목록"),
+                                fieldWithPath("result.columns")
+                                        .description("영향받은 컬럼 정보"),
+                                fieldWithPath("result.columns[].id")
                                         .description("컬럼 ID"),
-                                fieldWithPath("result.tableId")
+                                fieldWithPath("result.columns[].tableId")
                                         .description("테이블 ID"),
-                                fieldWithPath("result.name")
+                                fieldWithPath("result.columns[].name")
                                         .description("컬럼 이름"),
-                                fieldWithPath("result.dataType")
+                                fieldWithPath("result.columns[].dataType")
                                         .description("변경된 데이터 타입"),
-                                fieldWithPath("result.lengthScale")
+                                fieldWithPath("result.columns[].lengthScale")
                                         .description("길이/스케일"),
-                                fieldWithPath("result.isAutoIncrement")
+                                fieldWithPath(
+                                        "result.columns[].isAutoIncrement")
                                         .description("자동 증가 여부"),
-                                fieldWithPath("result.charset")
+                                fieldWithPath("result.columns[].charset")
                                         .description("문자 집합"),
-                                fieldWithPath("result.collation")
+                                fieldWithPath("result.columns[].collation")
                                         .description("정렬 규칙"),
-                                fieldWithPath("result.comment")
+                                fieldWithPath("result.columns[].comment")
                                         .description("컬럼 설명"),
-                                fieldWithPath("result.ordinalPosition")
+                                fieldWithPath(
+                                        "result.columns[].ordinalPosition")
                                         .description("컬럼 위치"))));
     }
 

@@ -545,6 +545,7 @@ class ConstraintServiceTest {
                                             "propagated-constraint-col",
                                             "child-pk-constraint",
                                             "propagated-parent-id-col",
+                                            1,
                                             EntityType.CONSTRAINT.name(),
                                             sourceId)),
                                     List.of()),
