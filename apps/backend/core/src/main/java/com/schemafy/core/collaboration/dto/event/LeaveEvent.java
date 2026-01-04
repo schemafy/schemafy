@@ -5,31 +5,31 @@ import com.schemafy.core.collaboration.dto.CollaborationEventType;
 
 public final class LeaveEvent {
 
-    private LeaveEvent() {}
+  private LeaveEvent() {}
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Outbound(
-            String sessionId,
-            String userId,
-            String userName,
-            long timestamp) implements CollaborationOutbound {
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Outbound(
+      String sessionId,
+      String userId,
+      String userName,
+      long timestamp) implements CollaborationOutbound {
 
-        public static Outbound of(String sessionId, String userId,
-                String userName) {
-            return new Outbound(sessionId, userId, userName,
-                    System.currentTimeMillis());
-        }
-
-        @Override
-        public CollaborationEventType type() {
-            return CollaborationEventType.LEAVE;
-        }
-
-        @Override
-        public Outbound withoutSessionId() {
-            return new Outbound(null, userId, userName, timestamp);
-        }
-
+    public static Outbound of(String sessionId, String userId,
+        String userName) {
+      return new Outbound(sessionId, userId, userName,
+          System.currentTimeMillis());
     }
+
+    @Override
+    public CollaborationEventType type() {
+      return CollaborationEventType.LEAVE;
+    }
+
+    @Override
+    public Outbound withoutSessionId() {
+      return new Outbound(null, userId, userName, timestamp);
+    }
+
+  }
 
 }

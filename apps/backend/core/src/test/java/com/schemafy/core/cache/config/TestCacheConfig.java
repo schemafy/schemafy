@@ -13,36 +13,34 @@ import reactor.core.publisher.Mono;
 @Profile({ "test", "dev" })
 public class TestCacheConfig {
 
-    @Bean("redisCacheService")
-    public CacheService mockRedisCacheService() {
-        return new CacheService() {
+  @Bean("redisCacheService")
+  public CacheService mockRedisCacheService() {
+    return new CacheService() {
 
-            @Override
-            public Mono<String> get(String key) {
-                return Mono.empty();
-            }
+      @Override
+      public Mono<String> get(String key) {
+        return Mono.empty();
+      }
 
-            @Override
-            public Mono<Void> put(String key, String value) {
-                return Mono.empty();
-            }
+      @Override
+      public Mono<Void> put(String key, String value) {
+        return Mono.empty();
+      }
 
-            @Override
-            public Mono<Void> evict(String key) {
-                return Mono.empty();
-            }
+      @Override
+      public Mono<Void> evict(String key) {
+        return Mono.empty();
+      }
 
-            @Override
-            public Mono<Boolean> exists(String key) {
-                return Mono.just(false);
-            }
+      @Override
+      public Mono<Boolean> exists(String key) {
+        return Mono.just(false);
+      }
 
-            @Override
-            public Mono<CacheStatsDto> getStats() {
-                return Mono.just(new CacheStatsDto(0L, 0L, 0.0, 0L));
-            }
+      @Override
+      public Mono<CacheStatsDto> getStats() { return Mono.just(new CacheStatsDto(0L, 0L, 0.0, 0L)); }
 
-        };
-    }
+    };
+  }
 
 }

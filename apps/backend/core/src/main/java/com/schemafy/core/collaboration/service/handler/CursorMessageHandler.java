@@ -20,45 +20,45 @@ import reactor.core.publisher.Mono;
 @ConditionalOnRedisEnabled
 public class CursorMessageHandler implements InboundMessageHandler {
 
-    private final SessionRegistry sessionRegistry;
+  private final SessionRegistry sessionRegistry;
 
-    @Override
-    public CollaborationEventType supportedType() {
-        return CollaborationEventType.CURSOR;
+  @Override
+  public CollaborationEventType supportedType() {
+    return CollaborationEventType.CURSOR;
+  }
+
+  @Override
+  public Mono<Void> handle(MessageContext context,
+      CollaborationInbound message) {
+    if (!(message instanceof CursorEvent.Inbound cursorMessage)) {
+      log.warn(
+          "[CursorMessageHandler] Invalid message format: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
     }
 
-    @Override
-    public Mono<Void> handle(MessageContext context,
-            CollaborationInbound message) {
-        if (!(message instanceof CursorEvent.Inbound cursorMessage)) {
-            log.warn(
-                    "[CursorMessageHandler] Invalid message format: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        CursorPosition cursor = cursorMessage.cursor();
-        if (cursor == null) {
-            log.warn("[CursorMessageHandler] No cursor data: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        SessionEntry entry = sessionRegistry
-                .getSessionEntry(context.projectId(), context.sessionId())
-                .orElse(null);
-
-        if (entry == null) {
-            log.warn("[CursorMessageHandler] Session not found: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        String userName = entry.authInfo().getUserName();
-        CursorPosition cursorWithUserName = cursor.withUserName(userName);
-        entry.pushCursor(cursorWithUserName);
-
-        return Mono.empty();
+    CursorPosition cursor = cursorMessage.cursor();
+    if (cursor == null) {
+      log.warn("[CursorMessageHandler] No cursor data: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
     }
+
+    SessionEntry entry = sessionRegistry
+        .getSessionEntry(context.projectId(), context.sessionId())
+        .orElse(null);
+
+    if (entry == null) {
+      log.warn("[CursorMessageHandler] Session not found: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
+    }
+
+    String userName = entry.authInfo().getUserName();
+    CursorPosition cursorWithUserName = cursor.withUserName(userName);
+    entry.pushCursor(cursorWithUserName);
+
+    return Mono.empty();
+  }
 
 }

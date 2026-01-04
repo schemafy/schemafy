@@ -6,25 +6,25 @@ import com.schemafy.core.project.repository.vo.ShareLinkRole;
 
 public record ShareLinkAccessResponse(
 
-        String projectId,
+    String projectId,
 
-        String projectName,
+    String projectName,
 
-        String description,
+    String description,
 
-        ProjectSettings settings,
+    ProjectSettings settings,
 
-        String grantedRole,
+    String grantedRole,
 
-        boolean canEdit,
+    boolean canEdit,
 
-        boolean canComment) {
+    boolean canComment) {
 
-    public static ShareLinkAccessResponse of(Project project,
-            ShareLinkRole role) {
-        return new ShareLinkAccessResponse(project.getId(), project.getName(),
-                project.getDescription(), project.getSettingsAsVo(),
-                role.getValue(), role.canEdit(), role.canComment());
-    }
+  public static ShareLinkAccessResponse of(Project project,
+      ShareLinkRole role) {
+    return new ShareLinkAccessResponse(project.getId(), project.getName(),
+        project.getDescription(), project.getSettingsAsVo(),
+        role.getValue(), role.canEdit(), role.canComment());
+  }
 
 }

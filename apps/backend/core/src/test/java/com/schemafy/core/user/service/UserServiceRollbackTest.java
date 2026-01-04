@@ -28,50 +28,50 @@ import static org.mockito.Mockito.doReturn;
 @DisplayName("UserService 트랜잭션 롤백 테스트")
 class UserServiceRollbackTest {
 
-    @Autowired
-    UserService userService;
+  @Autowired
+  UserService userService;
 
-    @Autowired
-    UserRepository userRepository;
+  @Autowired
+  UserRepository userRepository;
 
-    @Autowired
-    WorkspaceRepository workspaceRepository;
+  @Autowired
+  WorkspaceRepository workspaceRepository;
 
-    @MockitoSpyBean
-    WorkspaceMemberRepository workspaceMemberRepository;
+  @MockitoSpyBean
+  WorkspaceMemberRepository workspaceMemberRepository;
 
-    @BeforeEach
-    void setUp() {
-        Mockito.reset(workspaceMemberRepository);
-        workspaceMemberRepository.deleteAll().block();
-        workspaceRepository.deleteAll().block();
-        userRepository.deleteAll().block();
-    }
+  @BeforeEach
+  void setUp() {
+    Mockito.reset(workspaceMemberRepository);
+    workspaceMemberRepository.deleteAll().block();
+    workspaceRepository.deleteAll().block();
+    userRepository.deleteAll().block();
+  }
 
-    @Test
-    @DisplayName("WorkspaceMember 저장 실패 시 User와 Workspace 모두 롤백된다")
-    void signUp_RollbackAll_WhenMemberSaveFails() {
-        long initialUserCount = userRepository.count().block();
-        long initialWorkspaceCount = workspaceRepository.count().block();
-        long initialMemberCount = workspaceMemberRepository.count().block();
+  @Test
+  @DisplayName("WorkspaceMember 저장 실패 시 User와 Workspace 모두 롤백된다")
+  void signUp_RollbackAll_WhenMemberSaveFails() {
+    long initialUserCount = userRepository.count().block();
+    long initialWorkspaceCount = workspaceRepository.count().block();
+    long initialMemberCount = workspaceMemberRepository.count().block();
 
-        // WorkspaceMember 저장 시 강제로 실패하도록 설정
-        doReturn(Mono.error(new RuntimeException("DB 오류")))
-                .when(workspaceMemberRepository)
-                .save(any(WorkspaceMember.class));
+    // WorkspaceMember 저장 시 강제로 실패하도록 설정
+    doReturn(Mono.error(new RuntimeException("DB 오류")))
+        .when(workspaceMemberRepository)
+        .save(any(WorkspaceMember.class));
 
-        SignUpRequest request = new SignUpRequest(
-                "rollback@example.com", "Rollback User", "password");
+    SignUpRequest request = new SignUpRequest(
+        "rollback@example.com", "Rollback User", "password");
 
-        StepVerifier.create(userService.signUp(request.toCommand()))
-                .expectError(RuntimeException.class)
-                .verify();
+    StepVerifier.create(userService.signUp(request.toCommand()))
+        .expectError(RuntimeException.class)
+        .verify();
 
-        assertThat(userRepository.count().block()).isEqualTo(initialUserCount);
-        assertThat(workspaceRepository.count().block())
-                .isEqualTo(initialWorkspaceCount);
-        assertThat(workspaceMemberRepository.count().block())
-                .isEqualTo(initialMemberCount);
-    }
+    assertThat(userRepository.count().block()).isEqualTo(initialUserCount);
+    assertThat(workspaceRepository.count().block())
+        .isEqualTo(initialWorkspaceCount);
+    assertThat(workspaceMemberRepository.count().block())
+        .isEqualTo(initialMemberCount);
+  }
 
 }

@@ -5,31 +5,31 @@ import com.schemafy.core.collaboration.dto.CollaborationEventType;
 
 public final class JoinEvent {
 
-    private JoinEvent() {}
+  private JoinEvent() {}
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Outbound(
-            String sessionId,
-            String userId,
-            String userName,
-            long timestamp) implements CollaborationOutbound {
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Outbound(
+      String sessionId,
+      String userId,
+      String userName,
+      long timestamp) implements CollaborationOutbound {
 
-        public static Outbound of(String sessionId, String userId,
-                String userName) {
-            return new Outbound(sessionId, userId, userName,
-                    System.currentTimeMillis());
-        }
-
-        @Override
-        public CollaborationEventType type() {
-            return CollaborationEventType.JOIN;
-        }
-
-        @Override
-        public Outbound withoutSessionId() {
-            return new Outbound(null, userId, userName, timestamp);
-        }
-
+    public static Outbound of(String sessionId, String userId,
+        String userName) {
+      return new Outbound(sessionId, userId, userName,
+          System.currentTimeMillis());
     }
+
+    @Override
+    public CollaborationEventType type() {
+      return CollaborationEventType.JOIN;
+    }
+
+    @Override
+    public Outbound withoutSessionId() {
+      return new Outbound(null, userId, userName, timestamp);
+    }
+
+  }
 
 }

@@ -19,28 +19,28 @@ import reactor.core.publisher.Mono;
 @ConditionalOnRedisEnabled
 public class CollaborationEventPublisher {
 
-    private final ReactiveStringRedisTemplate redisTemplate;
-    private final ObjectMapper objectMapper;
+  private final ReactiveStringRedisTemplate redisTemplate;
+  private final ObjectMapper objectMapper;
 
-    public Mono<Void> publish(String projectId, CollaborationOutbound event) {
-        String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
+  public Mono<Void> publish(String projectId, CollaborationOutbound event) {
+    String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
 
-        return serializeToJson(event)
-                .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
-                        eventJson))
-                .doOnError(e -> log.warn(
-                        "[CollaborationEventPublisher] Failed to publish event: type={}, sessionId={}, error={}",
-                        event.type(), event.sessionId(), e.getMessage()))
-                .onErrorResume(e -> Mono.empty())
-                .then();
-    }
+    return serializeToJson(event)
+        .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
+            eventJson))
+        .doOnError(e -> log.warn(
+            "[CollaborationEventPublisher] Failed to publish event: type={}, sessionId={}, error={}",
+            event.type(), event.sessionId(), e.getMessage()))
+        .onErrorResume(e -> Mono.empty())
+        .then();
+  }
 
-    private Mono<String> serializeToJson(Object object) {
-        return Mono.fromCallable(() -> objectMapper.writeValueAsString(object))
-                .onErrorMap(JsonProcessingException.class,
-                        e -> new RuntimeException(
-                                "[CollaborationEventPublisher] Failed to serialize JSON",
-                                e));
-    }
+  private Mono<String> serializeToJson(Object object) {
+    return Mono.fromCallable(() -> objectMapper.writeValueAsString(object))
+        .onErrorMap(JsonProcessingException.class,
+            e -> new RuntimeException(
+                "[CollaborationEventPublisher] Failed to serialize JSON",
+                e));
+  }
 
 }

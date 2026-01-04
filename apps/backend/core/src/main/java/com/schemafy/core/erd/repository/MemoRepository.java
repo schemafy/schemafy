@@ -11,8 +11,8 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface MemoRepository extends ReactiveCrudRepository<Memo, String> {
 
-    Mono<Memo> findByIdAndDeletedAtIsNull(String id);
+  Mono<Memo> findByIdAndDeletedAtIsNull(String id);
 
-    Flux<Memo> findBySchemaIdAndDeletedAtIsNull(String schemaId);
+  Flux<Memo> findBySchemaIdAndDeletedAtIsNull(String schemaId);
 
 }

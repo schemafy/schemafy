@@ -9,11 +9,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface RelationshipRepository
-        extends ReactiveCrudRepository<Relationship, String> {
+    extends ReactiveCrudRepository<Relationship, String> {
 
-    public Mono<Relationship> findByIdAndDeletedAtIsNull(String id);
+  public Mono<Relationship> findByIdAndDeletedAtIsNull(String id);
 
-    @Query("SELECT * FROM db_relationships WHERE deleted_at IS NULL AND (fk_table_id = :tableId OR pk_table_id = :tableId)")
-    public Flux<Relationship> findByTableIdAndDeletedAtIsNull(String tableId);
+  @Query("SELECT * FROM db_relationships WHERE deleted_at IS NULL AND (fk_table_id = :tableId OR pk_table_id = :tableId)")
+  public Flux<Relationship> findByTableIdAndDeletedAtIsNull(String tableId);
 
 }

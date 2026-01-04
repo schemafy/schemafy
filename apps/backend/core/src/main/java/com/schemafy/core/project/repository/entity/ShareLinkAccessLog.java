@@ -21,38 +21,38 @@ import lombok.NoArgsConstructor;
 @Table("share_link_access_logs")
 public class ShareLinkAccessLog implements Persistable<String> {
 
-    @Id
-    private String id;
+  @Id
+  private String id;
 
-    private String shareLinkId;
+  private String shareLinkId;
 
-    private String userId;
+  private String userId;
 
-    private String ipAddress;
+  private String ipAddress;
 
-    private String userAgent;
+  private String userAgent;
 
-    @CreatedDate
-    private Instant accessedAt;
+  @CreatedDate
+  private Instant accessedAt;
 
-    public static ShareLinkAccessLog create(String shareLinkId, String userId,
-            String ipAddress, String userAgent) {
-        return new ShareLinkAccessLog(
-                UlidGenerator.generate(),
-                shareLinkId,
-                userId,
-                ipAddress,
-                userAgent,
-                null);
-    }
+  public static ShareLinkAccessLog create(String shareLinkId, String userId,
+      String ipAddress, String userAgent) {
+    return new ShareLinkAccessLog(
+        UlidGenerator.generate(),
+        shareLinkId,
+        userId,
+        ipAddress,
+        userAgent,
+        null);
+  }
 
-    @Override
-    public String getId() { return id; }
+  @Override
+  public String getId() { return id; }
 
-    @Override
-    @JsonIgnore
-    public boolean isNew() { return this.accessedAt == null; }
+  @Override
+  @JsonIgnore
+  public boolean isNew() { return this.accessedAt == null; }
 
-    public boolean isAnonymousAccess() { return userId == null; }
+  public boolean isAnonymousAccess() { return userId == null; }
 
 }
