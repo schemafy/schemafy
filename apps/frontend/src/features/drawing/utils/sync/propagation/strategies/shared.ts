@@ -1,12 +1,15 @@
 import type { ErdStore } from '@/store/erd.store';
 import type {
-  PropagatedConstraintColumn,
   PropagatedEntitiesGroup,
   SyncContext,
+} from '@/features/drawing/types';
+import type {
   PropagatedColumn,
   PropagatedRelationshipColumn,
-} from '@/features/drawing/types';
+  PropagatedConstraintColumn,
+} from '@/features/drawing/api/types/common';
 import type { Schema } from '@schemafy/validator';
+import type { IdMappingWithType } from '../../index';
 import { findSchema } from '../../helpers';
 
 export function replacePropagatedColumns(
@@ -14,6 +17,7 @@ export function replacePropagatedColumns(
   schema: Schema,
   context: SyncContext,
   erdStore: ErdStore,
+  idMap: Map<string, IdMappingWithType>,
 ) {
   const tableMap = new Map(schema.tables.map((t) => [t.id, t]));
 
@@ -39,6 +43,7 @@ export function replacePropagatedColumns(
           existingCol.id,
           propCol.columnId,
         );
+        idMap.set(existingCol.id, { realId: propCol.columnId, type: 'column' });
 
         erdStore.replaceRelationshipColumnFkId(
           context.schemaId,
@@ -58,6 +63,7 @@ export function replacePropagatedRelationshipColumns(
   schema: Schema,
   context: SyncContext,
   erdStore: ErdStore,
+  idMap: Map<string, IdMappingWithType>,
 ) {
   const relationshipMap = new Map<
     string,
@@ -90,6 +96,10 @@ export function replacePropagatedRelationshipColumns(
       existingRelCol.id,
       propRelCol.relationshipColumnId,
     );
+    idMap.set(existingRelCol.id, {
+      realId: propRelCol.relationshipColumnId,
+      type: 'relationshipColumn',
+    });
 
     if (existingRelCol.fkColumnId !== propRelCol.fkColumnId) {
       erdStore.replaceRelationshipColumnFkId(
@@ -109,6 +119,7 @@ export function replaceConstraintIds(
   >,
   context: SyncContext,
   erdStore: ErdStore,
+  idMap: Map<string, IdMappingWithType>,
 ) {
   if (
     entities.constraints.length === 0 &&
@@ -136,6 +147,10 @@ export function replaceConstraintIds(
         existing.id,
         propConstraint.constraintId,
       );
+      idMap.set(existing.id, {
+        realId: propConstraint.constraintId,
+        type: 'constraint',
+      });
     }
   });
 
@@ -152,6 +167,7 @@ export function replaceConstraintIds(
       context,
       targetTableId,
       erdStore,
+      idMap,
     );
   }
 }
@@ -167,6 +183,7 @@ function replaceConstraintColumnIds(
   context: SyncContext,
   tableId: string,
   erdStore: ErdStore,
+  idMap: Map<string, IdMappingWithType>,
 ) {
   const grouped = constraintColumns.reduce(
     (acc, cc) => {
@@ -197,6 +214,10 @@ function replaceConstraintColumnIds(
           tempCol.id,
           propCol.constraintColumnId,
         );
+        idMap.set(tempCol.id, {
+          realId: propCol.constraintColumnId,
+          type: 'constraintColumn',
+        });
       }
 
       if (tempCol.columnId !== propCol.columnId) {

@@ -3,6 +3,7 @@ import type {
   PropagatedEntitiesGroup,
   SyncContext,
 } from '@/features/drawing/types';
+import type { IdMappingWithType } from '../../index';
 import { findSchema } from '../../helpers';
 import {
   replaceConstraintIds,
@@ -15,11 +16,12 @@ export function constraintStrategy(
   entities: PropagatedEntitiesGroup,
   context: SyncContext,
   erdStore: ErdStore,
+  idMap: Map<string, IdMappingWithType>,
 ) {
   const schema = findSchema(erdStore, context.schemaId);
 
   if (entities.columns.length > 0) {
-    replacePropagatedColumns(entities.columns, schema, context, erdStore);
+    replacePropagatedColumns(entities.columns, schema, context, erdStore, idMap);
   }
 
   if (entities.relationshipColumns.length > 0) {
@@ -28,8 +30,9 @@ export function constraintStrategy(
       schema,
       context,
       erdStore,
+      idMap,
     );
   }
 
-  replaceConstraintIds(entities, context, erdStore);
+  replaceConstraintIds(entities, context, erdStore, idMap);
 }

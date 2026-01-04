@@ -2,22 +2,23 @@ import { ulid } from 'ulid';
 import type { Table } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
 import {
-  createTableAPI,
   getTableAPI,
   getTableColumnListAPI,
   getTableRelationshipListAPI,
   getTableIndexListAPI,
   getTableConstraintListAPI,
-  updateTableNameAPI,
-  updateTableExtraAPI,
-  deleteTableAPI,
 } from '../api/table.api';
-import { withOptimisticUpdate } from '../utils/optimisticUpdate';
 import {
   validateAndGetSchema,
   validateAndGetTable,
 } from '../utils/entityValidators';
-import { handleServerResponse } from '../utils/sync';
+import {
+  CreateTableCommand,
+  UpdateTableNameCommand,
+  UpdateTableExtraCommand,
+  DeleteTableCommand,
+} from '../queue/commands/TableCommands';
+import { executeCommandWithValidation } from '../utils/commandQueueHelper';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -46,16 +47,16 @@ export async function getTableConstraintList(tableId: string) {
   return response.result;
 }
 
-export async function createTable(
+export function createTable(
   schemaId: string,
   name: string,
   tableOptions: string,
   comment?: string,
   extra?: string,
 ) {
-  const erdStore = getErdStore();
-  const { database } = validateAndGetSchema(schemaId);
+  validateAndGetSchema(schemaId);
 
+  const erdStore = getErdStore();
   const tableId = ulid();
 
   const newTable: Omit<Table, 'schemaId'> = {
@@ -71,94 +72,53 @@ export async function createTable(
     extra: extra ? JSON.parse(extra) : undefined,
   };
 
-  const response = await withOptimisticUpdate(
-    () => erdStore.createTable(schemaId, newTable),
-    () =>
-      createTableAPI(
-        {
-          database,
-          schemaId,
-          table: {
-            id: tableId,
-            schemaId,
-            name,
-            comment: comment ?? '',
-            tableOptions: tableOptions ?? '',
-          },
-        },
-        extra,
-      ),
-    () => erdStore.deleteTable(schemaId, tableId),
-  );
+  const command = new CreateTableCommand(schemaId, newTable);
 
-  handleServerResponse(response, { schemaId, tableId });
+  executeCommandWithValidation(command, () => {
+    erdStore.createTable(schemaId, newTable);
+  });
 
   return tableId;
 }
 
-export async function updateTableName(
+export function updateTableName(
   schemaId: string,
   tableId: string,
   newName: string,
 ) {
-  const erdStore = getErdStore();
-  const { database, table } = validateAndGetTable(schemaId, tableId);
+  validateAndGetTable(schemaId, tableId);
 
-  await withOptimisticUpdate(
-    () => {
-      const oldName = table.name;
-      erdStore.changeTableName(schemaId, tableId, newName);
-      return oldName;
-    },
-    () =>
-      updateTableNameAPI(tableId, {
-        database,
-        schemaId,
-        tableId,
-        newName,
-      }),
-    (oldName) => erdStore.changeTableName(schemaId, tableId, oldName),
-  );
+  const erdStore = getErdStore();
+  const command = new UpdateTableNameCommand(schemaId, tableId, newName);
+
+  executeCommandWithValidation(command, () => {
+    erdStore.changeTableName(schemaId, tableId, newName);
+  });
 }
 
-export async function updateTableExtra(
+export function updateTableExtra(
   schemaId: string,
   tableId: string,
   extra: unknown,
 ) {
-  const erdStore = getErdStore();
-  const { table } = validateAndGetTable(schemaId, tableId);
+  validateAndGetTable(schemaId, tableId);
 
-  await withOptimisticUpdate(
-    () => {
-      const oldExtra = table.extra;
-      erdStore.updateTableExtra(schemaId, tableId, extra);
-      return oldExtra;
-    },
-    () =>
-      updateTableExtraAPI(tableId, {
-        extra: JSON.stringify(extra),
-      }),
-    (oldExtra) => erdStore.updateTableExtra(schemaId, tableId, oldExtra),
-  );
+  const erdStore = getErdStore();
+  const command = new UpdateTableExtraCommand(schemaId, tableId, extra);
+
+  executeCommandWithValidation(command, () => {
+    erdStore.updateTableExtra(schemaId, tableId, extra);
+  });
 }
 
-export async function deleteTable(schemaId: string, tableId: string) {
-  const erdStore = getErdStore();
-  const { database, table } = validateAndGetTable(schemaId, tableId);
+export function deleteTable(schemaId: string, tableId: string) {
+  const { table } = validateAndGetTable(schemaId, tableId);
 
-  await withOptimisticUpdate(
-    () => {
-      const tableSnapshot = structuredClone(table);
-      erdStore.deleteTable(schemaId, tableId);
-      return tableSnapshot;
-    },
-    () =>
-      deleteTableAPI(tableId, {
-        database,
-        schemaId,
-        tableId,
-      }),
-    (tableSnapshot) => erdStore.createTable(schemaId, tableSnapshot),
-  );
+  const erdStore = getErdStore();
+  const tableSnapshot = structuredClone(table);
+  const command = new DeleteTableCommand(schemaId, tableId, tableSnapshot);
+
+  executeCommandWithValidation(command, () => {
+    erdStore.deleteTable(schemaId, tableId);
+  });
 }

@@ -1,31 +1,14 @@
-import type { AffectedMappingResponse as ApiAffectedMappingResponse } from '../api/types/common';
+import type { AffectedMappingResponse } from '../api/types/common';
 
 export type SourceType = 'RELATIONSHIP' | 'CONSTRAINT';
 
-// API 타입을 그대로 재export
-export type {
-  PropagatedColumn,
-  PropagatedRelationshipColumn,
-  PropagatedConstraint,
-  PropagatedConstraintColumn,
-} from '../api/types/common';
-
-// 그룹화를 위한 확장 타입 (내부 사용)
 export type PropagatedEntitiesGroup = {
   sourceType: SourceType;
-  columns: ApiAffectedMappingResponse['propagated']['columns'];
-  relationshipColumns: ApiAffectedMappingResponse['propagated']['relationshipColumns'];
-  constraints: ApiAffectedMappingResponse['propagated']['constraints'];
-  constraintColumns: ApiAffectedMappingResponse['propagated']['constraintColumns'];
+  columns: AffectedMappingResponse['propagated']['columns'];
+  relationshipColumns: AffectedMappingResponse['propagated']['relationshipColumns'];
+  constraints: AffectedMappingResponse['propagated']['constraints'];
+  constraintColumns: AffectedMappingResponse['propagated']['constraintColumns'];
 };
-
-// API response를 그대로 사용
-export type AffectedMappingResponse = ApiAffectedMappingResponse;
-
-export interface ServerResponse {
-  success: boolean;
-  result?: AffectedMappingResponse | null;
-}
 
 export type SyncContext = {
   schemaId: string;
@@ -34,3 +17,14 @@ export type SyncContext = {
   constraintId?: string;
   indexId?: string;
 };
+
+export type EntityType =
+  | 'schema'
+  | 'table'
+  | 'column'
+  | 'index'
+  | 'indexColumn'
+  | 'constraint'
+  | 'constraintColumn'
+  | 'relationship'
+  | 'relationshipColumn';

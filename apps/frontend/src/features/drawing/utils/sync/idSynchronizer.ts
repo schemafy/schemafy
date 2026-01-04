@@ -1,49 +1,63 @@
-import { ErdStore } from '@/store/erd.store';
-import type { ServerResponse, SyncContext } from '../../types';
+import type { ErdStore } from '@/store/erd.store';
+import type { SyncContext } from '../../types';
+import type { AffectedMappingResponse } from '../../api/types/common';
+import type { IdMappingWithType } from './index';
 
 export function syncTempToRealIds(
-  result: NonNullable<ServerResponse['result']>,
+  result: AffectedMappingResponse,
   ctx: SyncContext,
+  erdStore: ErdStore,
+  idMap: Map<string, IdMappingWithType>,
 ) {
-  const erdStore = ErdStore.getInstance();
   const { schemaId, tableId, relationshipId, constraintId, indexId } = ctx;
 
-  replaceFlatIds(result.schemas, (t, r) => erdStore.replaceSchemaId(t, r));
-  replaceFlatIds(result.tables, (t, r) =>
-    erdStore.replaceTableId(schemaId, t, r),
-  );
+  replaceFlatIds(result.schemas, (t, r) => {
+    erdStore.replaceSchemaId(t, r);
+    idMap.set(t, { realId: r, type: 'schema' });
+  });
+  replaceFlatIds(result.tables, (t, r) => {
+    erdStore.replaceTableId(schemaId, t, r);
+    idMap.set(t, { realId: r, type: 'table' });
+  });
 
   if (tableId) {
-    replaceNestedIds(result.columns, tableId, (t, r) =>
-      erdStore.replaceColumnId(schemaId, tableId, t, r),
-    );
-    replaceNestedIds(result.constraints, tableId, (t, r) =>
-      erdStore.replaceConstraintId(schemaId, tableId, t, r),
-    );
-    replaceNestedIds(result.indexes, tableId, (t, r) =>
-      erdStore.replaceIndexId(schemaId, tableId, t, r),
-    );
-    replaceNestedIds(result.relationships, tableId, (t, r) =>
-      erdStore.replaceRelationshipId(schemaId, t, r),
-    );
+    replaceNestedIds(result.columns, tableId, (t, r) => {
+      erdStore.replaceColumnId(schemaId, tableId, t, r);
+      idMap.set(t, { realId: r, type: 'column' });
+    });
+    replaceNestedIds(result.constraints, tableId, (t, r) => {
+      erdStore.replaceConstraintId(schemaId, tableId, t, r);
+      idMap.set(t, { realId: r, type: 'constraint' });
+    });
+    replaceNestedIds(result.indexes, tableId, (t, r) => {
+      erdStore.replaceIndexId(schemaId, tableId, t, r);
+      idMap.set(t, { realId: r, type: 'index' });
+    });
+    replaceNestedIds(result.relationships, tableId, (t, r) => {
+      erdStore.replaceRelationshipId(schemaId, t, r);
+      idMap.set(t, { realId: r, type: 'relationship' });
+    });
   }
 
   if (relationshipId) {
-    replaceNestedIds(result.relationshipColumns, relationshipId, (t, r) =>
-      erdStore.replaceRelationshipColumnId(schemaId, relationshipId, t, r),
-    );
+    replaceNestedIds(result.relationshipColumns, relationshipId, (t, r) => {
+      erdStore.replaceRelationshipColumnId(schemaId, relationshipId, t, r);
+      idMap.set(t, { realId: r, type: 'relationshipColumn' });
+    });
   }
 
   if (constraintId && tableId) {
-    replaceNestedIds(result.constraintColumns, constraintId, (t, r) =>
-      erdStore.replaceConstraintColumnId(schemaId, tableId, constraintId, t, r),
-    );
+    replaceNestedIds(result.constraintColumns, constraintId, (t, r) => {
+      erdStore.replaceConstraintColumnId(schemaId, tableId, constraintId, t, r);
+      idMap.set(t, { realId: r, type: 'constraintColumn' });
+    });
   }
 
   if (indexId && tableId) {
-    replaceNestedIds(result.indexColumns, indexId, (t, r) =>
-      erdStore.replaceIndexColumnId(schemaId, tableId, indexId, t, r),
-    );
+    replaceNestedIds(result.indexColumns, indexId, (t, r) => {
+      erdStore.replaceIndexColumnId(schemaId, tableId, indexId, t, r);
+      idMap.set(t, { realId: r, type: 'indexColumn' });
+    });
   }
 }
 

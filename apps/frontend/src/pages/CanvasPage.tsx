@@ -35,6 +35,7 @@ import {
 import { ViewportProvider } from '@/features/drawing/contexts';
 import { ApiTester } from '@/features/drawing/temp/ApiTester';
 import { ErdStore } from '@/store/erd.store';
+import { CommandQueue } from '@/features/drawing/queue/CommandQueue';
 
 const NODE_TYPES = {
   table: TableNode,
@@ -69,14 +70,14 @@ const CanvasPageContent = ({ handleMoveEnd }: CanvasPageContentProps) => {
     if (erdStore.erdState.state === 'idle') {
       const dbId = ulid();
       const schemaId = ulid();
-      erdStore.load({
+      const initialDb = {
         id: dbId,
         isAffected: false,
         schemas: [
           {
             id: schemaId,
             projectId: ulid(),
-            dbVendorId: 'MYSQL',
+            dbVendorId: 'MYSQL' as const,
             name: 'schema1',
             charset: 'utf8mb4',
             collation: 'utf8mb4_general_ci',
@@ -85,7 +86,10 @@ const CanvasPageContent = ({ handleMoveEnd }: CanvasPageContentProps) => {
             isAffected: false,
           },
         ],
-      });
+      };
+
+      erdStore.load(initialDb);
+      CommandQueue.getInstance().initialize(initialDb);
     }
   }, [erdStore]);
 

@@ -1,30 +1,40 @@
-import { ErdStore } from '@/store/erd.store';
+import type { ErdStore } from '@/store/erd.store';
 import type {
   PropagatedEntitiesGroup,
-  ServerResponse,
   SyncContext,
   SourceType,
 } from '@/features/drawing/types';
+import type { AffectedMappingResponse } from '@/features/drawing/api/types/common';
+import type { IdMappingWithType } from '../index';
 import { relationshipStrategy } from './strategies/relationshipStrategy';
 import { constraintStrategy } from './strategies/constraintStrategy';
-import type { PropagationStrategy } from './strategies/types';
 
-const STRATEGIES: Record<SourceType, PropagationStrategy> = {
+const STRATEGIES: Record<
+  SourceType,
+  (
+    sourceId: string,
+    entities: PropagatedEntitiesGroup,
+    context: SyncContext,
+    erdStore: ErdStore,
+    idMap: Map<string, IdMappingWithType>,
+  ) => void
+> = {
   RELATIONSHIP: relationshipStrategy,
   CONSTRAINT: constraintStrategy,
 };
 
 export function syncPropagatedEntities(
-  propagated: NonNullable<NonNullable<ServerResponse['result']>['propagated']>,
+  propagated: AffectedMappingResponse['propagated'],
   context: SyncContext,
+  erdStore: ErdStore,
+  idMap: Map<string, IdMappingWithType>,
 ): void {
-  const erdStore = ErdStore.getInstance();
   const bySource = groupBySourceId(propagated);
 
   Object.entries(bySource).forEach(([sourceId, entities]) => {
     const strategy = STRATEGIES[entities.sourceType];
     if (strategy) {
-      strategy(sourceId, entities, context, erdStore);
+      strategy(sourceId, entities, context, erdStore, idMap);
     } else {
       console.warn(`Unknown source type: ${entities.sourceType}`);
     }
@@ -32,7 +42,7 @@ export function syncPropagatedEntities(
 }
 
 function groupBySourceId(
-  propagated: NonNullable<NonNullable<ServerResponse['result']>['propagated']>,
+  propagated: AffectedMappingResponse['propagated'],
 ): Record<string, PropagatedEntitiesGroup> {
   const grouped: Record<string, PropagatedEntitiesGroup> = {};
 

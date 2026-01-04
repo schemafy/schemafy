@@ -58,6 +58,7 @@ const getDatabaseExtra = (extra: unknown): DatabaseExtra => {
 
 export class ErdStore {
   private static instance: ErdStore;
+  private static syncedInstance: ErdStore;
   erdState: LoadingState = { state: 'idle' };
 
   private constructor() {
@@ -75,6 +76,13 @@ export class ErdStore {
       ErdStore.instance = new ErdStore();
     }
     return ErdStore.instance;
+  }
+
+  static getSyncedInstance(): ErdStore {
+    if (!ErdStore.syncedInstance) {
+      ErdStore.syncedInstance = new ErdStore();
+    }
+    return ErdStore.syncedInstance;
   }
 
   // state
