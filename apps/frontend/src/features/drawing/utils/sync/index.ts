@@ -42,6 +42,10 @@ export function applyLocalIdMapping(
     return;
   }
 
+  if (idMap.size === 0) {
+    return;
+  }
+
   const db = erdStore.database!;
 
   const updatedDb = {

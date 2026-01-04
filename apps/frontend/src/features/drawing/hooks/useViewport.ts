@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useReactFlow, type Viewport } from '@xyflow/react';
 import { ErdStore } from '@/store/erd.store';
+import { CommandQueue } from '../queue/CommandQueue';
 
 const LOCAL_STORAGE_KEY = 'schemafy-viewport';
 
@@ -15,6 +16,41 @@ export const useViewport = () => {
   const erdStore = ErdStore.getInstance();
   const { setViewport, getViewport } = useReactFlow();
   const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const commandQueue = CommandQueue.getInstance();
+
+    const unsubscribe = commandQueue.onIdMapping((tempId, realId, type) => {
+      if (type !== 'schema' || selectedSchemaId !== tempId) return;
+
+      setSelectedSchemaId(realId);
+
+      if (erdStore.erdState.state === 'loaded') {
+        const projectId = erdStore.erdState.database.id;
+        try {
+          const storageData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (!storageData) return;
+
+          const allProjects = JSON.parse(storageData) as ProjectViewports;
+          if (!allProjects[projectId]) return;
+
+          allProjects[projectId].selectedSchema = realId;
+
+          const viewports = allProjects[projectId].viewports;
+          if (viewports[tempId]) {
+            viewports[realId] = viewports[tempId];
+            delete viewports[tempId];
+          }
+
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(allProjects));
+        } catch (e) {
+          console.error('Failed to update mapped schema ID in localStorage', e);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [selectedSchemaId, erdStore.erdState]);
 
   useEffect(() => {
     if (erdStore.erdState.state !== 'loaded') return;

@@ -9,6 +9,8 @@ import {
 } from '../utils/sync';
 import type { SyncContext } from '../types';
 
+type IdMappingCallback = (tempId: string, realId: string, type: string) => void;
+
 export class CommandQueue {
   private static instance: CommandQueue;
   private queue: Command[] = [];
@@ -16,6 +18,7 @@ export class CommandQueue {
   private idMapping = new Map<string, IdMappingWithType>();
   private syncedStore: ErdStore;
   private isProcessing = false;
+  private idMappingCallbacks: IdMappingCallback[] = [];
 
   private constructor() {
     this.syncedStore = ErdStore.getSyncedInstance();
@@ -110,9 +113,18 @@ export class CommandQueue {
       const localStore = ErdStore.getInstance();
       applyLocalIdMapping(idMap, localStore);
 
+      if (this.idMappingCallbacks.length > 0) {
+        idMap.forEach((realId, tempId) => {
+          this.notifyIdMapping(tempId, realId.realId, realId.type);
+        });
+      }
+
       this.pendingEntityIds.delete(command.entityId);
     } catch (error) {
-      console.error('[CommandQueue] API request failed, rolling back to synced state:', error);
+      console.error(
+        '[CommandQueue] API request failed, rolling back to synced state:',
+        error,
+      );
       const localStore = ErdStore.getInstance();
       localStore.load(syncedDb);
 
@@ -130,10 +142,31 @@ export class CommandQueue {
     return this.idMapping.get(tempId);
   }
 
+  onIdMapping(callback: IdMappingCallback) {
+    this.idMappingCallbacks.push(callback);
+    return () => {
+      const index = this.idMappingCallbacks.indexOf(callback);
+      if (index > -1) {
+        this.idMappingCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  private notifyIdMapping(tempId: string, realId: string, type: string) {
+    this.idMappingCallbacks.forEach((callback) => {
+      try {
+        callback(tempId, realId, type);
+      } catch (error) {
+        console.error('Error in ID mapping callback:', error);
+      }
+    });
+  }
+
   clear() {
     this.queue = [];
     this.pendingEntityIds.clear();
     this.idMapping.clear();
     this.isProcessing = false;
+    this.idMappingCallbacks = [];
   }
 }
