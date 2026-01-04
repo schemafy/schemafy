@@ -210,9 +210,7 @@ export class MemoStore {
         if (schemaId) {
           const listMemos = this.memosBySchema[schemaId] ?? [];
           this.memosBySchema[schemaId] = listMemos.map((m) =>
-            m.id === memoId
-              ? { ...m, comments: [...m.comments, comment] }
-              : m,
+            m.id === memoId ? { ...m, comments: [...m.comments, comment] } : m,
           );
         }
       },

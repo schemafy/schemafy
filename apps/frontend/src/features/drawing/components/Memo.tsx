@@ -188,11 +188,7 @@ export const Memo = observer(({ id, data }: MemoProps) => {
 
           <ul className="flex flex-col gap-4">
             {comments.map((comment) => (
-              <ReplyItem
-                key={comment.id}
-                memoId={id}
-                comment={comment}
-              />
+              <ReplyItem key={comment.id} memoId={id} comment={comment} />
             ))}
           </ul>
 
