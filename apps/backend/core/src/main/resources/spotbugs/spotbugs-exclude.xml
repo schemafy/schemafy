@@ -76,8 +76,9 @@
         <Bug pattern="UNKNOWN"/>
     </Match>
 
-    <!-- Security: SQL Injection - False positives with prepared statements -->
+    <!-- Security: SQL Injection - repository-specific query builders handled via annotations -->
     <Match>
+        <Package name="com.schemafy.core.erd.repository.*"/>
         <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING"/>
     </Match>
 
@@ -87,7 +88,6 @@
         <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON"/>
     </Match>
 
-    <!-- TODO: Fix - DbVendor masks id field from BaseEntity -->
     <Match>
         <Class name="com.schemafy.core.erd.repository.entity.DbVendor"/>
         <Bug pattern="MF_CLASS_MASKS_FIELD"/>

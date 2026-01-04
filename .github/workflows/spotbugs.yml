@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  security-events: write
 
 jobs:
   spotbugs:
@@ -29,28 +30,19 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x apps/backend/core/gradlew
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
       - name: Run SpotBugs analysis
+        id: run_spotbugs
+        continue-on-error: true
         run: |
           cd apps/backend/core
-          ./gradlew spotbugsMain --console=plain
+          ./gradlew spotbugsMain --no-daemon --console=plain
 
-      - name: Upload SpotBugs HTML report
+      - name: Upload SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: spotbugs-html-report
-          path: apps/backend/core/build/reports/spotbugs/main.html
-          retention-days: 30
+          sarif_file: apps/backend/core/build/reports/spotbugs/main.sarif
+          category: spotbugs
 
       - name: Analyze SpotBugs results
         if: always()
@@ -65,6 +57,7 @@ jobs:
             echo "high_bugs=$HIGH_BUGS" >> $GITHUB_OUTPUT
             echo "medium_bugs=$MEDIUM_BUGS" >> $GITHUB_OUTPUT
             echo "low_bugs=$LOW_BUGS" >> $GITHUB_OUTPUT
+            echo "has_report=true" >> $GITHUB_OUTPUT
 
             echo "### 🔍 SpotBugs Analysis Results" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -84,34 +77,35 @@ jobs:
               echo "✅ **No critical bugs found!**" >> $GITHUB_STEP_SUMMARY
             fi
           else
-            echo "::warning::SpotBugs report not found"
+            echo "::error::SpotBugs report not found. The build might have failed before generating the report."
+            echo "has_report=false" >> $GITHUB_OUTPUT
+            exit 1
           fi
 
       - name: Comment PR with results
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && steps.analyze.outputs.has_report == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            const high = '${{ steps.analyze.outputs.high_bugs }}' || '0';
-            const medium = '${{ steps.analyze.outputs.medium_bugs }}' || '0';
-            const low = '${{ steps.analyze.outputs.low_bugs }}' || '0';
+            const high = '${{ steps.analyze.outputs.high_bugs }}';
+            const medium = '${{ steps.analyze.outputs.medium_bugs }}';
+            const low = '${{ steps.analyze.outputs.low_bugs }}';
 
             const status = (parseInt(high) + parseInt(medium)) > 0 ? '❌' : '✅';
             const message = `## ${status} SpotBugs Code Quality Report
 
-| Priority | Count |
-|----------|-------|
-| 🔴 High   | ${high} |
-| 🟡 Medium | ${medium} |
-| 🟢 Low    | ${low} |
+            | Priority | Count |
+            |----------|-------|
+            | 🔴 High   | ${high} |
+            | 🟡 Medium | ${medium} |
+            | 🟢 Low    | ${low} |
 
-${(parseInt(high) + parseInt(medium)) > 0
-  ? '⚠️ **Please review and fix the high/medium priority bugs before merging.**'
-  : '✅ **No critical bugs found!**'}
-
-📊 [View detailed HTML report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-`;
+            ${(parseInt(high) + parseInt(medium)) > 0
+              ? '⚠️ **Please review and fix the high/medium priority bugs before merging.**'
+              : '✅ **No critical bugs found!**'}
+            
+            🔍 Detailed issues can be found in the "Files changed" tab or "Security" tab.
+            `;
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
