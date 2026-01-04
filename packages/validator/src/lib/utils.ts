@@ -235,12 +235,12 @@ export const ERD_VALIDATOR: ERDValidator = {
           }
 
           const targetTableExists = schema.tables.some(
-            (t) => t.id === relationship.tgtTableId,
+            (t) => t.id === relationship.pkTableId,
           );
           if (!targetTableExists) {
             throw new RelationshipTargetTableNotExistError(
               relationship.name,
-              relationship.tgtTableId,
+              relationship.pkTableId,
             );
           }
         }
@@ -265,15 +265,15 @@ export const ERD_VALIDATOR: ERDValidator = {
         const table = schema.tables.find((t) => t.id === tableId);
         if (table) {
           for (const relationship of table.relationships) {
-            if (detectCycle(relationship.tgtTableId)) {
-              const srcTableName = table.name;
-              const tgtTable = schema.tables.find(
-                (t) => t.id === relationship.tgtTableId,
+            if (detectCycle(relationship.pkTableId)) {
+              const fkTableName = table.name;
+              const pkTable = schema.tables.find(
+                (t) => t.id === relationship.pkTableId,
               );
-              const tgtTableName = tgtTable?.name || relationship.tgtTableId;
+              const pkTableName = pkTable?.name || relationship.pkTableId;
               throw new RelationshipCyclicReferenceError(
-                srcTableName,
-                tgtTableName,
+                fkTableName,
+                pkTableName,
               );
             }
           }

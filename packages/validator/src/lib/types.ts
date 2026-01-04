@@ -37,7 +37,7 @@ export const COLUMN = z.object({
   id: ULID,
   tableId: ULID,
   name: z.string().min(1).max(40),
-  ordinalPosition: z.number().nonnegative(),
+  seqNo: z.number().nonnegative(),
   dataType: z.string().nullable().optional(),
   lengthScale: z.string(),
   isAutoIncrement: z.boolean(),
@@ -99,15 +99,15 @@ export const RELATIONSHIP_COLUMN = z.object({
   id: ULID,
   relationshipId: ULID,
   fkColumnId: ULID,
-  refColumnId: ULID,
+  pkColumnId: ULID,
   seqNo: z.number().nonnegative(),
   isAffected: z.boolean().default(false),
 });
 
 export const RELATIONSHIP = z.object({
   id: ULID,
-  srcTableId: ULID,
-  tgtTableId: ULID,
+  fkTableId: ULID,
+  pkTableId: ULID,
   name: z.string(),
   kind: RELATIONSHIP_KIND,
   cardinality: RELATIONSHIP_CARDINALITY,

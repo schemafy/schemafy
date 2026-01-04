@@ -17,8 +17,8 @@ import lombok.Getter;
 public class RelationshipResponse {
 
     private String id;
-    private String srcTableId;
-    private String tgtTableId;
+    private String fkTableId;
+    private String pkTableId;
     private String name;
     private String kind;
     private String cardinality;
@@ -30,8 +30,8 @@ public class RelationshipResponse {
     public static RelationshipResponse from(Relationship relationship) {
         return RelationshipResponse.builder()
                 .id(relationship.getId())
-                .srcTableId(relationship.getSrcTableId())
-                .tgtTableId(relationship.getTgtTableId())
+                .fkTableId(relationship.getFkTableId())
+                .pkTableId(relationship.getPkTableId())
                 .name(relationship.getName())
                 .kind(relationship.getKind())
                 .cardinality(relationship.getCardinality())
@@ -46,8 +46,8 @@ public class RelationshipResponse {
             List<RelationshipColumn> columns) {
         return RelationshipResponse.builder()
                 .id(relationship.getId())
-                .srcTableId(relationship.getSrcTableId())
-                .tgtTableId(relationship.getTgtTableId())
+                .fkTableId(relationship.getFkTableId())
+                .pkTableId(relationship.getPkTableId())
                 .name(relationship.getName())
                 .kind(relationship.getKind())
                 .cardinality(relationship.getCardinality())

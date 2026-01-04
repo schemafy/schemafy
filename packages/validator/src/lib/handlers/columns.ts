@@ -56,7 +56,7 @@ export interface ColumnHandlers {
     schemaId: Schema["id"],
     tableId: Table["id"],
     columnId: Column["id"],
-    newPosition: Column["ordinalPosition"],
+    newPosition: Column["seqNo"],
   ) => Database;
 }
 
@@ -166,10 +166,10 @@ export const columnHandlers: ColumnHandlers = {
       (rel) => ({
         ...rel,
         isAffected: rel.columns.some(
-          (rc) => rc.fkColumnId === columnId || rc.refColumnId === columnId,
+          (rc) => rc.fkColumnId === columnId || rc.pkColumnId === columnId,
         ),
         columns: rel.columns.filter(
-          (rc) => rc.fkColumnId !== columnId && rc.refColumnId !== columnId,
+          (rc) => rc.fkColumnId !== columnId && rc.pkColumnId !== columnId,
         ),
       }),
     );
@@ -278,7 +278,7 @@ export const columnHandlers: ColumnHandlers = {
         for (const relationship of currentTable.relationships) {
           for (const relationshipColumn of relationship.columns) {
             if (
-              relationshipColumn.refColumnId === currentColumnId &&
+              relationshipColumn.pkColumnId === currentColumnId &&
               !allRelatedColumnIds.has(relationshipColumn.fkColumnId)
             ) {
               allRelatedColumnIds.add(relationshipColumn.fkColumnId);
@@ -286,10 +286,10 @@ export const columnHandlers: ColumnHandlers = {
             }
             if (
               relationshipColumn.fkColumnId === currentColumnId &&
-              !allRelatedColumnIds.has(relationshipColumn.refColumnId)
+              !allRelatedColumnIds.has(relationshipColumn.pkColumnId)
             ) {
-              allRelatedColumnIds.add(relationshipColumn.refColumnId);
-              queue.push(relationshipColumn.refColumnId);
+              allRelatedColumnIds.add(relationshipColumn.pkColumnId);
+              queue.push(relationshipColumn.pkColumnId);
             }
           }
         }
@@ -338,9 +338,7 @@ export const columnHandlers: ColumnHandlers = {
     const column = table.columns.find((c) => c.id === columnId);
     if (!column) throw new ColumnNotExistError(columnId, tableId);
 
-    const sortedColumns = [...table.columns].sort(
-      (a, b) => a.ordinalPosition - b.ordinalPosition,
-    );
+    const sortedColumns = [...table.columns].sort((a, b) => a.seqNo - b.seqNo);
 
     const columnsWithoutTarget = sortedColumns.filter((c) => c.id !== columnId);
 
@@ -352,7 +350,7 @@ export const columnHandlers: ColumnHandlers = {
 
     const updatedColumns = reorderedColumns.map((col, index) => ({
       ...col,
-      ordinalPosition: index,
+      seqNo: index,
       isAffected: true,
     }));
 

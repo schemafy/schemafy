@@ -14,8 +14,8 @@ public class RelationshipColumnResponse {
 
     private String id;
     private String relationshipId;
-    private String srcColumnId;
-    private String tgtColumnId;
+    private String fkColumnId;
+    private String pkColumnId;
     private Integer seqNo;
 
     public static RelationshipColumnResponse from(
@@ -23,8 +23,8 @@ public class RelationshipColumnResponse {
         return RelationshipColumnResponse.builder()
                 .id(relationshipColumn.getId())
                 .relationshipId(relationshipColumn.getRelationshipId())
-                .srcColumnId(relationshipColumn.getSrcColumnId())
-                .tgtColumnId(relationshipColumn.getTgtColumnId())
+                .fkColumnId(relationshipColumn.getFkColumnId())
+                .pkColumnId(relationshipColumn.getPkColumnId())
                 .seqNo(relationshipColumn.getSeqNo())
                 .build();
     }

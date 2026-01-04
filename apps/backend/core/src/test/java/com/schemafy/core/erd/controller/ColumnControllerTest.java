@@ -112,7 +112,7 @@ class ColumnControllerTest {
                                 "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                 "name": "user_id",
                                 "dataType": "BIGINT",
-                                "ordinalPosition": 1,
+                                "seqNo": 1,
                                 "lengthScale": "20",
                                 "charset": "utf8mb4",
                                 "collation": "utf8mb4_unicode_ci",
@@ -195,7 +195,7 @@ class ColumnControllerTest {
                                         .description("컬럼 이름"),
                                 fieldWithPath("column.dataType")
                                         .description("데이터 타입"),
-                                fieldWithPath("column.ordinalPosition")
+                                fieldWithPath("column.seqNo")
                                         .description("컬럼 위치"),
                                 fieldWithPath("column.lengthScale")
                                         .description("길이/스케일"),
@@ -267,7 +267,7 @@ class ColumnControllerTest {
                                                 "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                 "name": "user_id",
                                                 "dataType": "BIGINT",
-                                                "ordinalPosition": 1,
+                                                "seqNo": 1,
                                                 "lengthScale": "20",
                                                 "isAutoIncrement": false,
                                                 "charset": "utf8mb4",
@@ -294,7 +294,7 @@ class ColumnControllerTest {
                 .isEqualTo("06D6W8HDY79QFZX39RMX62KSX4")
                 .jsonPath("$.result.name").isEqualTo("user_id")
                 .jsonPath("$.result.dataType").isEqualTo("BIGINT")
-                .jsonPath("$.result.ordinalPosition").isEqualTo(1)
+                .jsonPath("$.result.seqNo").isEqualTo(1)
                 .consumeWith(document("column-get",
                         pathParameters(
                                 parameterWithName("columnId")
@@ -328,7 +328,7 @@ class ColumnControllerTest {
                                         .description("정렬 규칙"),
                                 fieldWithPath("result.comment")
                                         .description("컬럼 설명"),
-                                fieldWithPath("result.ordinalPosition")
+                                fieldWithPath("result.seqNo")
                                         .description("컬럼 위치"))));
     }
 
@@ -366,7 +366,7 @@ class ColumnControllerTest {
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "user_id",
                                                         "dataType": "BIGINT",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
                                                         "collation": "utf8mb4_unicode_ci",
@@ -402,7 +402,7 @@ class ColumnControllerTest {
                                                 "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                 "name": "uid",
                                                 "dataType": "BIGINT",
-                                                "ordinalPosition": 1,
+                                                "seqNo": 1,
                                                 "lengthScale": "20",
                                                 "isAutoIncrement": false,
                                                 "charset": "utf8mb4",
@@ -480,7 +480,7 @@ class ColumnControllerTest {
                                         .description("정렬 규칙"),
                                 fieldWithPath("result.comment")
                                         .description("컬럼 설명"),
-                                fieldWithPath("result.ordinalPosition")
+                                fieldWithPath("result.seqNo")
                                         .description("컬럼 위치"))));
     }
 
@@ -518,7 +518,7 @@ class ColumnControllerTest {
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
                                                         "dataType": "BIGINT",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
                                                         "collation": "utf8mb4_unicode_ci",
@@ -554,7 +554,7 @@ class ColumnControllerTest {
                                                 "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                 "name": "uid",
                                                 "dataType": "INTEGER",
-                                                "ordinalPosition": 1,
+                                                "seqNo": 1,
                                                 "lengthScale": "20",
                                                 "isAutoIncrement": false,
                                                 "charset": "utf8mb4",
@@ -639,7 +639,7 @@ class ColumnControllerTest {
                                 fieldWithPath("result.columns[].comment")
                                         .description("컬럼 설명"),
                                 fieldWithPath(
-                                        "result.columns[].ordinalPosition")
+                                        "result.columns[].seqNo")
                                         .description("컬럼 위치"))));
     }
 
@@ -677,7 +677,7 @@ class ColumnControllerTest {
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
                                                         "dataType": "INTEGER",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
                                                         "collation": "utf8mb4_unicode_ci",
@@ -713,7 +713,7 @@ class ColumnControllerTest {
                                                 "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                 "name": "uid",
                                                 "dataType": "INTEGER",
-                                                "ordinalPosition": 1,
+                                                "seqNo": 1,
                                                 "lengthScale": "20",
                                                 "isAutoIncrement": false,
                                                 "charset": "utf8mb4",
@@ -740,7 +740,7 @@ class ColumnControllerTest {
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.result.id").isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
                 .jsonPath("$.result.name").isEqualTo("uid")
-                .jsonPath("$.result.ordinalPosition").isEqualTo(1)
+                .jsonPath("$.result.seqNo").isEqualTo(1)
                 .consumeWith(document("column-update-position",
                         pathParameters(
                                 parameterWithName("columnId")
@@ -789,7 +789,7 @@ class ColumnControllerTest {
                                         .description("정렬 규칙"),
                                 fieldWithPath("result.comment")
                                         .description("컬럼 설명"),
-                                fieldWithPath("result.ordinalPosition")
+                                fieldWithPath("result.seqNo")
                                         .description("변경된 컬럼 위치"))));
     }
 
@@ -827,7 +827,7 @@ class ColumnControllerTest {
                                                         "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
                                                         "name": "uid",
                                                         "dataType": "INTEGER",
-                                                        "ordinalPosition": 1,
+                                                        "seqNo": 1,
                                                         "lengthScale": "20",
                                                         "charset": "utf8mb4",
                                                         "collation": "utf8mb4_unicode_ci",

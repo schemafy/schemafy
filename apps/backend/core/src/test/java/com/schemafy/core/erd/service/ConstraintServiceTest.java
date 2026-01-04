@@ -245,7 +245,7 @@ class ConstraintServiceTest {
                                                 .setId("col-1")
                                                 .setTableId("table-1")
                                                 .setName("id")
-                                                .setOrdinalPosition(1)
+                                                .setSeqNo(1)
                                                 .setDataType("INT")
                                                 .build())
                                         .build())
@@ -412,9 +412,9 @@ class ConstraintServiceTest {
                                                 Validation.Relationship
                                                         .newBuilder()
                                                         .setId("identifying-rel")
-                                                        .setSrcTableId(
+                                                        .setFkTableId(
                                                                 "child-table")
-                                                        .setTgtTableId(
+                                                        .setPkTableId(
                                                                 "parent-table")
                                                         .setName(
                                                                 "fk_child_parent")
@@ -513,8 +513,8 @@ class ConstraintServiceTest {
                                 .addRelationships(Validation.Relationship
                                         .newBuilder()
                                         .setId("identifying-rel")
-                                        .setSrcTableId("child-table")
-                                        .setTgtTableId("parent-table")
+                                        .setFkTableId("child-table")
+                                        .setPkTableId("parent-table")
                                         .setName("fk_child_parent")
                                         .setKind(
                                                 Validation.RelationshipKind.IDENTIFYING)
@@ -812,7 +812,7 @@ class ConstraintServiceTest {
                 Column.builder()
                         .tableId("parent-table")
                         .name("id")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .dataType("INT")
                         .build())
                 .block();
@@ -820,7 +820,7 @@ class ConstraintServiceTest {
                 Column.builder()
                         .tableId("child-table")
                         .name("parent_id")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .dataType("INT")
                         .build())
                 .block();
@@ -845,7 +845,7 @@ class ConstraintServiceTest {
                                         .setId(pkColumn.getId())
                                         .setTableId("parent-table")
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .addConstraints(Validation.Constraint
@@ -875,7 +875,7 @@ class ConstraintServiceTest {
                                         .setId(fkColumnToDelete.getId())
                                         .setTableId("child-table")
                                         .setName("parent_id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .build())
@@ -894,7 +894,7 @@ class ConstraintServiceTest {
                                         .setId(pkColumn.getId())
                                         .setTableId("parent-table")
                                         .setName("id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .addConstraints(Validation.Constraint
@@ -947,7 +947,7 @@ class ConstraintServiceTest {
                 Column.builder()
                         .tableId("child-table")
                         .name("parent_id")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .dataType("INT")
                         .build())
                 .block();
@@ -985,7 +985,7 @@ class ConstraintServiceTest {
                                         .setId(fkColumnToDelete.getId())
                                         .setTableId("child-table")
                                         .setName("parent_id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .build())

@@ -382,11 +382,11 @@ public class AffectedEntitiesSaver {
                             .concatMap(relationship -> {
                                 var entity = ErdMapper
                                         .toEntity(relationship);
-                                entity.setSrcTableId(remapId(
-                                        relationship.getSrcTableId(),
+                                entity.setFkTableId(remapId(
+                                        relationship.getFkTableId(),
                                         tableIdMap));
-                                entity.setTgtTableId(remapId(
-                                        relationship.getTgtTableId(),
+                                entity.setPkTableId(remapId(
+                                        relationship.getPkTableId(),
                                         tableIdMap));
                                 return relationshipRepository.save(entity)
                                         .doOnNext(
@@ -492,15 +492,15 @@ public class AffectedEntitiesSaver {
                                 String fkColumnId = remapId(
                                         relationshipColumn.getFkColumnId(),
                                         columnIdMap);
-                                String refColumnId = remapId(
-                                        relationshipColumn.getRefColumnId(),
+                                String pkColumnId = remapId(
+                                        relationshipColumn.getPkColumnId(),
                                         columnIdMap);
 
                                 RelationshipColumn entity = RelationshipColumn
                                         .builder()
                                         .relationshipId(relationshipId)
-                                        .srcColumnId(fkColumnId)
-                                        .tgtColumnId(refColumnId)
+                                        .fkColumnId(fkColumnId)
+                                        .pkColumnId(pkColumnId)
                                         .seqNo((int) relationshipColumn
                                                 .getSeqNo())
                                         .build();
@@ -522,7 +522,7 @@ public class AffectedEntitiesSaver {
                                                                         .getId(),
                                                                 relationshipId,
                                                                 fkColumnId,
-                                                                refColumnId,
+                                                                pkColumnId,
                                                                 entity
                                                                         .getSeqNo(),
                                                                 sourceType,
@@ -684,7 +684,7 @@ public class AffectedEntitiesSaver {
                         for (Validation.RelationshipColumn relationshipColumn : relationship
                                 .getColumnsList()) {
                             if (!parentColumnIds.contains(
-                                    relationshipColumn.getRefColumnId())) {
+                                    relationshipColumn.getPkColumnId())) {
                                 continue;
                             }
 
@@ -710,7 +710,7 @@ public class AffectedEntitiesSaver {
 
         fkToRefMap.put(
                 remapId(fkColumnId, columnIdMap),
-                remapId(relationshipColumn.getRefColumnId(), columnIdMap));
+                remapId(relationshipColumn.getPkColumnId(), columnIdMap));
     }
 
     private static Validation.Relationship findRelationshipById(

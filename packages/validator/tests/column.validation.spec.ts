@@ -290,12 +290,12 @@ describe('Column validation', () => {
 
     const relationship = createRelationshipBuilder()
       .withId('rel-1')
-      .withSrcTableId(childTableId)
+      .withFkTableId(childTableId)
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
-      .withTgtTableId(parentTableId)
+      .withPkTableId(parentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(fkColumnId).withRefColumnId(parentColumnId)
+        rc.withFkColumnId(fkColumnId).withPkColumnId(parentColumnId)
       )
       .build();
 
@@ -384,12 +384,12 @@ describe('Column validation', () => {
 
     const parentRelationship = createRelationshipBuilder()
       .withId('rel-1')
-      .withSrcTableId(parentTableId)
+      .withFkTableId(parentTableId)
       .withName('fk_grandparent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(grandparentTableId)
+      .withPkTableId(grandparentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(parentFkColumnId).withRefColumnId(grandparentColumnId)
+        rc.withFkColumnId(parentFkColumnId).withPkColumnId(grandparentColumnId)
       )
       .build();
 
@@ -401,12 +401,12 @@ describe('Column validation', () => {
 
     const childRelationship = createRelationshipBuilder()
       .withId('rel-2')
-      .withSrcTableId(childTableId)
+      .withFkTableId(childTableId)
       .withName('fk_parent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(parentTableId)
+      .withPkTableId(parentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentFkColumnId)
+        rc.withFkColumnId(childFkColumnId).withPkColumnId(parentFkColumnId)
       )
       .build();
 
@@ -496,12 +496,12 @@ describe('Column validation', () => {
 
     const parentRelationship = createRelationshipBuilder()
       .withId('rel-1')
-      .withSrcTableId(parentTableId)
+      .withFkTableId(parentTableId)
       .withName('fk_grandparent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(grandparentTableId)
+      .withPkTableId(grandparentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(parentFkColumnId).withRefColumnId(grandparentColumnId)
+        rc.withFkColumnId(parentFkColumnId).withPkColumnId(grandparentColumnId)
       )
       .build();
 
@@ -513,12 +513,12 @@ describe('Column validation', () => {
 
     const childRelationship = createRelationshipBuilder()
       .withId('rel-2')
-      .withSrcTableId(childTableId)
+      .withFkTableId(childTableId)
       .withName('fk_parent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(parentTableId)
+      .withPkTableId(parentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentFkColumnId)
+        rc.withFkColumnId(childFkColumnId).withPkColumnId(parentFkColumnId)
       )
       .build();
 
@@ -609,12 +609,12 @@ describe('Column validation', () => {
 
     const parentRelationship = createRelationshipBuilder()
       .withId('rel-1')
-      .withSrcTableId(parentTableId)
+      .withFkTableId(parentTableId)
       .withName('fk_grandparent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(grandparentTableId)
+      .withPkTableId(grandparentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(parentFkColumnId).withRefColumnId(grandparentColumnId)
+        rc.withFkColumnId(parentFkColumnId).withPkColumnId(grandparentColumnId)
       )
       .build();
 
@@ -626,12 +626,12 @@ describe('Column validation', () => {
 
     const childRelationship = createRelationshipBuilder()
       .withId('rel-2')
-      .withSrcTableId(childTableId)
+      .withFkTableId(childTableId)
       .withName('fk_parent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(parentTableId)
+      .withPkTableId(parentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentFkColumnId)
+        rc.withFkColumnId(childFkColumnId).withPkColumnId(parentFkColumnId)
       )
       .build();
 
@@ -737,14 +737,14 @@ describe('Column validation', () => {
     // 관계 생성: great-grandparent → grandparent
     const rel1 = createRelationshipBuilder()
       .withId('rel-1')
-      .withSrcTableId(grandparentTableId)
+      .withFkTableId(grandparentTableId)
       .withName('fk_great_grandparent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(greatGrandparentTableId)
+      .withPkTableId(greatGrandparentTableId)
       .withColumn((rc) =>
         rc
           .withFkColumnId(grandparentFkColumnId)
-          .withRefColumnId(greatGrandparentColumnId)
+          .withPkColumnId(greatGrandparentColumnId)
       )
       .build();
 
@@ -753,14 +753,14 @@ describe('Column validation', () => {
     // 관계 생성: grandparent → parent
     const rel2 = createRelationshipBuilder()
       .withId('rel-2')
-      .withSrcTableId(parentTableId)
+      .withFkTableId(parentTableId)
       .withName('fk_grandparent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(grandparentTableId)
+      .withPkTableId(grandparentTableId)
       .withColumn((rc) =>
         rc
           .withFkColumnId(parentFkColumnId)
-          .withRefColumnId(grandparentFkColumnId)
+          .withPkColumnId(grandparentFkColumnId)
       )
       .build();
 
@@ -769,12 +769,12 @@ describe('Column validation', () => {
     // 관계 생성: parent → child
     const rel3 = createRelationshipBuilder()
       .withId('rel-3')
-      .withSrcTableId(childTableId)
+      .withFkTableId(childTableId)
       .withName('fk_parent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(parentTableId)
+      .withPkTableId(parentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentFkColumnId)
+        rc.withFkColumnId(childFkColumnId).withPkColumnId(parentFkColumnId)
       )
       .build();
 
@@ -864,12 +864,12 @@ describe('Column validation', () => {
     // 관계 생성: root → branch1
     const rel1 = createRelationshipBuilder()
       .withId('rel-1')
-      .withSrcTableId(branch1TableId)
+      .withFkTableId(branch1TableId)
       .withName('fk_root_1')
       .withKind('IDENTIFYING')
-      .withTgtTableId(rootTableId)
+      .withPkTableId(rootTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(branch1FkColumnId).withRefColumnId(rootColumnId)
+        rc.withFkColumnId(branch1FkColumnId).withPkColumnId(rootColumnId)
       )
       .build();
 
@@ -878,12 +878,12 @@ describe('Column validation', () => {
     // 관계 생성: root → branch2
     const rel2 = createRelationshipBuilder()
       .withId('rel-2')
-      .withSrcTableId(branch2TableId)
+      .withFkTableId(branch2TableId)
       .withName('fk_root_2')
       .withKind('IDENTIFYING')
-      .withTgtTableId(rootTableId)
+      .withPkTableId(rootTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(branch2FkColumnId).withRefColumnId(rootColumnId)
+        rc.withFkColumnId(branch2FkColumnId).withPkColumnId(rootColumnId)
       )
       .build();
 
@@ -963,8 +963,8 @@ describe('Column validation', () => {
                 r
                   .withName('fk_child_parent')
                   .withKind('NON_IDENTIFYING')
-                  .withTgtTableId('parent-table')
-                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withRefColumnId('parent-id'))
+                  .withPkTableId('parent-table')
+                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withPkColumnId('parent-id'))
               )
           )
       )

@@ -57,7 +57,7 @@ export const useIndexes = ({
       erdStore.addColumnToIndex(schemaId, tableId, indexId, {
         id: ulid(),
         columnId,
-        seqNo: index.columns.length + 1,
+        seqNo: index.columns.length,
         sortDir: 'ASC' as IndexSortDir,
         isAffected: false,
       });

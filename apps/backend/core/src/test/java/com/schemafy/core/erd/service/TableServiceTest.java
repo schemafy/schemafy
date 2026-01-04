@@ -259,7 +259,7 @@ class TableServiceTest {
                 Column.builder()
                         .tableId(saved.getId())
                         .name("owned_col")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .dataType("INT")
                         .build())
                 .block();
@@ -268,15 +268,15 @@ class TableServiceTest {
                 Column.builder()
                         .tableId(childTableId)
                         .name("parent_id")
-                        .ordinalPosition(1)
+                        .seqNo(1)
                         .dataType("INT")
                         .build())
                 .block();
 
         Relationship relationship = relationshipRepository.save(
                 Relationship.builder()
-                        .srcTableId(childTableId)
-                        .tgtTableId(saved.getId())
+                        .fkTableId(childTableId)
+                        .pkTableId(saved.getId())
                         .name("fk_child_parent")
                         .kind("NON_IDENTIFYING")
                         .cardinality("ONE_TO_MANY")
@@ -298,7 +298,7 @@ class TableServiceTest {
                                         .setId(tableOwnedColumn.getId())
                                         .setTableId(saved.getId())
                                         .setName("owned_col")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .build())
@@ -310,14 +310,14 @@ class TableServiceTest {
                                         .setId(fkColumnToDelete.getId())
                                         .setTableId(childTableId)
                                         .setName("parent_id")
-                                        .setOrdinalPosition(1)
+                                        .setSeqNo(1)
                                         .setDataType("INT")
                                         .build())
                                 .addRelationships(
                                         Validation.Relationship.newBuilder()
                                                 .setId(relationship.getId())
-                                                .setSrcTableId(childTableId)
-                                                .setTgtTableId(saved.getId())
+                                                .setFkTableId(childTableId)
+                                                .setPkTableId(saved.getId())
                                                 .setName("fk_child_parent")
                                                 .setKind(
                                                         Validation.RelationshipKind.NON_IDENTIFYING)
@@ -334,7 +334,7 @@ class TableServiceTest {
                                                                 .setFkColumnId(
                                                                         fkColumnToDelete
                                                                                 .getId())
-                                                                .setRefColumnId(
+                                                                .setPkColumnId(
                                                                         tableOwnedColumn
                                                                                 .getId())
                                                                 .setSeqNo(1)

@@ -70,28 +70,24 @@ export const relationshipHandlers: RelationshipHandlers = {
       throw new RelationshipEmptyError(relationship.name);
     }
 
-    const sourceTable = schema.tables.find(
-      (t) => t.id === relationship.srcTableId,
-    );
-    if (!sourceTable)
+    const fkTable = schema.tables.find((t) => t.id === relationship.fkTableId);
+    if (!fkTable)
       throw new RelationshipTargetTableNotExistError(
         relationship.name,
-        relationship.srcTableId,
+        relationship.fkTableId,
       );
 
-    const targetTable = schema.tables.find(
-      (t) => t.id === relationship.tgtTableId,
-    );
-    if (!targetTable)
+    const pkTable = schema.tables.find((t) => t.id === relationship.pkTableId);
+    if (!pkTable)
       throw new RelationshipTargetTableNotExistError(
         relationship.name,
-        relationship.tgtTableId,
+        relationship.pkTableId,
       );
 
     if (relationship.kind === "IDENTIFYING") {
       const cycle = helper.detectIdentifyingCycleInSchema(schema, undefined, {
-        srcTableId: relationship.srcTableId,
-        tgtTableId: relationship.tgtTableId,
+        fkTableId: relationship.fkTableId,
+        pkTableId: relationship.pkTableId,
         kind: relationship.kind,
       });
       if (cycle) {
@@ -99,17 +95,14 @@ export const relationshipHandlers: RelationshipHandlers = {
       }
     }
 
-    const duplicateRelationship = sourceTable.relationships.find(
+    const duplicateRelationship = fkTable.relationships.find(
       (r) => r.name === relationship.name,
     );
     if (duplicateRelationship)
-      throw new RelationshipNameNotUniqueError(
-        relationship.name,
-        sourceTable.id,
-      );
+      throw new RelationshipNameNotUniqueError(relationship.name, fkTable.id);
 
     const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === relationship.srcTableId
+      t.id === relationship.fkTableId
         ? {
             ...t,
             isAffected: true,
@@ -148,7 +141,7 @@ export const relationshipHandlers: RelationshipHandlers = {
     const updatedSchema = changeSchemas.find((s) => s.id === schemaId)!;
     const propagatedSchema = helper.propagateKeysToChildren(
       structuredClone(updatedSchema),
-      relationship.tgtTableId,
+      relationship.pkTableId,
     );
 
     updatedDatabase = {
@@ -208,7 +201,7 @@ export const relationshipHandlers: RelationshipHandlers = {
     if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
     const changeTables: Table[] = schema.tables.map((t) =>
-      t.id === relationship.srcTableId || t.id === relationship.tgtTableId
+      t.id === relationship.fkTableId || t.id === relationship.pkTableId
         ? {
             ...t,
             isAffected: true,
@@ -302,7 +295,7 @@ export const relationshipHandlers: RelationshipHandlers = {
     let addedPkColumnIds: string[] = [];
 
     const changeTables: Table[] = schema.tables.map((t) => {
-      if (t.id !== relationship.srcTableId) return t;
+      if (t.id !== relationship.fkTableId) return t;
 
       const updatedRelationships = t.relationships.map((r) =>
         r.id === relationshipId ? updatedRelationship : r,
@@ -416,7 +409,7 @@ export const relationshipHandlers: RelationshipHandlers = {
     if (kind === "IDENTIFYING" && addedPkColumnIds.length > 0) {
       for (const columnId of addedPkColumnIds) {
         const tableWithNewPk = updatedSchema.tables.find(
-          (t) => t.id === relationship.srcTableId,
+          (t) => t.id === relationship.fkTableId,
         );
         const newPkColumn = tableWithNewPk?.columns.find(
           (c) => c.id === columnId,
@@ -425,7 +418,7 @@ export const relationshipHandlers: RelationshipHandlers = {
 
         updatedSchema = helper.propagateNewPrimaryKey(
           structuredClone(updatedSchema),
-          relationship.srcTableId,
+          relationship.fkTableId,
           newPkColumn,
         );
       }

@@ -50,7 +50,7 @@ public record AffectedMappingResponse(
             String relationshipColumnId,
             String relationshipId,
             String fkColumnId,
-            String refColumnId,
+            String pkColumnId,
             int seqNo,
             String sourceType,
             String sourceId) {
@@ -176,7 +176,7 @@ public record AffectedMappingResponse(
         if (request.hasRelationshipColumn()) {
             String businessKey = request.getRelationshipColumn()
                     .getFkColumnId() + ":"
-                    + request.getRelationshipColumn().getRefColumnId();
+                    + request.getRelationshipColumn().getPkColumnId();
             requestIdMaps.relationshipColumns.put(
                     businessKey,
                     request.getRelationshipColumn().getId());
@@ -248,7 +248,7 @@ public record AffectedMappingResponse(
         for (Validation.RelationshipColumn relationshipColumn : relationship
                 .getColumnsList()) {
             String businessKey = relationshipColumn.getFkColumnId() + ":"
-                    + relationshipColumn.getRefColumnId();
+                    + relationshipColumn.getPkColumnId();
             maps.relationshipColumns.put(businessKey,
                     relationshipColumn.getId());
         }
@@ -326,11 +326,11 @@ public record AffectedMappingResponse(
                             .getRelationshipsList()) {
                         Validation.Relationship.Builder relBuilder = relationship
                                 .toBuilder();
-                        if (relationship.getSrcTableId().equals(feId)) {
-                            relBuilder.setSrcTableId(beId);
+                        if (relationship.getFkTableId().equals(feId)) {
+                            relBuilder.setFkTableId(beId);
                         }
-                        if (relationship.getTgtTableId().equals(feId)) {
-                            relBuilder.setTgtTableId(beId);
+                        if (relationship.getPkTableId().equals(feId)) {
+                            relBuilder.setPkTableId(beId);
                         }
                         tableBuilder.addRelationships(relBuilder.build());
                     }
@@ -810,7 +810,7 @@ public record AffectedMappingResponse(
                 beforeRelationshipSafe.getColumnsList(),
                 afterRelationship.getColumnsList(),
                 Validation.RelationshipColumn::getId,
-                c -> c.getFkColumnId() + ":" + c.getRefColumnId(),
+                c -> c.getFkColumnId() + ":" + c.getPkColumnId(),
                 Validation.RelationshipColumn::getIsAffected,
                 (feId, beId) -> builder.relationshipColumns
                         .computeIfAbsent(afterRelationship.getId(),

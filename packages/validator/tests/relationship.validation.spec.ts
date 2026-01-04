@@ -24,12 +24,12 @@ describe('Relationship validation', () => {
       )
       .build();
 
-    // createRelationship을 하는 경우에, 외래키 컬럼은 자동으로 생성됨. withRefColumnId만 지정하면 됨. (가정)
+    // createRelationship을 하는 경우에, 외래키 컬럼은 자동으로 생성됨. withPkColumnId만 지정하면 됨. (가정)
     const relationship = createRelationshipBuilder()
-      .withSrcTableId('child-table')
+      .withFkTableId('child-table')
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
-      .withTgtTableId('parent-table')
+      .withPkTableId('parent-table')
       .build();
 
     expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', relationship)).toThrow(RelationshipEmptyError);
@@ -55,11 +55,11 @@ describe('Relationship validation', () => {
       .build();
 
     const relationship = createRelationshipBuilder()
-      .withSrcTableId('employee-table')
+      .withFkTableId('employee-table')
       .withName('fk_employee')
       .withKind('NON_IDENTIFYING')
-      .withTgtTableId('employee-table')
-      .withColumn((rc) => rc.withRefColumnId('id-col'))
+      .withPkTableId('employee-table')
+      .withColumn((rc) => rc.withPkColumnId('id-col'))
       .build();
 
     // TODO: 이 경우에는 참조하는 테이블이 자기 자신이므로 컬럼을 추가하고 릴레이션을 추가하는데, 내부적으로 중복이 생기면 안된다.
@@ -87,11 +87,11 @@ describe('Relationship validation', () => {
       .build();
 
     const relationship = createRelationshipBuilder()
-      .withSrcTableId('child-table')
+      .withFkTableId('child-table')
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
-      .withTgtTableId('parent-table')
-      .withColumn((rc) => rc.withRefColumnId('parent-id'))
+      .withPkTableId('parent-table')
+      .withColumn((rc) => rc.withPkColumnId('parent-id'))
       .build();
 
     let duplicateDatabase = database;
@@ -101,11 +101,11 @@ describe('Relationship validation', () => {
     ).not.toThrow();
 
     const duplicateRelationship = createRelationshipBuilder()
-      .withSrcTableId('child-table')
+      .withFkTableId('child-table')
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
-      .withTgtTableId('parent-table')
-      .withColumn((rc) => rc.withRefColumnId('parent-id'))
+      .withPkTableId('parent-table')
+      .withColumn((rc) => rc.withPkColumnId('parent-id'))
       .build();
 
     expect(() => ERD_VALIDATOR.createRelationship(duplicateDatabase, 'schema-1', duplicateRelationship)).toThrow(
@@ -162,12 +162,12 @@ describe('Relationship validation', () => {
 
     const relationship = createRelationshipBuilder()
       .withId(relationshipId)
-      .withSrcTableId(childTableId)
+      .withFkTableId(childTableId)
       .withName('fk_parent')
       .withKind('NON_IDENTIFYING')
-      .withTgtTableId(parentTableId)
+      .withPkTableId(parentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(fkColumnId).withRefColumnId(parentColumnId)
+        rc.withFkColumnId(fkColumnId).withPkColumnId(parentColumnId)
       )
       .build();
 
@@ -248,12 +248,12 @@ describe('Relationship validation', () => {
 
     const relationship = createRelationshipBuilder()
       .withId(relationshipId)
-      .withSrcTableId(childTableId)
+      .withFkTableId(childTableId)
       .withName('fk_parent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(parentTableId)
+      .withPkTableId(parentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(fkColumnId).withRefColumnId(parentColumnId)
+        rc.withFkColumnId(fkColumnId).withPkColumnId(parentColumnId)
       )
       .build();
 
@@ -352,12 +352,12 @@ describe('Relationship validation', () => {
 
     const parentChildRelationship = createRelationshipBuilder()
       .withId(parentChildRelationshipId)
-      .withSrcTableId(childTableId)
+      .withFkTableId(childTableId)
       .withName('fk_parent')
       .withKind('IDENTIFYING')
-      .withTgtTableId(parentTableId)
+      .withPkTableId(parentTableId)
       .withColumn((rc) =>
-        rc.withFkColumnId(childFkColumnId).withRefColumnId(parentPkColumnId)
+        rc.withFkColumnId(childFkColumnId).withPkColumnId(parentPkColumnId)
       )
       .build();
 
@@ -369,14 +369,14 @@ describe('Relationship validation', () => {
 
     const grandchildRelationship = createRelationshipBuilder()
       .withId(grandchildRelationshipId)
-      .withSrcTableId(grandchildTableId)
+      .withFkTableId(grandchildTableId)
       .withName('fk_child_parent')
       .withKind('NON_IDENTIFYING')
-      .withTgtTableId(childTableId)
+      .withPkTableId(childTableId)
       .withColumn((rc) =>
         rc
           .withFkColumnId(grandchildFkColumnId)
-          .withRefColumnId(childFkColumnId)
+          .withPkColumnId(childFkColumnId)
       )
       .build();
 
@@ -425,11 +425,11 @@ describe('Relationship validation', () => {
       .build();
 
     const invalidRelationship = createRelationshipBuilder()
-      .withSrcTableId('child-table')
+      .withFkTableId('child-table')
       .withName('invalid_fk')
       .withKind('NON_IDENTIFYING')
-      .withTgtTableId('non-existent-table')
-      .withColumn((rc) => rc.withRefColumnId('child-col').withRefColumnId('some-col'))
+      .withPkTableId('non-existent-table')
+      .withColumn((rc) => rc.withPkColumnId('child-col').withPkColumnId('some-col'))
       .build();
 
     expect(() => ERD_VALIDATOR.createRelationship(database, 'schema-1', invalidRelationship)).toThrow(
@@ -473,11 +473,11 @@ describe('Relationship validation', () => {
 
       // Step 2: 첫 번째 IDENTIFYING 관계 추가 (A -> B)
       const aToBRelationship = createRelationshipBuilder()
-        .withSrcTableId('table-a')
+        .withFkTableId('table-a')
         .withName('fk_a_to_b')
         .withKind('IDENTIFYING') // IDENTIFYING 관계
-        .withTgtTableId('table-b')
-        .withColumn((rc) => rc.withRefColumnId('b-id'))
+        .withPkTableId('table-b')
+        .withColumn((rc) => rc.withPkColumnId('b-id'))
         .build();
 
       expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', aToBRelationship)).not.toThrow();
@@ -485,11 +485,11 @@ describe('Relationship validation', () => {
 
       // Step 3: IDENTIFYING 관계에서 순환 참조 시도 (B -> A) - 논리적으로 불가능
       const cyclicRelationship = createRelationshipBuilder()
-        .withSrcTableId('table-b')
+        .withFkTableId('table-b')
         .withName('fk_b_to_a')
         .withKind('IDENTIFYING') // IDENTIFYING 관계에서 순환은 불가능
-        .withTgtTableId('table-a')
-        .withColumn((rc) => rc.withRefColumnId('a-id'))
+        .withPkTableId('table-a')
+        .withColumn((rc) => rc.withPkColumnId('a-id'))
         .build();
 
       // IDENTIFYING 관계에서 순환 참조는 금지되어야 함
@@ -533,22 +533,22 @@ describe('Relationship validation', () => {
 
       // Step 2: 첫 번째 NON_IDENTIFYING 관계 추가 (user -> company)
       const userCompanyRelationship = createRelationshipBuilder()
-        .withSrcTableId('user-table')
+        .withFkTableId('user-table')
         .withName('fk_user_company')
         .withKind('NON_IDENTIFYING') // NON_IDENTIFYING 관계
-        .withTgtTableId('company-table')
-        .withColumn((rc) => rc.withRefColumnId('company-id'))
+        .withPkTableId('company-table')
+        .withColumn((rc) => rc.withPkColumnId('company-id'))
         .build();
 
       expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', userCompanyRelationship)).not.toThrow();
 
       // Step 3: NON_IDENTIFYING 관계에서 순환 참조 (company -> user) - 허용되어야 함
       const cyclicRelationship = createRelationshipBuilder()
-        .withSrcTableId('company-table')
+        .withFkTableId('company-table')
         .withName('fk_company_owner')
         .withKind('NON_IDENTIFYING') // NON_IDENTIFYING에서는 순환 허용
-        .withTgtTableId('user-table')
-        .withColumn((rc) => rc.withRefColumnId('user-id'))
+        .withPkTableId('user-table')
+        .withColumn((rc) => rc.withPkColumnId('user-id'))
         .build();
 
       // NON_IDENTIFYING 관계에서 순환 참조는 허용되어야 함
@@ -603,11 +603,11 @@ describe('Relationship validation', () => {
       // Step 2: IDENTIFYING 관계 추가 (Order -> OrderLine)
       // 결과: OrderLine의 PK = (line_id, order_id)
       const orderLineRelationship = createRelationshipBuilder()
-        .withSrcTableId('order-line-table')
+        .withFkTableId('order-line-table')
         .withName('fk_order_line')
         .withKind('IDENTIFYING')
-        .withTgtTableId('order-table')
-        .withColumn((rc) => rc.withRefColumnId('order-id'))
+        .withPkTableId('order-table')
+        .withColumn((rc) => rc.withPkColumnId('order-id'))
         .build();
 
       expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', orderLineRelationship)).not.toThrow();
@@ -617,13 +617,13 @@ describe('Relationship validation', () => {
       // 문제: OrderLine의 PK는 이제 복합키 (line_id, order_id)
       // 따라서 OrderLineDetail은 이 복합키 전체를 참조해야 함
       const orderLineDetailRelationship = createRelationshipBuilder()
-        .withSrcTableId('order-line-detail-table')
+        .withFkTableId('order-line-detail-table')
         .withName('fk_order_line_detail')
         .withKind('IDENTIFYING')
-        .withTgtTableId('order-line-table')
+        .withPkTableId('order-line-table')
         // 복합 PK 참조 - 여러 컬럼이 필요함
-        .withColumn((rc) => rc.withRefColumnId('line-id'))
-        .withColumn((rc) => rc.withRefColumnId('order-id')) // 전파된 PK도 포함, columnId는 상위 테이블의 PK 컬럼 ID, 내부적으로 관리하는 ID는 자동 생성
+        .withColumn((rc) => rc.withPkColumnId('line-id'))
+        .withColumn((rc) => rc.withPkColumnId('order-id')) // 전파된 PK도 포함, columnId는 상위 테이블의 PK 컬럼 ID, 내부적으로 관리하는 ID는 자동 생성
         .build();
 
       // 복합 PK를 올바르게 참조하는 IDENTIFYING 관계는 허용되어야 함
@@ -662,22 +662,22 @@ describe('Relationship validation', () => {
 
       // Step 2: 첫 번째 자기 참조 관계 추가 (created_by_user_id 컬럼이 추가됨)
       const createdByRelationship = createRelationshipBuilder()
-        .withSrcTableId('user-table')
+        .withFkTableId('user-table')
         .withName('fk_user_created_by')
         .withKind('NON_IDENTIFYING')
-        .withTgtTableId('user-table')
-        .withColumn((rc) => rc.withRefColumnId('user-id'))
+        .withPkTableId('user-table')
+        .withColumn((rc) => rc.withPkColumnId('user-id'))
         .build();
 
       expect(() => ERD_VALIDATOR.createRelationship(db, 'schema-1', createdByRelationship)).not.toThrow();
 
       // Step 3: 두 번째 자기 참조 관계 추가 (updated_by_user_id 컬럼이 추가됨)
       const updatedByRelationship = createRelationshipBuilder()
-        .withSrcTableId('user-table')
+        .withFkTableId('user-table')
         .withName('fk_user_updated_by')
         .withKind('NON_IDENTIFYING')
-        .withTgtTableId('user-table')
-        .withColumn((rc) => rc.withRefColumnId('user-id'))
+        .withPkTableId('user-table')
+        .withColumn((rc) => rc.withPkColumnId('user-id'))
         .build();
 
       // 같은 테이블에 대한 여러 자기 참조 관계는 허용되어야 함
@@ -739,11 +739,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-b-a')
-            .withSrcTableId('table-b')
-            .withTgtTableId('table-a')
+            .withFkTableId('table-b')
+            .withPkTableId('table-a')
             .withName('fk_b_to_a')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .withColumn((rc) => rc.withPkColumnId('a-id'))
             .build()
         );
 
@@ -753,11 +753,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-c-b')
-            .withSrcTableId('table-c')
-            .withTgtTableId('table-b')
+            .withFkTableId('table-c')
+            .withPkTableId('table-b')
             .withName('fk_c_to_b')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .withColumn((rc) => rc.withPkColumnId('b-id'))
             .build()
         );
 
@@ -767,11 +767,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-d-c')
-            .withSrcTableId('table-d')
-            .withTgtTableId('table-c')
+            .withFkTableId('table-d')
+            .withPkTableId('table-c')
             .withName('fk_d_to_c')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .withColumn((rc) => rc.withPkColumnId('c-id'))
             .build()
         );
 
@@ -781,11 +781,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-a-d')
-            .withSrcTableId('table-a')
-            .withTgtTableId('table-d')
+            .withFkTableId('table-a')
+            .withPkTableId('table-d')
             .withName('fk_a_to_d')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('d-id'))
+            .withColumn((rc) => rc.withPkColumnId('d-id'))
             .build()
         );
 
@@ -866,11 +866,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-b-a')
-            .withSrcTableId('table-b')
-            .withTgtTableId('table-a')
+            .withFkTableId('table-b')
+            .withPkTableId('table-a')
             .withName('fk_b_to_a')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .withColumn((rc) => rc.withPkColumnId('a-id'))
             .build()
         );
 
@@ -879,11 +879,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-c-b')
-            .withSrcTableId('table-c')
-            .withTgtTableId('table-b')
+            .withFkTableId('table-c')
+            .withPkTableId('table-b')
             .withName('fk_c_to_b')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .withColumn((rc) => rc.withPkColumnId('b-id'))
             .build()
         );
 
@@ -892,11 +892,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-d-c')
-            .withSrcTableId('table-d')
-            .withTgtTableId('table-c')
+            .withFkTableId('table-d')
+            .withPkTableId('table-c')
             .withName('fk_d_to_c')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .withColumn((rc) => rc.withPkColumnId('c-id'))
             .build()
         );
 
@@ -905,11 +905,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-e-d')
-            .withSrcTableId('table-e')
-            .withTgtTableId('table-d')
+            .withFkTableId('table-e')
+            .withPkTableId('table-d')
             .withName('fk_e_to_d')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('d-id'))
+            .withColumn((rc) => rc.withPkColumnId('d-id'))
             .build()
         );
 
@@ -918,11 +918,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-a-e')
-            .withSrcTableId('table-a')
-            .withTgtTableId('table-e')
+            .withFkTableId('table-a')
+            .withPkTableId('table-e')
             .withName('fk_a_to_e')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('e-id'))
+            .withColumn((rc) => rc.withPkColumnId('e-id'))
             .build()
         );
 
@@ -1008,11 +1008,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-b-a')
-            .withSrcTableId('table-b')
-            .withTgtTableId('table-a')
+            .withFkTableId('table-b')
+            .withPkTableId('table-a')
             .withName('fk_b_to_a')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .withColumn((rc) => rc.withPkColumnId('a-id'))
             .build()
         );
 
@@ -1022,11 +1022,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-c-b')
-            .withSrcTableId('table-c')
-            .withTgtTableId('table-b')
+            .withFkTableId('table-c')
+            .withPkTableId('table-b')
             .withName('fk_c_to_b')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .withColumn((rc) => rc.withPkColumnId('b-id'))
             .build()
         );
 
@@ -1036,11 +1036,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-d-c')
-            .withSrcTableId('table-d')
-            .withTgtTableId('table-c')
+            .withFkTableId('table-d')
+            .withPkTableId('table-c')
             .withName('fk_d_to_c')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .withColumn((rc) => rc.withPkColumnId('c-id'))
             .build()
         );
 
@@ -1050,11 +1050,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-e-b')
-            .withSrcTableId('table-e')
-            .withTgtTableId('table-b')
+            .withFkTableId('table-e')
+            .withPkTableId('table-b')
             .withName('fk_e_to_b')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .withColumn((rc) => rc.withPkColumnId('b-id'))
             .build()
         );
 
@@ -1064,11 +1064,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-f-e')
-            .withSrcTableId('table-f')
-            .withTgtTableId('table-e')
+            .withFkTableId('table-f')
+            .withPkTableId('table-e')
             .withName('fk_f_to_e')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('e-id'))
+            .withColumn((rc) => rc.withPkColumnId('e-id'))
             .build()
         );
 
@@ -1078,11 +1078,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-a-f')
-            .withSrcTableId('table-a')
-            .withTgtTableId('table-f')
+            .withFkTableId('table-a')
+            .withPkTableId('table-f')
             .withName('fk_a_to_f')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('f-id'))
+            .withColumn((rc) => rc.withPkColumnId('f-id'))
             .build()
         );
 
@@ -1144,11 +1144,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-b-a')
-            .withSrcTableId('table-b')
-            .withTgtTableId('table-a')
+            .withFkTableId('table-b')
+            .withPkTableId('table-a')
             .withName('fk_b_to_a')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .withColumn((rc) => rc.withPkColumnId('a-id'))
             .build()
         );
 
@@ -1158,11 +1158,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-c-b')
-            .withSrcTableId('table-c')
-            .withTgtTableId('table-b')
+            .withFkTableId('table-c')
+            .withPkTableId('table-b')
             .withName('fk_c_to_b')
             .withKind('NON_IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .withColumn((rc) => rc.withPkColumnId('b-id'))
             .build()
         );
 
@@ -1172,11 +1172,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-d-c')
-            .withSrcTableId('table-d')
-            .withTgtTableId('table-c')
+            .withFkTableId('table-d')
+            .withPkTableId('table-c')
             .withName('fk_d_to_c')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .withColumn((rc) => rc.withPkColumnId('c-id'))
             .build()
         );
 
@@ -1243,11 +1243,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-b-a')
-            .withSrcTableId('table-b')
-            .withTgtTableId('table-a')
+            .withFkTableId('table-b')
+            .withPkTableId('table-a')
             .withName('fk_b_to_a')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('a-id'))
+            .withColumn((rc) => rc.withPkColumnId('a-id'))
             .build()
         );
 
@@ -1257,11 +1257,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-c-b')
-            .withSrcTableId('table-c')
-            .withTgtTableId('table-b')
+            .withFkTableId('table-c')
+            .withPkTableId('table-b')
             .withName('fk_c_to_b')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('b-id'))
+            .withColumn((rc) => rc.withPkColumnId('b-id'))
             .build()
         );
 
@@ -1271,11 +1271,11 @@ describe('Relationship validation', () => {
           schemaId,
           createRelationshipBuilder()
             .withId('rel-d-c')
-            .withSrcTableId('table-d')
-            .withTgtTableId('table-c')
+            .withFkTableId('table-d')
+            .withPkTableId('table-c')
             .withName('fk_d_to_c')
             .withKind('IDENTIFYING')
-            .withColumn((rc) => rc.withRefColumnId('c-id'))
+            .withColumn((rc) => rc.withPkColumnId('c-id'))
             .build()
         );
 
@@ -1286,11 +1286,11 @@ describe('Relationship validation', () => {
             schemaId,
             createRelationshipBuilder()
               .withId('rel-a-d')
-              .withSrcTableId('table-a')
-              .withTgtTableId('table-d')
+              .withFkTableId('table-a')
+              .withPkTableId('table-d')
               .withName('fk_a_to_d')
               .withKind('IDENTIFYING')
-              .withColumn((rc) => rc.withRefColumnId('d-id'))
+              .withColumn((rc) => rc.withPkColumnId('d-id'))
               .build()
           )
         ).toThrow(RelationshipCyclicReferenceError);
@@ -1344,12 +1344,12 @@ describe('Relationship validation', () => {
 
       const relationship = createRelationshipBuilder()
         .withId('rel-1')
-        .withSrcTableId(childTableId)
+        .withFkTableId(childTableId)
         .withName('fk_parent')
         .withKind('IDENTIFYING')
-        .withTgtTableId(parentTableId)
+        .withPkTableId(parentTableId)
         .withColumn((rc) =>
-          rc.withFkColumnId(fkColumnId).withRefColumnId(parentColumnId)
+          rc.withFkColumnId(fkColumnId).withPkColumnId(parentColumnId)
         )
         .build();
 
@@ -1407,12 +1407,12 @@ describe('Relationship validation', () => {
 
       const relationship = createRelationshipBuilder()
         .withId('rel-1')
-        .withSrcTableId(childTableId)
+        .withFkTableId(childTableId)
         .withName('fk_parent')
         .withKind('IDENTIFYING')
-        .withTgtTableId(parentTableId)
+        .withPkTableId(parentTableId)
         .withColumn((rc) =>
-          rc.withFkColumnId('fk_p1').withRefColumnId('p1')
+          rc.withFkColumnId('fk_p1').withPkColumnId('p1')
         )
         .build();
 
