@@ -17,45 +17,45 @@ import com.schemafy.core.common.exception.ErrorCode;
 import reactor.core.publisher.Mono;
 
 public class ApiVersionArgumentResolver
-        implements HandlerMethodArgumentResolver {
+    implements HandlerMethodArgumentResolver {
 
-    private static final Pattern VERSION_PATTERN = Pattern
-            .compile("^v\\d+\\.\\d+$");
+  private static final Pattern VERSION_PATTERN = Pattern
+      .compile("^v\\d+\\.\\d+$");
 
-    @Override
-    public boolean supportsParameter(@NonNull MethodParameter parameter) {
-        return parameter.hasParameterAnnotation(ApiVersion.class);
+  @Override
+  public boolean supportsParameter(@NonNull MethodParameter parameter) {
+    return parameter.hasParameterAnnotation(ApiVersion.class);
+  }
+
+  @Override
+  @NonNull
+  public Mono<Object> resolveArgument(
+      @NonNull MethodParameter parameter,
+      @NonNull BindingContext bindingContext,
+      @NonNull ServerWebExchange exchange) {
+
+    Map<String, String> pathVariables = exchange.getAttribute(
+        HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+
+    if (pathVariables == null || !pathVariables.containsKey("version")) {
+      return Mono.error(new BusinessException(
+          ErrorCode.COMMON_API_VERSION_MISSING));
     }
 
-    @Override
-    @NonNull
-    public Mono<Object> resolveArgument(
-            @NonNull MethodParameter parameter,
-            @NonNull BindingContext bindingContext,
-            @NonNull ServerWebExchange exchange) {
+    String versionString = pathVariables.get("version");
 
-        Map<String, String> pathVariables = exchange.getAttribute(
-                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-
-        if (pathVariables == null || !pathVariables.containsKey("version")) {
-            return Mono.error(new BusinessException(
-                    ErrorCode.COMMON_API_VERSION_MISSING));
-        }
-
-        String versionString = pathVariables.get("version");
-
-        if (versionString == null
-                || !VERSION_PATTERN.matcher(versionString).matches()) {
-            return Mono.error(new BusinessException(
-                    ErrorCode.COMMON_API_VERSION_INVALID));
-        }
-
-        if (parameter.getParameterType().equals(String.class)) {
-            return Mono.just(versionString);
-        }
-
-        return Mono.error(new IllegalArgumentException(
-                "@ApiVersion can only be used with String parameter type"));
+    if (versionString == null
+        || !VERSION_PATTERN.matcher(versionString).matches()) {
+      return Mono.error(new BusinessException(
+          ErrorCode.COMMON_API_VERSION_INVALID));
     }
+
+    if (parameter.getParameterType().equals(String.class)) {
+      return Mono.just(versionString);
+    }
+
+    return Mono.error(new IllegalArgumentException(
+        "@ApiVersion can only be used with String parameter type"));
+  }
 
 }

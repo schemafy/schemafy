@@ -15,23 +15,21 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class DbVendorService {
 
-    private final DbVendorRepository dbVendorRepository;
+  private final DbVendorRepository dbVendorRepository;
 
-    public Mono<DbVendor> getVendorByDisplayName(String displayName) {
-        return dbVendorRepository.findById(displayName)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_VENDOR_NOT_FOUND)));
-    }
+  public Mono<DbVendor> getVendorByDisplayName(String displayName) {
+    return dbVendorRepository.findById(displayName)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_VENDOR_NOT_FOUND)));
+  }
 
-    public Flux<DbVendor> getAllVendors() {
-        return dbVendorRepository.findAll();
-    }
+  public Flux<DbVendor> getAllVendors() { return dbVendorRepository.findAll(); }
 
-    public Mono<DbVendor> getVendorByNameAndVersion(String name,
-            String version) {
-        return dbVendorRepository.findByNameAndVersion(name, version)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.ERD_VENDOR_NOT_FOUND)));
-    }
+  public Mono<DbVendor> getVendorByNameAndVersion(String name,
+      String version) {
+    return dbVendorRepository.findByNameAndVersion(name, version)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.ERD_VENDOR_NOT_FOUND)));
+  }
 
 }

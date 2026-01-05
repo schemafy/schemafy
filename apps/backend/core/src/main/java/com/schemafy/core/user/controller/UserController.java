@@ -23,27 +23,25 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserService userService;
+  private final UserService userService;
 
-    @GetMapping("/users")
-    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo(
-            @AuthenticationPrincipal AuthenticatedUser user) {
-        return userService.getUserById(user.userId())
-                .map(BaseResponse::success)
-                .map(ResponseEntity::ok);
-    }
+  @GetMapping("/users")
+  public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo(
+      @AuthenticationPrincipal AuthenticatedUser user) {
+    return userService.getUserById(user.userId())
+        .map(BaseResponse::success)
+        .map(ResponseEntity::ok);
+  }
 
-    /**
-     * 사용자 정보를 조회합니다. 인증된 사용자는 타 사용자의 프로필도 조회할 수 있습니다.
-     *
-     * @param userId 조회할 사용자 ID
-     * @return 사용자 정보
-     */
-    @GetMapping("/users/{userId}")
-    public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getUser(
-            @PathVariable String userId) {
-        return userService.getUserById(userId).map(BaseResponse::success)
-                .map(ResponseEntity::ok);
-    }
+  /** 사용자 정보를 조회합니다. 인증된 사용자는 타 사용자의 프로필도 조회할 수 있습니다.
+   *
+   * @param userId 조회할 사용자 ID
+   * @return 사용자 정보 */
+  @GetMapping("/users/{userId}")
+  public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getUser(
+      @PathVariable String userId) {
+    return userService.getUserById(userId).map(BaseResponse::success)
+        .map(ResponseEntity::ok);
+  }
 
 }

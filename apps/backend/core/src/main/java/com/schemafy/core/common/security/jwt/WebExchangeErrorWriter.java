@@ -17,26 +17,26 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class WebExchangeErrorWriter {
 
-    private final ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-    public Mono<Void> writeErrorResponse(ServerWebExchange exchange,
-            HttpStatus httpStatus, String errorCode, String errorMessage) {
-        exchange.getResponse().setStatusCode(httpStatus);
-        exchange.getResponse().getHeaders()
-                .setContentType(MediaType.APPLICATION_JSON);
+  public Mono<Void> writeErrorResponse(ServerWebExchange exchange,
+      HttpStatus httpStatus, String errorCode, String errorMessage) {
+    exchange.getResponse().setStatusCode(httpStatus);
+    exchange.getResponse().getHeaders()
+        .setContentType(MediaType.APPLICATION_JSON);
 
-        BaseResponse<Void> errorResponse = BaseResponse.error(errorCode,
-                errorMessage);
+    BaseResponse<Void> errorResponse = BaseResponse.error(errorCode,
+        errorMessage);
 
-        try {
-            byte[] responseBytes = objectMapper
-                    .writeValueAsBytes(errorResponse);
-            DataBuffer buffer = exchange.getResponse().bufferFactory()
-                    .wrap(responseBytes);
-            return exchange.getResponse().writeWith(Mono.just(buffer));
-        } catch (JsonProcessingException e) {
-            return exchange.getResponse().setComplete();
-        }
+    try {
+      byte[] responseBytes = objectMapper
+          .writeValueAsBytes(errorResponse);
+      DataBuffer buffer = exchange.getResponse().bufferFactory()
+          .wrap(responseBytes);
+      return exchange.getResponse().writeWith(Mono.just(buffer));
+    } catch (JsonProcessingException e) {
+      return exchange.getResponse().setComplete();
     }
+  }
 
 }

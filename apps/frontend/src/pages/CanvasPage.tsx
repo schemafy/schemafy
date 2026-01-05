@@ -14,7 +14,6 @@ import '@xyflow/react/dist/style.css';
 import {
   useRelationships,
   useTables,
-  useMemos,
   useViewport,
   TableNode,
   RelationshipMarker,
@@ -28,9 +27,11 @@ import {
   CustomConnectionLine,
   FloatingButtons,
   SchemaSelector,
-  MemoPrivew,
+  MemoPreview,
   Memo,
   TempMemoPreview,
+  MemoProvider,
+  useMemoContext,
 } from '@/features/drawing';
 import { ErdStore } from '@/store/erd.store';
 
@@ -43,7 +44,7 @@ const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
-const CanvasPageComponent = () => {
+const CanvasContent = () => {
   const erdStore = ErdStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
 
@@ -86,7 +87,9 @@ const CanvasPageComponent = () => {
   }, [erdStore]);
 
   const { tables, addTable, onTablesChange } = useTables();
-  const { memos, addMemo, onMemosChange } = useMemos();
+
+  const { memos, onMemosChange, createMemo } = useMemoContext();
+
   const {
     relationships,
     selectedRelationship,
@@ -136,7 +139,7 @@ const CanvasPageComponent = () => {
 
   const handleMemoCreate = (content: string) => {
     if (tempMemoPosition) {
-      addMemo(tempMemoPosition.flow, content.trim());
+      createMemo(tempMemoPosition.flow, content.trim());
       setTempMemoPosition(null);
     }
   };
@@ -246,7 +249,7 @@ const CanvasPageComponent = () => {
               <TablePreview mousePosition={mousePosition} />
             )}
             {activeTool === 'memo' && (
-              <MemoPrivew mousePosition={mousePosition} />
+              <MemoPreview mousePosition={mousePosition} />
             )}
           </ReactFlow>
 
@@ -272,6 +275,14 @@ const CanvasPageComponent = () => {
       </div>
       <FloatingButtons />
     </>
+  );
+};
+
+const CanvasPageComponent = () => {
+  return (
+    <MemoProvider>
+      <CanvasContent />
+    </MemoProvider>
   );
 };
 

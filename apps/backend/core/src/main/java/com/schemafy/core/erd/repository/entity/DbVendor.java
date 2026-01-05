@@ -18,28 +18,28 @@ import lombok.Setter;
 @Table("db_vendors")
 public class DbVendor {
 
-    @Id
-    @Column("display_name")
-    private String id;
+  @Id
+  @Column("display_name")
+  private String id;
 
-    @Column("name")
-    private String name;
+  @Column("name")
+  private String name;
 
-    @Column("version")
-    private String version;
+  @Column("version")
+  private String version;
 
-    @Column("datatype_mappings")
-    private String datatypeMappings;
+  @Column("datatype_mappings")
+  private String datatypeMappings;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static DbVendor newDbVendor(String displayName, String name,
-            String version, String datatypeMappings) {
-        DbVendor vendor = new DbVendor();
-        vendor.setId(displayName);
-        vendor.setName(name);
-        vendor.setVersion(version);
-        vendor.setDatatypeMappings(datatypeMappings);
-        return vendor;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static DbVendor newDbVendor(String displayName, String name,
+      String version, String datatypeMappings) {
+    DbVendor vendor = new DbVendor();
+    vendor.setId(displayName);
+    vendor.setName(name);
+    vendor.setVersion(version);
+    vendor.setDatatypeMappings(datatypeMappings);
+    return vendor;
+  }
 
 }

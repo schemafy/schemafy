@@ -8,11 +8,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface ConstraintColumnRepository
-        extends ReactiveCrudRepository<ConstraintColumn, String> {
+    extends ReactiveCrudRepository<ConstraintColumn, String> {
 
-    public Mono<ConstraintColumn> findByIdAndDeletedAtIsNull(String id);
+  public Mono<ConstraintColumn> findByIdAndDeletedAtIsNull(String id);
 
-    public Flux<ConstraintColumn> findByConstraintIdAndDeletedAtIsNull(
-            String constraintId);
+  public Flux<ConstraintColumn> findByConstraintIdAndDeletedAtIsNull(
+      String constraintId);
 
 }

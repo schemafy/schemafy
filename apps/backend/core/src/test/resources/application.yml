@@ -9,6 +9,9 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
 
+  main:
+    allow-bean-definition-overriding: true
+
   data:
     redis:
       enabled: false
@@ -49,10 +52,16 @@ cors:
   allowed-origins: http://localhost:3000
 
 cache:
-  type: CAFFEINE
-  maximum-size: 1000
-  expire-after-write-minutes: 5
-  expire-after-access-minutes: 2
+  caffeine:
+    enabled: true
+    maximum-size: 1000
+    expire-after-write-minutes: 5
+    expire-after-access-minutes: 2
+  redis:
+    enabled: false
+
+sharelink:
+  pepper: test-pepper-value
 
 logging:
   level:

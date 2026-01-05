@@ -9,8 +9,8 @@ import reactor.core.publisher.Mono;
 
 @Repository
 public interface DbVendorRepository
-        extends ReactiveCrudRepository<DbVendor, String> {
+    extends ReactiveCrudRepository<DbVendor, String> {
 
-    Mono<DbVendor> findByNameAndVersion(String name, String version);
+  Mono<DbVendor> findByNameAndVersion(String name, String version);
 
 }

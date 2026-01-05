@@ -10,9 +10,28 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "cache")
 public class CacheProperties {
 
-    private CacheType type = CacheType.CAFFEINE;
+  private CaffeineProperties caffeine = new CaffeineProperties();
+  private RedisProperties redis = new RedisProperties();
+
+  @Getter
+  @Setter
+  public static class CaffeineProperties {
+
+    private boolean enabled = true;
     private long maximumSize = 10000;
     private int expireAfterWriteMinutes = 30;
     private int expireAfterAccessMinutes = 10;
+
+  }
+
+  @Getter
+  @Setter
+  public static class RedisProperties {
+
+    private boolean enabled = true;
+    private int defaultTtlMinutes = 30;
+    private String keyPrefix = "cache::";
+
+  }
 
 }
