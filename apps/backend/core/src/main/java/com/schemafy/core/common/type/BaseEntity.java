@@ -1,55 +1,48 @@
 package com.schemafy.core.common.type;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import java.time.Instant;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public abstract class BaseEntity implements Persistable<String> {
 
-    @Id
-    protected String id;
+  @Id
+  @Setter(lombok.AccessLevel.PROTECTED)
+  protected String id;
 
-    @CreatedDate
-    protected LocalDateTime createdAt;
+  @CreatedDate
+  protected Instant createdAt;
 
-    @LastModifiedDate
-    protected LocalDateTime updatedAt;
+  @LastModifiedDate
+  protected Instant updatedAt;
 
-    protected LocalDateTime deletedAt;
+  protected Instant deletedAt;
 
-    @Transient
-    protected boolean isNew = true;
+  @Override
+  public String getId() { return id; }
 
-    @Override
-    public String getId() {
-        return id;
-    }
+  @Override
+  @JsonIgnore
+  public boolean isNew() { return this.createdAt == null; }
 
-    @Override
-    public boolean isNew() {
-        return isNew;
-    }
+  public void delete() {
+    this.deletedAt = Instant.now();
+  }
 
-    public void markAsNotNew() {
-        this.isNew = false;
-    }
+  @JsonIgnore
+  public boolean isDeleted() { return deletedAt != null; }
 
-
-    public void delete() {
-        this.deletedAt = LocalDateTime.now();
-    }
-
-    public boolean isDeleted() {
-        return deletedAt != null;
-    }
 }

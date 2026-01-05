@@ -1,37 +1,59 @@
-import { z } from 'zod';
+import { z } from "zod";
+
+export const SCHEMA_NAME_CONSTRAINTS = {
+  MIN_LENGTH: 1,
+  MAX_LENGTH: 20,
+} as const;
 
 const ULID = z.string().ulid();
-const DB_VENDOR = z.enum(['mysql']);
-const INDEX_TYPE = z.enum(['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER']);
-const INDEX_SORT_DIR = z.enum(['ASC', 'DESC']);
-const CONSTRAINT_KIND = z.enum(['PRIMARY_KEY', 'UNIQUE', 'CHECK', 'DEFAULT', 'NOT_NULL']);
-const RELATIONSHIP_KIND = z.enum(['IDENTIFYING', 'NON_IDENTIFYING']);
-const RELATIONSHIP_CARDINALITY = z.enum(['1:1', '1:N']);
-const RELATIONSHIP_ON_DELETE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
-const RELATIONSHIP_ON_UPDATE = z.enum(['NO_ACTION', 'RESTRICT', 'CASCADE', 'SET_NULL', 'SET_DEFAULT']);
+const DB_VENDOR = z.enum(["MYSQL"]);
+const INDEX_TYPE = z.enum(["BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER"]);
+const INDEX_SORT_DIR = z.enum(["ASC", "DESC"]);
+const CONSTRAINT_KIND = z.enum([
+  "PRIMARY_KEY",
+  "UNIQUE",
+  "CHECK",
+  "DEFAULT",
+  "NOT_NULL",
+]);
+const RELATIONSHIP_KIND = z.enum(["IDENTIFYING", "NON_IDENTIFYING"]);
+const RELATIONSHIP_CARDINALITY = z.enum(["1:1", "1:N"]);
+const RELATIONSHIP_ON_DELETE = z.enum([
+  "NO_ACTION",
+  "RESTRICT",
+  "CASCADE",
+  "SET_NULL",
+  "SET_DEFAULT",
+]);
+const RELATIONSHIP_ON_UPDATE = z.enum([
+  "NO_ACTION",
+  "RESTRICT",
+  "CASCADE",
+  "SET_NULL",
+  "SET_DEFAULT",
+]);
 
 export const COLUMN = z.object({
   id: ULID,
   tableId: ULID,
-  name: z.string().min(3).max(40),
-  ordinalPosition: z.number().positive(),
+  name: z.string().min(1).max(40),
+  seqNo: z.number().nonnegative(),
   dataType: z.string().nullable().optional(),
   lengthScale: z.string(),
   isAutoIncrement: z.boolean(),
   charset: z.string(),
   collation: z.string(),
   comment: z.string().nullable().optional(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
+  isAffected: z.boolean().default(false),
 });
 
 export const INDEX_COLUMN = z.object({
   id: ULID,
   indexId: ULID,
   columnId: ULID,
-  seqNo: z.number().positive(),
+  seqNo: z.number().nonnegative(),
   sortDir: INDEX_SORT_DIR,
+  isAffected: z.boolean().default(false),
 });
 
 export const INDEX = z.object({
@@ -41,13 +63,15 @@ export const INDEX = z.object({
   type: INDEX_TYPE,
   comment: z.string().nullable().optional(),
   columns: z.array(INDEX_COLUMN),
+  isAffected: z.boolean().default(false),
 });
 
 export const CONSTRAINT_COLUMN = z.object({
   id: ULID,
   constraintId: ULID,
   columnId: ULID,
-  seqNo: z.number().positive(),
+  seqNo: z.number().nonnegative(),
+  isAffected: z.boolean().default(false),
 });
 
 export const CONSTRAINT = z
@@ -59,12 +83,13 @@ export const CONSTRAINT = z
     checkExpr: z.string().nullable().optional(),
     defaultExpr: z.string().nullable().optional(),
     columns: z.array(CONSTRAINT_COLUMN),
+    isAffected: z.boolean().default(false),
   })
   .refine((data) => {
-    if (data.kind == 'CHECK') {
-      return typeof data.checkExpr === 'string';
-    } else if (data.kind == 'DEFAULT') {
-      return typeof data.defaultExpr === 'string';
+    if (data.kind == "CHECK") {
+      return typeof data.checkExpr === "string";
+    } else if (data.kind == "DEFAULT") {
+      return typeof data.defaultExpr === "string";
     }
 
     return true;
@@ -74,14 +99,15 @@ export const RELATIONSHIP_COLUMN = z.object({
   id: ULID,
   relationshipId: ULID,
   fkColumnId: ULID,
-  refColumnId: ULID,
-  seqNo: z.number().positive(),
+  pkColumnId: ULID,
+  seqNo: z.number().nonnegative(),
+  isAffected: z.boolean().default(false),
 });
 
 export const RELATIONSHIP = z.object({
   id: ULID,
-  srcTableId: ULID,
-  tgtTableId: ULID,
+  fkTableId: ULID,
+  pkTableId: ULID,
   name: z.string(),
   kind: RELATIONSHIP_KIND,
   cardinality: RELATIONSHIP_CARDINALITY,
@@ -89,40 +115,45 @@ export const RELATIONSHIP = z.object({
   onUpdate: RELATIONSHIP_ON_UPDATE,
   fkEnforced: z.literal(false),
   columns: z.array(RELATIONSHIP_COLUMN),
+  isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const TABLE = z.object({
   id: ULID,
   schemaId: ULID,
-  name: z.string().min(3).max(20),
+  name: z.string().min(1).max(20),
   comment: z.string().nullable().optional(),
   tableOptions: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
   columns: z.array(COLUMN),
   indexes: z.array(INDEX),
   constraints: z.array(CONSTRAINT),
   relationships: z.array(RELATIONSHIP),
+  isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const SCHEMA = z.object({
   id: ULID,
   projectId: ULID,
   dbVendorId: DB_VENDOR,
-  name: z.string().min(3).max(20),
+  name: z
+    .string()
+    .min(SCHEMA_NAME_CONSTRAINTS.MIN_LENGTH)
+    .max(SCHEMA_NAME_CONSTRAINTS.MAX_LENGTH),
   charset: z.string(),
   collation: z.string(),
   vendorOption: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  deletedAt: z.date().nullable().optional(),
   tables: z.array(TABLE),
+  isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export const DATABASE = z.object({
   id: ULID,
   schemas: z.array(SCHEMA),
+  isAffected: z.boolean().default(false),
+  extra: z.unknown().optional(),
 });
 
 export type Schema = z.infer<typeof SCHEMA>;

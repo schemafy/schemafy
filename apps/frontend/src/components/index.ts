@@ -12,3 +12,11 @@ export {
 } from './Table';
 export { Menu, MenuItem } from './Menu';
 export { Pagination } from './Pagination';
+export { Avatar } from './Avatar';
+export * from './Tooltip';
+export * from './DropDown';
+export * from './RadioGroup';
+export * from './Select';
+export * from './Dialog';
+export * from './ListItem';
+export * from './Toaster';

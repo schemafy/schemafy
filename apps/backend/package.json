@@ -1,11 +1,13 @@
 {
   "name": "backend",
   "private": true,
+  "version": "0.0.1",
   "scripts": {
-    "dev": "sh -c \"$(git rev-parse --show-toplevel)/gradlew -p core bootRun\"",
-    "build": "sh -c \"$(git rev-parse --show-toplevel)/gradlew -p core build\"",
-    "dev:infra": "podman compose up -d",
-    "infra:up": "podman compose up -d",
-    "infra:down": "podman compose down"
+    "build": "cd core && ./gradlew build",
+    "dev": "cd core && ./gradlew bootRun",
+    "lint": "echo 'No linter configured for backend'",
+    "format": "cd core && ./gradlew spotlessApply",
+    "format:check": "cd core && ./gradlew spotlessCheck",
+    "test": "cd core && ./gradlew test"
   }
 }

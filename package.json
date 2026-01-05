@@ -5,13 +5,19 @@
     "build": "turbo run build",
     "build:frontend": "cd apps/frontend && npm run build",
     "build:backend": "cd apps/backend && cd core && ./gradlew build",
-    "infra": "podman compose up -d mariadb || true",
+    "infra": "podman compose up -d mariadb redis || true",
     "dev": "npm run infra && turbo run dev --parallel",
     "dev:frontend": "cd apps/frontend && npm run dev",
     "dev:backend": "cd apps/backend && npm run dev",
-    "infra:up": "podman compose up -d mariadb",
+    "infra:up": "podman compose up -d mariadb redis",
     "infra:down": "podman compose down",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "test": "turbo run test",
+    "docs": "./gradlew :core:asciidoctor && open apps/backend/core/build/docs/asciidoc/api-guide.html",
+    "docs:build": "./gradlew :core:asciidoctor",
+    "docs:open": "open apps/backend/core/build/docs/asciidoc/api-guide.html"
   },
   "devDependencies": {
     "turbo": "^2.5.6"

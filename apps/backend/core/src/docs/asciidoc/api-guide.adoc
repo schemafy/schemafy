@@ -1,0 +1,2953 @@
+= Schemafy API 가이드
+:toc: left
+:toclevels: 3
+:sectnums:
+:sectlinks:
+:source-highlighter: highlightjs
+:highlightjs-theme: github
+:icons: font
+:imagesdir: images
+
+== 개요
+
+Schemafy API
+
+=== 기본 응답 형식
+
+모든 API는 다음과 같은 공통 응답 형식을 사용합니다.
+
+[source,json]
+----
+{
+  "success": true,
+  "result": {
+    // API별 응답 데이터
+  },
+  "error": null
+}
+----
+
+응답 필드
+
+[cols="1,2,1"]
+|===
+|필드명 |설명 |타입
+
+|`success`
+|요청 성공 여부
+|Boolean
+
+|`result`
+|응답 데이터 (성공시)
+|Object
+
+|`error`
+|에러 정보 (실패시)
+|Object
+
+|`error.code`
+|에러 코드
+|String
+
+|`error.message`
+|에러 메시지
+|String
+|===
+
+== API 목록
+
+=== ULID 생성
+
+ULID를 생성합니다.
+
+[source]
+----
+GET /public/api/v1.0/ulid/generate
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/ulid-generate/http-request.adoc[]
+include::{snippets}/ulid-generate/request-headers.adoc[]
+include::{snippets}/ulid-generate/request-body.adoc[]
+include::{snippets}/ulid-generate/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/ulid-generate/response-headers.adoc[]
+include::{snippets}/ulid-generate/response-body.adoc[]
+include::{snippets}/ulid-generate/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/ulid-generate/response-fields.adoc[]
+
+---
+
+
+== Workspace API
+
+=== Workspace 생성
+
+워크스페이스를 생성합니다.
+
+[source]
+----
+POST /api/v1.0/workspaces
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-create/http-request.adoc[]
+include::{snippets}/workspace-create/request-headers.adoc[]
+include::{snippets}/workspace-create/request-fields.adoc[]
+include::{snippets}/workspace-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-create/response-headers.adoc[]
+include::{snippets}/workspace-create/response-body.adoc[]
+include::{snippets}/workspace-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-create/response-fields.adoc[]
+
+---
+
+=== Workspace 목록 조회
+
+사용자가 소속된 워크스페이스 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-list/http-request.adoc[]
+include::{snippets}/workspace-list/request-headers.adoc[]
+include::{snippets}/workspace-list/query-parameters.adoc[]
+include::{snippets}/workspace-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-list/response-headers.adoc[]
+include::{snippets}/workspace-list/response-body.adoc[]
+include::{snippets}/workspace-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-list/response-fields.adoc[]
+
+---
+
+=== Workspace 상세 조회
+
+워크스페이스 상세 정보를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{id}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-get/http-request.adoc[]
+include::{snippets}/workspace-get/request-headers.adoc[]
+include::{snippets}/workspace-get/path-parameters.adoc[]
+include::{snippets}/workspace-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-get/response-headers.adoc[]
+include::{snippets}/workspace-get/response-body.adoc[]
+include::{snippets}/workspace-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-get/response-fields.adoc[]
+
+---
+
+=== Workspace 수정
+
+워크스페이스 정보를 수정합니다.
+
+[source]
+----
+PUT /api/v1.0/workspaces/{id}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-update/http-request.adoc[]
+include::{snippets}/workspace-update/request-headers.adoc[]
+include::{snippets}/workspace-update/path-parameters.adoc[]
+include::{snippets}/workspace-update/request-fields.adoc[]
+include::{snippets}/workspace-update/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-update/response-headers.adoc[]
+include::{snippets}/workspace-update/response-body.adoc[]
+include::{snippets}/workspace-update/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-update/response-fields.adoc[]
+
+---
+
+=== Workspace 삭제
+
+워크스페이스를 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{id}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-delete/http-request.adoc[]
+include::{snippets}/workspace-delete/request-headers.adoc[]
+include::{snippets}/workspace-delete/path-parameters.adoc[]
+include::{snippets}/workspace-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-delete/http-response.adoc[]
+
+NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
+
+---
+
+=== Workspace 멤버 목록 조회
+
+워크스페이스 멤버 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{id}/members
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-members/http-request.adoc[]
+include::{snippets}/workspace-members/request-headers.adoc[]
+include::{snippets}/workspace-members/path-parameters.adoc[]
+include::{snippets}/workspace-members/query-parameters.adoc[]
+include::{snippets}/workspace-members/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-members/response-headers.adoc[]
+include::{snippets}/workspace-members/response-body.adoc[]
+include::{snippets}/workspace-members/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-members/response-fields.adoc[]
+
+---
+
+== Project API
+
+=== Project 생성
+
+프로젝트를 생성합니다.
+
+[source]
+----
+POST /api/v1.0/workspaces/{workspaceId}/projects
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-create/http-request.adoc[]
+include::{snippets}/project-create/request-headers.adoc[]
+include::{snippets}/project-create/path-parameters.adoc[]
+include::{snippets}/project-create/request-fields.adoc[]
+include::{snippets}/project-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-create/response-headers.adoc[]
+include::{snippets}/project-create/response-body.adoc[]
+include::{snippets}/project-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-create/response-fields.adoc[]
+
+---
+
+=== Project 목록 조회
+
+워크스페이스 내 프로젝트 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{workspaceId}/projects
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-list/http-request.adoc[]
+include::{snippets}/project-list/request-headers.adoc[]
+include::{snippets}/project-list/path-parameters.adoc[]
+include::{snippets}/project-list/query-parameters.adoc[]
+include::{snippets}/project-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-list/response-headers.adoc[]
+include::{snippets}/project-list/response-body.adoc[]
+include::{snippets}/project-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-list/response-fields.adoc[]
+
+---
+
+=== Project 상세 조회
+
+프로젝트 상세 정보를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{workspaceId}/projects/{id}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-get/http-request.adoc[]
+include::{snippets}/project-get/request-headers.adoc[]
+include::{snippets}/project-get/path-parameters.adoc[]
+include::{snippets}/project-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-get/response-headers.adoc[]
+include::{snippets}/project-get/response-body.adoc[]
+include::{snippets}/project-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-get/response-fields.adoc[]
+
+---
+
+=== Project 수정
+
+프로젝트 정보를 수정합니다.
+
+[source]
+----
+PUT /api/v1.0/workspaces/{workspaceId}/projects/{id}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-update/http-request.adoc[]
+include::{snippets}/project-update/request-headers.adoc[]
+include::{snippets}/project-update/path-parameters.adoc[]
+include::{snippets}/project-update/request-fields.adoc[]
+include::{snippets}/project-update/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-update/response-headers.adoc[]
+include::{snippets}/project-update/response-body.adoc[]
+include::{snippets}/project-update/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-update/response-fields.adoc[]
+
+---
+
+=== Project 삭제
+
+프로젝트를 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{workspaceId}/projects/{id}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-delete/http-request.adoc[]
+include::{snippets}/project-delete/request-headers.adoc[]
+include::{snippets}/project-delete/path-parameters.adoc[]
+include::{snippets}/project-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-delete/http-response.adoc[]
+
+NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
+
+---
+
+=== Project 멤버 목록 조회
+
+프로젝트 멤버 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{workspaceId}/projects/{id}/members
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-members/http-request.adoc[]
+include::{snippets}/project-members/request-headers.adoc[]
+include::{snippets}/project-members/path-parameters.adoc[]
+include::{snippets}/project-members/query-parameters.adoc[]
+include::{snippets}/project-members/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-members/response-headers.adoc[]
+include::{snippets}/project-members/response-body.adoc[]
+include::{snippets}/project-members/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-members/response-fields.adoc[]
+
+---
+
+=== Project 참여 (ShareLink)
+
+ShareLink를 통해 프로젝트에 참여합니다.
+
+[source]
+----
+POST /api/v1.0/projects/join
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-join-by-sharelink/http-request.adoc[]
+include::{snippets}/project-join-by-sharelink/request-headers.adoc[]
+include::{snippets}/project-join-by-sharelink/request-fields.adoc[]
+include::{snippets}/project-join-by-sharelink/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-join-by-sharelink/response-headers.adoc[]
+include::{snippets}/project-join-by-sharelink/response-body.adoc[]
+include::{snippets}/project-join-by-sharelink/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-join-by-sharelink/response-fields.adoc[]
+
+---
+
+=== Project 멤버 역할 변경
+
+프로젝트 멤버의 역할을 변경합니다.
+
+[source]
+----
+PATCH /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-member-update-role/http-request.adoc[]
+include::{snippets}/project-member-update-role/request-headers.adoc[]
+include::{snippets}/project-member-update-role/path-parameters.adoc[]
+include::{snippets}/project-member-update-role/request-fields.adoc[]
+include::{snippets}/project-member-update-role/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-member-update-role/response-headers.adoc[]
+include::{snippets}/project-member-update-role/response-body.adoc[]
+include::{snippets}/project-member-update-role/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-member-update-role/response-fields.adoc[]
+
+---
+
+=== Project 멤버 제거
+
+프로젝트에서 멤버를 제거합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-member-remove/http-request.adoc[]
+include::{snippets}/project-member-remove/request-headers.adoc[]
+include::{snippets}/project-member-remove/path-parameters.adoc[]
+include::{snippets}/project-member-remove/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-member-remove/http-response.adoc[]
+
+NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
+
+---
+
+=== Project 탈퇴
+
+프로젝트에서 자발적으로 탈퇴합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/me
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-member-leave/http-request.adoc[]
+include::{snippets}/project-member-leave/request-headers.adoc[]
+include::{snippets}/project-member-leave/path-parameters.adoc[]
+include::{snippets}/project-member-leave/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-member-leave/http-response.adoc[]
+
+NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
+
+---
+
+== ShareLink API
+
+=== ShareLink 생성
+
+공유 링크를 생성합니다.
+
+[source]
+----
+POST /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/share-link-create/http-request.adoc[]
+include::{snippets}/share-link-create/request-headers.adoc[]
+include::{snippets}/share-link-create/path-parameters.adoc[]
+include::{snippets}/share-link-create/request-fields.adoc[]
+include::{snippets}/share-link-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/share-link-create/response-headers.adoc[]
+include::{snippets}/share-link-create/response-body.adoc[]
+include::{snippets}/share-link-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/share-link-create/response-fields.adoc[]
+
+---
+
+=== ShareLink 목록 조회
+
+프로젝트의 공유 링크 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/share-link-list/http-request.adoc[]
+include::{snippets}/share-link-list/request-headers.adoc[]
+include::{snippets}/share-link-list/path-parameters.adoc[]
+include::{snippets}/share-link-list/query-parameters.adoc[]
+include::{snippets}/share-link-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/share-link-list/response-headers.adoc[]
+include::{snippets}/share-link-list/response-body.adoc[]
+include::{snippets}/share-link-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/share-link-list/response-fields.adoc[]
+
+---
+
+=== ShareLink 상세 조회
+
+공유 링크 상세 정보를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/share-link-get/http-request.adoc[]
+include::{snippets}/share-link-get/request-headers.adoc[]
+include::{snippets}/share-link-get/path-parameters.adoc[]
+include::{snippets}/share-link-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/share-link-get/response-headers.adoc[]
+include::{snippets}/share-link-get/response-body.adoc[]
+include::{snippets}/share-link-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/share-link-get/response-fields.adoc[]
+
+---
+
+=== ShareLink 비활성화
+
+공유 링크를 비활성화합니다.
+
+[source]
+----
+PATCH /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/share-link-revoke/http-request.adoc[]
+include::{snippets}/share-link-revoke/request-headers.adoc[]
+include::{snippets}/share-link-revoke/path-parameters.adoc[]
+include::{snippets}/share-link-revoke/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/share-link-revoke/response-headers.adoc[]
+include::{snippets}/share-link-revoke/response-body.adoc[]
+include::{snippets}/share-link-revoke/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/share-link-revoke/response-fields.adoc[]
+
+---
+
+=== ShareLink 삭제
+
+공유 링크를 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/share-link-delete/http-request.adoc[]
+include::{snippets}/share-link-delete/request-headers.adoc[]
+include::{snippets}/share-link-delete/path-parameters.adoc[]
+include::{snippets}/share-link-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/share-link-delete/http-response.adoc[]
+
+NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
+
+---
+
+== ERD API
+
+ERD(Entity-Relationship Diagram) 관련 API입니다.
+
+=== Schema
+
+==== Schema 생성
+
+스키마를 생성합니다.
+
+[source]
+----
+POST /api/v1.0/schemas
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-create/http-request.adoc[]
+include::{snippets}/schema-create/request-headers.adoc[]
+include::{snippets}/schema-create/request-fields.adoc[]
+include::{snippets}/schema-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-create/response-headers.adoc[]
+include::{snippets}/schema-create/response-body.adoc[]
+include::{snippets}/schema-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-create/response-fields.adoc[]
+
+---
+
+==== Schema 조회
+
+스키마를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-get/http-request.adoc[]
+include::{snippets}/schema-get/request-headers.adoc[]
+include::{snippets}/schema-get/path-parameters.adoc[]
+include::{snippets}/schema-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-get/response-headers.adoc[]
+include::{snippets}/schema-get/response-body.adoc[]
+include::{snippets}/schema-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-get/response-fields.adoc[]
+
+---
+
+==== Schema 이름 변경
+
+스키마 이름을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/schemas/{schemaId}/name
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-update-name/http-request.adoc[]
+include::{snippets}/schema-update-name/request-headers.adoc[]
+include::{snippets}/schema-update-name/path-parameters.adoc[]
+include::{snippets}/schema-update-name/request-fields.adoc[]
+include::{snippets}/schema-update-name/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-update-name/response-headers.adoc[]
+include::{snippets}/schema-update-name/response-body.adoc[]
+include::{snippets}/schema-update-name/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-update-name/response-fields.adoc[]
+
+---
+
+==== Schema 삭제
+
+스키마를 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/schemas/{schemaId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-delete/http-request.adoc[]
+include::{snippets}/schema-delete/request-headers.adoc[]
+include::{snippets}/schema-delete/path-parameters.adoc[]
+include::{snippets}/schema-delete/request-fields.adoc[]
+include::{snippets}/schema-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-delete/response-headers.adoc[]
+include::{snippets}/schema-delete/response-body.adoc[]
+include::{snippets}/schema-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-delete/response-fields.adoc[]
+
+---
+
+==== 스키마별 Table 목록 조회
+
+특정 스키마에 속한 테이블 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}/tables
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-list-by-schema/http-request.adoc[]
+include::{snippets}/table-list-by-schema/request-headers.adoc[]
+include::{snippets}/table-list-by-schema/path-parameters.adoc[]
+include::{snippets}/table-list-by-schema/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-list-by-schema/response-headers.adoc[]
+include::{snippets}/table-list-by-schema/response-body.adoc[]
+include::{snippets}/table-list-by-schema/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-list-by-schema/response-fields.adoc[]
+
+---
+
+=== Table
+
+==== Table 생성
+
+테이블을 생성합니다.
+
+[source]
+----
+POST /api/v1.0/tables
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-create/http-request.adoc[]
+include::{snippets}/table-create/request-headers.adoc[]
+include::{snippets}/table-create/request-fields.adoc[]
+include::{snippets}/table-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-create/response-headers.adoc[]
+include::{snippets}/table-create/response-body.adoc[]
+include::{snippets}/table-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-create/response-fields.adoc[]
+
+---
+
+==== Table 조회
+
+테이블을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-get/http-request.adoc[]
+include::{snippets}/table-get/request-headers.adoc[]
+include::{snippets}/table-get/path-parameters.adoc[]
+include::{snippets}/table-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-get/response-headers.adoc[]
+include::{snippets}/table-get/response-body.adoc[]
+include::{snippets}/table-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-get/response-fields.adoc[]
+
+---
+
+==== Table 이름 변경
+
+테이블 이름을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/tables/{tableId}/name
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-update-name/http-request.adoc[]
+include::{snippets}/table-update-name/request-headers.adoc[]
+include::{snippets}/table-update-name/path-parameters.adoc[]
+include::{snippets}/table-update-name/request-fields.adoc[]
+include::{snippets}/table-update-name/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-update-name/response-headers.adoc[]
+include::{snippets}/table-update-name/response-body.adoc[]
+include::{snippets}/table-update-name/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-update-name/response-fields.adoc[]
+
+---
+
+==== Table extra 정보 변경
+
+테이블의 extra 정보를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/tables/{tableId}/extra
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-update-extra/http-request.adoc[]
+include::{snippets}/table-update-extra/request-headers.adoc[]
+include::{snippets}/table-update-extra/path-parameters.adoc[]
+include::{snippets}/table-update-extra/request-fields.adoc[]
+include::{snippets}/table-update-extra/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-update-extra/response-headers.adoc[]
+include::{snippets}/table-update-extra/response-body.adoc[]
+include::{snippets}/table-update-extra/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-update-extra/response-fields.adoc[]
+
+---
+
+==== Table 삭제
+
+테이블을 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/tables/{tableId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/table-delete/http-request.adoc[]
+include::{snippets}/table-delete/request-headers.adoc[]
+include::{snippets}/table-delete/path-parameters.adoc[]
+include::{snippets}/table-delete/request-fields.adoc[]
+include::{snippets}/table-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/table-delete/response-headers.adoc[]
+include::{snippets}/table-delete/response-body.adoc[]
+include::{snippets}/table-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/table-delete/response-fields.adoc[]
+
+---
+
+==== 테이블별 Column 목록 조회
+
+테이블에 속한 컬럼 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/columns
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-list-by-table/http-request.adoc[]
+include::{snippets}/column-list-by-table/request-headers.adoc[]
+include::{snippets}/column-list-by-table/path-parameters.adoc[]
+include::{snippets}/column-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-list-by-table/response-headers.adoc[]
+include::{snippets}/column-list-by-table/response-body.adoc[]
+include::{snippets}/column-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-list-by-table/response-fields.adoc[]
+
+---
+
+==== 테이블별 Relationship 목록 조회
+
+특정 테이블의 관계 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/relationships
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-list-by-table/http-request.adoc[]
+include::{snippets}/relationship-list-by-table/path-parameters.adoc[]
+include::{snippets}/relationship-list-by-table/request-headers.adoc[]
+include::{snippets}/relationship-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-list-by-table/response-headers.adoc[]
+include::{snippets}/relationship-list-by-table/response-body.adoc[]
+include::{snippets}/relationship-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-list-by-table/response-fields.adoc[]
+
+---
+
+==== 테이블별 Index 목록 조회
+
+특정 테이블의 인덱스 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/indexes
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-list-by-table/http-request.adoc[]
+include::{snippets}/index-list-by-table/path-parameters.adoc[]
+include::{snippets}/index-list-by-table/request-headers.adoc[]
+include::{snippets}/index-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-list-by-table/response-headers.adoc[]
+include::{snippets}/index-list-by-table/response-body.adoc[]
+include::{snippets}/index-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-list-by-table/response-fields.adoc[]
+
+---
+
+==== 테이블별 Constraint 목록 조회
+
+특정 테이블의 제약조건 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/tables/{tableId}/constraints
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-list-by-table/http-request.adoc[]
+include::{snippets}/constraint-list-by-table/path-parameters.adoc[]
+include::{snippets}/constraint-list-by-table/request-headers.adoc[]
+include::{snippets}/constraint-list-by-table/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-list-by-table/response-headers.adoc[]
+include::{snippets}/constraint-list-by-table/response-body.adoc[]
+include::{snippets}/constraint-list-by-table/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-list-by-table/response-fields.adoc[]
+
+---
+
+=== Column
+
+==== Column 생성
+
+컬럼을 생성합니다.
+
+[source]
+----
+POST /api/v1.0/columns
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-create/http-request.adoc[]
+include::{snippets}/column-create/request-headers.adoc[]
+include::{snippets}/column-create/request-fields.adoc[]
+include::{snippets}/column-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-create/response-headers.adoc[]
+include::{snippets}/column-create/response-body.adoc[]
+include::{snippets}/column-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-create/response-fields.adoc[]
+
+---
+
+==== Column 조회
+
+컬럼을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/columns/{columnId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-get/http-request.adoc[]
+include::{snippets}/column-get/request-headers.adoc[]
+include::{snippets}/column-get/path-parameters.adoc[]
+include::{snippets}/column-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-get/response-headers.adoc[]
+include::{snippets}/column-get/response-body.adoc[]
+include::{snippets}/column-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-get/response-fields.adoc[]
+
+---
+
+==== Column 이름 변경
+
+컬럼 이름을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/columns/{columnId}/name
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-update-name/http-request.adoc[]
+include::{snippets}/column-update-name/request-headers.adoc[]
+include::{snippets}/column-update-name/path-parameters.adoc[]
+include::{snippets}/column-update-name/request-fields.adoc[]
+include::{snippets}/column-update-name/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-update-name/response-headers.adoc[]
+include::{snippets}/column-update-name/response-body.adoc[]
+include::{snippets}/column-update-name/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-update-name/response-fields.adoc[]
+
+---
+
+==== Column 타입 변경
+
+컬럼 타입을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/columns/{columnId}/type
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-update-type/http-request.adoc[]
+include::{snippets}/column-update-type/request-headers.adoc[]
+include::{snippets}/column-update-type/path-parameters.adoc[]
+include::{snippets}/column-update-type/request-fields.adoc[]
+include::{snippets}/column-update-type/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-update-type/response-headers.adoc[]
+include::{snippets}/column-update-type/response-body.adoc[]
+include::{snippets}/column-update-type/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-update-type/response-fields.adoc[]
+
+---
+
+==== Column 위치 변경
+
+컬럼 위치를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/columns/{columnId}/position
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-update-position/http-request.adoc[]
+include::{snippets}/column-update-position/request-headers.adoc[]
+include::{snippets}/column-update-position/path-parameters.adoc[]
+include::{snippets}/column-update-position/request-fields.adoc[]
+include::{snippets}/column-update-position/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-update-position/response-headers.adoc[]
+include::{snippets}/column-update-position/response-body.adoc[]
+include::{snippets}/column-update-position/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-update-position/response-fields.adoc[]
+
+---
+
+==== Column 삭제
+
+컬럼을 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/columns/{columnId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/column-delete/http-request.adoc[]
+include::{snippets}/column-delete/request-headers.adoc[]
+include::{snippets}/column-delete/path-parameters.adoc[]
+include::{snippets}/column-delete/request-fields.adoc[]
+include::{snippets}/column-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/column-delete/response-headers.adoc[]
+include::{snippets}/column-delete/response-body.adoc[]
+include::{snippets}/column-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/column-delete/response-fields.adoc[]
+
+---
+
+=== Relationship
+
+==== Relationship 생성
+
+관계를 생성합니다.
+
+[source]
+----
+POST /api/v1.0/relationships
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-create/http-request.adoc[]
+include::{snippets}/relationship-create/request-headers.adoc[]
+include::{snippets}/relationship-create/request-fields.adoc[]
+include::{snippets}/relationship-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-create/response-headers.adoc[]
+include::{snippets}/relationship-create/response-body.adoc[]
+include::{snippets}/relationship-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-create/response-fields.adoc[]
+
+---
+
+==== Relationship 조회
+
+관계를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/relationships/{relationshipId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-get/http-request.adoc[]
+include::{snippets}/relationship-get/path-parameters.adoc[]
+include::{snippets}/relationship-get/request-headers.adoc[]
+include::{snippets}/relationship-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-get/response-headers.adoc[]
+include::{snippets}/relationship-get/response-body.adoc[]
+include::{snippets}/relationship-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-get/response-fields.adoc[]
+
+---
+
+==== Relationship 이름 변경
+
+관계의 이름을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/relationships/{relationshipId}/name
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-update-name/http-request.adoc[]
+include::{snippets}/relationship-update-name/path-parameters.adoc[]
+include::{snippets}/relationship-update-name/request-headers.adoc[]
+include::{snippets}/relationship-update-name/request-fields.adoc[]
+include::{snippets}/relationship-update-name/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-update-name/response-headers.adoc[]
+include::{snippets}/relationship-update-name/response-body.adoc[]
+include::{snippets}/relationship-update-name/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-update-name/response-fields.adoc[]
+
+---
+
+==== Relationship extra 정보 변경
+
+관계의 extra 정보를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/relationships/{relationshipId}/extra
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-update-extra/http-request.adoc[]
+include::{snippets}/relationship-update-extra/path-parameters.adoc[]
+include::{snippets}/relationship-update-extra/request-headers.adoc[]
+include::{snippets}/relationship-update-extra/request-fields.adoc[]
+include::{snippets}/relationship-update-extra/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-update-extra/response-headers.adoc[]
+include::{snippets}/relationship-update-extra/response-body.adoc[]
+include::{snippets}/relationship-update-extra/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-update-extra/response-fields.adoc[]
+
+---
+
+==== Relationship 카디널리티 변경
+
+관계의 카디널리티를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/relationships/{relationshipId}/cardinality
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-update-cardinality/http-request.adoc[]
+include::{snippets}/relationship-update-cardinality/path-parameters.adoc[]
+include::{snippets}/relationship-update-cardinality/request-headers.adoc[]
+include::{snippets}/relationship-update-cardinality/request-fields.adoc[]
+include::{snippets}/relationship-update-cardinality/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-update-cardinality/response-headers.adoc[]
+include::{snippets}/relationship-update-cardinality/response-body.adoc[]
+include::{snippets}/relationship-update-cardinality/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-update-cardinality/response-fields.adoc[]
+
+---
+
+==== Relationship 종류 변경
+
+Relationship의 종류(식별/비식별)를 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/relationships/{relationshipId}/kind
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-update-kind/http-request.adoc[]
+include::{snippets}/relationship-update-kind/path-parameters.adoc[]
+include::{snippets}/relationship-update-kind/request-headers.adoc[]
+include::{snippets}/relationship-update-kind/request-fields.adoc[]
+include::{snippets}/relationship-update-kind/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-update-kind/response-headers.adoc[]
+include::{snippets}/relationship-update-kind/response-body.adoc[]
+include::{snippets}/relationship-update-kind/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-update-kind/response-fields.adoc[]
+
+---
+
+==== Relationship에 컬럼 추가
+
+관계에 컬럼을 추가합니다.
+
+[source]
+----
+POST /api/v1.0/relationships/{relationshipId}/columns
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-add-column/http-request.adoc[]
+include::{snippets}/relationship-add-column/path-parameters.adoc[]
+include::{snippets}/relationship-add-column/request-headers.adoc[]
+include::{snippets}/relationship-add-column/request-fields.adoc[]
+include::{snippets}/relationship-add-column/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-add-column/response-headers.adoc[]
+include::{snippets}/relationship-add-column/response-body.adoc[]
+include::{snippets}/relationship-add-column/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-add-column/response-fields.adoc[]
+
+---
+
+==== Relationship에서 컬럼 제거
+
+관계에서 컬럼을 제거합니다.
+
+[source]
+----
+DELETE /api/v1.0/relationships/{relationshipId}/columns/{columnId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-remove-column/http-request.adoc[]
+include::{snippets}/relationship-remove-column/path-parameters.adoc[]
+include::{snippets}/relationship-remove-column/request-headers.adoc[]
+include::{snippets}/relationship-remove-column/request-fields.adoc[]
+include::{snippets}/relationship-remove-column/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-remove-column/response-headers.adoc[]
+include::{snippets}/relationship-remove-column/response-body.adoc[]
+include::{snippets}/relationship-remove-column/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-remove-column/response-fields.adoc[]
+
+---
+
+==== Relationship 삭제
+
+관계를 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/relationships/{relationshipId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/relationship-delete/http-request.adoc[]
+include::{snippets}/relationship-delete/path-parameters.adoc[]
+include::{snippets}/relationship-delete/request-headers.adoc[]
+include::{snippets}/relationship-delete/request-fields.adoc[]
+include::{snippets}/relationship-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/relationship-delete/response-headers.adoc[]
+include::{snippets}/relationship-delete/response-body.adoc[]
+include::{snippets}/relationship-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/relationship-delete/response-fields.adoc[]
+
+---
+
+=== Constraint
+
+==== Constraint 생성
+
+제약조건을 생성합니다.
+
+[source]
+----
+POST /api/v1.0/constraints
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-create/http-request.adoc[]
+include::{snippets}/constraint-create/request-headers.adoc[]
+include::{snippets}/constraint-create/request-fields.adoc[]
+include::{snippets}/constraint-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-create/response-headers.adoc[]
+include::{snippets}/constraint-create/response-body.adoc[]
+include::{snippets}/constraint-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-create/response-fields.adoc[]
+
+---
+
+==== Constraint 조회
+
+제약조건을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/constraints/{constraintId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-get/http-request.adoc[]
+include::{snippets}/constraint-get/path-parameters.adoc[]
+include::{snippets}/constraint-get/request-headers.adoc[]
+include::{snippets}/constraint-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-get/response-headers.adoc[]
+include::{snippets}/constraint-get/response-body.adoc[]
+include::{snippets}/constraint-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-get/response-fields.adoc[]
+
+---
+
+==== Constraint 이름 변경
+
+제약조건의 이름을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/constraints/{constraintId}/name
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-update-name/http-request.adoc[]
+include::{snippets}/constraint-update-name/path-parameters.adoc[]
+include::{snippets}/constraint-update-name/request-headers.adoc[]
+include::{snippets}/constraint-update-name/request-fields.adoc[]
+include::{snippets}/constraint-update-name/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-update-name/response-headers.adoc[]
+include::{snippets}/constraint-update-name/response-body.adoc[]
+include::{snippets}/constraint-update-name/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-update-name/response-fields.adoc[]
+
+---
+
+==== Constraint에 컬럼 추가
+
+제약조건에 컬럼을 추가합니다.
+
+[source]
+----
+POST /api/v1.0/constraints/{constraintId}/columns
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-add-column/http-request.adoc[]
+include::{snippets}/constraint-add-column/path-parameters.adoc[]
+include::{snippets}/constraint-add-column/request-headers.adoc[]
+include::{snippets}/constraint-add-column/request-fields.adoc[]
+include::{snippets}/constraint-add-column/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-add-column/response-headers.adoc[]
+include::{snippets}/constraint-add-column/response-body.adoc[]
+include::{snippets}/constraint-add-column/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-add-column/response-fields.adoc[]
+
+---
+
+==== Constraint에서 컬럼 제거
+
+제약조건에서 컬럼을 제거합니다.
+
+[source]
+----
+DELETE /api/v1.0/constraints/{constraintId}/columns/{columnId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-remove-column/http-request.adoc[]
+include::{snippets}/constraint-remove-column/path-parameters.adoc[]
+include::{snippets}/constraint-remove-column/request-headers.adoc[]
+include::{snippets}/constraint-remove-column/request-fields.adoc[]
+include::{snippets}/constraint-remove-column/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-remove-column/response-headers.adoc[]
+include::{snippets}/constraint-remove-column/response-body.adoc[]
+include::{snippets}/constraint-remove-column/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-remove-column/response-fields.adoc[]
+
+---
+
+==== Constraint 삭제
+
+제약조건을 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/constraints/{constraintId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-delete/http-request.adoc[]
+include::{snippets}/constraint-delete/path-parameters.adoc[]
+include::{snippets}/constraint-delete/request-headers.adoc[]
+include::{snippets}/constraint-delete/request-fields.adoc[]
+include::{snippets}/constraint-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-delete/response-headers.adoc[]
+include::{snippets}/constraint-delete/response-body.adoc[]
+include::{snippets}/constraint-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-delete/response-fields.adoc[]
+
+---
+
+=== Index
+
+==== Index 생성
+
+인덱스를 생성합니다.
+
+[source]
+----
+POST /api/v1.0/indexes
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-create/http-request.adoc[]
+include::{snippets}/index-create/request-headers.adoc[]
+include::{snippets}/index-create/request-fields.adoc[]
+include::{snippets}/index-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-create/response-headers.adoc[]
+include::{snippets}/index-create/response-body.adoc[]
+include::{snippets}/index-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-create/response-fields.adoc[]
+
+---
+
+==== Index 조회
+
+인덱스를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/indexes/{indexId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-get/http-request.adoc[]
+include::{snippets}/index-get/path-parameters.adoc[]
+include::{snippets}/index-get/request-headers.adoc[]
+include::{snippets}/index-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-get/response-headers.adoc[]
+include::{snippets}/index-get/response-body.adoc[]
+include::{snippets}/index-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-get/response-fields.adoc[]
+
+---
+
+==== Index 이름 변경
+
+인덱스의 이름을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/indexes/{indexId}/name
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-update-name/http-request.adoc[]
+include::{snippets}/index-update-name/path-parameters.adoc[]
+include::{snippets}/index-update-name/request-headers.adoc[]
+include::{snippets}/index-update-name/request-fields.adoc[]
+include::{snippets}/index-update-name/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-update-name/response-headers.adoc[]
+include::{snippets}/index-update-name/response-body.adoc[]
+include::{snippets}/index-update-name/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-update-name/response-fields.adoc[]
+
+---
+
+==== Index 타입 변경
+
+인덱스 타입을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/indexes/{indexId}/type
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-update-type/http-request.adoc[]
+include::{snippets}/index-update-type/path-parameters.adoc[]
+include::{snippets}/index-update-type/request-headers.adoc[]
+include::{snippets}/index-update-type/request-fields.adoc[]
+include::{snippets}/index-update-type/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-update-type/response-headers.adoc[]
+include::{snippets}/index-update-type/response-body.adoc[]
+include::{snippets}/index-update-type/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-update-type/response-fields.adoc[]
+
+---
+
+==== Index에 컬럼 추가
+
+인덱스에 컬럼을 추가합니다.
+
+[source]
+----
+POST /api/v1.0/indexes/{indexId}/columns
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-add-column/http-request.adoc[]
+include::{snippets}/index-add-column/path-parameters.adoc[]
+include::{snippets}/index-add-column/request-headers.adoc[]
+include::{snippets}/index-add-column/request-fields.adoc[]
+include::{snippets}/index-add-column/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-add-column/response-headers.adoc[]
+include::{snippets}/index-add-column/response-body.adoc[]
+include::{snippets}/index-add-column/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-add-column/response-fields.adoc[]
+
+---
+
+==== Index 컬럼 정렬 방향 변경
+
+인덱스 컬럼의 정렬 방향을 변경합니다.
+
+[source]
+----
+PUT /api/v1.0/indexes/{indexId}/columns/{indexColumnId}/sort-dir
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-column-update-sort-dir/http-request.adoc[]
+include::{snippets}/index-column-update-sort-dir/path-parameters.adoc[]
+include::{snippets}/index-column-update-sort-dir/request-headers.adoc[]
+include::{snippets}/index-column-update-sort-dir/request-fields.adoc[]
+include::{snippets}/index-column-update-sort-dir/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-column-update-sort-dir/response-headers.adoc[]
+include::{snippets}/index-column-update-sort-dir/response-body.adoc[]
+include::{snippets}/index-column-update-sort-dir/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-column-update-sort-dir/response-fields.adoc[]
+
+---
+
+==== Index에서 컬럼 제거
+
+인덱스에서 컬럼을 제거합니다.
+
+[source]
+----
+DELETE /api/v1.0/indexes/{indexId}/columns/{indexColumnId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-remove-column/http-request.adoc[]
+include::{snippets}/index-remove-column/path-parameters.adoc[]
+include::{snippets}/index-remove-column/request-headers.adoc[]
+include::{snippets}/index-remove-column/request-fields.adoc[]
+include::{snippets}/index-remove-column/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-remove-column/response-headers.adoc[]
+include::{snippets}/index-remove-column/response-body.adoc[]
+include::{snippets}/index-remove-column/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-remove-column/response-fields.adoc[]
+
+---
+
+==== Index 삭제
+
+인덱스를 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/indexes/{indexId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/index-delete/http-request.adoc[]
+include::{snippets}/index-delete/path-parameters.adoc[]
+include::{snippets}/index-delete/request-headers.adoc[]
+include::{snippets}/index-delete/request-fields.adoc[]
+include::{snippets}/index-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/index-delete/response-headers.adoc[]
+include::{snippets}/index-delete/response-body.adoc[]
+include::{snippets}/index-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/index-delete/response-fields.adoc[]
+
+---
+
+=== Memo
+
+==== Memo 생성
+
+메모를 생성합니다.
+
+[source]
+----
+POST /api/v1.0/memos
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-create/http-request.adoc[]
+include::{snippets}/memo-create/request-headers.adoc[]
+include::{snippets}/memo-create/request-fields.adoc[]
+include::{snippets}/memo-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-create/response-headers.adoc[]
+include::{snippets}/memo-create/response-body.adoc[]
+include::{snippets}/memo-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-create/response-fields.adoc[]
+
+---
+
+==== Memo 조회
+
+메모를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/memos/{memoId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-get/http-request.adoc[]
+include::{snippets}/memo-get/request-headers.adoc[]
+include::{snippets}/memo-get/path-parameters.adoc[]
+include::{snippets}/memo-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-get/response-headers.adoc[]
+include::{snippets}/memo-get/response-body.adoc[]
+include::{snippets}/memo-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-get/response-fields.adoc[]
+
+---
+
+==== 스키마별 Memo 목록 조회
+
+특정 스키마에 속한 메모 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}/memos
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-list-by-schema/http-request.adoc[]
+include::{snippets}/memo-list-by-schema/request-headers.adoc[]
+include::{snippets}/memo-list-by-schema/path-parameters.adoc[]
+include::{snippets}/memo-list-by-schema/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-list-by-schema/response-headers.adoc[]
+include::{snippets}/memo-list-by-schema/response-body.adoc[]
+include::{snippets}/memo-list-by-schema/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-list-by-schema/response-fields.adoc[]
+
+---
+
+==== Memo 수정
+
+메모를 수정합니다.
+
+[source]
+----
+PUT /api/v1.0/memos/{memoId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-update/http-request.adoc[]
+include::{snippets}/memo-update/request-headers.adoc[]
+include::{snippets}/memo-update/path-parameters.adoc[]
+include::{snippets}/memo-update/request-fields.adoc[]
+include::{snippets}/memo-update/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-update/response-headers.adoc[]
+include::{snippets}/memo-update/response-body.adoc[]
+include::{snippets}/memo-update/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-update/response-fields.adoc[]
+
+---
+
+==== Memo 삭제
+
+메모를 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/memos/{memoId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-delete/http-request.adoc[]
+include::{snippets}/memo-delete/request-headers.adoc[]
+include::{snippets}/memo-delete/path-parameters.adoc[]
+include::{snippets}/memo-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-delete/response-headers.adoc[]
+include::{snippets}/memo-delete/response-body.adoc[]
+include::{snippets}/memo-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-delete/response-fields.adoc[]
+
+---
+
+==== Memo 댓글 생성
+
+메모에 댓글을 생성합니다.
+
+[source]
+----
+POST /api/v1.0/memos/{memoId}/comments
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-comment-create/http-request.adoc[]
+include::{snippets}/memo-comment-create/request-headers.adoc[]
+include::{snippets}/memo-comment-create/path-parameters.adoc[]
+include::{snippets}/memo-comment-create/request-fields.adoc[]
+include::{snippets}/memo-comment-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-comment-create/response-headers.adoc[]
+include::{snippets}/memo-comment-create/response-body.adoc[]
+include::{snippets}/memo-comment-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-comment-create/response-fields.adoc[]
+
+---
+
+==== Memo 댓글 목록 조회
+
+메모의 댓글 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/memos/{memoId}/comments
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-comment-list/http-request.adoc[]
+include::{snippets}/memo-comment-list/request-headers.adoc[]
+include::{snippets}/memo-comment-list/path-parameters.adoc[]
+include::{snippets}/memo-comment-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-comment-list/response-headers.adoc[]
+include::{snippets}/memo-comment-list/response-body.adoc[]
+include::{snippets}/memo-comment-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-comment-list/response-fields.adoc[]
+
+---
+
+==== Memo 댓글 수정
+
+메모의 댓글을 수정합니다.
+
+[source]
+----
+PUT /api/v1.0/memos/{memoId}/comments/{commentId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-comment-update/http-request.adoc[]
+include::{snippets}/memo-comment-update/request-headers.adoc[]
+include::{snippets}/memo-comment-update/path-parameters.adoc[]
+include::{snippets}/memo-comment-update/request-fields.adoc[]
+include::{snippets}/memo-comment-update/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-comment-update/response-headers.adoc[]
+include::{snippets}/memo-comment-update/response-body.adoc[]
+include::{snippets}/memo-comment-update/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-comment-update/response-fields.adoc[]
+
+---
+
+==== Memo 댓글 삭제
+
+메모의 댓글을 삭제합니다.
+
+[source]
+----
+DELETE /api/v1.0/memos/{memoId}/comments/{commentId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/memo-comment-delete/http-request.adoc[]
+include::{snippets}/memo-comment-delete/request-headers.adoc[]
+include::{snippets}/memo-comment-delete/path-parameters.adoc[]
+include::{snippets}/memo-comment-delete/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/memo-comment-delete/response-headers.adoc[]
+include::{snippets}/memo-comment-delete/response-body.adoc[]
+include::{snippets}/memo-comment-delete/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/memo-comment-delete/response-fields.adoc[]
+
+---
+
+== User API
+
+=== 회원가입
+
+사용자 계정을 생성하고 JWT 토큰을 발급합니다.
+
+[source]
+----
+POST /public/api/v1.0/users/signup
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-signup/http-request.adoc[]
+include::{snippets}/user-signup/request-fields.adoc[]
+include::{snippets}/user-signup/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/user-signup/response-headers.adoc[]
+include::{snippets}/user-signup/response-body.adoc[]
+include::{snippets}/user-signup/http-response.adoc[]
+include::{snippets}/user-signup/response-fields.adoc[]
+
+---
+
+=== 로그인
+
+이메일과 비밀번호로 로그인하고 JWT 토큰을 발급합니다.
+
+[source]
+----
+POST /public/api/v1.0/users/login
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-login/http-request.adoc[]
+include::{snippets}/user-login/request-fields.adoc[]
+include::{snippets}/user-login/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/user-login/response-headers.adoc[]
+include::{snippets}/user-login/response-body.adoc[]
+include::{snippets}/user-login/http-response.adoc[]
+include::{snippets}/user-login/response-fields.adoc[]
+
+---
+
+=== 내 정보 조회
+
+로그인된 사용자의 정보를 조회합니다. (인증 필요)
+
+[source]
+----
+GET /public/api/v1.0/users
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-get-me/http-request.adoc[]
+include::{snippets}/user-get-me/request-headers.adoc[]
+include::{snippets}/user-get-me/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/user-get-me/response-headers.adoc[]
+include::{snippets}/user-get-me/response-body.adoc[]
+include::{snippets}/user-get-me/http-response.adoc[]
+include::{snippets}/user-get-me/response-fields.adoc[]
+
+---
+
+=== 사용자 조회 (스펙 변경 예정)
+
+사용자 ID로 사용자 정보를 조회합니다. (인증 필요). 요구 사항에 따른 변경 예정
+
+[source]
+----
+GET /public/api/v1.0/users/{userId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-get/http-request.adoc[]
+include::{snippets}/user-get/path-parameters.adoc[]
+include::{snippets}/user-get/request-headers.adoc[]
+include::{snippets}/user-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/user-get/response-headers.adoc[]
+include::{snippets}/user-get/response-body.adoc[]
+include::{snippets}/user-get/http-response.adoc[]
+include::{snippets}/user-get/response-fields.adoc[]
+
+---
+
+=== 토큰 갱신
+
+리프레시 토큰으로 새로운 액세스 토큰을 발급받습니다.
+
+[source]
+----
+POST /public/api/v1.0/users/refresh
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-refresh/http-request.adoc[]
+include::{snippets}/user-refresh/request-cookies.adoc[]
+include::{snippets}/user-refresh/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/user-refresh/response-headers.adoc[]
+include::{snippets}/user-refresh/response-body.adoc[]
+include::{snippets}/user-refresh/http-response.adoc[]
+include::{snippets}/user-refresh/response-fields.adoc[]
+
+---
+
+== WebSocket API
+
+실시간 기능을 위한 WebSocket API입니다.
+
+=== 프로젝트 협업
+
+프로젝트 내 실시간 협업 기능을 제공합니다.
+
+==== 연결
+
+===== 엔드포인트
+
+[source]
+----
+ws://{host}/ws/collaboration?projectId={projectId}
+----
+
+쿼리 파라미터
+
+[cols="1,2,1"]
+|===
+|파라미터 |설명 |필수
+
+|`projectId`
+|협업할 프로젝트 ID (ULID)
+|필수
+|===
+
+===== 인증
+
+WebSocket 연결 시 다음 두 가지 방법 중 하나로 JWT 토큰을 전달해야 합니다.
+
+방법 1: HTTP 헤더
+
+[source]
+----
+Authorization: Bearer {accessToken}
+----
+
+방법 2: 쿠키
+
+HTTP 헤더에 토큰을 포함할 수 없는 환경(브라우저 등)에서는 쿠키를 사용합니다.
+
+[cols="1,2"]
+|===
+|쿠키 이름 |설명
+
+|`accessToken`
+|JWT 액세스 토큰
+|===
+
+---
+
+==== 클라이언트 → 서버 메시지
+
+클라이언트가 서버로 보내는 메시지 형식입니다.
+
+===== CURSOR
+
+다른 사용자에게 내 커서 위치를 공유합니다.
+
+[source,json]
+----
+{
+  "type": "CURSOR",
+  "cursor": {
+    "x": 150.5,
+    "y": 320.0
+  }
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|메시지 타입 (고정값: `CURSOR`)
+|String
+
+|`cursor.x`
+|X 좌표
+|Number
+
+|`cursor.y`
+|Y 좌표
+|Number
+|===
+
+---
+
+===== SCHEMA_FOCUS
+
+현재 보고 있는 스키마를 다른 사용자에게 알립니다.
+
+[source,json]
+----
+{
+  "type": "SCHEMA_FOCUS",
+  "schemaId": "01HNQD..."
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|메시지 타입 (고정값: `SCHEMA_FOCUS`)
+|String
+
+|`schemaId`
+|포커스한 스키마 ID (ULID)
+|String
+|===
+
+---
+
+===== CHAT
+
+프로젝트 채팅 메시지를 전송합니다.
+
+[source,json]
+----
+{
+  "type": "CHAT",
+  "content": "안녕하세요!"
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|메시지 타입 (고정값: `CHAT`)
+|String
+
+|`content`
+|채팅 내용
+|String
+|===
+
+---
+
+==== 서버 → 클라이언트 이벤트
+
+서버가 클라이언트에게 브로드캐스트하는 이벤트 형식입니다.
+
+===== JOIN
+
+새로운 사용자가 프로젝트에 접속했을 때 브로드캐스트됩니다.
+
+[source,json]
+----
+{
+  "type": "JOIN",
+  "userId": "01HNQD...",
+  "userName": "cjeongmin",
+  "timestamp": 1703577600000
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|이벤트 타입 (고정값: `JOIN`)
+|String
+
+|`userId`
+|입장한 사용자 ID (ULID)
+|String
+
+|`userName`
+|입장한 사용자 이름
+|String
+
+|`timestamp`
+|이벤트 발생 시간 (Unix milliseconds)
+|Number
+|===
+
+---
+
+===== LEAVE
+
+사용자가 프로젝트에서 나갔을 때 브로드캐스트됩니다.
+
+[source,json]
+----
+{
+  "type": "LEAVE",
+  "userId": "01HNQD...",
+  "userName": "cjeongmin",
+  "timestamp": 1703577600000
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|이벤트 타입 (고정값: `LEAVE`)
+|String
+
+|`userId`
+|퇴장한 사용자 ID (ULID)
+|String
+
+|`userName`
+|퇴장한 사용자 이름
+|String
+
+|`timestamp`
+|이벤트 발생 시간 (Unix milliseconds)
+|Number
+|===
+
+---
+
+===== CURSOR
+
+다른 사용자의 커서 위치가 업데이트되었을 때 브로드캐스트됩니다.
+
+[source,json]
+----
+{
+  "type": "CURSOR",
+  "cursor": {
+    "userName": "cjeongmin",
+    "x": 150.5,
+    "y": 320.0
+  },
+  "timestamp": 1703577600000
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|이벤트 타입 (고정값: `CURSOR`)
+|String
+
+|`cursor.userName`
+|커서 소유자 이름
+|String
+
+|`cursor.x`
+|X 좌표
+|Number
+
+|`cursor.y`
+|Y 좌표
+|Number
+
+|`timestamp`
+|이벤트 발생 시간 (Unix milliseconds)
+|Number
+|===
+
+---
+
+===== SCHEMA_FOCUS
+
+다른 사용자가 스키마를 전환했을 때 브로드캐스트됩니다.
+
+[source,json]
+----
+{
+  "type": "SCHEMA_FOCUS",
+  "userId": "01HNQD...",
+  "userName": "cjeongmin",
+  "schemaId": "01HNQE...",
+  "timestamp": 1703577600000
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|이벤트 타입 (고정값: `SCHEMA_FOCUS`)
+|String
+
+|`userId`
+|사용자 ID (ULID)
+|String
+
+|`userName`
+|사용자 이름
+|String
+
+|`schemaId`
+|포커스한 스키마 ID (ULID)
+|String
+
+|`timestamp`
+|이벤트 발생 시간 (Unix milliseconds)
+|Number
+|===
+
+---
+
+===== CHAT
+
+채팅 메시지가 전송되었을 때 브로드캐스트됩니다. (본인 포함 모든 사용자에게 전송)
+
+[source,json]
+----
+{
+  "type": "CHAT",
+  "messageId": "01HNQF...",
+  "userId": "01HNQD...",
+  "userName": "cjeongmin",
+  "content": "안녕하세요!",
+  "timestamp": 1703577600000
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|이벤트 타입 (고정값: `CHAT`)
+|String
+
+|`messageId`
+|메시지 ID (ULID, DB 저장된 ID)
+|String
+
+|`userId`
+|발신자 ID (ULID)
+|String
+
+|`userName`
+|발신자 이름
+|String
+
+|`content`
+|채팅 내용
+|String
+
+|`timestamp`
+|이벤트 발생 시간 (Unix milliseconds)
+|Number
+|===
+
+---
+
+==== 이벤트 타입 요약
+
+[cols="1,1,2"]
+|===
+|타입 |방향 |설명
+
+|`JOIN`
+|서버 → 클라이언트
+|사용자가 프로젝트에 입장
+
+|`LEAVE`
+|서버 → 클라이언트
+|사용자가 프로젝트에서 퇴장
+
+|`CURSOR`
+|양방향
+|커서 위치 공유
+
+|`SCHEMA_FOCUS`
+|양방향
+|현재 보고 있는 스키마 공유
+
+|`CHAT`
+|양방향
+|채팅 메시지
+|===
+
+== 에러 응답
+
+API 호출이 실패한 경우 다음과 같은 형식으로 에러 응답을 반환합니다.
+
+[source,json]
+----
+{
+  "success": false,
+  "result": null,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Error description"
+  }
+}
+----
+
+에러 코드
+
+[cols="1,2"]
+|===
+|에러 코드 |설명
+
+|`VALIDATION_ERROR`
+|입력 데이터 검증 실패
+
+|`NOT_FOUND`
+|요청한 리소스를 찾을 수 없음
+
+|`INTERNAL_ERROR`
+|서버 내부 오류
+|===

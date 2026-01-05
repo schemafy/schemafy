@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 services:
   mariadb:
     image: mariadb:11.4
@@ -13,14 +13,30 @@ services:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpw}
       TZ: ${TZ:-Asia/Seoul}
     ports:
-      - '${DB_PORT:-3306}:3306'
+      - "${DB_PORT:-3306}:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  redis:
+    image: redis:8.4-alpine
+    container_name: schemafy-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   mariadb_data:
+  redis_data:

@@ -6,6 +6,8 @@ logs/
 ._.DS_Store
 **/.DS_Store
 **/._.DS_Store
+.claude
+agent-log
 
 HELP.md
 .gradle
@@ -47,3 +49,6 @@ out/
 .turbo/
 
 **/dist/
+
+### Cursor ###
+.cursor/

@@ -1,0 +1,87 @@
+spring:
+  profiles:
+    active: test
+  application:
+    name: core
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+
+  main:
+    allow-bean-definition-overriding: true
+
+  data:
+    redis:
+      enabled: false
+
+  sql:
+    init:
+      schema-locations: classpath:ddl/h2/**/*.sql
+      mode: always
+
+  r2dbc:
+    url: r2dbc:h2:mem:///schemafy;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+
+  security:
+    user:
+      name: test
+      password: test
+
+  output:
+    ansi:
+      enabled: always
+
+jwt:
+  secret: my-super-secret-key-for-jwt-token-generation-min-256-bits-required
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+  issuer: schemafy-test
+  audience: schemafy-test-audience
+  cookie:
+    secure: false
+
+cors:
+  allowed-origins: http://localhost:3000
+
+cache:
+  caffeine:
+    enabled: true
+    maximum-size: 1000
+    expire-after-write-minutes: 5
+    expire-after-access-minutes: 2
+  redis:
+    enabled: false
+
+sharelink:
+  pepper: test-pepper-value
+
+logging:
+  level:
+    com:
+      schemafy: DEBUG
+    io.r2dbc:
+      h2: DEBUG
+    org.springframework:
+      cache: DEBUG
+      data.r2dbc.core: DEBUG
+      r2dbc.core: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      probes:
+        enabled: true

@@ -4,9 +4,10 @@ import { createTestDatabase } from '../src/lib/builder';
 import type { Table } from '../src/lib/types';
 
 describe('Table validation', () => {
-  test.skip('새 테이블 생성 시, 같은 스키마 내에 중복된 이름이 있으면 에러를 발생시킨다', () => {
+  test('새 테이블 생성 시, 같은 스키마 내에 중복된 이름이 있으면 에러를 발생시킨다', () => {
     const schemaId = 'schema-1';
-    const table: Omit<Table, 'id' | 'schemaId' | 'createdAt' | 'updatedAt'> = {
+    const table: Omit<Table, 'schemaId'> = {
+      id: 'table-1',
       name: 'posts',
       columns: [],
       constraints: [],
@@ -14,6 +15,7 @@ describe('Table validation', () => {
       relationships: [],
       comment: '',
       tableOptions: '',
+      isAffected: false,
     };
 
     const database = createTestDatabase()
@@ -28,9 +30,10 @@ describe('Table validation', () => {
     expect(() => ERD_VALIDATOR.createTable(database, schemaId, table)).toThrow(TableNameNotUniqueError);
   });
 
-  test.skip('테이블 이름 변경 시, 같은 스키마 내에 중복된 이름이 있으면 에러를 발생시킨다', () => {
+  test('테이블 이름 변경 시, 같은 스키마 내에 중복된 이름이 있으면 에러를 발생시킨다', () => {
     const schemaId = 'schema-1';
-    const table: Omit<Table, 'id' | 'schemaId' | 'createdAt' | 'updatedAt'> = {
+    const table: Omit<Table, 'schemaId'> = {
+      id: 'table-2',
       name: 'users',
       columns: [],
       constraints: [],
@@ -38,6 +41,7 @@ describe('Table validation', () => {
       relationships: [],
       comment: '',
       tableOptions: '',
+      isAffected: false,
     };
 
     const database = createTestDatabase()
@@ -50,12 +54,15 @@ describe('Table validation', () => {
       .build();
 
     const dbWithUsers = ERD_VALIDATOR.createTable(database, schemaId, table);
-    expect(() => ERD_VALIDATOR.changeTableName(dbWithUsers, 'table-1', 'users')).toThrow(TableNameNotUniqueError);
+    expect(() => ERD_VALIDATOR.changeTableName(dbWithUsers, schemaId, 'table-1', 'users')).toThrow(
+      TableNameNotUniqueError
+    );
   });
 
-  test.skip('다른 스키마에 있는 테이블 이름과는 중복되어도 괜찮다', () => {
+  test('다른 스키마에 있는 테이블 이름과는 중복되어도 괜찮다', () => {
     const schemaId = 'schema-1';
-    const table: Omit<Table, 'id' | 'schemaId' | 'createdAt' | 'updatedAt'> = {
+    const table: Omit<Table, 'schemaId'> = {
+      id: 'table-1',
       name: 'users',
       columns: [],
       constraints: [],
@@ -63,6 +70,7 @@ describe('Table validation', () => {
       relationships: [],
       comment: '',
       tableOptions: '',
+      isAffected: false,
     };
 
     const anotherSchemaId = 'schema-2';
@@ -79,7 +87,7 @@ describe('Table validation', () => {
     expect(() => ERD_VALIDATOR.createTable(dbWithAnotherSchema, anotherSchemaId, table)).not.toThrow();
   });
 
-  test.skip('독립적인 테이블을 삭제할 수 있다', () => {
+  test('독립적인 테이블을 삭제할 수 있다', () => {
     const simpleDb = createTestDatabase()
       .withSchema((s) => s.withId('schema-1').withTable((t) => t.withId('table-1').withName('simple')))
       .build();
@@ -87,7 +95,7 @@ describe('Table validation', () => {
     expect(() => ERD_VALIDATOR.deleteTable(simpleDb, 'schema-1', 'table-1')).not.toThrow();
   });
 
-  test.skip('존재하지 않는 테이블 삭제 시 에러 발생', () => {
+  test('존재하지 않는 테이블 삭제 시 에러 발생', () => {
     const database = createTestDatabase()
       .withSchema((s) =>
         s
@@ -96,7 +104,7 @@ describe('Table validation', () => {
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id').withDataType('INT'))
+              .withColumn((c) => c.withId('parent-id').withName('id2').withDataType('INT'))
           )
           .withTable((t) =>
             t
@@ -110,15 +118,16 @@ describe('Table validation', () => {
     expect(() => ERD_VALIDATOR.deleteTable(database, 'schema-1', 'non-existent')).toThrow(TableNotExistError);
   });
 
-  test.skip('관계로 참조되는 부모 테이블도 삭제 가능하다', () => {
+  test('관계로 참조되는 부모 테이블도 삭제 가능하다', () => {
     const dbWithRelation = createTestDatabase()
       .withSchema((s) =>
         s
+          .withId('schema-1')
           .withTable((t) =>
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id').withDataType('INT'))
+              .withColumn((c) => c.withId('parent-id').withName('id2').withDataType('INT'))
               .withConstraint((c) =>
                 c
                   .withName('pk_parent')
@@ -129,8 +138,8 @@ describe('Table validation', () => {
                 r
                   .withName('fk_child_parent')
                   .withKind('NON_IDENTIFYING')
-                  .withTgtTableId('parent-table')
-                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withRefColumnId('parent-id'))
+                  .withPkTableId('parent-table')
+                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withPkColumnId('parent-id'))
               )
           )
           .withTable((t) =>
@@ -142,8 +151,8 @@ describe('Table validation', () => {
                 r
                   .withName('fk_child_parent')
                   .withKind('NON_IDENTIFYING')
-                  .withTgtTableId('parent-table')
-                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withRefColumnId('parent-id'))
+                  .withPkTableId('parent-table')
+                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withPkColumnId('parent-id'))
               )
           )
       )
@@ -161,21 +170,22 @@ describe('Table validation', () => {
     expect(() => ERD_VALIDATOR.deleteTable(dbWithRelation, 'schema-1', 'parent-table')).not.toThrow();
   });
 
-  test.skip('FK를 가진 자식 테이블은 삭제 가능하다', () => {
+  test('FK를 가진 자식 테이블은 삭제 가능하다', () => {
     const dbWithFK = createTestDatabase()
       .withSchema((s) =>
         s
+          .withId('schema-1')
           .withTable((t) =>
             t
               .withId('parent-table')
               .withName('parent')
-              .withColumn((c) => c.withId('parent-id').withName('id'))
+              .withColumn((c) => c.withId('parent-id').withName('id2'))
               .withRelationship((r) =>
                 r
                   .withName('fk_child_parent')
                   .withKind('NON_IDENTIFYING')
-                  .withTgtTableId('parent-table')
-                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withRefColumnId('parent-id'))
+                  .withPkTableId('parent-table')
+                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withPkColumnId('parent-id'))
               )
           )
           .withTable((t) =>
@@ -187,8 +197,8 @@ describe('Table validation', () => {
                 r
                   .withName('fk_child_parent')
                   .withKind('NON_IDENTIFYING')
-                  .withTgtTableId('parent-table')
-                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withRefColumnId('parent-id'))
+                  .withPkTableId('parent-table')
+                  .withColumn((rc) => rc.withFkColumnId('child-parent-id').withPkColumnId('parent-id'))
               )
           )
       )

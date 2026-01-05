@@ -1,7 +1,10 @@
 import { Button, InputField } from '@/components';
-import { useFormStatus } from 'react-dom';
 import type { SignInFormValues, ValidationRules } from '../types';
 import { useFormState } from '../hooks';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signIn } from '@/lib/api';
+import { AuthStore } from '@/store/auth.store';
 
 const formFields = [
   {
@@ -39,14 +42,55 @@ const validationRules: ValidationRules<SignInFormValues> = {
 };
 
 export const SignInForm = () => {
-  const { form, errors, handleChange, handleBlur } = useFormState(
+  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
     initialForm,
     validationRules,
   );
-  const { pending } = useFormStatus();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>('');
+  const navigate = useNavigate();
+  const authStore = AuthStore.getInstance();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitError('');
+    const hasErrors = Object.keys(errors).length > 0;
+    if (hasErrors) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await signIn({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (response.success) {
+        if (response.result) {
+          authStore.setUser(response.result);
+        }
+        resetForm();
+        navigate('/');
+      } else {
+        setSubmitError(response.error?.message || '로그인에 실패했습니다.');
+      }
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : '로그인에 실패했습니다.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <form noValidate className="flex flex-col w-full max-w-[480px]">
+    <form
+      noValidate
+      className="flex flex-col w-full max-w-[480px]"
+      onSubmit={handleSubmit}
+    >
       {formFields.map((field) => (
         <InputField
           key={field.name}
@@ -69,9 +113,12 @@ export const SignInForm = () => {
         Forgot Password?
       </Button>
       <div className="flex flex-col w-full gap-6 py-3">
-        <Button disabled={pending} round fullWidth>
-          {pending ? 'Sign In...' : 'Sign In'}
+        <Button type="submit" disabled={isSubmitting} round fullWidth>
+          {isSubmitting ? 'Sign In...' : 'Sign In'}
         </Button>
+        {submitError && (
+          <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
+        )}
         <div className="flex flex-col w-full gap-2">
           <Button variant={'secondary'} round fullWidth>
             Continue with GitHub

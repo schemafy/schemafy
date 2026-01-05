@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS users (
+    id        CHAR(26)     NOT NULL,
+    email     VARCHAR(255) NOT NULL,
+    name      VARCHAR(255) NOT NULL,
+    password  VARCHAR(255) NOT NULL,
+    status    VARCHAR(32)  NOT NULL DEFAULT 'ACTIVE',
+    created_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at  TIMESTAMP  NULL,
+    CONSTRAINT pk_users PRIMARY KEY (id),
+    CONSTRAINT uq_users_email UNIQUE (email)
+);
