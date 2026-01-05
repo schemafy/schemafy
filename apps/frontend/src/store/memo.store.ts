@@ -155,7 +155,9 @@ export class MemoStore {
         if (effectiveSchemaId) {
           const list = this.memosBySchema[effectiveSchemaId] ?? [];
           this.memosBySchema[effectiveSchemaId] = list.map((m) =>
-            m.id === memoId ? updated : m,
+            m.id === memoId
+              ? { ...updated, comments: updated.comments ?? m.comments ?? [] }
+              : m,
           );
         }
       },
