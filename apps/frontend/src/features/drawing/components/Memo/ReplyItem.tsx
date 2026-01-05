@@ -1,9 +1,9 @@
-import type { MemoComment } from "@/lib/api";
-import { Avatar } from "@/components";
-import { useMemoContext } from "../../context/MemoContext";
-import { formatDate } from "@/lib";
-import { Pencil, Trash } from "lucide-react";
-import { useState } from "react";
+import type { MemoComment } from '@/lib/api';
+import { Avatar } from '@/components';
+import { useMemoContext } from '../../context/MemoContext';
+import { formatDate } from '@/lib';
+import { Pencil, Trash } from 'lucide-react';
+import { useState } from 'react';
 
 export const ReplyItem = ({
   memoId,

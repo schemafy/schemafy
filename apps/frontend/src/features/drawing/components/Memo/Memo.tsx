@@ -42,10 +42,14 @@ export const Memo = observer(({ id, data }: MemoProps) => {
           />
         </div>
 
-        {showHoverPreview && <MemoHoverPreview firstComment={firstComment} comments={comments} />}
+        {showHoverPreview && (
+          <MemoHoverPreview firstComment={firstComment} comments={comments} />
+        )}
       </div>
 
-      {showThread && <MemoThread id={id} comments={comments} setShowThread={setShowThread} />}
+      {showThread && (
+        <MemoThread id={id} comments={comments} setShowThread={setShowThread} />
+      )}
     </div>
   );
 });
