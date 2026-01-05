@@ -5,23 +5,22 @@
         <Class name="~.*\$.*"/>
     </Match>
 
-    <!-- gRPC generated code -->
+    <!-- Generated code (gRPC, Protobuf, etc.) -->
     <Match>
-        <Package name="~.*\.grpc\..*"/>
-    </Match>
-
-    <!-- Protobuf generated code -->
-    <Match>
-        <Class name="~.*\.proto\..*"/>
+        <Or>
+            <Package name="~.*\.grpc\..*"/>
+            <Package name="~.*\.proto\..*"/>
+            <Package name="~.*\.generated\..*"/>
+        </Or>
     </Match>
 
     <!-- Record classes - Defensive copy not needed for immutable records -->
     <Match>
+        <Package name="com.schemafy.core.model.record"/>
         <Or>
             <Bug pattern="EI_EXPOSE_REP"/>
             <Bug pattern="EI_EXPOSE_REP2"/>
         </Or>
-        <Class name="~.*Record$"/>
     </Match>
 
     <!-- DTOs and Request/Response classes - Often designed for data transfer -->
@@ -76,21 +75,10 @@
         <Bug pattern="UNKNOWN"/>
     </Match>
 
-    <!-- Security: SQL Injection - repository-specific query builders handled via annotations -->
-    <Match>
-        <Package name="com.schemafy.core.erd.repository.*"/>
-        <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING"/>
-    </Match>
-
     <!-- Performance: Inner class could be static - Intentional for Spring context -->
     <Match>
         <Class name="~.*Configuration\$.*"/>
         <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON"/>
-    </Match>
-
-    <Match>
-        <Class name="com.schemafy.core.erd.repository.entity.DbVendor"/>
-        <Bug pattern="MF_CLASS_MASKS_FIELD"/>
     </Match>
 
     <!-- Spring Bean constructors may throw exceptions during initialization -->
