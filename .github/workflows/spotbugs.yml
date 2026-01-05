@@ -3,8 +3,14 @@ name: SpotBugs Code Quality Check
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/backend/core/**'
+      - '.github/workflows/spotbugs.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'apps/backend/core/**'
+      - '.github/workflows/spotbugs.yml'
 
 permissions:
   contents: read
