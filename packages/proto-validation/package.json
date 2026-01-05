@@ -1,0 +1,25 @@
+{
+  "name": "@schemafy/proto-validation",
+  "version": "0.1.0",
+  "description": "Shared protobuf definitions for Schemafy validation service",
+  "main": "./protos/validation.proto",
+  "files": [
+    "protos"
+  ],
+  "scripts": {
+    "format": "echo 'No formatting needed for proto files'",
+    "format:check": "echo 'No formatting needed for proto files'"
+  },
+  "keywords": [
+    "protobuf",
+    "grpc",
+    "validation",
+    "schema"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/schemafy/schemafy.git",
+    "directory": "packages/proto-validation"
+  },
+  "license": "MIT"
+}
