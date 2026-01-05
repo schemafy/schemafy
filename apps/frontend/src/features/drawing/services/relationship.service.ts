@@ -1,27 +1,22 @@
 import { ulid } from 'ulid';
 import type { Relationship, RelationshipColumn } from '@schemafy/validator';
 import { ErdStore } from '@/store/erd.store';
-import {
-  createRelationshipAPI,
-  getRelationshipAPI,
-  updateRelationshipNameAPI,
-  updateRelationshipCardinalityAPI,
-  updateRelationshipExtraAPI,
-  addColumnToRelationshipAPI,
-  removeColumnFromRelationshipAPI,
-  deleteRelationshipAPI,
-} from '../api/relationship.api';
-import { withOptimisticUpdate } from '../utils/optimisticUpdate';
-import {
-  convertCardinality,
-  convertOnUpdate,
-} from '../utils/relationshipHelpers';
+import { getRelationshipAPI } from '../api/relationship.api';
 import {
   validateAndGetSchema,
   validateAndGetRelationship,
   ERROR_MESSAGES,
 } from '../utils/entityValidators';
-import { handleServerResponse } from '../utils/sync';
+import { executeCommandWithValidation } from '../utils/commandQueueHelper';
+import {
+  CreateRelationshipCommand,
+  UpdateRelationshipNameCommand,
+  UpdateRelationshipCardinalityCommand,
+  UpdateRelationshipExtraCommand,
+  AddColumnToRelationshipCommand,
+  RemoveColumnFromRelationshipCommand,
+  DeleteRelationshipCommand,
+} from '../queue/commands/RelationshipCommands';
 
 const getErdStore = () => ErdStore.getInstance();
 
@@ -30,7 +25,7 @@ export async function getRelationship(relationshipId: string) {
   return response.result;
 }
 
-export async function createRelationship(
+export function createRelationship(
   schemaId: string,
   srcTableId: string,
   tgtTableId: string,
@@ -48,7 +43,7 @@ export async function createRelationship(
   extra?: string,
 ) {
   const erdStore = getErdStore();
-  const { database } = validateAndGetSchema(schemaId);
+  validateAndGetSchema(schemaId);
 
   const relationshipId = ulid();
 
@@ -76,40 +71,14 @@ export async function createRelationship(
     extra,
   };
 
-  const response = await withOptimisticUpdate(
-    () => erdStore.createRelationship(schemaId, newRelationship),
-    () =>
-      createRelationshipAPI(
-        {
-          database,
-          schemaId,
-          relationship: {
-            id: relationshipId,
-            srcTableId,
-            tgtTableId,
-            name,
-            kind,
-            cardinality: convertCardinality(cardinality),
-            onDelete,
-            onUpdate: convertOnUpdate(onUpdate),
-            columns: relationshipColumns.map((col) => ({
-              id: col.id,
-              relationshipId,
-              fkColumnId: col.fkColumnId,
-              refColumnId: col.refColumnId,
-              seqNo: col.seqNo,
-            })),
-          },
-        },
-        extra,
-      ),
-    () => erdStore.deleteRelationship(schemaId, relationshipId),
+  const command = new CreateRelationshipCommand(
+    schemaId,
+    newRelationship,
+    extra,
   );
 
-  handleServerResponse(response, {
-    schemaId,
-    tableId: srcTableId,
-    relationshipId,
+  executeCommandWithValidation(command, () => {
+    erdStore.createRelationship(schemaId, newRelationship);
   });
 
   return relationshipId;
@@ -121,27 +90,17 @@ export async function updateRelationshipName(
   newName: string,
 ) {
   const erdStore = getErdStore();
-  const { database, relationship } = validateAndGetRelationship(
+  validateAndGetRelationship(schemaId, relationshipId);
+
+  const command = new UpdateRelationshipNameCommand(
     schemaId,
     relationshipId,
+    newName,
   );
 
-  await withOptimisticUpdate(
-    () => {
-      const oldName = relationship.name;
-      erdStore.changeRelationshipName(schemaId, relationshipId, newName);
-      return oldName;
-    },
-    () =>
-      updateRelationshipNameAPI(relationshipId, {
-        database,
-        schemaId,
-        relationshipId,
-        newName,
-      }),
-    (oldName) =>
-      erdStore.changeRelationshipName(schemaId, relationshipId, oldName),
-  );
+  executeCommandWithValidation(command, () => {
+    erdStore.changeRelationshipName(schemaId, relationshipId, newName);
+  });
 }
 
 export async function updateRelationshipCardinality(
@@ -150,35 +109,21 @@ export async function updateRelationshipCardinality(
   cardinality: '1:1' | '1:N',
 ) {
   const erdStore = getErdStore();
-  const { database, relationship } = validateAndGetRelationship(
+  validateAndGetRelationship(schemaId, relationshipId);
+
+  const command = new UpdateRelationshipCardinalityCommand(
     schemaId,
     relationshipId,
+    cardinality,
   );
 
-  await withOptimisticUpdate(
-    () => {
-      const oldCardinality = relationship.cardinality;
-      erdStore.changeRelationshipCardinality(
-        schemaId,
-        relationshipId,
-        cardinality,
-      );
-      return oldCardinality;
-    },
-    () =>
-      updateRelationshipCardinalityAPI(relationshipId, {
-        database,
-        schemaId,
-        relationshipId,
-        cardinality: convertCardinality(cardinality),
-      }),
-    (oldCardinality) =>
-      erdStore.changeRelationshipCardinality(
-        schemaId,
-        relationshipId,
-        oldCardinality,
-      ),
-  );
+  executeCommandWithValidation(command, () => {
+    erdStore.changeRelationshipCardinality(
+      schemaId,
+      relationshipId,
+      cardinality,
+    );
+  });
 }
 
 export async function updateRelationshipKind(
@@ -188,65 +133,7 @@ export async function updateRelationshipKind(
 ) {
   // TODO: relationship kind 업데이트 API 연결
   const erdStore = getErdStore();
-  const { database, relationship } = validateAndGetRelationship(
-    schemaId,
-    relationshipId,
-  );
-
-  const currentExtra =
-    typeof relationship.extra === 'string'
-      ? JSON.parse(relationship.extra)
-      : relationship.extra;
-
-  await withOptimisticUpdate(
-    () => {
-      const relationshipSnapshot = structuredClone(relationship);
-      erdStore.deleteRelationship(schemaId, relationshipId);
-      return relationshipSnapshot;
-    },
-    async () => {
-      await deleteRelationshipAPI(relationshipId, {
-        database,
-        schemaId,
-        relationshipId,
-      });
-
-      const response = await createRelationshipAPI(
-        {
-          database,
-          schemaId,
-          relationship: {
-            id: relationshipId,
-            srcTableId: relationship.srcTableId,
-            tgtTableId: relationship.tgtTableId,
-            name: relationship.name,
-            kind,
-            cardinality: convertCardinality(relationship.cardinality),
-            onDelete: relationship.onDelete,
-            onUpdate: convertOnUpdate(relationship.onUpdate),
-            columns: relationship.columns.map((col) => ({
-              id: col.id,
-              relationshipId,
-              fkColumnId: col.fkColumnId,
-              refColumnId: col.refColumnId,
-              seqNo: col.seqNo,
-            })),
-          },
-        },
-        currentExtra ? JSON.stringify(currentExtra) : undefined,
-      );
-
-      handleServerResponse(response, {
-        schemaId,
-        tableId: relationship.srcTableId,
-        relationshipId,
-      });
-
-      return response;
-    },
-    (relationshipSnapshot) =>
-      erdStore.createRelationship(schemaId, relationshipSnapshot),
-  );
+  validateAndGetRelationship(schemaId, relationshipId);
 }
 
 export async function updateRelationshipExtra(
@@ -255,21 +142,17 @@ export async function updateRelationshipExtra(
   extra: unknown,
 ) {
   const erdStore = getErdStore();
-  const { relationship } = validateAndGetRelationship(schemaId, relationshipId);
+  validateAndGetRelationship(schemaId, relationshipId);
 
-  await withOptimisticUpdate(
-    () => {
-      const oldExtra = relationship.extra;
-      erdStore.updateRelationshipExtra(schemaId, relationshipId, extra);
-      return oldExtra;
-    },
-    () =>
-      updateRelationshipExtraAPI(relationshipId, {
-        extra: JSON.stringify(extra),
-      }),
-    (oldExtra) =>
-      erdStore.updateRelationshipExtra(schemaId, relationshipId, oldExtra),
+  const command = new UpdateRelationshipExtraCommand(
+    schemaId,
+    relationshipId,
+    extra,
   );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.updateRelationshipExtra(schemaId, relationshipId, extra);
+  });
 }
 
 export async function addColumnToRelationship(
@@ -280,7 +163,7 @@ export async function addColumnToRelationship(
   seqNo: number,
 ) {
   const erdStore = getErdStore();
-  const { database } = validateAndGetRelationship(schemaId, relationshipId);
+  validateAndGetRelationship(schemaId, relationshipId);
 
   const relationshipColumnId = ulid();
 
@@ -293,40 +176,19 @@ export async function addColumnToRelationship(
     isAffected: false,
   };
 
-  const response = await withOptimisticUpdate(
-    () =>
-      erdStore.addColumnToRelationship(
-        schemaId,
-        relationshipId,
-        newRelationshipColumn,
-      ),
-    () =>
-      addColumnToRelationshipAPI(relationshipId, {
-        database,
-        schemaId,
-        relationshipId,
-        relationshipColumn: {
-          id: relationshipColumnId,
-          relationshipId,
-          fkColumnId,
-          refColumnId,
-          seqNo,
-        },
-      }),
-    () =>
-      erdStore.removeColumnFromRelationship(
-        schemaId,
-        relationshipId,
-        relationshipColumnId,
-      ),
-  );
-
-  handleServerResponse(response, {
+  const command = new AddColumnToRelationshipCommand(
     schemaId,
     relationshipId,
-  });
+    newRelationshipColumn,
+  );
 
-  return relationshipColumnId;
+  executeCommandWithValidation(command, () => {
+    erdStore.addColumnToRelationship(
+      schemaId,
+      relationshipId,
+      newRelationshipColumn,
+    );
+  });
 }
 
 export async function removeColumnFromRelationship(
@@ -335,10 +197,7 @@ export async function removeColumnFromRelationship(
   relationshipColumnId: string,
 ) {
   const erdStore = getErdStore();
-  const { database, relationship } = validateAndGetRelationship(
-    schemaId,
-    relationshipId,
-  );
+  const { relationship } = validateAndGetRelationship(schemaId, relationshipId);
 
   const relationshipColumn = relationship.columns.find(
     (c) => c.id === relationshipColumnId,
@@ -350,30 +209,19 @@ export async function removeColumnFromRelationship(
     );
   }
 
-  await withOptimisticUpdate(
-    () => {
-      const columnSnapshot = structuredClone(relationshipColumn);
-      erdStore.removeColumnFromRelationship(
-        schemaId,
-        relationshipId,
-        relationshipColumnId,
-      );
-      return columnSnapshot;
-    },
-    () =>
-      removeColumnFromRelationshipAPI(relationshipId, relationshipColumnId, {
-        database,
-        schemaId,
-        relationshipId,
-        relationshipColumnId,
-      }),
-    (columnSnapshot) =>
-      erdStore.addColumnToRelationship(
-        schemaId,
-        relationshipId,
-        columnSnapshot,
-      ),
+  const command = new RemoveColumnFromRelationshipCommand(
+    schemaId,
+    relationshipId,
+    relationshipColumnId,
   );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.removeColumnFromRelationship(
+      schemaId,
+      relationshipId,
+      relationshipColumnId,
+    );
+  });
 }
 
 export async function deleteRelationship(
@@ -381,24 +229,11 @@ export async function deleteRelationship(
   relationshipId: string,
 ) {
   const erdStore = getErdStore();
-  const { database, relationship } = validateAndGetRelationship(
-    schemaId,
-    relationshipId,
-  );
+  validateAndGetRelationship(schemaId, relationshipId);
 
-  await withOptimisticUpdate(
-    () => {
-      const relationshipSnapshot = structuredClone(relationship);
-      erdStore.deleteRelationship(schemaId, relationshipId);
-      return relationshipSnapshot;
-    },
-    () =>
-      deleteRelationshipAPI(relationshipId, {
-        database,
-        schemaId,
-        relationshipId,
-      }),
-    (relationshipSnapshot) =>
-      erdStore.createRelationship(schemaId, relationshipSnapshot),
-  );
+  const command = new DeleteRelationshipCommand(schemaId, relationshipId);
+
+  executeCommandWithValidation(command, () => {
+    erdStore.deleteRelationship(schemaId, relationshipId);
+  });
 }

@@ -39,9 +39,12 @@ export function syncTempToRealIds(
     });
   }
 
-  if (relationshipId) {
-    replaceNestedIds(result.relationshipColumns, relationshipId, (t, r) => {
-      erdStore.replaceRelationshipColumnId(schemaId, relationshipId, t, r);
+  if (relationshipId && tableId) {
+    const realRelationshipId =
+      result.relationships?.[tableId]?.[relationshipId] || relationshipId;
+
+    replaceNestedIds(result.relationshipColumns, realRelationshipId, (t, r) => {
+      erdStore.replaceRelationshipColumnId(schemaId, realRelationshipId, t, r);
       idMap.set(t, { realId: r, type: 'relationshipColumn' });
     });
   }
