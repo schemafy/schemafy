@@ -96,8 +96,8 @@ export class MemoStore {
           const result = commentsResults[index];
           const comments =
             result.status === 'fulfilled' &&
-              result.value.success &&
-              result.value.result
+            result.value.success &&
+            result.value.result
               ? result.value.result
               : [];
           return { ...memo, comments };
@@ -155,9 +155,7 @@ export class MemoStore {
         if (effectiveSchemaId) {
           const list = this.memosBySchema[effectiveSchemaId] ?? [];
           this.memosBySchema[effectiveSchemaId] = list.map((m) =>
-            m.id === memoId
-              ? { ...updated, comments: m.comments }
-              : m,
+            m.id === memoId ? { ...updated, comments: m.comments } : m,
           );
         }
       },
@@ -244,11 +242,11 @@ export class MemoStore {
           this.memosBySchema[schemaId] = listMemos.map((m) =>
             m.id === memoId
               ? {
-                ...m,
-                comments: m.comments.map((c) =>
-                  c.id === commentId ? updated : c,
-                ),
-              }
+                  ...m,
+                  comments: m.comments.map((c) =>
+                    c.id === commentId ? updated : c,
+                  ),
+                }
               : m,
           );
         }
