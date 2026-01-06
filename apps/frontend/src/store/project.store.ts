@@ -7,6 +7,7 @@ import {
   getProject,
   createProject,
   deleteProject,
+  deleteWorkspace,
 } from '../lib/api';
 import type {
   Workspace,
@@ -204,6 +205,40 @@ export class ProjectStore {
       'Failed to create project',
     );
     return project;
+  }
+
+  async deleteWorkspace(workspaceId: string) {
+    this._loadingStates['deleteWorkspace'] = true;
+    this.error = null;
+
+    try {
+      await deleteWorkspace(workspaceId);
+
+      runInAction(() => {
+        if (this.workspaces) {
+          this.workspaces = {
+            ...this.workspaces,
+            content: this.workspaces.content.filter(
+              (w) => w.id !== workspaceId,
+            ),
+            totalElements: this.workspaces.totalElements - 1,
+          };
+        }
+        if (this.currentWorkspace?.id === workspaceId) {
+          this.currentWorkspace = null;
+        }
+        this._loadingStates['deleteWorkspace'] = false;
+      });
+
+      return true;
+    } catch (e) {
+      runInAction(() => {
+        this.error =
+          e instanceof Error ? e.message : 'Failed to delete workspace';
+        this._loadingStates['deleteWorkspace'] = false;
+      });
+      return false;
+    }
   }
 
   async deleteProject(

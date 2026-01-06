@@ -24,6 +24,7 @@ export const ProjectsPage = observer(() => {
     totalPages,
     setWorkspace,
     createWorkspace,
+    deleteWorkspace,
     createProject,
     deleteProject,
   } = useProjectStore();
@@ -60,6 +61,7 @@ export const ProjectsPage = observer(() => {
           workspaces={workspaces}
           selectedWorkspace={currentWorkspace}
           onSelect={setWorkspace}
+          onDelete={deleteWorkspace}
         />
 
         <ProjectSearchBar value={searchQuery} onChange={setSearchQuery} />

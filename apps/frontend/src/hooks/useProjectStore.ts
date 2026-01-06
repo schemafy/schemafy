@@ -22,6 +22,13 @@ export const useProjectStore = () => {
     store.fetchWorkspaces();
   }, [store]);
 
+  const deleteWorkspace = useCallback(
+    (workspaceId: string) => {
+      store.deleteWorkspace(workspaceId);
+    },
+    [store],
+  );
+
   const fetchProjects = useCallback(
     (workspaceId: string, page: number = 0) => {
       store.fetchProjects(workspaceId, page);
@@ -66,8 +73,9 @@ export const useProjectStore = () => {
     totalPages,
     isLoading,
     setWorkspace,
-    fetchProjects,
     createWorkspace,
+    deleteWorkspace,
+    fetchProjects,
     createProject,
     deleteProject,
   };
