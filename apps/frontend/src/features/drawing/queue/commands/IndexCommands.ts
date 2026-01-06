@@ -208,7 +208,18 @@ export class AddColumnToIndexCommand extends BaseCommand {
       },
     });
 
-    return response.result ?? {};
+    const result = response.result;
+    if (result && 'id' in result) {
+      return {
+        indexColumns: {
+          [this.indexId]: {
+            [this.indexColumnData.id]: result.id,
+          },
+        },
+      };
+    }
+
+    return {};
   }
 
   withMappedIds(mapping: IdMapping) {
