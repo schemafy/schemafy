@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Dropdown,
   Table,
   TableHeader,
   TableBody,
@@ -11,7 +10,11 @@ import {
   Menu,
   MenuItem,
   Button,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
 } from '@/components';
+import { ChevronDown } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -59,14 +62,29 @@ export const ProjectsPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-schemafy-bg">
+    <div className="min-h-screen bg-schemafy-bg w-full">
       <div className="flex flex-col">
         <div className="my-5">
-          <Dropdown
-            value={selectedWorkspace}
-            options={workspaceOptions}
-            onChange={setSelectedWorkspace}
-          />
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-2 bg-schemafy-secondary rounded-xl font-body-md text-schemafy-text hover:bg-schemafy-light-gray transition-colors cursor-pointer">
+              {selectedWorkspace}
+              <ChevronDown size={16} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="min-w-[200px]">
+              {workspaceOptions.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setSelectedWorkspace(option)}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-body-sm transition-colors ${selectedWorkspace === option
+                    ? 'bg-schemafy-button-bg text-schemafy-button-text'
+                    : 'text-schemafy-text hover:bg-schemafy-secondary'
+                    }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="mb-8">
@@ -166,7 +184,7 @@ export const ProjectsPage = () => {
                         </button>
                       }
                     >
-                      <MenuItem onClick={() => {}} variant="destructive">
+                      <MenuItem onClick={() => { }} variant="destructive">
                         Delete
                       </MenuItem>
                     </Menu>

@@ -3,7 +3,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { TooltipProvider } from '@/components';
-import { LandingPage, SignInPage, SignUpPage, CanvasPage } from '@/pages';
+import { LandingPage, SignInPage, SignUpPage, CanvasPage, ProjectsPage } from '@/pages';
 import { useEffect } from 'react';
 import { AuthStore } from '@/store/auth.store';
 import { getMyInfo, refreshToken } from '@/lib/api';
