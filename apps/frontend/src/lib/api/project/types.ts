@@ -12,6 +12,7 @@ type ProjectSummary = {
 type ProjectSettings = {
   theme?: string;
   language?: string;
+  defaultView?: string;
 };
 
 type ProjectRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'COMMENTER' | 'VIEWER';

@@ -2,16 +2,20 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import {
   getWorkspaces,
   getWorkspace,
+  createWorkspace,
   getProjects,
   getProject,
+  createProject,
 } from '../lib/api';
 import type {
   Workspace,
   WorkspacesResponse,
+  WorkspaceRequest,
 } from '../lib/api/workspace/types';
 import type {
   Project,
   ProjectsResponse,
+  ProjectRequest,
 } from '../lib/api/project/types';
 import type { ApiResponse } from '../lib/api/types';
 
@@ -118,6 +122,49 @@ export class ProjectStore {
       },
       'Failed to fetch project',
     );
+  }
+
+  async createWorkspace(data: WorkspaceRequest): Promise<Workspace | null> {
+    const { data: workspace } = await this.handleAsync(
+      'createWorkspace',
+      () => createWorkspace(data),
+      (workspace) => {
+        if (this.workspaces) {
+          this.workspaces = {
+            ...this.workspaces,
+            content: [{ ...workspace, memberCount: 1 }, ...this.workspaces.content],
+            totalElements: this.workspaces.totalElements + 1,
+          };
+        }
+      },
+      'Failed to create workspace',
+    );
+    return workspace;
+  }
+
+  async createProject(workspaceId: string, data: ProjectRequest): Promise<Project | null> {
+    const { data: project } = await this.handleAsync(
+      'createProject',
+      () => createProject(workspaceId, data),
+      (project) => {
+        if (this.projects) {
+          this.projects = {
+            ...this.projects,
+            content: [
+              {
+                ...project,
+                myRole: 'OWNER',
+                memberCount: 1,
+              },
+              ...this.projects.content,
+            ],
+            totalElements: this.projects.totalElements + 1,
+          };
+        }
+      },
+      'Failed to create project',
+    );
+    return project;
   }
 
   clearWorkspaces() {
