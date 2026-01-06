@@ -14,6 +14,8 @@ const handleTokenResponse = (response: AxiosResponse<ApiResponse<unknown>>) => {
   }
 };
 
+
+
 export const signUp = async (
   data: SignUpRequest,
 ): Promise<ApiResponse<AuthResponse>> => {

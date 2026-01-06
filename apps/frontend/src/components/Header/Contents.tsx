@@ -6,7 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '../DropDown';
+} from '../Dropdown';
 import { FilePlus, Link } from 'lucide-react';
 import { ThemeProviderContext, type Theme } from '@/lib/config';
 import {
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../Select';
+import { AuthStore } from '@/store';
 
 export const LandingContents = () => {
   return (
@@ -32,24 +33,31 @@ export const LandingContents = () => {
 };
 
 export const DashBoardContents = () => {
+  const user = AuthStore.getInstance().user;
+
   return (
-    <div className="flex items-center gap-9">
-      <Button variant={'none'} size={'none'} to="/projects">
-        Product
-      </Button>
-      <Button variant={'none'} size={'none'}>
-        Settings
-      </Button>
-      <Button variant={'none'} size={'none'}>
-        Notifications
-      </Button>
-      <div className="flex gap-2">
-        <Button round>New Project</Button>
-        <Button variant={'secondary'} round to="/signin">
-          Sign Out
+    <div className="flex items-center justify-between w-full">
+      <div className="flex items-center gap-9 ml-8">
+        <Button variant={'none'} size={'none'} to="/projects">
+          Product
+        </Button>
+        <Button variant={'none'} size={'none'}>
+          Settings
+        </Button>
+        <Button variant={'none'} size={'none'}>
+          Notifications
         </Button>
       </div>
-      <Avatar src="https://picsum.photos/200/300?random=1" />
+      <div className="flex items-center gap-4">
+        <div className="flex gap-2">
+          <Button round>New Project</Button>
+          <Button variant={'secondary'} round>
+            Sign Out
+          </Button>
+        </div>
+        <span className="flex items-center font-body-sm text-schemafy-dark-gray">{user?.name}</span>
+        <Avatar src="https://picsum.photos/200/300?random=1" />
+      </div>
     </div>
   );
 };
