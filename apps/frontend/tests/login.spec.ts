@@ -7,16 +7,15 @@ test.describe('Login Flow', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL(/.*\/signin/);
 
-    //TODO: frontend 하단에 env 파일 생성 후 등록
-    const email = process.env.TEST_EMAIL ?? 'test@example.com';
-    const password = process.env.TEST_PASSWORD ?? 'password123';
+    const email = 'test@example.com';
+    const password = 'password123';
 
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', password);
 
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL('http://localhost:3000/');
+    await expect(page).toHaveURL('http://localhost:3001/');
 
     await expect(page.getByRole('button', { name: 'Sign In' })).not.toBeVisible();
   });

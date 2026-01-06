@@ -8,15 +8,15 @@ test.describe('Memo Flow', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL(/.*\/signin/);
 
-    const email = process.env.TEST_EMAIL ?? 'test@example.com';
-    const password = process.env.TEST_PASSWORD ?? 'password123';
+    const email = 'test@example.com';
+    const password = 'password123';
 
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', password);
 
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL('http://localhost:3000/');
+    await expect(page).toHaveURL('http://localhost:3001/');
 
     await expect(page.getByRole('button', { name: 'Sign In' })).not.toBeVisible();
   });
