@@ -13,62 +13,69 @@ import reactor.core.publisher.Sinks;
 
 public class SessionEntry {
 
-    private static final Duration CURSOR_SAMPLE_INTERVAL = Duration
-            .ofMillis(50);
+  private static final Duration CURSOR_SAMPLE_INTERVAL = Duration
+      .ofMillis(50);
 
-    private final WebSocketSession session;
-    private final WebSocketAuthInfo authInfo;
+  private final WebSocketSession session;
+  private final WebSocketAuthInfo authInfo;
 
-    private final Sinks.Many<String> outboundSink;
-    private final Flux<WebSocketMessage> outboundFlux;
+  private final Sinks.Many<String> outboundSink;
+  private final Flux<WebSocketMessage> outboundFlux;
 
-    private final Sinks.Many<CursorPosition> cursorSink;
+  private final Sinks.Many<CursorPosition> cursorSink;
 
-    public SessionEntry(WebSocketSession session, WebSocketAuthInfo authInfo) {
-        this.session = session;
-        this.authInfo = authInfo;
+  private String currentSchemaId;
 
-        this.outboundSink = Sinks.many()
-                .unicast()
-                .onBackpressureBuffer();
-        this.outboundFlux = outboundSink.asFlux()
-                .map(session::textMessage);
+  public SessionEntry(WebSocketSession session, WebSocketAuthInfo authInfo) {
+    this.session = session;
+    this.authInfo = authInfo;
+    this.currentSchemaId = null;
 
-        this.cursorSink = Sinks.many()
-                .unicast()
-                .onBackpressureBuffer();
-    }
+    this.outboundSink = Sinks.many()
+        .unicast()
+        .onBackpressureBuffer();
+    this.outboundFlux = outboundSink.asFlux()
+        .map(session::textMessage);
 
-    public WebSocketSession session() {
-        return session;
-    }
+    this.cursorSink = Sinks.many()
+        .unicast()
+        .onBackpressureBuffer();
+  }
 
-    public WebSocketAuthInfo authInfo() {
-        return authInfo;
-    }
+  public WebSocketSession session() {
+    return session;
+  }
 
-    public Flux<WebSocketMessage> outboundFlux() {
-        return outboundFlux;
-    }
+  public WebSocketAuthInfo authInfo() {
+    return authInfo;
+  }
 
-    public Flux<CursorPosition> sampledCursorFlux() {
-        return cursorSink.asFlux()
-                .sample(CURSOR_SAMPLE_INTERVAL);
-    }
+  public Flux<WebSocketMessage> outboundFlux() {
+    return outboundFlux;
+  }
 
-    public void pushCursor(CursorPosition cursor) {
-        cursorSink.tryEmitNext(cursor);
-    }
+  public Flux<CursorPosition> sampledCursorFlux() {
+    return cursorSink.asFlux()
+        .sample(CURSOR_SAMPLE_INTERVAL);
+  }
 
-    public Sinks.EmitResult send(String message) {
-        return outboundSink.tryEmitNext(message);
-    }
+  public void pushCursor(CursorPosition cursor) {
+    cursorSink.tryEmitNext(cursor);
+  }
 
-    public void complete() {
-        outboundSink.tryEmitComplete();
-        cursorSink.tryEmitComplete();
-    }
+  public Sinks.EmitResult send(String message) {
+    return outboundSink.tryEmitNext(message);
+  }
 
-    public boolean isOpen() { return session.isOpen(); }
+  public void complete() {
+    outboundSink.tryEmitComplete();
+    cursorSink.tryEmitComplete();
+  }
+
+  public boolean isOpen() { return session.isOpen(); }
+
+  public String getCurrentSchemaId() { return currentSchemaId; }
+
+  public void setCurrentSchemaId(String schemaId) { this.currentSchemaId = schemaId; }
 
 }

@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { useAuthStore } from '../../store/auth.store';
+import { AuthStore } from '../../store/auth.store';
 
 const BASE_URL: string =
   (import.meta as unknown as { env?: { VITE_BASE_URL?: string } })?.env
@@ -43,18 +43,20 @@ const refreshAccessToken = async (): Promise<string | null> => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const response = await refreshClient.post('/public/api/v1.0/users/refresh');
+        const response = await refreshClient.post(
+          '/public/api/v1.0/users/refresh',
+        );
         const authHeader: string | undefined =
           response.headers['authorization'];
         if (authHeader && authHeader.startsWith('Bearer ')) {
           const token = authHeader.replace('Bearer ', '');
-          useAuthStore.getState().setAccessToken(token);
+          AuthStore.getInstance().setAccessToken(token);
           return token;
         }
-        useAuthStore.getState().clearAuth();
+        AuthStore.getInstance().clearAuth();
         throw new Error('REFRESH_NO_AUTH_HEADER');
       } catch (e) {
-        useAuthStore.getState().clearAuth();
+        AuthStore.getInstance().clearAuth();
         throw e instanceof Error ? e : new Error('REFRESH_FAILED');
       } finally {
         refreshPromise = null;
@@ -65,7 +67,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 };
 
 apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
-  const currentToken = useAuthStore.getState().accessToken;
+  const currentToken = AuthStore.getInstance().accessToken;
   if (currentToken) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['Authorization'] =

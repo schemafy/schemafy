@@ -10,7 +10,8 @@ import {
   SchemaNotExistError,
   TableNotExistError,
 } from "../errors";
-import { Database, INDEX, Index, IndexColumn, Schema, Table } from "../types";
+import { INDEX } from "../types";
+import type { Database, Index, IndexColumn, Schema, Table } from "../types";
 
 export interface IndexHandlers {
   createIndex: (

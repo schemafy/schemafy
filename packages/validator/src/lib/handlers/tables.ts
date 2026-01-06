@@ -4,7 +4,8 @@ import {
   TableNotExistError,
   TableNameNotInvalidError,
 } from "../errors";
-import { Database, Schema, TABLE, Table } from "../types";
+import { TABLE } from "../types";
+import type { Database, Schema, Table } from "../types";
 import { relationshipHandlers } from "./relationships";
 
 export interface TableHandlers {
@@ -69,8 +70,8 @@ export const tableHandlers: TableHandlers = {
     for (const table of schema.tables) {
       for (const relationship of table.relationships) {
         if (
-          relationship.srcTableId === tableId ||
-          relationship.tgtTableId === tableId
+          relationship.fkTableId === tableId ||
+          relationship.pkTableId === tableId
         ) {
           relationshipsToDelete.add(relationship.id);
         }

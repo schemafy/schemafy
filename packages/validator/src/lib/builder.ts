@@ -107,7 +107,7 @@ class TableBuilder {
     this.columns.forEach((c) => c.withTableId(id));
     this.constraints.forEach((c) => c.withTableId(id));
     this.indexes.forEach((i) => i.withTableId(id));
-    this.relationships.forEach((r) => r.withSrcTableId(id));
+    this.relationships.forEach((r) => r.withFkTableId(id));
     return this;
   }
 
@@ -119,7 +119,7 @@ class TableBuilder {
   withColumn(modifier?: (builder: ColumnBuilder) => void) {
     const columnBuilder = new ColumnBuilder()
       .withTableId(this.id)
-      .withOrdinalPosition(this.columns.length + 1);
+      .withSeqNo(this.columns.length);
     if (modifier) {
       modifier(columnBuilder);
     }
@@ -146,7 +146,7 @@ class TableBuilder {
   }
 
   withRelationship(modifier?: (builder: RelationshipBuilder) => void) {
-    const relationshipBuilder = new RelationshipBuilder().withSrcTableId(
+    const relationshipBuilder = new RelationshipBuilder().withFkTableId(
       this.id,
     );
     if (modifier) {
@@ -197,7 +197,7 @@ class ColumnBuilder {
   private charset: string = "utf8mb4";
   private collation: string = "utf8mb4_general_ci";
   private comment: string | null = null;
-  private ordinalPosition: number = 1;
+  private seqNo: number = 0;
 
   constructor() {}
 
@@ -231,8 +231,8 @@ class ColumnBuilder {
     return this;
   }
 
-  withOrdinalPosition(position: number) {
-    this.ordinalPosition = position;
+  withSeqNo(seqNo: number) {
+    this.seqNo = seqNo;
     return this;
   }
 
@@ -244,7 +244,7 @@ class ColumnBuilder {
       id: this.id,
       tableId: this.tableId,
       name: this.name,
-      ordinalPosition: this.ordinalPosition,
+      seqNo: this.seqNo,
       dataType: this.dataType,
       lengthScale: this.lengthScale,
       isAutoIncrement: this.isAutoIncrement,
@@ -263,7 +263,7 @@ class ConstraintColumnBuilder {
   private constraintId: string;
   private columnName?: string;
   private columnId: string | null = null;
-  private seqNo: number = 1;
+  private seqNo: number = 0;
 
   constructor(constraintId: string) {
     this.constraintId = constraintId;
@@ -384,7 +384,7 @@ class IndexColumnBuilder {
   private indexId: string;
   private columnName?: string;
   private columnId: string | null = null;
-  private seqNo: number = 1;
+  private seqNo: number = 0;
   private sortDir: IndexSortDir = "ASC";
 
   constructor(indexId: string) {
@@ -503,8 +503,8 @@ class RelationshipColumnBuilder {
   private id: string = idGenerator();
   private relationshipId: string;
   private fkColumnId: string | null = null;
-  private refColumnId: string | null = null;
-  private seqNo: number = 1;
+  private pkColumnId: string | null = null;
+  private seqNo: number = 0;
 
   constructor(relationshipId: string) {
     this.relationshipId = relationshipId;
@@ -520,8 +520,8 @@ class RelationshipColumnBuilder {
     return this;
   }
 
-  withRefColumnId(refColumnId: string) {
-    this.refColumnId = refColumnId;
+  withPkColumnId(pkColumnId: string) {
+    this.pkColumnId = pkColumnId;
     return this;
   }
 
@@ -529,14 +529,14 @@ class RelationshipColumnBuilder {
     if (!this.fkColumnId) {
       this.fkColumnId = `fk_${idGenerator()}`;
     }
-    if (!this.refColumnId) {
-      this.refColumnId = `ref_${idGenerator()}`;
+    if (!this.pkColumnId) {
+      this.pkColumnId = `pk_${idGenerator()}`;
     }
     return {
       id: this.id,
       relationshipId: this.relationshipId,
       fkColumnId: this.fkColumnId,
-      refColumnId: this.refColumnId,
+      pkColumnId: this.pkColumnId,
       seqNo: this.seqNo,
       isAffected: false,
     };
@@ -545,8 +545,8 @@ class RelationshipColumnBuilder {
 
 class RelationshipBuilder {
   private id: string = idGenerator();
-  private srcTableId?: string;
-  private tgtTableId?: string;
+  private fkTableId?: string;
+  private pkTableId?: string;
   private name: string = "default_relationship";
   private kind: RelationshipKind = "NON_IDENTIFYING";
   private cardinality: RelationshipCardinality = "1:N";
@@ -560,13 +560,13 @@ class RelationshipBuilder {
     return this;
   }
 
-  withSrcTableId(tableId: string) {
-    this.srcTableId = tableId;
+  withFkTableId(tableId: string) {
+    this.fkTableId = tableId;
     return this;
   }
 
-  withTgtTableId(tableId: string) {
-    this.tgtTableId = tableId;
+  withPkTableId(tableId: string) {
+    this.pkTableId = tableId;
     return this;
   }
 
@@ -608,16 +608,16 @@ class RelationshipBuilder {
   }
 
   build(): Relationship {
-    if (!this.srcTableId) {
-      this.srcTableId = `tbl_${idGenerator()}`;
+    if (!this.fkTableId) {
+      this.fkTableId = `tbl_${idGenerator()}`;
     }
-    if (!this.tgtTableId) {
-      this.tgtTableId = `tbl_${idGenerator()}`;
+    if (!this.pkTableId) {
+      this.pkTableId = `tbl_${idGenerator()}`;
     }
     return {
       id: this.id,
-      srcTableId: this.srcTableId,
-      tgtTableId: this.tgtTableId,
+      fkTableId: this.fkTableId,
+      pkTableId: this.pkTableId,
       name: this.name,
       kind: this.kind,
       cardinality: this.cardinality,

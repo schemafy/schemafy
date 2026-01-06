@@ -14,7 +14,6 @@ import '@xyflow/react/dist/style.css';
 import {
   useRelationships,
   useTables,
-  useMemos,
   useViewport,
   TableNode,
   RelationshipMarker,
@@ -28,9 +27,11 @@ import {
   CustomConnectionLine,
   FloatingButtons,
   SchemaSelector,
-  MemoPrivew,
+  MemoPreview,
   Memo,
   TempMemoPreview,
+  MemoProvider,
+  useMemoContext,
 } from '@/features/drawing';
 import { ViewportProvider } from '@/features/drawing/contexts';
 import { ApiTester } from '@/features/drawing/temp/ApiTester';
@@ -94,7 +95,9 @@ const CanvasPageContent = ({ handleMoveEnd }: CanvasPageContentProps) => {
   }, [erdStore]);
 
   const { tables, addTable, onTablesChange } = useTables();
-  const { memos, addMemo, onMemosChange } = useMemos();
+
+  const { memos, onMemosChange, createMemo } = useMemoContext();
+
   const {
     relationships,
     selectedRelationship,
@@ -144,7 +147,7 @@ const CanvasPageContent = ({ handleMoveEnd }: CanvasPageContentProps) => {
 
   const handleMemoCreate = (content: string) => {
     if (tempMemoPosition) {
-      addMemo(tempMemoPosition.flow, content.trim());
+      createMemo(tempMemoPosition.flow, content.trim());
       setTempMemoPosition(null);
     }
   };
@@ -254,7 +257,7 @@ const CanvasPageContent = ({ handleMoveEnd }: CanvasPageContentProps) => {
               <TablePreview mousePosition={mousePosition} />
             )}
             {activeTool === 'memo' && (
-              <MemoPrivew mousePosition={mousePosition} />
+              <MemoPreview mousePosition={mousePosition} />
             )}
           </ReactFlow>
 
@@ -295,7 +298,9 @@ const CanvasPageComponent = () => {
         updateSelectedSchema,
       }}
     >
-      <CanvasPageContent handleMoveEnd={handleMoveEnd} />
+      <MemoProvider>
+        <CanvasPageContent handleMoveEnd={handleMoveEnd} />
+      </MemoProvider>
     </ViewportProvider>
   );
 };

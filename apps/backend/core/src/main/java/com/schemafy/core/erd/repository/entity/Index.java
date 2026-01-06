@@ -20,24 +20,24 @@ import lombok.Setter;
 @Table("db_indexes")
 public class Index extends BaseEntity {
 
-    @Column("table_id")
-    private String tableId;
+  @Column("table_id")
+  private String tableId;
 
-    @Column("name")
-    private String name;
+  @Column("name")
+  private String name;
 
-    @Column("type")
-    private String type;
+  @Column("type")
+  private String type;
 
-    @Column("comment")
-    private String comment;
+  @Column("comment")
+  private String comment;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Index newIndex(String tableId, String name, String type,
-            String comment) {
-        Index index = new Index(tableId, name, type, comment);
-        index.setId(UlidGenerator.generate());
-        return index;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static Index newIndex(String tableId, String name, String type,
+      String comment) {
+    Index index = new Index(tableId, name, type, comment);
+    index.setId(UlidGenerator.generate());
+    return index;
+  }
 
 }
