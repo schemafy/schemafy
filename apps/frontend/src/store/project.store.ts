@@ -140,12 +140,13 @@ export class ProjectStore {
       () => createWorkspace(data),
       (workspace) => {
         if (this.workspaces) {
+          const fetchContents = [
+            { ...workspace, memberCount: 1 },
+            ...this.workspaces.content,
+          ];
           this.workspaces = {
             ...this.workspaces,
-            content: [
-              { ...workspace, memberCount: 1 },
-              ...this.workspaces.content,
-            ],
+            content: fetchContents.sort((a, b) => a.name.localeCompare(b.name)),
             totalElements: this.workspaces.totalElements + 1,
           };
         } else {

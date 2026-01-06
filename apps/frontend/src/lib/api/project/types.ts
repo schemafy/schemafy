@@ -1,4 +1,12 @@
-type ProjectSummary = {
+type ProjectSettings = {
+  theme?: string;
+  language?: string;
+  defaultView?: string;
+};
+
+type ProjectRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
+
+export type ProjectSummary = {
   id: string;
   workspaceId: string;
   name: string;
@@ -8,14 +16,6 @@ type ProjectSummary = {
   createdAt: string;
   updatedAt: string;
 };
-
-type ProjectSettings = {
-  theme?: string;
-  language?: string;
-  defaultView?: string;
-};
-
-type ProjectRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
 
 export type Project = {
   id: string;
@@ -42,7 +42,7 @@ export type ProjectsResponse = {
   totalElements: number;
   totalPages: number;
   content: ProjectSummary[];
-}
+};
 
 export type ProjectsMembersResponse = {
   page: number;
@@ -50,7 +50,7 @@ export type ProjectsMembersResponse = {
   totalElements: number;
   totalPages: number;
   content: ProjectMember[];
-}
+};
 
 export type ProjectRequest = {
   name: string;
