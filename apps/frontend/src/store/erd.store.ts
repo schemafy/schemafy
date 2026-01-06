@@ -798,6 +798,16 @@ export class ErdStore {
     );
   }
 
+  changeRelationshipKind(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    kind: Relationship['kind'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeRelationshipKind(db, schemaId, relationshipId, kind),
+    );
+  }
+
   updateRelationshipExtra(
     schemaId: Schema['id'],
     relationshipId: Relationship['id'],

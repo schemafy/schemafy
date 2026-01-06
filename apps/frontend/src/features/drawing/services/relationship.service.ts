@@ -12,6 +12,7 @@ import {
   CreateRelationshipCommand,
   UpdateRelationshipNameCommand,
   UpdateRelationshipCardinalityCommand,
+  UpdateRelationshipKindCommand,
   UpdateRelationshipExtraCommand,
   AddColumnToRelationshipCommand,
   RemoveColumnFromRelationshipCommand,
@@ -131,9 +132,18 @@ export async function updateRelationshipKind(
   relationshipId: string,
   kind: 'IDENTIFYING' | 'NON_IDENTIFYING',
 ) {
-  // TODO: relationship kind 업데이트 API 연결
   const erdStore = getErdStore();
   validateAndGetRelationship(schemaId, relationshipId);
+
+  const command = new UpdateRelationshipKindCommand(
+    schemaId,
+    relationshipId,
+    kind,
+  );
+
+  executeCommandWithValidation(command, () => {
+    erdStore.changeRelationshipKind(schemaId, relationshipId, kind);
+  });
 }
 
 export async function updateRelationshipExtra(

@@ -4,6 +4,7 @@ import type {
   CreateRelationshipRequest,
   UpdateRelationshipNameRequest,
   UpdateRelationshipCardinalityRequest,
+  UpdateRelationshipKindRequest,
   UpdateRelationshipExtraRequest,
   AddColumnToRelationshipRequest,
   RemoveColumnFromRelationshipRequest,
@@ -37,14 +38,17 @@ export const updateRelationshipCardinalityAPI = (
     data,
   );
 
+export const updateRelationshipKindAPI = (
+  relationshipId: string,
+  data: UpdateRelationshipKindRequest,
+) =>
+  api.put<RelationshipResponse>(`/relationships/${relationshipId}/kind`, data);
+
 export const updateRelationshipExtraAPI = (
   relationshipId: string,
   data: UpdateRelationshipExtraRequest,
 ) =>
-  api.put<RelationshipResponse>(
-    `/relationships/${relationshipId}/extra`,
-    data,
-  );
+  api.put<RelationshipResponse>(`/relationships/${relationshipId}/extra`, data);
 
 export const addColumnToRelationshipAPI = (
   relationshipId: string,

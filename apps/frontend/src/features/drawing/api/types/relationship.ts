@@ -71,6 +71,13 @@ export interface UpdateRelationshipCardinalityRequest {
   cardinality: 'ONE_TO_ONE' | 'ONE_TO_MANY';
 }
 
+export interface UpdateRelationshipKindRequest {
+  database: DatabaseContext;
+  schemaId: ULID;
+  relationshipId: ULID;
+  kind: 'IDENTIFYING' | 'NON_IDENTIFYING';
+}
+
 export interface AddColumnToRelationshipRequest {
   database: DatabaseContext;
   schemaId: ULID;

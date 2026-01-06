@@ -9,6 +9,7 @@ import {
   createRelationshipAPI,
   updateRelationshipNameAPI,
   updateRelationshipCardinalityAPI,
+  updateRelationshipKindAPI,
   updateRelationshipExtraAPI,
   addColumnToRelationshipAPI,
   removeColumnFromRelationshipAPI,
@@ -183,6 +184,53 @@ export class UpdateRelationshipCardinalityCommand extends BaseCommand {
       mappedSchemaId,
       mappedRelationshipId,
       this.cardinality,
+    );
+  }
+
+  getContext() {
+    return {
+      schemaId: this.schemaId,
+      relationshipId: this.relationshipId,
+    };
+  }
+}
+
+export class UpdateRelationshipKindCommand extends BaseCommand {
+  constructor(
+    private schemaId: string,
+    private relationshipId: string,
+    private kind: 'IDENTIFYING' | 'NON_IDENTIFYING',
+  ) {
+    super('UPDATE_RELATIONSHIP_KIND', 'relationship', relationshipId);
+  }
+
+  applyToSyncedStore(syncedStore: ErdStore) {
+    syncedStore.changeRelationshipKind(
+      this.schemaId,
+      this.relationshipId,
+      this.kind,
+    );
+  }
+
+  async executeAPI(db: Database) {
+    await updateRelationshipKindAPI(this.relationshipId, {
+      database: db,
+      schemaId: this.schemaId,
+      relationshipId: this.relationshipId,
+      kind: this.kind,
+    });
+    return {};
+  }
+
+  withMappedIds(mapping: IdMapping) {
+    const mappedSchemaId = mapping[this.schemaId] || this.schemaId;
+    const mappedRelationshipId =
+      mapping[this.relationshipId] || this.relationshipId;
+
+    return new UpdateRelationshipKindCommand(
+      mappedSchemaId,
+      mappedRelationshipId,
+      this.kind,
     );
   }
 
