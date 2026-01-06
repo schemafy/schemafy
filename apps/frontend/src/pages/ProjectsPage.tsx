@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Table,
   TableHeader,
@@ -13,53 +13,68 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components';
 import { ChevronDown } from 'lucide-react';
+import { ProjectStore } from '@/store';
+import type { ProjectRequest, WorkspaceRequest } from '@/lib/api';
+import { observer } from 'mobx-react-lite';
 
-interface Project {
-  id: string;
-  name: string;
-  lastModified: string;
-  access: 'Private' | 'Shared';
-  members: number;
-}
-
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    name: 'Project Alpha',
-    lastModified: '2024-01-15',
-    access: 'Private',
-    members: 2,
-  },
-  {
-    id: '2',
-    name: 'Project Beta',
-    lastModified: '2024-02-20',
-    access: 'Shared',
-    members: 1,
-  },
-  {
-    id: '3',
-    name: 'Project Gamma',
-    lastModified: '2024-03-10',
-    access: 'Private',
-    members: 1,
-  },
-];
-
-export const ProjectsPage = () => {
-  const [selectedWorkspace, setSelectedWorkspace] =
-    useState("Workspace's name");
+export const ProjectsPage = observer(() => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [projects] = useState<Project[]>(mockProjects);
+  const [isWorkspaceDialogOpen, setIsWorkspaceDialogOpen] = useState(false);
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
-  const workspaceOptions = ["Workspace's name", 'Workspace 2', 'Workspace 3'];
+  const [createWorkspaceName, setCreateWorkspaceName] = useState('');
+  const [createWorkspaceDescription, setCreateWorkspaceDescription] =
+    useState('');
 
-  const filteredProjects = projects.filter((project) =>
+  const [createProjectName, setCreateProjectName] = useState('');
+  const [createProjectDescription, setCreateProjectDescription] = useState('');
+
+  const projectStore = ProjectStore.getInstance();
+
+  const selectedWorkspace = projectStore.currentWorkspace?.name || '';
+
+  const filteredProjects = projectStore.projects?.content.filter((project) =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+
+  const handleCreateWorkSpace = (workspace: WorkspaceRequest) => {
+    projectStore.createWorkspace(workspace);
+    setIsWorkspaceDialogOpen(false);
+  };
+
+  const handleCreateProject = (
+    workspaceId: string,
+    project: ProjectRequest,
+  ) => {
+    projectStore.createProject(workspaceId, project);
+    setIsProjectDialogOpen(false);
+  };
+
+  const handleDeleteProject = (workspaceId: string, projectId: string) => {
+    projectStore.deleteProject(workspaceId, projectId);
+  };
+
+  useEffect(() => {
+    projectStore.fetchWorkspaces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!projectStore.currentWorkspace) return;
+
+    projectStore.fetchProjects(
+      projectStore.currentWorkspace.id,
+      currentPage - 1,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectStore.currentWorkspace]);
 
   return (
     <div className="min-h-screen bg-schemafy-bg w-full">
@@ -71,16 +86,19 @@ export const ProjectsPage = () => {
               <ChevronDown size={16} />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[200px]">
-              {workspaceOptions.map((option) => (
+              {projectStore.workspaces?.content.map((workspace) => (
                 <button
-                  key={option}
-                  onClick={() => setSelectedWorkspace(option)}
-                  className={`w-full text-left px-3 py-2 rounded-lg font-body-sm transition-colors ${selectedWorkspace === option
-                    ? 'bg-schemafy-button-bg text-schemafy-button-text'
-                    : 'text-schemafy-text hover:bg-schemafy-secondary'
-                    }`}
+                  key={workspace.name}
+                  onClick={() => {
+                    projectStore.setWorkspace(workspace);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-body-sm transition-colors ${
+                    selectedWorkspace === workspace.name
+                      ? 'bg-schemafy-button-bg text-schemafy-button-text'
+                      : 'text-schemafy-text hover:bg-schemafy-secondary'
+                  }`}
                 >
-                  {option}
+                  {workspace.name}
                 </button>
               ))}
             </DropdownMenuContent>
@@ -122,7 +140,17 @@ export const ProjectsPage = () => {
 
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-heading-md text-schemafy-text">Projects</h2>
-          <Button>New Project</Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsWorkspaceDialogOpen(true)}
+            >
+              New Workspace
+            </Button>
+            <Button onClick={() => setIsProjectDialogOpen(true)}>
+              New Project
+            </Button>
+          </div>
         </div>
 
         <div className="bg-schemafy-bg border border-schemafy-light-gray rounded-lg mb-6">
@@ -142,13 +170,13 @@ export const ProjectsPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProjects.map((project) => (
+              {filteredProjects?.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell className="font-body-sm text-schemafy-text">
                     {project.name}
                   </TableCell>
                   <TableCell className="font-body-sm text-schemafy-dark-gray">
-                    {project.lastModified}
+                    {project.updatedAt}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-4">
@@ -157,7 +185,7 @@ export const ProjectsPage = () => {
                           'px-15 py-1 rounded-2xl font-overline-sm bg-schemafy-secondary text-schemafy-text'
                         }
                       >
-                        {project.access}
+                        {project.myRole}
                       </span>
                     </div>
                   </TableCell>
@@ -184,7 +212,12 @@ export const ProjectsPage = () => {
                         </button>
                       }
                     >
-                      <MenuItem onClick={() => { }} variant="destructive">
+                      <MenuItem
+                        onClick={() => {
+                          handleDeleteProject(project.workspaceId, project.id);
+                        }}
+                        variant="destructive"
+                      >
                         Delete
                       </MenuItem>
                     </Menu>
@@ -198,11 +231,106 @@ export const ProjectsPage = () => {
         <div className="flex justify-center">
           <Pagination
             currentPage={currentPage}
-            totalPages={3}
+            totalPages={projectStore.projects?.totalPages || 1}
             onPageChange={setCurrentPage}
           />
         </div>
       </div>
+
+      <Dialog
+        open={isWorkspaceDialogOpen}
+        onOpenChange={setIsWorkspaceDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Workspace</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 flex flex-col gap-8 justify-between items-center rounded-[10px]">
+            <div className="w-full bg-schemafy-secondary rounded-xl">
+              <input
+                value={createWorkspaceName}
+                onChange={(e) => setCreateWorkspaceName(e.target.value)}
+                type="text"
+                placeholder="Workspace name"
+                className="w-full pl-3 pr-4 py-3 bg-schemafy-secondary rounded-xl font-body-xs text-schemafy-text placeholder-schemafy-dark-gray focus:outline-none focus:ring-2 focus:ring-schemafy-button-bg"
+              />
+            </div>
+            <div className="w-full bg-schemafy-secondary rounded-xl">
+              <input
+                value={createWorkspaceDescription}
+                onChange={(e) => setCreateWorkspaceDescription(e.target.value)}
+                type="text"
+                placeholder="Workspace description"
+                className="w-full pl-3 pr-4 py-3 bg-schemafy-secondary rounded-xl font-body-xs text-schemafy-text placeholder-schemafy-dark-gray focus:outline-none focus:ring-2 focus:ring-schemafy-button-bg"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() =>
+                handleCreateWorkSpace({
+                  name: createWorkspaceName,
+                  description: createWorkspaceDescription,
+                })
+              }
+            >
+              Save
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsWorkspaceDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Project</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 flex flex-col gap-8 justify-between items-center rounded-[10px]">
+            <div className="w-full bg-schemafy-secondary rounded-xl">
+              <input
+                value={createProjectName}
+                onChange={(e) => setCreateProjectName(e.target.value)}
+                type="text"
+                placeholder="Project name"
+                className="w-full pl-3 pr-4 py-3 bg-schemafy-secondary rounded-xl font-body-xs text-schemafy-text placeholder-schemafy-dark-gray focus:outline-none focus:ring-2 focus:ring-schemafy-button-bg"
+              />
+            </div>
+            <div className="w-full bg-schemafy-secondary rounded-xl">
+              <input
+                value={createProjectDescription}
+                onChange={(e) => setCreateProjectDescription(e.target.value)}
+                type="text"
+                placeholder="Project description"
+                className="w-full pl-3 pr-4 py-3 bg-schemafy-secondary rounded-xl font-body-xs text-schemafy-text placeholder-schemafy-dark-gray focus:outline-none focus:ring-2 focus:ring-schemafy-button-bg"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() =>
+                handleCreateProject(projectStore.currentWorkspace?.id || '', {
+                  name: createProjectName,
+                  description: createProjectDescription,
+                })
+              }
+            >
+              Save
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsWorkspaceDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
+});

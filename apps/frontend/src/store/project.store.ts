@@ -6,6 +6,7 @@ import {
   getProjects,
   getProject,
   createProject,
+  deleteProject,
 } from '../lib/api';
 import type {
   Workspace,
@@ -85,10 +86,18 @@ export class ProjectStore {
       'fetchWorkspaces',
       () => getWorkspaces(page, size),
       (result) => {
-        this.workspaces = result;
+        const sortedContent = [...result.content].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        );
+        this.workspaces = { ...result, content: sortedContent };
+        this.currentWorkspace = sortedContent[0];
       },
       'Failed to fetch workspaces',
     );
+  }
+
+  setWorkspace(workspace: Workspace) {
+    this.currentWorkspace = workspace;
   }
 
   async fetchWorkspace(workspaceId: string) {
@@ -125,6 +134,7 @@ export class ProjectStore {
   }
 
   async createWorkspace(data: WorkspaceRequest): Promise<Workspace | null> {
+    console.log(data);
     const { data: workspace } = await this.handleAsync(
       'createWorkspace',
       () => createWorkspace(data),
@@ -132,8 +142,19 @@ export class ProjectStore {
         if (this.workspaces) {
           this.workspaces = {
             ...this.workspaces,
-            content: [{ ...workspace, memberCount: 1 }, ...this.workspaces.content],
+            content: [
+              { ...workspace, memberCount: 1 },
+              ...this.workspaces.content,
+            ],
             totalElements: this.workspaces.totalElements + 1,
+          };
+        } else {
+          this.workspaces = {
+            page: 1,
+            size: 1,
+            totalElements: 1,
+            totalPages: 1,
+            content: [{ ...workspace, memberCount: 1 }],
           };
         }
       },
@@ -142,7 +163,10 @@ export class ProjectStore {
     return workspace;
   }
 
-  async createProject(workspaceId: string, data: ProjectRequest): Promise<Project | null> {
+  async createProject(
+    workspaceId: string,
+    data: ProjectRequest,
+  ): Promise<Project | null> {
     const { data: project } = await this.handleAsync(
       'createProject',
       () => createProject(workspaceId, data),
@@ -160,11 +184,57 @@ export class ProjectStore {
             ],
             totalElements: this.projects.totalElements + 1,
           };
+        } else {
+          this.projects = {
+            page: 1,
+            size: 1,
+            totalElements: 1,
+            totalPages: 1,
+            content: [
+              {
+                ...project,
+                myRole: 'OWNER',
+                memberCount: 1,
+              },
+            ],
+          };
         }
       },
       'Failed to create project',
     );
     return project;
+  }
+
+  async deleteProject(
+    workspaceId: string,
+    projectId: string,
+  ): Promise<boolean> {
+    this._loadingStates['deleteProject'] = true;
+    this.error = null;
+
+    try {
+      await deleteProject(workspaceId, projectId);
+
+      runInAction(() => {
+        if (this.projects) {
+          this.projects = {
+            ...this.projects,
+            content: this.projects.content.filter((p) => p.id !== projectId),
+            totalElements: this.projects.totalElements - 1,
+          };
+        }
+        this._loadingStates['deleteProject'] = false;
+      });
+
+      return true;
+    } catch (e) {
+      runInAction(() => {
+        this.error =
+          e instanceof Error ? e.message : 'Failed to delete project';
+        this._loadingStates['deleteProject'] = false;
+      });
+      return false;
+    }
   }
 
   clearWorkspaces() {
