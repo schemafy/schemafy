@@ -39,8 +39,8 @@ export class CreateRelationshipCommand extends BaseCommand {
         schemaId: this.schemaId,
         relationship: {
           id: this.relationshipData.id,
-          srcTableId: this.relationshipData.srcTableId,
-          tgtTableId: this.relationshipData.tgtTableId,
+          fkTableId: this.relationshipData.fkTableId,
+          pkTableId: this.relationshipData.pkTableId,
           name: this.relationshipData.name,
           kind: this.relationshipData.kind,
           cardinality: convertCardinality(this.relationshipData.cardinality),
@@ -50,7 +50,7 @@ export class CreateRelationshipCommand extends BaseCommand {
             id: col.id,
             relationshipId: this.relationshipData.id,
             fkColumnId: col.fkColumnId,
-            refColumnId: col.refColumnId,
+            pkColumnId: col.pkColumnId,
             seqNo: col.seqNo,
           })),
         },
@@ -66,25 +66,25 @@ export class CreateRelationshipCommand extends BaseCommand {
     const mappedRelationshipId =
       mapping[this.relationshipData.id] || this.relationshipData.id;
     const mappedSrcTableId =
-      mapping[this.relationshipData.srcTableId] ||
-      this.relationshipData.srcTableId;
+      mapping[this.relationshipData.fkTableId] ||
+      this.relationshipData.fkTableId;
     const mappedTgtTableId =
-      mapping[this.relationshipData.tgtTableId] ||
-      this.relationshipData.tgtTableId;
+      mapping[this.relationshipData.pkTableId] ||
+      this.relationshipData.pkTableId;
 
     return new CreateRelationshipCommand(
       mappedSchemaId,
       {
         ...this.relationshipData,
         id: mappedRelationshipId,
-        srcTableId: mappedSrcTableId,
-        tgtTableId: mappedTgtTableId,
+        fkTableId: mappedSrcTableId,
+        pkTableId: mappedTgtTableId,
         columns: this.relationshipData.columns.map((col) => ({
           ...col,
           id: mapping[col.id] || col.id,
           relationshipId: mappedRelationshipId,
           fkColumnId: mapping[col.fkColumnId] || col.fkColumnId,
-          refColumnId: mapping[col.refColumnId] || col.refColumnId,
+          pkColumnId: mapping[col.pkColumnId] || col.pkColumnId,
         })),
       },
       this.extra,
@@ -94,7 +94,7 @@ export class CreateRelationshipCommand extends BaseCommand {
   getContext() {
     return {
       schemaId: this.schemaId,
-      tableId: this.relationshipData.srcTableId,
+      tableId: this.relationshipData.fkTableId,
       relationshipId: this.relationshipData.id,
     };
   }
@@ -268,7 +268,7 @@ export class AddColumnToRelationshipCommand extends BaseCommand {
         id: this.relationshipColumnData.id,
         relationshipId: this.relationshipId,
         fkColumnId: this.relationshipColumnData.fkColumnId,
-        refColumnId: this.relationshipColumnData.refColumnId,
+        pkColumnId: this.relationshipColumnData.pkColumnId,
         seqNo: this.relationshipColumnData.seqNo,
       },
     });
@@ -286,8 +286,8 @@ export class AddColumnToRelationshipCommand extends BaseCommand {
       mapping[this.relationshipColumnData.fkColumnId] ||
       this.relationshipColumnData.fkColumnId;
     const mappedRefColumnId =
-      mapping[this.relationshipColumnData.refColumnId] ||
-      this.relationshipColumnData.refColumnId;
+      mapping[this.relationshipColumnData.pkColumnId] ||
+      this.relationshipColumnData.pkColumnId;
 
     return new AddColumnToRelationshipCommand(
       mappedSchemaId,
@@ -297,7 +297,7 @@ export class AddColumnToRelationshipCommand extends BaseCommand {
         id: mappedRelationshipColumnId,
         relationshipId: mappedRelationshipId,
         fkColumnId: mappedFkColumnId,
-        refColumnId: mappedRefColumnId,
+        pkColumnId: mappedRefColumnId,
       },
     );
   }

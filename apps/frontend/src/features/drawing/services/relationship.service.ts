@@ -27,8 +27,8 @@ export async function getRelationship(relationshipId: string) {
 
 export function createRelationship(
   schemaId: string,
-  srcTableId: string,
-  tgtTableId: string,
+  fkTableId: string,
+  pkTableId: string,
   name: string,
   kind: 'IDENTIFYING' | 'NON_IDENTIFYING',
   cardinality: '1:1' | '1:N',
@@ -37,7 +37,7 @@ export function createRelationship(
   fkEnforced: false,
   columns: Array<{
     fkColumnId: string;
-    refColumnId: string;
+    pkColumnId: string;
     seqNo: number;
   }>,
   extra?: string,
@@ -51,15 +51,15 @@ export function createRelationship(
     id: ulid(),
     relationshipId,
     fkColumnId: col.fkColumnId,
-    refColumnId: col.refColumnId,
+    pkColumnId: col.pkColumnId,
     seqNo: col.seqNo,
     isAffected: false,
   }));
 
   const newRelationship: Relationship = {
     id: relationshipId,
-    srcTableId,
-    tgtTableId,
+    fkTableId,
+    pkTableId,
     name,
     kind,
     cardinality,
@@ -159,7 +159,7 @@ export async function addColumnToRelationship(
   schemaId: string,
   relationshipId: string,
   fkColumnId: string,
-  refColumnId: string,
+  pkColumnId: string,
   seqNo: number,
 ) {
   const erdStore = getErdStore();
@@ -171,7 +171,7 @@ export async function addColumnToRelationship(
     id: relationshipColumnId,
     relationshipId,
     fkColumnId,
-    refColumnId,
+    pkColumnId,
     seqNo,
     isAffected: false,
   };

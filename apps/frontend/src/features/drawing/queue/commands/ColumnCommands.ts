@@ -31,7 +31,7 @@ export class CreateColumnCommand extends BaseCommand {
         id: this.columnData.id,
         tableId: this.tableId,
         name: this.columnData.name,
-        ordinalPosition: this.columnData.ordinalPosition,
+        seqNo: this.columnData.seqNo,
         dataType: this.columnData.dataType ?? '',
         lengthScale: this.columnData.lengthScale ?? '',
         charset: this.columnData.charset ?? '',

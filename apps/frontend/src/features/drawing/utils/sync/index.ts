@@ -121,7 +121,7 @@ const mapRelationshipColumn = (
   id: replaceId(relationshipColumn.id, idMap, 'relationshipColumn'),
   relationshipId: newRelationshipId,
   fkColumnId: replaceId(relationshipColumn.fkColumnId, idMap, 'column'),
-  refColumnId: replaceId(relationshipColumn.refColumnId, idMap, 'column'),
+  pkColumnId: replaceId(relationshipColumn.pkColumnId, idMap, 'column'),
 });
 
 const mapRelationship = (
@@ -132,8 +132,8 @@ const mapRelationship = (
   return {
     ...relationship,
     id: newRelationshipId,
-    srcTableId: replaceId(relationship.srcTableId, idMap, 'table'),
-    tgtTableId: replaceId(relationship.tgtTableId, idMap, 'table'),
+    fkTableId: replaceId(relationship.fkTableId, idMap, 'table'),
+    pkTableId: replaceId(relationship.pkTableId, idMap, 'table'),
     columns: relationship.columns.map((rc) =>
       mapRelationshipColumn(rc, newRelationshipId, idMap),
     ),

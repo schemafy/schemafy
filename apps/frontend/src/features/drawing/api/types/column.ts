@@ -4,7 +4,7 @@ export interface ColumnResponse {
   id: ULID;
   tableId: ULID;
   name: string;
-  ordinalPosition: number;
+  seqNo: number;
   dataType?: string | null;
   lengthScale: string;
   isAutoIncrement: boolean;
@@ -22,7 +22,7 @@ export interface CreateColumnRequest {
     id: ULID;
     tableId: ULID;
     name: string;
-    ordinalPosition: number;
+    seqNo: number;
     dataType: string;
     lengthScale: string;
     charset: string;

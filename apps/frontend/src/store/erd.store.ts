@@ -571,7 +571,7 @@ export class ErdStore {
     schemaId: Schema['id'],
     tableId: Table['id'],
     columnId: Column['id'],
-    newPosition: Column['ordinalPosition'],
+    newPosition: Column['seqNo'],
   ) {
     this.update((db) =>
       ERD_VALIDATOR.changeColumnPosition(

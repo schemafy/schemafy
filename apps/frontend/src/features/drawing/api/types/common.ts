@@ -41,7 +41,7 @@ export interface PropagatedRelationshipColumn {
   relationshipColumnId: string;
   relationshipId: string;
   fkColumnId: string;
-  refColumnId: string;
+  pkColumnId: string;
   seqNo: number;
   sourceType: string;
   sourceId: string;
@@ -77,7 +77,7 @@ export interface DatabaseContext {
   schemas: {
     id: ULID;
     projectId: ULID;
-    dbVendorId: string;
+    dbVendorId: 'MYSQL';
     name: string;
     charset: string;
     collation: string;
@@ -89,9 +89,9 @@ export interface DatabaseContext {
       comment?: string | null;
       tableOptions: string;
       columns: ColumnResponse[];
-      relationships: RelationshipResponse[];
-      constraints: ConstraintResponse[];
       indexes: IndexResponse[];
+      constraints: ConstraintResponse[];
+      relationships: RelationshipResponse[];
       isAffected: boolean;
       extra?: unknown;
     }[];

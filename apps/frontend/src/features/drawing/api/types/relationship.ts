@@ -4,15 +4,15 @@ export interface RelationshipColumnResponse {
   id: ULID;
   relationshipId: ULID;
   fkColumnId: ULID;
-  refColumnId: ULID;
+  pkColumnId: ULID;
   seqNo: number;
   isAffected: boolean;
 }
 
 export interface RelationshipResponse {
   id: ULID;
-  srcTableId: ULID;
-  tgtTableId: ULID;
+  fkTableId: ULID;
+  pkTableId: ULID;
   name: string;
   kind: string;
   cardinality: string;
@@ -29,8 +29,8 @@ export interface CreateRelationshipRequest {
   schemaId: ULID;
   relationship: {
     id: ULID;
-    srcTableId: ULID;
-    tgtTableId: ULID;
+    fkTableId: ULID;
+    pkTableId: ULID;
     name: string;
     kind: string;
     cardinality: 'ONE_TO_ONE' | 'ONE_TO_MANY';
@@ -45,7 +45,7 @@ export interface CreateRelationshipRequest {
       id: ULID;
       relationshipId: ULID;
       fkColumnId: ULID;
-      refColumnId: ULID;
+      pkColumnId: ULID;
       seqNo: number;
     }[];
   };
@@ -53,7 +53,7 @@ export interface CreateRelationshipRequest {
 
 export interface CreateRelationshipColumnRequest {
   fkColumnId: ULID;
-  refColumnId: ULID;
+  pkColumnId: ULID;
   seqNo: number;
 }
 
@@ -79,7 +79,7 @@ export interface AddColumnToRelationshipRequest {
     id: ULID;
     relationshipId: ULID;
     fkColumnId: ULID;
-    refColumnId: ULID;
+    pkColumnId: ULID;
     seqNo: number;
   };
 }

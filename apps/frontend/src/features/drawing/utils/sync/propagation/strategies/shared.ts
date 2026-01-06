@@ -27,7 +27,7 @@ export function replacePropagatedColumns(
 
     for (const rel of table.relationships) {
       const relCol = rel.columns.find(
-        (rc) => rc.refColumnId === propCol.sourceColumnId,
+        (rc) => rc.pkColumnId === propCol.sourceColumnId,
       );
       if (!relCol) continue;
 

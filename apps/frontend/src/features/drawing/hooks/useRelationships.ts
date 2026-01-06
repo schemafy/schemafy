@@ -128,8 +128,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       try {
         await relationshipService.createRelationship(
           selectedSchemaId,
-          newRelationship.srcTableId,
-          newRelationship.tgtTableId,
+          newRelationship.fkTableId,
+          newRelationship.pkTableId,
           newRelationship.name,
           newRelationship.kind,
           newRelationship.cardinality,
@@ -138,7 +138,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
           newRelationship.fkEnforced,
           newRelationship.columns.map((col) => ({
             fkColumnId: col.fkColumnId,
-            refColumnId: col.refColumnId,
+            pkColumnId: col.pkColumnId,
             seqNo: col.seqNo,
           })),
           JSON.stringify(newRelationship.extra),
@@ -204,8 +204,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       if (newRelationship) {
         await relationshipService.createRelationship(
           selectedSchemaId,
-          newRelationship.srcTableId,
-          newRelationship.tgtTableId,
+          newRelationship.fkTableId,
+          newRelationship.pkTableId,
           newRelationship.name,
           newRelationship.kind,
           newRelationship.cardinality,
@@ -214,7 +214,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
           newRelationship.fkEnforced,
           newRelationship.columns.map((col) => ({
             fkColumnId: col.fkColumnId,
-            refColumnId: col.refColumnId,
+            pkColumnId: col.pkColumnId,
             seqNo: col.seqNo,
           })),
           JSON.stringify(newRelationship.extra),
