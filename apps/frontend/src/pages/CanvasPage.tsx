@@ -32,8 +32,8 @@ import {
   TempMemoPreview,
   MemoProvider,
   useMemoContext,
+  ViewportProvider,
 } from '@/features/drawing';
-import { ViewportProvider } from '@/features/drawing/contexts';
 import { ApiTester } from '@/features/drawing/temp/ApiTester';
 import { ErdStore } from '@/store/erd.store';
 import { CommandQueue } from '@/features/drawing/queue/CommandQueue';

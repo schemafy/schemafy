@@ -7,7 +7,7 @@ import type { MemoData } from '../hooks/memo.helper';
 import type { MemoComment } from '@/lib/api/memo/types';
 import type { Point } from '../types';
 import { observer } from 'mobx-react-lite';
-import { useMemoContext } from '../context/MemoContext';
+import { useMemoContext } from '../contexts/MemoContext';
 
 interface MemoProps {
   id: string;
