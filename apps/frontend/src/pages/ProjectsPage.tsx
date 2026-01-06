@@ -70,7 +70,7 @@ export const ProjectsPage = () => {
               {selectedWorkspace}
               <ChevronDown size={16} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="min-w-[200px]">
+            <DropdownMenuContent align="start" className="min-w-[200px]">
               {workspaceOptions.map((option) => (
                 <button
                   key={option}

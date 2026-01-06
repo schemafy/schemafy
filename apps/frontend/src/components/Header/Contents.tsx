@@ -38,7 +38,7 @@ export const DashBoardContents = () => {
   return (
     <div className="flex items-center justify-between w-full">
       <div className="flex items-center gap-9 ml-8">
-        <Button variant={'none'} size={'none'} to="/projects">
+        <Button variant={'none'} size={'none'}>
           Product
         </Button>
         <Button variant={'none'} size={'none'}>
@@ -50,7 +50,7 @@ export const DashBoardContents = () => {
       </div>
       <div className="flex items-center gap-4">
         <div className="flex gap-2">
-          <Button round>New Project</Button>
+          <Button round to='/projects'>New Project</Button>
           <Button variant={'secondary'} round>
             Sign Out
           </Button>
