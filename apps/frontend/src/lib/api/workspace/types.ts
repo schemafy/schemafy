@@ -35,11 +35,11 @@ export type Workspace = {
 };
 
 export type WorkspaceMemberResponse = {
-  content: WorkspaceMember[];
   page: number;
   size: number;
   totalElements: number;
   totalPages: number;
+  content: WorkspaceMember[];
 };
 
 export type WorkspaceRequest = {
@@ -49,9 +49,9 @@ export type WorkspaceRequest = {
 };
 
 export type WorkspacesResponse = {
-  content: WorkspaceSummary[];
   page: number;
   size: number;
   totalElements: number;
   totalPages: number;
+  content: WorkspaceSummary[];
 };
