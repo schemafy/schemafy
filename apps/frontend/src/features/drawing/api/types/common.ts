@@ -60,6 +60,7 @@ export interface PropagatedConstraintColumn {
   constraintColumnId: string;
   constraintId: string;
   columnId: string;
+  seqNo: number;
   sourceType: string;
   sourceId: string;
 }

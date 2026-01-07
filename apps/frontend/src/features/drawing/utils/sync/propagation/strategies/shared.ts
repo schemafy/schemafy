@@ -176,7 +176,7 @@ function replaceConstraintColumnIds(
   table: {
     constraints: Array<{
       id: string;
-      columns: Array<{ id: string; columnId: string }>;
+      columns: Array<{ id: string; columnId: string; seqNo: number }>;
     }>;
   },
   constraintColumns: PropagatedConstraintColumn[],
@@ -198,29 +198,27 @@ function replaceConstraintColumnIds(
     const constraint = table.constraints.find((c) => c.id === constraintId);
     if (!constraint) return;
 
-    const tempCols = constraint.columns.slice(
-      constraint.columns.length - propCols.length,
-    );
+    propCols.forEach((propCol) => {
+      const existingCol = constraint.columns.find(
+        (cc) => cc.seqNo === propCol.seqNo,
+      );
+      if (!existingCol) return;
 
-    tempCols.forEach((tempCol, index) => {
-      const propCol = propCols[index];
-      if (!propCol) return;
-
-      if (tempCol.id !== propCol.constraintColumnId) {
+      if (existingCol.id !== propCol.constraintColumnId) {
         erdStore.replaceConstraintColumnId(
           context.schemaId,
           tableId,
           constraintId,
-          tempCol.id,
+          existingCol.id,
           propCol.constraintColumnId,
         );
-        idMap.set(tempCol.id, {
+        idMap.set(existingCol.id, {
           realId: propCol.constraintColumnId,
           type: 'constraintColumn',
         });
       }
 
-      if (tempCol.columnId !== propCol.columnId) {
+      if (existingCol.columnId !== propCol.columnId) {
         erdStore.replaceConstraintColumnColumnId(
           context.schemaId,
           tableId,

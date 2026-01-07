@@ -111,7 +111,7 @@ export class CommandQueue {
       });
 
       const localStore = ErdStore.getInstance();
-      applyLocalIdMapping(idMap, localStore);
+      applyLocalIdMapping(idMap, localStore, this.syncedStore);
 
       if (this.idMappingCallbacks.length > 0) {
         idMap.forEach((realId, tempId) => {

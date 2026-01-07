@@ -21,7 +21,13 @@ export function constraintStrategy(
   const schema = findSchema(erdStore, context.schemaId);
 
   if (entities.columns.length > 0) {
-    replacePropagatedColumns(entities.columns, schema, context, erdStore, idMap);
+    replacePropagatedColumns(
+      entities.columns,
+      schema,
+      context,
+      erdStore,
+      idMap,
+    );
   }
 
   if (entities.relationshipColumns.length > 0) {
