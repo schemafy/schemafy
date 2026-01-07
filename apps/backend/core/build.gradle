@@ -126,21 +126,24 @@ tasks.named('bootJar') {
 spotbugs {
 	toolVersion = '4.8.6'
 	effort = 'max'
-	reportLevel = 'medium'
-	ignoreFailures = true
+	reportLevel = 'medium'  // high, medium, low
+	ignoreFailures = false  // CI에서 버그 발견 시 빌드 실패
 	excludeFilter = file("$projectDir/src/main/resources/spotbugs/spotbugs-exclude.xml")
 	omitVisitors = ['FindReturnRef']
 }
 
 tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
-	enabled = false
+	enabled = true
 	classes = classes.filter {
-		!it.path.contains('/lombok/')
+		!it.path.contains('/lombok/') && !it.path.contains('/grpc/')
 	}
 
 	// Missing classes 경고 무시
-	jvmArgs = ['-Dspotbugs.sf.comment=true']
-	maxHeapSize = '512m'
+	jvmArgs = [
+		'-Dspotbugs.sf.comment=true',
+		'-Dfindbugs.verbose=true'
+	]
+	maxHeapSize = '1024m'
 
 	reports {
 		html {
@@ -152,7 +155,15 @@ tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
 			required = true
 			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.xml')
 		}
+		sarif {
+			required = true
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.sarif')
+		}
 	}
+}
+
+tasks.named('spotbugsTest') {
+	enabled = false
 }
 
 spotless {
@@ -176,6 +187,40 @@ spotless {
 
 tasks.named('check') {
 	dependsOn 'spotlessCheck'
+}
+
+// Create symlink to shared proto files
+tasks.register('linkProtos') {
+	doLast {
+		def sharedProtoDir = file('../../../packages/proto-validation/protos')
+		def targetProtoDir = file('src/main/proto')
+
+		targetProtoDir.mkdirs()
+
+		def sourceFile = new File(sharedProtoDir, 'validation.proto')
+		def targetFile = new File(targetProtoDir, 'validation.proto')
+
+		if (!targetFile.exists()) {
+			def relativeSourcePath = targetProtoDir.toPath().relativize(sourceFile.toPath()).toString()
+			if (System.properties['os.name'].toLowerCase().contains('windows')) {
+				exec {
+					workingDir targetProtoDir
+					commandLine 'cmd', '/c', 'mklink',
+						targetFile.name, relativeSourcePath
+				}
+			} else {
+				exec {
+					workingDir targetProtoDir
+					commandLine 'ln', '-sf',
+						relativeSourcePath, targetFile.name
+				}
+			}
+		}
+	}
+}
+
+tasks.named('generateProto') {
+	dependsOn 'linkProtos'
 }
 
 // Protobuf configuration

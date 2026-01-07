@@ -8,6 +8,8 @@ logs/
 **/._.DS_Store
 .claude
 agent-log
+playwright-report
+test-results
 
 HELP.md
 .gradle

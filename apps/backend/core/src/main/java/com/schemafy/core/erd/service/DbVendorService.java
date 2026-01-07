@@ -18,18 +18,16 @@ public class DbVendorService {
   private final DbVendorRepository dbVendorRepository;
 
   public Mono<DbVendor> getVendorByDisplayName(String displayName) {
-    return dbVendorRepository
-        .findByIdAndDeletedAtIsNull(displayName)
+    return dbVendorRepository.findById(displayName)
         .switchIfEmpty(Mono.error(
             new BusinessException(ErrorCode.ERD_VENDOR_NOT_FOUND)));
   }
 
-  public Flux<DbVendor> getAllVendors() { return dbVendorRepository.findByDeletedAtIsNull(); }
+  public Flux<DbVendor> getAllVendors() { return dbVendorRepository.findAll(); }
 
   public Mono<DbVendor> getVendorByNameAndVersion(String name,
       String version) {
-    return dbVendorRepository.findByNameAndVersionAndDeletedAtIsNull(name,
-        version)
+    return dbVendorRepository.findByNameAndVersion(name, version)
         .switchIfEmpty(Mono.error(
             new BusinessException(ErrorCode.ERD_VENDOR_NOT_FOUND)));
   }

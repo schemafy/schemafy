@@ -1,9 +1,8 @@
 package com.schemafy.core.erd.repository.entity;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-
-import com.schemafy.core.common.type.BaseEntity;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -17,10 +16,11 @@ import lombok.Setter;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("db_vendors")
-public class DbVendor extends BaseEntity {
+public class DbVendor {
 
+  @Id
   @Column("display_name")
-  protected String id;
+  private String id;
 
   @Column("name")
   private String name;
