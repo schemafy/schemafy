@@ -20,21 +20,21 @@ import lombok.Setter;
 @Table("memos")
 public class Memo extends BaseEntity {
 
-    @Column("schema_id")
-    private String schemaId;
+  @Column("schema_id")
+  private String schemaId;
 
-    @Column("author_id")
-    private String authorId;
+  @Column("author_id")
+  private String authorId;
 
-    @Column("positions")
-    private String positions;
+  @Column("positions")
+  private String positions;
 
-    @Builder(builderMethodName = "builder", buildMethodName = "build")
-    private static Memo newMemo(String schemaId, String authorId,
-            String positions) {
-        Memo memo = new Memo(schemaId, authorId, positions);
-        memo.setId(UlidGenerator.generate());
-        return memo;
-    }
+  @Builder(builderMethodName = "builder", buildMethodName = "build")
+  private static Memo newMemo(String schemaId, String authorId,
+      String positions) {
+    Memo memo = new Memo(schemaId, authorId, positions);
+    memo.setId(UlidGenerator.generate());
+    return memo;
+  }
 
 }

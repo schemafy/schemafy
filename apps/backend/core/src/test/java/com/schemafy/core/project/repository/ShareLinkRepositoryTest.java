@@ -25,152 +25,152 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("ShareLinkRepository 테스트")
 class ShareLinkRepositoryTest {
 
-    @Autowired
-    private ShareLinkRepository shareLinkRepository;
+  @Autowired
+  private ShareLinkRepository shareLinkRepository;
 
-    @Autowired
-    private DatabaseClient databaseClient;
+  @Autowired
+  private DatabaseClient databaseClient;
 
-    private ShareLink testShareLink;
-    private String testProjectId = "project123";
-    private byte[] testTokenHash;
+  private ShareLink testShareLink;
+  private String testProjectId = "project123";
+  private byte[] testTokenHash;
 
-    @BeforeEach
-    void setUp() {
-        shareLinkRepository.deleteAll().block();
+  @BeforeEach
+  void setUp() {
+    shareLinkRepository.deleteAll().block();
 
-        testTokenHash = new byte[32];
-        for (int i = 0; i < 32; i++) {
-            testTokenHash[i] = (byte) i;
-        }
-
-        testShareLink = ShareLink.create(testProjectId, testTokenHash,
-                ShareLinkRole.EDITOR,
-                Instant.now().plus(7, ChronoUnit.DAYS));
+    testTokenHash = new byte[32];
+    for (int i = 0; i < 32; i++) {
+      testTokenHash[i] = (byte) i;
     }
 
-    @Test
-    @DisplayName("ShareLink 생성 및 저장에 성공한다")
-    void createShareLink() {
-        StepVerifier.create(shareLinkRepository.save(testShareLink))
-                .assertNext(shareLink -> {
-                    assertThat(shareLink.getId()).isNotNull();
-                    assertThat(shareLink.getProjectId())
-                            .isEqualTo(testProjectId);
-                    assertThat(shareLink.getTokenHash())
-                            .isEqualTo(testTokenHash);
-                    assertThat(shareLink.getRoleAsEnum())
-                            .isEqualTo(ShareLinkRole.EDITOR);
-                    assertThat(shareLink.getIsRevoked()).isFalse();
-                }).verifyComplete();
-    }
+    testShareLink = ShareLink.create(testProjectId, testTokenHash,
+        ShareLinkRole.EDITOR,
+        Instant.now().plus(7, ChronoUnit.DAYS));
+  }
 
-    @Test
-    @DisplayName("유효한 토큰 해시로 조회에 성공한다")
-    void findValidByTokenHash_Success() {
-        shareLinkRepository.save(testShareLink).block();
+  @Test
+  @DisplayName("ShareLink 생성 및 저장에 성공한다")
+  void createShareLink() {
+    StepVerifier.create(shareLinkRepository.save(testShareLink))
+        .assertNext(shareLink -> {
+          assertThat(shareLink.getId()).isNotNull();
+          assertThat(shareLink.getProjectId())
+              .isEqualTo(testProjectId);
+          assertThat(shareLink.getTokenHash())
+              .isEqualTo(testTokenHash);
+          assertThat(shareLink.getRoleAsEnum())
+              .isEqualTo(ShareLinkRole.EDITOR);
+          assertThat(shareLink.getIsRevoked()).isFalse();
+        }).verifyComplete();
+  }
 
-        StepVerifier
-                .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
-                .assertNext(shareLink -> {
-                    assertThat(shareLink.getId())
-                            .isEqualTo(testShareLink.getId());
-                }).verifyComplete();
-    }
+  @Test
+  @DisplayName("유효한 토큰 해시로 조회에 성공한다")
+  void findValidByTokenHash_Success() {
+    shareLinkRepository.save(testShareLink).block();
 
-    @Test
-    @DisplayName("만료일이 없는(무제한) 토큰 조회 성공한다")
-    void findValidByTokenHash_NoExpiration_Success() {
-        ShareLink noExpireLink = ShareLink.create(testProjectId, testTokenHash,
-                ShareLinkRole.VIEWER, null);
-        shareLinkRepository.save(noExpireLink).block();
+    StepVerifier
+        .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
+        .assertNext(shareLink -> {
+          assertThat(shareLink.getId())
+              .isEqualTo(testShareLink.getId());
+        }).verifyComplete();
+  }
 
-        StepVerifier
-                .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
-                .assertNext(shareLink -> {
-                    assertThat(shareLink.getId())
-                            .isEqualTo(noExpireLink.getId());
-                }).verifyComplete();
-    }
+  @Test
+  @DisplayName("만료일이 없는(무제한) 토큰 조회 성공한다")
+  void findValidByTokenHash_NoExpiration_Success() {
+    ShareLink noExpireLink = ShareLink.create(testProjectId, testTokenHash,
+        ShareLinkRole.VIEWER, null);
+    shareLinkRepository.save(noExpireLink).block();
 
-    @Test
-    @DisplayName("Revoked된 토큰은 조회되지 않는다")
-    void findValidByTokenHash_Revoked_Empty() {
-        ShareLink saved = shareLinkRepository.save(testShareLink).block();
+    StepVerifier
+        .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
+        .assertNext(shareLink -> {
+          assertThat(shareLink.getId())
+              .isEqualTo(noExpireLink.getId());
+        }).verifyComplete();
+  }
 
-        saved.revoke();
-        shareLinkRepository.save(saved).block();
+  @Test
+  @DisplayName("Revoked된 토큰은 조회되지 않는다")
+  void findValidByTokenHash_Revoked_Empty() {
+    ShareLink saved = shareLinkRepository.save(testShareLink).block();
 
-        StepVerifier
-                .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
-                .verifyComplete();
-    }
+    saved.revoke();
+    shareLinkRepository.save(saved).block();
 
-    @Test
-    @DisplayName("만료된 토큰은 조회되지 않는다")
-    void findValidByTokenHash_Expired_Empty() {
-        ShareLink saved = shareLinkRepository.save(testShareLink).block();
+    StepVerifier
+        .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
+        .verifyComplete();
+  }
 
-        // 강제로 만료 시간을 과거로 업데이트
-        databaseClient.sql(
-                "UPDATE share_links SET expires_at = :expiresAt WHERE id = :id")
-                .bind("expiresAt", Instant.now().minusSeconds(3600))
-                .bind("id", saved.getId())
-                .fetch().rowsUpdated().block();
+  @Test
+  @DisplayName("만료된 토큰은 조회되지 않는다")
+  void findValidByTokenHash_Expired_Empty() {
+    ShareLink saved = shareLinkRepository.save(testShareLink).block();
 
-        StepVerifier
-                .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
-                .verifyComplete();
-    }
+    // 강제로 만료 시간을 과거로 업데이트
+    databaseClient.sql(
+        "UPDATE share_links SET expires_at = :expiresAt WHERE id = :id")
+        .bind("expiresAt", Instant.now().minusSeconds(3600))
+        .bind("id", saved.getId())
+        .fetch().rowsUpdated().block();
 
-    @Test
-    @DisplayName("삭제된(Soft Deleted) 토큰은 조회되지 않는다")
-    void findValidByTokenHash_Deleted_Empty() {
-        ShareLink saved = shareLinkRepository.save(testShareLink).block();
+    StepVerifier
+        .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
+        .verifyComplete();
+  }
 
-        saved.delete();
-        shareLinkRepository.save(saved).block();
+  @Test
+  @DisplayName("삭제된(Soft Deleted) 토큰은 조회되지 않는다")
+  void findValidByTokenHash_Deleted_Empty() {
+    ShareLink saved = shareLinkRepository.save(testShareLink).block();
 
-        StepVerifier
-                .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
-                .verifyComplete();
-    }
+    saved.delete();
+    shareLinkRepository.save(saved).block();
 
-    @Test
-    @DisplayName("프로젝트 ID로 목록 조회에 성공한다 (최신순)")
-    void findByProjectIdAndNotDeleted() {
-        shareLinkRepository.save(testShareLink).block();
+    StepVerifier
+        .create(shareLinkRepository.findValidByTokenHash(testTokenHash))
+        .verifyComplete();
+  }
 
-        byte[] hash2 = new byte[32];
-        hash2[0] = 1;
-        ShareLink link2 = ShareLink.create(testProjectId, hash2,
-                ShareLinkRole.VIEWER, null);
-        shareLinkRepository.save(link2).block();
+  @Test
+  @DisplayName("프로젝트 ID로 목록 조회에 성공한다 (최신순)")
+  void findByProjectIdAndNotDeleted() {
+    shareLinkRepository.save(testShareLink).block();
 
-        StepVerifier
-                .create(shareLinkRepository
-                        .findByProjectIdAndNotDeleted(testProjectId))
-                .assertNext(link -> assertThat(link.getTokenHash())
-                        .isEqualTo(hash2))
-                .assertNext(link -> assertThat(link.getTokenHash())
-                        .isEqualTo(testTokenHash))
-                .verifyComplete();
-    }
+    byte[] hash2 = new byte[32];
+    hash2[0] = 1;
+    ShareLink link2 = ShareLink.create(testProjectId, hash2,
+        ShareLinkRole.VIEWER, null);
+    shareLinkRepository.save(link2).block();
 
-    @Test
-    @DisplayName("프로젝트 ID로 Soft Delete에 성공한다")
-    void softDeleteByProjectId() {
-        shareLinkRepository.save(testShareLink).block();
+    StepVerifier
+        .create(shareLinkRepository
+            .findByProjectIdAndNotDeleted(testProjectId))
+        .assertNext(link -> assertThat(link.getTokenHash())
+            .isEqualTo(hash2))
+        .assertNext(link -> assertThat(link.getTokenHash())
+            .isEqualTo(testTokenHash))
+        .verifyComplete();
+  }
 
-        StepVerifier
-                .create(shareLinkRepository
-                        .softDeleteByProjectId(testProjectId))
-                .verifyComplete();
+  @Test
+  @DisplayName("프로젝트 ID로 Soft Delete에 성공한다")
+  void softDeleteByProjectId() {
+    shareLinkRepository.save(testShareLink).block();
 
-        StepVerifier
-                .create(shareLinkRepository
-                        .findByIdAndNotDeleted(testShareLink.getId()))
-                .verifyComplete();
-    }
+    StepVerifier
+        .create(shareLinkRepository
+            .softDeleteByProjectId(testProjectId))
+        .verifyComplete();
+
+    StepVerifier
+        .create(shareLinkRepository
+            .findByIdAndNotDeleted(testShareLink.getId()))
+        .verifyComplete();
+  }
 
 }

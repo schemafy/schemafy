@@ -21,51 +21,51 @@ import reactor.core.publisher.Mono;
 @ConditionalOnRedisEnabled
 public class SchemaFocusMessageHandler implements InboundMessageHandler {
 
-    private final SessionRegistry sessionRegistry;
-    private final CollaborationEventPublisher eventPublisher;
+  private final SessionRegistry sessionRegistry;
+  private final CollaborationEventPublisher eventPublisher;
 
-    @Override
-    public CollaborationEventType supportedType() {
-        return CollaborationEventType.SCHEMA_FOCUS;
+  @Override
+  public CollaborationEventType supportedType() {
+    return CollaborationEventType.SCHEMA_FOCUS;
+  }
+
+  @Override
+  public Mono<Void> handle(MessageContext context,
+      CollaborationInbound message) {
+    if (!(message instanceof SchemaFocusEvent.Inbound schemaFocusMessage)) {
+      log.warn(
+          "[SchemaFocusMessageHandler] Invalid message format: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
     }
 
-    @Override
-    public Mono<Void> handle(MessageContext context,
-            CollaborationInbound message) {
-        if (!(message instanceof SchemaFocusEvent.Inbound schemaFocusMessage)) {
-            log.warn(
-                    "[SchemaFocusMessageHandler] Invalid message format: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        String schemaId = schemaFocusMessage.schemaId();
-        if (schemaId == null || schemaId.isBlank()) {
-            log.warn(
-                    "[SchemaFocusMessageHandler] No schemaId in message: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        SessionEntry entry = sessionRegistry
-                .getSessionEntry(context.projectId(), context.sessionId())
-                .orElse(null);
-
-        if (entry == null) {
-            log.warn(
-                    "[SchemaFocusMessageHandler] Session not found: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        entry.setCurrentSchemaId(schemaId);
-
-        String userId = entry.authInfo().getUserId();
-        String userName = entry.authInfo().getUserName();
-
-        return eventPublisher.publish(context.projectId(),
-                CollaborationOutboundFactory.schemaFocus(context.sessionId(),
-                        userId, userName, schemaId));
+    String schemaId = schemaFocusMessage.schemaId();
+    if (schemaId == null || schemaId.isBlank()) {
+      log.warn(
+          "[SchemaFocusMessageHandler] No schemaId in message: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
     }
+
+    SessionEntry entry = sessionRegistry
+        .getSessionEntry(context.projectId(), context.sessionId())
+        .orElse(null);
+
+    if (entry == null) {
+      log.warn(
+          "[SchemaFocusMessageHandler] Session not found: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
+    }
+
+    entry.setCurrentSchemaId(schemaId);
+
+    String userId = entry.authInfo().getUserId();
+    String userName = entry.authInfo().getUserName();
+
+    return eventPublisher.publish(context.projectId(),
+        CollaborationOutboundFactory.schemaFocus(context.sessionId(),
+            userId, userName, schemaId));
+  }
 
 }

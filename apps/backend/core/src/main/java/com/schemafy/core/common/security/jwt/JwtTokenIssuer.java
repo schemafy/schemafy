@@ -14,55 +14,55 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JwtTokenIssuer {
 
-    private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
-    private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
-    private static final String BEARER_PREFIX = "Bearer ";
-    private static final Duration REFRESH_TOKEN_COOKIE_MAX_AGE = Duration
-            .ofDays(7);
-    private static final String CLAIM_NAME = "name";
+  private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+  private static final String ACCESS_TOKEN_COOKIE_NAME = "accessToken";
+  private static final String BEARER_PREFIX = "Bearer ";
+  private static final Duration REFRESH_TOKEN_COOKIE_MAX_AGE = Duration
+      .ofDays(7);
+  private static final String CLAIM_NAME = "name";
 
-    private final JwtProvider jwtProvider;
-    private final JwtProperties jwtProperties;
+  private final JwtProvider jwtProvider;
+  private final JwtProperties jwtProperties;
 
-    public <T> ResponseEntity<T> issueTokens(String userId, String userName,
-            T body) {
-        long now = System.currentTimeMillis();
-        Map<String, Object> claims = Map.of(CLAIM_NAME, userName);
+  public <T> ResponseEntity<T> issueTokens(String userId, String userName,
+      T body) {
+    long now = System.currentTimeMillis();
+    Map<String, Object> claims = Map.of(CLAIM_NAME, userName);
 
-        boolean cookieSecure = jwtProperties.getCookie().isSecure();
-        String cookieSameSite = jwtProperties.getCookie().getSameSite();
+    boolean cookieSecure = jwtProperties.getCookie().isSecure();
+    String cookieSameSite = jwtProperties.getCookie().getSameSite();
 
-        String accessToken = jwtProvider.generateAccessToken(userId, claims,
-                now);
-        String refreshToken = jwtProvider.generateRefreshToken(userId);
+    String accessToken = jwtProvider.generateAccessToken(userId, claims,
+        now);
+    String refreshToken = jwtProvider.generateRefreshToken(userId);
 
-        // Refresh Token을 HttpOnly Cookie로 설정
-        ResponseCookie refreshTokenCookie = ResponseCookie
-                .from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .path("/")
-                .maxAge(REFRESH_TOKEN_COOKIE_MAX_AGE)
-                .sameSite(cookieSameSite)
-                .build();
+    // Refresh Token을 HttpOnly Cookie로 설정
+    ResponseCookie refreshTokenCookie = ResponseCookie
+        .from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
+        .httpOnly(true)
+        .secure(cookieSecure)
+        .path("/")
+        .maxAge(REFRESH_TOKEN_COOKIE_MAX_AGE)
+        .sameSite(cookieSameSite)
+        .build();
 
-        ResponseCookie accessTokenCookie = ResponseCookie
-                .from(ACCESS_TOKEN_COOKIE_NAME, accessToken)
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .path("/")
-                .maxAge(jwtProvider.getAccessTokenExpiresIn())
-                .sameSite(cookieSameSite)
-                .build();
+    ResponseCookie accessTokenCookie = ResponseCookie
+        .from(ACCESS_TOKEN_COOKIE_NAME, accessToken)
+        .httpOnly(true)
+        .secure(cookieSecure)
+        .path("/")
+        .maxAge(jwtProvider.getAccessTokenExpiresIn())
+        .sameSite(cookieSameSite)
+        .build();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken);
-        headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
-        headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+    HttpHeaders headers = new HttpHeaders();
+    headers.set(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken);
+    headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+    headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(body);
-    }
+    return ResponseEntity.ok()
+        .headers(headers)
+        .body(body);
+  }
 
 }

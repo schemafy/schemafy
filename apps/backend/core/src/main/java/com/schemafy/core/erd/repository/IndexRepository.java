@@ -9,8 +9,8 @@ import reactor.core.publisher.Mono;
 
 public interface IndexRepository extends ReactiveCrudRepository<Index, String> {
 
-    public Mono<Index> findByIdAndDeletedAtIsNull(String id);
+  public Mono<Index> findByIdAndDeletedAtIsNull(String id);
 
-    public Flux<Index> findByTableIdAndDeletedAtIsNull(String tableId);
+  public Flux<Index> findByTableIdAndDeletedAtIsNull(String tableId);
 
 }

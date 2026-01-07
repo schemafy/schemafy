@@ -19,36 +19,34 @@ import lombok.NoArgsConstructor;
 @Table("project_members")
 public class ProjectMember extends BaseEntity {
 
-    private String projectId;
+  private String projectId;
 
-    private String userId;
+  private String userId;
 
-    private String role;
+  private String role;
 
-    private LocalDateTime joinedAt;
+  private LocalDateTime joinedAt;
 
-    public static ProjectMember create(String projectId, String userId,
-            ProjectRole role) {
-        ProjectMember member = new ProjectMember(projectId, userId,
-                role.getValue(), LocalDateTime.now());
-        member.setId(UlidGenerator.generate());
-        return member;
-    }
+  public static ProjectMember create(String projectId, String userId,
+      ProjectRole role) {
+    ProjectMember member = new ProjectMember(projectId, userId,
+        role.getValue(), LocalDateTime.now());
+    member.setId(UlidGenerator.generate());
+    return member;
+  }
 
-    public void updateRole(ProjectRole role) {
-        this.role = role.getValue();
-    }
+  public void updateRole(ProjectRole role) {
+    this.role = role.getValue();
+  }
 
-    public ProjectRole getRoleAsEnum() {
-        return ProjectRole.fromString(this.role);
-    }
+  public ProjectRole getRoleAsEnum() { return ProjectRole.fromString(this.role); }
 
-    public boolean isOwner() { return getRoleAsEnum().isOwner(); }
+  public boolean isOwner() { return getRoleAsEnum().isOwner(); }
 
-    public boolean isAdmin() { return getRoleAsEnum().isAdmin(); }
+  public boolean isAdmin() { return getRoleAsEnum().isAdmin(); }
 
-    public boolean canEdit() {
-        return getRoleAsEnum().canEdit();
-    }
+  public boolean canEdit() {
+    return getRoleAsEnum().canEdit();
+  }
 
 }

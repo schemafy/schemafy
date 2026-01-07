@@ -21,64 +21,58 @@ import lombok.NoArgsConstructor;
 @Table("share_links")
 public class ShareLink extends BaseEntity {
 
-    private String projectId;
+  private String projectId;
 
-    private byte[] tokenHash;
+  private byte[] tokenHash;
 
-    private String role;
+  private String role;
 
-    private Instant expiresAt;
+  private Instant expiresAt;
 
-    private Boolean isRevoked;
+  private Boolean isRevoked;
 
-    private Instant lastAccessedAt;
+  private Instant lastAccessedAt;
 
-    private Long accessCount;
+  private Long accessCount;
 
-    public static ShareLink create(String projectId, byte[] tokenHash,
-            ShareLinkRole role, Instant expiresAt) {
-        if (projectId == null || projectId.isBlank()) {
-            throw new BusinessException(
-                    ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
-        }
-        if (tokenHash == null || tokenHash.length != 32) {
-            throw new BusinessException(
-                    ErrorCode.SHARE_LINK_INVALID_TOKEN_HASH);
-        }
-        if (role == null) {
-            throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_ROLE);
-        }
-        if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
-            throw new BusinessException(
-                    ErrorCode.SHARE_LINK_INVALID_EXPIRATION);
-        }
-
-        ShareLink shareLink = new ShareLink(
-                projectId,
-                tokenHash,
-                role.getValue(),
-                expiresAt,
-                false,
-                null,
-                0L);
-        shareLink.setId(UlidGenerator.generate());
-        return shareLink;
+  public static ShareLink create(String projectId, byte[] tokenHash,
+      ShareLinkRole role, Instant expiresAt) {
+    if (projectId == null || projectId.isBlank()) {
+      throw new BusinessException(
+          ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
+    }
+    if (tokenHash == null || tokenHash.length != 32) {
+      throw new BusinessException(
+          ErrorCode.SHARE_LINK_INVALID_TOKEN_HASH);
+    }
+    if (role == null) {
+      throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_ROLE);
+    }
+    if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
+      throw new BusinessException(
+          ErrorCode.SHARE_LINK_INVALID_EXPIRATION);
     }
 
-    public ShareLinkRole getRoleAsEnum() {
-        return ShareLinkRole.fromString(this.role);
-    }
+    ShareLink shareLink = new ShareLink(
+        projectId,
+        tokenHash,
+        role.getValue(),
+        expiresAt,
+        false,
+        null,
+        0L);
+    shareLink.setId(UlidGenerator.generate());
+    return shareLink;
+  }
 
-    public void revoke() {
-        this.isRevoked = true;
-    }
+  public ShareLinkRole getRoleAsEnum() { return ShareLinkRole.fromString(this.role); }
 
-    public boolean isExpired() {
-        return expiresAt != null && Instant.now().isAfter(expiresAt);
-    }
+  public void revoke() {
+    this.isRevoked = true;
+  }
 
-    public boolean isActive() {
-        return !isRevoked && !isExpired() && !isDeleted();
-    }
+  public boolean isExpired() { return expiresAt != null && Instant.now().isAfter(expiresAt); }
+
+  public boolean isActive() { return !isRevoked && !isExpired() && !isDeleted(); }
 
 }

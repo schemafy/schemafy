@@ -11,7 +11,18 @@ async function bootstrap() {
     transport: Transport.GRPC,
     options: {
       package: 'validation',
-      protoPath: [join(__dirname, '..', 'protos', 'validation.proto')],
+      protoPath: [
+        join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          'packages',
+          'proto-validation',
+          'protos',
+          'validation.proto',
+        ),
+      ],
       url: process.env.GRPC_URL ?? '0.0.0.0:50051',
       loader: {
         enums: String,

@@ -12,30 +12,30 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ColumnResponse {
 
-    private String id;
-    private String tableId;
-    private String name;
-    private String dataType;
-    private Integer seqNo;
-    private String lengthScale;
-    private Boolean isAutoIncrement;
-    private String charset;
-    private String collation;
-    private String comment;
+  private String id;
+  private String tableId;
+  private String name;
+  private String dataType;
+  private Integer seqNo;
+  private String lengthScale;
+  private Boolean isAutoIncrement;
+  private String charset;
+  private String collation;
+  private String comment;
 
-    public static ColumnResponse from(Column column) {
-        return ColumnResponse.builder()
-                .id(column.getId())
-                .tableId(column.getTableId())
-                .name(column.getName())
-                .dataType(column.getDataType())
-                .seqNo(column.getSeqNo())
-                .lengthScale(column.getLengthScale())
-                .isAutoIncrement(column.isAutoIncrement())
-                .charset(column.getCharset())
-                .collation(column.getCollation())
-                .comment(column.getComment())
-                .build();
-    }
+  public static ColumnResponse from(Column column) {
+    return ColumnResponse.builder()
+        .id(column.getId())
+        .tableId(column.getTableId())
+        .name(column.getName())
+        .dataType(column.getDataType())
+        .seqNo(column.getSeqNo())
+        .lengthScale(column.getLengthScale())
+        .isAutoIncrement(column.isAutoIncrement())
+        .charset(column.getCharset())
+        .collation(column.getCollation())
+        .comment(column.getComment())
+        .build();
+  }
 
 }

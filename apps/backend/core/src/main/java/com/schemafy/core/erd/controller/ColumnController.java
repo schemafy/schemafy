@@ -32,74 +32,74 @@ import validation.Validation.DeleteColumnRequest;
 @RequestMapping(ApiPath.API)
 public class ColumnController {
 
-    private final ColumnService columnService;
+  private final ColumnService columnService;
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-    @PostMapping("/columns")
-    public Mono<BaseResponse<AffectedMappingResponse>> createColumn(
-            @RequestBody CreateColumnRequest request) {
-        return columnService.createColumn(request)
-                .map(BaseResponse::success);
-    }
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PostMapping("/columns")
+  public Mono<BaseResponse<AffectedMappingResponse>> createColumn(
+      @RequestBody CreateColumnRequest request) {
+    return columnService.createColumn(request)
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-    @GetMapping("/columns/{columnId}")
-    public Mono<BaseResponse<ColumnResponse>> getColumn(
-            @PathVariable String columnId) {
-        return columnService.getColumn(columnId)
-                .map(BaseResponse::success);
-    }
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/columns/{columnId}")
+  public Mono<BaseResponse<ColumnResponse>> getColumn(
+      @PathVariable String columnId) {
+    return columnService.getColumn(columnId)
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-    @PutMapping("/columns/{columnId}/name")
-    public Mono<BaseResponse<ColumnResponse>> updateColumnName(
-            @PathVariable String columnId,
-            @RequestBody ChangeColumnNameRequest request) {
-        if (!columnId.equals(request.getColumnId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-        return columnService.updateColumnName(request)
-                .map(BaseResponse::success);
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PutMapping("/columns/{columnId}/name")
+  public Mono<BaseResponse<ColumnResponse>> updateColumnName(
+      @PathVariable String columnId,
+      @RequestBody ChangeColumnNameRequest request) {
+    if (!columnId.equals(request.getColumnId())) {
+      return Mono.error(
+          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
     }
+    return columnService.updateColumnName(request)
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-    @PutMapping("/columns/{columnId}/type")
-    public Mono<BaseResponse<AffectedColumnsResponse>> updateColumnType(
-            @PathVariable String columnId,
-            @RequestBody ChangeColumnTypeRequest request) {
-        if (!columnId.equals(request.getColumnId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-        return columnService.updateColumnType(request)
-                .map(BaseResponse::success);
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PutMapping("/columns/{columnId}/type")
+  public Mono<BaseResponse<AffectedColumnsResponse>> updateColumnType(
+      @PathVariable String columnId,
+      @RequestBody ChangeColumnTypeRequest request) {
+    if (!columnId.equals(request.getColumnId())) {
+      return Mono.error(
+          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
     }
+    return columnService.updateColumnType(request)
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-    @PutMapping("/columns/{columnId}/position")
-    public Mono<BaseResponse<ColumnResponse>> updateColumnPosition(
-            @PathVariable String columnId,
-            @RequestBody ChangeColumnPositionRequest request) {
-        if (!columnId.equals(request.getColumnId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-        return columnService.updateColumnPosition(request)
-                .map(BaseResponse::success);
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PutMapping("/columns/{columnId}/position")
+  public Mono<BaseResponse<ColumnResponse>> updateColumnPosition(
+      @PathVariable String columnId,
+      @RequestBody ChangeColumnPositionRequest request) {
+    if (!columnId.equals(request.getColumnId())) {
+      return Mono.error(
+          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
     }
+    return columnService.updateColumnPosition(request)
+        .map(BaseResponse::success);
+  }
 
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-    @DeleteMapping("/columns/{columnId}")
-    public Mono<BaseResponse<Void>> deleteColumn(
-            @PathVariable String columnId,
-            @RequestBody DeleteColumnRequest request) {
-        if (!columnId.equals(request.getColumnId())) {
-            return Mono.error(
-                    new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
-        }
-        return columnService.deleteColumn(request)
-                .then(Mono.just(BaseResponse.success(null)));
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @DeleteMapping("/columns/{columnId}")
+  public Mono<BaseResponse<Void>> deleteColumn(
+      @PathVariable String columnId,
+      @RequestBody DeleteColumnRequest request) {
+    if (!columnId.equals(request.getColumnId())) {
+      return Mono.error(
+          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
     }
+    return columnService.deleteColumn(request)
+        .then(Mono.just(BaseResponse.success(null)));
+  }
 
 }

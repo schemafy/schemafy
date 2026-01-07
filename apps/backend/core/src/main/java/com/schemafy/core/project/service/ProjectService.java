@@ -32,430 +32,420 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ProjectService {
 
-    private final TransactionalOperator transactionalOperator;
-    private final ProjectRepository projectRepository;
-    private final ProjectMemberRepository projectMemberRepository;
-    private final WorkspaceMemberRepository workspaceMemberRepository;
-    private final UserRepository userRepository;
-    private final ShareLinkRepository shareLinkRepository;
-    private final ShareLinkTokenService tokenService;
+  private final TransactionalOperator transactionalOperator;
+  private final ProjectRepository projectRepository;
+  private final ProjectMemberRepository projectMemberRepository;
+  private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final UserRepository userRepository;
+  private final ShareLinkRepository shareLinkRepository;
+  private final ShareLinkTokenService tokenService;
 
-    private static final int MAX_PROJECT_MEMBERS = 30;
+  private static final int MAX_PROJECT_MEMBERS = 30;
 
-    public Mono<ProjectResponse> createProject(String workspaceId,
-            CreateProjectRequest request, String userId) {
-        return validateWorkspaceMember(workspaceId, userId).then(
-                Mono.defer(() -> {
-                    ProjectSettings settings = request.getSettingsOrDefault();
-                    validateSettings(settings);
+  public Mono<ProjectResponse> createProject(String workspaceId,
+      CreateProjectRequest request, String userId) {
+    return validateWorkspaceMember(workspaceId, userId).then(
+        Mono.defer(() -> {
+          ProjectSettings settings = request.getSettingsOrDefault();
+          validateSettings(settings);
 
-                    Project project = Project.create(workspaceId,
-                            request.name(), request.description(), settings);
+          Project project = Project.create(workspaceId,
+              request.name(), request.description(), settings);
 
-                    ProjectMember ownerMember = ProjectMember
-                            .create(project.getId(), userId, ProjectRole.OWNER);
+          ProjectMember ownerMember = ProjectMember
+              .create(project.getId(), userId, ProjectRole.OWNER);
 
-                    return projectRepository.save(project)
-                            .flatMap(savedProject -> projectMemberRepository
-                                    .save(ownerMember)
-                                    .thenReturn(savedProject))
-                            .map(ProjectResponse::from);
-                }))
-                .as(transactionalOperator::transactional);
+          return projectRepository.save(project)
+              .flatMap(savedProject -> projectMemberRepository
+                  .save(ownerMember)
+                  .thenReturn(savedProject))
+              .map(ProjectResponse::from);
+        }))
+        .as(transactionalOperator::transactional);
+  }
+
+  public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
+      String workspaceId, String userId, int page, int size) {
+    return validateWorkspaceMember(workspaceId, userId)
+        .then(Mono.defer(() -> {
+          int offset = page * size;
+          return projectMemberRepository
+              .countByWorkspaceIdAndUserId(workspaceId, userId)
+              .flatMap(totalElements -> Mono.zip(
+                  projectRepository
+                      .findByWorkspaceIdAndUserIdWithPaging(
+                          workspaceId, userId, size,
+                          offset)
+                      .collectList(),
+                  projectMemberRepository
+                      .findRolesByWorkspaceIdAndUserIdWithPaging(
+                          workspaceId, userId, size,
+                          offset)
+                      .collectList())
+                  .flatMap(tuple -> {
+                    var projects = tuple.getT1();
+                    var roles = tuple.getT2();
+                    return Flux.range(0, projects.size())
+                        .flatMap(i -> {
+                          var project = projects
+                              .get(i);
+                          var role = ProjectRole
+                              .fromString(
+                                  roles.get(
+                                      i));
+                          return projectMemberRepository
+                              .countByProjectIdAndNotDeleted(
+                                  project.getId())
+                              .map(count -> ProjectSummaryResponse
+                                  .of(project,
+                                      role,
+                                      count));
+                        })
+                        .collectList()
+                        .map(content -> PageResponse.of(
+                            content, page, size,
+                            totalElements));
+                  }));
+        }));
+  }
+
+  public Mono<ProjectResponse> getProject(String workspaceId,
+      String projectId,
+      String userId) {
+    return validateMemberAccess(workspaceId, projectId, userId)
+        .then(findProjectById(projectId))
+        .flatMap(project -> {
+          if (!project.belongsToWorkspace(workspaceId)) {
+            return Mono.error(new BusinessException(
+                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+          }
+          return Mono.just(ProjectResponse.from(project));
+        });
+  }
+
+  public Mono<ProjectResponse> updateProject(String workspaceId,
+      String projectId, UpdateProjectRequest request, String userId) {
+    return validateAdminAccess(workspaceId, projectId, userId)
+        .then(findProjectById(projectId))
+        .flatMap(project -> {
+          if (!project.belongsToWorkspace(workspaceId)) {
+            return Mono.error(new BusinessException(
+                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+          }
+
+          ProjectSettings settings = request.getSettingsOrDefault();
+          validateSettings(settings);
+
+          project.update(request.name(), request.description(),
+              settings);
+          return projectRepository.save(project);
+        })
+        .map(ProjectResponse::from)
+        .as(transactionalOperator::transactional);
+  }
+
+  public Mono<Void> deleteProject(String workspaceId, String projectId,
+      String userId) {
+    return validateAdminAccess(workspaceId, projectId, userId)
+        .then(findProjectById(projectId))
+        .flatMap(project -> {
+          if (!project.belongsToWorkspace(workspaceId)) {
+            return Mono.error(new BusinessException(
+                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+          }
+          if (project.isDeleted()) {
+            return Mono.error(new BusinessException(
+                ErrorCode.PROJECT_ALREADY_DELETED));
+          }
+          project.delete();
+          return projectRepository.save(project)
+              .then(projectMemberRepository
+                  .softDeleteByProjectId(projectId));
+        })
+        .as(transactionalOperator::transactional);
+  }
+
+  public Mono<PageResponse<ProjectMemberResponse>> getMembers(
+      String workspaceId, String projectId, String userId, int page,
+      int size) {
+    return validateMemberAccess(workspaceId, projectId, userId)
+        .then(projectMemberRepository
+            .countByProjectIdAndNotDeleted(projectId))
+        .flatMap(totalElements -> {
+          int offset = page * size;
+          return projectMemberRepository
+              .findByProjectIdAndNotDeleted(projectId, size,
+                  offset)
+              .flatMap(member -> userRepository
+                  .findById(member.getUserId())
+                  .map(user -> ProjectMemberResponse
+                      .of(member, user)))
+              .collectList()
+              .map(members -> PageResponse.of(members, page, size,
+                  totalElements));
+        });
+  }
+
+  /** ShareLink 토큰을 통한 프로젝트 참여 */
+  public Mono<ProjectMemberResponse> joinProjectByShareLink(String token,
+      String userId) {
+    byte[] tokenHash = tokenService.hashToken(token);
+
+    return shareLinkRepository.findValidByTokenHash(tokenHash)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
+        .flatMap(shareLink -> projectRepository
+            .findByIdAndNotDeleted(shareLink.getProjectId())
+            .switchIfEmpty(Mono.error(
+                new BusinessException(
+                    ErrorCode.PROJECT_NOT_FOUND)))
+            .flatMap(project -> workspaceMemberRepository
+                .existsByWorkspaceIdAndUserIdAndNotDeleted(
+                    project.getWorkspaceId(), userId)
+                .flatMap(isWorkspaceMember -> {
+                  if (!isWorkspaceMember) {
+                    return Mono.error(new BusinessException(
+                        ErrorCode.WORKSPACE_MEMBERSHIP_REQUIRED));
+                  }
+                  return createOrUpdateProjectMember(project,
+                      shareLink, userId);
+                })))
+        .as(transactionalOperator::transactional);
+  }
+
+  /** 프로젝트 멤버 역할 변경 */
+  public Mono<ProjectMemberResponse> updateMemberRole(String workspaceId,
+      String projectId, String targetId,
+      UpdateProjectMemberRoleRequest request, String requesterId) {
+    return validateAdminAccess(workspaceId, projectId, requesterId)
+        .then(Mono.zip(
+            findProjectMemberByUserIdAndProjectId(requesterId,
+                projectId),
+            findProjectMemberByMemberIdAndProjectId(targetId,
+                projectId)))
+        .flatMap(tuple -> {
+          ProjectMember requester = tuple.getT1();
+          ProjectMember target = tuple.getT2();
+
+          validateRoleChangePermission(requester, target,
+              request.role());
+
+          target.updateRole(request.role());
+          return projectMemberRepository.save(target);
+        })
+        .flatMap(updatedMember -> userRepository
+            .findById(updatedMember.getUserId())
+            .map(user -> ProjectMemberResponse.of(updatedMember,
+                user)))
+        .as(transactionalOperator::transactional);
+  }
+
+  /** 요청자는 부여하려는 역할보다 높거나 같은 권한을 가져야 함
+   * 요청자는 대상의 현재 역할보다 높거나 같은 권한을 가져야 함 */
+  private void validateRoleChangePermission(ProjectMember requester,
+      ProjectMember target, ProjectRole newRole) {
+    ProjectRole requesterRole = requester.getRoleAsEnum();
+    ProjectRole targetCurrentRole = target.getRoleAsEnum();
+
+    // 요청자가 본인의 역할을 변경하려는지
+    if (target.getUserId().equals(requester.getUserId())) {
+      throw new BusinessException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
     }
 
-    public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
-            String workspaceId, String userId, int page, int size) {
-        return validateWorkspaceMember(workspaceId, userId)
-                .then(Mono.defer(() -> {
-                    int offset = page * size;
-                    return projectMemberRepository
-                            .countByWorkspaceIdAndUserId(workspaceId, userId)
-                            .flatMap(totalElements -> Mono.zip(
-                                    projectRepository
-                                            .findByWorkspaceIdAndUserIdWithPaging(
-                                                    workspaceId, userId, size,
-                                                    offset)
-                                            .collectList(),
-                                    projectMemberRepository
-                                            .findRolesByWorkspaceIdAndUserIdWithPaging(
-                                                    workspaceId, userId, size,
-                                                    offset)
-                                            .collectList())
-                                    .flatMap(tuple -> {
-                                        var projects = tuple.getT1();
-                                        var roles = tuple.getT2();
-                                        return Flux.range(0, projects.size())
-                                                .flatMap(i -> {
-                                                    var project = projects
-                                                            .get(i);
-                                                    var role = ProjectRole
-                                                            .fromString(
-                                                                    roles.get(
-                                                                            i));
-                                                    return projectMemberRepository
-                                                            .countByProjectIdAndNotDeleted(
-                                                                    project.getId())
-                                                            .map(count -> ProjectSummaryResponse
-                                                                    .of(project,
-                                                                            role,
-                                                                            count));
-                                                })
-                                                .collectList()
-                                                .map(content -> PageResponse.of(
-                                                        content, page, size,
-                                                        totalElements));
-                                    }));
-                }));
+    // 요청자가 부여하려는 역할 이상의 권한을 가지고 있는지
+    if (!requesterRole.isHigherOrEqualThan(newRole)) {
+      throw new BusinessException(ErrorCode.CANNOT_ASSIGN_HIGHER_ROLE);
     }
 
-    public Mono<ProjectResponse> getProject(String workspaceId,
-            String projectId,
-            String userId) {
-        return validateMemberAccess(workspaceId, projectId, userId)
-                .then(findProjectById(projectId))
-                .flatMap(project -> {
-                    if (!project.belongsToWorkspace(workspaceId)) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
-                    }
-                    return Mono.just(ProjectResponse.from(project));
-                });
+    // 요청자가 대상의 현재 역할 이상의 권한을 가지고 있는지
+    if (!requesterRole.isHigherOrEqualThan(targetCurrentRole)) {
+      throw new BusinessException(
+          ErrorCode.CANNOT_MODIFY_HIGHER_ROLE_MEMBER);
+    }
+  }
+
+  /** 프로젝트 멤버 제거 (관리자 권한) */
+  public Mono<Void> removeMember(String workspaceId, String projectId,
+      String targetId, String requesterId) {
+    return validateAdminAccess(workspaceId, projectId, requesterId)
+        .then(findProjectMemberByMemberIdAndProjectId(targetId,
+            projectId))
+        .flatMap(targetMember -> protectAdmin(projectId, targetMember))
+        .as(transactionalOperator::transactional);
+  }
+
+  /** 프로젝트 자발적 탈퇴 */
+  public Mono<Void> leaveProject(String workspaceId, String projectId,
+      String userId) {
+    return validateWorkspaceMember(workspaceId, userId)
+        .then(findProjectMemberByUserIdAndProjectId(userId, projectId))
+        .flatMap(member -> protectAdmin(projectId, member)
+            .then(projectMemberRepository
+                .countByProjectIdAndNotDeleted(projectId)
+                .flatMap(memberCount -> {
+                  if (memberCount <= 1) {
+                    return softDeleteMember(member)
+                        .then(projectRepository
+                            .findByIdAndNotDeleted(
+                                projectId)
+                            .flatMap(project -> {
+                              project.delete();
+                              return projectRepository
+                                  .save(project)
+                                  .then();
+                            }));
+                  }
+                  return softDeleteMember(member);
+                })))
+        .as(transactionalOperator::transactional);
+  }
+
+  private Mono<ProjectMemberResponse> createOrUpdateProjectMember(
+      Project project, ShareLink shareLink, String userId) {
+    return projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
+        .flatMap(existingMember -> {
+          ShareLinkRole shareLinkRole = shareLink.getRoleAsEnum();
+          ProjectRole newRole = shareLinkRole.toProjectRole();
+          ProjectRole currentRole = existingMember.getRoleAsEnum();
+
+          // 새로운 역할이 현재 역할보다 높은 권한을 가지면 업그레이드
+          if (newRole.getLevel() > currentRole.getLevel()) {
+            existingMember.updateRole(newRole);
+            return projectMemberRepository.save(existingMember);
+          }
+
+          return Mono.just(existingMember);
+        })
+        .switchIfEmpty(Mono.defer(() -> projectMemberRepository
+            .countByProjectIdAndNotDeleted(project.getId())
+            .flatMap(memberCount -> {
+              if (memberCount >= MAX_PROJECT_MEMBERS) {
+                return Mono.error(new BusinessException(
+                    ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED));
+              }
+
+              ShareLinkRole shareLinkRole = shareLink
+                  .getRoleAsEnum();
+              ProjectRole projectRole = shareLinkRole
+                  .toProjectRole();
+              ProjectMember newMember = ProjectMember
+                  .create(project.getId(), userId,
+                      projectRole);
+
+              return projectMemberRepository.save(newMember);
+            })))
+        .flatMap(member -> userRepository.findById(member.getUserId())
+            .map(user -> ProjectMemberResponse.of(member, user)));
+  }
+
+  private Mono<Void> validateOwnerOrAdminProtection(String projectId) {
+    return Mono.zip(
+        projectMemberRepository.countByProjectIdAndRoleAndNotDeleted(
+            projectId,
+            ProjectRole.OWNER.getValue()),
+        projectMemberRepository.countByProjectIdAndRoleAndNotDeleted(
+            projectId,
+            ProjectRole.ADMIN.getValue()))
+        .flatMap(tuple -> {
+          long ownerCount = tuple.getT1();
+          long adminCount = tuple.getT2();
+          long totalAdminCount = ownerCount + adminCount;
+
+          if (totalAdminCount <= 1) {
+            return Mono.error(new BusinessException(
+                ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED));
+          }
+          return Mono.empty();
+        });
+  }
+
+  private Mono<Void> validateMemberAccess(String workspaceId,
+      String projectId, String userId) {
+    return validateWorkspaceMember(workspaceId, userId)
+        .then(validateProjectMember(projectId, userId));
+  }
+
+  private Mono<Void> validateAdminAccess(String workspaceId, String projectId,
+      String userId) {
+    return validateWorkspaceMember(workspaceId, userId)
+        .then(validateProjectAdmin(projectId, userId));
+  }
+
+  private Mono<Project> findProjectById(String projectId) {
+    return projectRepository.findByIdAndNotDeleted(projectId)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
+  }
+
+  private Mono<ProjectMember> findProjectMemberByMemberIdAndProjectId(
+      String memberId, String projectId) {
+    return projectMemberRepository
+        .findByProjectIdAndMemberIdAndNotDeleted(projectId, memberId)
+        .filter(member -> member.getProjectId().equals(projectId))
+        .switchIfEmpty(Mono.error(new BusinessException(
+            ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
+  }
+
+  private Mono<ProjectMember> findProjectMemberByUserIdAndProjectId(
+      String userId, String projectId) {
+    return projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
+        .filter(member -> member.getProjectId().equals(projectId))
+        .switchIfEmpty(Mono.error(new BusinessException(
+            ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
+  }
+
+  private Mono<Void> protectAdmin(String projectId,
+      ProjectMember targetMember) {
+    if (targetMember.isOwner() || targetMember.isAdmin()) {
+      return validateOwnerOrAdminProtection(projectId)
+          .then(softDeleteMember(targetMember));
     }
 
-    public Mono<ProjectResponse> updateProject(String workspaceId,
-            String projectId, UpdateProjectRequest request, String userId) {
-        return validateAdminAccess(workspaceId, projectId, userId)
-                .then(findProjectById(projectId))
-                .flatMap(project -> {
-                    if (!project.belongsToWorkspace(workspaceId)) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
-                    }
+    return softDeleteMember(targetMember);
+  }
 
-                    ProjectSettings settings = request.getSettingsOrDefault();
-                    validateSettings(settings);
+  private Mono<Void> softDeleteMember(ProjectMember member) {
+    member.delete();
+    return projectMemberRepository.save(member).then();
+  }
 
-                    project.update(request.name(), request.description(),
-                            settings);
-                    return projectRepository.save(project);
-                })
-                .map(ProjectResponse::from)
-                .as(transactionalOperator::transactional);
+  private Mono<Void> validateWorkspaceMember(String workspaceId,
+      String userId) {
+    return workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
+        .switchIfEmpty(Mono.error(new BusinessException(
+            ErrorCode.WORKSPACE_ACCESS_DENIED)))
+        .then();
+  }
+
+  private Mono<Void> validateProjectMember(String projectId,
+      String userId) {
+    return projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+        .then();
+  }
+
+  private Mono<Void> validateProjectAdmin(String projectId, String userId) {
+    return projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+        .filter(ProjectMember::isAdmin)
+        .switchIfEmpty(Mono.error(new BusinessException(
+            ErrorCode.PROJECT_ADMIN_REQUIRED)))
+        .then();
+  }
+
+  private void validateSettings(ProjectSettings settings) {
+    settings.validate();
+    String json = settings.toJson();
+    if (json.length() > 65536) {
+      throw new BusinessException(ErrorCode.PROJECT_SETTINGS_TOO_LARGE);
     }
-
-    public Mono<Void> deleteProject(String workspaceId, String projectId,
-            String userId) {
-        return validateAdminAccess(workspaceId, projectId, userId)
-                .then(findProjectById(projectId))
-                .flatMap(project -> {
-                    if (!project.belongsToWorkspace(workspaceId)) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
-                    }
-                    if (project.isDeleted()) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.PROJECT_ALREADY_DELETED));
-                    }
-                    project.delete();
-                    return projectRepository.save(project)
-                            .then(projectMemberRepository
-                                    .softDeleteByProjectId(projectId));
-                })
-                .as(transactionalOperator::transactional);
-    }
-
-    public Mono<PageResponse<ProjectMemberResponse>> getMembers(
-            String workspaceId, String projectId, String userId, int page,
-            int size) {
-        return validateMemberAccess(workspaceId, projectId, userId)
-                .then(projectMemberRepository
-                        .countByProjectIdAndNotDeleted(projectId))
-                .flatMap(totalElements -> {
-                    int offset = page * size;
-                    return projectMemberRepository
-                            .findByProjectIdAndNotDeleted(projectId, size,
-                                    offset)
-                            .flatMap(member -> userRepository
-                                    .findById(member.getUserId())
-                                    .map(user -> ProjectMemberResponse
-                                            .of(member, user)))
-                            .collectList()
-                            .map(members -> PageResponse.of(members, page, size,
-                                    totalElements));
-                });
-    }
-
-    /**
-     * ShareLink 토큰을 통한 프로젝트 참여
-     */
-    public Mono<ProjectMemberResponse> joinProjectByShareLink(String token,
-            String userId) {
-        byte[] tokenHash = tokenService.hashToken(token);
-
-        return shareLinkRepository.findValidByTokenHash(tokenHash)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
-                .flatMap(shareLink -> projectRepository
-                        .findByIdAndNotDeleted(shareLink.getProjectId())
-                        .switchIfEmpty(Mono.error(
-                                new BusinessException(
-                                        ErrorCode.PROJECT_NOT_FOUND)))
-                        .flatMap(project -> workspaceMemberRepository
-                                .existsByWorkspaceIdAndUserIdAndNotDeleted(
-                                        project.getWorkspaceId(), userId)
-                                .flatMap(isWorkspaceMember -> {
-                                    if (!isWorkspaceMember) {
-                                        return Mono.error(new BusinessException(
-                                                ErrorCode.WORKSPACE_MEMBERSHIP_REQUIRED));
-                                    }
-                                    return createOrUpdateProjectMember(project,
-                                            shareLink, userId);
-                                })))
-                .as(transactionalOperator::transactional);
-    }
-
-    /**
-     * 프로젝트 멤버 역할 변경
-     */
-    public Mono<ProjectMemberResponse> updateMemberRole(String workspaceId,
-            String projectId, String targetId,
-            UpdateProjectMemberRoleRequest request, String requesterId) {
-        return validateAdminAccess(workspaceId, projectId, requesterId)
-                .then(Mono.zip(
-                        findProjectMemberByUserIdAndProjectId(requesterId,
-                                projectId),
-                        findProjectMemberByMemberIdAndProjectId(targetId,
-                                projectId)))
-                .flatMap(tuple -> {
-                    ProjectMember requester = tuple.getT1();
-                    ProjectMember target = tuple.getT2();
-
-                    validateRoleChangePermission(requester, target,
-                            request.role());
-
-                    target.updateRole(request.role());
-                    return projectMemberRepository.save(target);
-                })
-                .flatMap(updatedMember -> userRepository
-                        .findById(updatedMember.getUserId())
-                        .map(user -> ProjectMemberResponse.of(updatedMember,
-                                user)))
-                .as(transactionalOperator::transactional);
-    }
-
-    /**
-     * 요청자는 부여하려는 역할보다 높거나 같은 권한을 가져야 함
-     * 요청자는 대상의 현재 역할보다 높거나 같은 권한을 가져야 함
-     */
-    private void validateRoleChangePermission(ProjectMember requester,
-            ProjectMember target, ProjectRole newRole) {
-        ProjectRole requesterRole = requester.getRoleAsEnum();
-        ProjectRole targetCurrentRole = target.getRoleAsEnum();
-
-        // 요청자가 본인의 역할을 변경하려는지
-        if (target.getUserId().equals(requester.getUserId())) {
-            throw new BusinessException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
-        }
-
-        // 요청자가 부여하려는 역할 이상의 권한을 가지고 있는지
-        if (!requesterRole.isHigherOrEqualThan(newRole)) {
-            throw new BusinessException(ErrorCode.CANNOT_ASSIGN_HIGHER_ROLE);
-        }
-
-        // 요청자가 대상의 현재 역할 이상의 권한을 가지고 있는지
-        if (!requesterRole.isHigherOrEqualThan(targetCurrentRole)) {
-            throw new BusinessException(
-                    ErrorCode.CANNOT_MODIFY_HIGHER_ROLE_MEMBER);
-        }
-    }
-
-    /**
-     * 프로젝트 멤버 제거 (관리자 권한)
-     */
-    public Mono<Void> removeMember(String workspaceId, String projectId,
-            String targetId, String requesterId) {
-        return validateAdminAccess(workspaceId, projectId, requesterId)
-                .then(findProjectMemberByMemberIdAndProjectId(targetId,
-                        projectId))
-                .flatMap(targetMember -> protectAdmin(projectId, targetMember))
-                .as(transactionalOperator::transactional);
-    }
-
-    /**
-     * 프로젝트 자발적 탈퇴
-     */
-    public Mono<Void> leaveProject(String workspaceId, String projectId,
-            String userId) {
-        return validateWorkspaceMember(workspaceId, userId)
-                .then(findProjectMemberByUserIdAndProjectId(userId, projectId))
-                .flatMap(member -> protectAdmin(projectId, member)
-                        .then(projectMemberRepository
-                                .countByProjectIdAndNotDeleted(projectId)
-                                .flatMap(memberCount -> {
-                                    if (memberCount <= 1) {
-                                        return softDeleteMember(member)
-                                                .then(projectRepository
-                                                        .findByIdAndNotDeleted(
-                                                                projectId)
-                                                        .flatMap(project -> {
-                                                            project.delete();
-                                                            return projectRepository
-                                                                    .save(project)
-                                                                    .then();
-                                                        }));
-                                    }
-                                    return softDeleteMember(member);
-                                })))
-                .as(transactionalOperator::transactional);
-    }
-
-    private Mono<ProjectMemberResponse> createOrUpdateProjectMember(
-            Project project, ShareLink shareLink, String userId) {
-        return projectMemberRepository
-                .findByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
-                .flatMap(existingMember -> {
-                    ShareLinkRole shareLinkRole = shareLink.getRoleAsEnum();
-                    ProjectRole newRole = shareLinkRole.toProjectRole();
-                    ProjectRole currentRole = existingMember.getRoleAsEnum();
-
-                    // 새로운 역할이 현재 역할보다 높은 권한을 가지면 업그레이드
-                    if (newRole.getLevel() > currentRole.getLevel()) {
-                        existingMember.updateRole(newRole);
-                        return projectMemberRepository.save(existingMember);
-                    }
-
-                    return Mono.just(existingMember);
-                })
-                .switchIfEmpty(Mono.defer(() -> projectMemberRepository
-                        .countByProjectIdAndNotDeleted(project.getId())
-                        .flatMap(memberCount -> {
-                            if (memberCount >= MAX_PROJECT_MEMBERS) {
-                                return Mono.error(new BusinessException(
-                                        ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED));
-                            }
-
-                            ShareLinkRole shareLinkRole = shareLink
-                                    .getRoleAsEnum();
-                            ProjectRole projectRole = shareLinkRole
-                                    .toProjectRole();
-                            ProjectMember newMember = ProjectMember
-                                    .create(project.getId(), userId,
-                                            projectRole);
-
-                            return projectMemberRepository.save(newMember);
-                        })))
-                .flatMap(member -> userRepository.findById(member.getUserId())
-                        .map(user -> ProjectMemberResponse.of(member, user)));
-    }
-
-    private Mono<Void> validateOwnerOrAdminProtection(String projectId) {
-        return Mono.zip(
-                projectMemberRepository.countByProjectIdAndRoleAndNotDeleted(
-                        projectId,
-                        ProjectRole.OWNER.getValue()),
-                projectMemberRepository.countByProjectIdAndRoleAndNotDeleted(
-                        projectId,
-                        ProjectRole.ADMIN.getValue()))
-                .flatMap(tuple -> {
-                    long ownerCount = tuple.getT1();
-                    long adminCount = tuple.getT2();
-                    long totalAdminCount = ownerCount + adminCount;
-
-                    if (totalAdminCount <= 1) {
-                        return Mono.error(new BusinessException(
-                                ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED));
-                    }
-                    return Mono.empty();
-                });
-    }
-
-    private Mono<Void> validateMemberAccess(String workspaceId,
-            String projectId, String userId) {
-        return validateWorkspaceMember(workspaceId, userId)
-                .then(validateProjectMember(projectId, userId));
-    }
-
-    private Mono<Void> validateAdminAccess(String workspaceId, String projectId,
-            String userId) {
-        return validateWorkspaceMember(workspaceId, userId)
-                .then(validateProjectAdmin(projectId, userId));
-    }
-
-    private Mono<Project> findProjectById(String projectId) {
-        return projectRepository.findByIdAndNotDeleted(projectId)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
-    }
-
-    private Mono<ProjectMember> findProjectMemberByMemberIdAndProjectId(
-            String memberId, String projectId) {
-        return projectMemberRepository
-                .findByProjectIdAndMemberIdAndNotDeleted(projectId, memberId)
-                .filter(member -> member.getProjectId().equals(projectId))
-                .switchIfEmpty(Mono.error(new BusinessException(
-                        ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
-    }
-
-    private Mono<ProjectMember> findProjectMemberByUserIdAndProjectId(
-            String userId, String projectId) {
-        return projectMemberRepository
-                .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-                .filter(member -> member.getProjectId().equals(projectId))
-                .switchIfEmpty(Mono.error(new BusinessException(
-                        ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
-    }
-
-    private Mono<Void> protectAdmin(String projectId,
-            ProjectMember targetMember) {
-        if (targetMember.isOwner() || targetMember.isAdmin()) {
-            return validateOwnerOrAdminProtection(projectId)
-                    .then(softDeleteMember(targetMember));
-        }
-
-        return softDeleteMember(targetMember);
-    }
-
-    private Mono<Void> softDeleteMember(ProjectMember member) {
-        member.delete();
-        return projectMemberRepository.save(member).then();
-    }
-
-    private Mono<Void> validateWorkspaceMember(String workspaceId,
-            String userId) {
-        return workspaceMemberRepository
-                .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
-                .switchIfEmpty(Mono.error(new BusinessException(
-                        ErrorCode.WORKSPACE_ACCESS_DENIED)))
-                .then();
-    }
-
-    private Mono<Void> validateProjectMember(String projectId,
-            String userId) {
-        return projectMemberRepository
-                .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
-                .then();
-    }
-
-    private Mono<Void> validateProjectAdmin(String projectId, String userId) {
-        return projectMemberRepository
-                .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-                .switchIfEmpty(Mono.error(
-                        new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
-                .filter(ProjectMember::isAdmin)
-                .switchIfEmpty(Mono.error(new BusinessException(
-                        ErrorCode.PROJECT_ADMIN_REQUIRED)))
-                .then();
-    }
-
-    private void validateSettings(ProjectSettings settings) {
-        settings.validate();
-        String json = settings.toJson();
-        if (json.length() > 65536) {
-            throw new BusinessException(ErrorCode.PROJECT_SETTINGS_TOO_LARGE);
-        }
-    }
+  }
 
 }

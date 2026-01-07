@@ -22,51 +22,51 @@ import reactor.core.publisher.Mono;
 @ConditionalOnRedisEnabled
 public class ChatMessageHandler implements InboundMessageHandler {
 
-    private final SessionRegistry sessionRegistry;
-    private final CollaborationEventPublisher eventPublisher;
+  private final SessionRegistry sessionRegistry;
+  private final CollaborationEventPublisher eventPublisher;
 
-    @Override
-    public CollaborationEventType supportedType() {
-        return CollaborationEventType.CHAT;
+  @Override
+  public CollaborationEventType supportedType() {
+    return CollaborationEventType.CHAT;
+  }
+
+  @Override
+  public Mono<Void> handle(MessageContext context,
+      CollaborationInbound message) {
+    if (!(message instanceof ChatEvent.Inbound chatMessage)) {
+      log.warn(
+          "[ChatMessageHandler] Invalid message format: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
     }
 
-    @Override
-    public Mono<Void> handle(MessageContext context,
-            CollaborationInbound message) {
-        if (!(message instanceof ChatEvent.Inbound chatMessage)) {
-            log.warn(
-                    "[ChatMessageHandler] Invalid message format: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        String content = chatMessage.content();
-        if (content == null || content.isBlank()) {
-            log.warn("[ChatMessageHandler] Empty chat content: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        SessionEntry entry = sessionRegistry
-                .getSessionEntry(context.projectId(), context.sessionId())
-                .orElse(null);
-
-        if (entry == null) {
-            log.warn("[ChatMessageHandler] Session not found: sessionId={}",
-                    context.sessionId());
-            return Mono.empty();
-        }
-
-        String authorId = entry.authInfo().getUserId();
-        String authorName = entry.authInfo().getUserName();
-        String messageId = UlidGenerator.generate();
-
-        return eventPublisher.publish(context.projectId(),
-                CollaborationOutboundFactory.chat(context.sessionId(),
-                        messageId, authorId, authorName, content))
-                .doOnSuccess(v -> log.debug(
-                        "[ChatMessageHandler] Message published: messageId={}, projectId={}",
-                        messageId, context.projectId()));
+    String content = chatMessage.content();
+    if (content == null || content.isBlank()) {
+      log.warn("[ChatMessageHandler] Empty chat content: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
     }
+
+    SessionEntry entry = sessionRegistry
+        .getSessionEntry(context.projectId(), context.sessionId())
+        .orElse(null);
+
+    if (entry == null) {
+      log.warn("[ChatMessageHandler] Session not found: sessionId={}",
+          context.sessionId());
+      return Mono.empty();
+    }
+
+    String authorId = entry.authInfo().getUserId();
+    String authorName = entry.authInfo().getUserName();
+    String messageId = UlidGenerator.generate();
+
+    return eventPublisher.publish(context.projectId(),
+        CollaborationOutboundFactory.chat(context.sessionId(),
+            messageId, authorId, authorName, content))
+        .doOnSuccess(v -> log.debug(
+            "[ChatMessageHandler] Message published: messageId={}, projectId={}",
+            messageId, context.projectId()));
+  }
 
 }

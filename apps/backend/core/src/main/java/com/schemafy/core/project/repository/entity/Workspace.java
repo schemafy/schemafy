@@ -17,31 +17,29 @@ import lombok.NoArgsConstructor;
 @Table("workspaces")
 public class Workspace extends BaseEntity {
 
-    private String ownerId;
+  private String ownerId;
 
-    private String name;
+  private String name;
 
-    private String description;
+  private String description;
 
-    private String settings;
+  private String settings;
 
-    public static Workspace create(String ownerId, String name,
-            String description, WorkspaceSettings settings) {
-        Workspace workspace = new Workspace(ownerId, name, description,
-                settings.toJson());
-        workspace.setId(UlidGenerator.generate());
-        return workspace;
-    }
+  public static Workspace create(String ownerId, String name,
+      String description, WorkspaceSettings settings) {
+    Workspace workspace = new Workspace(ownerId, name, description,
+        settings.toJson());
+    workspace.setId(UlidGenerator.generate());
+    return workspace;
+  }
 
-    public void update(String name, String description,
-            WorkspaceSettings settings) {
-        this.name = name;
-        this.description = description;
-        this.settings = settings.toJson();
-    }
+  public void update(String name, String description,
+      WorkspaceSettings settings) {
+    this.name = name;
+    this.description = description;
+    this.settings = settings.toJson();
+  }
 
-    public WorkspaceSettings getSettingsAsVo() {
-        return WorkspaceSettings.fromJson(this.settings);
-    }
+  public WorkspaceSettings getSettingsAsVo() { return WorkspaceSettings.fromJson(this.settings); }
 
 }
