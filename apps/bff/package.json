@@ -1,7 +1,7 @@
 {
-  "name": "proxy-server",
+  "name": "bff",
   "version": "0.0.1",
-  "description": "Proxy server for frontend API authentication",
+  "description": "bff for frontend API authentication",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

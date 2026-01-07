@@ -11,7 +11,7 @@ async function bootstrap() {
   });
 
   await app.listen(4000);
-  console.log(`Proxy server is running on port 4000`);
+  console.log(`Bff is running on port 4000`);
 }
 
 void bootstrap();
