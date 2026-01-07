@@ -1,6 +1,6 @@
 import type { MemoComment } from '@/lib/api';
 import { useMemoContext } from '../../context';
-import { CircleCheck, MoveUp, Trash, X } from 'lucide-react';
+import { MoveUp, Trash, X } from 'lucide-react';
 import { ReplyItem } from './ReplyItem';
 import { Avatar } from '@/components';
 import { useState } from 'react';
@@ -43,18 +43,11 @@ export const MemoThread = ({
         <h3 className="font-heading-xs">Memo</h3>
         <div className="flex gap-2">
           <button
-            title="Resolved Memo"
+            title="Delete Memo"
             onClick={handleDeleteMemo}
             className="text-schemafy-dark-gray hover:text-schemafy-text cursor-pointer transition-colors duration-200 hover:bg-schemafy-light-gray rounded-sm p-1"
           >
             <Trash size={14} color="var(--color-schemafy-dark-gray)" />
-          </button>
-          <button
-            title="Resolved Memo"
-            onClick={() => {}}
-            className="text-schemafy-dark-gray hover:text-schemafy-text cursor-pointer transition-colors duration-200 hover:bg-schemafy-light-gray rounded-sm p-1"
-          >
-            <CircleCheck size={14} color="var(--color-schemafy-dark-gray)" />
           </button>
           <button
             onClick={() => setShowThread(false)}
