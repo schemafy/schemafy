@@ -153,19 +153,23 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const onRelationshipsChange = (changes: EdgeChange[]) => {
     if (!selectedSchemaId) return;
 
-    changes
-      .filter((change) => change.type === 'remove')
-      .forEach(async (change) => {
-        try {
-          await relationshipService.deleteRelationship(
-            selectedSchemaId,
-            change.id,
-          );
-        } catch (error) {
-          toast.error('Failed to delete relationship');
-          console.error(error);
-        }
-      });
+    const removeChanges = changes.filter((change) => change.type === 'remove');
+
+    if (removeChanges.length > 0) {
+      Promise.all(
+        removeChanges.map(async (change) => {
+          try {
+            await relationshipService.deleteRelationship(
+              selectedSchemaId,
+              change.id,
+            );
+          } catch (error) {
+            toast.error('Failed to delete relationship');
+            console.error(error);
+          }
+        }),
+      );
+    }
 
     setRelationships((edges) => applyEdgeChanges(changes, edges) as Edge[]);
   };
