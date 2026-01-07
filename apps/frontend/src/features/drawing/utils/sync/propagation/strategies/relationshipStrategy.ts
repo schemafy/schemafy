@@ -29,7 +29,13 @@ export function relationshipStrategy(
       idMap,
     );
   } else if (entities.columns.length > 0) {
-    replacePropagatedColumns(entities.columns, schema, context, erdStore, idMap);
+    replacePropagatedColumns(
+      entities.columns,
+      schema,
+      context,
+      erdStore,
+      idMap,
+    );
   }
 
   replaceConstraintIds(entities, context, erdStore, idMap);

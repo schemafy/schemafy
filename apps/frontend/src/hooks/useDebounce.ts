@@ -22,12 +22,9 @@ export function useDebounce<T extends (...args: unknown[]) => unknown>(
     };
   }, [callback, delay]);
 
-  const debouncedFunction = useCallback(
-    (...args: Parameters<T>) => {
-      return debouncedRef.current?.(...args);
-    },
-    [],
-  ) as DebouncedFunction<T>;
+  const debouncedFunction = useCallback((...args: Parameters<T>) => {
+    return debouncedRef.current?.(...args);
+  }, []) as DebouncedFunction<T>;
 
   debouncedFunction.cancel = useCallback(() => {
     debouncedRef.current?.cancel();
