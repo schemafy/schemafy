@@ -190,15 +190,18 @@ tasks.register('linkProtos') {
 		def targetFile = new File(targetProtoDir, 'validation.proto')
 
 		if (!targetFile.exists()) {
+			def relativeSourcePath = targetProtoDir.toPath().relativize(sourceFile.toPath()).toString()
 			if (System.properties['os.name'].toLowerCase().contains('windows')) {
 				exec {
+					workingDir targetProtoDir
 					commandLine 'cmd', '/c', 'mklink',
-						targetFile.absolutePath, sourceFile.absolutePath
+						targetFile.name, relativeSourcePath
 				}
 			} else {
 				exec {
+					workingDir targetProtoDir
 					commandLine 'ln', '-sf',
-						sourceFile.absolutePath, targetFile.absolutePath
+						relativeSourcePath, targetFile.name
 				}
 			}
 		}
