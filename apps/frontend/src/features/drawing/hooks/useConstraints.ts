@@ -1,12 +1,14 @@
-import { ulid } from 'ulid';
-import type { ErdStore } from '@/store/erd.store';
+import { useRef, useEffect } from 'react';
+import { debounce } from 'lodash-es';
+import type { DebouncedFunc } from 'lodash-es';
 import type { Constraint } from '@schemafy/validator';
 import { generateUniqueName } from '../utils/nameGenerator';
+import * as constraintService from '../services/constraint.service';
+import { toast } from 'sonner';
 
 export type CompositeConstraintKind = 'PRIMARY_KEY' | 'UNIQUE';
 
 interface UseConstraintsProps {
-  erdStore: ErdStore;
   schemaId: string;
   tableId: string;
   tableName: string;
@@ -14,13 +16,26 @@ interface UseConstraintsProps {
 }
 
 export const useConstraints = ({
-  erdStore,
   schemaId,
   tableId,
   tableName,
   constraints,
 }: UseConstraintsProps) => {
-  const createConstraint = (kind: CompositeConstraintKind = 'UNIQUE') => {
+  const debouncedSaveRef = useRef<
+    Map<string, DebouncedFunc<(name: string) => void>>
+  >(new Map());
+
+  useEffect(() => {
+    const currentMap = debouncedSaveRef.current;
+    return () => {
+      currentMap.forEach((debouncedFn) => {
+        debouncedFn.cancel();
+      });
+      currentMap.clear();
+    };
+  }, []);
+
+  const createConstraint = async (kind: CompositeConstraintKind = 'UNIQUE') => {
     const existingConstraintNames = constraints.map((c) => c.name);
     const prefixMap: Record<CompositeConstraintKind, string> = {
       PRIMARY_KEY: 'pk',
@@ -28,48 +43,98 @@ export const useConstraints = ({
     };
     const prefix = prefixMap[kind];
 
-    erdStore.createConstraint(schemaId, tableId, {
-      id: ulid(),
-      name: generateUniqueName(
-        existingConstraintNames,
-        `${prefix}_${tableName}_`,
-      ),
-      kind,
-      columns: [],
-      isAffected: false,
-    });
-  };
-
-  const deleteConstraint = (constraintId: string) => {
-    erdStore.deleteConstraint(schemaId, tableId, constraintId);
-  };
-
-  const changeConstraintName = (constraintId: string, newName: string) => {
-    erdStore.changeConstraintName(schemaId, tableId, constraintId, newName);
-  };
-
-  const addColumnToConstraint = (constraintId: string, columnId: string) => {
-    const constraint = constraints.find((c) => c.id === constraintId);
-    if (constraint) {
-      erdStore.addColumnToConstraint(schemaId, tableId, constraintId, {
-        id: ulid(),
-        columnId,
-        seqNo: constraint.columns.length,
-        isAffected: false,
-      });
+    try {
+      await constraintService.createConstraint(
+        schemaId,
+        tableId,
+        generateUniqueName(existingConstraintNames, `${prefix}_${tableName}_`),
+        kind,
+        [],
+      );
+    } catch (error) {
+      toast.error('Failed to create constraint');
+      console.error(error);
     }
   };
 
-  const removeColumnFromConstraint = (
+  const deleteConstraint = async (constraintId: string) => {
+    try {
+      await constraintService.deleteConstraint(schemaId, tableId, constraintId);
+    } catch (error) {
+      toast.error('Failed to delete constraint');
+      console.error(error);
+    }
+  };
+
+  const saveConstraintName = async (constraintId: string, newName: string) => {
+    try {
+      await constraintService.updateConstraintName(
+        schemaId,
+        tableId,
+        constraintId,
+        newName,
+      );
+    } catch (error) {
+      toast.error('Failed to update constraint name');
+      console.error(error);
+    }
+  };
+
+  const changeConstraintName = (constraintId: string, newName: string) => {
+    let debouncedSave = debouncedSaveRef.current.get(constraintId);
+    if (!debouncedSave) {
+      debouncedSave = debounce((name: string) => {
+        saveConstraintName(constraintId, name);
+      }, 300);
+
+      debouncedSaveRef.current.set(constraintId, debouncedSave);
+    }
+
+    debouncedSave(newName);
+  };
+
+  const addColumnToConstraint = async (
+    constraintId: string,
+    columnId: string,
+  ) => {
+    const constraint = constraints.find((c) => c.id === constraintId);
+    if (!constraint) return;
+
+    try {
+      await constraintService.addColumnToConstraint(
+        schemaId,
+        tableId,
+        constraintId,
+        columnId,
+        constraint.columns.length,
+      );
+    } catch (error) {
+      toast.error('Failed to add column to constraint');
+      console.error(error);
+    }
+  };
+
+  const removeColumnFromConstraint = async (
     constraintId: string,
     constraintColumnId: string,
   ) => {
-    erdStore.removeColumnFromConstraint(
-      schemaId,
-      tableId,
-      constraintId,
-      constraintColumnId,
-    );
+    try {
+      await constraintService.removeColumnFromConstraint(
+        schemaId,
+        tableId,
+        constraintId,
+        constraintColumnId,
+      );
+    } catch (error) {
+      toast.error('Failed to remove column from constraint');
+      console.error(error);
+    }
+  };
+
+  const saveAllPendingChanges = () => {
+    debouncedSaveRef.current.forEach((debouncedFn) => {
+      debouncedFn.flush();
+    });
   };
 
   return {
@@ -78,5 +143,6 @@ export const useConstraints = ({
     changeConstraintName,
     addColumnToConstraint,
     removeColumnFromConstraint,
+    saveAllPendingChanges,
   };
 };

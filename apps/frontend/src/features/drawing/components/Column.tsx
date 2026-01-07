@@ -32,6 +32,8 @@ export const ColumnRow = ({
   onDragEnd,
   onUpdateColumn,
   onRemoveColumn,
+  isFKColumn = false,
+  restrictionReason,
 }: ColumnRowProps) => {
   const rowClassName = `
     border-b border-schemafy-light-gray last:border-b-0 transition-colors duration-200
@@ -55,6 +57,8 @@ export const ColumnRow = ({
           onDragEnd={onDragEnd}
           onUpdateColumn={onUpdateColumn}
           onRemoveColumn={onRemoveColumn}
+          isFKColumn={isFKColumn}
+          restrictionReason={restrictionReason}
         />
       ) : (
         <ViewModeColumn column={column} />
@@ -70,6 +74,8 @@ export const EditModeColumn = ({
   onDragEnd,
   onUpdateColumn,
   onRemoveColumn,
+  isFKColumn = false,
+  restrictionReason,
 }: EditModeColumnProps) => {
   const [localName, setLocalName] = useState(column.name);
 
@@ -81,6 +87,13 @@ export const EditModeColumn = ({
     setLocalName(value);
     onUpdateColumn(column.id, 'name', value);
   };
+
+  const isDeleteDisabled = isLastColumn || isFKColumn;
+  const deleteTooltip = isFKColumn
+    ? restrictionReason || 'Cannot delete this column'
+    : isLastColumn
+      ? 'Cannot delete the last column'
+      : 'Remove Column';
 
   return (
     <div className="p-2 space-y-2 text-schemafy-text">
@@ -102,25 +115,30 @@ export const EditModeColumn = ({
         <TypeSelector
           value={column.type}
           onChange={(value) => onUpdateColumn(column.id, 'type', value)}
+          isFKColumn={isFKColumn}
+          disabledReason={restrictionReason}
         />
 
         <button
           onClick={() => onRemoveColumn(column.id)}
-          disabled={isLastColumn}
+          disabled={isDeleteDisabled}
           className={`p-1 rounded flex-shrink-0 ${
-            isLastColumn
+            isDeleteDisabled
               ? 'text-schemafy-dark-gray cursor-not-allowed'
               : 'text-schemafy-destructive hover:bg-red-100'
           }`}
-          title={
-            isLastColumn ? 'Cannot delete the last column' : 'Remove Column'
-          }
+          title={deleteTooltip}
         >
           <Trash2 size={12} />
         </button>
       </div>
 
-      <ColumnConstraints column={column} onUpdateColumn={onUpdateColumn} />
+      <ColumnConstraints
+        column={column}
+        onUpdateColumn={onUpdateColumn}
+        isFKColumn={isFKColumn}
+        restrictionReason={restrictionReason}
+      />
     </div>
   );
 };
@@ -165,10 +183,22 @@ export const DragHandle = ({
   );
 };
 
-export const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
+export const TypeSelector = ({
+  value,
+  onChange,
+  isFKColumn = false,
+  disabledReason,
+}: TypeSelectorProps) => {
   return (
-    <Select onValueChange={(value) => onChange(value)} value={value}>
-      <SelectTrigger className="text-xs font-mono p-1.5 border border-schemafy-light-gray rounded focus:outline-none w-[6rem]">
+    <Select
+      onValueChange={(value) => onChange(value)}
+      value={value}
+      disabled={isFKColumn}
+    >
+      <SelectTrigger
+        className="text-xs font-mono p-1.5 border border-schemafy-light-gray rounded focus:outline-none w-[6rem]"
+        title={isFKColumn ? disabledReason || 'Cannot change type' : undefined}
+      >
         <SelectValue placeholder={value} />
       </SelectTrigger>
       <SelectContent popover="auto">
@@ -187,17 +217,31 @@ export const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
 export const ColumnConstraints = ({
   column,
   onUpdateColumn,
+  isFKColumn = false,
+  restrictionReason,
 }: ColumnConstraintsProps) => {
   return (
     <div className="flex flex-wrap gap-3 text-xs ml-4">
       {CONSTRAINTS.filter(({ visible }) => visible).map(
         ({ key, label, color }) => {
-          const isDisabled = column.isPrimaryKey && key === 'isNotNull';
+          const isNotNullDisabled = column.isPrimaryKey && key === 'isNotNull';
+          const isPKDisabled =
+            key === 'isPrimaryKey' && column.isPrimaryKey && isFKColumn;
+          const isDisabled = isNotNullDisabled || isPKDisabled;
+
+          const getTooltip = () => {
+            if (isNotNullDisabled)
+              return 'Primary key columns are always NOT NULL';
+            if (isPKDisabled)
+              return restrictionReason || 'Cannot remove primary key';
+            return undefined;
+          };
 
           return (
             <label
               key={key}
               className={`flex items-center gap-1 ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+              title={getTooltip()}
             >
               <input
                 type="checkbox"

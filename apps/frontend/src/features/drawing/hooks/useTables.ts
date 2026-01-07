@@ -3,51 +3,67 @@ import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
 import { toast } from 'sonner';
 import { ErdStore } from '@/store';
 import type { TableData, Point } from '../types';
-import { ulid } from 'ulid';
 import { transformTableToNode } from '../utils/tableHelpers';
 import { generateUniqueName } from '../utils/nameGenerator';
+import * as tableService from '../services/table.service';
+import { useViewportContext } from '../contexts';
 
 export const useTables = () => {
   const erdStore = ErdStore.getInstance();
-
-  const getTablesFromStore = (): Node<TableData>[] => {
-    const selectedSchema = erdStore.selectedSchema;
-
-    if (!selectedSchema) return [];
-
-    return selectedSchema.tables.map((table) =>
-      transformTableToNode(table, selectedSchema.id),
-    );
-  };
-
-  const [tables, setTables] = useState<Node<TableData>[]>(getTablesFromStore());
+  const { selectedSchemaId } = useViewportContext();
+  const [tables, setTables] = useState<Node<TableData>[]>([]);
 
   useEffect(() => {
-    setTables(getTablesFromStore());
-  }, [erdStore.erdState, erdStore.selectedSchemaId]);
+    if (erdStore.erdState.state !== 'loaded' || !selectedSchemaId) {
+      setTables([]);
+      return;
+    }
 
-  const addTable = (position: Point) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = erdStore.erdState.database.schemas.find(
+      (s) => s.id === selectedSchemaId,
+    );
 
-    if (!selectedSchemaId || !selectedSchema) {
+    if (!selectedSchema) {
+      setTables([]);
+      return;
+    }
+
+    const newTables = selectedSchema.tables.map((table) =>
+      transformTableToNode(table, selectedSchema.id),
+    );
+    setTables(newTables);
+  }, [erdStore.erdState, selectedSchemaId]);
+
+  const addTable = async (position: Point) => {
+    if (erdStore.erdState.state !== 'loaded' || !selectedSchemaId) {
+      toast.error('No schema selected');
+      return;
+    }
+
+    const selectedSchema = erdStore.erdState.database.schemas.find(
+      (s) => s.id === selectedSchemaId,
+    );
+
+    if (!selectedSchema) {
       toast.error('No schema selected');
       return;
     }
 
     const existingTableNames = selectedSchema.tables.map((table) => table.name);
+    const tableName = generateUniqueName(existingTableNames, 'Table');
 
-    erdStore.createTable(selectedSchemaId, {
-      id: ulid(),
-      name: generateUniqueName(existingTableNames, 'Table'),
-      columns: [],
-      indexes: [],
-      constraints: [],
-      relationships: [],
-      tableOptions: '',
-      extra: { position },
-      isAffected: false,
-    });
+    try {
+      await tableService.createTable(
+        selectedSchemaId,
+        tableName,
+        '',
+        undefined,
+        JSON.stringify({ position }),
+      );
+    } catch (error) {
+      toast.error('Failed to create table');
+      console.error(error);
+    }
   };
 
   const handlePositionChanges = (
@@ -61,15 +77,20 @@ export const useTables = () => {
           change.dragging === false &&
           change.position,
       )
-      .forEach((change) => {
+      .forEach(async (change) => {
         if (change.type !== 'position' || !change.position) return;
 
         const table = nodes.find((t) => t.id === change.id);
         if (!table) return;
 
-        erdStore.updateTableExtra(table.data.schemaId, change.id, {
-          position: change.position,
-        });
+        try {
+          await tableService.updateTableExtra(table.data.schemaId, change.id, {
+            position: change.position,
+          });
+        } catch (error) {
+          toast.error('Failed to update table position');
+          console.error(error);
+        }
       });
   };
 

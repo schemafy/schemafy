@@ -14,23 +14,33 @@ import {
   convertRelationshipsToEdges,
   createRelationshipFromConnection,
   findRelationshipInSchema,
-  shouldRecreateRelationship,
 } from '../utils/relationshipHelpers';
+import * as relationshipService from '../services/relationship.service';
+import { useViewportContext } from '../contexts';
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const erdStore = ErdStore.getInstance();
+  const { selectedSchemaId } = useViewportContext();
   const [selectedRelationship, setSelectedRelationship] = useState<
     string | null
   >(null);
   const relationshipReconnectSuccessful = useRef(true);
 
-  const updateRelationshipControlPoint = (
+  const getSelectedSchema = () => {
+    if (erdStore.erdState.state !== 'loaded' || !selectedSchemaId) return null;
+    return (
+      erdStore.erdState.database.schemas.find(
+        (s) => s.id === selectedSchemaId,
+      ) || null
+    );
+  };
+
+  const updateRelationshipControlPoint = async (
     relationshipId: string,
     controlPoint1: Point,
     controlPoint2?: Point,
   ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = getSelectedSchema();
 
     if (!selectedSchemaId || !selectedSchema) return;
 
@@ -40,7 +50,10 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     );
     if (!currentRelationship) return;
 
-    const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
+    const currentExtra =
+      typeof currentRelationship.extra === 'string'
+        ? (JSON.parse(currentRelationship.extra) as RelationshipExtra)
+        : ((currentRelationship.extra || {}) as RelationshipExtra);
 
     const updatedExtra: RelationshipExtra = {
       ...currentExtra,
@@ -51,15 +64,20 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       updatedExtra.controlPoint2 = controlPoint2;
     }
 
-    erdStore.updateRelationshipExtra(
-      selectedSchemaId,
-      relationshipId,
-      updatedExtra,
-    );
+    try {
+      await relationshipService.updateRelationshipExtra(
+        selectedSchemaId,
+        relationshipId,
+        updatedExtra,
+      );
+    } catch (error) {
+      toast.error('Failed to update relationship control point');
+      console.error(error);
+    }
   };
 
   const getRelationships = (): Edge[] => {
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = getSelectedSchema();
     if (!selectedSchema) return [];
 
     const edges = convertRelationshipsToEdges(selectedSchema);
@@ -80,17 +98,16 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   useEffect(() => {
     const dispose = autorun(() => {
       const state = erdStore.erdState;
-      if (state.state === 'loaded') {
+      if (state.state === 'loaded' && selectedSchemaId) {
         setRelationships(getRelationships());
       }
     });
 
     return () => dispose();
-  }, []);
+  }, [selectedSchemaId]);
 
-  const onConnect = (params: Connection) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+  const onConnect = async (params: Connection) => {
+    const selectedSchema = getSelectedSchema();
 
     if (
       !selectedSchemaId ||
@@ -108,19 +125,51 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     });
 
     if (newRelationship) {
-      erdStore.createRelationship(selectedSchemaId, newRelationship);
+      try {
+        await relationshipService.createRelationship(
+          selectedSchemaId,
+          newRelationship.fkTableId,
+          newRelationship.pkTableId,
+          newRelationship.name,
+          newRelationship.kind,
+          newRelationship.cardinality,
+          newRelationship.onDelete,
+          newRelationship.onUpdate,
+          newRelationship.fkEnforced,
+          newRelationship.columns.map((col) => ({
+            fkColumnId: col.fkColumnId,
+            pkColumnId: col.pkColumnId,
+            seqNo: col.seqNo,
+          })),
+          JSON.stringify(newRelationship.extra),
+        );
+      } catch (error) {
+        toast.error('Failed to create relationship');
+        console.error(error);
+      }
     }
   };
 
   const onRelationshipsChange = (changes: EdgeChange[]) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
     if (!selectedSchemaId) return;
 
-    changes
-      .filter((change) => change.type === 'remove')
-      .forEach((change) => {
-        erdStore.deleteRelationship(selectedSchemaId, change.id);
-      });
+    const removeChanges = changes.filter((change) => change.type === 'remove');
+
+    if (removeChanges.length > 0) {
+      Promise.all(
+        removeChanges.map(async (change) => {
+          try {
+            await relationshipService.deleteRelationship(
+              selectedSchemaId,
+              change.id,
+            );
+          } catch (error) {
+            toast.error('Failed to delete relationship');
+            console.error(error);
+          }
+        }),
+      );
+    }
 
     setRelationships((edges) => applyEdgeChanges(changes, edges) as Edge[]);
   };
@@ -134,43 +183,78 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipReconnectSuccessful.current = false;
   };
 
-  const onReconnect = (oldRelationship: Edge, newConnection: Connection) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+  const onReconnect = async (
+    oldRelationship: Edge,
+    newConnection: Connection,
+  ) => {
+    const selectedSchema = getSelectedSchema();
 
     if (!selectedSchemaId || !selectedSchema) return;
 
     relationshipReconnectSuccessful.current = true;
-    erdStore.deleteRelationship(selectedSchemaId, oldRelationship.id);
 
-    const newRelationship = createRelationshipFromConnection({
-      schema: selectedSchema,
-      connection: newConnection,
-      relationshipConfig,
-    });
+    try {
+      await relationshipService.deleteRelationship(
+        selectedSchemaId,
+        oldRelationship.id,
+      );
 
-    if (newRelationship) {
-      erdStore.createRelationship(selectedSchemaId, newRelationship);
+      const newRelationship = createRelationshipFromConnection({
+        schema: selectedSchema,
+        connection: newConnection,
+        relationshipConfig,
+      });
+
+      if (newRelationship) {
+        await relationshipService.createRelationship(
+          selectedSchemaId,
+          newRelationship.fkTableId,
+          newRelationship.pkTableId,
+          newRelationship.name,
+          newRelationship.kind,
+          newRelationship.cardinality,
+          newRelationship.onDelete,
+          newRelationship.onUpdate,
+          newRelationship.fkEnforced,
+          newRelationship.columns.map((col) => ({
+            fkColumnId: col.fkColumnId,
+            pkColumnId: col.pkColumnId,
+            seqNo: col.seqNo,
+          })),
+          JSON.stringify(newRelationship.extra),
+        );
+      }
+    } catch (error) {
+      toast.error('Failed to reconnect relationship');
+      console.error(error);
     }
   };
 
-  const onReconnectEnd = (_: MouseEvent | TouchEvent, relationship: Edge) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
+  const onReconnectEnd = async (
+    _: MouseEvent | TouchEvent,
+    relationship: Edge,
+  ) => {
     if (!selectedSchemaId) return;
 
     if (!relationshipReconnectSuccessful.current) {
-      erdStore.deleteRelationship(selectedSchemaId, relationship.id);
+      try {
+        await relationshipService.deleteRelationship(
+          selectedSchemaId,
+          relationship.id,
+        );
+      } catch (error) {
+        toast.error('Failed to delete relationship');
+        console.error(error);
+      }
     }
     relationshipReconnectSuccessful.current = true;
   };
 
-  const updateRelationshipConfig = (
+  const updateRelationshipConfig = async (
     relationshipId: string,
     config: RelationshipConfig,
   ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    const selectedSchema = getSelectedSchema();
 
     if (!selectedSchemaId || !selectedSchema) {
       toast.error('No schema selected');
@@ -188,46 +272,69 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
     const typeConfig = RELATIONSHIP_TYPES[config.type];
     const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
-    const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
+    const newCardinality = typeConfig.cardinality;
 
-    if (
-      shouldRecreateRelationship(
-        currentRelationship,
-        newKind,
-        typeConfig.cardinality,
-      )
-    ) {
-      erdStore.deleteRelationship(selectedSchemaId, relationshipId);
-      erdStore.createRelationship(selectedSchemaId, {
-        ...currentRelationship,
-        kind: newKind,
-        cardinality: typeConfig.cardinality,
-        extra: currentExtra,
-      });
+    const kindChanged = currentRelationship.kind !== newKind;
+    const cardinalityChanged =
+      currentRelationship.cardinality !== newCardinality;
+
+    try {
+      if (kindChanged) {
+        await relationshipService.updateRelationshipKind(
+          selectedSchemaId,
+          relationshipId,
+          newKind,
+        );
+      } else if (cardinalityChanged) {
+        await relationshipService.updateRelationshipCardinality(
+          selectedSchemaId,
+          relationshipId,
+          newCardinality,
+        );
+      }
+    } catch (error) {
+      toast.error('Failed to update relationship configuration');
+      console.error(error);
     }
   };
 
-  const deleteRelationship = (relationshipId: string) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
+  const deleteRelationship = async (relationshipId: string) => {
     if (!selectedSchemaId) {
       toast.error('No schema selected');
       return;
     }
 
-    erdStore.deleteRelationship(selectedSchemaId, relationshipId);
-    setSelectedRelationship(null);
+    try {
+      await relationshipService.deleteRelationship(
+        selectedSchemaId,
+        relationshipId,
+      );
+      setSelectedRelationship(null);
+    } catch (error) {
+      toast.error('Failed to delete relationship');
+      console.error(error);
+    }
   };
 
-  const changeRelationshipName = (relationshipId: string, newName: string) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
+  const changeRelationshipName = async (
+    relationshipId: string,
+    newName: string,
+  ) => {
     if (!selectedSchemaId) {
       toast.error('No schema selected');
       return;
     }
 
-    erdStore.changeRelationshipName(selectedSchemaId, relationshipId, newName);
+    try {
+      await relationshipService.updateRelationshipName(
+        selectedSchemaId,
+        relationshipId,
+        newName,
+      );
+    } catch (error) {
+      toast.error('Failed to update relationship name');
+      console.error(error);
+    }
   };
 
   return {

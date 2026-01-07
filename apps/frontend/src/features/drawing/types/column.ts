@@ -26,6 +26,8 @@ export interface ColumnRowProps {
     value: string | boolean,
   ) => void;
   onRemoveColumn: (columnId: string) => void;
+  isFKColumn?: boolean;
+  restrictionReason?: string;
 }
 
 export interface EditModeColumnProps {
@@ -39,6 +41,8 @@ export interface EditModeColumnProps {
     value: string | boolean,
   ) => void;
   onRemoveColumn: (columnId: string) => void;
+  isFKColumn?: boolean;
+  restrictionReason?: string;
 }
 
 export interface ViewModeColumnProps {
@@ -54,6 +58,8 @@ export interface DragHandleProps {
 export interface TypeSelectorProps {
   value: string;
   onChange: (value: string) => void;
+  isFKColumn?: boolean;
+  disabledReason?: string;
 }
 
 export interface ColumnConstraintsProps {
@@ -63,6 +69,8 @@ export interface ColumnConstraintsProps {
     key: keyof ColumnType,
     value: boolean,
   ) => void;
+  isFKColumn?: boolean;
+  restrictionReason?: string;
 }
 
 export interface ColumnBadgesProps {

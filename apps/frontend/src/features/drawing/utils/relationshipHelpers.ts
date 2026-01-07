@@ -84,16 +84,16 @@ export const createRelationshipFromConnection = ({
       id: ulid(),
       relationshipId: relId,
       fkColumnId: ulid(),
-      refColumnId: pkColId,
-      seqNo: index + 1,
+      pkColumnId: pkColId,
+      seqNo: index,
       isAffected: false,
     };
   });
 
   return {
     id: relId,
-    srcTableId: connection.source,
-    tgtTableId: connection.target,
+    fkTableId: connection.source,
+    pkTableId: connection.target,
     name: `${sourceTable.name}_${targetTable.name}`,
     kind,
     cardinality: typeConfig.cardinality,
@@ -129,12 +129,15 @@ export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
       const baseConfig = RELATIONSHIP_TYPES[relationshipType];
       const isNonIdentifying = rel.kind === 'NON_IDENTIFYING';
       const style = getRelationshipStyle(isNonIdentifying);
-      const extra = (rel.extra || {}) as RelationshipExtra;
+      const extra =
+        typeof rel.extra === 'string'
+          ? (JSON.parse(rel.extra) as RelationshipExtra)
+          : ((rel.extra || {}) as RelationshipExtra);
 
       const edge: Edge = {
         id: rel.id,
-        source: rel.srcTableId,
-        target: rel.tgtTableId,
+        source: rel.fkTableId,
+        target: rel.pkTableId,
         sourceHandle: extra.sourceHandle,
         targetHandle: extra.targetHandle,
         type: 'customSmoothStep',
@@ -161,4 +164,35 @@ export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
   });
 
   return allRelationships;
+};
+
+export const convertCardinality = (
+  cardinality: '1:1' | '1:N',
+): 'ONE_TO_ONE' | 'ONE_TO_MANY' => {
+  return cardinality === '1:1' ? 'ONE_TO_ONE' : 'ONE_TO_MANY';
+};
+
+export const convertOnUpdate = (
+  onUpdate: 'NO_ACTION' | 'RESTRICT' | 'CASCADE' | 'SET_NULL' | 'SET_DEFAULT',
+):
+  | 'NO_ACTION_UPDATE'
+  | 'RESTRICT_UPDATE'
+  | 'CASCADE_UPDATE'
+  | 'SET_NULL_UPDATE'
+  | 'SET_DEFAULT_UPDATE' => {
+  const mapping: Record<
+    string,
+    | 'NO_ACTION_UPDATE'
+    | 'RESTRICT_UPDATE'
+    | 'CASCADE_UPDATE'
+    | 'SET_NULL_UPDATE'
+    | 'SET_DEFAULT_UPDATE'
+  > = {
+    NO_ACTION: 'NO_ACTION_UPDATE',
+    RESTRICT: 'RESTRICT_UPDATE',
+    CASCADE: 'CASCADE_UPDATE',
+    SET_NULL: 'SET_NULL_UPDATE',
+    SET_DEFAULT: 'SET_DEFAULT_UPDATE',
+  };
+  return mapping[onUpdate];
 };

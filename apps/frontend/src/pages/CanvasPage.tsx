@@ -32,8 +32,10 @@ import {
   TempMemoPreview,
   MemoProvider,
   useMemoContext,
+  ViewportProvider,
 } from '@/features/drawing';
 import { ErdStore } from '@/store/erd.store';
+import { CommandQueue } from '@/features/drawing/queue/CommandQueue';
 
 const NODE_TYPES = {
   table: TableNode,
@@ -44,7 +46,11 @@ const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
-const CanvasContent = () => {
+interface CanvasPageContentProps {
+  handleMoveEnd: () => void;
+}
+
+const CanvasPageContent = ({ handleMoveEnd }: CanvasPageContentProps) => {
   const erdStore = ErdStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
 
@@ -60,20 +66,18 @@ const CanvasContent = () => {
     screen: Point;
   } | null>(null);
 
-  const { handleMoveEnd } = useViewport();
-
   useEffect(() => {
     if (erdStore.erdState.state === 'idle') {
       const dbId = ulid();
       const schemaId = ulid();
-      erdStore.load({
+      const initialDb = {
         id: dbId,
         isAffected: false,
         schemas: [
           {
             id: schemaId,
             projectId: ulid(),
-            dbVendorId: 'MYSQL',
+            dbVendorId: 'MYSQL' as const,
             name: 'schema1',
             charset: 'utf8mb4',
             collation: 'utf8mb4_general_ci',
@@ -82,7 +86,10 @@ const CanvasContent = () => {
             isAffected: false,
           },
         ],
-      });
+      };
+
+      erdStore.load(initialDb);
+      CommandQueue.getInstance().initialize(initialDb);
     }
   }, [erdStore]);
 
@@ -279,10 +286,20 @@ const CanvasContent = () => {
 };
 
 const CanvasPageComponent = () => {
+  const { selectedSchemaId, updateSelectedSchema, handleMoveEnd } =
+    useViewport();
+
   return (
-    <MemoProvider>
-      <CanvasContent />
-    </MemoProvider>
+    <ViewportProvider
+      value={{
+        selectedSchemaId,
+        updateSelectedSchema,
+      }}
+    >
+      <MemoProvider>
+        <CanvasPageContent handleMoveEnd={handleMoveEnd} />
+      </MemoProvider>
+    </ViewportProvider>
   );
 };
 

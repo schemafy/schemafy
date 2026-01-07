@@ -58,6 +58,7 @@ const getDatabaseExtra = (extra: unknown): DatabaseExtra => {
 
 export class ErdStore {
   private static instance: ErdStore;
+  private static syncedInstance: ErdStore;
   erdState: LoadingState = { state: 'idle' };
 
   private constructor() {
@@ -75,6 +76,13 @@ export class ErdStore {
       ErdStore.instance = new ErdStore();
     }
     return ErdStore.instance;
+  }
+
+  static getSyncedInstance(): ErdStore {
+    if (!ErdStore.syncedInstance) {
+      ErdStore.syncedInstance = new ErdStore();
+    }
+    return ErdStore.syncedInstance;
   }
 
   // state
@@ -165,6 +173,271 @@ export class ErdStore {
       console.error(e);
       throw e;
     }
+  }
+
+  private replaceIdInArray<T extends { id: string }>(
+    items: T[],
+    oldId: string,
+    newId: string,
+  ): T[] {
+    return items.map((item) =>
+      item.id === oldId ? { ...item, id: newId } : item,
+    );
+  }
+
+  private updateSchema(
+    schemaId: Schema['id'],
+    updateFn: (schema: Schema) => Schema,
+  ) {
+    this.update((db) => ({
+      ...db,
+      schemas: db.schemas.map((schema) =>
+        schema.id !== schemaId ? schema : updateFn(schema),
+      ),
+    }));
+  }
+
+  private updateTable(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    updateFn: (table: Table) => Table,
+  ) {
+    this.updateSchema(schemaId, (schema) => ({
+      ...schema,
+      tables: schema.tables.map((table) =>
+        table.id !== tableId ? table : updateFn(table),
+      ),
+    }));
+  }
+
+  private updateConstraint(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    updateFn: (constraint: Constraint) => Constraint,
+  ) {
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      constraints: table.constraints.map((constraint) =>
+        constraint.id !== constraintId ? constraint : updateFn(constraint),
+      ),
+    }));
+  }
+
+  private updateIndex(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    updateFn: (index: Index) => Index,
+  ) {
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      indexes: table.indexes.map((index) =>
+        index.id !== indexId ? index : updateFn(index),
+      ),
+    }));
+  }
+
+  private updateRelationshipInSchema(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    updateFn: (relationship: Relationship) => Relationship,
+  ) {
+    this.updateSchema(schemaId, (schema) => ({
+      ...schema,
+      tables: schema.tables.map((table) => ({
+        ...table,
+        relationships: table.relationships.map((relationship) =>
+          relationship.id !== relationshipId
+            ? relationship
+            : updateFn(relationship),
+        ),
+      })),
+    }));
+  }
+
+  // replace ID
+  replaceSchemaId(oldId: Schema['id'], newId: Schema['id']) {
+    this.update((db) => {
+      const extra = getDatabaseExtra(db.extra);
+      const selectedSchemaId =
+        extra.selectedSchemaId === oldId ? newId : extra.selectedSchemaId;
+
+      return {
+        ...db,
+        schemas: this.replaceIdInArray(db.schemas, oldId, newId),
+        extra: {
+          ...extra,
+          selectedSchemaId,
+        },
+      };
+    });
+  }
+
+  replaceTableId(
+    schemaId: Schema['id'],
+    oldId: Table['id'],
+    newId: Table['id'],
+  ) {
+    this.updateSchema(schemaId, (schema) => ({
+      ...schema,
+      tables: this.replaceIdInArray(schema.tables, oldId, newId),
+    }));
+  }
+
+  replaceColumnId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    oldId: Column['id'],
+    newId: Column['id'],
+  ) {
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      columns: this.replaceIdInArray(table.columns, oldId, newId),
+    }));
+  }
+
+  replaceIndexId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    oldId: Index['id'],
+    newId: Index['id'],
+  ) {
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      indexes: this.replaceIdInArray(table.indexes, oldId, newId),
+    }));
+  }
+
+  replaceConstraintId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    oldId: Constraint['id'],
+    newId: Constraint['id'],
+  ) {
+    this.updateTable(schemaId, tableId, (table) => ({
+      ...table,
+      constraints: table.constraints.map((constraint) =>
+        constraint.id !== oldId
+          ? constraint
+          : {
+              ...constraint,
+              id: newId,
+              columns: constraint.columns.map((col) => ({
+                ...col,
+                constraintId: newId,
+              })),
+            },
+      ),
+    }));
+  }
+
+  replaceConstraintColumnId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    oldId: ConstraintColumn['id'],
+    newId: ConstraintColumn['id'],
+  ) {
+    this.updateConstraint(schemaId, tableId, constraintId, (constraint) => ({
+      ...constraint,
+      columns: constraint.columns.map((col) =>
+        col.id === oldId ? { ...col, id: newId } : col,
+      ),
+    }));
+  }
+
+  replaceConstraintColumnColumnId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    constraintColumnId: ConstraintColumn['id'],
+    newColumnId: Column['id'],
+  ) {
+    this.updateConstraint(schemaId, tableId, constraintId, (constraint) => ({
+      ...constraint,
+      columns: constraint.columns.map((col) =>
+        col.id === constraintColumnId ? { ...col, columnId: newColumnId } : col,
+      ),
+    }));
+  }
+
+  replaceIndexColumnId(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    oldId: IndexColumn['id'],
+    newId: IndexColumn['id'],
+  ) {
+    this.updateIndex(schemaId, tableId, indexId, (index) => ({
+      ...index,
+      columns: index.columns.map((col) =>
+        col.id === oldId ? { ...col, id: newId } : col,
+      ),
+    }));
+  }
+
+  replaceRelationshipColumnId(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    oldId: RelationshipColumn['id'],
+    newId: RelationshipColumn['id'],
+  ) {
+    this.updateRelationshipInSchema(
+      schemaId,
+      relationshipId,
+      (relationship) => ({
+        ...relationship,
+        columns: relationship.columns.map((col) =>
+          col.id === oldId ? { ...col, id: newId } : col,
+        ),
+      }),
+    );
+  }
+
+  replaceRelationshipColumnFkId(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    relationshipColumnId: RelationshipColumn['id'],
+    newFkColumnId: Column['id'],
+  ) {
+    this.updateRelationshipInSchema(
+      schemaId,
+      relationshipId,
+      (relationship) => ({
+        ...relationship,
+        columns: relationship.columns.map((col) =>
+          col.id === relationshipColumnId
+            ? { ...col, fkColumnId: newFkColumnId }
+            : col,
+        ),
+      }),
+    );
+  }
+
+  replaceRelationshipId(
+    schemaId: Schema['id'],
+    oldId: Relationship['id'],
+    newId: Relationship['id'],
+  ) {
+    this.updateSchema(schemaId, (schema) => ({
+      ...schema,
+      tables: schema.tables.map((table) => ({
+        ...table,
+        relationships: table.relationships.map((relationship) =>
+          relationship.id !== oldId
+            ? relationship
+            : {
+                ...relationship,
+                id: newId,
+                columns: relationship.columns.map((col) => ({
+                  ...col,
+                  relationshipId: newId,
+                })),
+              },
+        ),
+      })),
+    }));
   }
 
   // schemas
@@ -297,7 +570,7 @@ export class ErdStore {
     schemaId: Schema['id'],
     tableId: Table['id'],
     columnId: Column['id'],
-    newPosition: Column['ordinalPosition'],
+    newPosition: Column['seqNo'],
   ) {
     this.update((db) =>
       ERD_VALIDATOR.changeColumnPosition(
@@ -342,6 +615,17 @@ export class ErdStore {
     );
   }
 
+  changeIndexType(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    newType: Index['type'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeIndexType(db, schemaId, tableId, indexId, newType),
+    );
+  }
+
   addColumnToIndex(
     schemaId: Schema['id'],
     tableId: Table['id'],
@@ -355,6 +639,25 @@ export class ErdStore {
         tableId,
         indexId,
         indexColumn,
+      ),
+    );
+  }
+
+  changeIndexColumnSortDir(
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    indexColumnId: IndexColumn['id'],
+    newSortDir: IndexColumn['sortDir'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeIndexColumnSortDir(
+        db,
+        schemaId,
+        tableId,
+        indexId,
+        indexColumnId,
+        newSortDir,
       ),
     );
   }
@@ -491,6 +794,16 @@ export class ErdStore {
         relationshipId,
         cardinality,
       ),
+    );
+  }
+
+  changeRelationshipKind(
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    kind: Relationship['kind'],
+  ) {
+    this.update((db) =>
+      ERD_VALIDATOR.changeRelationshipKind(db, schemaId, relationshipId, kind),
     );
   }
 

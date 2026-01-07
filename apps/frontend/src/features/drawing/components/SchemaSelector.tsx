@@ -1,17 +1,19 @@
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
-import { ulid } from 'ulid';
 import { toast } from 'sonner';
 import { ErdStore } from '@/store/erd.store';
+import * as schemaService from '../services/schema.service';
 import { Button } from '@/components';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { SchemaInput } from './SchemaInput';
 import { SchemaListItem } from './SchemaListItem';
 import { useSchemaEditor } from '../hooks';
 import { validateSchemaName } from '../utils/validateSchemaName';
+import { useViewportContext } from '../contexts';
 
 export const SchemaSelector = observer(() => {
   const erdStore = ErdStore.getInstance();
+  const { selectedSchemaId, updateSelectedSchema } = useViewportContext();
   const [isAdding, setIsAdding] = useState(false);
   const [newSchemaName, setNewSchemaName] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -28,47 +30,46 @@ export const SchemaSelector = observer(() => {
   }
 
   const { database } = erdStore.erdState;
-  const selectedSchemaId = erdStore.selectedSchemaId;
   const selectedSchemaName =
     database.schemas.find((schema) => schema.id === selectedSchemaId)?.name ||
     '';
 
   const handleSchemaChange = (value: string) => {
-    erdStore.selectSchema(value);
+    updateSelectedSchema(value);
   };
 
-  const handleAddSchema = () => {
+  const handleAddSchema = async () => {
     const trimmedName = newSchemaName.trim();
-    const schemaId = ulid();
-    const firstSchema = database.schemas[0];
-    const defaultValues = {
-      projectId: firstSchema.projectId,
-      dbVendorId: firstSchema.dbVendorId,
-      charset: firstSchema.charset,
-      collation: firstSchema.collation,
-      vendorOption: firstSchema.vendorOption,
-    };
 
-    const newSchema = {
-      id: schemaId,
-      name: trimmedName,
-      tables: [],
-      isAffected: false,
-      ...defaultValues,
-    };
+    if (!validateSchemaName(trimmedName)) {
+      return;
+    }
 
-    erdStore.createSchema(newSchema);
-    erdStore.selectSchema(schemaId);
+    try {
+      const newSchemaId = await schemaService.createSchema(trimmedName);
+      updateSelectedSchema(newSchemaId);
 
-    setNewSchemaName('');
-    setIsAdding(false);
+      setNewSchemaName('');
+      setIsAdding(false);
+    } catch (error) {
+      toast.error('Failed to create schema');
+      console.error(error);
+    }
   };
 
-  const handleSaveEdit = (schemaId: string) => {
+  const handleSaveEdit = async (schemaId: string) => {
     const trimmedName = editingSchemaName.trim();
-    if (validateSchemaName(trimmedName)) {
-      erdStore.changeSchemaName(schemaId, trimmedName);
+
+    if (!validateSchemaName(trimmedName)) {
+      return;
+    }
+
+    try {
+      await schemaService.updateSchemaName(schemaId, trimmedName);
       cancelEdit();
+    } catch (error) {
+      toast.error('Failed to update schema name');
+      console.error(error);
     }
   };
 
@@ -77,7 +78,7 @@ export const SchemaSelector = observer(() => {
     setNewSchemaName('');
   };
 
-  const handleDelete = (schemaId: string) => {
+  const handleDelete = async (schemaId: string) => {
     if (database.schemas.length <= 1) {
       toast.error('Cannot delete the last schema');
       return;
@@ -86,10 +87,16 @@ export const SchemaSelector = observer(() => {
     if (selectedSchemaId === schemaId) {
       const otherSchema = database.schemas.find((s) => s.id !== schemaId);
       if (otherSchema) {
-        erdStore.selectSchema(otherSchema.id);
+        updateSelectedSchema(otherSchema.id);
       }
     }
-    erdStore.deleteSchema(schemaId);
+
+    try {
+      await schemaService.deleteSchema(schemaId);
+    } catch (error) {
+      toast.error('Failed to delete schema');
+      console.error(error);
+    }
   };
 
   return (
