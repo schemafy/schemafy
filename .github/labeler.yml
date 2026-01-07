@@ -9,11 +9,8 @@ front-end:
       - any-glob-to-any-file: "apps/frontend/**"
 
 shared:
-  - all:
-      - changed-files:
-          - any-glob-to-any-file: "**"
-      - changed-files:
-          - all-globs-to-all-files:
-              - "!apps/backend/**"
-              - "!apps/validation-server/**"
-              - "!apps/frontend/**"
+  - changed-files:
+      - all-globs-to-any-file:
+          - "!apps/backend/**"
+          - "!apps/validation-server/**"
+          - "!apps/frontend/**"
