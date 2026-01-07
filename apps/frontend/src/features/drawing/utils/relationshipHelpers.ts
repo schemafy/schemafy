@@ -85,7 +85,7 @@ export const createRelationshipFromConnection = ({
       relationshipId: relId,
       fkColumnId: ulid(),
       pkColumnId: pkColId,
-      seqNo: index + 1,
+      seqNo: index,
       isAffected: false,
     };
   });

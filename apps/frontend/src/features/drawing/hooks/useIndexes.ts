@@ -101,7 +101,7 @@ export const useIndexes = ({
         tableId,
         indexId,
         columnId,
-        index.columns.length + 1,
+        index.columns.length,
       );
     } catch (error) {
       toast.error('Failed to add column to index');
