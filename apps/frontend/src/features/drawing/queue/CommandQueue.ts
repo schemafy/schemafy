@@ -13,12 +13,14 @@ type IdMappingCallback = (tempId: string, realId: string, type: string) => void;
 
 export class CommandQueue {
   private static instance: CommandQueue;
+  private static readonly MAX_MAPPING_SIZE = 1000;
   private queue: Command[] = [];
   private pendingEntityIds = new Set<string>();
   private idMapping = new Map<string, IdMappingWithType>();
   private syncedStore: ErdStore;
   private isProcessing = false;
   private idMappingCallbacks: IdMappingCallback[] = [];
+  private currentProjectId: string | null = null;
 
   private constructor() {
     this.syncedStore = ErdStore.getSyncedInstance();
@@ -32,6 +34,13 @@ export class CommandQueue {
   }
 
   initialize(initialDb: Database) {
+    if (
+      this.currentProjectId !== null &&
+      this.currentProjectId !== initialDb.id
+    ) {
+      this.clear();
+    }
+    this.currentProjectId = initialDb.id;
     this.syncedStore.load(initialDb);
   }
 
@@ -110,6 +119,8 @@ export class CommandQueue {
         this.idMapping.set(tempId, realId);
       });
 
+      this.trimExcessMappings();
+
       const localStore = ErdStore.getInstance();
       applyLocalIdMapping(idMap, localStore, this.syncedStore);
 
@@ -162,11 +173,28 @@ export class CommandQueue {
     });
   }
 
+  private trimExcessMappings() {
+    if (this.idMapping.size <= CommandQueue.MAX_MAPPING_SIZE) {
+      return;
+    }
+
+    const entriesToRemove = this.idMapping.size - CommandQueue.MAX_MAPPING_SIZE;
+    const iterator = this.idMapping.keys();
+
+    for (let i = 0; i < entriesToRemove; i++) {
+      const key = iterator.next().value;
+      if (key !== undefined) {
+        this.idMapping.delete(key);
+      }
+    }
+  }
+
   clear() {
     this.queue = [];
     this.pendingEntityIds.clear();
     this.idMapping.clear();
     this.isProcessing = false;
     this.idMappingCallbacks = [];
+    this.currentProjectId = null;
   }
 }
