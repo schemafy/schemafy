@@ -22,11 +22,11 @@ export default defineConfig(({ command }) => {
     },
     server: isDev
       ? {
-          port: 3000,
-          fs: {
-            allow: [path.resolve(__dirname), path.resolve(__dirname, '../../packages/validator/src')],
-          },
-        }
+        port: 3001,
+        fs: {
+          allow: [path.resolve(__dirname), path.resolve(__dirname, '../../packages/validator/src')],
+        },
+      }
       : undefined,
   };
 });
