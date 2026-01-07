@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button,
   Dialog,
@@ -6,21 +6,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components';
-import type { ProjectRequest } from '@/lib/api';
 
-interface CreateProjectDialogProps {
+type EntityType = 'workspace' | 'project';
+type Mode = 'create' | 'edit';
+
+export type EntityFormData = {
+  name: string;
+  description: string;
+};
+
+interface EntityFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: ProjectRequest) => void;
+  onSubmit: (data: EntityFormData) => void;
+  entityType: EntityType;
+  mode: Mode;
+  initialData?: EntityFormData;
 }
 
-export const CreateProjectDialog = ({
+const ENTITY_LABELS: Record<EntityType, { singular: string }> = {
+  workspace: { singular: 'Workspace' },
+  project: { singular: 'Project' },
+};
+
+export const EntityFormDialog = ({
   open,
   onOpenChange,
   onSubmit,
-}: CreateProjectDialogProps) => {
+  entityType,
+  mode,
+  initialData,
+}: EntityFormDialogProps) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+
+  const label = ENTITY_LABELS[entityType];
+  const title =
+    mode === 'create' ? `Create ${label.singular}` : `Edit ${label.singular}`;
+
+  useEffect(() => {
+    if (open) {
+      if (mode === 'edit' && initialData) {
+        setName(initialData.name);
+        setDescription(initialData.description);
+      } else {
+        setName('');
+        setDescription('');
+      }
+    }
+  }, [open, mode, initialData]);
 
   const handleSubmit = () => {
     onSubmit({ name, description });
@@ -38,7 +72,7 @@ export const CreateProjectDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Project</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="py-2 flex flex-col gap-8 justify-between items-center rounded-[10px]">
           <div className="w-full bg-schemafy-secondary rounded-xl">
@@ -46,7 +80,7 @@ export const CreateProjectDialog = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               type="text"
-              placeholder="Project name"
+              placeholder={`${label.singular} name`}
               className="w-full pl-3 pr-4 py-3 bg-schemafy-secondary rounded-xl font-body-xs text-schemafy-text placeholder-schemafy-dark-gray focus:outline-none focus:ring-2 focus:ring-schemafy-button-bg"
             />
           </div>
@@ -55,7 +89,7 @@ export const CreateProjectDialog = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               type="text"
-              placeholder="Project description"
+              placeholder={`${label.singular} description`}
               className="w-full pl-3 pr-4 py-3 bg-schemafy-secondary rounded-xl font-body-xs text-schemafy-text placeholder-schemafy-dark-gray focus:outline-none focus:ring-2 focus:ring-schemafy-button-bg"
             />
           </div>

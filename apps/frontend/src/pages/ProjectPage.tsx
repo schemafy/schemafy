@@ -5,17 +5,27 @@ import {
   WorkspaceSelector,
   ProjectSearchBar,
   ProjectTable,
-  CreateWorkspaceDialog,
-  CreateProjectDialog,
+  EntityFormDialog,
 } from '@/components';
+import type { EntityFormData } from '@/components';
 import { useProjectStore } from '@/hooks';
 import { observer } from 'mobx-react-lite';
+
+type DialogState = {
+  open: boolean;
+  entityType: 'workspace' | 'project';
+  mode: 'create' | 'edit';
+  initialData?: EntityFormData;
+};
 
 export const ProjectsPage = observer(() => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isWorkspaceDialogOpen, setIsWorkspaceDialogOpen] = useState(false);
-  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [dialogState, setDialogState] = useState<DialogState>({
+    open: false,
+    entityType: 'workspace',
+    mode: 'create',
+  });
 
   const {
     workspaces,
@@ -33,21 +43,33 @@ export const ProjectsPage = observer(() => {
     project.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handleCreateWorkspace = async (data: {
-    name: string;
-    description: string;
-  }) => {
-    await createWorkspace(data);
-    setIsWorkspaceDialogOpen(false);
+  const openDialog = (
+    entityType: 'workspace' | 'project',
+    mode: 'create' | 'edit',
+    initialData?: EntityFormData,
+  ) => {
+    setDialogState({ open: true, entityType, mode, initialData });
   };
 
-  const handleCreateProject = async (data: {
-    name: string;
-    description: string;
-  }) => {
-    if (!currentWorkspace) return;
-    await createProject(currentWorkspace.id, data);
-    setIsProjectDialogOpen(false);
+  const closeDialog = () => {
+    setDialogState((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleDialogSubmit = async (data: EntityFormData) => {
+    const { entityType, mode } = dialogState;
+
+    if (entityType === 'workspace') {
+      if (mode === 'create') {
+        await createWorkspace(data);
+      }
+    } else if (entityType === 'project') {
+      if (!currentWorkspace) return;
+      if (mode === 'create') {
+        await createProject(currentWorkspace.id, data);
+      }
+    }
+
+    closeDialog();
   };
 
   const handleDeleteProject = (workspaceId: string, projectId: string) => {
@@ -71,11 +93,11 @@ export const ProjectsPage = observer(() => {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => setIsWorkspaceDialogOpen(true)}
+              onClick={() => openDialog('workspace', 'create')}
             >
               New Workspace
             </Button>
-            <Button onClick={() => setIsProjectDialogOpen(true)}>
+            <Button onClick={() => openDialog('project', 'create')}>
               New Project
             </Button>
           </div>
@@ -95,16 +117,13 @@ export const ProjectsPage = observer(() => {
         </div>
       </div>
 
-      <CreateWorkspaceDialog
-        open={isWorkspaceDialogOpen}
-        onOpenChange={setIsWorkspaceDialogOpen}
-        onSubmit={handleCreateWorkspace}
-      />
-
-      <CreateProjectDialog
-        open={isProjectDialogOpen}
-        onOpenChange={setIsProjectDialogOpen}
-        onSubmit={handleCreateProject}
+      <EntityFormDialog
+        open={dialogState.open}
+        onOpenChange={(open) => !open && closeDialog()}
+        onSubmit={handleDialogSubmit}
+        entityType={dialogState.entityType}
+        mode={dialogState.mode}
+        initialData={dialogState.initialData}
       />
     </div>
   );
