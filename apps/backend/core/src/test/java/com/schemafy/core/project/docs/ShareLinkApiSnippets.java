@@ -207,7 +207,8 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
   /** 공유 링크 비활성화 응답 */
   public static Snippet revokeShareLinkResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(shareLinkResponseFields()));
+        fieldWithPath("success").type(JsonFieldType.BOOLEAN)
+            .description("비활성화 성공 여부"));
   }
 
   // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 삭제
