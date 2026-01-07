@@ -88,7 +88,8 @@ export const useTables = () => {
             position: change.position,
           });
         } catch (error) {
-          console.error('Failed to update table position:', error);
+          toast.error('Failed to update table position');
+          console.error(error);
         }
       });
   };

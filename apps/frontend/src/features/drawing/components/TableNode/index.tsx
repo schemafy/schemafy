@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
+import { toast } from 'sonner';
 import type { TableProps } from '../../types';
 import { ColumnRow } from '../Column';
 import { TableHeader } from '../TableHeader';
@@ -86,7 +87,8 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
           newIndex,
         );
       } catch (error) {
-        console.error('Failed to update column position:', error);
+        toast.error('Failed to update column position');
+        console.error(error);
       }
     },
   });

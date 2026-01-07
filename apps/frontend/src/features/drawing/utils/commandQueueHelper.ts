@@ -11,7 +11,7 @@ export async function executeCommandWithValidation(
     optimisticUpdate();
     commandQueue.enqueue(command);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     throw error;
   }
 }
