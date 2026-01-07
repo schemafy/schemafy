@@ -126,21 +126,24 @@ tasks.named('bootJar') {
 spotbugs {
 	toolVersion = '4.8.6'
 	effort = 'max'
-	reportLevel = 'medium'
-	ignoreFailures = true
+	reportLevel = 'medium'  // high, medium, low
+	ignoreFailures = false  // CI에서 버그 발견 시 빌드 실패
 	excludeFilter = file("$projectDir/src/main/resources/spotbugs/spotbugs-exclude.xml")
 	omitVisitors = ['FindReturnRef']
 }
 
 tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
-	enabled = false
+	enabled = true
 	classes = classes.filter {
-		!it.path.contains('/lombok/')
+		!it.path.contains('/lombok/') && !it.path.contains('/grpc/')
 	}
 
 	// Missing classes 경고 무시
-	jvmArgs = ['-Dspotbugs.sf.comment=true']
-	maxHeapSize = '512m'
+	jvmArgs = [
+		'-Dspotbugs.sf.comment=true',
+		'-Dfindbugs.verbose=true'
+	]
+	maxHeapSize = '1024m'
 
 	reports {
 		html {
@@ -152,7 +155,15 @@ tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
 			required = true
 			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.xml')
 		}
+		sarif {
+			required = true
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.sarif')
+		}
 	}
+}
+
+tasks.named('spotbugsTest') {
+	enabled = false
 }
 
 spotless {
