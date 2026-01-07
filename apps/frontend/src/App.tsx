@@ -48,9 +48,9 @@ function App() {
                 <Route
                   path="/canvas"
                   element={
-                    // <RequireAuth>
-                    <CanvasPage />
-                    // </RequireAuth>
+                    <RequireAuth>
+                      <CanvasPage />
+                    </RequireAuth>
                   }
                 />
               </Routes>
