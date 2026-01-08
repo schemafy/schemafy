@@ -635,6 +635,227 @@ class PropagationE2ETest {
   }
 
   @Test
+  @DisplayName("PK 컬럼 추가 시 다단계 연쇄 전파가 올바른 sourceColumnId를 반환한다")
+  void addPkColumnCascadesToMultipleLevels() throws Exception {
+    // Table1 -> Table2 -> Table3 구조 설정
+    SetupState table1ToTable2 = setupIdentifyingRelationship().state();
+
+    // Table3 생성
+    Validation.Table table1 = buildParentTableWithPk(table1ToTable2,
+        List.of(buildColumn(table1ToTable2.parentColumnId(),
+            table1ToTable2.parentTableId(), "id", 1, true)));
+    Validation.Table table2 = buildChildTableWithRelationship(table1ToTable2);
+
+    String table3RequestId = "06DM1TABLE3REQ000000000000";
+    JsonNode table3Response = postJson("/tables",
+        toJson(buildCreateTableRequest(table1ToTable2.schemaId(),
+            table3RequestId, "table3",
+            List.of(table1, table2))));
+    String table3Id = extractMapping(table3Response, "tables",
+        table3RequestId);
+
+    // Table3에 자체 컬럼 추가
+    Validation.Table table3State = buildTable(table3Id,
+        table1ToTable2.schemaId(), "table3", List.of(), List.of(),
+        List.of());
+    String table3ColumnRequestId = "06DM1TABLE3COL000000000000";
+    JsonNode table3ColumnResponse = postJson("/columns",
+        toJson(buildCreateColumnRequest(table1ToTable2.schemaId(),
+            table3Id, table3ColumnRequestId, "id", 1, true,
+            List.of(table1, table2, table3State))));
+    String table3ColumnId = extractNestedMapping(table3ColumnResponse,
+        "columns", table3Id, table3ColumnRequestId);
+
+    // Table2 -> Table3 identifying relationship 생성
+    Validation.Table table3WithColumn = buildTable(table3Id,
+        table1ToTable2.schemaId(), "table3",
+        List.of(buildColumn(table3ColumnId, table3Id, "id", 1,
+            true)),
+        List.of(), List.of());
+
+    String table2ToTable3RelRequestId = "06DM1REL2TO3REQ00000000000";
+    String table2ToTable3RelColRequestId = "06DM1RELCOL2TO3REQ000000000";
+    String table2ToTable3FkColRequestId = "06DM1FKCOL2TO3REQ0000000000";
+
+    Validation.RelationshipColumn table2ToTable3RelColumn = Validation.RelationshipColumn
+        .newBuilder()
+        .setId(table2ToTable3RelColRequestId)
+        .setRelationshipId(table2ToTable3RelRequestId)
+        .setFkColumnId(table2ToTable3FkColRequestId)
+        .setPkColumnId(table1ToTable2.propagatedColumnId())
+        .setSeqNo(1)
+        .build();
+
+    Validation.Relationship table2ToTable3Relationship = Validation.Relationship
+        .newBuilder()
+        .setId(table2ToTable3RelRequestId)
+        .setFkTableId(table3Id)
+        .setPkTableId(table1ToTable2.childTableId())
+        .setName("FK_table3_table2")
+        .setKind(Validation.RelationshipKind.IDENTIFYING)
+        .setCardinality(
+            Validation.RelationshipCardinality.ONE_TO_MANY)
+        .setOnDelete(Validation.RelationshipOnDelete.NO_ACTION)
+        .setOnUpdate(Validation.RelationshipOnUpdate.NO_ACTION_UPDATE)
+        .setFkEnforced(false)
+        .addColumns(table2ToTable3RelColumn)
+        .build();
+
+    Validation.Database dbWithTable3 = buildDatabase(
+        table1ToTable2.schemaId(),
+        List.of(table1, table2, table3WithColumn));
+
+    Validation.CreateRelationshipRequest createTable2ToTable3RelRequest = Validation.CreateRelationshipRequest
+        .newBuilder()
+        .setDatabase(dbWithTable3)
+        .setSchemaId(table1ToTable2.schemaId())
+        .setRelationship(table2ToTable3Relationship)
+        .build();
+
+    JsonNode table2ToTable3RelResponse = postJson("/relationships",
+        toJson(createTable2ToTable3RelRequest));
+    String table2ToTable3RelId = extractNestedMapping(
+        table2ToTable3RelResponse,
+        "relationships", table3Id, table2ToTable3RelRequestId);
+
+    // Table2에 전파된 컬럼 확인
+    JsonNode table2Propagated = table2ToTable3RelResponse.path("result")
+        .path("propagated");
+    String table3PropagatedFromTable2ColumnId = table2Propagated
+        .path("columns").get(0).path("columnId").asText();
+
+    // Table1의 PK에 새 컬럼 추가
+    Validation.Table table2Updated = buildTable(
+        table1ToTable2.childTableId(),
+        table1ToTable2.schemaId(), "child",
+        List.of(
+            buildColumn(table1ToTable2.childColumnId(),
+                table1ToTable2.childTableId(), "id", 1, true),
+            buildColumn(table1ToTable2.propagatedColumnId(),
+                table1ToTable2.childTableId(), "parent_id", 2,
+                false)),
+        List.of(buildPkConstraint(
+            table1ToTable2.propagatedConstraintId(),
+            table1ToTable2.childTableId(),
+            table1ToTable2.propagatedConstraintColumnId(),
+            table1ToTable2.propagatedColumnId())),
+        List.of(buildRelationship(table1ToTable2,
+            table1ToTable2.propagatedColumnId())));
+
+    Validation.Table table3Updated = buildTable(table3Id,
+        table1ToTable2.schemaId(), "table3",
+        List.of(
+            buildColumn(table3ColumnId, table3Id, "id", 1, true),
+            buildColumn(table3PropagatedFromTable2ColumnId,
+                table3Id, "table2_parent_id", 2, false)),
+        List.of(),
+        List.of(buildRelationship(table2ToTable3RelId, table3Id,
+            table1ToTable2.childTableId(),
+            table3PropagatedFromTable2ColumnId,
+            table1ToTable2.propagatedColumnId())));
+
+    String extraParentColumnRequestId = "06DM1EXTRACOL000000000000";
+    JsonNode extraColumnResponse = postJson("/columns",
+        toJson(buildCreateColumnRequest(table1ToTable2.schemaId(),
+            table1ToTable2.parentTableId(),
+            extraParentColumnRequestId, "code", 2, false,
+            List.of(table1, table2Updated, table3Updated))));
+    String extraParentColumnId = extractNestedMapping(extraColumnResponse,
+        "columns", table1ToTable2.parentTableId(),
+        extraParentColumnRequestId);
+
+    Validation.Table table1WithExtraColumn = buildParentTableWithPk(
+        table1ToTable2,
+        List.of(
+            buildColumn(table1ToTable2.parentColumnId(),
+                table1ToTable2.parentTableId(), "id", 1, true),
+            buildColumn(extraParentColumnId,
+                table1ToTable2.parentTableId(), "code", 2, false)));
+
+    String extraPkColumnRequestId = "06DM1EXTRAPKCOL0000000000";
+    Validation.AddColumnToConstraintRequest addColumnRequest = Validation.AddColumnToConstraintRequest
+        .newBuilder()
+        .setDatabase(buildDatabase(table1ToTable2.schemaId(),
+            List.of(table1WithExtraColumn, table2Updated,
+                table3Updated)))
+        .setSchemaId(table1ToTable2.schemaId())
+        .setTableId(table1ToTable2.parentTableId())
+        .setConstraintId(table1ToTable2.parentPkId())
+        .setConstraintColumn(Validation.ConstraintColumn.newBuilder()
+            .setId(extraPkColumnRequestId)
+            .setColumnId(extraParentColumnId)
+            .setSeqNo(2)
+            .build())
+        .build();
+
+    JsonNode addResponse = postJson(
+        "/constraints/" + table1ToTable2.parentPkId() + "/columns",
+        toJson(addColumnRequest));
+
+    JsonNode propagated = addResponse.path("result").path("propagated");
+    assertThat(propagated.path("columns")).hasSizeGreaterThanOrEqualTo(2);
+
+    // Table2에 전파된 컬럼 검증
+    JsonNode table2PropagatedColumn = null;
+    JsonNode table3PropagatedColumn = null;
+
+    for (JsonNode col : propagated.path("columns")) {
+      String tableId = col.path("tableId").asText();
+      if (tableId.equals(table1ToTable2.childTableId())) {
+        table2PropagatedColumn = col;
+      } else if (tableId.equals(table3Id)) {
+        table3PropagatedColumn = col;
+      }
+    }
+
+    assertThat(table2PropagatedColumn).isNotNull();
+    assertThat(table2PropagatedColumn.path("sourceColumnId").asText())
+        .isEqualTo(extraParentColumnId)
+        .as("Table2에 전파된 컬럼의 sourceColumnId는 Table1의 원본 컬럼이어야 함");
+
+    // Table3에 전파된 컬럼 검증 - 여기가 버그가 발생하는 부분
+    assertThat(table3PropagatedColumn).isNotNull();
+    String table3SourceColumnId = table3PropagatedColumn
+        .path("sourceColumnId").asText();
+    String table3ColumnIdValue = table3PropagatedColumn.path("columnId")
+        .asText();
+
+    assertThat(table3SourceColumnId)
+        .isNotEqualTo(table3ColumnIdValue)
+        .as("Table3에 전파된 컬럼의 sourceColumnId는 columnId와 달라야 함");
+    assertThat(table3SourceColumnId)
+        .isEqualTo(extraParentColumnId)
+        .as("Table3에 전파된 컬럼의 sourceColumnId는 Table1의 원본 컬럼이어야 함");
+  }
+
+  private Validation.Relationship buildRelationship(String relationshipId,
+      String fkTableId, String pkTableId, String fkColumnId,
+      String pkColumnId) {
+    Validation.RelationshipColumn relationshipColumn = Validation.RelationshipColumn
+        .newBuilder()
+        .setId("relcol_" + relationshipId)
+        .setRelationshipId(relationshipId)
+        .setFkColumnId(fkColumnId)
+        .setPkColumnId(pkColumnId)
+        .setSeqNo(1)
+        .build();
+
+    return Validation.Relationship.newBuilder()
+        .setId(relationshipId)
+        .setFkTableId(fkTableId)
+        .setPkTableId(pkTableId)
+        .setName("FK_test")
+        .setKind(Validation.RelationshipKind.IDENTIFYING)
+        .setCardinality(
+            Validation.RelationshipCardinality.ONE_TO_MANY)
+        .setOnDelete(Validation.RelationshipOnDelete.NO_ACTION)
+        .setOnUpdate(Validation.RelationshipOnUpdate.NO_ACTION_UPDATE)
+        .setFkEnforced(false)
+        .addColumns(relationshipColumn)
+        .build();
+  }
+
+  @Test
   @DisplayName("자식 테이블 삭제 시 관계가 정리되고 부모는 유지된다")
   void deleteChildTableRemovesRelationshipAndColumns() throws Exception {
     SetupState state = setupIdentifyingRelationship().state();

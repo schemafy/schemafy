@@ -316,15 +316,18 @@ public class AffectedEntitiesSaver {
                 columnIdMap);
 
             for (SavedPropagatedColumn savedColumn : savedPropagatedColumns) {
-              String sourceColumnId = fkToRefColumnIdMap
-                  .getOrDefault(savedColumn.columnId(),
-                      savedColumn.columnId());
+              String sourceColumnId = resolveSourceColumnId(
+                  savedColumn.columnId(),
+                  fkToRefColumnIdMap,
+                  after);
               propagatedColumns.add(new PropagatedColumn(
                   savedColumn.columnId(),
                   savedColumn.tableId(),
                   sourceType,
                   sourceId,
                   sourceColumnId));
+
+              fkToRefColumnIdMap.put(savedColumn.columnId(), sourceColumnId);
             }
           }));
 
@@ -642,6 +645,63 @@ public class AffectedEntitiesSaver {
   public record SaveResult(
       PropagatedEntities propagated,
       IdMappings idMappings) {
+  }
+
+  private static String resolveSourceColumnId(
+      String columnId,
+      Map<String, String> fkToRefMap,
+      Validation.Database database) {
+    String current = columnId;
+    Set<String> visited = new HashSet<>();
+
+    while (true) {
+      if (!visited.add(current)) {
+        break;
+      }
+
+      if (fkToRefMap.containsKey(current)) {
+        String next = fkToRefMap.get(current);
+        if (next.equals(current)) {
+          break;
+        }
+        current = next;
+        continue;
+      }
+
+      String pkColumnId = findPkColumnIdByFkColumnId(database, current);
+      if (pkColumnId == null || pkColumnId.equals(current)) {
+        break;
+      }
+
+      if (fkToRefMap.containsKey(pkColumnId)) {
+        current = fkToRefMap.get(pkColumnId);
+        fkToRefMap.put(columnId, current);
+        break;
+      }
+
+      break;
+    }
+
+    return current;
+  }
+
+  private static String findPkColumnIdByFkColumnId(
+      Validation.Database database,
+      String fkColumnId) {
+    for (Validation.Schema schema : database.getSchemasList()) {
+      for (Validation.Table table : schema.getTablesList()) {
+        for (Validation.Relationship relationship : table
+            .getRelationshipsList()) {
+          for (Validation.RelationshipColumn relationshipColumn : relationship
+              .getColumnsList()) {
+            if (fkColumnId.equals(relationshipColumn.getFkColumnId())) {
+              return relationshipColumn.getPkColumnId();
+            }
+          }
+        }
+      }
+    }
+    return null;
   }
 
   private static Map<String, String> buildFkToRefColumnIdMap(
