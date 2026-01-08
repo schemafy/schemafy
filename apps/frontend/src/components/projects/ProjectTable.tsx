@@ -9,6 +9,7 @@ import {
   MenuItem,
 } from '@/components';
 import type { Project, ProjectSummary } from '@/lib/api';
+import { Link } from 'react-router-dom';
 
 interface ProjectTableProps {
   projects: ProjectSummary[];
@@ -41,9 +42,11 @@ export const ProjectTable = ({
         <TableBody>
           {projects.map((project) => (
             <TableRow key={project.id}>
-              <TableCell className="font-body-sm text-schemafy-text">
-                {project.name}
-              </TableCell>
+              <Link to={`/canvas`}>
+                <TableCell className="font-body-sm text-schemafy-text">
+                  {project.name}
+                </TableCell>
+              </Link>
               <TableCell className="font-body-sm text-schemafy-dark-gray">
                 {project.updatedAt}
               </TableCell>
