@@ -1,11 +1,11 @@
 import { useEffect, useCallback } from 'react';
-import { ProjectStore } from '@/store';
+import { ProjectStore, WorkspaceStore } from '@/store';
 import type { ProjectRequest } from '@/lib/api';
-import { useWorkspaceStore } from './useWorkspaceStore';
 
 export const useProjectStore = () => {
   const store = ProjectStore.getInstance();
-  const { currentWorkspace } = useWorkspaceStore();
+  const workspaceStore = WorkspaceStore.getInstance();
+  const currentWorkspace = workspaceStore.currentWorkspace;
 
   const projects = store.projects?.content ?? [];
   const totalPages = store.projects?.totalPages ?? 1;

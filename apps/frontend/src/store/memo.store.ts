@@ -8,19 +8,18 @@ import type {
   CreateMemoCommentRequest,
   UpdateMemoCommentRequest,
 } from '@/lib/api/memo/types';
-import type { ApiResponse } from '@/lib/api/types';
+import { handleAsync, type AsyncHandlerContext } from './helpers';
 
 type MemosBySchema = Record<string, Memo[]>;
 type CommentsByMemo = Record<string, MemoComment[]>;
 
-export class MemoStore {
+export class MemoStore implements AsyncHandlerContext {
   private static instance: MemoStore;
 
   memosBySchema: MemosBySchema = {};
   commentsByMemo: CommentsByMemo = {};
 
-  private _loadingStates: Record<string, boolean> = {};
-
+  _loadingStates: Record<string, boolean> = {};
   error: string | null = null;
 
   private constructor() {
@@ -38,42 +37,7 @@ export class MemoStore {
     return !!this._loadingStates[operation];
   }
 
-  private async handleAsync<T>(
-    operation: string,
-    apiCall: () => Promise<ApiResponse<T>>,
-    onSuccess: (result: T) => void,
-    defaultErrorMessage: string,
-  ): Promise<{ success: boolean; data: T | null }> {
-    this._loadingStates[operation] = true;
-    this.error = null;
-
-    try {
-      const res = await apiCall();
-      if (!res.success) {
-        runInAction(() => {
-          this.error = res.error?.message ?? defaultErrorMessage;
-          this._loadingStates[operation] = false;
-        });
-        return { success: false, data: null };
-      }
-
-      runInAction(() => {
-        onSuccess(res.result as T);
-        this._loadingStates[operation] = false;
-      });
-
-      return { success: true, data: res.result as T };
-    } catch (e) {
-      runInAction(() => {
-        this.error = e instanceof Error ? e.message : defaultErrorMessage;
-        this._loadingStates[operation] = false;
-      });
-      return { success: false, data: null };
-    }
-  }
-
   async fetchSchemaMemos(schemaId: string) {
-    // 복합적으로 처리되는 함수이기에 handleAsync를 사용할 수 없음
     this._loadingStates['fetchSchemaMemos'] = true;
     this.error = null;
     try {
@@ -124,7 +88,8 @@ export class MemoStore {
   }
 
   async createMemo(data: CreateMemoRequest): Promise<Memo | null> {
-    const { data: memo } = await this.handleAsync(
+    const { data: memo } = await handleAsync(
+      this,
       'createMemo',
       () => memoApi.createMemo(data),
       (memo) => {
@@ -141,7 +106,8 @@ export class MemoStore {
     data: UpdateMemoRequest,
     schemaId?: string,
   ): Promise<Memo | null> {
-    const { data: updated } = await this.handleAsync(
+    const { data: updated } = await handleAsync(
+      this,
       'updateMemo',
       () => memoApi.updateMemo(memoId, data),
       (updated) => {
@@ -165,7 +131,8 @@ export class MemoStore {
   }
 
   async deleteMemo(memoId: string, schemaId: string): Promise<boolean> {
-    const { success } = await this.handleAsync(
+    const { success } = await handleAsync(
+      this,
       'deleteMemo',
       () => memoApi.deleteMemo(memoId),
       () => {
@@ -182,7 +149,8 @@ export class MemoStore {
   }
 
   async fetchMemoComments(memoId: string) {
-    await this.handleAsync(
+    await handleAsync(
+      this,
       'fetchMemoComments',
       () => memoApi.getMemoComments(memoId),
       (comments) => {
@@ -196,7 +164,8 @@ export class MemoStore {
     memoId: string,
     data: CreateMemoCommentRequest,
   ): Promise<MemoComment | null> {
-    const { data: comment } = await this.handleAsync(
+    const { data: comment } = await handleAsync(
+      this,
       'createMemoComment',
       () => memoApi.createMemoComment(memoId, data),
       (comment) => {
@@ -224,7 +193,8 @@ export class MemoStore {
     commentId: string,
     data: UpdateMemoCommentRequest,
   ): Promise<MemoComment | null> {
-    const { data: updated } = await this.handleAsync(
+    const { data: updated } = await handleAsync(
+      this,
       'updateMemoComment',
       () => memoApi.updateMemoComment(memoId, commentId, data),
       (updated) => {
@@ -257,7 +227,8 @@ export class MemoStore {
   }
 
   async deleteMemoComment(memoId: string, commentId: string): Promise<boolean> {
-    const { success } = await this.handleAsync(
+    const { success } = await handleAsync(
+      this,
       'deleteMemoComment',
       () => memoApi.deleteMemoComment(memoId, commentId),
       () => {

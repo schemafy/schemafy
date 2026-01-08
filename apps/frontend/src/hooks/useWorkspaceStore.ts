@@ -1,9 +1,9 @@
 import { useEffect, useCallback } from 'react';
-import { ProjectStore } from '@/store';
+import { WorkspaceStore } from '@/store';
 import type { WorkspaceRequest, Workspace } from '@/lib/api';
 
 export const useWorkspaceStore = () => {
-  const store = ProjectStore.getInstance();
+  const store = WorkspaceStore.getInstance();
 
   const workspaces = store.workspaces?.content ?? [];
   const currentWorkspace = store.currentWorkspace;
