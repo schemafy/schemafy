@@ -293,6 +293,7 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     const fkColumnIds = relationship.columns.map((rc) => rc.fkColumnId);
     let addedPkColumnIds: string[] = [];
+    let removedPkColumnIds: string[] = [];
 
     const changeTables: Table[] = schema.tables.map((t) => {
       if (t.id !== relationship.fkTableId) return t;
@@ -365,6 +366,10 @@ export const relationshipHandlers: RelationshipHandlers = {
           );
 
           if (remainingColumns.length !== pkConstraint.columns.length) {
+            removedPkColumnIds = pkConstraint.columns
+              .filter((cc) => fkColumnIds.includes(cc.columnId))
+              .map((cc) => cc.columnId);
+
             if (remainingColumns.length === 0) {
               updatedConstraints = t.constraints.filter(
                 (c) => c.id !== pkConstraint.id,
@@ -420,6 +425,16 @@ export const relationshipHandlers: RelationshipHandlers = {
           structuredClone(updatedSchema),
           relationship.fkTableId,
           newPkColumn,
+        );
+      }
+    }
+
+    if (kind === "NON_IDENTIFYING" && removedPkColumnIds.length > 0) {
+      for (const columnId of removedPkColumnIds) {
+        updatedSchema = helper.removeCascadingPrimaryKeyConstraints(
+          structuredClone(updatedSchema),
+          relationship.fkTableId,
+          columnId,
         );
       }
     }

@@ -1427,4 +1427,171 @@ describe('Relationship validation', () => {
       expect(pkConstraint?.columns.find(c => c.columnId === 'c2')?.seqNo).toBe(1);
     });
   });
+
+  describe('Cascade PK constraint removal when changing to NON_IDENTIFYING', () => {
+    test('Table1 -> Table2 (IDENTIFYING) -> Table3 (IDENTIFYING) 에서 Table1-Table2를 NON_IDENTIFYING으로 변경하면 Table3의 PK도 업데이트되어야 한다', () => {
+      const schemaId = 'schema-1';
+      const table1Id = 'table1';
+      const table2Id = 'table2';
+      const table3Id = 'table3';
+
+      const baseDatabase = createTestDatabase()
+        .withSchema((s) =>
+          s
+            .withId(schemaId)
+            .withTable((t) =>
+              t
+                .withId(table1Id)
+                .withName('Table1')
+                .withColumn((c) => c.withId('t1-col1').withName('Column1'))
+                .withConstraint((c) =>
+                  c
+                    .withKind('PRIMARY_KEY')
+                    .withColumn((cc) => cc.withColumnId('t1-col1').withSeqNo(0))
+                )
+            )
+            .withTable((t) => t.withId(table2Id).withName('Table2'))
+            .withTable((t) => t.withId(table3Id).withName('Table3'))
+        )
+        .build();
+
+      const rel1 = createRelationshipBuilder()
+        .withId('rel-table2-table1')
+        .withFkTableId(table2Id)
+        .withName('Table2_Table1')
+        .withKind('IDENTIFYING')
+        .withPkTableId(table1Id)
+        .withColumn((rc) => rc.withPkColumnId('t1-col1'))
+        .build();
+
+      let database = ERD_VALIDATOR.createRelationship(baseDatabase, schemaId, rel1);
+
+      let table2 = database.schemas[0].tables.find((t: Table) => t.id === table2Id);
+      let table2PkConstraint = table2?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+      const table2FkColumnId = table2?.columns.find((c) => c.name === 'Table1_Column1')?.id;
+
+      expect(table2PkConstraint).toBeDefined();
+      expect(table2PkConstraint?.columns).toHaveLength(1);
+      expect(table2PkConstraint?.columns[0].columnId).toBe(table2FkColumnId);
+
+      const rel2 = createRelationshipBuilder()
+        .withId('rel-table3-table2')
+        .withFkTableId(table3Id)
+        .withName('Table3_Table2')
+        .withKind('IDENTIFYING')
+        .withPkTableId(table2Id)
+        .withColumn((rc) => rc.withPkColumnId(table2FkColumnId!))
+        .build();
+
+      database = ERD_VALIDATOR.createRelationship(database, schemaId, rel2);
+
+      let table3 = database.schemas[0].tables.find((t: Table) => t.id === table3Id);
+      let table3PkConstraint = table3?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+      const table3FkColumnId = table3?.columns.find((c) => c.name.includes('Table1_Column1'))?.id;
+
+      expect(table3PkConstraint).toBeDefined();
+      expect(table3PkConstraint?.columns).toHaveLength(1);
+      expect(table3PkConstraint?.columns[0].columnId).toBe(table3FkColumnId);
+
+      database = ERD_VALIDATOR.changeRelationshipKind(database, schemaId, 'rel-table2-table1', 'NON_IDENTIFYING');
+
+      table2 = database.schemas[0].tables.find((t: Table) => t.id === table2Id);
+      table2PkConstraint = table2?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+
+      expect(table2PkConstraint).toBeUndefined();
+
+      table3 = database.schemas[0].tables.find((t: Table) => t.id === table3Id);
+      table3PkConstraint = table3?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+
+      const table3ColumnExists = table3?.columns.find((c) => c.id === table3FkColumnId);
+      expect(table3ColumnExists).toBeDefined();
+
+      expect(table3PkConstraint).toBeUndefined();
+    });
+
+    test('Table1 -> Table2 (IDENTIFYING) -> Table3 (IDENTIFYING) 에서 Table2가 다른 PK를 가지고 있으면 해당 PK는 유지되어야 한다', () => {
+      const schemaId = 'schema-1';
+      const table1Id = 'table1';
+      const table2Id = 'table2';
+      const table3Id = 'table3';
+
+      const baseDatabase = createTestDatabase()
+        .withSchema((s) =>
+          s
+            .withId(schemaId)
+            .withTable((t) =>
+              t
+                .withId(table1Id)
+                .withName('Table1')
+                .withColumn((c) => c.withId('t1-col1').withName('Column1'))
+                .withConstraint((c) =>
+                  c
+                    .withKind('PRIMARY_KEY')
+                    .withColumn((cc) => cc.withColumnId('t1-col1').withSeqNo(0))
+                )
+            )
+            .withTable((t) =>
+              t
+                .withId(table2Id)
+                .withName('Table2')
+                .withColumn((c) => c.withId('t2-own-pk').withName('OwnPK'))
+                .withConstraint((c) =>
+                  c
+                    .withKind('PRIMARY_KEY')
+                    .withColumn((cc) => cc.withColumnId('t2-own-pk').withSeqNo(0))
+                )
+            )
+            .withTable((t) => t.withId(table3Id).withName('Table3'))
+        )
+        .build();
+
+      const rel1 = createRelationshipBuilder()
+        .withId('rel-table2-table1')
+        .withFkTableId(table2Id)
+        .withName('Table2_Table1')
+        .withKind('IDENTIFYING')
+        .withPkTableId(table1Id)
+        .withColumn((rc) => rc.withPkColumnId('t1-col1'))
+        .build();
+
+      let database = ERD_VALIDATOR.createRelationship(baseDatabase, schemaId, rel1);
+
+      let table2 = database.schemas[0].tables.find((t: Table) => t.id === table2Id);
+      let table2PkConstraint = table2?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+      const table2FkColumnId = table2?.columns.find((c) => c.name === 'Table1_Column1')?.id;
+
+      expect(table2PkConstraint).toBeDefined();
+      expect(table2PkConstraint?.columns).toHaveLength(2);
+      expect(table2PkConstraint?.columns.find((c) => c.columnId === 't2-own-pk')).toBeDefined();
+      expect(table2PkConstraint?.columns.find((c) => c.columnId === table2FkColumnId)).toBeDefined();
+
+      const rel2 = createRelationshipBuilder()
+        .withId('rel-table3-table2')
+        .withFkTableId(table3Id)
+        .withName('Table3_Table2')
+        .withKind('IDENTIFYING')
+        .withPkTableId(table2Id)
+        .withColumn((rc) => rc.withPkColumnId('t2-own-pk'))
+        .build();
+
+      database = ERD_VALIDATOR.createRelationship(database, schemaId, rel2);
+
+      database = ERD_VALIDATOR.changeRelationshipKind(database, schemaId, 'rel-table2-table1', 'NON_IDENTIFYING');
+
+      table2 = database.schemas[0].tables.find((t: Table) => t.id === table2Id);
+      table2PkConstraint = table2?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+
+      expect(table2PkConstraint).toBeDefined();
+      expect(table2PkConstraint?.columns).toHaveLength(1);
+      expect(table2PkConstraint?.columns[0].columnId).toBe('t2-own-pk');
+
+      const table3 = database.schemas[0].tables.find((t: Table) => t.id === table3Id);
+      const table3PkConstraint = table3?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
+      const table3FkColumn = table3?.columns.find((c) => c.name === 'Table2_OwnPK');
+
+      expect(table3FkColumn).toBeDefined();
+      expect(table3PkConstraint).toBeDefined();
+      expect(table3PkConstraint?.columns[0].columnId).toBe(table3FkColumn?.id);
+    });
+  });
 });
