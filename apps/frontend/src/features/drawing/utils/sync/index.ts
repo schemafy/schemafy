@@ -36,17 +36,23 @@ export function handleServerResponse(
   return idMap;
 }
 
+export function matchLocalPropagatedEntities(
+  propagated: AffectedMappingResponse['propagated'],
+  context: SyncContext,
+  localStore: ErdStore,
+  idMap: Map<string, IdMappingWithType>,
+) {
+  if (!propagated) return;
+
+  syncPropagatedEntities(propagated, context, localStore, idMap);
+}
+
 export function applyLocalIdMapping(
   idMap: Map<string, IdMappingWithType>,
   localStore: ErdStore,
-  syncedStore?: ErdStore,
 ) {
   if (localStore.erdState.state !== 'loaded' || idMap.size === 0) {
     return;
-  }
-
-  if (syncedStore?.erdState.state === 'loaded') {
-    reconcileMissingMappings(idMap, localStore, syncedStore);
   }
 
   const db = localStore.database!;
@@ -56,116 +62,6 @@ export function applyLocalIdMapping(
   };
 
   localStore.load(updatedDb);
-}
-
-function reconcileMissingMappings(
-  idMap: Map<string, IdMappingWithType>,
-  localStore: ErdStore,
-  syncedStore: ErdStore,
-) {
-  const syncedDb = syncedStore.database!;
-  const localDb = localStore.database!;
-
-  const syncedMap = buildSyncedDbMap(syncedDb);
-
-  const realIdToMappingMap = new Map<string, IdMappingWithType>();
-  for (const mapping of idMap.values()) {
-    realIdToMappingMap.set(mapping.realId, mapping);
-  }
-
-  for (const localSchema of localDb.schemas) {
-    const syncedSchema = syncedMap.get(localSchema.id);
-    if (!syncedSchema) continue;
-
-    for (const localTable of localSchema.tables) {
-      const syncedTable = syncedSchema.tables.get(localTable.id);
-      if (!syncedTable) continue;
-
-      reconcileColumns(localTable, syncedTable, idMap, realIdToMappingMap);
-      reconcileRelationships(
-        localTable,
-        syncedTable,
-        idMap,
-        realIdToMappingMap,
-      );
-    }
-  }
-}
-
-function buildSyncedDbMap(db: { schemas: Schema[] }) {
-  return new Map(
-    db.schemas.map((s) => [
-      s.id,
-      {
-        raw: s,
-        tables: new Map(s.tables.map((t) => [t.id, t])),
-      },
-    ]),
-  );
-}
-
-function reconcileColumns(
-  localTable: Table,
-  syncedTable: Table,
-  idMap: Map<string, IdMappingWithType>,
-  realIdToMappingMap: Map<string, IdMappingWithType>,
-) {
-  localTable.columns.forEach((localCol, idx) => {
-    if (idMap.has(localCol.id)) return;
-
-    const syncedCol = syncedTable.columns[idx];
-
-    if (
-      syncedCol &&
-      syncedCol.name === localCol.name &&
-      syncedCol.id !== localCol.id
-    ) {
-      const existingMapping = realIdToMappingMap.get(syncedCol.id);
-
-      const newMapping = {
-        realId: existingMapping?.realId ?? syncedCol.id,
-        type: 'column' as const,
-      };
-
-      idMap.set(localCol.id, newMapping);
-      realIdToMappingMap.set(newMapping.realId, newMapping);
-    }
-  });
-}
-
-function reconcileRelationships(
-  localTable: Table,
-  syncedTable: Table,
-  idMap: Map<string, IdMappingWithType>,
-  realIdToMappingMap: Map<string, IdMappingWithType>,
-) {
-  const syncedRels = new Map(syncedTable.relationships.map((r) => [r.id, r]));
-
-  localTable.relationships.forEach((localRel) => {
-    const syncedRel = syncedRels.get(localRel.id);
-    if (!syncedRel) return;
-
-    const syncedRelColsBySeqNo = new Map(
-      syncedRel.columns.map((rc) => [rc.seqNo, rc]),
-    );
-
-    localRel.columns.forEach((localRelCol) => {
-      if (idMap.has(localRelCol.fkColumnId)) return;
-
-      const syncedRelCol = syncedRelColsBySeqNo.get(localRelCol.seqNo);
-      if (!syncedRelCol) return;
-
-      const existingMapping = realIdToMappingMap.get(syncedRelCol.fkColumnId);
-
-      const newMapping = {
-        realId: existingMapping?.realId ?? syncedRelCol.fkColumnId,
-        type: 'column' as const,
-      };
-
-      idMap.set(localRelCol.fkColumnId, newMapping);
-      realIdToMappingMap.set(newMapping.realId, newMapping);
-    });
-  });
 }
 
 const replaceId = (

@@ -5,6 +5,7 @@ import { ErdStore } from '@/store/erd.store';
 import {
   handleServerResponse,
   applyLocalIdMapping,
+  matchLocalPropagatedEntities,
   type IdMappingWithType,
 } from '../utils/sync';
 import type { SyncContext } from '../types';
@@ -115,14 +116,23 @@ export class CommandQueue {
         this.syncedStore,
       );
 
+      const localStore = ErdStore.getInstance();
+      if ((response as AffectedMappingResponse).propagated) {
+        matchLocalPropagatedEntities(
+          (response as AffectedMappingResponse).propagated!,
+          context,
+          localStore,
+          idMap,
+        );
+      }
+
       idMap.forEach((realId, tempId) => {
         this.idMapping.set(tempId, realId);
       });
 
       this.trimExcessMappings();
 
-      const localStore = ErdStore.getInstance();
-      applyLocalIdMapping(idMap, localStore, this.syncedStore);
+      applyLocalIdMapping(idMap, localStore);
 
       if (this.idMappingCallbacks.length > 0) {
         idMap.forEach((realId, tempId) => {
