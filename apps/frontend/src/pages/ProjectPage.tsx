@@ -8,7 +8,7 @@ import {
   EntityFormDialog,
 } from '@/components';
 import type { EntityFormData } from '@/components';
-import { useProjectStore } from '@/hooks';
+import { useProjectStore, useWorkspaceStore } from '@/hooks';
 import { observer } from 'mobx-react-lite';
 
 type DialogState = {
@@ -30,14 +30,14 @@ export const ProjectsPage = observer(() => {
   const {
     workspaces,
     currentWorkspace,
-    projects,
-    totalPages,
     setWorkspace,
     createWorkspace,
+    updateWorkspace,
     deleteWorkspace,
-    createProject,
-    deleteProject,
-  } = useProjectStore();
+  } = useWorkspaceStore();
+
+  const { projects, totalPages, createProject, deleteProject } =
+    useProjectStore();
 
   const filteredProjects = projects.filter((project) =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -61,6 +61,11 @@ export const ProjectsPage = observer(() => {
     if (entityType === 'workspace') {
       if (mode === 'create') {
         await createWorkspace(data);
+      } else if (mode === 'edit' && data.id) {
+        await updateWorkspace(data.id, {
+          name: data.name,
+          description: data.description,
+        });
       }
     } else if (entityType === 'project') {
       if (!currentWorkspace) return;
@@ -83,6 +88,13 @@ export const ProjectsPage = observer(() => {
           workspaces={workspaces}
           selectedWorkspace={currentWorkspace}
           onSelect={setWorkspace}
+          onEdit={(workspace) => {
+            openDialog('workspace', 'edit', {
+              id: workspace.id,
+              name: workspace.name,
+              description: workspace.description,
+            });
+          }}
           onDelete={deleteWorkspace}
         />
 

@@ -11,6 +11,7 @@ type EntityType = 'workspace' | 'project';
 type Mode = 'create' | 'edit';
 
 export type EntityFormData = {
+  id?: string;
   name: string;
   description: string;
 };
@@ -57,7 +58,7 @@ export const EntityFormDialog = ({
   }, [open, mode, initialData]);
 
   const handleSubmit = () => {
-    onSubmit({ name, description });
+    onSubmit({ id: initialData?.id, name, description });
     setName('');
     setDescription('');
   };

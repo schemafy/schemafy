@@ -8,6 +8,8 @@ import {
   createProject,
   deleteProject,
   deleteWorkspace,
+  updateWorkspace,
+  updateProject,
 } from '../lib/api';
 import type {
   Workspace,
@@ -205,6 +207,54 @@ export class ProjectStore {
       'Failed to create project',
     );
     return project;
+  }
+
+  async updateWorkspace(workspaceID: string, data: WorkspaceRequest) {
+    await this.handleAsync(
+      'editWorkspace',
+      () => updateWorkspace(workspaceID, data),
+      (workspace) => {
+        if (this.workspaces) {
+          this.workspaces = {
+            ...this.workspaces,
+            content: this.workspaces.content.map((w) =>
+              w.id === workspaceID
+                ? { ...workspace, memberCount: w.memberCount }
+                : w,
+            ),
+          };
+
+          if (this.currentWorkspace?.id == workspaceID) {
+            this.currentWorkspace = workspace;
+          }
+        }
+      },
+      'Failed to edit workspace',
+    );
+  }
+
+  async editProject(
+    workspaceId: string,
+    projectId: string,
+    data: ProjectRequest,
+  ) {
+    await this.handleAsync(
+      'editProject',
+      () => updateProject(workspaceId, projectId, data),
+      (project) => {
+        if (this.projects) {
+          this.projects = {
+            ...this.projects,
+            content: this.projects.content.map((p) =>
+              p.id === projectId
+                ? { ...project, memberCount: p.memberCount, myRole: p.myRole }
+                : p,
+            ),
+          };
+        }
+      },
+      'Failed to edit project',
+    );
   }
 
   async deleteWorkspace(workspaceId: string) {

@@ -1,4 +1,4 @@
-import { ChevronDown, Trash } from 'lucide-react';
+import { ChevronDown, Pencil, Trash } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -10,6 +10,7 @@ interface WorkspaceSelectorProps {
   workspaces: Workspace[];
   selectedWorkspace: Workspace | null;
   onSelect: (workspace: Workspace) => void;
+  onEdit: (workspace: Workspace) => void;
   onDelete: (workspaceId: string) => void;
 }
 
@@ -17,6 +18,7 @@ export const WorkspaceSelector = ({
   workspaces,
   selectedWorkspace,
   onSelect,
+  onEdit,
   onDelete,
 }: WorkspaceSelectorProps) => {
   return (
@@ -41,6 +43,12 @@ export const WorkspaceSelector = ({
                 }`}
               >
                 {workspace.name}
+              </button>
+              <button
+                onClick={() => onEdit(workspace)}
+                className={`text-center px-3 py-2 rounded-lg font-body-sm hover:bg-schemafy-light-gray transition-colors`}
+              >
+                <Pencil size={16} />
               </button>
               <button
                 onClick={() => onDelete(workspace.id)}
