@@ -233,6 +233,30 @@ export class ProjectStore {
     );
   }
 
+  async updateProject(
+    workspaceId: string,
+    projectId: string,
+    data: ProjectRequest,
+  ) {
+    await this.handleAsync(
+      'editProject',
+      () => updateProject(workspaceId, projectId, data),
+      (project) => {
+        if (this.projects) {
+          this.projects = {
+            ...this.projects,
+            content: this.projects.content.map((p) =>
+              p.id === projectId
+                ? { ...project, memberCount: p.memberCount, myRole: p.myRole }
+                : p,
+            ),
+          };
+        }
+      },
+      'Failed to edit project',
+    );
+  }
+
   async editProject(
     workspaceId: string,
     projectId: string,

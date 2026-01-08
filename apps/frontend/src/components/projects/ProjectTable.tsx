@@ -8,14 +8,19 @@ import {
   Menu,
   MenuItem,
 } from '@/components';
-import type { ProjectSummary } from '@/lib/api';
+import type { Project, ProjectSummary } from '@/lib/api';
 
 interface ProjectTableProps {
   projects: ProjectSummary[];
+  onEdit: (projectId: string, project: Project) => void;
   onDelete: (workspaceId: string, projectId: string) => void;
 }
 
-export const ProjectTable = ({ projects, onDelete }: ProjectTableProps) => {
+export const ProjectTable = ({
+  projects,
+  onEdit,
+  onDelete,
+}: ProjectTableProps) => {
   return (
     <div className="bg-schemafy-bg border border-schemafy-light-gray rounded-lg mb-6">
       <Table>
@@ -67,6 +72,9 @@ export const ProjectTable = ({ projects, onDelete }: ProjectTableProps) => {
                     </button>
                   }
                 >
+                  <MenuItem onClick={() => onEdit(project.id, project)}>
+                    Edit
+                  </MenuItem>
                   <MenuItem
                     onClick={() => onDelete(project.workspaceId, project.id)}
                     variant="destructive"

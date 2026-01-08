@@ -18,19 +18,21 @@ export const useProjectStore = () => {
     [store],
   );
 
-  const createProject = useCallback(
-    async (workspaceId: string, data: ProjectRequest) => {
-      return store.createProject(workspaceId, data);
-    },
-    [store],
-  );
+  const createProject = async (workspaceId: string, data: ProjectRequest) => {
+    store.createProject(workspaceId, data);
+  };
 
-  const deleteProject = useCallback(
-    async (workspaceId: string, projectId: string) => {
-      return store.deleteProject(workspaceId, projectId);
-    },
-    [store],
-  );
+  const updateProject = async (
+    workspaceId: string,
+    projectId: string,
+    data: ProjectRequest,
+  ) => {
+    store.updateProject(workspaceId, projectId, data);
+  };
+
+  const deleteProject = async (workspaceId: string, projectId: string) => {
+    return store.deleteProject(workspaceId, projectId);
+  };
 
   useEffect(() => {
     if (!currentWorkspace) return;
@@ -43,6 +45,7 @@ export const useProjectStore = () => {
     isLoading,
     fetchProjects,
     createProject,
+    updateProject,
     deleteProject,
   };
 };

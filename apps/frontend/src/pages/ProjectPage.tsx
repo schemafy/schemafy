@@ -10,6 +10,7 @@ import {
 import type { EntityFormData } from '@/components';
 import { useProjectStore, useWorkspaceStore } from '@/hooks';
 import { observer } from 'mobx-react-lite';
+import type { Project, Workspace } from '@/lib/api';
 
 type DialogState = {
   open: boolean;
@@ -36,7 +37,7 @@ export const ProjectsPage = observer(() => {
     deleteWorkspace,
   } = useWorkspaceStore();
 
-  const { projects, totalPages, createProject, deleteProject } =
+  const { projects, totalPages, createProject, updateProject, deleteProject } =
     useProjectStore();
 
   const filteredProjects = projects.filter((project) =>
@@ -71,10 +72,31 @@ export const ProjectsPage = observer(() => {
       if (!currentWorkspace) return;
       if (mode === 'create') {
         await createProject(currentWorkspace.id, data);
+      } else if (mode === 'edit' && data.id) {
+        await updateProject(currentWorkspace.id, data.id, {
+          name: data.name,
+          description: data.description,
+        });
       }
     }
 
     closeDialog();
+  };
+
+  const handleEditWorkspace = (workspaceId: string, workspace: Workspace) => {
+    openDialog('workspace', 'edit', {
+      id: workspaceId,
+      name: workspace.name,
+      description: workspace.description,
+    });
+  };
+
+  const handleEditProject = (projectId: string, project: Project) => {
+    openDialog('project', 'edit', {
+      id: projectId,
+      name: project.name,
+      description: project.description,
+    });
   };
 
   const handleDeleteProject = (workspaceId: string, projectId: string) => {
@@ -89,11 +111,7 @@ export const ProjectsPage = observer(() => {
           selectedWorkspace={currentWorkspace}
           onSelect={setWorkspace}
           onEdit={(workspace) => {
-            openDialog('workspace', 'edit', {
-              id: workspace.id,
-              name: workspace.name,
-              description: workspace.description,
-            });
+            handleEditWorkspace(workspace.id, workspace);
           }}
           onDelete={deleteWorkspace}
         />
@@ -117,6 +135,7 @@ export const ProjectsPage = observer(() => {
 
         <ProjectTable
           projects={filteredProjects}
+          onEdit={handleEditProject}
           onDelete={handleDeleteProject}
         />
 
