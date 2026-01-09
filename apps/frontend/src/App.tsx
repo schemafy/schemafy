@@ -3,7 +3,14 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { TooltipProvider } from '@/components';
-import { LandingPage, SignInPage, SignUpPage, CanvasPage, ProjectsPage } from '@/pages';
+import {
+  LandingPage,
+  SignInPage,
+  SignUpPage,
+  CanvasPage,
+  ProjectsPage,
+  JoinPage,
+} from '@/pages';
 import { useEffect } from 'react';
 import { AuthStore } from '@/store/auth.store';
 import { getMyInfo, refreshToken } from '@/lib/api';
@@ -46,8 +53,9 @@ function App() {
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/signin" element={<SignInPage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/join/:token" element={<JoinPage />} />
                 <Route
-                  path="/canvas"
+                  path="/canvas/:workspaceId/:projectId"
                   element={
                     <RequireAuth>
                       <CanvasPage />

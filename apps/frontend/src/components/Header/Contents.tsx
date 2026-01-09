@@ -1,4 +1,5 @@
 import { useState, useContext } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Avatar } from '../Avatar';
 import { Button } from '../Button';
 import { RadioGroup, RadioGroupItem } from '../RadioGroup';
@@ -18,6 +19,8 @@ import {
   SelectValue,
 } from '../Select';
 import { AuthStore } from '@/store';
+import { useShareLinkStore } from '@/hooks';
+import type { ShareLinkRole } from '@/lib/api/shareLink/types';
 
 export const LandingContents = () => {
   return (
@@ -50,12 +53,16 @@ export const DashBoardContents = () => {
       </div>
       <div className="flex items-center gap-4">
         <div className="flex gap-2">
-          <Button round to='/projects'>New Project</Button>
+          <Button round to="/projects">
+            New Project
+          </Button>
           <Button variant={'secondary'} round>
             Sign Out
           </Button>
         </div>
-        <span className="flex items-center font-body-sm text-schemafy-dark-gray">{user?.name}</span>
+        <span className="flex items-center font-body-sm text-schemafy-dark-gray">
+          {user?.name}
+        </span>
         <Avatar src="https://picsum.photos/200/300?random=1" />
       </div>
     </div>
@@ -99,7 +106,7 @@ const ImportContents = () => {
             type="file"
             id="file-upload"
             className="hidden"
-            onChange={() => { }}
+            onChange={() => {}}
           />
           <label
             htmlFor="file-upload"
@@ -139,6 +146,36 @@ const ExportContents = () => {
 };
 
 const ShareContents = () => {
+  const location = useLocation();
+  const pathParts = location.pathname.split('/');
+  const workspaceId = pathParts[2];
+  const projectId = pathParts[3];
+
+  const { createShareLink, generatedLink, isLoading } = useShareLinkStore();
+  const [selectedRole, setSelectedRole] = useState<ShareLinkRole>('viewer');
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleGenerateLink = async () => {
+    console.log(workspaceId, projectId);
+    if (!workspaceId || !projectId) return;
+
+    setCopySuccess(false);
+
+    await createShareLink(workspaceId, projectId, selectedRole);
+  };
+
+  const handleCopyLink = async () => {
+    if (!generatedLink) return;
+
+    try {
+      await navigator.clipboard.writeText(generatedLink);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch {
+      console.error('Failed to copy link');
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -150,46 +187,61 @@ const ShareContents = () => {
         align="end"
         className="flex flex-col gap-2.5 font-body-xs"
       >
-        <div className="flex gap-4">
-          <input
-            type="email"
-            className="w-[12.5rem] placeholder:text-schemafy-dark-gray bg-secondary rounded-[10px] px-3 py-2"
-            placeholder="schemafy@email.com"
-          />
-          <Button size={'dropdown'}>Invite</Button>
-        </div>
-        <div className="flex gap-1 justify-end items-center hover:text-blue-500">
-          <Link size={10} />
-          <Button
-            variant={'none'}
-            size={'none'}
-            className="text-schemafy-dark-gray font-body-xs"
+        <p className="font-overline-xs text-schemafy-dark-gray">
+          Generate Share Link
+        </p>
+
+        <div className="flex flex-col gap-2">
+          <label className="font-caption-sm text-schemafy-text">Role</label>
+          <Select
+            value={selectedRole}
+            onValueChange={(value) => setSelectedRole(value as ShareLinkRole)}
           >
-            Copy Link
-          </Button>
-        </div>
-        <p className="text-schemafy-dark-gray">Who has access</p>
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2.5 items-center">
-            <Avatar
-              size={'dropdown'}
-              src="https://picsum.photos/200/300?random=1"
-            />
-            <p>name</p>
-          </div>
-          <Select>
-            <SelectTrigger className="w-[3.75rem] border-none font-body-xs">
-              <SelectValue placeholder="admin" />
+            <SelectTrigger className="w-full border border-schemafy-light-gray font-body-xs">
+              <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent popover="manual">
               <SelectGroup>
-                <SelectItem value="admin">admin</SelectItem>
-                <SelectItem value="viewer">viewer</SelectItem>
-                <SelectItem value="editor">editor</SelectItem>
+                <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="commenter">Commenter</SelectItem>
+                <SelectItem value="editor">Editor</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
         </div>
+
+        <Button
+          fullWidth
+          size={'dropdown'}
+          onClick={handleGenerateLink}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Generating...' : 'Generate Link'}
+        </Button>
+
+        {generatedLink && (
+          <div className="flex flex-col gap-2 pt-2 border-t border-schemafy-light-gray">
+            <p className="font-caption-sm text-schemafy-dark-gray">
+              Share Link
+            </p>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                readOnly
+                value={generatedLink}
+                className="flex-1 placeholder:text-schemafy-dark-gray bg-secondary rounded-[10px] px-3 py-2 text-xs truncate"
+              />
+              <Button
+                size={'dropdown'}
+                variant={copySuccess ? 'secondary' : 'default'}
+                onClick={handleCopyLink}
+              >
+                <Link size={14} className="mr-1" />
+                {copySuccess ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+          </div>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -243,7 +295,7 @@ const SettingsContents = () => {
           <input
             type="text"
             value={'Schemafy'}
-            onChange={() => { }}
+            onChange={() => {}}
             className="w-[12.5rem] placeholder:text-schemafy-dark-gray bg-secondary rounded-[10px] px-3 py-2"
           />
         </div>
@@ -252,7 +304,7 @@ const SettingsContents = () => {
           <input
             type="text"
             value={'Schemafy ERD Diagram'}
-            onChange={() => { }}
+            onChange={() => {}}
             className="w-[12.5rem] placeholder:text-schemafy-dark-gray bg-secondary rounded-[10px] px-3 py-2"
           />
         </div>

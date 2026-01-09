@@ -7,7 +7,7 @@ import { Toaster } from './Toaster';
 
 export const Layout = ({ children }: PropsWithChildren) => {
   const location = useLocation();
-  const isCanvasPage = location.pathname === '/canvas';
+  const isCanvasPage = location.pathname.startsWith('/canvas');
 
   return (
     <div className="layout flex flex-col min-h-screen bg-schemafy-bg w-full items-center">

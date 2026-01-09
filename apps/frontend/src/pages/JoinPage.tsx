@@ -1,0 +1,102 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { observer } from 'mobx-react-lite';
+import { ProjectStore, AuthStore } from '@/store';
+import { Button } from '@/components';
+
+const JoinPageComponent = () => {
+  const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const projectStore = ProjectStore.getInstance();
+  const authStore = AuthStore.getInstance();
+
+  const [status, setStatus] = useState<
+    'loading' | 'success' | 'error' | 'unauthenticated'
+  >('loading');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  useEffect(() => {
+    const joinProject = async () => {
+      if (!token) {
+        setStatus('error');
+        setErrorMessage('Invalid share link');
+        return;
+      }
+
+      if (!authStore.user) {
+        setStatus('unauthenticated');
+        return;
+      }
+
+      try {
+        const result = await projectStore.joinByShareLink(token);
+        if (result) {
+          setStatus('success');
+          navigate('/projects');
+        } else {
+          setStatus('error');
+          setErrorMessage(projectStore.error || 'Failed to join project');
+        }
+      } catch {
+        setStatus('error');
+        setErrorMessage('Failed to join project');
+      }
+    };
+
+    if (!authStore.isAuthLoading) {
+      joinProject();
+    }
+  }, [authStore.isAuthLoading, authStore.user, navigate, projectStore, token]);
+
+  const handleSignIn = () => {
+    navigate('/signin', { state: { from: location } });
+  };
+
+  if (status === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-schemafy-primary"></div>
+        <p className="font-body-md text-schemafy-text">Joining project...</p>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+        <h1 className="font-heading-lg text-schemafy-text">Sign in required</h1>
+        <p className="font-body-md text-schemafy-dark-gray">
+          Please sign in to join this project
+        </p>
+        <Button onClick={handleSignIn}>Sign In</Button>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+        <h1 className="font-heading-lg text-schemafy-text">
+          Unable to join project
+        </h1>
+        <p className="font-body-md text-schemafy-dark-gray">{errorMessage}</p>
+        <Button to="/projects">Go to Projects</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+      <div className="text-green-500 text-5xl">✓</div>
+      <h1 className="font-heading-lg text-schemafy-text">
+        Successfully joined!
+      </h1>
+      <p className="font-body-md text-schemafy-dark-gray">
+        Redirecting to canvas...
+      </p>
+    </div>
+  );
+};
+
+export const JoinPage = observer(JoinPageComponent);

@@ -42,7 +42,7 @@ export const ProjectTable = ({
         <TableBody>
           {projects.map((project) => (
             <TableRow key={project.id}>
-              <Link to={`/canvas`}>
+              <Link to={`/canvas/${project.workspaceId}/${project.id}`}>
                 <TableCell className="font-body-sm text-schemafy-text">
                   {project.name}
                 </TableCell>

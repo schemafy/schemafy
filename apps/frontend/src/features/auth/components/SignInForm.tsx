@@ -2,7 +2,7 @@ import { Button, InputField } from '@/components';
 import type { SignInFormValues, ValidationRules } from '../types';
 import { useFormState } from '../hooks';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { signIn } from '@/lib/api';
 import { AuthStore } from '@/store/auth.store';
 
@@ -49,7 +49,11 @@ export const SignInForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
   const navigate = useNavigate();
+  const location = useLocation();
   const authStore = AuthStore.getInstance();
+
+  const from =
+    (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -72,7 +76,7 @@ export const SignInForm = () => {
           authStore.setUser(response.result);
         }
         resetForm();
-        navigate('/');
+        navigate(from, { replace: true });
       } else {
         setSubmitError(response.error?.message || '로그인에 실패했습니다.');
       }
