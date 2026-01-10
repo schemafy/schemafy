@@ -45,18 +45,11 @@ const JoinPageComponent = () => {
       }
     };
 
-    if (!authStore.isAuthLoading) {
+    if (!authStore.isAuthLoading && authStore.isInitialized) {
       joinProject();
     }
-  }, [
-    authStore.isAuthLoading,
-    authStore.user,
-    navigate,
-    joinByShareLink,
-    error,
-    token,
-    location,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStore.isAuthLoading, authStore.isInitialized]);
 
   if (status === 'loading') {
     return (
