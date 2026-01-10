@@ -729,6 +729,36 @@ NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다
 
 ---
 
+=== ShareLink 공개 접근
+
+토큰을 사용하여 공유 링크에 접근합니다. 인증 없이 접근 가능하며, 익명 사용자는 viewer 권한만 부여됩니다.
+
+[source]
+----
+GET /public/api/v1.0/share/{token}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/share-link-public-access/http-request.adoc[]
+include::{snippets}/share-link-public-access/path-parameters.adoc[]
+include::{snippets}/share-link-public-access/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/share-link-public-access/response-headers.adoc[]
+include::{snippets}/share-link-public-access/response-body.adoc[]
+include::{snippets}/share-link-public-access/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/share-link-public-access/response-fields.adoc[]
+
+---
+
 == ERD API
 
 ERD(Entity-Relationship Diagram) 관련 API입니다.

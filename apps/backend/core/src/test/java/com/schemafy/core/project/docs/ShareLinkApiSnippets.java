@@ -235,4 +235,49 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         successResponseFieldsWithNullResult());
   }
 
+  // ========== GET /api/public/share/{token} - 공유 링크 공개 접근 ==========
+
+  /** 공유 링크 공개 접근 경로 파라미터 */
+  public static Snippet accessShareLinkPublicPathParameters() {
+    return pathParameters(
+        parameterWithName("token")
+            .description("공유 링크 토큰 (URL-safe Base64 인코딩)"));
+  }
+
+  /** 공유 링크 공개 접근 응답 헤더 */
+  public static Snippet accessShareLinkPublicResponseHeaders() {
+    return createResponseHeadersSnippet(commonResponseHeaders());
+  }
+
+  /** 공유 링크 공개 접근 응답 */
+  public static Snippet accessShareLinkPublicResponse() {
+    return createResponseFieldsSnippet(
+        successResponseFields(
+            fieldWithPath("result.projectId").type(JsonFieldType.STRING)
+                .description("프로젝트 고유 ID (ULID)"),
+            fieldWithPath("result.projectName")
+                .type(JsonFieldType.STRING)
+                .description("프로젝트 이름"),
+            fieldWithPath("result.description")
+                .type(JsonFieldType.STRING)
+                .description("프로젝트 설명").optional(),
+            fieldWithPath("result.settings").type(JsonFieldType.OBJECT)
+                .description("프로젝트 설정"),
+            fieldWithPath("result.settings.theme")
+                .type(JsonFieldType.STRING)
+                .description("테마 설정 (예: light, dark)"),
+            fieldWithPath("result.settings.language")
+                .type(JsonFieldType.STRING)
+                .description("언어 설정 (예: ko, en)"),
+            fieldWithPath("result.grantedRole")
+                .type(JsonFieldType.STRING)
+                .description(
+                    "부여된 역할 (viewer, commenter, editor). 익명 사용자는 항상 viewer"),
+            fieldWithPath("result.canEdit").type(JsonFieldType.BOOLEAN)
+                .description("편집 권한 여부 (EDITOR 역할만 true)"),
+            fieldWithPath("result.canComment")
+                .type(JsonFieldType.BOOLEAN)
+                .description(
+                    "코멘트 권한 여부 (COMMENTER, EDITOR 역할일 때 true)")));
+  }
 }

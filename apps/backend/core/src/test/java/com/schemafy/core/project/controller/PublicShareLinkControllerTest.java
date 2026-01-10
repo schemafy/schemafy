@@ -5,8 +5,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -15,7 +17,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.core.RestDocsConfiguration;
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.project.docs.ShareLinkApiSnippets;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkAccessLogRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
@@ -36,9 +40,13 @@ import com.schemafy.core.user.repository.vo.UserInfo;
 
 import reactor.core.publisher.Mono;
 
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
+
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
+@AutoConfigureRestDocs
+@Import(RestDocsConfiguration.class)
 @DisplayName("PublicShareLinkController 통합 테스트")
 class PublicShareLinkControllerTest {
 
@@ -123,8 +131,15 @@ class PublicShareLinkControllerTest {
     ShareLink shareLink = createShareLink(token, ShareLinkRole.EDITOR,
         null);
 
-    webTestClient.get().uri(PUBLIC_API_PATH + "/" + token).exchange()
-        .expectStatus().isOk().expectBody().jsonPath("$.success")
+    webTestClient.get()
+        .uri(PUBLIC_API_PATH + "/{token}", token)
+        .exchange()
+        .expectStatus().isOk().expectBody()
+        .consumeWith(document("share-link-public-access",
+            ShareLinkApiSnippets.accessShareLinkPublicPathParameters(),
+            ShareLinkApiSnippets.accessShareLinkPublicResponseHeaders(),
+            ShareLinkApiSnippets.accessShareLinkPublicResponse()))
+        .jsonPath("$.success")
         .isEqualTo(true).jsonPath("$.result.projectId")
         .isEqualTo(testProject.getId()).jsonPath("$.result.projectName")
         .isEqualTo("Test Project").jsonPath("$.result.grantedRole")
