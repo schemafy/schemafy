@@ -1,9 +1,11 @@
 import { makeAutoObservable } from 'mobx';
 import { createShareLink } from '@/lib/api/shareLink/api';
+import { joinProjectByShareLink } from '@/lib/api/project/api';
 import type {
   CreateShareLinkRequest,
   CreateShareLinkResponse,
 } from '@/lib/api/shareLink/types';
+import type { ProjectMember } from '@/lib/api/project/types';
 import { handleAsync, type AsyncHandlerContext } from './helpers';
 
 export class ShareLinkStore implements AsyncHandlerContext {
@@ -44,6 +46,17 @@ export class ShareLinkStore implements AsyncHandlerContext {
       'Failed to create share link',
     );
     return shareLink;
+  }
+
+  async joinByShareLink(token: string): Promise<ProjectMember | null> {
+    const { data: member } = await handleAsync(
+      this,
+      'joinByShareLink',
+      () => joinProjectByShareLink({ token }),
+      () => {},
+      'Failed to join project',
+    );
+    return member;
   }
 
   getShareLinkUrl(): string | null {

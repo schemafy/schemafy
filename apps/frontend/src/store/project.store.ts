@@ -5,13 +5,11 @@ import {
   createProject,
   deleteProject,
   updateProject,
-  joinProjectByShareLink,
 } from '@/lib/api';
 import type {
   Project,
   ProjectsResponse,
   ProjectRequest,
-  ProjectMember,
 } from '@/lib/api/project/types';
 import { handleAsync, type AsyncHandlerContext } from './helpers';
 
@@ -161,19 +159,6 @@ export class ProjectStore implements AsyncHandlerContext {
       });
       return false;
     }
-  }
-
-  async joinByShareLink(token: string): Promise<ProjectMember | null> {
-    const { data: member } = await handleAsync(
-      this,
-      'joinByShareLink',
-      () => joinProjectByShareLink({ token }),
-      () => {
-        this.currentProject = null;
-      },
-      'Failed to join project',
-    );
-    return member;
   }
 
   clearProjects() {

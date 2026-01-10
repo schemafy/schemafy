@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ShareLinkStore } from '@/store';
 import type { ShareLinkRole } from '@/lib/api/shareLink/types';
+import type { ProjectMember } from '@/lib/api/project/types';
 
 export const useShareLinkStore = () => {
   const store = ShareLinkStore.getInstance();
@@ -29,6 +30,12 @@ export const useShareLinkStore = () => {
     return null;
   };
 
+  const joinByShareLink = async (
+    token: string,
+  ): Promise<ProjectMember | null> => {
+    return store.joinByShareLink(token);
+  };
+
   const clearShareLink = () => {
     store.clearShareLink();
     setGeneratedLink(null);
@@ -44,6 +51,7 @@ export const useShareLinkStore = () => {
     currentShareLink,
     generatedLink,
     createShareLink,
+    joinByShareLink,
     clearShareLink,
     clearError,
   };

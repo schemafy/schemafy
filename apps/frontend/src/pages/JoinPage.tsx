@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { observer } from 'mobx-react-lite';
-import { ProjectStore, AuthStore } from '@/store';
+import { AuthStore } from '@/store';
+import { useShareLinkStore } from '@/hooks';
 import { Button } from '@/components';
 
 const JoinPageComponent = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const projectStore = ProjectStore.getInstance();
   const authStore = AuthStore.getInstance();
+  const { joinByShareLink, error } = useShareLinkStore();
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
     'loading',
@@ -30,13 +31,13 @@ const JoinPageComponent = () => {
       }
 
       try {
-        const result = await projectStore.joinByShareLink(token);
+        const result = await joinByShareLink(token);
         if (result) {
           setStatus('success');
           navigate('/projects');
         } else {
           setStatus('error');
-          setErrorMessage(projectStore.error || 'Failed to join project');
+          setErrorMessage(error || 'Failed to join project');
         }
       } catch {
         setStatus('error');
@@ -51,7 +52,8 @@ const JoinPageComponent = () => {
     authStore.isAuthLoading,
     authStore.user,
     navigate,
-    projectStore,
+    joinByShareLink,
+    error,
     token,
     location,
   ]);
@@ -84,7 +86,7 @@ const JoinPageComponent = () => {
         Successfully joined!
       </h1>
       <p className="font-body-md text-schemafy-dark-gray">
-        Redirecting to canvas...
+        Redirecting to projects...
       </p>
     </div>
   );
