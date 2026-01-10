@@ -58,28 +58,24 @@ export const ProjectsPage = observer(() => {
 
   const handleDialogSubmit = async (data: EntityFormData) => {
     const { entityType, mode } = dialogState;
+    const payload = { name: data.name, description: data.description };
 
-    if (entityType === 'workspace') {
-      if (mode === 'create') {
-        await createWorkspace(data);
-      } else if (mode === 'edit' && data.id) {
-        await updateWorkspace(data.id, {
-          name: data.name,
-          description: data.description,
-        });
-      }
-    } else if (entityType === 'project') {
-      if (!currentWorkspace) return;
-      if (mode === 'create') {
-        await createProject(currentWorkspace.id, data);
-      } else if (mode === 'edit' && data.id) {
-        await updateProject(currentWorkspace.id, data.id, {
-          name: data.name,
-          description: data.description,
-        });
-      }
-    }
+    const actions = {
+      workspace: {
+        create: () => createWorkspace(payload),
+        edit: () => data.id && updateWorkspace(data.id, payload),
+      },
+      project: {
+        create: () =>
+          currentWorkspace && createProject(currentWorkspace.id, payload),
+        edit: () =>
+          currentWorkspace &&
+          data.id &&
+          updateProject(currentWorkspace.id, data.id, payload),
+      },
+    };
 
+    await actions[entityType][mode]?.();
     closeDialog();
   };
 
