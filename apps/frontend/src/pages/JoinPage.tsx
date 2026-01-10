@@ -11,9 +11,9 @@ const JoinPageComponent = () => {
   const projectStore = ProjectStore.getInstance();
   const authStore = AuthStore.getInstance();
 
-  const [status, setStatus] = useState<
-    'loading' | 'success' | 'error' | 'unauthenticated'
-  >('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    'loading',
+  );
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const JoinPageComponent = () => {
       }
 
       if (!authStore.user) {
-        setStatus('unauthenticated');
+        navigate('/signin', { state: { from: location } });
         return;
       }
 
@@ -47,29 +47,20 @@ const JoinPageComponent = () => {
     if (!authStore.isAuthLoading) {
       joinProject();
     }
-  }, [authStore.isAuthLoading, authStore.user, navigate, projectStore, token]);
-
-  const handleSignIn = () => {
-    navigate('/signin', { state: { from: location } });
-  };
+  }, [
+    authStore.isAuthLoading,
+    authStore.user,
+    navigate,
+    projectStore,
+    token,
+    location,
+  ]);
 
   if (status === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-schemafy-primary"></div>
         <p className="font-body-md text-schemafy-text">Joining project...</p>
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-        <h1 className="font-heading-lg text-schemafy-text">Sign in required</h1>
-        <p className="font-body-md text-schemafy-dark-gray">
-          Please sign in to join this project
-        </p>
-        <Button onClick={handleSignIn}>Sign In</Button>
       </div>
     );
   }
