@@ -70,34 +70,23 @@ export class ProjectStore implements AsyncHandlerContext {
       'createProject',
       () => createProject(workspaceId, data),
       (project) => {
-        if (this.projects) {
-          this.projects = {
-            ...this.projects,
-            content: [
-              {
-                ...project,
-                myRole: 'OWNER',
-                memberCount: 1,
-              },
-              ...this.projects.content,
-            ],
-            totalElements: this.projects.totalElements + 1,
-          };
-        } else {
-          this.projects = {
-            page: 1,
-            size: 1,
-            totalElements: 1,
-            totalPages: 1,
-            content: [
-              {
-                ...project,
-                myRole: 'OWNER',
-                memberCount: 1,
-              },
-            ],
-          };
-        }
+        const existing = this.projects ?? {
+          page: 1,
+          size: 10,
+          totalElements: 0,
+          totalPages: 1,
+          content: [],
+        };
+        const newItem = {
+          ...project,
+          myRole: 'OWNER' as const,
+          memberCount: 1,
+        };
+        this.projects = {
+          ...existing,
+          content: [newItem, ...existing.content],
+          totalElements: existing.totalElements + 1,
+        };
       },
       'Failed to create project',
     );

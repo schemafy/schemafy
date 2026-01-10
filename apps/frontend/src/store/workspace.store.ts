@@ -75,25 +75,22 @@ export class WorkspaceStore implements AsyncHandlerContext {
       'createWorkspace',
       () => createWorkspace(data),
       (workspace) => {
-        if (this.workspaces) {
-          const fetchContents = [
-            { ...workspace, memberCount: 1 },
-            ...this.workspaces.content,
-          ];
-          this.workspaces = {
-            ...this.workspaces,
-            content: fetchContents.sort((a, b) => a.name.localeCompare(b.name)),
-            totalElements: this.workspaces.totalElements + 1,
-          };
-        } else {
-          this.workspaces = {
-            page: 1,
-            size: 1,
-            totalElements: 1,
-            totalPages: 1,
-            content: [{ ...workspace, memberCount: 1 }],
-          };
-        }
+        const existing = this.workspaces ?? {
+          page: 1,
+          size: 10,
+          totalElements: 0,
+          totalPages: 1,
+          content: [],
+        };
+        const newItem = { ...workspace, memberCount: 1 };
+        const newContent = [newItem, ...existing.content].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        );
+        this.workspaces = {
+          ...existing,
+          content: newContent,
+          totalElements: existing.totalElements + 1,
+        };
       },
       'Failed to create workspace',
     );

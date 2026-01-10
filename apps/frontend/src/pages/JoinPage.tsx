@@ -60,7 +60,7 @@ const JoinPageComponent = () => {
 
   if (status === 'loading') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="flex flex-col w-full items-center justify-center min-h-[60vh] gap-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-schemafy-primary"></div>
         <p className="font-body-md text-schemafy-text">Joining project...</p>
       </div>
@@ -69,7 +69,7 @@ const JoinPageComponent = () => {
 
   if (status === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+      <div className="flex flex-col w-full items-center justify-center min-h-[60vh] gap-6">
         <h1 className="font-heading-lg text-schemafy-text">
           Unable to join project
         </h1>
@@ -80,7 +80,7 @@ const JoinPageComponent = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+    <div className="flex flex-col w-full items-center justify-center min-h-[60vh] gap-6">
       <div className="text-green-500 text-5xl">✓</div>
       <h1 className="font-heading-lg text-schemafy-text">
         Successfully joined!

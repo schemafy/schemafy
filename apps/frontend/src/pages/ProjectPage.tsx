@@ -7,17 +7,10 @@ import {
   ProjectTable,
   EntityFormDialog,
 } from '@/components';
-import type { EntityFormData } from '@/components';
+import type { DialogState, EntityFormData } from '@/components';
 import { useProjectStore, useWorkspaceStore } from '@/hooks';
 import { observer } from 'mobx-react-lite';
 import type { Project, Workspace } from '@/lib/api';
-
-type DialogState = {
-  open: boolean;
-  entityType: 'workspace' | 'project';
-  mode: 'create' | 'edit';
-  initialData?: EntityFormData;
-};
 
 export const ProjectsPage = observer(() => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,9 +141,7 @@ export const ProjectsPage = observer(() => {
         open={dialogState.open}
         onOpenChange={(open) => !open && closeDialog()}
         onSubmit={handleDialogSubmit}
-        entityType={dialogState.entityType}
-        mode={dialogState.mode}
-        initialData={dialogState.initialData}
+        dialogState={dialogState}
       />
     </div>
   );

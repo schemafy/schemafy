@@ -7,8 +7,12 @@ import {
   DialogTitle,
 } from '@/components';
 
-type EntityType = 'workspace' | 'project';
-type Mode = 'create' | 'edit';
+export type DialogState = {
+  open: boolean;
+  entityType: 'workspace' | 'project';
+  mode: 'create' | 'edit';
+  initialData?: EntityFormData;
+};
 
 export type EntityFormData = {
   id?: string;
@@ -20,12 +24,10 @@ interface EntityFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: EntityFormData) => void;
-  entityType: EntityType;
-  mode: Mode;
-  initialData?: EntityFormData;
+  dialogState: DialogState;
 }
 
-const ENTITY_LABELS: Record<EntityType, { singular: string }> = {
+const ENTITY_LABELS: Record<DialogState['entityType'], { singular: string }> = {
   workspace: { singular: 'Workspace' },
   project: { singular: 'Project' },
 };
@@ -34,31 +36,31 @@ export const EntityFormDialog = ({
   open,
   onOpenChange,
   onSubmit,
-  entityType,
-  mode,
-  initialData,
+  dialogState,
 }: EntityFormDialogProps) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  const label = ENTITY_LABELS[entityType];
+  const label = ENTITY_LABELS[dialogState.entityType];
   const title =
-    mode === 'create' ? `Create ${label.singular}` : `Edit ${label.singular}`;
+    dialogState.mode === 'create'
+      ? `Create ${label.singular}`
+      : `Edit ${label.singular}`;
 
   useEffect(() => {
     if (open) {
-      if (mode === 'edit' && initialData) {
-        setName(initialData.name);
-        setDescription(initialData.description);
+      if (dialogState.mode === 'edit' && dialogState.initialData) {
+        setName(dialogState.initialData.name);
+        setDescription(dialogState.initialData.description);
       } else {
         setName('');
         setDescription('');
       }
     }
-  }, [open, mode, initialData]);
+  }, [open, dialogState.mode, dialogState.initialData]);
 
   const handleSubmit = () => {
-    onSubmit({ id: initialData?.id, name, description });
+    onSubmit({ id: dialogState.initialData?.id, name, description });
     setName('');
     setDescription('');
   };
