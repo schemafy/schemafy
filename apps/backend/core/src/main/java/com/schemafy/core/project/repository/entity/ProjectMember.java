@@ -1,6 +1,6 @@
 package com.schemafy.core.project.repository.entity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -25,12 +25,12 @@ public class ProjectMember extends BaseEntity {
 
   private String role;
 
-  private LocalDateTime joinedAt;
+  private Instant joinedAt;
 
   public static ProjectMember create(String projectId, String userId,
       ProjectRole role) {
     ProjectMember member = new ProjectMember(projectId, userId,
-        role.getValue(), LocalDateTime.now());
+        role.getValue(), Instant.now());
     member.setId(UlidGenerator.generate());
     return member;
   }
