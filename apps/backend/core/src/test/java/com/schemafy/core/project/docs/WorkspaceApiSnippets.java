@@ -21,16 +21,16 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   private static FieldDescriptor[] workspaceResponseFields() {
     return new FieldDescriptor[] {
       fieldWithPath("result.id").type(JsonFieldType.STRING)
-          .description("워크스페이스 고유 ID (ULID)"),
+          .description("워크스페이스 고유 ID"),
       fieldWithPath("result.name").type(JsonFieldType.STRING)
           .description("워크스페이스 이름 (1-255자)"),
       fieldWithPath("result.description")
           .type(JsonFieldType.STRING)
           .description("워크스페이스 설명 (최대 1000자)").optional(),
       fieldWithPath("result.createdAt").type(JsonFieldType.STRING)
-          .description("생성 시각 (ISO 8601)"),
+          .description("생성 시각"),
       fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
-          .description("수정 시각 (ISO 8601)"),
+          .description("수정 시각"),
       fieldWithPath("result.memberCount").type(JsonFieldType.NUMBER)
           .description("워크스페이스 멤버 수").optional(),
       fieldWithPath("result.projectCount").type(JsonFieldType.NUMBER)
@@ -44,7 +44,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   private static FieldDescriptor[] workspaceSummaryFields(String prefix) {
     return new FieldDescriptor[] {
       fieldWithPath(prefix + "id").type(JsonFieldType.STRING)
-          .description("워크스페이스 고유 ID (ULID)"),
+          .description("워크스페이스 고유 ID"),
       fieldWithPath(prefix + "name").type(JsonFieldType.STRING)
           .description("워크스페이스 이름"),
       fieldWithPath(prefix + "description").type(JsonFieldType.STRING)
@@ -52,9 +52,9 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "memberCount").type(JsonFieldType.NUMBER)
           .description("전체 멤버 수"),
       fieldWithPath(prefix + "createdAt").type(JsonFieldType.STRING)
-          .description("생성 시각 (ISO 8601)"),
+          .description("생성 시각"),
       fieldWithPath(prefix + "updatedAt").type(JsonFieldType.STRING)
-          .description("수정 시각 (ISO 8601)")
+          .description("수정 시각")
     };
   }
 
@@ -135,7 +135,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   /** 워크스페이스 상세 조회 경로 파라미터 */
   public static Snippet getWorkspacePathParameters() {
     return pathParameters(
-        parameterWithName("id").description("워크스페이스 ID (ULID)"));
+        parameterWithName("id").description("워크스페이스 ID"));
   }
 
   /** 워크스페이스 상세 조회 요청 헤더 */
@@ -159,7 +159,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   /** 워크스페이스 수정 경로 파라미터 */
   public static Snippet updateWorkspacePathParameters() {
     return pathParameters(
-        parameterWithName("id").description("워크스페이스 ID (ULID)"));
+        parameterWithName("id").description("워크스페이스 ID"));
   }
 
   /** 워크스페이스 수정 요청 헤더 */
@@ -192,7 +192,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   /** 워크스페이스 삭제 경로 파라미터 */
   public static Snippet deleteWorkspacePathParameters() {
     return pathParameters(
-        parameterWithName("id").description("워크스페이스 ID (ULID)"));
+        parameterWithName("id").description("워크스페이스 ID"));
   }
 
   /** 워크스페이스 삭제 요청 헤더 */
@@ -211,7 +211,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   /** 워크스페이스 멤버 조회 경로 파라미터 */
   public static Snippet getWorkspaceMembersPathParameters() {
     return pathParameters(
-        parameterWithName("id").description("워크스페이스 ID (ULID)"));
+        parameterWithName("id").description("워크스페이스 ID"));
   }
 
   /** 워크스페이스 멤버 조회 요청 헤더 */
@@ -242,10 +242,10 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
                 .description("멤버 목록"),
             fieldWithPath("result.content[].id")
                 .type(JsonFieldType.STRING)
-                .description("멤버십 ID (ULID)"),
+                .description("멤버십 ID"),
             fieldWithPath("result.content[].userId")
                 .type(JsonFieldType.STRING)
-                .description("사용자 ID (ULID)"),
+                .description("사용자 ID"),
             fieldWithPath("result.content[].userName")
                 .type(JsonFieldType.STRING)
                 .description("사용자 이름"),
@@ -258,7 +258,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
                     "워크스페이스 내 역할 (OWNER, ADMIN, MEMBER)"),
             fieldWithPath("result.content[].joinedAt")
                 .type(JsonFieldType.STRING)
-                .description("가입 시각 (ISO 8601)"),
+                .description("가입 시각"),
             fieldWithPath("result.page").type(JsonFieldType.NUMBER)
                 .description("현재 페이지 번호 (0부터 시작)"),
             fieldWithPath("result.size").type(JsonFieldType.NUMBER)
@@ -277,7 +277,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   public static Snippet addMemberPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"));
+            .description("워크스페이스 ID"));
   }
 
   /** 멤버 추가 요청 헤더 */
@@ -304,10 +304,10 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
     return createResponseFieldsSnippet(
         successResponseFields(
             fieldWithPath("result.id").type(JsonFieldType.STRING)
-                .description("생성된 멤버십 ID (ULID)"),
+                .description("생성된 멤버십 ID"),
             fieldWithPath("result.userId")
                 .type(JsonFieldType.STRING)
-                .description("사용자 ID (ULID)"),
+                .description("사용자 ID"),
             fieldWithPath("result.userName")
                 .type(JsonFieldType.STRING)
                 .description("사용자 이름"),
@@ -318,7 +318,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
                 .description("할당된 역할"),
             fieldWithPath("result.joinedAt")
                 .type(JsonFieldType.STRING)
-                .description("가입 시각 (ISO 8601)")));
+                .description("가입 시각")));
   }
 
   // ========== DELETE /api/workspaces/{workspaceId}/members/{memberId} - 멤버 추방 ==========
@@ -327,8 +327,8 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   public static Snippet removeMemberPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("memberId").description("멤버십 ID (ULID)"));
+            .description("워크스페이스 ID"),
+        parameterWithName("memberId").description("멤버십 ID"));
   }
 
   /** 멤버 추방 요청 헤더 */
@@ -342,12 +342,57 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   public static Snippet leaveMemberPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"));
+            .description("워크스페이스 ID"));
   }
 
   /** 워크스페이스 탈퇴 요청 헤더 */
   public static Snippet leaveMemberRequestHeaders() {
     return createRequestHeadersSnippet(authorizationHeader());
+  }
+
+  // ========== PATCH /api/workspaces/{workspaceId}/members/{memberId}/role - 멤버 역할 변경 ==========
+
+  /** 멤버 역할 변경 경로 파라미터 */
+  public static Snippet updateMemberRolePathParameters() {
+    return pathParameters(
+        parameterWithName("workspaceId")
+            .description("워크스페이스 ID"),
+        parameterWithName("memberId").description("멤버십 ID"));
+  }
+
+  /** 멤버 역할 변경 요청 헤더 */
+  public static Snippet updateMemberRoleRequestHeaders() {
+    return createRequestHeadersSnippet(authorizationHeader());
+  }
+
+  /** 멤버 역할 변경 요청 바디 */
+  public static Snippet updateMemberRoleRequest() {
+    return requestFields(
+        fieldWithPath("role").type(JsonFieldType.STRING)
+            .description("변경할 역할 (ADMIN, MEMBER)"));
+  }
+
+  /** 멤버 역할 변경 응답 헤더 */
+  public static Snippet updateMemberRoleResponseHeaders() {
+    return createResponseHeadersSnippet(commonResponseHeaders());
+  }
+
+  /** 멤버 역할 변경 응답 */
+  public static Snippet updateMemberRoleResponse() {
+    return createResponseFieldsSnippet(
+        successResponseFields(
+            fieldWithPath("result.id").type(JsonFieldType.STRING)
+                .description("멤버십 ID"),
+            fieldWithPath("result.userId").type(JsonFieldType.STRING)
+                .description("사용자 ID"),
+            fieldWithPath("result.userName").type(JsonFieldType.STRING)
+                .description("사용자 이름"),
+            fieldWithPath("result.userEmail").type(JsonFieldType.STRING)
+                .description("사용자 이메일"),
+            fieldWithPath("result.role").type(JsonFieldType.STRING)
+                .description("변경된 역할"),
+            fieldWithPath("result.joinedAt").type(JsonFieldType.STRING)
+                .description("가입 시각")));
   }
 
 }

@@ -351,6 +351,38 @@ include::{snippets}/workspace-member-leave/http-response.adoc[]
 
 ---
 
+=== Workspace 멤버 역할 변경
+
+워크스페이스 멤버의 역할을 변경합니다.
+
+[source]
+----
+PATCH /api/v1.0/workspaces/{workspaceId}/members/{memberId}/role
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-member-update-role/http-request.adoc[]
+include::{snippets}/workspace-member-update-role/request-headers.adoc[]
+include::{snippets}/workspace-member-update-role/path-parameters.adoc[]
+include::{snippets}/workspace-member-update-role/request-fields.adoc[]
+include::{snippets}/workspace-member-update-role/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-member-update-role/response-headers.adoc[]
+include::{snippets}/workspace-member-update-role/response-body.adoc[]
+include::{snippets}/workspace-member-update-role/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-member-update-role/response-fields.adoc[]
+
+---
+
 == Project API
 
 === Project 생성

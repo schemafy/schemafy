@@ -19,6 +19,7 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
+import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.docs.WorkspaceApiSnippets;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
@@ -492,6 +493,43 @@ class WorkspaceControllerTest {
 
     assertThat(workspaceMemberRepository.findById(member2.getId()).block()
         .isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("멤버 역할 변경에 성공한다")
+  void updateMemberRoleSuccess() {
+    // given
+    Workspace workspace = Workspace.create("Test Workspace", "Description");
+    workspace = workspaceRepository.save(workspace).block();
+
+    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
+        testUserId, WorkspaceRole.ADMIN);
+    workspaceMemberRepository.save(member1).block();
+
+    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
+        testUser2Id, WorkspaceRole.MEMBER);
+    member2 = workspaceMemberRepository.save(member2).block();
+
+    UpdateMemberRoleRequest request = new UpdateMemberRoleRequest(
+        WorkspaceRole.ADMIN);
+
+    // when & then
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/members/{memberId}/role",
+            workspace.getId(), member2.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isOk().expectBody()
+        .consumeWith(document("workspace-member-update-role",
+            WorkspaceApiSnippets.updateMemberRolePathParameters(),
+            WorkspaceApiSnippets.updateMemberRoleRequestHeaders(),
+            WorkspaceApiSnippets.updateMemberRoleRequest(),
+            WorkspaceApiSnippets.updateMemberRoleResponseHeaders(),
+            WorkspaceApiSnippets.updateMemberRoleResponse()))
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.role")
+        .isEqualTo(WorkspaceRole.ADMIN.getValue());
   }
 
 }
