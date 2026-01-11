@@ -70,11 +70,7 @@ public abstract class RestDocsSnippets {
   protected static FieldDescriptor[] successResponseFieldsWithNullResult() {
     return new FieldDescriptor[] {
       fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-          .description("요청 성공 여부"),
-      fieldWithPath("result").type(JsonFieldType.NULL)
-          .description("응답 데이터 (없음)").optional(),
-      fieldWithPath("error").type(JsonFieldType.NULL)
-          .description("에러 정보 (성공 시 null)").optional()
+          .description("요청 성공 여부")
     };
   }
 
