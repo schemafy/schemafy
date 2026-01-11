@@ -17,35 +17,23 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
 
   // ========== Workspace 도메인 공통 필드 ==========
 
-  /** WorkspaceSettings 응답 필드 */
-  private static FieldDescriptor[] workspaceSettingsFields(String prefix) {
-    return new FieldDescriptor[] {
-      fieldWithPath(prefix + "language").type(JsonFieldType.STRING)
-          .description("언어 설정 (ko, en)")
-    };
-  }
-
   /** Workspace 응답 필드 (상세 정보) */
   private static FieldDescriptor[] workspaceResponseFields() {
-    return concat(
-        new FieldDescriptor[] {
-          fieldWithPath("result.id").type(JsonFieldType.STRING)
-              .description("워크스페이스 고유 ID (ULID)"),
-          fieldWithPath("result.name").type(JsonFieldType.STRING)
-              .description("워크스페이스 이름 (1-255자)"),
-          fieldWithPath("result.description")
-              .type(JsonFieldType.STRING)
-              .description("워크스페이스 설명 (최대 1000자)").optional(),
-          fieldWithPath("result.ownerId").type(JsonFieldType.STRING)
-              .description("워크스페이스 소유자 ID (ULID)"),
-          fieldWithPath("result.settings").type(JsonFieldType.OBJECT)
-              .description("워크스페이스 설정"),
-          fieldWithPath("result.createdAt").type(JsonFieldType.STRING)
-              .description("생성 시각 (ISO 8601)"),
-          fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
-              .description("수정 시각 (ISO 8601)")
-        },
-        workspaceSettingsFields("result.settings."));
+    return new FieldDescriptor[] {
+      fieldWithPath("result.id").type(JsonFieldType.STRING)
+          .description("워크스페이스 고유 ID (ULID)"),
+      fieldWithPath("result.name").type(JsonFieldType.STRING)
+          .description("워크스페이스 이름 (1-255자)"),
+      fieldWithPath("result.description")
+          .type(JsonFieldType.STRING)
+          .description("워크스페이스 설명 (최대 1000자)").optional(),
+      fieldWithPath("result.ownerId").type(JsonFieldType.STRING)
+          .description("워크스페이스 소유자 ID (ULID)"),
+      fieldWithPath("result.createdAt").type(JsonFieldType.STRING)
+          .description("생성 시각 (ISO 8601)"),
+      fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
+          .description("수정 시각 (ISO 8601)")
+    };
   }
 
   /** WorkspaceSummary 응답 필드 (목록 조회용) */
@@ -76,13 +64,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("워크스페이스 이름 (1-255자, 필수)"),
         fieldWithPath("description").type(JsonFieldType.STRING)
-            .description("워크스페이스 설명 (최대 1000자)").optional(),
-        fieldWithPath("settings").type(JsonFieldType.OBJECT)
-            .description("워크스페이스 설정 (null인 경우 기본값 사용)").optional(),
-        fieldWithPath("settings.theme").type(JsonFieldType.STRING)
-            .description("테마 설정 (light, dark)").optional(),
-        fieldWithPath("settings.language").type(JsonFieldType.STRING)
-            .description("언어 설정 (ko, en)").optional());
+            .description("워크스페이스 설명 (최대 1000자)").optional());
   }
 
   /** 워크스페이스 생성 요청 헤더 */
@@ -189,13 +171,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("워크스페이스 이름 (1-255자, 필수)"),
         fieldWithPath("description").type(JsonFieldType.STRING)
-            .description("워크스페이스 설명 (최대 1000자)").optional(),
-        fieldWithPath("settings").type(JsonFieldType.OBJECT)
-            .description("워크스페이스 설정 (null인 경우 기본값 사용)").optional(),
-        fieldWithPath("settings.theme").type(JsonFieldType.STRING)
-            .description("테마 설정 (light, dark)").optional(),
-        fieldWithPath("settings.language").type(JsonFieldType.STRING)
-            .description("언어 설정 (ko, en)").optional());
+            .description("워크스페이스 설명 (최대 1000자)").optional());
   }
 
   /** 워크스페이스 수정 응답 헤더 */

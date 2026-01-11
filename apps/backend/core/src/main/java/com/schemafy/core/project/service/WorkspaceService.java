@@ -25,7 +25,6 @@ import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -48,11 +47,8 @@ public class WorkspaceService {
   public Mono<WorkspaceResponse> createWorkspace(
       CreateWorkspaceRequest request, String userId) {
     return Mono.defer(() -> {
-      WorkspaceSettings settings = request.getSettingsOrDefault();
-      validateSettings(settings);
-
       Workspace workspace = Workspace.create(userId, request.name(),
-          request.description(), settings);
+          request.description());
 
       WorkspaceMember ownerMember = WorkspaceMember.create(
           workspace.getId(), userId, WorkspaceRole.ADMIN);
@@ -96,11 +92,7 @@ public class WorkspaceService {
         .switchIfEmpty(Mono.error(
             new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
         .flatMap(workspace -> {
-          WorkspaceSettings settings = request.getSettingsOrDefault();
-          validateSettings(settings);
-
-          workspace.update(request.name(), request.description(),
-              settings);
+          workspace.update(request.name(), request.description());
           return workspaceRepository.save(workspace);
         }).map(WorkspaceResponse::from)
         .as(transactionalOperator::transactional);
@@ -334,14 +326,6 @@ public class WorkspaceService {
         .switchIfEmpty(Mono.error(
             new BusinessException(
                 ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)));
-  }
-
-  private void validateSettings(WorkspaceSettings settings) {
-    settings.validate();
-    String json = settings.toJson();
-    if (json.length() > 65536) {
-      throw new BusinessException(ErrorCode.WORKSPACE_SETTINGS_TOO_LARGE);
-    }
   }
 
 }

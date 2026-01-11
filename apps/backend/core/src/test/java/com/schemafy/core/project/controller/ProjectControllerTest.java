@@ -110,7 +110,7 @@ class ProjectControllerTest {
 
     // Create workspace and add members
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
     testWorkspaceId = workspace.getId();
 

@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.config.R2dbcConfig;
 import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 import reactor.test.StepVerifier;
 
@@ -30,7 +29,7 @@ class WorkspaceRepositoryTest {
     workspaceRepository.deleteAll().block();
 
     testWorkspace = Workspace.create("owner123", "Test Workspace",
-        "Test Description", WorkspaceSettings.defaultSettings());
+        "Test Description");
   }
 
   @Test
@@ -90,8 +89,7 @@ class WorkspaceRepositoryTest {
   void updateWorkspace() {
     Workspace saved = workspaceRepository.save(testWorkspace).block();
 
-    saved.update("Updated Name", "Updated Description",
-        WorkspaceSettings.defaultSettings());
+    saved.update("Updated Name", "Updated Description");
     Workspace updated = workspaceRepository.save(saved).block();
 
     StepVerifier.create(workspaceRepository.findById(updated.getId()))

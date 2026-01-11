@@ -25,7 +25,6 @@ import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
@@ -85,8 +84,7 @@ class WorkspaceServiceTest {
     testWorkspace = Workspace.create(
         adminUser.getId(),
         "Test Workspace",
-        "Test Description",
-        WorkspaceSettings.defaultSettings());
+        "Test Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 
     adminMember = WorkspaceMember.create(
@@ -108,8 +106,7 @@ class WorkspaceServiceTest {
     void createWorkspace_CreatesOwnerMember() {
       CreateWorkspaceRequest request = new CreateWorkspaceRequest(
           "New Workspace",
-          "New Description",
-          null);
+          "New Description");
 
       Mono<WorkspaceResponse> result = workspaceService.createWorkspace(
           request, outsiderUser.getId());
@@ -145,8 +142,7 @@ class WorkspaceServiceTest {
       Workspace newWorkspace = Workspace.create(
           adminUser.getId(),
           "Deletable Workspace",
-          "Description",
-          WorkspaceSettings.defaultSettings());
+          "Description");
       newWorkspace = workspaceRepository.save(newWorkspace).block();
 
       WorkspaceMember member1 = WorkspaceMember.create(
@@ -183,8 +179,7 @@ class WorkspaceServiceTest {
       Workspace newWorkspace = Workspace.create(
           adminUser.getId(),
           "Will Delete",
-          "Description",
-          WorkspaceSettings.defaultSettings());
+          "Description");
       newWorkspace = workspaceRepository.save(newWorkspace).block();
 
       WorkspaceMember member = WorkspaceMember.create(
@@ -505,8 +500,7 @@ class WorkspaceServiceTest {
       Workspace singleMemberWorkspace = Workspace.create(
           memberUser.getId(),
           "Single Member Workspace",
-          "Description",
-          WorkspaceSettings.defaultSettings());
+          "Description");
       singleMemberWorkspace = workspaceRepository.save(
           singleMemberWorkspace).block();
 

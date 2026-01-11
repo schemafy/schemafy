@@ -280,4 +280,5 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
                 .description(
                     "코멘트 권한 여부 (COMMENTER, EDITOR 역할일 때 true)")));
   }
+
 }

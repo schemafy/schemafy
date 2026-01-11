@@ -24,7 +24,6 @@ import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
@@ -105,8 +104,7 @@ class ProjectServiceTest {
     testWorkspace = Workspace.create(
         ownerUser.getId(),
         "Test Workspace",
-        "Test Description",
-        WorkspaceSettings.defaultSettings());
+        "Test Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 
     workspaceMemberRepository.save(

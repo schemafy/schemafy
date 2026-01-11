@@ -13,7 +13,6 @@ import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -63,13 +62,11 @@ public class UserService {
     String workspaceName = user.getName() + "'s Workspace";
     String workspaceDescription = "Personal workspace for "
         + user.getName();
-    WorkspaceSettings defaultSettings = WorkspaceSettings.defaultSettings();
 
     Workspace workspace = Workspace.create(
         user.getId(),
         workspaceName,
-        workspaceDescription,
-        defaultSettings);
+        workspaceDescription);
 
     WorkspaceMember adminMember = WorkspaceMember.create(
         workspace.getId(),

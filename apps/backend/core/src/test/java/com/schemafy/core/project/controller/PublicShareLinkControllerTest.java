@@ -32,7 +32,6 @@ import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.project.service.ShareLinkTokenService;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -104,7 +103,7 @@ class PublicShareLinkControllerTest {
 
     // Create workspace
     testWorkspace = Workspace.create(testUser.getId(), "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 
     // Add workspace member

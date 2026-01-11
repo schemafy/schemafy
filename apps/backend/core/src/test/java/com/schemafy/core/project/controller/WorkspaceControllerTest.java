@@ -26,7 +26,6 @@ import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
@@ -102,8 +101,7 @@ class WorkspaceControllerTest {
   @DisplayName("워크스페이스 생성에 성공한다")
   void createWorkspaceSuccess() {
     CreateWorkspaceRequest request = new CreateWorkspaceRequest(
-        "My Workspace", "Test Description",
-        WorkspaceSettings.defaultSettings());
+        "My Workspace", "Test Description");
 
     webTestClient.post().uri(API_BASE_PATH)
         .header("Authorization", "Bearer " + accessToken)
@@ -127,8 +125,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 생성 시 이름이 없으면 실패한다")
   void createWorkspaceFailWithoutName() {
-    CreateWorkspaceRequest request = new CreateWorkspaceRequest("", null,
-        null);
+    CreateWorkspaceRequest request = new CreateWorkspaceRequest("", null);
 
     webTestClient.post().uri(API_BASE_PATH)
         .header("Authorization", "Bearer " + accessToken)
@@ -141,7 +138,7 @@ class WorkspaceControllerTest {
   void getWorkspacesSuccess() {
     // given
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
@@ -167,7 +164,7 @@ class WorkspaceControllerTest {
   @DisplayName("워크스페이스 상세 조회에 성공한다")
   void getWorkspaceSuccess() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
@@ -194,7 +191,7 @@ class WorkspaceControllerTest {
   @DisplayName("멤버가 아닌 사용자는 워크스페이스 조회에 실패한다")
   void getWorkspaceFailWhenNotMember() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
@@ -210,7 +207,7 @@ class WorkspaceControllerTest {
   @DisplayName("워크스페이스 수정에 성공한다")
   void updateWorkspaceSuccess() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
@@ -218,8 +215,7 @@ class WorkspaceControllerTest {
     workspaceMemberRepository.save(member).block();
 
     UpdateWorkspaceRequest request = new UpdateWorkspaceRequest(
-        "Updated Workspace", "Updated Description",
-        new WorkspaceSettings("en"));
+        "Updated Workspace", "Updated Description");
 
     webTestClient.put()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -241,7 +237,7 @@ class WorkspaceControllerTest {
   @DisplayName("Admin이 아닌 사용자는 워크스페이스 수정에 실패한다")
   void updateWorkspaceFailWhenNotAdmin() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
@@ -253,7 +249,7 @@ class WorkspaceControllerTest {
     workspaceMemberRepository.save(member2).block();
 
     UpdateWorkspaceRequest request = new UpdateWorkspaceRequest(
-        "Updated Workspace", "Updated Description", null);
+        "Updated Workspace", "Updated Description");
 
     webTestClient.put().uri(API_BASE_PATH + "/" + workspace.getId())
         .header("Authorization", "Bearer " + accessToken2)
@@ -265,7 +261,7 @@ class WorkspaceControllerTest {
   @DisplayName("워크스페이스 삭제에 성공한다")
   void deleteWorkspaceSuccess() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
@@ -291,7 +287,7 @@ class WorkspaceControllerTest {
   @DisplayName("Admin이 아닌 사용자는 워크스페이스 삭제에 실패한다")
   void deleteWorkspaceFailWhenNotAdmin() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
@@ -311,7 +307,7 @@ class WorkspaceControllerTest {
   @DisplayName("멤버 목록 조회에 성공한다")
   void getMembersSuccess() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
@@ -343,7 +339,7 @@ class WorkspaceControllerTest {
   @DisplayName("MEMBER도 멤버 목록을 조회할 수 있다")
   void getMembersSuccessWithMemberRole() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
@@ -364,7 +360,7 @@ class WorkspaceControllerTest {
   @DisplayName("멤버 추가에 성공한다")
   void addMemberSuccess() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
@@ -397,7 +393,7 @@ class WorkspaceControllerTest {
   @DisplayName("Admin이 아닌 사용자는 멤버 추가에 실패한다")
   void addMemberFailWhenNotAdmin() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
@@ -422,7 +418,7 @@ class WorkspaceControllerTest {
   @DisplayName("멤버 추방에 성공한다")
   void removeMemberSuccess() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
@@ -451,7 +447,7 @@ class WorkspaceControllerTest {
   @DisplayName("Admin이 아닌 사용자는 멤버 추방에 실패한다")
   void removeMemberFailWhenNotAdmin() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
@@ -473,7 +469,7 @@ class WorkspaceControllerTest {
   @DisplayName("워크스페이스 탈퇴에 성공한다")
   void leaveMemberSuccess() {
     Workspace workspace = Workspace.create(testUserId, "Test Workspace",
-        "Description", WorkspaceSettings.defaultSettings());
+        "Description");
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
