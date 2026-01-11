@@ -237,14 +237,13 @@ class UserControllerTest {
 
     // 워크스페이스 생성 검증
     StepVerifier
-        .create(workspaceRepository.findByOwnerIdAndNotDeleted(userId))
+        .create(workspaceRepository.findByUserIdWithPaging(userId, 1, 0))
         .as("default workspace should be created")
         .assertNext(workspace -> {
           assertThat(workspace.getName())
               .isEqualTo("Test User's Workspace");
           assertThat(workspace.getDescription())
               .isEqualTo("Personal workspace for Test User");
-          assertThat(workspace.getOwnerId()).isEqualTo(userId);
         })
         .verifyComplete();
 

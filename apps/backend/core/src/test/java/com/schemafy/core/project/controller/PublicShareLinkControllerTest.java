@@ -102,7 +102,7 @@ class PublicShareLinkControllerTest {
     accessToken = generateAccessToken(testUser.getId());
 
     // Create workspace
-    testWorkspace = Workspace.create(testUser.getId(), "Test Workspace",
+    testWorkspace = Workspace.create("Test Workspace",
         "Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 

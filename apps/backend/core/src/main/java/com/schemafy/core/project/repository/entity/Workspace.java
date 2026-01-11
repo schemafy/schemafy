@@ -16,15 +16,12 @@ import lombok.NoArgsConstructor;
 @Table("workspaces")
 public class Workspace extends BaseEntity {
 
-  private String ownerId;
-
   private String name;
 
   private String description;
 
-  public static Workspace create(String ownerId, String name,
-      String description) {
-    Workspace workspace = new Workspace(ownerId, name, description);
+  public static Workspace create(String name, String description) {
+    Workspace workspace = new Workspace(name, description);
     workspace.setId(UlidGenerator.generate());
     return workspace;
   }

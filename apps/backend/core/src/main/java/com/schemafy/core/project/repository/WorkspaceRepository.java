@@ -18,12 +18,6 @@ public interface WorkspaceRepository
   Mono<Workspace> findByIdAndNotDeleted(String id);
 
   @Query("""
-      SELECT * FROM workspaces
-      WHERE owner_id = :ownerId AND deleted_at IS NULL
-      """)
-  Mono<Workspace> findByOwnerIdAndNotDeleted(String ownerId);
-
-  @Query("""
       UPDATE workspaces
       SET deleted_at = CURRENT_TIMESTAMP
       WHERE id = :id

@@ -27,12 +27,16 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
       fieldWithPath("result.description")
           .type(JsonFieldType.STRING)
           .description("워크스페이스 설명 (최대 1000자)").optional(),
-      fieldWithPath("result.ownerId").type(JsonFieldType.STRING)
-          .description("워크스페이스 소유자 ID (ULID)"),
       fieldWithPath("result.createdAt").type(JsonFieldType.STRING)
           .description("생성 시각 (ISO 8601)"),
       fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
-          .description("수정 시각 (ISO 8601)")
+          .description("수정 시각 (ISO 8601)"),
+      fieldWithPath("result.memberCount").type(JsonFieldType.NUMBER)
+          .description("워크스페이스 멤버 수").optional(),
+      fieldWithPath("result.projectCount").type(JsonFieldType.NUMBER)
+          .description("워크스페이스 프로젝트 수").optional(),
+      fieldWithPath("result.currentUserRole").type(JsonFieldType.STRING)
+          .description("요청자의 워크스페이스 역할 (admin/member)").optional()
     };
   }
 
@@ -45,8 +49,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
           .description("워크스페이스 이름"),
       fieldWithPath(prefix + "description").type(JsonFieldType.STRING)
           .description("워크스페이스 설명").optional(),
-      fieldWithPath(prefix + "ownerId").type(JsonFieldType.STRING)
-          .description("워크스페이스 소유자 ID"),
       fieldWithPath(prefix + "memberCount").type(JsonFieldType.NUMBER)
           .description("전체 멤버 수"),
       fieldWithPath(prefix + "createdAt").type(JsonFieldType.STRING)

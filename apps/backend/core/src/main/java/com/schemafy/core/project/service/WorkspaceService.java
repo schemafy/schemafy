@@ -20,6 +20,7 @@ import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceSummaryResponse;
+import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
@@ -42,21 +43,34 @@ public class WorkspaceService {
   private final TransactionalOperator transactionalOperator;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final ProjectRepository projectRepository;
   private final UserRepository userRepository;
 
   public Mono<WorkspaceResponse> createWorkspace(
       CreateWorkspaceRequest request, String userId) {
     return Mono.defer(() -> {
-      Workspace workspace = Workspace.create(userId, request.name(),
+      Workspace workspace = Workspace.create(request.name(),
           request.description());
 
-      WorkspaceMember ownerMember = WorkspaceMember.create(
+      WorkspaceMember adminMember = WorkspaceMember.create(
           workspace.getId(), userId, WorkspaceRole.ADMIN);
 
-      return workspaceRepository.save(workspace).flatMap(
-          savedWorkspace -> workspaceMemberRepository.save(
-              ownerMember).thenReturn(savedWorkspace))
-          .map(WorkspaceResponse::from);
+      return workspaceRepository.save(workspace)
+          .flatMap(savedWorkspace -> workspaceMemberRepository.save(
+              adminMember).thenReturn(savedWorkspace))
+          .flatMap(savedWorkspace -> Mono.zip(
+              Mono.just(savedWorkspace),
+              workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
+                  savedWorkspace.getId()),
+              projectRepository.countByWorkspaceIdAndNotDeleted(
+                  savedWorkspace.getId()),
+              Mono.just(WorkspaceRole.ADMIN.getValue())))
+          .map(tuple -> WorkspaceResponse.of(
+              tuple.getT1(), // workspace
+              tuple.getT2(), // memberCount (1)
+              tuple.getT3(), // projectCount (0)
+              tuple.getT4() // currentUserRole (ADMIN)
+      ));
     }).as(transactionalOperator::transactional);
   }
 
@@ -78,23 +92,52 @@ public class WorkspaceService {
 
   public Mono<WorkspaceResponse> getWorkspace(String workspaceId,
       String userId) {
-    return validateMemberAccess(workspaceId, userId).then(
-        workspaceRepository.findByIdAndNotDeleted(workspaceId))
+    return validateMemberAccess(workspaceId, userId)
+        .then(workspaceRepository.findByIdAndNotDeleted(workspaceId))
         .switchIfEmpty(Mono.error(
             new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
-        .map(WorkspaceResponse::from);
+        .flatMap(workspace -> Mono.zip(
+            Mono.just(workspace),
+            workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
+                workspaceId),
+            projectRepository.countByWorkspaceIdAndNotDeleted(workspaceId),
+            workspaceMemberRepository
+                .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId,
+                    userId)
+                .map(WorkspaceMember::getRole)))
+        .map(tuple -> WorkspaceResponse.of(
+            tuple.getT1(), // workspace
+            tuple.getT2(), // memberCount
+            tuple.getT3(), // projectCount
+            tuple.getT4() // currentUserRole
+        ));
   }
 
   public Mono<WorkspaceResponse> updateWorkspace(String workspaceId,
       UpdateWorkspaceRequest request, String userId) {
-    return validateAdminAccess(workspaceId, userId).then(
-        workspaceRepository.findByIdAndNotDeleted(workspaceId))
+    return validateAdminAccess(workspaceId, userId)
+        .then(workspaceRepository.findByIdAndNotDeleted(workspaceId))
         .switchIfEmpty(Mono.error(
             new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
         .flatMap(workspace -> {
           workspace.update(request.name(), request.description());
           return workspaceRepository.save(workspace);
-        }).map(WorkspaceResponse::from)
+        })
+        .flatMap(savedWorkspace -> Mono.zip(
+            Mono.just(savedWorkspace),
+            workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
+                workspaceId),
+            projectRepository.countByWorkspaceIdAndNotDeleted(workspaceId),
+            workspaceMemberRepository
+                .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId,
+                    userId)
+                .map(WorkspaceMember::getRole)))
+        .map(tuple -> WorkspaceResponse.of(
+            tuple.getT1(), // workspace
+            tuple.getT2(), // memberCount
+            tuple.getT3(), // projectCount
+            tuple.getT4() // currentUserRole
+        ))
         .as(transactionalOperator::transactional);
   }
 

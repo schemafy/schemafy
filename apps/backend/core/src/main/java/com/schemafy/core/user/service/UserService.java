@@ -64,7 +64,6 @@ public class UserService {
         + user.getName();
 
     Workspace workspace = Workspace.create(
-        user.getId(),
         workspaceName,
         workspaceDescription);
 

@@ -115,7 +115,7 @@ class ShareLinkControllerTest {
     accessToken2 = generateAccessToken(testUser2.getId());
 
     // Create workspace
-    testWorkspace = Workspace.create(testUser.getId(), "Test Workspace",
+    testWorkspace = Workspace.create("Test Workspace",
         "Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 

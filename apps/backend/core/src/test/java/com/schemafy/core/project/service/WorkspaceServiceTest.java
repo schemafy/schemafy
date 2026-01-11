@@ -82,7 +82,6 @@ class WorkspaceServiceTest {
         encoder).flatMap(userRepository::save).block();
 
     testWorkspace = Workspace.create(
-        adminUser.getId(),
         "Test Workspace",
         "Test Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
@@ -140,7 +139,6 @@ class WorkspaceServiceTest {
     void deleteWorkspace_SoftDeletesAllMembers() {
       // 추가 워크스페이스 생성 (기본 워크스페이스는 삭제 불가하므로)
       Workspace newWorkspace = Workspace.create(
-          adminUser.getId(),
           "Deletable Workspace",
           "Description");
       newWorkspace = workspaceRepository.save(newWorkspace).block();
@@ -177,7 +175,6 @@ class WorkspaceServiceTest {
     @DisplayName("이미 삭제된 워크스페이스 삭제 시 에러 발생")
     void deleteWorkspace_AlreadyDeleted_Fails() {
       Workspace newWorkspace = Workspace.create(
-          adminUser.getId(),
           "Will Delete",
           "Description");
       newWorkspace = workspaceRepository.save(newWorkspace).block();
@@ -498,7 +495,6 @@ class WorkspaceServiceTest {
     void leaveMember_LastMember_DeletesWorkspace() {
       // 새 워크스페이스 생성 (테스트 격리)
       Workspace singleMemberWorkspace = Workspace.create(
-          memberUser.getId(),
           "Single Member Workspace",
           "Description");
       singleMemberWorkspace = workspaceRepository.save(

@@ -102,7 +102,6 @@ class ProjectServiceTest {
         encoder).flatMap(userRepository::save).block();
 
     testWorkspace = Workspace.create(
-        ownerUser.getId(),
         "Test Workspace",
         "Test Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();

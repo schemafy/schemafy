@@ -109,7 +109,7 @@ class ProjectControllerTest {
     accessToken2 = generateAccessToken(testUser2Id);
 
     // Create workspace and add members
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
     testWorkspaceId = workspace.getId();

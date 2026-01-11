@@ -28,7 +28,7 @@ class WorkspaceRepositoryTest {
   void setUp() {
     workspaceRepository.deleteAll().block();
 
-    testWorkspace = Workspace.create("owner123", "Test Workspace",
+    testWorkspace = Workspace.create("Test Workspace",
         "Test Description");
   }
 
@@ -39,7 +39,6 @@ class WorkspaceRepositoryTest {
         .assertNext(workspace -> {
           assertThat(workspace.getId()).isNotNull();
           assertThat(workspace.getName()).isEqualTo("Test Workspace");
-          assertThat(workspace.getOwnerId()).isEqualTo("owner123");
           assertThat(workspace.getDescription()).isEqualTo(
               "Test Description");
         }).verifyComplete();
@@ -69,19 +68,6 @@ class WorkspaceRepositoryTest {
     StepVerifier.create(
         workspaceRepository.findByIdAndNotDeleted(saved.getId()))
         .verifyComplete();
-  }
-
-  @Test
-  @DisplayName("Owner로 워크스페이스 조회")
-  void findByOwnerIdAndNotDeleted() {
-    workspaceRepository.save(testWorkspace).block();
-
-    StepVerifier.create(
-        workspaceRepository.findByOwnerIdAndNotDeleted("owner123"))
-        .assertNext(workspace -> {
-          assertThat(workspace.getOwnerId()).isEqualTo("owner123");
-          assertThat(workspace.getName()).isEqualTo("Test Workspace");
-        }).verifyComplete();
   }
 
   @Test

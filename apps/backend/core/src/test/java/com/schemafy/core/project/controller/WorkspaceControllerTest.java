@@ -137,7 +137,7 @@ class WorkspaceControllerTest {
   @DisplayName("워크스페이스 목록 조회에 성공한다")
   void getWorkspacesSuccess() {
     // given
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -163,7 +163,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 상세 조회에 성공한다")
   void getWorkspaceSuccess() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -190,7 +190,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버가 아닌 사용자는 워크스페이스 조회에 실패한다")
   void getWorkspaceFailWhenNotMember() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -206,7 +206,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 수정에 성공한다")
   void updateWorkspaceSuccess() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -236,7 +236,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 워크스페이스 수정에 실패한다")
   void updateWorkspaceFailWhenNotAdmin() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -260,7 +260,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 삭제에 성공한다")
   void deleteWorkspaceSuccess() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -286,7 +286,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 워크스페이스 삭제에 실패한다")
   void deleteWorkspaceFailWhenNotAdmin() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -306,7 +306,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버 목록 조회에 성공한다")
   void getMembersSuccess() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -338,7 +338,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("MEMBER도 멤버 목록을 조회할 수 있다")
   void getMembersSuccessWithMemberRole() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -359,7 +359,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버 추가에 성공한다")
   void addMemberSuccess() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -392,7 +392,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 멤버 추가에 실패한다")
   void addMemberFailWhenNotAdmin() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -417,7 +417,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버 추방에 성공한다")
   void removeMemberSuccess() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -446,7 +446,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 멤버 추방에 실패한다")
   void removeMemberFailWhenNotAdmin() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -468,7 +468,7 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 탈퇴에 성공한다")
   void leaveMemberSuccess() {
-    Workspace workspace = Workspace.create(testUserId, "Test Workspace",
+    Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
 

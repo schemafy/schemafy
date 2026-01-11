@@ -91,14 +91,13 @@ class UserServiceTest {
 
     // then - 워크스페이스 생성 검증
     StepVerifier.create(
-        workspaceRepository.findByOwnerIdAndNotDeleted(user.getId()))
+        workspaceRepository.findByUserIdWithPaging(user.getId(), 1, 0))
         .as("default workspace should be created")
         .assertNext(workspace -> {
           assertThat(workspace.getName())
               .isEqualTo("Test User's Workspace");
           assertThat(workspace.getDescription())
               .isEqualTo("Personal workspace for Test User");
-          assertThat(workspace.getOwnerId()).isEqualTo(user.getId());
           assertThat(workspace.getId()).isNotNull();
           assertThat(workspace.getCreatedAt()).isNotNull();
         })
@@ -284,12 +283,10 @@ class UserServiceTest {
 
       StepVerifier.create(
           workspaceRepository
-              .findByOwnerIdAndNotDeleted(user.getId()))
+              .findByUserIdWithPaging(user.getId(), 1, 0))
           .assertNext(workspace -> {
             assertThat(workspace.getName())
                 .isEqualTo("Atomic User's Workspace");
-            assertThat(workspace.getOwnerId())
-                .isEqualTo(user.getId());
           })
           .verifyComplete();
 

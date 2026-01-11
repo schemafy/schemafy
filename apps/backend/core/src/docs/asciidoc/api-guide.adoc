@@ -237,8 +237,6 @@ include::{snippets}/workspace-delete/curl-request.adoc[]
 
 include::{snippets}/workspace-delete/http-response.adoc[]
 
-NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
-
 ---
 
 === Workspace 멤버 목록 조회
@@ -270,6 +268,86 @@ include::{snippets}/workspace-members/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/workspace-members/response-fields.adoc[]
+
+---
+
+=== Workspace 멤버 추가
+
+워크스페이스에 새 멤버를 추가합니다.
+
+[source]
+----
+POST /api/v1.0/workspaces/{workspaceId}/members
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-member-add/http-request.adoc[]
+include::{snippets}/workspace-member-add/request-headers.adoc[]
+include::{snippets}/workspace-member-add/path-parameters.adoc[]
+include::{snippets}/workspace-member-add/request-fields.adoc[]
+include::{snippets}/workspace-member-add/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-member-add/response-headers.adoc[]
+include::{snippets}/workspace-member-add/response-body.adoc[]
+include::{snippets}/workspace-member-add/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-member-add/response-fields.adoc[]
+
+---
+
+=== Workspace 멤버 추방
+
+워크스페이스에서 멤버를 추방합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{workspaceId}/members/{memberId}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-member-remove/http-request.adoc[]
+include::{snippets}/workspace-member-remove/request-headers.adoc[]
+include::{snippets}/workspace-member-remove/path-parameters.adoc[]
+include::{snippets}/workspace-member-remove/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-member-remove/http-response.adoc[]
+
+---
+
+=== Workspace 탈퇴
+
+워크스페이스에서 자발적으로 탈퇴합니다.
+
+[source]
+----
+DELETE /api/v1.0/workspaces/{workspaceId}/members/me
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-member-leave/http-request.adoc[]
+include::{snippets}/workspace-member-leave/request-headers.adoc[]
+include::{snippets}/workspace-member-leave/path-parameters.adoc[]
+include::{snippets}/workspace-member-leave/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-member-leave/http-response.adoc[]
 
 ---
 
@@ -424,8 +502,6 @@ include::{snippets}/project-delete/curl-request.adoc[]
 
 include::{snippets}/project-delete/http-response.adoc[]
 
-NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
-
 ---
 
 === Project 멤버 목록 조회
@@ -545,8 +621,6 @@ include::{snippets}/project-member-remove/curl-request.adoc[]
 
 include::{snippets}/project-member-remove/http-response.adoc[]
 
-NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
-
 ---
 
 === Project 탈퇴
@@ -570,8 +644,6 @@ include::{snippets}/project-member-leave/curl-request.adoc[]
 ==== 응답
 
 include::{snippets}/project-member-leave/http-response.adoc[]
-
-NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
 
 ---
 
@@ -724,8 +796,6 @@ include::{snippets}/share-link-delete/curl-request.adoc[]
 ==== 응답
 
 include::{snippets}/share-link-delete/http-response.adoc[]
-
-NOTE: 이 API는 204 No Content를 반환하므로 응답 본문이 없습니다.
 
 ---
 
