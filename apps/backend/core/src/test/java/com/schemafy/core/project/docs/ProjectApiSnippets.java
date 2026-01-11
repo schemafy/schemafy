@@ -32,10 +32,10 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return concat(
         new FieldDescriptor[] {
           fieldWithPath("result.id").type(JsonFieldType.STRING)
-              .description("프로젝트 고유 ID (ULID)"),
+              .description("프로젝트 고유 ID"),
           fieldWithPath("result.workspaceId")
               .type(JsonFieldType.STRING)
-              .description("소속 워크스페이스 ID (ULID)"),
+              .description("소속 워크스페이스 ID"),
           fieldWithPath("result.name").type(JsonFieldType.STRING)
               .description("프로젝트 이름"),
           fieldWithPath("result.description")
@@ -44,9 +44,13 @@ public class ProjectApiSnippets extends RestDocsSnippets {
           fieldWithPath("result.settings").type(JsonFieldType.OBJECT)
               .description("프로젝트 설정"),
           fieldWithPath("result.createdAt").type(JsonFieldType.STRING)
-              .description("생성 시각 (ISO 8601)"),
+              .description("생성 시각"),
           fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
-              .description("수정 시각 (ISO 8601)")
+              .description("수정 시각"),
+          fieldWithPath("result.memberCount").type(JsonFieldType.NUMBER)
+              .description("프로젝트 멤버 수"),
+          fieldWithPath("result.currentUserRole").type(JsonFieldType.STRING)
+              .description("현재 사용자의 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)")
         },
         projectSettingsFields("result.settings."));
   }
@@ -55,9 +59,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   private static FieldDescriptor[] projectSummaryFields(String prefix) {
     return new FieldDescriptor[] {
       fieldWithPath(prefix + "id").type(JsonFieldType.STRING)
-          .description("프로젝트 고유 ID (ULID)"),
+          .description("프로젝트 고유 ID"),
       fieldWithPath(prefix + "workspaceId").type(JsonFieldType.STRING)
-          .description("소속 워크스페이스 ID (ULID)"),
+          .description("소속 워크스페이스 ID"),
       fieldWithPath(prefix + "name").type(JsonFieldType.STRING)
           .description("프로젝트 이름"),
       fieldWithPath(prefix + "description").type(JsonFieldType.STRING)
@@ -68,9 +72,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "memberCount").type(JsonFieldType.NUMBER)
           .description("전체 멤버 수"),
       fieldWithPath(prefix + "createdAt").type(JsonFieldType.STRING)
-          .description("생성 시각 (ISO 8601)"),
+          .description("생성 시각"),
       fieldWithPath(prefix + "updatedAt").type(JsonFieldType.STRING)
-          .description("수정 시각 (ISO 8601)")
+          .description("수정 시각")
     };
   }
 
@@ -80,7 +84,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet createProjectPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"));
+            .description("워크스페이스 ID"));
   }
 
   /** 프로젝트 생성 요청 헤더 */
@@ -122,7 +126,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet getProjectsPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"));
+            .description("워크스페이스 ID"));
   }
 
   /** 프로젝트 목록 조회 요청 헤더 */
@@ -174,8 +178,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet getProjectPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("id").description("프로젝트 ID (ULID)"));
+            .description("워크스페이스 ID"),
+        parameterWithName("id").description("프로젝트 ID"));
   }
 
   /** 프로젝트 상세 조회 요청 헤더 */
@@ -200,8 +204,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet updateProjectPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("id").description("프로젝트 ID (ULID)"));
+            .description("워크스페이스 ID"),
+        parameterWithName("id").description("프로젝트 ID"));
   }
 
   /** 프로젝트 수정 요청 헤더 */
@@ -241,8 +245,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet deleteProjectPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("id").description("프로젝트 ID (ULID)"));
+            .description("워크스페이스 ID"),
+        parameterWithName("id").description("프로젝트 ID"));
   }
 
   /** 프로젝트 삭제 요청 헤더 */
@@ -262,8 +266,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet getProjectMembersPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("id").description("프로젝트 ID (ULID)"));
+            .description("워크스페이스 ID"),
+        parameterWithName("id").description("프로젝트 ID"));
   }
 
   /** 프로젝트 멤버 조회 요청 헤더 */
@@ -294,10 +298,10 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                 .description("멤버 목록"),
             fieldWithPath("result.content[].id")
                 .type(JsonFieldType.STRING)
-                .description("멤버십 ID (ULID)"),
+                .description("멤버십 ID"),
             fieldWithPath("result.content[].userId")
                 .type(JsonFieldType.STRING)
-                .description("사용자 ID (ULID)"),
+                .description("사용자 ID"),
             fieldWithPath("result.content[].userName")
                 .type(JsonFieldType.STRING)
                 .description("사용자 이름"),
@@ -310,7 +314,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                     "프로젝트 내 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)"),
             fieldWithPath("result.content[].joinedAt")
                 .type(JsonFieldType.STRING)
-                .description("가입 시각 (ISO 8601)"),
+                .description("가입 시각"),
             fieldWithPath("result.page").type(JsonFieldType.NUMBER)
                 .description("현재 페이지 번호 (0부터 시작)"),
             fieldWithPath("result.size").type(JsonFieldType.NUMBER)
@@ -347,10 +351,10 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return createResponseFieldsSnippet(
         successResponseFields(
             fieldWithPath("result.id").type(JsonFieldType.STRING)
-                .description("멤버십 ID (ULID)"),
+                .description("멤버십 ID"),
             fieldWithPath("result.userId")
                 .type(JsonFieldType.STRING)
-                .description("사용자 ID (ULID)"),
+                .description("사용자 ID"),
             fieldWithPath("result.userName")
                 .type(JsonFieldType.STRING)
                 .description("사용자 이름"),
@@ -362,7 +366,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                     "부여받은 역할 (EDITOR, COMMENTER, VIEWER)"),
             fieldWithPath("result.joinedAt")
                 .type(JsonFieldType.STRING)
-                .description("가입 시각 (ISO 8601)")));
+                .description("가입 시각")));
   }
 
   // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role - 멤버 역할 변경 ==========
@@ -371,9 +375,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet updateMemberRolePathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("projectId").description("프로젝트 ID (ULID)"),
-        parameterWithName("memberId").description("멤버 ID (ULID)"));
+            .description("워크스페이스 ID"),
+        parameterWithName("projectId").description("프로젝트 ID"),
+        parameterWithName("memberId").description("멤버 ID"));
   }
 
   /** 멤버 역할 변경 요청 헤더 */
@@ -399,10 +403,10 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return createResponseFieldsSnippet(
         successResponseFields(
             fieldWithPath("result.id").type(JsonFieldType.STRING)
-                .description("멤버십 ID (ULID)"),
+                .description("멤버십 ID"),
             fieldWithPath("result.userId")
                 .type(JsonFieldType.STRING)
-                .description("사용자 ID (ULID)"),
+                .description("사용자 ID"),
             fieldWithPath("result.userName")
                 .type(JsonFieldType.STRING)
                 .description("사용자 이름"),
@@ -413,7 +417,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                 .description("변경된 역할"),
             fieldWithPath("result.joinedAt")
                 .type(JsonFieldType.STRING)
-                .description("가입 시각 (ISO 8601)")));
+                .description("가입 시각")));
   }
 
   // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/members/{memberId} - 멤버 제거 ==========
@@ -422,9 +426,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet removeMemberPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("projectId").description("프로젝트 ID (ULID)"),
-        parameterWithName("memberId").description("멤버 ID (ULID)"));
+            .description("워크스페이스 ID"),
+        parameterWithName("projectId").description("프로젝트 ID"),
+        parameterWithName("memberId").description("멤버 ID"));
   }
 
   /** 멤버 제거 요청 헤더 */
@@ -443,8 +447,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet leaveProjectPathParameters() {
     return pathParameters(
         parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("projectId").description("프로젝트 ID (ULID)"));
+            .description("워크스페이스 ID"),
+        parameterWithName("projectId").description("프로젝트 ID"));
   }
 
   /** 프로젝트 탈퇴 요청 헤더 */

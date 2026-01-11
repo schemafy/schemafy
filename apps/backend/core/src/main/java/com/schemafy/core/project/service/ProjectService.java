@@ -59,7 +59,8 @@ public class ProjectService {
               .flatMap(savedProject -> projectMemberRepository
                   .save(ownerMember)
                   .thenReturn(savedProject))
-              .map(ProjectResponse::from);
+              .flatMap(savedProject -> buildProjectResponse(
+                  savedProject, userId));
         }))
         .as(transactionalOperator::transactional);
   }
@@ -119,7 +120,7 @@ public class ProjectService {
             return Mono.error(new BusinessException(
                 ErrorCode.PROJECT_WORKSPACE_MISMATCH));
           }
-          return Mono.just(ProjectResponse.from(project));
+          return buildProjectResponse(project, userId);
         });
   }
 
@@ -140,7 +141,7 @@ public class ProjectService {
               settings);
           return projectRepository.save(project);
         })
-        .map(ProjectResponse::from)
+        .flatMap(savedProject -> buildProjectResponse(savedProject, userId))
         .as(transactionalOperator::transactional);
   }
 
@@ -376,6 +377,22 @@ public class ProjectService {
     return projectRepository.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(
             new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
+  }
+
+  private Mono<ProjectResponse> buildProjectResponse(Project project,
+      String userId) {
+    return Mono.zip(
+        projectMemberRepository.countByProjectIdAndNotDeleted(
+            project.getId()),
+        projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
+            .map(ProjectMember::getRole)
+            .defaultIfEmpty(ProjectRole.VIEWER.getValue()))
+        .map(tuple -> ProjectResponse.of(
+            project,
+            tuple.getT1(), // memberCount
+            tuple.getT2()  // currentUserRole
+        ));
   }
 
   private Mono<ProjectMember> findProjectMemberByMemberIdAndProjectId(
