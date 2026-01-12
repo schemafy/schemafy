@@ -468,9 +468,14 @@ export const removeCascadingPrimaryKeyConstraints = (
 
       if (!childTable) continue;
 
+      const relationshipFkColumnIds = rel.columns
+        .map((relCol) => relCol.fkColumnId)
+        .filter((fkColumnId) => fkColumnId !== "");
+
       const fkColumnsToRemoveFromPk = rel.columns
         .filter((relCol) => relCol.pkColumnId === removedPkColumnId)
-        .map((relCol) => relCol.fkColumnId);
+        .map((relCol) => relCol.fkColumnId)
+        .filter((fkColumnId) => fkColumnId !== "");
 
       if (fkColumnsToRemoveFromPk.length === 0) continue;
 
@@ -480,13 +485,24 @@ export const removeCascadingPrimaryKeyConstraints = (
 
       if (!pkConstraint) continue;
 
-      const remainingColumns = pkConstraint.columns.filter(
-        (cc) => !fkColumnsToRemoveFromPk.includes(cc.columnId),
+      let columnsToRemoveFromPk = fkColumnsToRemoveFromPk;
+      let remainingColumns = pkConstraint.columns.filter(
+        (cc) => !columnsToRemoveFromPk.includes(cc.columnId),
       );
 
       let updateConstraints: Constraint[] = childTable.constraints;
+      let shouldConvertRelationship = false;
 
       if (remainingColumns.length !== pkConstraint.columns.length) {
+        shouldConvertRelationship = true;
+
+        if (shouldConvertRelationship) {
+          columnsToRemoveFromPk = relationshipFkColumnIds;
+          remainingColumns = pkConstraint.columns.filter(
+            (cc) => !columnsToRemoveFromPk.includes(cc.columnId),
+          );
+        }
+
         if (remainingColumns.length === 0) {
           updateConstraints = childTable.constraints.filter(
             (c) => c.id !== pkConstraint.id,
@@ -510,12 +526,27 @@ export const removeCascadingPrimaryKeyConstraints = (
         }
       }
 
+      let updatedRelationships = childTable.relationships;
+
+      if (shouldConvertRelationship) {
+        updatedRelationships = childTable.relationships.map((r) =>
+          r.id === rel.id
+            ? {
+                ...r,
+                kind: "NON_IDENTIFYING" as const,
+                isAffected: true,
+              }
+            : r,
+        );
+      }
+
       const updateTables: Table[] = updatedSchema.tables.map((t) =>
         t.id === childTable.id
           ? {
               ...t,
               isAffected: true,
               constraints: updateConstraints,
+              relationships: updatedRelationships,
             }
           : t,
       );
@@ -526,7 +557,11 @@ export const removeCascadingPrimaryKeyConstraints = (
         tables: updateTables,
       };
 
-      for (const fkColumnId of fkColumnsToRemoveFromPk) {
+      const removedPkColumnIds = pkConstraint.columns
+        .filter((cc) => columnsToRemoveFromPk.includes(cc.columnId))
+        .map((cc) => cc.columnId);
+
+      for (const fkColumnId of removedPkColumnIds) {
         updatedSchema = removeCascadingPrimaryKeyConstraints(
           structuredClone(updatedSchema),
           rel.fkTableId,

@@ -410,6 +410,148 @@ describe('Relationship validation', () => {
       updatedGrandchildTable?.columns.some((c) => c.id === grandchildFkColumnId)
     ).toBe(true);
     expect(remainingRelationship).toBeDefined();
+    expect(remainingRelationship?.kind).toBe('NON_IDENTIFYING');
+  });
+
+  test('IDENTIFYING 관계가 부모 PK 제거 시 자동으로 NON_IDENTIFYING으로 변환된다', () => {
+    const schemaId = 'schema-1';
+    const parentTableId = 'parent-table';
+    const childTableId = 'child-table';
+    const grandchildTableId = 'grandchild-table';
+    const parentPkColumnId = 'parent-id';
+    const childPkColumnId = 'child-id';
+    const grandchildPkColumnId = 'grandchild-id';
+    const parentChildRelationshipId = 'rel-parent-child';
+    const childGrandchildRelationshipId = 'rel-child-grandchild';
+
+    const baseDatabase = createTestDatabase()
+      .withSchema((s) =>
+        s
+          .withId(schemaId)
+          .withTable((t) =>
+            t
+              .withId(parentTableId)
+              .withName('parent')
+              .withColumn((c) =>
+                c.withId(parentPkColumnId).withName('id').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_parent')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(parentPkColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(childTableId)
+              .withName('child')
+              .withColumn((c) =>
+                c.withId(childPkColumnId).withName('id').withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_child')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(childPkColumnId))
+              )
+          )
+          .withTable((t) =>
+            t
+              .withId(grandchildTableId)
+              .withName('grandchild')
+              .withColumn((c) =>
+                c
+                  .withId(grandchildPkColumnId)
+                  .withName('id')
+                  .withDataType('INT')
+              )
+              .withConstraint((c) =>
+                c
+                  .withName('pk_grandchild')
+                  .withKind('PRIMARY_KEY')
+                  .withColumn((cc) => cc.withColumnId(grandchildPkColumnId))
+              )
+          )
+      )
+      .build();
+
+    const parentChildRelationship = createRelationshipBuilder()
+      .withId(parentChildRelationshipId)
+      .withFkTableId(childTableId)
+      .withName('fk_parent_child')
+      .withKind('IDENTIFYING')
+      .withPkTableId(parentTableId)
+      .withColumn((rc) => rc.withPkColumnId(parentPkColumnId))
+      .build();
+
+    let database = ERD_VALIDATOR.createRelationship(
+      baseDatabase,
+      schemaId,
+      parentChildRelationship
+    );
+
+    let childTable = database.schemas[0].tables.find((t) => t.id === childTableId);
+    const childFkColumnId = childTable?.columns.find(
+      (c) => c.name === 'parent_id'
+    )?.id;
+
+    const childGrandchildRelationship = createRelationshipBuilder()
+      .withId(childGrandchildRelationshipId)
+      .withFkTableId(grandchildTableId)
+      .withName('fk_child_grandchild')
+      .withKind('IDENTIFYING')
+      .withPkTableId(childTableId)
+      .withColumn((rc) => rc.withPkColumnId(childFkColumnId!))
+      .build();
+
+    database = ERD_VALIDATOR.createRelationship(
+      database,
+      schemaId,
+      childGrandchildRelationship
+    );
+
+    childTable = database.schemas[0].tables.find((t) => t.id === childTableId);
+    const initialChildRel = childTable?.relationships.find(
+      (r) => r.id === parentChildRelationshipId
+    );
+
+    const grandchildTable = database.schemas[0].tables.find(
+      (t) => t.id === grandchildTableId
+    );
+    const initialGrandchildRel = grandchildTable?.relationships.find(
+      (r) => r.id === childGrandchildRelationshipId
+    );
+
+    expect(initialChildRel?.kind).toBe('IDENTIFYING');
+    expect(initialGrandchildRel?.kind).toBe('IDENTIFYING');
+
+    database = ERD_VALIDATOR.changeRelationshipKind(
+      database,
+      schemaId,
+      parentChildRelationshipId,
+      'NON_IDENTIFYING'
+    );
+
+    const updatedChildTable = database.schemas[0].tables.find(
+      (t) => t.id === childTableId
+    );
+    const updatedChildRel = updatedChildTable?.relationships.find(
+      (r) => r.id === parentChildRelationshipId
+    );
+
+    const updatedGrandchildTable = database.schemas[0].tables.find(
+      (t) => t.id === grandchildTableId
+    );
+    const updatedGrandchildRel = updatedGrandchildTable?.relationships.find(
+      (r) => r.id === childGrandchildRelationshipId
+    );
+
+    expect(updatedChildRel?.kind).toBe('NON_IDENTIFYING');
+    expect(updatedGrandchildRel?.kind).toBe('NON_IDENTIFYING');
+    expect(updatedGrandchildRel?.isAffected).toBe(true);
+    expect(updatedGrandchildRel).toBeDefined();
+    expect(updatedChildTable?.columns.find((c) => c.id === childFkColumnId)).toBeDefined();
   });
 
   test('존재하지 않는 대상 테이블로는 관계를 생성할 수 없다.', () => {
@@ -1588,10 +1730,20 @@ describe('Relationship validation', () => {
       const table3 = database.schemas[0].tables.find((t: Table) => t.id === table3Id);
       const table3PkConstraint = table3?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
       const table3FkColumn = table3?.columns.find((c) => c.name === 'Table2_OwnPK');
+      const table3InheritedColumn = table3?.columns.find(
+        (c) => c.name === 'Table2_Table1_Column1'
+      );
 
       expect(table3FkColumn).toBeDefined();
+      expect(table3InheritedColumn).toBeDefined();
       expect(table3PkConstraint).toBeDefined();
+      expect(table3PkConstraint?.columns).toHaveLength(1);
       expect(table3PkConstraint?.columns[0].columnId).toBe(table3FkColumn?.id);
+      expect(
+        table3PkConstraint?.columns.some(
+          (c) => c.columnId === table3InheritedColumn?.id
+        )
+      ).toBe(false);
     });
   });
 });
