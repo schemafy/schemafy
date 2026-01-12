@@ -60,8 +60,10 @@ export class ErdStore {
   private static instance: ErdStore;
   private static syncedInstance: ErdStore;
   erdState: LoadingState = { state: 'idle' };
+  private readonly instanceType: 'local' | 'synced';
 
-  private constructor() {
+  private constructor(instanceType: 'local' | 'synced' = 'local') {
+    this.instanceType = instanceType;
     // database는 깊은 observable이 되면 내부 배열이 MobX ObservableArray(Proxy)로 래핑되어
     // validator 내부의 structuredClone에서 복제가 실패할 수 있다. 참조형으로만 추적한다.
     makeAutoObservable(
@@ -73,14 +75,14 @@ export class ErdStore {
 
   static getInstance(): ErdStore {
     if (!ErdStore.instance) {
-      ErdStore.instance = new ErdStore();
+      ErdStore.instance = new ErdStore('local');
     }
     return ErdStore.instance;
   }
 
   static getSyncedInstance(): ErdStore {
     if (!ErdStore.syncedInstance) {
-      ErdStore.syncedInstance = new ErdStore();
+      ErdStore.syncedInstance = new ErdStore('synced');
     }
     return ErdStore.syncedInstance;
   }
@@ -99,6 +101,8 @@ export class ErdStore {
         },
       };
     }
+
+    console.log(`[${this.instanceType.toUpperCase()} DB]`, this, this.erdState);
 
     this.erdState = { state: 'loaded', database };
   }

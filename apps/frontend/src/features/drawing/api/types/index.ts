@@ -1,15 +1,15 @@
 import type { ULID, DatabaseContext } from './common';
 
-export interface IndexColumnResponse {
+export type IndexColumnResponse = {
   id: ULID;
   indexId: ULID;
   columnId: ULID;
   seqNo: number;
   sortDir: string;
   isAffected: boolean;
-}
+};
 
-export interface IndexResponse {
+export type IndexResponse = {
   id: ULID;
   tableId: ULID;
   name: string;
@@ -17,9 +17,9 @@ export interface IndexResponse {
   comment?: string | null;
   columns: IndexColumnResponse[];
   isAffected: boolean;
-}
+};
 
-export interface CreateIndexRequest {
+export type CreateIndexRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
@@ -37,17 +37,17 @@ export interface CreateIndexRequest {
       sortDir: string;
     }[];
   };
-}
+};
 
-export interface UpdateIndexNameRequest {
+export type UpdateIndexNameRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
   indexId: ULID;
   newName: string;
-}
+};
 
-export interface AddColumnToIndexRequest {
+export type AddColumnToIndexRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
@@ -59,27 +59,27 @@ export interface AddColumnToIndexRequest {
     seqNo: number;
     sortDir?: string;
   };
-}
+};
 
-export interface RemoveColumnFromIndexRequest {
+export type RemoveColumnFromIndexRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
   indexId: ULID;
   indexColumnId: ULID;
-}
+};
 
-export interface UpdateIndexTypeRequest {
+export type UpdateIndexTypeRequest = {
   type: string;
-}
+};
 
-export interface UpdateIndexColumnSortDirRequest {
+export type UpdateIndexColumnSortDirRequest = {
   sortDir: string;
-}
+};
 
-export interface DeleteIndexRequest {
+export type DeleteIndexRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
   indexId: ULID;
-}
+};

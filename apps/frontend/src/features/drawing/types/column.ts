@@ -47,6 +47,7 @@ export interface EditModeColumnProps {
 
 export interface ViewModeColumnProps {
   column: ColumnType;
+  isFKColumn?: boolean;
 }
 
 export interface DragHandleProps {
@@ -75,6 +76,7 @@ export interface ColumnConstraintsProps {
 
 export interface ColumnBadgesProps {
   column: ColumnType;
+  isFKColumn?: boolean;
 }
 
 // TODO: 데이터 타입은 백엔드에서 length_scale이랑 같이 제공

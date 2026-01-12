@@ -8,7 +8,7 @@ export type ULID = string;
 export type IdMapping = Record<ULID, ULID>;
 export type NestedIdMapping = Record<ULID, IdMapping>;
 
-export interface AffectedMappingResponse {
+export type AffectedMappingResponse = {
   schemas: IdMapping;
   tables: IdMapping;
   columns: NestedIdMapping;
@@ -19,25 +19,25 @@ export interface AffectedMappingResponse {
   relationships: NestedIdMapping;
   relationshipColumns: NestedIdMapping;
   propagated: PropagatedEntities;
-}
+};
 
-export interface PropagatedEntities {
+export type PropagatedEntities = {
   columns: PropagatedColumn[];
   relationshipColumns: PropagatedRelationshipColumn[];
   constraints: PropagatedConstraint[];
   constraintColumns: PropagatedConstraintColumn[];
   indexColumns: PropagatedIndexColumn[];
-}
+};
 
-export interface PropagatedColumn {
+export type PropagatedColumn = {
   columnId: string;
   tableId: string;
   sourceType: string;
   sourceId: string;
   sourceColumnId: string;
-}
+};
 
-export interface PropagatedRelationshipColumn {
+export type PropagatedRelationshipColumn = {
   relationshipColumnId: string;
   relationshipId: string;
   fkColumnId: string;
@@ -45,35 +45,35 @@ export interface PropagatedRelationshipColumn {
   seqNo: number;
   sourceType: string;
   sourceId: string;
-}
+};
 
-export interface PropagatedConstraint {
+export type PropagatedConstraint = {
   constraintId: string;
   tableId: string;
   name: string;
   kind: string;
   sourceType: string;
   sourceId: string;
-}
+};
 
-export interface PropagatedConstraintColumn {
+export type PropagatedConstraintColumn = {
   constraintColumnId: string;
   constraintId: string;
   columnId: string;
   seqNo: number;
   sourceType: string;
   sourceId: string;
-}
+};
 
-export interface PropagatedIndexColumn {
+export type PropagatedIndexColumn = {
   indexColumnId: string;
   indexId: string;
   columnId: string;
   sourceType: string;
   sourceId: string;
-}
+};
 
-export interface DatabaseContext {
+export type DatabaseContext = {
   id: ULID;
   schemas: {
     id: ULID;
@@ -101,4 +101,4 @@ export interface DatabaseContext {
   }[];
   isAffected: boolean;
   extra?: unknown;
-}
+};

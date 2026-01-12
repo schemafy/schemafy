@@ -61,7 +61,7 @@ export const ColumnRow = ({
           restrictionReason={restrictionReason}
         />
       ) : (
-        <ViewModeColumn column={column} />
+        <ViewModeColumn column={column} isFKColumn={isFKColumn} />
       )}
     </div>
   );
@@ -143,13 +143,22 @@ export const EditModeColumn = ({
   );
 };
 
-export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
+export const ViewModeColumn = ({
+  column,
+  isFKColumn = false,
+}: ViewModeColumnProps) => {
   return (
     <div className="p-2 text-schemafy-text">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <span
-            className={`text-sm ${column.isPrimaryKey ? 'font-bold text-schemafy-yellow' : 'text-schemafy-text'}`}
+            className={`text-sm ${
+              column.isPrimaryKey
+                ? 'font-bold text-schemafy-yellow'
+                : isFKColumn
+                  ? 'font-bold text-schemafy-green'
+                  : 'text-schemafy-text'
+            }`}
           >
             {column.name}
           </span>
@@ -158,7 +167,7 @@ export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
           </span>
         </div>
 
-        <ColumnBadges column={column} />
+        <ColumnBadges column={column} isFKColumn={isFKColumn} />
       </div>
     </div>
   );
@@ -225,8 +234,7 @@ export const ColumnConstraints = ({
       {CONSTRAINTS.filter(({ visible }) => visible).map(
         ({ key, label, color }) => {
           const isNotNullDisabled = column.isPrimaryKey && key === 'isNotNull';
-          const isPKDisabled =
-            key === 'isPrimaryKey' && column.isPrimaryKey && isFKColumn;
+          const isPKDisabled = key === 'isPrimaryKey' && isFKColumn;
           const isDisabled = isNotNullDisabled || isPKDisabled;
 
           const getTooltip = () => {
@@ -261,17 +269,26 @@ export const ColumnConstraints = ({
   );
 };
 
-export const ColumnBadges = ({ column }: ColumnBadgesProps) => {
+export const ColumnBadges = ({
+  column,
+  isFKColumn = false,
+}: ColumnBadgesProps) => {
   if (column.isPrimaryKey) {
     return (
       <div className="flex items-center gap-1">
         <span className="text-xs text-schemafy-yellow font-medium">PK</span>
+        {isFKColumn && (
+          <span className="text-xs text-schemafy-green font-medium">FK</span>
+        )}
       </div>
     );
   }
 
   return (
     <div className="flex items-center gap-1">
+      {isFKColumn && (
+        <span className="text-xs text-schemafy-green font-medium">FK</span>
+      )}
       {column.isNotNull && (
         <span className="text-xs text-schemafy-destructive font-medium">*</span>
       )}

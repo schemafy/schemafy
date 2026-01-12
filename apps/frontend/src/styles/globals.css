@@ -44,6 +44,7 @@
   --color-schemafy-tools: hsl(var(--schemafy-tools));
   --color-schemafy-yellow: hsl(var(--schemafy-yellow));
   --color-schemafy-blue: hsl(var(--schemafy-blue));
+  --color-schemafy-green: hsl(var(--schemafy-green));
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -85,6 +86,7 @@
     --schemafy-tools: 0 0% 46% / 0.8;
     --schemafy-yellow: 40 96% 40%;
     --schemafy-blue: 218 70% 50%;
+    --schemafy-green: 142 65% 45%;
 
     /* Font Sizes - Display */
     --text-display-lg: 48px;
@@ -227,6 +229,7 @@
     --schemafy-tools: 240 1% 44%;
     --schemafy-yellow: 40 85% 65%;
     --schemafy-blue: 218 70% 65%;
+    --schemafy-green: 142 60% 55%;
   }
 }
 

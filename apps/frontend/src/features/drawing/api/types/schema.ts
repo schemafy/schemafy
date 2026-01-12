@@ -1,7 +1,7 @@
 import type { ISODateString, ULID, DatabaseContext } from './common';
 import type { TableResponse } from './table';
 
-export interface SchemaResponse {
+export type SchemaResponse = {
   id: ULID;
   projectId: ULID;
   dbVendorId: ULID;
@@ -12,13 +12,13 @@ export interface SchemaResponse {
   canvasViewport: string | null;
   createdAt: ISODateString;
   updatedAt: ISODateString;
-}
+};
 
-export interface SchemaDetailResponse extends SchemaResponse {
+export type SchemaDetailResponse = SchemaResponse & {
   tables?: TableResponse[];
-}
+};
 
-export interface CreateSchemaRequest {
+export type CreateSchemaRequest = {
   database: DatabaseContext;
   schema: {
     id: ULID;
@@ -29,15 +29,15 @@ export interface CreateSchemaRequest {
     collation: string;
     vendorOption: string;
   };
-}
+};
 
-export interface UpdateSchemaNameRequest {
+export type UpdateSchemaNameRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   newName: string;
-}
+};
 
-export interface DeleteSchemaRequest {
+export type DeleteSchemaRequest = {
   database: DatabaseContext;
   schemaId: ULID;
-}
+};

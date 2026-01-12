@@ -1,6 +1,6 @@
 import type { ULID, DatabaseContext } from './common';
 
-export interface ColumnResponse {
+export type ColumnResponse = {
   id: ULID;
   tableId: ULID;
   name: string;
@@ -12,9 +12,9 @@ export interface ColumnResponse {
   collation: string;
   comment?: string | null;
   isAffected: boolean;
-}
+};
 
-export interface CreateColumnRequest {
+export type CreateColumnRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
@@ -29,36 +29,36 @@ export interface CreateColumnRequest {
     collation: string;
     comment: string;
   };
-}
+};
 
-export interface UpdateColumnNameRequest {
+export type UpdateColumnNameRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
   columnId: ULID;
   newName: string;
-}
+};
 
-export interface UpdateColumnTypeRequest {
+export type UpdateColumnTypeRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
   columnId: ULID;
   dataType: string;
   lengthScale?: string;
-}
+};
 
-export interface UpdateColumnPositionRequest {
+export type UpdateColumnPositionRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
   columnId: ULID;
   newPosition: number;
-}
+};
 
-export interface DeleteColumnRequest {
+export type DeleteColumnRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
   columnId: ULID;
-}
+};

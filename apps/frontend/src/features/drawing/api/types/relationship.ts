@@ -1,15 +1,15 @@
 import type { ULID, DatabaseContext } from './common';
 
-export interface RelationshipColumnResponse {
+export type RelationshipColumnResponse = {
   id: ULID;
   relationshipId: ULID;
   fkColumnId: ULID;
   pkColumnId: ULID;
   seqNo: number;
   isAffected: boolean;
-}
+};
 
-export interface RelationshipResponse {
+export type RelationshipResponse = {
   id: ULID;
   fkTableId: ULID;
   pkTableId: ULID;
@@ -22,9 +22,9 @@ export interface RelationshipResponse {
   columns: RelationshipColumnResponse[];
   isAffected: boolean;
   extra?: unknown;
-}
+};
 
-export interface CreateRelationshipRequest {
+export type CreateRelationshipRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   relationship: {
@@ -49,36 +49,36 @@ export interface CreateRelationshipRequest {
       seqNo: number;
     }[];
   };
-}
+};
 
-export interface CreateRelationshipColumnRequest {
+export type CreateRelationshipColumnRequest = {
   fkColumnId: ULID;
   pkColumnId: ULID;
   seqNo: number;
-}
+};
 
-export interface UpdateRelationshipNameRequest {
+export type UpdateRelationshipNameRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   relationshipId: ULID;
   newName: string;
-}
+};
 
-export interface UpdateRelationshipCardinalityRequest {
+export type UpdateRelationshipCardinalityRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   relationshipId: ULID;
   cardinality: 'ONE_TO_ONE' | 'ONE_TO_MANY';
-}
+};
 
-export interface UpdateRelationshipKindRequest {
+export type UpdateRelationshipKindRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   relationshipId: ULID;
   kind: 'IDENTIFYING' | 'NON_IDENTIFYING';
-}
+};
 
-export interface AddColumnToRelationshipRequest {
+export type AddColumnToRelationshipRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   relationshipId: ULID;
@@ -89,21 +89,21 @@ export interface AddColumnToRelationshipRequest {
     pkColumnId: ULID;
     seqNo: number;
   };
-}
+};
 
-export interface RemoveColumnFromRelationshipRequest {
+export type RemoveColumnFromRelationshipRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   relationshipId: ULID;
   relationshipColumnId: ULID;
-}
+};
 
-export interface UpdateRelationshipExtraRequest {
+export type UpdateRelationshipExtraRequest = {
   extra: string;
-}
+};
 
-export interface DeleteRelationshipRequest {
+export type DeleteRelationshipRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   relationshipId: ULID;
-}
+};

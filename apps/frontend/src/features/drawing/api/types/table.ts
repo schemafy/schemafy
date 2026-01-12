@@ -4,7 +4,7 @@ import type { ConstraintResponse } from './constraint';
 import type { IndexResponse } from './index';
 import type { RelationshipResponse } from './relationship';
 
-export interface TableResponse {
+export type TableResponse = {
   id: ULID;
   schemaId: ULID;
   name: string;
@@ -13,16 +13,16 @@ export interface TableResponse {
   extra: string | null;
   createdAt: ISODateString;
   updatedAt: ISODateString;
-}
+};
 
-export interface TableDetailResponse extends TableResponse {
+export type TableDetailResponse = TableResponse & {
   columns: ColumnResponse[];
   constraints: ConstraintResponse[];
   indexes: IndexResponse[];
   relationships: RelationshipResponse[];
-}
+};
 
-export interface CreateTableRequest {
+export type CreateTableRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   table: {
@@ -32,21 +32,21 @@ export interface CreateTableRequest {
     comment: string;
     tableOptions: string;
   };
-}
+};
 
-export interface UpdateTableNameRequest {
+export type UpdateTableNameRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
   newName: string;
-}
+};
 
-export interface UpdateTableExtraRequest {
+export type UpdateTableExtraRequest = {
   extra: string;
-}
+};
 
-export interface DeleteTableRequest {
+export type DeleteTableRequest = {
   database: DatabaseContext;
   schemaId: ULID;
   tableId: ULID;
-}
+};
