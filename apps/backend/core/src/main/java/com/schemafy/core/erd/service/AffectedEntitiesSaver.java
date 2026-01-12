@@ -319,7 +319,8 @@ public class AffectedEntitiesSaver {
               String sourceColumnId = resolveSourceColumnId(
                   savedColumn.columnId(),
                   fkToRefColumnIdMap,
-                  after);
+                  after,
+                  columnIdMap);
               propagatedColumns.add(new PropagatedColumn(
                   savedColumn.columnId(),
                   savedColumn.tableId(),
@@ -650,7 +651,8 @@ public class AffectedEntitiesSaver {
   private static String resolveSourceColumnId(
       String columnId,
       Map<String, String> fkToRefMap,
-      Validation.Database database) {
+      Validation.Database database,
+      Map<String, String> columnIdMap) {
     String current = columnId;
     Set<String> visited = new HashSet<>();
 
@@ -668,7 +670,9 @@ public class AffectedEntitiesSaver {
         continue;
       }
 
-      String pkColumnId = findPkColumnIdByFkColumnId(database, current);
+      String pkColumnId = findPkColumnIdByFkColumnId(database,
+          current,
+          columnIdMap);
       if (pkColumnId == null || pkColumnId.equals(current)) {
         break;
       }
@@ -687,15 +691,20 @@ public class AffectedEntitiesSaver {
 
   private static String findPkColumnIdByFkColumnId(
       Validation.Database database,
-      String fkColumnId) {
+      String fkColumnId,
+      Map<String, String> columnIdMap) {
     for (Validation.Schema schema : database.getSchemasList()) {
       for (Validation.Table table : schema.getTablesList()) {
         for (Validation.Relationship relationship : table
             .getRelationshipsList()) {
           for (Validation.RelationshipColumn relationshipColumn : relationship
               .getColumnsList()) {
-            if (fkColumnId.equals(relationshipColumn.getFkColumnId())) {
-              return relationshipColumn.getPkColumnId();
+            String mappedFkColumnId = remapId(
+                relationshipColumn.getFkColumnId(),
+                columnIdMap);
+            if (fkColumnId.equals(mappedFkColumnId)) {
+              return remapId(relationshipColumn.getPkColumnId(),
+                  columnIdMap);
             }
           }
         }
