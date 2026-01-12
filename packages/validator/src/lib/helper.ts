@@ -456,6 +456,22 @@ export const removeCascadingPrimaryKeyConstraints = (
   visited.add(parentTableId);
 
   let updatedSchema = currentSchema;
+  const parentTable = updatedSchema.tables.find(
+    (t) => t.id === parentTableId,
+  );
+  const parentPkConstraint = parentTable?.constraints.find(
+    (c) => c.kind === "PRIMARY_KEY",
+  );
+  const parentPkColumnIds = new Set(
+    parentPkConstraint?.columns.map((cc) => cc.columnId) ?? [],
+  );
+  const removedParentColumnName = parentTable?.columns.find(
+    (c) => c.id === removedPkColumnId,
+  )?.name;
+  const fallbackChildColumnName =
+    parentTable && removedParentColumnName
+      ? `${parentTable.name}_${removedParentColumnName}`
+      : null;
 
   for (const table of updatedSchema.tables) {
     for (const rel of table.relationships) {
@@ -468,16 +484,25 @@ export const removeCascadingPrimaryKeyConstraints = (
 
       if (!childTable) continue;
 
-      const relationshipFkColumnIds = rel.columns
-        .map((relCol) => relCol.fkColumnId)
-        .filter((fkColumnId) => fkColumnId !== "");
-
       const fkColumnsToRemoveFromPk = rel.columns
-        .filter((relCol) => relCol.pkColumnId === removedPkColumnId)
+        .filter(
+          (relCol) =>
+            relCol.pkColumnId === removedPkColumnId ||
+            !parentPkColumnIds.has(relCol.pkColumnId),
+        )
         .map((relCol) => relCol.fkColumnId)
         .filter((fkColumnId) => fkColumnId !== "");
+      const fallbackColumnsToRemove =
+        fallbackChildColumnName && childTable
+          ? childTable.columns
+              .filter((col) => col.name === fallbackChildColumnName)
+              .map((col) => col.id)
+          : [];
+      const columnsToRemoveFromPk = Array.from(
+        new Set([...fkColumnsToRemoveFromPk, ...fallbackColumnsToRemove]),
+      );
 
-      if (fkColumnsToRemoveFromPk.length === 0) continue;
+      if (columnsToRemoveFromPk.length === 0) continue;
 
       const pkConstraint = childTable.constraints.find(
         (c) => c.kind === "PRIMARY_KEY",
@@ -485,8 +510,7 @@ export const removeCascadingPrimaryKeyConstraints = (
 
       if (!pkConstraint) continue;
 
-      let columnsToRemoveFromPk = fkColumnsToRemoveFromPk;
-      let remainingColumns = pkConstraint.columns.filter(
+      const remainingColumns = pkConstraint.columns.filter(
         (cc) => !columnsToRemoveFromPk.includes(cc.columnId),
       );
 
@@ -495,13 +519,6 @@ export const removeCascadingPrimaryKeyConstraints = (
 
       if (remainingColumns.length !== pkConstraint.columns.length) {
         shouldConvertRelationship = true;
-
-        if (shouldConvertRelationship) {
-          columnsToRemoveFromPk = relationshipFkColumnIds;
-          remainingColumns = pkConstraint.columns.filter(
-            (cc) => !columnsToRemoveFromPk.includes(cc.columnId),
-          );
-        }
 
         if (remainingColumns.length === 0) {
           updateConstraints = childTable.constraints.filter(
