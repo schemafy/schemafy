@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib';
 import { logoImg } from '@/assets';
-import { LandingContents, CanvasContents } from './Contents';
-import { UserMenu } from './UserMenu';
+import { LandingContents, CanvasContents, DashBoardContents } from './Contents';
 import { AuthStore } from '@/store/auth.store';
 import { useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
@@ -19,7 +18,7 @@ export const Header = observer(
         return (
           <div className="h-5 w-5 border-2 border-schemafy-light-gray border-t-black rounded-full animate-spin" />
         );
-      if (accessToken && user) return <UserMenu />;
+      if (accessToken && user) return <DashBoardContents />;
       return <LandingContents />;
     }, [isCanvasPage, isAuthLoading, accessToken, user, isInitialized]);
 

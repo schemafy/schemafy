@@ -7,7 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '../DropDown';
-import { FilePlus, Link } from 'lucide-react';
+import { FilePlus } from 'lucide-react';
 import { ThemeProviderContext, type Theme } from '@/lib/config';
 import {
   Select,
@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../Select';
+import { AuthStore } from '@/store';
+import { NotificationContents } from './NotificationContents';
 
 export const LandingContents = () => {
   return (
@@ -32,24 +34,33 @@ export const LandingContents = () => {
 };
 
 export const DashBoardContents = () => {
+  const user = AuthStore.getInstance().user;
+
   return (
-    <div className="flex items-center gap-9">
-      <Button variant={'none'} size={'none'}>
-        Projects
-      </Button>
-      <Button variant={'none'} size={'none'}>
-        Settings
-      </Button>
-      <Button variant={'none'} size={'none'}>
-        Notifications
-      </Button>
-      <div className="flex gap-2">
-        <Button round>New Project</Button>
-        <Button variant={'secondary'} round to="/signin">
-          Sign Out
+    <div className="flex items-center justify-end gap-5 w-full">
+      <div className="flex items-center gap-9 ml-8">
+        <Button variant={'none'} size={'none'}>
+          Product
         </Button>
+        <Button variant={'none'} size={'none'}>
+          Settings
+        </Button>
+        <NotificationContents />
       </div>
-      <Avatar src="https://picsum.photos/200/300?random=1" />
+      <div className="flex items-center gap-4">
+        <div className="flex gap-2">
+          <Button round to="/projects">
+            New Project
+          </Button>
+          <Button variant={'secondary'} round>
+            Sign Out
+          </Button>
+        </div>
+        <span className="flex items-center font-body-sm text-schemafy-dark-gray">
+          {user?.name}
+        </span>
+        <Avatar src="https://picsum.photos/200/300?random=1" />
+      </div>
     </div>
   );
 };
@@ -148,17 +159,8 @@ const ShareContents = () => {
             className="w-[12.5rem] placeholder:text-schemafy-dark-gray bg-secondary rounded-[10px] px-3 py-2"
             placeholder="schemafy@email.com"
           />
+          <RoleSelect />
           <Button size={'dropdown'}>Invite</Button>
-        </div>
-        <div className="flex gap-1 justify-end items-center hover:text-blue-500">
-          <Link size={10} />
-          <Button
-            variant={'none'}
-            size={'none'}
-            className="text-schemafy-dark-gray font-body-xs"
-          >
-            Copy Link
-          </Button>
         </div>
         <p className="text-schemafy-dark-gray">Who has access</p>
         <div className="flex justify-between items-center">
@@ -169,21 +171,27 @@ const ShareContents = () => {
             />
             <p>name</p>
           </div>
-          <Select>
-            <SelectTrigger className="w-[3.75rem] border-none font-body-xs">
-              <SelectValue placeholder="admin" />
-            </SelectTrigger>
-            <SelectContent popover="manual">
-              <SelectGroup>
-                <SelectItem value="admin">admin</SelectItem>
-                <SelectItem value="viewer">viewer</SelectItem>
-                <SelectItem value="editor">editor</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <RoleSelect />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+};
+
+const RoleSelect = () => {
+  return (
+    <Select>
+      <SelectTrigger className="w-[3.75rem] border-none font-body-xs">
+        <SelectValue placeholder="admin" />
+      </SelectTrigger>
+      <SelectContent popover="manual">
+        <SelectGroup>
+          <SelectItem value="admin">admin</SelectItem>
+          <SelectItem value="viewer">viewer</SelectItem>
+          <SelectItem value="editor">editor</SelectItem>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 };
 
