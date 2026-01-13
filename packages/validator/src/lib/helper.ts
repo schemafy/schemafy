@@ -515,6 +515,7 @@ export const removeCascadingPrimaryKeyConstraints = (
       );
 
       let updateConstraints: Constraint[] = childTable.constraints;
+      let updatedRelationships = childTable.relationships;
       let shouldConvertRelationship = false;
 
       if (remainingColumns.length !== pkConstraint.columns.length) {
@@ -543,25 +544,73 @@ export const removeCascadingPrimaryKeyConstraints = (
         }
       }
 
-      let updatedRelationships = childTable.relationships;
-
       if (shouldConvertRelationship) {
         updatedRelationships = childTable.relationships.map((r) =>
           r.id === rel.id
             ? {
                 ...r,
-                kind: "NON_IDENTIFYING" as const,
+                columns: r.columns.filter(
+                  (rc) => !fkColumnsToRemoveFromPk.includes(rc.fkColumnId),
+                ),
                 isAffected: true,
               }
             : r,
         );
       }
 
+      const updateIndexes: Index[] = childTable.indexes
+        .map((idx) => ({
+          ...idx,
+          isAffected: idx.columns.some((ic) =>
+            columnsToRemoveFromPk.includes(ic.columnId),
+          ),
+          columns: idx.columns.filter(
+            (ic) => !columnsToRemoveFromPk.includes(ic.columnId),
+          ),
+        }))
+        .filter((idx) => idx.columns.length > 0);
+
+      updateConstraints = updateConstraints
+        .map((constraint) => {
+          const remainingConstraintColumns = constraint.columns.filter(
+            (cc) => !columnsToRemoveFromPk.includes(cc.columnId),
+          );
+
+          return {
+            ...constraint,
+            isAffected: constraint.columns.some((cc) =>
+              columnsToRemoveFromPk.includes(cc.columnId),
+            ),
+            columns: remainingConstraintColumns,
+          };
+        })
+        .filter((constraint) => constraint.columns.length > 0);
+
+      updatedRelationships = updatedRelationships
+        .map((relationship) => ({
+          ...relationship,
+          isAffected: relationship.columns.some(
+            (rc) =>
+              columnsToRemoveFromPk.includes(rc.fkColumnId) ||
+              columnsToRemoveFromPk.includes(rc.pkColumnId),
+          ),
+          columns: relationship.columns.filter(
+            (rc) =>
+              !columnsToRemoveFromPk.includes(rc.fkColumnId) &&
+              !columnsToRemoveFromPk.includes(rc.pkColumnId),
+          ),
+        }))
+        .filter((relationship) => relationship.columns.length > 0);
+
       const updateTables: Table[] = updatedSchema.tables.map((t) =>
         t.id === childTable.id
           ? {
               ...t,
               isAffected: true,
+              columns: t.columns.filter(
+                (col) => !columnsToRemoveFromPk.includes(col.id),
+              ),
+              indexes: updateIndexes,
               constraints: updateConstraints,
               relationships: updatedRelationships,
             }

@@ -548,9 +548,7 @@ describe('Relationship validation', () => {
     );
 
     expect(updatedChildRel?.kind).toBe('NON_IDENTIFYING');
-    expect(updatedGrandchildRel?.kind).toBe('NON_IDENTIFYING');
-    expect(updatedGrandchildRel?.isAffected).toBe(true);
-    expect(updatedGrandchildRel).toBeDefined();
+    expect(updatedGrandchildRel).toBeUndefined();
     expect(updatedChildTable?.columns.find((c) => c.id === childFkColumnId)).toBeDefined();
   });
 
@@ -1646,7 +1644,7 @@ describe('Relationship validation', () => {
       table3PkConstraint = table3?.constraints.find((c: Constraint) => c.kind === 'PRIMARY_KEY');
 
       const table3ColumnExists = table3?.columns.find((c) => c.id === table3FkColumnId);
-      expect(table3ColumnExists).toBeDefined();
+      expect(table3ColumnExists).toBeUndefined();
 
       expect(table3PkConstraint).toBeUndefined();
     });
@@ -1735,15 +1733,10 @@ describe('Relationship validation', () => {
       );
 
       expect(table3FkColumn).toBeDefined();
-      expect(table3InheritedColumn).toBeDefined();
+      expect(table3InheritedColumn).toBeUndefined();
       expect(table3PkConstraint).toBeDefined();
       expect(table3PkConstraint?.columns).toHaveLength(1);
       expect(table3PkConstraint?.columns[0].columnId).toBe(table3FkColumn?.id);
-      expect(
-        table3PkConstraint?.columns.some(
-          (c) => c.columnId === table3InheritedColumn?.id
-        )
-      ).toBe(false);
     });
   });
 });
