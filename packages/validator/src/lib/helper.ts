@@ -939,19 +939,97 @@ export const deleteRelatedColumns = (
 
   if (relationshipToDelete.kind === "IDENTIFYING") {
     for (const table of updatedSchema.tables) {
-      const relationshipsToDelete = table.relationships.filter((rel) => {
-        return rel.columns.some((relCol) =>
+      for (const rel of table.relationships) {
+        if (rel.pkTableId !== relationshipToDelete.fkTableId) {
+          continue;
+        }
+
+        const affectedColumns = rel.columns.filter((relCol) =>
           fkColumnsToDelete.has(relCol.pkColumnId),
         );
-      });
 
-      for (const relToDelete of relationshipsToDelete) {
-        if (!visited.has(relToDelete.id)) {
-          updatedSchema = deleteRelatedColumns(
-            structuredClone(updatedSchema),
-            relToDelete,
-            new Set(visited),
-          );
+        if (affectedColumns.length === 0) {
+          continue;
+        }
+
+        if (!visited.has(rel.id)) {
+          if (affectedColumns.length === rel.columns.length) {
+            updatedSchema = deleteRelatedColumns(
+              structuredClone(updatedSchema),
+              rel,
+              new Set(visited),
+            );
+          } else {
+            const affectedFkColumnIds = new Set(
+              affectedColumns.map((ac) => ac.fkColumnId),
+            );
+
+            updatedSchema = {
+              ...updatedSchema,
+              isAffected: true,
+              tables: updatedSchema.tables.map((t) => {
+                if (t.id === rel.fkTableId) {
+                  return {
+                    ...t,
+                    isAffected: true,
+                    relationships: t.relationships.map((r) =>
+                      r.id === rel.id
+                        ? {
+                            ...r,
+                            columns: r.columns.filter(
+                              (rc) => !affectedFkColumnIds.has(rc.fkColumnId),
+                            ),
+                          }
+                        : r,
+                    ),
+                    columns: t.columns.filter(
+                      (col) => !affectedFkColumnIds.has(col.id),
+                    ),
+                    indexes: t.indexes.map((idx) => ({
+                      ...idx,
+                      columns: idx.columns.filter(
+                        (ic) => !affectedFkColumnIds.has(ic.columnId),
+                      ),
+                    })),
+                    constraints: t.constraints
+                      .map((constraint) => {
+                        const remainingColumns = constraint.columns.filter(
+                          (cc) => !affectedFkColumnIds.has(cc.columnId),
+                        );
+
+                        const finalColumns =
+                          constraint.kind === "PRIMARY_KEY"
+                            ? remainingColumns.map((cc, index) => ({
+                                ...cc,
+                                seqNo: index,
+                                isAffected: true,
+                              }))
+                            : remainingColumns;
+
+                        return {
+                          ...constraint,
+                          columns: finalColumns,
+                        };
+                      })
+                      .filter((constraint) => constraint.columns.length > 0),
+                  };
+                }
+                return t;
+              }),
+            };
+
+            for (const affectedCol of affectedColumns) {
+              const partialRel: Relationship = {
+                ...rel,
+                columns: [affectedCol],
+              };
+              updatedSchema = deleteRelatedColumns(
+                structuredClone(updatedSchema),
+                partialRel,
+                new Set([...visited, rel.id]),
+              );
+            }
+          }
         }
       }
     }
