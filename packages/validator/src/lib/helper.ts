@@ -660,6 +660,27 @@ export const propagateKeysToChildren = (
           columns: [...updatedChildTable.columns, newColumn],
         };
 
+        if (relColumn && (!relColumn.fkColumnId || relColumn.fkColumnId === "")) {
+          const updatedRelColumns = rel.columns.map((rc) =>
+            rc.id === relColumn.id
+              ? { ...rc, fkColumnId: newColumnId, isAffected: true }
+              : rc,
+          );
+
+          const updatedRel = {
+            ...rel,
+            columns: updatedRelColumns,
+            isAffected: true,
+          };
+
+          updatedChildTable = {
+            ...updatedChildTable,
+            relationships: updatedChildTable.relationships.map((r) =>
+              r.id === rel.id ? updatedRel : r,
+            ),
+          };
+        }
+
         newlyCreatedFkColumns.push(newColumn);
 
         if (!relColumn) {
