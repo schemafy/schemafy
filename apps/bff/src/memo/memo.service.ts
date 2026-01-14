@@ -25,6 +25,12 @@ export class MemoService {
     });
   }
 
+  private getAuthConfig(authHeader: string) {
+    return {
+      headers: { Authorization: authHeader },
+    };
+  }
+
   async createMemo(
     data: CreateMemoRequest,
     authHeader: string,
@@ -32,9 +38,7 @@ export class MemoService {
     const response = await this.backendClient.post<ApiResponse<Memo>>(
       '/api/v1.0/memos',
       data,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
@@ -45,9 +49,7 @@ export class MemoService {
   ): Promise<ApiResponse<Memo>> {
     const response = await this.backendClient.get<ApiResponse<Memo>>(
       `/api/v1.0/memos/${memoId}`,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
@@ -58,9 +60,7 @@ export class MemoService {
   ): Promise<ApiResponse<Memo[]>> {
     const response = await this.backendClient.get<ApiResponse<Memo[]>>(
       `/api/v1.0/schemas/${schemaId}/memos`,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
@@ -71,9 +71,7 @@ export class MemoService {
   ): Promise<ApiResponse<Memo[]>> {
     const memosResponse = await this.backendClient.get<ApiResponse<Memo[]>>(
       `/api/v1.0/schemas/${schemaId}/memos`,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
 
     if (!memosResponse.data.success || !memosResponse.data.result) {
@@ -86,9 +84,7 @@ export class MemoService {
       memos.map((memo) =>
         this.backendClient.get<ApiResponse<MemoComment[]>>(
           `/api/v1.0/memos/${memo.id}/comments`,
-          {
-            headers: { Authorization: authHeader },
-          },
+          this.getAuthConfig(authHeader),
         ),
       ),
     );
@@ -119,9 +115,7 @@ export class MemoService {
     const response = await this.backendClient.put<ApiResponse<Memo>>(
       `/api/v1.0/memos/${memoId}`,
       data,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
@@ -132,9 +126,7 @@ export class MemoService {
   ): Promise<ApiResponse<null>> {
     const response = await this.backendClient.delete<ApiResponse<null>>(
       `/api/v1.0/memos/${memoId}`,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
@@ -147,9 +139,7 @@ export class MemoService {
     const response = await this.backendClient.post<ApiResponse<MemoComment>>(
       `/api/v1.0/memos/${memoId}/comments`,
       data,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
@@ -160,9 +150,7 @@ export class MemoService {
   ): Promise<ApiResponse<MemoComment[]>> {
     const response = await this.backendClient.get<ApiResponse<MemoComment[]>>(
       `/api/v1.0/memos/${memoId}/comments`,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
@@ -176,9 +164,7 @@ export class MemoService {
     const response = await this.backendClient.put<ApiResponse<MemoComment>>(
       `/api/v1.0/memos/${memoId}/comments/${commentId}`,
       data,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
@@ -190,9 +176,7 @@ export class MemoService {
   ): Promise<ApiResponse<null>> {
     const response = await this.backendClient.delete<ApiResponse<null>>(
       `/api/v1.0/memos/${memoId}/comments/${commentId}`,
-      {
-        headers: { Authorization: authHeader },
-      },
+      this.getAuthConfig(authHeader),
     );
     return response.data;
   }
