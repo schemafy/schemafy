@@ -40,7 +40,14 @@ type Author = {
   name: string;
 };
 
-export type ApiResponse<T> = {
-  data: T;
-  message?: string;
+export type ApiError = {
+  code?: string;
+  message: string;
+  details?: Record<string, unknown>;
+};
+
+export type ApiResponse<T = unknown> = {
+  success: boolean;
+  result: T | null;
+  error: ApiError | null;
 };

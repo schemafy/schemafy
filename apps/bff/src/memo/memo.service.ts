@@ -33,7 +33,7 @@ export class MemoService {
       '/api/v1.0/memos',
       data,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;
@@ -46,7 +46,7 @@ export class MemoService {
     const response = await this.backendClient.get<ApiResponse<Memo>>(
       `/api/v1.0/memos/${memoId}`,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;
@@ -59,10 +59,56 @@ export class MemoService {
     const response = await this.backendClient.get<ApiResponse<Memo[]>>(
       `/api/v1.0/schemas/${schemaId}/memos`,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;
+  }
+
+  async getSchemaMemosWithComments(
+    schemaId: string,
+    authHeader: string,
+  ): Promise<ApiResponse<Memo[]>> {
+    const memosResponse = await this.backendClient.get<ApiResponse<Memo[]>>(
+      `/api/v1.0/schemas/${schemaId}/memos`,
+      {
+        headers: { Authorization: authHeader },
+      },
+    );
+
+    if (!memosResponse.data.success || !memosResponse.data.result) {
+      return memosResponse.data;
+    }
+
+    const memos = memosResponse.data.result;
+
+    const commentsResults = await Promise.allSettled(
+      memos.map((memo) =>
+        this.backendClient.get<ApiResponse<MemoComment[]>>(
+          `/api/v1.0/memos/${memo.id}/comments`,
+          {
+            headers: { Authorization: authHeader },
+          },
+        ),
+      ),
+    );
+
+    const memosWithComments = memos.map((memo, index) => {
+      const result = commentsResults[index];
+      const comments =
+        result.status === 'fulfilled' &&
+        result.value.data.success &&
+        result.value.data.result
+          ? result.value.data.result
+          : [];
+      return { ...memo, comments };
+    });
+
+    return {
+      success: true,
+      result: memosWithComments,
+      error: null,
+    };
   }
 
   async updateMemo(
@@ -74,7 +120,7 @@ export class MemoService {
       `/api/v1.0/memos/${memoId}`,
       data,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;
@@ -87,7 +133,7 @@ export class MemoService {
     const response = await this.backendClient.delete<ApiResponse<null>>(
       `/api/v1.0/memos/${memoId}`,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;
@@ -102,7 +148,7 @@ export class MemoService {
       `/api/v1.0/memos/${memoId}/comments`,
       data,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;
@@ -115,7 +161,7 @@ export class MemoService {
     const response = await this.backendClient.get<ApiResponse<MemoComment[]>>(
       `/api/v1.0/memos/${memoId}/comments`,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;
@@ -131,7 +177,7 @@ export class MemoService {
       `/api/v1.0/memos/${memoId}/comments/${commentId}`,
       data,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;
@@ -145,7 +191,7 @@ export class MemoService {
     const response = await this.backendClient.delete<ApiResponse<null>>(
       `/api/v1.0/memos/${memoId}/comments/${commentId}`,
       {
-        headers: authHeader ? { Authorization: authHeader } : {},
+        headers: { Authorization: authHeader },
       },
     );
     return response.data;

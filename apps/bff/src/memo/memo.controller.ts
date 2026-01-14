@@ -44,6 +44,14 @@ export class MemoController {
     return this.memoService.getSchemaMemos(schemaId, authHeader);
   }
 
+  @Get('schemas/:schemaId/memos-with-comments')
+  async getSchemaMemosWithComments(
+    @Param('schemaId') schemaId: string,
+    @Headers('authorization') authHeader: string,
+  ) {
+    return this.memoService.getSchemaMemosWithComments(schemaId, authHeader);
+  }
+
   @Put('memos/:memoId')
   async updateMemo(
     @Param('memoId') memoId: string,

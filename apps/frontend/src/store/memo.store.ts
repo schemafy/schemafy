@@ -73,54 +73,23 @@ export class MemoStore {
   }
 
   async fetchSchemaMemos(schemaId: string) {
-    // 복합적으로 처리되는 함수이기에 handleAsync를 사용할 수 없음
-    this._loadingStates['fetchSchemaMemos'] = true;
-    this.error = null;
-    try {
-      const res = await memoApi.getSchemaMemos(schemaId);
-      if (!res.success || !res.result) {
-        runInAction(() => {
-          this.error = res.error?.message ?? 'Failed to fetch memos';
-          this._loadingStates['fetchSchemaMemos'] = false;
-        });
-        return;
-      }
-      const memos = res.result;
-
-      const commentsResults = await Promise.allSettled(
-        memos.map((memo) => memoApi.getMemoComments(memo.id)),
-      );
-
-      runInAction(() => {
-        const combinedMemos = memos.map((memo, index) => {
-          const result = commentsResults[index];
-          const comments =
-            result.status === 'fulfilled' &&
-            result.value.success &&
-            result.value.result
-              ? result.value.result
-              : [];
-          return { ...memo, comments };
-        });
-
-        const newCommentsByMemo = combinedMemos.reduce((acc, memo) => {
+    await this.handleAsync(
+      'fetchSchemaMemos',
+      () => memoApi.getSchemaMemosWithComments(schemaId),
+      (memos) => {
+        const newCommentsByMemo = memos.reduce((acc, memo) => {
           acc[memo.id] = memo.comments;
           return acc;
         }, {} as CommentsByMemo);
 
-        this.memosBySchema[schemaId] = combinedMemos;
+        this.memosBySchema[schemaId] = memos;
         this.commentsByMemo = {
           ...this.commentsByMemo,
           ...newCommentsByMemo,
         };
-        this._loadingStates['fetchSchemaMemos'] = false;
-      });
-    } catch (e) {
-      runInAction(() => {
-        this._loadingStates['fetchSchemaMemos'] = false;
-        this.error = e instanceof Error ? e.message : 'Failed to fetch memos';
-      });
-    }
+      },
+      'Failed to fetch memos',
+    );
   }
 
   async createMemo(data: CreateMemoRequest): Promise<Memo | null> {

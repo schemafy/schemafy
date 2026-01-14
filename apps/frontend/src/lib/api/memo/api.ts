@@ -35,6 +35,15 @@ export const getSchemaMemos = async (
   return response.data;
 };
 
+export const getSchemaMemosWithComments = async (
+  schemaId: string,
+): Promise<ApiResponse<Memo[]>> => {
+  const response = await bffClient.get<ApiResponse<Memo[]>>(
+    `/api/v1.0/schemas/${schemaId}/memos-with-comments`,
+  );
+  return response.data;
+};
+
 export const updateMemo = async (
   memoId: string,
   data: UpdateMemoRequest,
