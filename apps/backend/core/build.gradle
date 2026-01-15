@@ -35,6 +35,8 @@ ext {
 }
 
 dependencies {
+	implementation project(':validation')
+
 	// webflux
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
@@ -150,10 +152,12 @@ tasks.named('spotbugsTest') {
 	enabled = false
 }
 
+def formatterConfig = file("${projectDir}/../../../gradle/format/java-formatter.xml")
+
 spotless {
 	java {
 		target 'src/**/*.java'
-		eclipse().configFile('java-formatter.xml')
+		eclipse().configFile(formatterConfig)
 		removeUnusedImports()
 		importOrder(
 				'java',
