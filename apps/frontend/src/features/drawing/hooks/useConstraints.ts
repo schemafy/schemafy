@@ -1,6 +1,6 @@
 import { ulid } from 'ulid';
 import type { ErdStore } from '@/store/erd.store';
-import type { Constraint } from '@schemafy/validator';
+import type { Constraint } from '@/types/erd.types';
 import { generateUniqueName } from '../utils/nameGenerator';
 
 export type CompositeConstraintKind = 'PRIMARY_KEY' | 'UNIQUE';

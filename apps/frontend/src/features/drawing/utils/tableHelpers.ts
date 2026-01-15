@@ -1,5 +1,5 @@
 import type { Node } from '@xyflow/react';
-import type { Table, Column, Constraint } from '@schemafy/validator';
+import type { Table, Column, Constraint } from '@/types/erd.types';
 import type { TableData, ColumnType, ConstraintKind, Point } from '../types';
 
 type TableExtra = {

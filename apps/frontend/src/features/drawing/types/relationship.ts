@@ -1,5 +1,5 @@
 import type { Point } from './index';
-import type { Relationship } from '@schemafy/validator';
+import type { Relationship } from '@/types/erd.types';
 
 export const RELATIONSHIP_TYPES = {
   'one-to-one': {
