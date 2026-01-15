@@ -1,4 +1,4 @@
-import { SCHEMA_NAME_CONSTRAINTS } from '@schemafy/validator';
+import { SCHEMA_NAME_CONSTRAINTS } from '@/types/erd.types';
 
 export const validateSchemaName = (name: string): boolean => {
   const trimmed = name.trim();

@@ -5,7 +5,6 @@ plugins {
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
 	id 'com.github.spotbugs' version '6.0.26'
 	id 'org.ec4j.editorconfig' version '0.1.0'
-	id 'com.google.protobuf' version '0.9.4'
 	id 'com.diffplug.spotless' version '6.25.0'
 }
 
@@ -33,8 +32,6 @@ repositories {
 
 ext {
 	set('snippetsDir', file("build/generated-snippets"))
-	set('grpcVersion', '1.68.2')
-	set('protobufVersion', '4.29.2')
 }
 
 dependencies {
@@ -75,14 +72,6 @@ dependencies {
 	// validation
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-	// grpc
-	implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
-	implementation "io.grpc:grpc-protobuf:${grpcVersion}"
-	implementation "io.grpc:grpc-stub:${grpcVersion}"
-	implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
-	compileOnly 'jakarta.annotation:jakarta.annotation-api:2.1.1'
-	compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
-
 	// lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -91,11 +80,6 @@ dependencies {
 
 	// doc
 	implementation 'org.springdoc:springdoc-openapi-starter-webflux-api:2.8.13'
-
-	// grpc testing
-	testImplementation "io.grpc:grpc-testing:${grpcVersion}"
-
-	implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
 
 	// spotbugs
 	spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
@@ -189,63 +173,8 @@ tasks.named('check') {
 	dependsOn 'spotlessCheck'
 }
 
-// Create symlink to shared proto files
-tasks.register('linkProtos') {
-	doLast {
-		def sharedProtoDir = file('../../../packages/proto-validation/protos')
-		def targetProtoDir = file('src/main/proto')
-
-		targetProtoDir.mkdirs()
-
-		def sourceFile = new File(sharedProtoDir, 'validation.proto')
-		def targetFile = new File(targetProtoDir, 'validation.proto')
-
-		if (!targetFile.exists()) {
-			def relativeSourcePath = targetProtoDir.toPath().relativize(sourceFile.toPath()).toString()
-			if (System.properties['os.name'].toLowerCase().contains('windows')) {
-				exec {
-					workingDir targetProtoDir
-					commandLine 'cmd', '/c', 'mklink',
-						targetFile.name, relativeSourcePath
-				}
-			} else {
-				exec {
-					workingDir targetProtoDir
-					commandLine 'ln', '-sf',
-						relativeSourcePath, targetFile.name
-				}
-			}
-		}
-	}
-}
-
-tasks.named('generateProto') {
-	dependsOn 'linkProtos'
-}
-
-// Protobuf configuration
-protobuf {
-	protoc {
-		artifact = "com.google.protobuf:protoc:${protobufVersion}"
-	}
-	plugins {
-		grpc {
-			artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
-		}
-	}
-	generateProtoTasks {
-		all()*.plugins {
-			grpc {}
-		}
-	}
-}
-
 sourceSets {
 	main {
-		java {
-			srcDir 'build/generated/source/proto/main/grpc'
-			srcDir 'build/generated/source/proto/main/java'
-		}
 		resources {
 			srcDir 'src/main/resources'
 			srcDir 'sql'
@@ -255,10 +184,6 @@ sourceSets {
 
 tasks.named('processResources') {
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
-tasks.named('compileJava') {
-	dependsOn 'generateProto'
 }
 
 tasks.withType(Jar).configureEach {

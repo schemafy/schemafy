@@ -2,7 +2,7 @@
   "name": "schemafy",
   "private": true,
   "scripts": {
-    "build": "turbo run build --filter='!@schemafy/proto-validation'",
+    "build": "turbo run build",
     "build:frontend": "cd apps/frontend && npm run build",
     "build:backend": "cd apps/backend && cd core && ./gradlew build",
     "infra": "podman compose up -d mariadb redis || true",
@@ -11,10 +11,10 @@
     "dev:backend": "cd apps/backend && npm run dev",
     "infra:up": "podman compose up -d mariadb redis",
     "infra:down": "podman compose down",
-    "lint": "turbo run lint --filter='!@schemafy/proto-validation'",
-    "format": "turbo run format --filter='!@schemafy/proto-validation'",
-    "format:check": "turbo run format:check --filter='!@schemafy/proto-validation'",
-    "test": "turbo run test --filter='!@schemafy/proto-validation'",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "test": "turbo run test",
     "docs": "./gradlew :core:asciidoctor && open apps/backend/core/build/docs/asciidoc/api-guide.html",
     "docs:build": "./gradlew :core:asciidoctor",
     "docs:open": "open apps/backend/core/build/docs/asciidoc/api-guide.html"

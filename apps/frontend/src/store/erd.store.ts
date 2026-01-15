@@ -1,17 +1,17 @@
 import { makeAutoObservable, observable, runInAction } from 'mobx';
-import {
-  ERD_VALIDATOR,
-  type Database,
-  type Schema,
-  type Table,
-  type Column,
-  type Index,
-  type IndexColumn,
-  type Constraint,
-  type ConstraintColumn,
-  type Relationship,
-  type RelationshipColumn,
-} from '@schemafy/validator';
+import { ERD_VALIDATOR } from '@/utils/erd-handlers';
+import type {
+  Database,
+  Schema,
+  Table,
+  Column,
+  Index,
+  IndexColumn,
+  Constraint,
+  ConstraintColumn,
+  Relationship,
+  RelationshipColumn,
+} from '@/types/erd.types';
 
 interface IDLE {
   state: 'idle';
