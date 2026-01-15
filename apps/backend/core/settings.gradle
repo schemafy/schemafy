@@ -1,1 +1,3 @@
 rootProject.name = 'core'
+include ':validation'
+project(':validation').projectDir = file('../validation')

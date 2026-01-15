@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.schemafy'
+version = '0.0.1-SNAPSHOT'
+description = 'Validation module of the backend application'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
