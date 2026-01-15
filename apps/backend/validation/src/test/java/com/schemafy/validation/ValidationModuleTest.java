@@ -9,4 +9,5 @@ class ValidationModuleTest {
   void loadsModuleClass() throws Exception {
     Assertions.assertNotNull(Class.forName("com.schemafy.validation.ValidationModule"));
   }
+
 }

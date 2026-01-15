@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'com.schemafy'
@@ -22,6 +23,31 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+def formatterConfig = file("${projectDir}/../../../gradle/format/java-formatter.xml")
+
+spotless {
+    java {
+        target 'src/**/*.java'
+        eclipse().configFile(formatterConfig)
+        removeUnusedImports()
+        importOrder(
+                'java',
+                'jakarta',
+                'org.springframework',
+                'org',
+                'com',
+                '',
+                '\\#'
+        )
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
 test {
     useJUnitPlatform()
+}
+
+tasks.named('check') {
+    dependsOn 'spotlessCheck'
 }
