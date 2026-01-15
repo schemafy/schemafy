@@ -14,14 +14,11 @@ import com.schemafy.core.project.controller.dto.response.ProjectResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectSummaryResponse;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
-import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
-import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -37,8 +34,6 @@ public class ProjectService {
   private final ProjectMemberRepository projectMemberRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final UserRepository userRepository;
-  private final ShareLinkRepository shareLinkRepository;
-  private final ShareLinkTokenService tokenService;
 
   private static final int MAX_PROJECT_MEMBERS = 30;
 
@@ -187,33 +182,6 @@ public class ProjectService {
         });
   }
 
-  /** ShareLink 토큰을 통한 프로젝트 참여 */
-  public Mono<ProjectMemberResponse> joinProjectByShareLink(String token,
-      String userId) {
-    byte[] tokenHash = tokenService.hashToken(token);
-
-    return shareLinkRepository.findValidByTokenHash(tokenHash)
-        .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
-        .flatMap(shareLink -> projectRepository
-            .findByIdAndNotDeleted(shareLink.getProjectId())
-            .switchIfEmpty(Mono.error(
-                new BusinessException(
-                    ErrorCode.PROJECT_NOT_FOUND)))
-            .flatMap(project -> workspaceMemberRepository
-                .existsByWorkspaceIdAndUserIdAndNotDeleted(
-                    project.getWorkspaceId(), userId)
-                .flatMap(isWorkspaceMember -> {
-                  if (!isWorkspaceMember) {
-                    return Mono.error(new BusinessException(
-                        ErrorCode.WORKSPACE_MEMBERSHIP_REQUIRED));
-                  }
-                  return createOrUpdateProjectMember(project,
-                      shareLink, userId);
-                })))
-        .as(transactionalOperator::transactional);
-  }
-
   /** 프로젝트 멤버 역할 변경 */
   public Mono<ProjectMemberResponse> updateMemberRole(String workspaceId,
       String projectId, String targetId,
@@ -299,45 +267,6 @@ public class ProjectService {
                   return softDeleteMember(member);
                 })))
         .as(transactionalOperator::transactional);
-  }
-
-  private Mono<ProjectMemberResponse> createOrUpdateProjectMember(
-      Project project, ShareLink shareLink, String userId) {
-    return projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
-        .flatMap(existingMember -> {
-          ShareLinkRole shareLinkRole = shareLink.getRoleAsEnum();
-          ProjectRole newRole = shareLinkRole.toProjectRole();
-          ProjectRole currentRole = existingMember.getRoleAsEnum();
-
-          // 새로운 역할이 현재 역할보다 높은 권한을 가지면 업그레이드
-          if (newRole.getLevel() > currentRole.getLevel()) {
-            existingMember.updateRole(newRole);
-            return projectMemberRepository.save(existingMember);
-          }
-
-          return Mono.just(existingMember);
-        })
-        .switchIfEmpty(Mono.defer(() -> projectMemberRepository
-            .countByProjectIdAndNotDeleted(project.getId())
-            .flatMap(memberCount -> {
-              if (memberCount >= MAX_PROJECT_MEMBERS) {
-                return Mono.error(new BusinessException(
-                    ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED));
-              }
-
-              ShareLinkRole shareLinkRole = shareLink
-                  .getRoleAsEnum();
-              ProjectRole projectRole = shareLinkRole
-                  .toProjectRole();
-              ProjectMember newMember = ProjectMember
-                  .create(project.getId(), userId,
-                      projectRole);
-
-              return projectMemberRepository.save(newMember);
-            })))
-        .flatMap(member -> userRepository.findById(member.getUserId())
-            .map(user -> ProjectMemberResponse.of(member, user)));
   }
 
   private Mono<Void> validateOwnerOrAdminProtection(String projectId) {

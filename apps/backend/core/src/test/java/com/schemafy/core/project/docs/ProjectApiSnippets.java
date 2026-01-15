@@ -254,12 +254,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return createRequestHeadersSnippet(authorizationHeader());
   }
 
-  /** 프로젝트 삭제 응답 */
-  public static Snippet deleteProjectResponse() {
-    return createResponseFieldsSnippet(
-        successResponseFieldsWithNullResult());
-  }
-
   // ========== GET /api/workspaces/{workspaceId}/projects/{id}/members - 프로젝트 멤버 조회 ==========
 
   /** 프로젝트 멤버 조회 경로 파라미터 */
@@ -325,48 +319,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
             fieldWithPath("result.totalPages")
                 .type(JsonFieldType.NUMBER)
                 .description("전체 페이지 수")));
-  }
-
-  // ========== POST /api/projects/join - ShareLink로 프로젝트 참여 ==========
-
-  /** ShareLink로 프로젝트 참여 요청 헤더 */
-  public static Snippet joinProjectByShareLinkRequestHeaders() {
-    return createRequestHeadersSnippet(authorizationHeader());
-  }
-
-  /** ShareLink로 프로젝트 참여 요청 바디 */
-  public static Snippet joinProjectByShareLinkRequest() {
-    return requestFields(
-        fieldWithPath("token").type(JsonFieldType.STRING)
-            .description("ShareLink 토큰 (필수)"));
-  }
-
-  /** ShareLink로 프로젝트 참여 응답 헤더 */
-  public static Snippet joinProjectByShareLinkResponseHeaders() {
-    return createResponseHeadersSnippet(commonResponseHeaders());
-  }
-
-  /** ShareLink로 프로젝트 참여 응답 */
-  public static Snippet joinProjectByShareLinkResponse() {
-    return createResponseFieldsSnippet(
-        successResponseFields(
-            fieldWithPath("result.id").type(JsonFieldType.STRING)
-                .description("멤버십 ID"),
-            fieldWithPath("result.userId")
-                .type(JsonFieldType.STRING)
-                .description("사용자 ID"),
-            fieldWithPath("result.userName")
-                .type(JsonFieldType.STRING)
-                .description("사용자 이름"),
-            fieldWithPath("result.userEmail")
-                .type(JsonFieldType.STRING)
-                .description("사용자 이메일"),
-            fieldWithPath("result.role").type(JsonFieldType.STRING)
-                .description(
-                    "부여받은 역할 (EDITOR, COMMENTER, VIEWER)"),
-            fieldWithPath("result.joinedAt")
-                .type(JsonFieldType.STRING)
-                .description("가입 시각")));
   }
 
   // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role - 멤버 역할 변경 ==========
@@ -436,11 +388,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return createRequestHeadersSnippet(authorizationHeader());
   }
 
-  /** 멤버 제거 응답 헤더 */
-  public static Snippet removeMemberResponseHeaders() {
-    return createResponseHeadersSnippet(commonResponseHeaders());
-  }
-
   // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/members/me - 프로젝트 탈퇴 ==========
 
   /** 프로젝트 탈퇴 경로 파라미터 */
@@ -454,11 +401,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   /** 프로젝트 탈퇴 요청 헤더 */
   public static Snippet leaveProjectRequestHeaders() {
     return createRequestHeadersSnippet(authorizationHeader());
-  }
-
-  /** 프로젝트 탈퇴 응답 헤더 */
-  public static Snippet leaveProjectResponseHeaders() {
-    return createResponseHeadersSnippet(commonResponseHeaders());
   }
 
 }

@@ -7,7 +7,6 @@ import org.springframework.data.relational.core.mapping.Table;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseEntity;
-import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 
 import lombok.AccessLevel;
@@ -23,9 +22,7 @@ public class ShareLink extends BaseEntity {
 
   private String projectId;
 
-  private byte[] tokenHash;
-
-  private String role;
+  private String code;
 
   private Instant expiresAt;
 
@@ -35,18 +32,14 @@ public class ShareLink extends BaseEntity {
 
   private Long accessCount;
 
-  public static ShareLink create(String projectId, byte[] tokenHash,
-      ShareLinkRole role, Instant expiresAt) {
+  public static ShareLink create(String projectId, String code, Instant expiresAt) {
     if (projectId == null || projectId.isBlank()) {
       throw new BusinessException(
           ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
     }
-    if (tokenHash == null || tokenHash.length != 32) {
+    if (code == null || code.isBlank() || code.length() < 22) {
       throw new BusinessException(
-          ErrorCode.SHARE_LINK_INVALID_TOKEN_HASH);
-    }
-    if (role == null) {
-      throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_ROLE);
+          ErrorCode.SHARE_LINK_INVALID_CODE);
     }
     if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
       throw new BusinessException(
@@ -55,8 +48,7 @@ public class ShareLink extends BaseEntity {
 
     ShareLink shareLink = new ShareLink(
         projectId,
-        tokenHash,
-        role.getValue(),
+        code,
         expiresAt,
         false,
         null,
@@ -64,8 +56,6 @@ public class ShareLink extends BaseEntity {
     shareLink.setId(UlidGenerator.generate());
     return shareLink;
   }
-
-  public ShareLinkRole getRoleAsEnum() { return ShareLinkRole.fromString(this.role); }
 
   public void revoke() {
     this.isRevoked = true;

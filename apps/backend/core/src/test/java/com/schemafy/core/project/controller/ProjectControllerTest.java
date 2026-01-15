@@ -1,7 +1,5 @@
 package com.schemafy.core.project.controller;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +18,12 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
-import com.schemafy.core.project.controller.dto.request.JoinProjectByShareLinkRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
 import com.schemafy.core.project.docs.ProjectApiSnippets;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.*;
 import com.schemafy.core.project.repository.vo.*;
-import com.schemafy.core.project.service.ShareLinkTokenService;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
@@ -64,12 +60,6 @@ class ProjectControllerTest {
   private UserRepository userRepository;
 
   @Autowired
-  private ShareLinkRepository shareLinkRepository;
-
-  @Autowired
-  private ShareLinkTokenService shareLinkTokenService;
-
-  @Autowired
   private JwtProvider jwtProvider;
 
   private String testUserId;
@@ -82,7 +72,6 @@ class ProjectControllerTest {
   @BeforeEach
   void setUp() {
     Mono<Void> cleanup = Mono.when(
-        shareLinkRepository.deleteAll(),
         projectMemberRepository.deleteAll(),
         projectRepository.deleteAll(),
         workspaceMemberRepository.deleteAll(),
@@ -398,179 +387,6 @@ class ProjectControllerTest {
         .jsonPath("$.success")
         .isEqualTo(true).jsonPath("$.result.totalElements")
         .isEqualTo(1);
-  }
-
-  @Test
-  @DisplayName("유효한 ShareLink로 프로젝트 가입에 성공한다")
-  void joinProjectByShareLink_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
-    project = projectRepository.save(project).block();
-
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
-    projectMemberRepository.save(ownerMember).block();
-
-    String rawToken = "test_share_link_token_123456789";
-    byte[] tokenHash = shareLinkTokenService.hashToken(rawToken);
-    ShareLink shareLink = ShareLink.create(project.getId(), tokenHash,
-        ShareLinkRole.EDITOR,
-        Instant.now().plus(7, ChronoUnit.DAYS));
-    shareLinkRepository.save(shareLink).block();
-
-    JoinProjectByShareLinkRequest request = new JoinProjectByShareLinkRequest(
-        rawToken);
-
-    webTestClient.post()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/join")
-        .header("Authorization", "Bearer " + accessToken2)
-        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
-        .exchange().expectStatus().isCreated().expectBody()
-        .consumeWith(document("project-join-by-sharelink",
-            ProjectApiSnippets
-                .joinProjectByShareLinkRequestHeaders(),
-            ProjectApiSnippets.joinProjectByShareLinkRequest(),
-            ProjectApiSnippets
-                .joinProjectByShareLinkResponseHeaders(),
-            ProjectApiSnippets.joinProjectByShareLinkResponse()))
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("editor").jsonPath("$.result.userId")
-        .isEqualTo(testUser2Id);
-
-    ProjectMember newMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(),
-            testUser2Id)
-        .block();
-    assertThat(newMember).isNotNull();
-    assertThat(newMember.getRole()).isEqualTo("editor");
-  }
-
-  @Test
-  @DisplayName("ShareLink로 중복 가입이 가능하다(멱등성)")
-  void joinProjectByShareLink_Duplicate_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
-    project = projectRepository.save(project).block();
-
-    ProjectMember existingMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.EDITOR);
-    projectMemberRepository.save(existingMember).block();
-
-    String rawToken = "test_share_link_token_123456789";
-    byte[] tokenHash = shareLinkTokenService.hashToken(rawToken);
-    ShareLink shareLink = ShareLink.create(project.getId(), tokenHash,
-        ShareLinkRole.EDITOR,
-        Instant.now().plus(7, ChronoUnit.DAYS));
-    shareLinkRepository.save(shareLink).block();
-
-    JoinProjectByShareLinkRequest request = new JoinProjectByShareLinkRequest(
-        rawToken);
-
-    webTestClient.post()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/join")
-        .header("Authorization", "Bearer " + accessToken2)
-        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
-        .exchange().expectStatus().isCreated().expectBody()
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("editor");
-  }
-
-  @Test
-  @DisplayName("ShareLink로 역할을 변경할 수 있다")
-  void joinProjectByShareLink_RoleUpgrade_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
-    project = projectRepository.save(project).block();
-
-    ProjectMember existingMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(existingMember).block();
-
-    String rawToken = "test_share_link_token_123456789";
-    byte[] tokenHash = shareLinkTokenService.hashToken(rawToken);
-    ShareLink shareLink = ShareLink.create(project.getId(), tokenHash,
-        ShareLinkRole.EDITOR,
-        Instant.now().plus(7, ChronoUnit.DAYS));
-    shareLinkRepository.save(shareLink).block();
-
-    JoinProjectByShareLinkRequest request = new JoinProjectByShareLinkRequest(
-        rawToken);
-
-    webTestClient.post()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/join")
-        .header("Authorization", "Bearer " + accessToken2)
-        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
-        .exchange().expectStatus().isCreated().expectBody()
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("editor");
-
-    ProjectMember upgradedMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(),
-            testUser2Id)
-        .block();
-    assertThat(upgradedMember.getRole()).isEqualTo("editor");
-  }
-
-  @Test
-  @DisplayName("인증 없이 ShareLink 가입 시도하면 실패한다")
-  void joinProjectByShareLink_Unauthorized() {
-    JoinProjectByShareLinkRequest request = new JoinProjectByShareLinkRequest(
-        "test_token");
-
-    webTestClient.post()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/join")
-        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
-        .exchange().expectStatus().isUnauthorized();
-  }
-
-  @Test
-  @DisplayName("워크스페이스 멤버가 아닌 경우 ShareLink 가입 실패한다")
-  void joinProjectByShareLink_NotWorkspaceMember_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
-    project = projectRepository.save(project).block();
-
-    workspaceMemberRepository.findByUserIdAndNotDeleted(testUser2Id)
-        .flatMap(workspaceMemberRepository::delete).blockLast();
-
-    String rawToken = "test_share_link_token_123456789";
-    byte[] tokenHash = shareLinkTokenService.hashToken(rawToken);
-    ShareLink shareLink = ShareLink.create(project.getId(), tokenHash,
-        ShareLinkRole.EDITOR,
-        Instant.now().plus(7, ChronoUnit.DAYS));
-    shareLinkRepository.save(shareLink).block();
-
-    JoinProjectByShareLinkRequest request = new JoinProjectByShareLinkRequest(
-        rawToken);
-
-    webTestClient.post()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/join")
-        .header("Authorization", "Bearer " + accessToken2)
-        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
-        .exchange().expectStatus().isForbidden();
-  }
-
-  @Test
-  @DisplayName("유효하지 않은 ShareLink 토큰 가입 시도는 실패한다")
-  void joinProjectByShareLink_InvalidToken_BadRequest() {
-    JoinProjectByShareLinkRequest request = new JoinProjectByShareLinkRequest(
-        "invalid_token_12345");
-
-    webTestClient.post()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/join")
-        .header("Authorization", "Bearer " + accessToken2)
-        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
-        .exchange().expectStatus().is4xxClientError();
   }
 
   @Test

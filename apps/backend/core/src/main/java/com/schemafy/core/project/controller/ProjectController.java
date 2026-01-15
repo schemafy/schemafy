@@ -11,7 +11,6 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
-import com.schemafy.core.project.controller.dto.request.JoinProjectByShareLinkRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
 import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
@@ -92,17 +91,6 @@ public class ProjectController {
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.getMembers(workspaceId, id, userId, page, size)
-        .map(BaseResponse::success);
-  }
-
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
-  @PostMapping("/projects/join")
-  @ResponseStatus(HttpStatus.CREATED)
-  public Mono<BaseResponse<ProjectMemberResponse>> joinProjectByShareLink(
-      @Valid @RequestBody JoinProjectByShareLinkRequest request,
-      Authentication authentication) {
-    String userId = authentication.getName();
-    return projectService.joinProjectByShareLink(request.token(), userId)
         .map(BaseResponse::success);
   }
 

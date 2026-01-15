@@ -127,10 +127,9 @@ public enum ErrorCode {
   SHARE_LINK_INVALID(HttpStatus.UNAUTHORIZED, "S004", "유효하지 않은 공유 링크입니다."),
   SHARE_LINK_INVALID_PROJECT_ID(HttpStatus.BAD_REQUEST, "S005",
       "프로젝트 ID가 유효하지 않습니다."),
-  SHARE_LINK_INVALID_TOKEN_HASH(HttpStatus.BAD_REQUEST, "S006",
-      "토큰 해시가 유효하지 않습니다."),
-  SHARE_LINK_INVALID_ROLE(HttpStatus.BAD_REQUEST, "S007", "권한이 유효하지 않습니다."),
-  SHARE_LINK_INVALID_EXPIRATION(HttpStatus.BAD_REQUEST, "S008",
+  SHARE_LINK_INVALID_CODE(HttpStatus.BAD_REQUEST, "S006",
+      "공유 링크 코드가 유효하지 않습니다."),
+  SHARE_LINK_INVALID_EXPIRATION(HttpStatus.BAD_REQUEST, "S007",
       "만료 시간은 미래 시간이어야 합니다.");
 
   private final HttpStatus status;
