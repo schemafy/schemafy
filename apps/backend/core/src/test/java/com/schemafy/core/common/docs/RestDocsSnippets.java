@@ -58,9 +58,7 @@ public abstract class RestDocsSnippets {
       fieldWithPath("success").type(JsonFieldType.BOOLEAN)
           .description("요청 성공 여부"),
       fieldWithPath("result").type(JsonFieldType.OBJECT)
-          .description("응답 데이터").optional(),
-      fieldWithPath("error").type(JsonFieldType.NULL)
-          .description("에러 정보 (성공 시 null)").optional()
+          .description("응답 데이터").optional()
     };
 
     return concat(baseFields, resultFields);
