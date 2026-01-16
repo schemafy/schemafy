@@ -150,7 +150,6 @@ export class CollaborationStore {
 
   private handleCursorMessage(message: RecieveCursor) {
     const cursorPosition: CursorPosition = {
-      userId: message.cursor.userName,
       userName: message.cursor.userName,
       x: message.cursor.x,
       y: message.cursor.y,
