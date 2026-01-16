@@ -104,7 +104,7 @@ class PublicShareLinkControllerResilienceTest {
   }
 
   private ShareLink createShareLink(String code) {
-    ShareLink shareLink = ShareLink.create(testProject.getId(), code, null);
+    ShareLink shareLink = ShareLink.create(testProject.getId(), code);
     return shareLinkRepository.save(shareLink).block();
   }
 

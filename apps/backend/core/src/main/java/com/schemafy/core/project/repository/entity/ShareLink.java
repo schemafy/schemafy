@@ -32,27 +32,24 @@ public class ShareLink extends BaseEntity {
 
   private Long accessCount;
 
+  private static final int DEFAULT_DURATION_DAYS = 14;
+
+  /** 기본 만료 정책(14일) 적용 */
+  public static ShareLink create(String projectId, String code) {
+    Instant expiresAt = Instant.now().plus(java.time.Duration.ofDays(DEFAULT_DURATION_DAYS));
+    return create(projectId, code, expiresAt);
+  }
+
+  /** 커스텀 만료일 지정 */
   public static ShareLink create(String projectId, String code, Instant expiresAt) {
     if (projectId == null || projectId.isBlank()) {
-      throw new BusinessException(
-          ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
+      throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
     }
     if (code == null || code.isBlank() || code.length() < 22) {
-      throw new BusinessException(
-          ErrorCode.SHARE_LINK_INVALID_CODE);
-    }
-    if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
-      throw new BusinessException(
-          ErrorCode.SHARE_LINK_INVALID_EXPIRATION);
+      throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_CODE);
     }
 
-    ShareLink shareLink = new ShareLink(
-        projectId,
-        code,
-        expiresAt,
-        false,
-        null,
-        0L);
+    ShareLink shareLink = new ShareLink(projectId, code, expiresAt, false, null, 0L);
     shareLink.setId(UlidGenerator.generate());
     return shareLink;
   }

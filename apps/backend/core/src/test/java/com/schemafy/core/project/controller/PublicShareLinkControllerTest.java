@@ -134,7 +134,7 @@ class PublicShareLinkControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .consumeWith(document("public-share-link/access-by-code",
+        .consumeWith(document("share-link-public-access",
             accessByCodePathParameters(),
             accessByCodeResponseHeaders(),
             accessByCodeResponse()))

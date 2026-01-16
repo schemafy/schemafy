@@ -36,6 +36,7 @@ public class PublicShareLinkController {
 
     return shareLinkService
         .accessByCode(code, userId, ipAddress, userAgent)
+        .map(ShareLinkAccessResponse::of)
         .map(BaseResponse::success);
   }
 

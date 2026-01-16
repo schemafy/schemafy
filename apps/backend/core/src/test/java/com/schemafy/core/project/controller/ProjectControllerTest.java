@@ -1,6 +1,7 @@
 package com.schemafy.core.project.controller;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
@@ -60,6 +61,9 @@ class ProjectControllerTest {
   private UserRepository userRepository;
 
   @Autowired
+  private ShareLinkRepository shareLinkRepository;
+
+  @Autowired
   private JwtProvider jwtProvider;
 
   private String testUserId;
@@ -72,6 +76,7 @@ class ProjectControllerTest {
   @BeforeEach
   void setUp() {
     Mono<Void> cleanup = Mono.when(
+        shareLinkRepository.deleteAll(),
         projectMemberRepository.deleteAll(),
         projectRepository.deleteAll(),
         workspaceMemberRepository.deleteAll(),
@@ -118,6 +123,10 @@ class ProjectControllerTest {
   private String generateAccessToken(String userId) {
     return jwtProvider.generateAccessToken(userId, new HashMap<>(),
         System.currentTimeMillis());
+  }
+
+  private String generateShareLinkCode() {
+    return UUID.randomUUID().toString().replace("-", "");
   }
 
   @Test
@@ -717,6 +726,547 @@ class ProjectControllerTest {
             testWorkspaceId, project.getId())
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().is4xxClientError();
+  }
+
+  @Test
+  @DisplayName("공유 링크 생성에 성공한다")
+  void createShareLink_Success() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.post()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isCreated()
+        .expectBody()
+        .consumeWith(document("share-link-create",
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkPathParameters(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkRequestHeaders(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponseHeaders(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponse()))
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.projectId").isEqualTo(project.getId())
+        .jsonPath("$.result.code").exists()
+        .jsonPath("$.result.shareUrl").exists()
+        .jsonPath("$.result.isRevoked").isEqualTo(false)
+        .jsonPath("$.result.accessCount").isEqualTo(0);
+  }
+
+  @Test
+  @DisplayName("공유 링크 목록 조회에 성공한다")
+  void getShareLinks_Success() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    shareLinkRepository.save(shareLink).block();
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=0&size=10",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .consumeWith(document("share-link-list",
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksPathParameters(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksRequestHeaders(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksQueryParameters(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksResponseHeaders(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksResponse()))
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.content").isArray()
+        .jsonPath("$.result.totalElements").isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("공유 링크 상세 조회에 성공한다")
+  void getShareLink_Success() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    String shareLinkCode = generateShareLinkCode();
+    ShareLink shareLink = ShareLink.create(project.getId(), shareLinkCode, null);
+    shareLink = shareLinkRepository.save(shareLink).block();
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
+            testWorkspaceId, project.getId(), shareLink.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .consumeWith(document("share-link-get",
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkPathParameters(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkRequestHeaders(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponseHeaders(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponse()))
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.id").isEqualTo(shareLink.getId())
+        .jsonPath("$.result.code").isEqualTo(shareLinkCode)
+        .jsonPath("$.result.isRevoked").isEqualTo(false);
+  }
+
+  @Test
+  @DisplayName("공유 링크 비활성화에 성공한다")
+  void revokeShareLink_Success() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    shareLink = shareLinkRepository.save(shareLink).block();
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
+            testWorkspaceId, project.getId(), shareLink.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .consumeWith(document("share-link-revoke",
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkPathParameters(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkRequestHeaders(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkResponseHeaders(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkResponse()))
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.id").isEqualTo(shareLink.getId())
+        .jsonPath("$.result.isRevoked").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("공유 링크 삭제에 성공한다")
+  void deleteShareLink_Success() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    shareLink = shareLinkRepository.save(shareLink).block();
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
+            testWorkspaceId, project.getId(), shareLink.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isNoContent()
+        .expectBody()
+        .consumeWith(document("share-link-delete",
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.deleteShareLinkPathParameters(),
+            com.schemafy.core.project.docs.ShareLinkApiSnippets.deleteShareLinkRequestHeaders()));
+  }
+
+  @Test
+  @DisplayName("EDITOR는 공유 링크를 생성할 수 없다")
+  void createShareLink_EditorRole_Forbidden() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.EDITOR);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.post()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("VIEWER는 공유 링크를 생성할 수 없다")
+  void createShareLink_ViewerRole_Forbidden() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.VIEWER);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.post()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("프로젝트 멤버가 아닌 사용자는 공유 링크를 생성할 수 없다")
+  void createShareLink_NotMember_Forbidden() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.post()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("VIEWER는 공유 링크 목록을 조회할 수 없다")
+  void getShareLinks_ViewerRole_Forbidden() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.VIEWER);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("EDITOR는 공유 링크 상세를 조회할 수 없다")
+  void getShareLink_EditorRole_Forbidden() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(adminMember).block();
+
+    ProjectMember editorMember = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.EDITOR);
+    projectMemberRepository.save(editorMember).block();
+
+    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    shareLink = shareLinkRepository.save(shareLink).block();
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
+            testWorkspaceId, project.getId(), shareLink.getId())
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("VIEWER는 공유 링크를 비활성화할 수 없다")
+  void revokeShareLink_ViewerRole_Forbidden() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(adminMember).block();
+
+    ProjectMember viewerMember = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.VIEWER);
+    projectMemberRepository.save(viewerMember).block();
+
+    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    shareLink = shareLinkRepository.save(shareLink).block();
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
+            testWorkspaceId, project.getId(), shareLink.getId())
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("EDITOR는 공유 링크를 삭제할 수 없다")
+  void deleteShareLink_EditorRole_Forbidden() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(adminMember).block();
+
+    ProjectMember editorMember = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.EDITOR);
+    projectMemberRepository.save(editorMember).block();
+
+    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    shareLink = shareLinkRepository.save(shareLink).block();
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
+            testWorkspaceId, project.getId(), shareLink.getId())
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 공유 링크 조회 시 실패한다")
+  void getShareLink_NotFound() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
+            testWorkspaceId, project.getId(), "nonexistent-id")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().is4xxClientError();
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 공유 링크 비활성화 시 실패한다")
+  void revokeShareLink_NotFound() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
+            testWorkspaceId, project.getId(), "nonexistent-id")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().is4xxClientError();
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 공유 링크 삭제 시 실패한다")
+  void deleteShareLink_NotFound() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
+            testWorkspaceId, project.getId(), "nonexistent-id")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().is4xxClientError();
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 프로젝트에 공유 링크 생성 시 실패한다")
+  void createShareLink_ProjectNotFound() {
+    webTestClient.post()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+            testWorkspaceId, "nonexistent-project-id")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().is4xxClientError();
+  }
+
+  @Test
+  @DisplayName("공유 링크 목록 조회 시 페이징이 정상 동작한다")
+  void getShareLinks_Pagination_Success() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    for (int i = 0; i < 5; i++) {
+      ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+      shareLinkRepository.save(shareLink).block();
+    }
+
+    // first page
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=0&size=3",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.content").isArray()
+        .jsonPath("$.result.content.length()").isEqualTo(3)
+        .jsonPath("$.result.page").isEqualTo(0)
+        .jsonPath("$.result.size").isEqualTo(3)
+        .jsonPath("$.result.totalElements").isEqualTo(5)
+        .jsonPath("$.result.totalPages").isEqualTo(2);
+
+    // second page
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=1&size=3",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.content").isArray()
+        .jsonPath("$.result.content.length()").isEqualTo(2)
+        .jsonPath("$.result.page").isEqualTo(1)
+        .jsonPath("$.result.totalElements").isEqualTo(5);
+  }
+
+  @Test
+  @DisplayName("비활성화된 공유 링크도 목록에 포함된다")
+  void getShareLinks_IncludesRevokedLinks() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    ShareLink activeLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    shareLinkRepository.save(activeLink).block();
+
+    ShareLink revokedLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    revokedLink = shareLinkRepository.save(revokedLink).block();
+    revokedLink.revoke();
+    shareLinkRepository.save(revokedLink).block();
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.content").isArray()
+        .jsonPath("$.result.totalElements").isEqualTo(2);
+  }
+
+  @Test
+  @DisplayName("이미 비활성화된 공유 링크를 다시 비활성화하려고 하면 실패한다")
+  void revokeShareLink_AlreadyRevoked_Fail() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
+    shareLink = shareLinkRepository.save(shareLink).block();
+    shareLink.revoke();
+    shareLink = shareLinkRepository.save(shareLink).block();
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
+            testWorkspaceId, project.getId(), shareLink.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().is4xxClientError();
+  }
+
+  @Test
+  @DisplayName("공유 링크가 없는 프로젝트의 목록 조회는 빈 배열을 반환한다")
+  void getShareLinks_EmptyProject_ReturnsEmptyList() {
+    Project project = Project.create(testWorkspaceId,
+        "Test Project", "Description",
+        ProjectSettings.defaultSettings());
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(member).block();
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
+            testWorkspaceId, project.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.content").isArray()
+        .jsonPath("$.result.content").isEmpty()
+        .jsonPath("$.result.totalElements").isEqualTo(0);
   }
 
 }
