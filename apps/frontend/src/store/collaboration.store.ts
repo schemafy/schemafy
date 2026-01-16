@@ -129,22 +129,17 @@ export class CollaborationStore {
   private handleMessage(message: WebSocketMessage) {
     switch (message.type) {
       case 'CHAT':
-        console.log('Chat message:', message);
         this.handleChatMessage(message);
         break;
       case 'CURSOR':
-        console.log('Cursor message:', message);
         this.handleCursorMessage(message);
         break;
       case 'JOIN':
-        console.log('User joined:', message);
         break;
       case 'LEAVE':
-        console.log('User left:', message);
         this.handleLeaveMessage(message);
         break;
       case 'SCHEMA_FOCUS':
-        console.log('Schema focus:', message);
         break;
     }
   }

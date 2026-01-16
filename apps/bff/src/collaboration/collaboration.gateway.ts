@@ -70,7 +70,6 @@ export class CollaborationGateway
 
     backendWs.on('error', (error) => {
       console.error('Backend WebSocket error:', error.message);
-      console.error('Backend URL:', backendUrl);
     });
 
     backendWs.on('close', () => {
