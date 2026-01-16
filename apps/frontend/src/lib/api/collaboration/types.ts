@@ -32,7 +32,15 @@ export type RecieveLeave = {
 
 export type RecieveCursor = {
   type: 'CURSOR';
-  cursor: CursorPosition;
+  sessionId: string;
+  userInfo: {
+    userId: string;
+    userName: string;
+  };
+  cursor: {
+    x: number;
+    y: number;
+  };
   timestamp: string;
 };
 
@@ -70,6 +78,7 @@ export type ChatMessage = {
 };
 
 export type CursorPosition = {
+  userId: string;
   userName: string;
   x: number;
   y: number;

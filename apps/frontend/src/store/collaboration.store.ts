@@ -107,10 +107,12 @@ export class CollaborationStore {
 
     const authStore = AuthStore.getInstance();
     const userName = authStore.user?.name;
+    const userId = authStore.user?.id;
 
-    if (userName) {
+    if (userName && userId) {
       runInAction(() => {
-        this.cursors.set(userName, {
+        this.cursors.set(userId, {
+          userId,
           userName,
           x,
           y,
@@ -163,13 +165,14 @@ export class CollaborationStore {
 
   private handleCursorMessage(message: RecieveCursor) {
     const cursorPosition: CursorPosition = {
-      userName: message.cursor.userName,
+      userId: message.userInfo.userId,
+      userName: message.userInfo.userName,
       x: message.cursor.x,
       y: message.cursor.y,
     };
 
     runInAction(() => {
-      this.cursors.set(cursorPosition.userName, cursorPosition);
+      this.cursors.set(cursorPosition.userId, cursorPosition);
     });
   }
 
