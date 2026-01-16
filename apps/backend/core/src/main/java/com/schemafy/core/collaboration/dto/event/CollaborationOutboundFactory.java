@@ -17,8 +17,9 @@ public final class CollaborationOutboundFactory {
   }
 
   public static CursorEvent.Outbound cursor(String sessionId,
+      CursorEvent.UserInfo userInfo,
       CursorPosition cursor) {
-    return CursorEvent.Outbound.of(sessionId, cursor);
+    return CursorEvent.Outbound.of(sessionId, userInfo, cursor);
   }
 
   public static SchemaFocusEvent.Outbound schemaFocus(String sessionId,
