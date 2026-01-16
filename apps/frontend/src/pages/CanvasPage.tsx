@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ulid } from 'ulid';
 import {
@@ -50,6 +50,8 @@ const CanvasContent = () => {
   const erdStore = ErdStore.getInstance();
   const collaborationStore = CollaborationStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
+  const lastCursorSendTime = useRef<number>(0);
+  const CURSOR_THROTTLE_MS = 100;
 
   const [relationshipConfig, setRelationshipConfig] =
     useState<RelationshipConfig>({
@@ -93,7 +95,8 @@ const CanvasContent = () => {
   }, [erdStore]);
 
   useEffect(() => {
-    collaborationStore.connect('01HNQD0000000000000000');
+    // TODO: 프로젝트 mock ID 후에 변경
+    collaborationStore.connect('06DS8JSJ7Y112MC87X0AB2CE8M');
 
     return () => {
       collaborationStore.disconnect();
@@ -221,7 +224,15 @@ const CanvasContent = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    setMousePosition({ x: e.clientX, y: e.clientY });
+    const position = { x: e.clientX, y: e.clientY };
+    setMousePosition(position);
+
+    const now = Date.now();
+    if (now - lastCursorSendTime.current >= CURSOR_THROTTLE_MS) {
+      console.log('Sending cursor position:', position);
+      lastCursorSendTime.current = now;
+      collaborationStore.sendCursor(position.x, position.y);
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import type {
   RecieveLeave,
   WebSocketMessage,
 } from '@/lib/api/collaboration/types';
+import { AuthStore } from './auth.store';
 
 export class CollaborationStore {
   private static instance: CollaborationStore;
@@ -104,6 +105,19 @@ export class CollaborationStore {
       return;
     }
 
+    const authStore = AuthStore.getInstance();
+    const userName = authStore.user?.name;
+
+    if (userName) {
+      runInAction(() => {
+        this.cursors.set(userName, {
+          userName,
+          x,
+          y,
+        });
+      });
+    }
+
     const message = {
       type: 'CURSOR',
       cursor: { x, y },
@@ -115,19 +129,23 @@ export class CollaborationStore {
   private handleMessage(message: WebSocketMessage) {
     switch (message.type) {
       case 'CHAT':
+        console.log('Chat message:', message);
         this.handleChatMessage(message);
         break;
       case 'CURSOR':
+        console.log('Cursor message:', message);
         this.handleCursorMessage(message);
         break;
       case 'JOIN':
         console.log('User joined:', message);
         break;
       case 'LEAVE':
+        console.log('User left:', message);
         this.handleLeaveMessage(message);
         break;
-      default:
-        console.log('Unknown message type:', message.type);
+      case 'SCHEMA_FOCUS':
+        console.log('Schema focus:', message);
+        break;
     }
   }
 

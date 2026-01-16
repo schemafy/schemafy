@@ -41,8 +41,20 @@ export class CollaborationGateway
 
     client.projectId = projectId;
 
+    const accessToken = this.extractAccessToken(request);
+
+    if (!accessToken) {
+      client.close(1008, 'Authentication required');
+      return;
+    }
+
     const backendUrl = `ws://localhost:8080/ws/collaboration?projectId=${projectId}`;
-    const backendWs = new WsWebSocket(backendUrl);
+
+    const backendWs = new WsWebSocket(backendUrl, {
+      headers: {
+        Cookie: `accessToken=${accessToken}`,
+      },
+    });
 
     client.backendWs = backendWs;
 
@@ -57,10 +69,8 @@ export class CollaborationGateway
     });
 
     backendWs.on('error', (error) => {
-      console.error('Backend WebSocket error:', error);
-      if (client.readyState === WsWebSocket.OPEN) {
-        client.close(1011, 'Backend connection error');
-      }
+      console.error('Backend WebSocket error:', error.message);
+      console.error('Backend URL:', backendUrl);
     });
 
     backendWs.on('close', () => {
@@ -77,6 +87,25 @@ export class CollaborationGateway
     });
 
     console.log(`Client connected to project ${projectId} via BFF proxy`);
+  }
+
+  private extractAccessToken(request: IncomingMessage): string | null {
+    const cookieHeader = request.headers.cookie;
+
+    if (!cookieHeader) {
+      return null;
+    }
+
+    const cookies = cookieHeader.split(';').reduce(
+      (acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    return cookies.accessToken || null;
   }
 
   handleDisconnect(client: WebSocketClient) {
