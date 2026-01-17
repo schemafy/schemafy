@@ -189,7 +189,7 @@ export class CollaborationStore {
 
   private handleLeaveMessage(message: RecieveLeave) {
     runInAction(() => {
-      this.cursors.delete(message.userName);
+      this.cursors.delete(message.userId);
     });
   }
 }
