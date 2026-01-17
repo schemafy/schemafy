@@ -14,9 +14,9 @@ export class CollaborationStore {
   private ws: WebSocket | null = null;
 
   isConnected = false;
-  messages: ChatMessage[] = [];
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
+  private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
 
   private constructor() {
     makeAutoObservable(this);
@@ -27,6 +27,39 @@ export class CollaborationStore {
       CollaborationStore.instance = new CollaborationStore();
     }
     return CollaborationStore.instance;
+  }
+
+  get currentUser() {
+    return AuthStore.getInstance().user;
+  }
+
+  private setupWebSocketListeners() {
+    if (!this.ws) return;
+
+    this.ws.onopen = () => {
+      runInAction(() => {
+        this.isConnected = true;
+      });
+    };
+
+    this.ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data) as WebSocketMessage;
+        this.handleMessage(message);
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error);
+      }
+    };
+
+    this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    this.ws.onclose = () => {
+      runInAction(() => {
+        this.isConnected = false;
+      });
+    };
   }
 
   connect(projectId: string) {
@@ -42,31 +75,7 @@ export class CollaborationStore {
 
     try {
       this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
-        runInAction(() => {
-          this.isConnected = true;
-        });
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data) as WebSocketMessage;
-          this.handleMessage(message);
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
-        }
-      };
-
-      this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-
-      this.ws.onclose = () => {
-        runInAction(() => {
-          this.isConnected = false;
-        });
-      };
+      this.setupWebSocketListeners();
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
     }
@@ -81,9 +90,15 @@ export class CollaborationStore {
     runInAction(() => {
       this.isConnected = false;
       this.projectId = null;
-      this.messages = [];
       this.cursors.clear();
     });
+  }
+
+  onChatMessage(listener: (message: ChatMessage) => void) {
+    this.chatMessageListeners.add(listener);
+    return () => {
+      this.chatMessageListeners.delete(listener);
+    };
   }
 
   sendMessage(content: string) {
@@ -105,20 +120,21 @@ export class CollaborationStore {
       return;
     }
 
-    const authStore = AuthStore.getInstance();
-    const userName = authStore.user?.name;
-    const userId = authStore.user?.id;
+    const user = this.currentUser;
 
-    if (userName && userId) {
-      runInAction(() => {
-        this.cursors.set(userId, {
-          userId,
-          userName,
-          x,
-          y,
-        });
-      });
+    if (!user) {
+      console.error('User is not logged in');
+      return;
     }
+
+    runInAction(() => {
+      this.cursors.set(user.id, {
+        userId: user.id,
+        userName: user.name,
+        x,
+        y,
+      });
+    });
 
     const message = {
       type: 'CURSOR',
@@ -155,12 +171,7 @@ export class CollaborationStore {
       timestamp: message.timestamp,
     };
 
-    runInAction(() => {
-      this.messages.push(chatMessage);
-      if (this.messages.length > 50) {
-        this.messages.shift();
-      }
-    });
+    this.chatMessageListeners.forEach((listener) => listener(chatMessage));
   }
 
   private handleCursorMessage(message: RecieveCursor) {
@@ -179,12 +190,6 @@ export class CollaborationStore {
   private handleLeaveMessage(message: RecieveLeave) {
     runInAction(() => {
       this.cursors.delete(message.userName);
-    });
-  }
-
-  clearMessages() {
-    runInAction(() => {
-      this.messages = [];
     });
   }
 }

@@ -229,7 +229,6 @@ const CanvasContent = () => {
 
     const now = Date.now();
     if (now - lastCursorSendTime.current >= CURSOR_THROTTLE_MS) {
-      console.log('Sending cursor position:', position);
       lastCursorSendTime.current = now;
       collaborationStore.sendCursor(position.x, position.y);
     }

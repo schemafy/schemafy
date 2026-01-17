@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { CollaborationStore } from '@/store';
 import type { ChatMessage } from '@/lib/api/collaboration';
+import { useChatMessages } from '@/hooks';
+
+const DISPLAY_DURATION = 3000;
+const FADE_OUT_START = 2500;
 
 interface FloatingChatMessageProps {
   message: ChatMessage;
@@ -17,11 +20,11 @@ const FloatingChatMessage = ({
   useEffect(() => {
     const fadeTimer = setTimeout(() => {
       setOpacity(0);
-    }, 2500);
+    }, FADE_OUT_START);
 
     const expireTimer = setTimeout(() => {
       onExpire();
-    }, 3000);
+    }, DISPLAY_DURATION);
 
     return () => {
       clearTimeout(fadeTimer);
@@ -53,32 +56,7 @@ const FloatingChatMessage = ({
 };
 
 export const ChatOverlay = observer(() => {
-  const collaborationStore = CollaborationStore.getInstance();
-  const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([]);
-
-  useEffect(() => {
-    const latestMessage =
-      collaborationStore.messages[collaborationStore.messages.length - 1];
-
-    if (!latestMessage) return;
-
-    const cursor = collaborationStore.cursors.get(latestMessage.userName);
-
-    if (!cursor) return;
-
-    const messageWithPosition: ChatMessage = {
-      ...latestMessage,
-      position: { x: cursor.x + 20, y: cursor.y + 20 },
-    };
-
-    setDisplayMessages((prev) => [...prev, messageWithPosition]);
-  }, [collaborationStore.messages.length, collaborationStore]);
-
-  const handleExpire = (messageId: string) => {
-    setDisplayMessages((prev) =>
-      prev.filter((msg) => msg.messageId !== messageId),
-    );
-  };
+  const { displayMessages, removeMessage } = useChatMessages();
 
   return (
     <>
@@ -86,7 +64,7 @@ export const ChatOverlay = observer(() => {
         <FloatingChatMessage
           key={message.messageId}
           message={message}
-          onExpire={() => handleExpire(message.messageId)}
+          onExpire={() => removeMessage(message.messageId)}
         />
       ))}
     </>

@@ -4,13 +4,17 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Server, WebSocket as WsWebSocket } from 'ws';
+import { Server, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 
-type WebSocketClient = WsWebSocket & {
-  backendWs?: WsWebSocket;
+type WebSocketClient = WebSocket & {
+  backendWs?: WebSocket;
   projectId?: string;
 };
+
+const BACKEND_WS_BASE_URL = 'ws://localhost:8080/ws/collaboration';
+const WS_CLOSE_NORMAL = 1000;
+const WS_CLOSE_POLICY_VIOLATION = 1008;
 
 @WebSocketGateway({
   path: '/ws/collaboration',
@@ -26,31 +30,60 @@ export class CollaborationGateway
   server: Server;
 
   handleConnection(client: WebSocketClient, request: IncomingMessage) {
-    if (!request.url) {
-      client.close(1008, 'Invalid request');
+    const validationResult = this.validateRequest(client, request);
+    if (!validationResult) {
       return;
+    }
+
+    const { projectId, accessToken } = validationResult;
+    client.projectId = projectId;
+
+    this.setupBackendConnection(client, projectId, accessToken);
+  }
+
+  handleDisconnect(client: WebSocketClient) {
+    if (client.backendWs) {
+      if (client.backendWs.readyState === WebSocket.OPEN) {
+        client.backendWs.close();
+      }
+      client.backendWs = undefined;
+    }
+  }
+
+  private validateRequest(
+    client: WebSocketClient,
+    request: IncomingMessage,
+  ): { projectId: string; accessToken: string } | null {
+    if (!request.url) {
+      client.close(WS_CLOSE_POLICY_VIOLATION, 'Invalid request');
+      return null;
     }
 
     const url = new URL(request.url, `http://${request.headers.host}`);
     const projectId = url.searchParams.get('projectId');
 
     if (!projectId) {
-      client.close(1008, 'Project ID is required');
-      return;
+      client.close(WS_CLOSE_POLICY_VIOLATION, 'Project ID is required');
+      return null;
     }
-
-    client.projectId = projectId;
 
     const accessToken = this.extractAccessToken(request);
 
     if (!accessToken) {
-      client.close(1008, 'Authentication required');
-      return;
+      client.close(WS_CLOSE_POLICY_VIOLATION, 'Authentication required');
+      return null;
     }
 
-    const backendUrl = `ws://localhost:8080/ws/collaboration?projectId=${projectId}`;
+    return { projectId, accessToken };
+  }
 
-    const backendWs = new WsWebSocket(backendUrl, {
+  private setupBackendConnection(
+    client: WebSocketClient,
+    projectId: string,
+    accessToken: string,
+  ) {
+    const backendUrl = `${BACKEND_WS_BASE_URL}?projectId=${projectId}`;
+    const backendWs = new WebSocket(backendUrl, {
       headers: {
         Cookie: `accessToken=${accessToken}`,
       },
@@ -63,7 +96,7 @@ export class CollaborationGateway
     });
 
     backendWs.on('message', (data: Buffer) => {
-      if (client.readyState === WsWebSocket.OPEN) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(data.toString());
       }
     });
@@ -74,18 +107,16 @@ export class CollaborationGateway
 
     backendWs.on('close', () => {
       console.log(`Backend WebSocket closed for project ${projectId}`);
-      if (client.readyState === WsWebSocket.OPEN) {
-        client.close(1000, 'Backend connection closed');
+      if (client.readyState === WebSocket.OPEN) {
+        client.close(WS_CLOSE_NORMAL, 'Backend connection closed');
       }
     });
 
     client.on('message', (data: Buffer) => {
-      if (backendWs.readyState === WsWebSocket.OPEN) {
+      if (backendWs.readyState === WebSocket.OPEN) {
         backendWs.send(data.toString());
       }
     });
-
-    console.log(`Client connected to project ${projectId} via BFF proxy`);
   }
 
   private extractAccessToken(request: IncomingMessage): string | null {
@@ -105,16 +136,5 @@ export class CollaborationGateway
     );
 
     return cookies.accessToken || null;
-  }
-
-  handleDisconnect(client: WebSocketClient) {
-    if (client.backendWs) {
-      if (client.backendWs.readyState === WsWebSocket.OPEN) {
-        client.backendWs.close();
-      }
-      client.backendWs = undefined;
-    }
-
-    console.log(`Client disconnected from project ${client.projectId}`);
   }
 }
