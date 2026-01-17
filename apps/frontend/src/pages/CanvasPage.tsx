@@ -95,7 +95,6 @@ const CanvasContent = () => {
   }, [erdStore]);
 
   useEffect(() => {
-    // TODO: 프로젝트 mock ID 후에 변경
     collaborationStore.connect('06DS8JSJ7Y112MC87X0AB2CE8M');
 
     return () => {
