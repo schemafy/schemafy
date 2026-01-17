@@ -288,8 +288,8 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
   /** 멤버 추가 요청 바디 */
   public static Snippet addMemberRequest() {
     return requestFields(
-        fieldWithPath("userId").type(JsonFieldType.STRING)
-            .description("추가할 사용자의 ID (필수)"),
+        fieldWithPath("email").type(JsonFieldType.STRING)
+            .description("추가할 사용자의 이메일"),
         fieldWithPath("role").type(JsonFieldType.STRING)
             .description("부여할 역할 (ADMIN, MEMBER)"));
   }

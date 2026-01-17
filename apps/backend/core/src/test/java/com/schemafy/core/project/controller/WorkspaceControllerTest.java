@@ -79,9 +79,8 @@ class WorkspaceControllerTest {
             "password"), new BCryptPasswordEncoder())
             .flatMap(userRepository::save));
 
-    // 3) 체인으로 묶고, 딱 한 번만 block
     Tuple2<User, User> users = cleanup.then(createUsers).blockOptional()
-        .orElseThrow(); // null 방지
+        .orElseThrow();
 
     User testUser = users.getT1();
     User testUser2 = users.getT2();
@@ -368,8 +367,8 @@ class WorkspaceControllerTest {
         testUserId, WorkspaceRole.ADMIN);
     workspaceMemberRepository.save(member).block();
 
-    AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-        testUser2Id, WorkspaceRole.MEMBER);
+    User user = userRepository.findById(testUser2Id).block();
+    AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(user.getEmail(), WorkspaceRole.MEMBER);
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -398,19 +397,16 @@ class WorkspaceControllerTest {
     workspace = workspaceRepository.save(workspace).block();
 
     WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
+        testUserId, WorkspaceRole.MEMBER);
     workspaceMemberRepository.save(member1).block();
 
-    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.MEMBER);
-    workspaceMemberRepository.save(member2).block();
-
+    User testUser2 = userRepository.findById(testUser2Id).block();
     AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-        "some-other-user-id", WorkspaceRole.MEMBER);
+        testUser2.getEmail(), WorkspaceRole.MEMBER);
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/" + workspace.getId() + "/members")
-        .header("Authorization", "Bearer " + accessToken2)
+        .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isForbidden();
   }

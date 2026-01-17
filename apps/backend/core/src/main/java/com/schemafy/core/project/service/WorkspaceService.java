@@ -27,6 +27,7 @@ import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.core.user.repository.entity.User;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -65,10 +66,9 @@ public class WorkspaceService {
 
   public Mono<PageResponse<WorkspaceSummaryResponse>> getWorkspaces(
       String userId, int page, int size) {
-    int offset = page * size;
     return workspaceRepository.countByUserId(userId)
-        .flatMap(totalElements -> workspaceRepository
-            .findByUserIdWithPaging(userId, size, offset)
+        .flatMap(sizeOfWorkspace -> workspaceRepository
+            .findByUserIdWithPaging(userId, size, page * size)
             .flatMap(workspace -> workspaceMemberRepository
                 .countByWorkspaceIdAndNotDeleted(
                     workspace.getId())
@@ -76,7 +76,7 @@ public class WorkspaceService {
                     .of(workspace, memberCount)))
             .collectList()
             .map(content -> PageResponse.of(content, page, size,
-                totalElements)));
+                sizeOfWorkspace)));
   }
 
   public Mono<WorkspaceResponse> getWorkspace(String workspaceId,
@@ -132,19 +132,17 @@ public class WorkspaceService {
         });
   }
 
-  /** 워크스페이스에 멤버 추가
-   * - Soft delete된 멤버는 재활성화
-   * - DB UNIQUE constraint로 중복 방지 */
+  // Soft delete된 멤버는 재활성화
   public Mono<WorkspaceMemberResponse> addMember(
       String workspaceId,
       AddWorkspaceMemberRequest request,
       String currentUserId) {
 
     return validateAdminAccess(workspaceId, currentUserId)
-        .then(validateUserExists(request.userId()))
-        .then(workspaceMemberRepository
+        .then(findUserByEmailOrThrow(request.email()))
+        .flatMap(targetUser -> workspaceMemberRepository
             .findLatestByWorkspaceIdAndUserId(workspaceId,
-                request.userId())
+                targetUser.getId())
             .flatMap(existing -> {
               if (!existing.isDeleted()) {
                 log.warn(
@@ -177,7 +175,7 @@ public class WorkspaceService {
                   WorkspaceMember newMember = WorkspaceMember
                       .create(
                           workspaceId,
-                          request.userId(),
+                          targetUser.getId(),
                           request.role());
                   return workspaceMemberRepository
                       .save(newMember);
@@ -186,8 +184,8 @@ public class WorkspaceService {
         .onErrorResume(error -> {
           if (error instanceof DataIntegrityViolationException) {
             log.warn(
-                "Duplicate key constraint: workspaceId={}, userId={}",
-                workspaceId, request.userId());
+                "Duplicate key constraint: workspaceId={}, email={}",
+                workspaceId, request.email());
             return Mono.error(new BusinessException(
                 ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS));
           }
@@ -196,11 +194,10 @@ public class WorkspaceService {
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<Void> validateUserExists(String userId) {
-    return userRepository.findById(userId)
-        .switchIfEmpty(Mono
-            .error(new BusinessException(ErrorCode.USER_NOT_FOUND)))
-        .then();
+  private Mono<User> findUserByEmailOrThrow(String email) {
+    return userRepository.findByEmail(email)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.USER_NOT_FOUND)));
   }
 
   private Mono<WorkspaceMemberResponse> buildMemberResponse(
@@ -235,7 +232,6 @@ public class WorkspaceService {
             new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)));
   }
 
-  /** 워크스페이스 멤버 제거 */
   public Mono<Void> removeMember(
       String workspaceId,
       String targetMemberId,
@@ -249,7 +245,7 @@ public class WorkspaceService {
         .as(transactionalOperator::transactional);
   }
 
-  /** 본인 워크스페이스 탈퇴 */
+  /** 셀프 워크스페이스 탈퇴 */
   public Mono<Void> leaveMember(
       String workspaceId,
       String targetUserId) {
@@ -272,7 +268,6 @@ public class WorkspaceService {
         .as(transactionalOperator::transactional);
   }
 
-  /** 멤버 권한 변경 */
   public Mono<WorkspaceMemberResponse> updateMemberRole(
       String workspaceId,
       String memberId,

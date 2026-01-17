@@ -275,7 +275,7 @@ class WorkspaceServiceTest {
           encoder).flatMap(userRepository::save).block();
 
       AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-          newUser.getId(), WorkspaceRole.MEMBER);
+          newUser.getEmail(), WorkspaceRole.MEMBER);
 
       StepVerifier.create(workspaceService.addMember(
           testWorkspace.getId(), request, adminUser.getId()))
@@ -330,7 +330,7 @@ class WorkspaceServiceTest {
           encoder).flatMap(userRepository::save).block();
 
       AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-          newUser.getId(), WorkspaceRole.MEMBER);
+          newUser.getEmail(), WorkspaceRole.MEMBER);
 
       Mono<Long> resultMono = Flux.range(0, 30)
           .flatMap(i -> workspaceService
@@ -412,7 +412,7 @@ class WorkspaceServiceTest {
           .fromIterable(userList)
           .flatMap(user -> {
             AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-                user.getId(), WorkspaceRole.MEMBER);
+                user.getEmail(), WorkspaceRole.MEMBER);
             return workspaceService.addMember(
                 testWorkspace.getId(), request,
                 adminUser.getId())
@@ -442,7 +442,7 @@ class WorkspaceServiceTest {
           encoder).flatMap(userRepository::save).block();
 
       AddWorkspaceMemberRequest addRequest = new AddWorkspaceMemberRequest(
-          newUser.getId(), WorkspaceRole.MEMBER);
+          newUser.getEmail(), WorkspaceRole.MEMBER);
 
       // 멤버 추가
       WorkspaceMemberResponse added = workspaceService.addMember(
@@ -464,7 +464,7 @@ class WorkspaceServiceTest {
 
       // 동일 멤버 재초대
       AddWorkspaceMemberRequest readdRequest = new AddWorkspaceMemberRequest(
-          newUser.getId(), WorkspaceRole.ADMIN); // 다른 role로 재초대
+          newUser.getEmail(), WorkspaceRole.ADMIN); // 다른 role로 재초대
 
       WorkspaceMemberResponse readded = workspaceService.addMember(
           testWorkspace.getId(), readdRequest, adminUser.getId())
