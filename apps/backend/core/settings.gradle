@@ -1,3 +1,4 @@
 rootProject.name = 'core'
-include ':validation'
+include ':validation', ':domain'
 project(':validation').projectDir = file('../validation')
+project(':domain').projectDir = file('../domain')

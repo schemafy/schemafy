@@ -1,1 +1,3 @@
 rootProject.name = 'validation'
+include ':domain'
+project(':domain').projectDir = file('../domain')
