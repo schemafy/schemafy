@@ -2,8 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { AuthStore } from '../../store/auth.store';
 
 const BASE_URL: string =
-  (import.meta as unknown as { env?: { VITE_BASE_URL?: string } })?.env
-    ?.VITE_BASE_URL ?? 'http://localhost:8080';
+  import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -39,7 +38,7 @@ const refreshClient = axios.create({
 
 let refreshPromise: Promise<string | null> | null = null;
 
-const refreshAccessToken = async (): Promise<string | null> => {
+export const refreshAccessToken = async (): Promise<string | null> => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
