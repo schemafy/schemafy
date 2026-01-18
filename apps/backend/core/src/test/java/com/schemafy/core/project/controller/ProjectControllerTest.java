@@ -152,9 +152,7 @@ class ProjectControllerTest {
         .jsonPath("$.result.workspaceId").isEqualTo(testWorkspaceId);
 
     projectMemberRepository.findByUserIdAndNotDeleted(testUserId)
-        .collectList().block().forEach(member -> {
-          assertThat(member.getRole()).isEqualTo("owner");
-        });
+        .collectList().block().forEach(member -> assertThat(member.getRole()).isEqualTo(ProjectRole.ADMIN.getValue()));
   }
 
   @Test
@@ -193,7 +191,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(member).block();
 
     webTestClient.get()
@@ -223,7 +221,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(member).block();
 
     webTestClient.get()
@@ -252,7 +250,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(member).block();
 
     webTestClient.get().uri(apiBasePath + "/" + project.getId())
@@ -269,7 +267,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(member).block();
 
     UpdateProjectRequest request = new UpdateProjectRequest(
@@ -303,7 +301,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember member1 = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(member1).block();
 
     ProjectMember member2 = ProjectMember.create(project.getId(),
@@ -328,7 +326,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(member).block();
 
     webTestClient.delete()
@@ -378,7 +376,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(member).block();
 
     webTestClient.get()
@@ -485,7 +483,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     ownerMember = projectMemberRepository.save(ownerMember).block();
 
     UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
@@ -509,7 +507,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(ownerMember).block();
 
     ProjectMember viewerMember = ProjectMember.create(project.getId(),
@@ -537,7 +535,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(ownerMember).block();
 
     UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
@@ -561,7 +559,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(ownerMember).block();
 
     ProjectMember targetMember = ProjectMember.create(project.getId(),
@@ -592,7 +590,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(ownerMember).block();
 
     ProjectMember viewerMember = ProjectMember.create(project.getId(),
@@ -616,7 +614,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(ownerMember).block();
 
     webTestClient.delete()
@@ -636,7 +634,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(ownerMember).block();
 
     ProjectMember viewerMember = ProjectMember.create(project.getId(),
@@ -693,7 +691,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(ownerMember).block();
 
     ProjectMember viewerMember = ProjectMember.create(project.getId(),
@@ -717,7 +715,7 @@ class ProjectControllerTest {
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.OWNER);
+        testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(ownerMember).block();
 
     webTestClient.delete()

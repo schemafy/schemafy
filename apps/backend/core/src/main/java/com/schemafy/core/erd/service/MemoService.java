@@ -306,9 +306,8 @@ public class MemoService {
 
   private Mono<Void> checkDeletePermission(AuthenticatedUser user,
       String authorId) {
-    boolean isAdminOrOwner = user.roles().contains(ProjectRole.OWNER)
-        || user.roles().contains(ProjectRole.ADMIN);
-    if (!isAdminOrOwner && !authorId.equals(user.userId())) {
+    boolean isAdmin = user.roles().contains(ProjectRole.ADMIN);
+    if (!isAdmin && !authorId.equals(user.userId())) {
       return Mono.error(
           new BusinessException(ErrorCode.ACCESS_DENIED));
     }

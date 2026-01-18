@@ -109,10 +109,8 @@ public enum ErrorCode {
   // PROJECT MEMBER MANAGEMENT
   CANNOT_CHANGE_OWN_ROLE(HttpStatus.BAD_REQUEST, "PM001",
       "자신의 권한은 변경할 수 없습니다."),
-  LAST_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "PM002",
-      "마지막 소유자는 제거할 수 없습니다."),
-  WORKSPACE_MEMBERSHIP_REQUIRED(HttpStatus.FORBIDDEN, "PM003",
-      "프로젝트 접근을 위해서는 워크스페이스 멤버여야 합니다."),
+  LAST_ADMIN_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "PM002",
+      "마지막 관리자는 제거할 수 없습니다."),
   PROJECT_MEMBER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PM004",
       "프로젝트 멤버 수 제한(30명)을 초과했습니다."),
   PROJECT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "PM005",

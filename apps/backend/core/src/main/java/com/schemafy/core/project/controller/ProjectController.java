@@ -35,7 +35,7 @@ public class ProjectController {
   @Value("${app.base-url:https://schemafy.com}")
   private String baseUrl;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/workspaces/{workspaceId}/projects")
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<BaseResponse<ProjectResponse>> createProject(
@@ -47,7 +47,7 @@ public class ProjectController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/workspaces/{workspaceId}/projects")
   public Mono<BaseResponse<PageResponse<ProjectSummaryResponse>>> getProjects(
       @PathVariable String workspaceId,
@@ -59,7 +59,7 @@ public class ProjectController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/workspaces/{workspaceId}/projects/{id}")
   public Mono<BaseResponse<ProjectResponse>> getProject(
       @PathVariable String workspaceId, @PathVariable String id,
@@ -69,7 +69,7 @@ public class ProjectController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @PutMapping("/workspaces/{workspaceId}/projects/{id}")
   public Mono<BaseResponse<ProjectResponse>> updateProject(
       @PathVariable String workspaceId, @PathVariable String id,
@@ -80,7 +80,7 @@ public class ProjectController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @DeleteMapping("/workspaces/{workspaceId}/projects/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> deleteProject(@PathVariable String workspaceId,
@@ -89,7 +89,7 @@ public class ProjectController {
     return projectService.deleteProject(workspaceId, id, userId);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/workspaces/{workspaceId}/projects/{id}/members")
   public Mono<BaseResponse<PageResponse<ProjectMemberResponse>>> getMembers(
       @PathVariable String workspaceId, @PathVariable String id,
@@ -97,11 +97,11 @@ public class ProjectController {
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.getMembers(workspaceId, id, userId, page, size)
+    return projectService.getMembers(id, userId, page, size)
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @PatchMapping("/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role")
   public Mono<BaseResponse<ProjectMemberResponse>> updateMemberRole(
       @PathVariable String workspaceId, @PathVariable String projectId,
@@ -110,34 +110,33 @@ public class ProjectController {
       Authentication authentication) {
     String requesterId = authentication.getName();
     return projectService
-        .updateMemberRole(workspaceId, projectId, memberId, request,
-            requesterId)
+        .updateMemberRole(projectId, memberId, request, requesterId)
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> removeMember(@PathVariable String workspaceId,
       @PathVariable String projectId, @PathVariable String memberId,
       Authentication authentication) {
     String requester = authentication.getName();
-    return projectService.removeMember(workspaceId, projectId, memberId,
+    return projectService.removeMember(projectId, memberId,
         requester);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/members/me")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> leaveProject(@PathVariable String workspaceId,
       @PathVariable String projectId, Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.leaveProject(workspaceId, projectId, userId);
+    return projectService.leaveProject(projectId, userId);
   }
 
   // ========== ShareLink Management ==========
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links")
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<BaseResponse<ShareLinkResponse>> createShareLink(
@@ -150,7 +149,7 @@ public class ProjectController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links")
   public Mono<BaseResponse<PageResponse<ShareLinkResponse>>> getShareLinks(
       @PathVariable String workspaceId,
@@ -168,7 +167,7 @@ public class ProjectController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}")
   public Mono<BaseResponse<ShareLinkResponse>> getShareLink(
       @PathVariable String workspaceId,
@@ -181,7 +180,7 @@ public class ProjectController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @PatchMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke")
   public Mono<BaseResponse<ShareLinkResponse>> revokeShareLink(
       @PathVariable String workspaceId,
@@ -194,7 +193,7 @@ public class ProjectController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN')")
   @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> deleteShareLink(

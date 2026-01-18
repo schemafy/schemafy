@@ -39,7 +39,7 @@ public class ProjectService {
 
   public Mono<ProjectResponse> createProject(String workspaceId,
       CreateProjectRequest request, String userId) {
-    return validateWorkspaceMember(workspaceId, userId).then(
+    return validateWorkspaceAdmin(workspaceId, userId).then(
         Mono.defer(() -> {
           ProjectSettings settings = request.getSettingsOrDefault();
           validateSettings(settings);
@@ -47,12 +47,12 @@ public class ProjectService {
           Project project = Project.create(workspaceId,
               request.name(), request.description(), settings);
 
-          ProjectMember ownerMember = ProjectMember
-              .create(project.getId(), userId, ProjectRole.OWNER);
+          ProjectMember adminMember = ProjectMember
+              .create(project.getId(), userId, ProjectRole.ADMIN);
 
           return projectRepository.save(project)
               .flatMap(savedProject -> projectMemberRepository
-                  .save(ownerMember)
+                  .save(adminMember)
                   .thenReturn(savedProject))
               .flatMap(savedProject -> buildProjectResponse(
                   savedProject, userId));
@@ -62,53 +62,52 @@ public class ProjectService {
 
   public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
       String workspaceId, String userId, int page, int size) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(Mono.defer(() -> {
-          int offset = page * size;
-          return projectMemberRepository
-              .countByWorkspaceIdAndUserId(workspaceId, userId)
-              .flatMap(totalElements -> Mono.zip(
-                  projectRepository
-                      .findByWorkspaceIdAndUserIdWithPaging(
-                          workspaceId, userId, size,
-                          offset)
-                      .collectList(),
-                  projectMemberRepository
-                      .findRolesByWorkspaceIdAndUserIdWithPaging(
-                          workspaceId, userId, size,
-                          offset)
-                      .collectList())
-                  .flatMap(tuple -> {
-                    var projects = tuple.getT1();
-                    var roles = tuple.getT2();
-                    return Flux.range(0, projects.size())
-                        .flatMap(i -> {
-                          var project = projects
-                              .get(i);
-                          var role = ProjectRole
-                              .fromString(
-                                  roles.get(
-                                      i));
-                          return projectMemberRepository
-                              .countByProjectIdAndNotDeleted(
-                                  project.getId())
-                              .map(count -> ProjectSummaryResponse
-                                  .of(project,
-                                      role,
-                                      count));
-                        })
-                        .collectList()
-                        .map(content -> PageResponse.of(
-                            content, page, size,
-                            totalElements));
-                  }));
-        }));
+    return Mono.defer(() -> {
+      int offset = page * size;
+      return projectMemberRepository
+          .countByWorkspaceIdAndUserId(workspaceId, userId)
+          .flatMap(totalElements -> Mono.zip(
+              projectRepository
+                  .findByWorkspaceIdAndUserIdWithPaging(
+                      workspaceId, userId, size,
+                      offset)
+                  .collectList(),
+              projectMemberRepository
+                  .findRolesByWorkspaceIdAndUserIdWithPaging(
+                      workspaceId, userId, size,
+                      offset)
+                  .collectList())
+              .flatMap(tuple -> {
+                var projects = tuple.getT1();
+                var roles = tuple.getT2();
+                return Flux.range(0, projects.size())
+                    .flatMap(i -> {
+                      var project = projects
+                          .get(i);
+                      var role = ProjectRole
+                          .fromString(
+                              roles.get(
+                                  i));
+                      return projectMemberRepository
+                          .countByProjectIdAndNotDeleted(
+                              project.getId())
+                          .map(count -> ProjectSummaryResponse
+                              .of(project,
+                                  role,
+                                  count));
+                    })
+                    .collectList()
+                    .map(content -> PageResponse.of(
+                        content, page, size,
+                        totalElements));
+              }));
+    });
   }
 
   public Mono<ProjectResponse> getProject(String workspaceId,
       String projectId,
       String userId) {
-    return validateMemberAccess(workspaceId, projectId, userId)
+    return validateMemberAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           if (!project.belongsToWorkspace(workspaceId)) {
@@ -121,7 +120,7 @@ public class ProjectService {
 
   public Mono<ProjectResponse> updateProject(String workspaceId,
       String projectId, UpdateProjectRequest request, String userId) {
-    return validateAdminAccess(workspaceId, projectId, userId)
+    return validateAdminAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           if (!project.belongsToWorkspace(workspaceId)) {
@@ -142,7 +141,7 @@ public class ProjectService {
 
   public Mono<Void> deleteProject(String workspaceId, String projectId,
       String userId) {
-    return validateAdminAccess(workspaceId, projectId, userId)
+    return validateAdminAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           if (!project.belongsToWorkspace(workspaceId)) {
@@ -162,9 +161,9 @@ public class ProjectService {
   }
 
   public Mono<PageResponse<ProjectMemberResponse>> getMembers(
-      String workspaceId, String projectId, String userId, int page,
+      String projectId, String userId, int page,
       int size) {
-    return validateMemberAccess(workspaceId, projectId, userId)
+    return validateMemberAccess(projectId, userId)
         .then(projectMemberRepository
             .countByProjectIdAndNotDeleted(projectId))
         .flatMap(totalElements -> {
@@ -183,10 +182,9 @@ public class ProjectService {
   }
 
   /** 프로젝트 멤버 역할 변경 */
-  public Mono<ProjectMemberResponse> updateMemberRole(String workspaceId,
-      String projectId, String targetId,
+  public Mono<ProjectMemberResponse> updateMemberRole(String projectId, String targetId,
       UpdateProjectMemberRoleRequest request, String requesterId) {
-    return validateAdminAccess(workspaceId, projectId, requesterId)
+    return validateAdminAccess(projectId, requesterId)
         .then(Mono.zip(
             findProjectMemberByUserIdAndProjectId(requesterId,
                 projectId),
@@ -234,9 +232,9 @@ public class ProjectService {
   }
 
   /** 프로젝트 멤버 제거 (관리자 권한) */
-  public Mono<Void> removeMember(String workspaceId, String projectId,
+  public Mono<Void> removeMember(String projectId,
       String targetId, String requesterId) {
-    return validateAdminAccess(workspaceId, projectId, requesterId)
+    return validateAdminAccess(projectId, requesterId)
         .then(findProjectMemberByMemberIdAndProjectId(targetId,
             projectId))
         .flatMap(targetMember -> protectAdmin(projectId, targetMember))
@@ -244,10 +242,8 @@ public class ProjectService {
   }
 
   /** 프로젝트 자발적 탈퇴 */
-  public Mono<Void> leaveProject(String workspaceId, String projectId,
-      String userId) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(findProjectMemberByUserIdAndProjectId(userId, projectId))
+  public Mono<Void> leaveProject(String projectId, String userId) {
+    return findProjectMemberByUserIdAndProjectId(userId, projectId)
         .flatMap(member -> protectAdmin(projectId, member)
             .then(projectMemberRepository
                 .countByProjectIdAndNotDeleted(projectId)
@@ -269,37 +265,25 @@ public class ProjectService {
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<Void> validateOwnerOrAdminProtection(String projectId) {
-    return Mono.zip(
-        projectMemberRepository.countByProjectIdAndRoleAndNotDeleted(
-            projectId,
-            ProjectRole.OWNER.getValue()),
-        projectMemberRepository.countByProjectIdAndRoleAndNotDeleted(
-            projectId,
-            ProjectRole.ADMIN.getValue()))
-        .flatMap(tuple -> {
-          long ownerCount = tuple.getT1();
-          long adminCount = tuple.getT2();
-          long totalAdminCount = ownerCount + adminCount;
-
-          if (totalAdminCount <= 1) {
+  private Mono<Void> validateAdminProtection(String projectId) {
+    return projectMemberRepository
+        .countByProjectIdAndRoleAndNotDeleted(projectId,
+            ProjectRole.ADMIN.getValue())
+        .flatMap(adminCount -> {
+          if (adminCount <= 1) {
             return Mono.error(new BusinessException(
-                ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED));
+                ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED));
           }
           return Mono.empty();
         });
   }
 
-  private Mono<Void> validateMemberAccess(String workspaceId,
-      String projectId, String userId) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(validateProjectMember(projectId, userId));
+  private Mono<Void> validateMemberAccess(String projectId, String userId) {
+    return validateProjectMember(projectId, userId);
   }
 
-  private Mono<Void> validateAdminAccess(String workspaceId, String projectId,
-      String userId) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(validateProjectAdmin(projectId, userId));
+  private Mono<Void> validateAdminAccess(String projectId, String userId) {
+    return validateProjectAdmin(projectId, userId);
   }
 
   private Mono<Project> findProjectById(String projectId) {
@@ -344,8 +328,8 @@ public class ProjectService {
 
   private Mono<Void> protectAdmin(String projectId,
       ProjectMember targetMember) {
-    if (targetMember.isOwner() || targetMember.isAdmin()) {
-      return validateOwnerOrAdminProtection(projectId)
+    if (targetMember.isAdmin()) {
+      return validateAdminProtection(projectId)
           .then(softDeleteMember(targetMember));
     }
 
@@ -357,12 +341,15 @@ public class ProjectService {
     return projectMemberRepository.save(member).then();
   }
 
-  private Mono<Void> validateWorkspaceMember(String workspaceId,
+  private Mono<Void> validateWorkspaceAdmin(String workspaceId,
       String userId) {
     return workspaceMemberRepository
         .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
         .switchIfEmpty(Mono.error(new BusinessException(
             ErrorCode.WORKSPACE_ACCESS_DENIED)))
+        .filter(member -> member.isAdmin())
+        .switchIfEmpty(Mono.error(new BusinessException(
+            ErrorCode.WORKSPACE_ADMIN_REQUIRED)))
         .then();
   }
 

@@ -51,7 +51,7 @@ public class TableController {
   private final IndexService indexService;
   private final ConstraintService constraintService;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/tables")
   public Mono<BaseResponse<AffectedMappingResponse>> createTable(
       @RequestBody CreateTableRequest request,
@@ -63,7 +63,7 @@ public class TableController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/tables/{tableId}")
   public Mono<BaseResponse<TableDetailResponse>> getTable(
       @PathVariable String tableId) {
@@ -71,7 +71,7 @@ public class TableController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/tables/{tableId}/columns")
   public Mono<BaseResponse<List<ColumnResponse>>> getColumnsByTableId(
       @PathVariable String tableId) {
@@ -80,7 +80,7 @@ public class TableController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/tables/{tableId}/relationships")
   public Mono<BaseResponse<List<RelationshipResponse>>> getRelationshipsByTableId(
       @PathVariable String tableId) {
@@ -89,7 +89,7 @@ public class TableController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/tables/{tableId}/indexes")
   public Mono<BaseResponse<List<IndexResponse>>> getIndexesByTableId(
       @PathVariable String tableId) {
@@ -98,7 +98,7 @@ public class TableController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/tables/{tableId}/constraints")
   public Mono<BaseResponse<List<ConstraintResponse>>> getConstraintsByTableId(
       @PathVariable String tableId) {
@@ -107,7 +107,7 @@ public class TableController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/tables/{tableId}/name")
   public Mono<BaseResponse<TableResponse>> updateTableName(
       @PathVariable String tableId,
@@ -120,7 +120,7 @@ public class TableController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/tables/{tableId}/extra")
   public Mono<BaseResponse<TableResponse>> updateTableExtra(
       @PathVariable String tableId,
@@ -129,7 +129,7 @@ public class TableController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/tables/{tableId}")
   public Mono<BaseResponse<Void>> deleteTable(
       @PathVariable String tableId,

@@ -412,7 +412,7 @@ class WorkspaceControllerTest {
   }
 
   @Test
-  @DisplayName("멤버 추방에 성공한다")
+  @DisplayName("ADMIN은 멤버 추방을 할 수 있다")
   void removeMemberSuccess() {
     Workspace workspace = Workspace.create("Test Workspace",
         "Description");

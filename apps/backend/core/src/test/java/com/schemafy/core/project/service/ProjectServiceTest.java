@@ -117,7 +117,7 @@ class ProjectServiceTest {
     testProject = projectRepository.save(testProject).block();
 
     ownerMember = ProjectMember.create(testProject.getId(),
-        ownerUser.getId(), ProjectRole.OWNER);
+        ownerUser.getId(), ProjectRole.ADMIN);
     ownerMember = projectMemberRepository.save(ownerMember).block();
 
     adminMember = ProjectMember.create(testProject.getId(),
@@ -141,7 +141,6 @@ class ProjectServiceTest {
 
       StepVerifier.create(
           projectService.updateMemberRole(
-              testWorkspace.getId(),
               testProject.getId(),
               adminMember.getId(),
               request,
@@ -181,7 +180,6 @@ class ProjectServiceTest {
 
       StepVerifier.create(
           projectService.updateMemberRole(
-              testWorkspace.getId(),
               testProject.getId(),
               ownerMember.getId(),
               request,
@@ -200,7 +198,6 @@ class ProjectServiceTest {
 
       Mono<ProjectMemberResponse> result = projectService
           .updateMemberRole(
-              testWorkspace.getId(),
               testProject.getId(),
               viewerMember.getId(),
               request,
@@ -225,11 +222,10 @@ class ProjectServiceTest {
     @DisplayName("관리자 권한이 없으면 거부된다")
     void nonAdmin_rejected() {
       UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
-          ProjectRole.COMMENTER);
+          ProjectRole.VIEWER);
 
       StepVerifier.create(
           projectService.updateMemberRole(
-              testWorkspace.getId(),
               testProject.getId(),
               adminMember.getId(),
               request,
@@ -255,13 +251,12 @@ class ProjectServiceTest {
 
       StepVerifier.create(
           projectService.removeMember(
-              testWorkspace.getId(),
               testProject.getId(),
               ownerMember.getId(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED)
+                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED)
           .verify();
     }
 
@@ -272,7 +267,6 @@ class ProjectServiceTest {
           .countByProjectIdAndNotDeleted(testProject.getId()).block();
 
       Mono<Void> result = projectService.removeMember(
-          testWorkspace.getId(),
           testProject.getId(),
           viewerMember.getId(),
           adminUser.getId());
@@ -293,7 +287,6 @@ class ProjectServiceTest {
     void nonAdmin_rejected() {
       StepVerifier.create(
           projectService.removeMember(
-              testWorkspace.getId(),
               testProject.getId(),
               adminMember.getId(),
               viewerUser.getId() // VIEWER has no admin rights
@@ -318,12 +311,11 @@ class ProjectServiceTest {
 
       StepVerifier.create(
           projectService.leaveProject(
-              testWorkspace.getId(),
               testProject.getId(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED)
+                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED)
           .verify();
     }
 
@@ -338,7 +330,6 @@ class ProjectServiceTest {
       assertThat(memberCount).isEqualTo(1L);
 
       Mono<Void> result = projectService.leaveProject(
-          testWorkspace.getId(),
           testProject.getId(),
           viewerUser.getId());
 
@@ -361,7 +352,6 @@ class ProjectServiceTest {
       assertThat(beforeCount).isEqualTo(3L); // owner, admin, viewer
 
       Mono<Void> result = projectService.leaveProject(
-          testWorkspace.getId(),
           testProject.getId(),
           viewerUser.getId());
 

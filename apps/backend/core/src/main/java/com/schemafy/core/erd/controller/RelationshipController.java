@@ -32,7 +32,7 @@ public class RelationshipController {
 
   private final RelationshipService relationshipService;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/relationships")
   public Mono<BaseResponse<AffectedMappingResponse>> createRelationship(
       @RequestBody Validation.CreateRelationshipRequest request,
@@ -43,7 +43,7 @@ public class RelationshipController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/relationships/{relationshipId}")
   public Mono<BaseResponse<RelationshipResponse>> getRelationship(
       @PathVariable String relationshipId) {
@@ -51,7 +51,7 @@ public class RelationshipController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/relationships/{relationshipId}/name")
   public Mono<BaseResponse<RelationshipResponse>> updateRelationshipName(
       @PathVariable String relationshipId,
@@ -64,7 +64,7 @@ public class RelationshipController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/relationships/{relationshipId}/extra")
   public Mono<BaseResponse<RelationshipResponse>> updateRelationshipExtra(
       @PathVariable String relationshipId,
@@ -86,7 +86,7 @@ public class RelationshipController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/relationships/{relationshipId}/kind")
   public Mono<BaseResponse<RelationshipResponse>> updateRelationshipKind(
       @PathVariable String relationshipId,
@@ -99,7 +99,7 @@ public class RelationshipController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/relationships/{relationshipId}/columns")
   public Mono<BaseResponse<AffectedMappingResponse>> addColumnToRelationship(
       @PathVariable String relationshipId,
@@ -112,7 +112,7 @@ public class RelationshipController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/relationships/{relationshipId}/columns/{columnId}")
   public Mono<BaseResponse<Void>> removeColumnFromRelationship(
       @PathVariable String relationshipId,
@@ -127,7 +127,7 @@ public class RelationshipController {
         .then(Mono.just(BaseResponse.success(null)));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/relationships/{relationshipId}")
   public Mono<BaseResponse<Void>> deleteRelationship(
       @PathVariable String relationshipId,

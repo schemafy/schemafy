@@ -40,7 +40,7 @@ public class SchemaController {
   private final TableService tableService;
   private final MemoService memoService;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/schemas")
   public Mono<BaseResponse<AffectedMappingResponse>> createSchema(
       @RequestBody CreateSchemaRequest request) {
@@ -48,7 +48,7 @@ public class SchemaController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/schemas/{schemaId}")
   public Mono<BaseResponse<SchemaDetailResponse>> getSchema(
       @PathVariable String schemaId) {
@@ -56,7 +56,7 @@ public class SchemaController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/schemas/{schemaId}/tables")
   public Mono<BaseResponse<List<TableResponse>>> getTablesBySchemaId(
       @PathVariable String schemaId) {
@@ -65,7 +65,7 @@ public class SchemaController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/schemas/{schemaId}/memos")
   public Mono<BaseResponse<List<MemoResponse>>> getMemosBySchemaId(
       @PathVariable String schemaId) {
@@ -74,7 +74,7 @@ public class SchemaController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/schemas/{schemaId}/name")
   public Mono<BaseResponse<SchemaResponse>> updateSchemaName(
       @PathVariable String schemaId,
@@ -87,7 +87,7 @@ public class SchemaController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/schemas/{schemaId}")
   public Mono<BaseResponse<Void>> deleteSchema(
       @PathVariable String schemaId,

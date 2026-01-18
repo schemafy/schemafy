@@ -37,7 +37,7 @@ public class MemoController {
 
   private final MemoService memoService;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/memos")
   public Mono<BaseResponse<MemoDetailResponse>> createMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -46,7 +46,7 @@ public class MemoController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/memos/{memoId}")
   public Mono<BaseResponse<MemoDetailResponse>> getMemo(
       @PathVariable String memoId) {
@@ -54,7 +54,7 @@ public class MemoController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/memos/{memoId}")
   public Mono<BaseResponse<MemoResponse>> updateMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -64,7 +64,7 @@ public class MemoController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/memos/{memoId}")
   public Mono<BaseResponse<Void>> deleteMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -73,7 +73,7 @@ public class MemoController {
         .then(Mono.just(BaseResponse.success(null)));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/memos/{memoId}/comments")
   public Mono<BaseResponse<MemoCommentResponse>> createMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -83,7 +83,7 @@ public class MemoController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/memos/{memoId}/comments")
   public Mono<BaseResponse<List<MemoCommentResponse>>> getMemoComments(
       @PathVariable String memoId) {
@@ -92,7 +92,7 @@ public class MemoController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/memos/{memoId}/comments/{commentId}")
   public Mono<BaseResponse<MemoCommentResponse>> updateMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -103,7 +103,7 @@ public class MemoController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/memos/{memoId}/comments/{commentId}")
   public Mono<BaseResponse<Void>> deleteMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,

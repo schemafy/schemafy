@@ -41,8 +41,6 @@ public class ProjectMember extends BaseEntity {
 
   public ProjectRole getRoleAsEnum() { return ProjectRole.fromString(this.role); }
 
-  public boolean isOwner() { return getRoleAsEnum().isOwner(); }
-
   public boolean isAdmin() { return getRoleAsEnum().isAdmin(); }
 
   public boolean canEdit() {
