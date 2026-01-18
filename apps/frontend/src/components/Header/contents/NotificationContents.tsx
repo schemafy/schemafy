@@ -1,10 +1,10 @@
-import { Avatar } from '../Avatar';
-import { Button } from '../Button';
+import { Avatar } from '../../Avatar';
+import { Button } from '../../Button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '../DropDown';
+} from '../../DropDown';
 
 interface InviteType {
   inviteUser: string;
