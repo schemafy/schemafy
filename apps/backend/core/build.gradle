@@ -35,7 +35,6 @@ ext {
 }
 
 dependencies {
-	implementation project(':validation')
 	implementation project(':domain')
 
 	// webflux
