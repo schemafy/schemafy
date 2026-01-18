@@ -1,6 +1,6 @@
-package com.schemafy.domain.erd;
+package com.schemafy.domain.erd.domain;
 
-import com.schemafy.domain.erd.type.ConstraintKind;
+import com.schemafy.domain.erd.domain.type.ConstraintKind;
 
 public record Constraint(
     String id,

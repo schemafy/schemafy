@@ -1,7 +1,7 @@
-package com.schemafy.domain.erd;
+package com.schemafy.domain.erd.domain;
 
-import com.schemafy.domain.erd.type.Cardinality;
-import com.schemafy.domain.erd.type.RelationshipKind;
+import com.schemafy.domain.erd.domain.type.Cardinality;
+import com.schemafy.domain.erd.domain.type.RelationshipKind;
 
 public record Relationship(
     String id,

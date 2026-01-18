@@ -1,4 +1,4 @@
-package com.schemafy.domain.erd.type;
+package com.schemafy.domain.erd.domain.type;
 
 public enum ConstraintKind {
   PRIMARY_KEY, UNIQUE, CHECK, DEFAULT, NOT_NULL

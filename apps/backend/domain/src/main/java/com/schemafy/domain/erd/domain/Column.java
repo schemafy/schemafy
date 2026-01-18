@@ -1,4 +1,4 @@
-package com.schemafy.domain.erd;
+package com.schemafy.domain.erd.domain;
 
 public record Column(
     String id,

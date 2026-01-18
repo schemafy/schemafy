@@ -1,6 +1,6 @@
-package com.schemafy.domain.erd;
+package com.schemafy.domain.erd.domain;
 
-import com.schemafy.domain.erd.type.IndexType;
+import com.schemafy.domain.erd.domain.type.IndexType;
 
 public record Index(
     String id,
