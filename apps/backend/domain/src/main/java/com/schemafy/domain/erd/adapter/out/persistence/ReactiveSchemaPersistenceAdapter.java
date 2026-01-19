@@ -17,6 +17,11 @@ class ReactiveSchemaPersistenceAdapter implements ReactiveCreateSchema, Reactive
   private final ReactiveSchemaRepository reactiveSchemaRepository;
   private final SchemaMapper schemaMapper;
 
+  public Mono<Schema> findActiveSchemaById(String id) {
+    return reactiveSchemaRepository.findByIdAndDeletedAtIsNull(id)
+        .map(schemaMapper::toDomain);
+  }
+
   @Override
   public Mono<Schema> createSchema(Schema schema) {
     SchemaEntity entity = Objects.requireNonNull(schemaMapper.toEntity(schema));
