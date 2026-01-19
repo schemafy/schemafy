@@ -59,8 +59,6 @@ public class SchemaEntity implements Persistable<String> {
   }
 
   @Override
-  public boolean isNew() {
-    return this.createdAt == null;
-  }
+  public boolean isNew() { return this.createdAt == null; }
 
 }

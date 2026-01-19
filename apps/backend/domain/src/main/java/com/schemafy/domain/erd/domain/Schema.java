@@ -25,15 +25,15 @@ public record Schema(
 
   private static String defaultCharset(String dbVendorName) {
     return switch (dbVendorName.toLowerCase()) {
-      case "mysql", "mariadb" -> "utf8mb4";
-      default -> "utf8";
+    case "mysql", "mariadb" -> "utf8mb4";
+    default -> "utf8";
     };
   }
 
   private static String defaultCollation(String dbVendorName) {
     return switch (dbVendorName.toLowerCase()) {
-      case "mysql", "mariadb" -> "utf8mb4_general_ci";
-      default -> "utf8_general_ci";
+    case "mysql", "mariadb" -> "utf8mb4_general_ci";
+    default -> "utf8_general_ci";
     };
   }
 

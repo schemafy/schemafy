@@ -6,7 +6,6 @@ public record CreateSchemaResult(
     String dbVendorName,
     String name,
     String charset,
-    String collation
-) {
+    String collation) {
 
 }

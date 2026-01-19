@@ -4,9 +4,9 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.erd.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.application.port.in.CreateSchemaResult;
-import com.schemafy.domain.erd.application.port.in.ReactiveCreateSchemaUseCase;
-import com.schemafy.domain.erd.application.port.out.ReactiveCreateSchema;
-import com.schemafy.domain.erd.application.port.out.ReactiveSchemaExistsPort;
+import com.schemafy.domain.erd.application.port.in.CreateSchemaUseCase;
+import com.schemafy.domain.erd.application.port.out.CreateSchemaPort;
+import com.schemafy.domain.erd.application.port.out.SchemaExistsPort;
 import com.schemafy.domain.erd.domain.Schema;
 import com.schemafy.domain.erd.domain.exception.SchemaNameDuplicateException;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
@@ -16,15 +16,15 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-class ReactiveCreateSchemaService implements ReactiveCreateSchemaUseCase {
+class CreateSchemaService implements CreateSchemaUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;
-  private final ReactiveCreateSchema reactiveCreateSchema;
-  private final ReactiveSchemaExistsPort reactiveSchemaExistsPort;
+  private final CreateSchemaPort createSchemaPort;
+  private final SchemaExistsPort schemaExistsPort;
 
   @Override
   public Mono<CreateSchemaResult> createSchema(CreateSchemaCommand command) {
-    return reactiveSchemaExistsPort
+    return schemaExistsPort
         .existsActiveByProjectIdAndName(command.projectId(), command.name())
         .flatMap(exists -> {
           if (exists) {
@@ -42,7 +42,7 @@ class ReactiveCreateSchemaService implements ReactiveCreateSchemaUseCase {
               command.charset(),
               command.collation());
 
-          return reactiveCreateSchema.createSchema(schema)
+          return createSchemaPort.createSchema(schema)
               .map(savedSchema -> new CreateSchemaResult(
                   savedSchema.id(),
                   savedSchema.projectId(),

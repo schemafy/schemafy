@@ -4,7 +4,7 @@ import com.schemafy.domain.erd.domain.Schema;
 
 import reactor.core.publisher.Mono;
 
-public interface ReactiveCreateSchema {
+public interface CreateSchemaPort {
 
   Mono<Schema> createSchema(Schema schema);
 

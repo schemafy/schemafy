@@ -5,8 +5,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import reactor.core.publisher.Mono;
 
-
-interface ReactiveSchemaRepository extends ReactiveCrudRepository<SchemaEntity, String> {
+interface SchemaRepository extends ReactiveCrudRepository<SchemaEntity, String> {
 
   Mono<SchemaEntity> findByIdAndDeletedAtIsNull(String id);
 
