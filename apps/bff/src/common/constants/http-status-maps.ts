@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ErrorCode, ErrorCodeType } from '../types/api-response.types';
+import { ErrorCode, ErrorCodeType } from '@/common/types/index.js';
 
 export const STATUS_CODE_MAP: Record<number, ErrorCodeType> = {
   [HttpStatus.BAD_REQUEST]: ErrorCode.BAD_REQUEST,
