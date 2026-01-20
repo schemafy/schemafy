@@ -16,7 +16,7 @@ import {
   getErrorInfo,
   getErrorCodeFromStatus,
   getMessageFromStatus,
-} from '@/common/index.js';
+} from '../index.js';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {

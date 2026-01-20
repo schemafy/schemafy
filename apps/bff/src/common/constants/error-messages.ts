@@ -1,4 +1,4 @@
-import { ErrorCategory, ErrorCategoryType } from '@/common/types/index.js';
+import { ErrorCategory, ErrorCategoryType } from '../types/index.js';
 
 type ErrorInfo = {
   message: string;
