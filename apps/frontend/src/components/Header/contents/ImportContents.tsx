@@ -30,7 +30,9 @@ export const ImportContents = () => {
             File Upload
           </label>
         </div>
-        <Button fullWidth>Import</Button>
+        <Button fullWidth size={'dropdown'}>
+          Import
+        </Button>
       </DropdownMenuContent>
     </DropdownMenu>
   );

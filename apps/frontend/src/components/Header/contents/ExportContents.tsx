@@ -24,7 +24,9 @@ export const ExportContents = () => {
           <RadioGroupItem value={'PNG'}>PNG</RadioGroupItem>
           <RadioGroupItem value={'SVG'}>SVG</RadioGroupItem>
         </RadioGroup>
-        <Button fullWidth>Export</Button>
+        <Button fullWidth size={'dropdown'}>
+          Export
+        </Button>
       </DropdownMenuContent>
     </DropdownMenu>
   );

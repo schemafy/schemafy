@@ -10,7 +10,7 @@ export const DashboardHeader = () => {
     <div className="flex items-center justify-end gap-5 w-full">
       <div className="flex items-center gap-9 ml-8">
         <Button variant={'none'} size={'none'}>
-          Product
+          Projects
         </Button>
         <Button variant={'none'} size={'none'}>
           Settings
