@@ -181,7 +181,7 @@ sourceSets {
 	main {
 		resources {
 			srcDir 'src/main/resources'
-			srcDir 'sql'
+			srcDir '../sql-resources'
 		}
 	}
 }
