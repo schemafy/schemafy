@@ -3,6 +3,8 @@ package com.schemafy.domain.erd.adapter.out.persistence;
 import java.time.Instant;
 import java.util.Objects;
 
+import org.springframework.lang.NonNull;
+
 import com.schemafy.domain.common.PersistenceAdapter;
 import com.schemafy.domain.erd.application.port.out.ChangeSchemaNamePort;
 import com.schemafy.domain.erd.application.port.out.CreateSchemaPort;
@@ -46,8 +48,8 @@ class SchemaPersistenceAdapter implements
 
   @Override
   public Mono<Void> changeSchemaName(String schemaId, String newName) {
-    return schemaRepository.findByIdAndDeletedAtIsNull(schemaId)
-        .flatMap(schemaEntity -> {
+    return findActiveSchemaOrError(schemaId)
+        .flatMap((@NonNull SchemaEntity schemaEntity) -> {
           schemaEntity.setName(newName);
           return schemaRepository.save(schemaEntity);
         })
@@ -56,12 +58,17 @@ class SchemaPersistenceAdapter implements
 
   @Override
   public Mono<Void> deleteSchema(String schemaId) {
-    return schemaRepository.findByIdAndDeletedAtIsNull(schemaId)
-        .flatMap(schemaEntity -> {
+    return findActiveSchemaOrError(schemaId)
+        .flatMap((@NonNull SchemaEntity schemaEntity) -> {
           schemaEntity.setDeletedAt(Instant.now());
           return schemaRepository.save(schemaEntity);
         })
         .then();
+  }
+
+  private Mono<SchemaEntity> findActiveSchemaOrError(String schemaId) {
+    return schemaRepository.findByIdAndDeletedAtIsNull(schemaId)
+        .switchIfEmpty(Mono.error(new RuntimeException("Schema not found")));
   }
 
 }
