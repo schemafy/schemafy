@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { AuthStore } from '../../store/auth.store';
+import { refreshAccessToken } from './refresh';
 
 const BASE_URL: string =
   import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
@@ -26,43 +27,6 @@ export const publicClient = axios.create({
 type RequestConfigWithMeta = InternalAxiosRequestConfig & {
   _retry?: boolean;
   _skipAuth?: boolean;
-};
-
-const refreshClient = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-let refreshPromise: Promise<string | null> | null = null;
-
-export const refreshAccessToken = async (): Promise<string | null> => {
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
-      try {
-        const response = await refreshClient.post(
-          '/public/api/v1.0/users/refresh',
-        );
-        const authHeader: string | undefined =
-          response.headers['authorization'];
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          const token = authHeader.replace('Bearer ', '');
-          AuthStore.getInstance().setAccessToken(token);
-          return token;
-        }
-        AuthStore.getInstance().clearAuth();
-        throw new Error('REFRESH_NO_AUTH_HEADER');
-      } catch (e) {
-        AuthStore.getInstance().clearAuth();
-        throw e instanceof Error ? e : new Error('REFRESH_FAILED');
-      } finally {
-        refreshPromise = null;
-      }
-    })();
-  }
-  return refreshPromise;
 };
 
 apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
