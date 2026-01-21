@@ -66,13 +66,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message ?? getMessageFromStatus(status),
       );
 
+      const mergedDetails = this.mergeDetails(details, message);
+
       return {
         status,
         errorResponse: this.createErrorResponse(
           errorCode,
           errorInfo.message,
           errorInfo.category,
-          details,
+          mergedDetails,
         ),
       };
     }
@@ -181,9 +183,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return { success: false, result: null, error };
   }
 
-  private isValidBackendResponse(
-    data: unknown,
-  ): data is {
+  private isValidBackendResponse(data: unknown): data is {
     error: {
       code?: string;
       message?: string;
@@ -218,5 +218,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     return { message: String(responseMessage) };
+  }
+
+  private mergeDetails(
+    details?: Record<string, unknown>,
+    originalMessage?: string,
+  ): Record<string, unknown> | undefined {
+    if (!originalMessage && !details) {
+      return undefined;
+    }
+
+    return {
+      ...details,
+      ...(originalMessage && { originalMessage }),
+    };
   }
 }

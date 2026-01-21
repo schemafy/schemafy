@@ -26,7 +26,7 @@ const SETTINGS_TOO_LARGE: ErrorInfo = {
 };
 
 const notFound = (item: string): ErrorInfo => ({
-  message: `${item} not found. It may have been deleted.`,
+  message: `${item} not found. Please check and try again.`,
   category: ErrorCategory.USER_FEEDBACK,
 });
 
