@@ -23,6 +23,7 @@ const buttonVariants = cva(
       size: {
         dropdown: 'py-2 font-overline-xs min-w-[5rem]',
         default: 'px-4 h-10',
+        sm: 'py-0.3 px-3 font-overline-xs min-w-[4rem]',
         none: '',
       },
       fullWidth: {
