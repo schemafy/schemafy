@@ -7,6 +7,7 @@ import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
 import com.schemafy.domain.erd.application.port.out.ChangeTableNamePort;
+import com.schemafy.domain.erd.application.port.out.ChangeTableExtraPort;
 import com.schemafy.domain.erd.application.port.out.ChangeTableMetaPort;
 import com.schemafy.domain.erd.application.port.out.CreateTablePort;
 import com.schemafy.domain.erd.application.port.out.DeleteTablePort;
@@ -24,6 +25,7 @@ class TablePersistenceAdapter implements
     TableExistsPort,
     GetTableByIdPort,
     ChangeTableNamePort,
+    ChangeTableExtraPort,
     ChangeTableMetaPort,
     DeleteTablePort {
 
@@ -53,6 +55,16 @@ class TablePersistenceAdapter implements
     return findActiveTableOrError(tableId)
         .flatMap((@NonNull TableEntity tableEntity) -> {
           tableEntity.setName(newName);
+          return tableRepository.save(tableEntity);
+        })
+        .then();
+  }
+
+  @Override
+  public Mono<Void> changeTableExtra(String tableId, String extra) {
+    return findActiveTableOrError(tableId)
+        .flatMap((@NonNull TableEntity tableEntity) -> {
+          tableEntity.setExtra(hasText(extra) ? extra : null);
           return tableRepository.save(tableEntity);
         })
         .then();

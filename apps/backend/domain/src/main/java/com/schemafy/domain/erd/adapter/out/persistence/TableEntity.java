@@ -36,6 +36,9 @@ public class TableEntity implements Persistable<String> {
   @Column("collation")
   private String collation;
 
+  @Column("extra")
+  private String extra;
+
   @CreatedDate
   private Instant createdAt;
 
