@@ -38,8 +38,9 @@ const FloatingChatMessage = ({
     <div
       className="fixed pointer-events-none z-50 transition-opacity duration-500"
       style={{
-        left: message.position.x,
-        top: message.position.y,
+        left: 0,
+        top: 0,
+        transform: `translate3d(${message.position.x}px, ${message.position.y}px, 0)`,
         opacity,
       }}
     >

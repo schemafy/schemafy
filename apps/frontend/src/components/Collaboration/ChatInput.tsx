@@ -31,8 +31,9 @@ export const ChatInput = ({ position, onSend, onCancel }: ChatInputProps) => {
     <div
       className="fixed z-50 pointer-events-auto"
       style={{
-        left: position.x + 20,
-        top: position.y + 20,
+        left: 0,
+        top: 0,
+        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
       }}
     >
       <div className="bg-schemafy-bg border border-schemafy-light-gray rounded-lg shadow-lg p-2 min-w-[300px]">

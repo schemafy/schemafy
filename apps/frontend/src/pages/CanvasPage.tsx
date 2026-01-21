@@ -46,12 +46,13 @@ const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
+const CURSOR_THROTTLE_MS = 100;
+
 const CanvasContent = () => {
   const erdStore = ErdStore.getInstance();
   const collaborationStore = CollaborationStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
-  const CURSOR_THROTTLE_MS = 100;
 
   const [relationshipConfig, setRelationshipConfig] =
     useState<RelationshipConfig>({
@@ -100,8 +101,7 @@ const CanvasContent = () => {
     return () => {
       collaborationStore.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [collaborationStore]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {

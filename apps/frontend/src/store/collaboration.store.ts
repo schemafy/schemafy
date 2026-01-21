@@ -13,7 +13,6 @@ export class CollaborationStore {
   private static instance: CollaborationStore;
   private ws: WebSocket | null = null;
 
-  isConnected = false;
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
@@ -21,6 +20,8 @@ export class CollaborationStore {
   private constructor() {
     makeAutoObservable(this);
   }
+
+  private reconnectTimeoutId: number | null = null;
 
   static getInstance(): CollaborationStore {
     if (!CollaborationStore.instance) {
@@ -36,12 +37,6 @@ export class CollaborationStore {
   private setupWebSocketListeners() {
     if (!this.ws) return;
 
-    this.ws.onopen = () => {
-      runInAction(() => {
-        this.isConnected = true;
-      });
-    };
-
     this.ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data) as WebSocketMessage;
@@ -56,14 +51,24 @@ export class CollaborationStore {
     };
 
     this.ws.onclose = () => {
-      runInAction(() => {
-        this.isConnected = false;
-      });
+      if (this.projectId) {
+        if (!this.reconnectTimeoutId) {
+          this.reconnectTimeoutId = window.setTimeout(() => {
+            this.reconnectTimeoutId = null;
+            if (this.projectId) {
+              this.connect(this.projectId);
+            }
+          }, 3000);
+        }
+      }
     };
   }
 
   connect(projectId: string) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (
+      this.ws?.readyState === WebSocket.OPEN ||
+      this.ws?.readyState === WebSocket.CONNECTING
+    ) {
       if (this.projectId === projectId) {
         return;
       }
@@ -71,7 +76,9 @@ export class CollaborationStore {
     }
 
     this.projectId = projectId;
-    const wsUrl = `ws://localhost:4000/ws/collaboration?projectId=${projectId}`;
+    const baseUrl =
+      import.meta.env.VITE_BFF_WS_URL || 'ws://localhost:4000/ws/collaboration';
+    const wsUrl = `${baseUrl}?projectId=${projectId}`;
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -83,12 +90,15 @@ export class CollaborationStore {
 
   disconnect() {
     if (this.ws) {
+      if (this.reconnectTimeoutId) {
+        clearTimeout(this.reconnectTimeoutId);
+        this.reconnectTimeoutId = null;
+      }
       this.ws.close();
       this.ws = null;
     }
 
     runInAction(() => {
-      this.isConnected = false;
       this.projectId = null;
       this.cursors.clear();
     });
@@ -102,8 +112,8 @@ export class CollaborationStore {
   }
 
   sendMessage(content: string) {
-    if (!this.isConnected || !this.ws) {
-      console.error('WebSocket is not connected');
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      console.error('WebSocket is not ready');
       return;
     }
 
@@ -112,11 +122,25 @@ export class CollaborationStore {
       content,
     };
 
-    this.ws.send(JSON.stringify(message));
+    try {
+      this.ws.send(JSON.stringify(message));
+    } catch (error) {
+      console.error('Failed to send chat message:', error);
+      setTimeout(() => {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          try {
+            this.ws.send(JSON.stringify(message));
+          } catch (retryError) {
+            console.error('Retry failed:', retryError);
+          }
+        }
+      }, 500);
+    }
   }
 
   sendCursor(x: number, y: number) {
-    if (!this.isConnected || !this.ws) {
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      console.error('WebSocket is not ready');
       return;
     }
 
@@ -141,7 +165,11 @@ export class CollaborationStore {
       cursor: { x, y },
     };
 
-    this.ws.send(JSON.stringify(message));
+    try {
+      this.ws.send(JSON.stringify(message));
+    } catch (error) {
+      console.error('Failed to send cursor:', error);
+    }
   }
 
   private handleMessage(message: WebSocketMessage) {

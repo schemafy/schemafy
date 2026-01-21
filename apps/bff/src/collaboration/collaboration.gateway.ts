@@ -19,7 +19,7 @@ const WS_CLOSE_POLICY_VIOLATION = 1008;
 @WebSocketGateway({
   path: '/ws/collaboration',
   cors: {
-    origin: 'http://localhost:3001',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
     credentials: true,
   },
 })
