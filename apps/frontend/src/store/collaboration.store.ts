@@ -2,6 +2,8 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
+  PostChat,
+  PostCursor,
   RecieveChat,
   RecieveCursor,
   RecieveLeave,
@@ -51,16 +53,14 @@ export class CollaborationStore {
     };
 
     this.ws.onclose = () => {
-      if (this.projectId) {
-        if (!this.reconnectTimeoutId) {
-          this.reconnectTimeoutId = window.setTimeout(() => {
-            this.reconnectTimeoutId = null;
-            if (this.projectId) {
-              this.connect(this.projectId);
-            }
-          }, 3000);
-        }
-      }
+      if (!this.projectId || this.reconnectTimeoutId) return;
+
+      this.reconnectTimeoutId = window.setTimeout(() => {
+        if (!this.projectId) return;
+
+        this.reconnectTimeoutId = null;
+        this.connect(this.projectId);
+      }, 3000);
     };
   }
 
@@ -117,7 +117,7 @@ export class CollaborationStore {
       return;
     }
 
-    const message = {
+    const message: PostChat = {
       type: 'CHAT',
       content,
     };
@@ -160,7 +160,7 @@ export class CollaborationStore {
       });
     });
 
-    const message = {
+    const message: PostCursor = {
       type: 'CURSOR',
       cursor: { x, y },
     };
