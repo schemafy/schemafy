@@ -13,10 +13,12 @@ import {
   ErrorCode,
   ErrorCategory,
   ErrorCategoryType,
-  getErrorInfo,
+} from '../types/api-response.types.js';
+import { getErrorInfo } from '../constants/error-messages.js';
+import {
   getErrorCodeFromStatus,
   getMessageFromStatus,
-} from '../index.js';
+} from '../constants/http-status-maps.js';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {

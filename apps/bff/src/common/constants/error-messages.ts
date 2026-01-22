@@ -1,4 +1,4 @@
-import { ErrorCategory, ErrorCategoryType } from '../types/index.js';
+import { ErrorCategory, ErrorCategoryType } from '../types/api-response.types.js';
 
 type ErrorInfo = {
   message: string;
