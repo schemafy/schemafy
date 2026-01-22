@@ -112,38 +112,25 @@ export class CollaborationStore {
   }
 
   sendMessage(content: string) {
-    if (this.ws?.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket is not ready');
-      return;
-    }
-
     const message: PostChat = {
       type: 'CHAT',
       content,
     };
 
-    try {
-      this.ws.send(JSON.stringify(message));
-    } catch (error) {
+    this.send(message, (error) => {
       console.error('Failed to send chat message:', error);
       setTimeout(() => {
-        if (this.ws?.readyState === WebSocket.OPEN) {
-          try {
-            this.ws.send(JSON.stringify(message));
-          } catch (retryError) {
-            console.error('Retry failed:', retryError);
-          }
+        try {
+          if (this.ws?.readyState !== WebSocket.OPEN) return;
+          this.send(message);
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
         }
       }, 500);
-    }
+    });
   }
 
   sendCursor(x: number, y: number) {
-    if (this.ws?.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket is not ready');
-      return;
-    }
-
     const user = this.currentUser;
 
     if (!user) {
@@ -165,10 +152,28 @@ export class CollaborationStore {
       cursor: { x, y },
     };
 
+    this.send(message, (error) => {
+      console.error('Failed to send cursor:', error);
+    });
+  }
+
+  private send(
+    message: PostChat | PostCursor,
+    onError?: (error: unknown) => void,
+  ) {
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      console.error('WebSocket is not ready');
+      return;
+    }
+
     try {
       this.ws.send(JSON.stringify(message));
     } catch (error) {
-      console.error('Failed to send cursor:', error);
+      if (onError) {
+        onError(error);
+      } else {
+        console.error('Failed to send message:', error);
+      }
     }
   }
 
