@@ -86,10 +86,6 @@ class ProjectServiceTest {
         new UserInfo("viewer@test.com", "Viewer User", "password"),
         encoder).flatMap(userRepository::save).block();
 
-    outsiderUser = User.signUp(
-        new UserInfo("outsider@test.com", "Outsider User", "password"),
-        encoder).flatMap(userRepository::save).block();
-
     testWorkspace = Workspace.create(
         "Test Workspace",
         "Test Description");

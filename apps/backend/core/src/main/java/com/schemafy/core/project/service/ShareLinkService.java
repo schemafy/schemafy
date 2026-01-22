@@ -42,7 +42,7 @@ public class ShareLinkService {
             code, shareLink.getProjectId(), user, ipAddress, userAgent))
         .flatMap(shareLink -> shareLinkRepository.incrementAccessCount(shareLink.getId())
             .onErrorResume(e -> {
-              log.error("Failed to increment access count for ShareLink id: {}", shareLink.getId(), e);
+              log.error("Failed to increment access count for ShareLink InvitationId: {}", shareLink.getId(), e);
               return Mono.empty();
             })
             .then(projectRepository.findByIdAndNotDeleted(shareLink.getProjectId()))

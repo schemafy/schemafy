@@ -21,15 +21,10 @@ import lombok.NoArgsConstructor;
 public class ShareLink extends BaseEntity {
 
   private String projectId;
-
   private String code;
-
   private Instant expiresAt;
-
   private Boolean isRevoked;
-
   private Instant lastAccessedAt;
-
   private Long accessCount;
 
   private static final int DEFAULT_DURATION_DAYS = 14;

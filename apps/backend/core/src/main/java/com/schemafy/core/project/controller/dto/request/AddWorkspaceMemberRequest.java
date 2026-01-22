@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 
-/** 워크스페이스 멤버 추가 요청 DTO */
 public record AddWorkspaceMemberRequest(
     @NotBlank(message = "이메일은 필수입니다") @Email(message = "유효한 이메일 형식이 아닙니다") String email,
 

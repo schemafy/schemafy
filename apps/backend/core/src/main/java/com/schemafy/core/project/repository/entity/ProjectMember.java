@@ -20,11 +20,8 @@ import lombok.NoArgsConstructor;
 public class ProjectMember extends BaseEntity {
 
   private String projectId;
-
   private String userId;
-
   private String role;
-
   private Instant joinedAt;
 
   public static ProjectMember create(String projectId, String userId,

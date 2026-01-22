@@ -17,7 +17,6 @@ import lombok.NoArgsConstructor;
 public class Workspace extends BaseEntity {
 
   private String name;
-
   private String description;
 
   public static Workspace create(String name, String description) {

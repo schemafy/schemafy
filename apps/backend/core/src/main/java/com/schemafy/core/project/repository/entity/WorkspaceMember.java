@@ -18,9 +18,7 @@ import lombok.NoArgsConstructor;
 public class WorkspaceMember extends BaseEntity {
 
   private String workspaceId;
-
   private String userId;
-
   private String role;
 
   public static WorkspaceMember create(String workspaceId, String userId,
