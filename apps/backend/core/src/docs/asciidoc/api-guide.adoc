@@ -2762,8 +2762,12 @@ HTTP 헤더에 토큰을 포함할 수 없는 환경(브라우저 등)에서는 
 ----
 {
   "type": "CURSOR",
+  "sessionId": "session-uuid",
+  "userInfo": {
+    "userId": "01HNQD...",
+    "userName": "cjeongmin"
+  },
   "cursor": {
-    "userName": "cjeongmin",
     "x": 150.5,
     "y": 320.0
   },
@@ -2781,8 +2785,16 @@ HTTP 헤더에 토큰을 포함할 수 없는 환경(브라우저 등)에서는 
 |이벤트 타입 (고정값: `CURSOR`)
 |String
 
-|`cursor.userName`
-|커서 소유자 이름
+|`sessionId`
+|커서를 움직인 클라이언트 세션 ID
+|String
+
+|`userInfo.userId`
+|사용자 ID
+|String
+
+|`userInfo.userName`
+|사용자 이름
 |String
 
 |`cursor.x`

@@ -19,14 +19,20 @@ public final class CursorEvent {
 
   }
 
+  public record UserInfo(String userId, String userName) {
+  }
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Outbound(
       String sessionId,
+      UserInfo userInfo,
       CursorPosition cursor,
       long timestamp) implements CollaborationOutbound {
 
-    public static Outbound of(String sessionId, CursorPosition cursor) {
-      return new Outbound(sessionId, cursor, System.currentTimeMillis());
+    public static Outbound of(String sessionId, UserInfo userInfo,
+        CursorPosition cursor) {
+      return new Outbound(sessionId, userInfo, cursor,
+          System.currentTimeMillis());
     }
 
     @Override
@@ -36,7 +42,7 @@ public final class CursorEvent {
 
     @Override
     public Outbound withoutSessionId() {
-      return new Outbound(null, cursor, timestamp);
+      return new Outbound(null, userInfo, cursor, timestamp);
     }
 
   }

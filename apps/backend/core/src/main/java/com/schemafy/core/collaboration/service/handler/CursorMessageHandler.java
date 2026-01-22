@@ -54,9 +54,7 @@ public class CursorMessageHandler implements InboundMessageHandler {
       return Mono.empty();
     }
 
-    String userName = entry.authInfo().getUserName();
-    CursorPosition cursorWithUserName = cursor.withUserName(userName);
-    entry.pushCursor(cursorWithUserName);
+    entry.pushCursor(cursor);
 
     return Mono.empty();
   }
