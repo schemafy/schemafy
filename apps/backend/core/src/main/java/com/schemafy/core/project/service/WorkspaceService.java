@@ -169,7 +169,7 @@ public class WorkspaceService {
                         "Workspace member limit exceeded: workspaceId={}",
                         workspaceId);
                     return Mono.error(new BusinessException(
-                        ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEEDED));
+                        ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEED));
                   }
 
                   WorkspaceMember newMember = WorkspaceMember
@@ -234,11 +234,11 @@ public class WorkspaceService {
 
   public Mono<Void> removeMember(
       String workspaceId,
-      String targetMemberId,
+      String targetUserId,
       String requesterId) {
     return validateAdminAccess(workspaceId, requesterId)
-        .then(findWorkspaceMemberByMemberIdAndWorkspaceId(
-            targetMemberId, workspaceId))
+        .then(findWorkspaceMemberByUserIdAndWorkspaceId(
+            targetUserId, workspaceId))
         .flatMap(targetMember -> modifyMemberWithAdminGuard(workspaceId,
             targetMember, WorkspaceMember::delete))
         .then()
@@ -270,11 +270,11 @@ public class WorkspaceService {
 
   public Mono<WorkspaceMemberResponse> updateMemberRole(
       String workspaceId,
-      String memberId,
+      String targetUserId,
       UpdateMemberRoleRequest request,
       String currentUserId) {
     return validateAdminAccess(workspaceId, currentUserId)
-        .then(findWorkspaceMemberByMemberIdAndWorkspaceId(memberId,
+        .then(findWorkspaceMemberByUserIdAndWorkspaceId(targetUserId,
             workspaceId))
         .flatMap(targetMember -> modifyMemberWithAdminGuard(workspaceId,
             targetMember, m -> m.updateRole(request.role())))
@@ -334,15 +334,6 @@ public class WorkspaceService {
       String userId, String workspaceId) {
     return workspaceMemberRepository
         .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
-        .switchIfEmpty(Mono.error(
-            new BusinessException(
-                ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)));
-  }
-
-  private Mono<WorkspaceMember> findWorkspaceMemberByMemberIdAndWorkspaceId(
-      String memberId, String workspaceId) {
-    return workspaceMemberRepository
-        .findByIdAndWorkspaceIdAndNotDeleted(memberId, workspaceId)
         .switchIfEmpty(Mono.error(
             new BusinessException(
                 ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)));

@@ -221,7 +221,7 @@ class WorkspaceServiceTest {
       workspaceMemberRepository.deleteById(normalMember.getId()).block();
 
       StepVerifier.create(workspaceService.removeMember(
-          testWorkspace.getId(), adminMember.getId(),
+          testWorkspace.getId(), adminMember.getUserId(),
           adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -236,7 +236,7 @@ class WorkspaceServiceTest {
           WorkspaceRole.MEMBER);
 
       StepVerifier.create(workspaceService.updateMemberRole(
-          testWorkspace.getId(), adminMember.getId(), request,
+          testWorkspace.getId(), adminMember.getUserId(), request,
           adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -281,7 +281,7 @@ class WorkspaceServiceTest {
           testWorkspace.getId(), request, adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEEDED)
+                  .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEED)
           .verify();
     }
 
@@ -289,7 +289,7 @@ class WorkspaceServiceTest {
     @DisplayName("일반 멤버 제거 성공")
     void removeMember_NormalMember_Success() {
       Mono<Void> result = workspaceService.removeMember(
-          testWorkspace.getId(), normalMember.getId(),
+          testWorkspace.getId(), normalMember.getUserId(),
           adminUser.getId());
 
       StepVerifier.create(result).verifyComplete();
@@ -312,7 +312,7 @@ class WorkspaceServiceTest {
 
       Mono<WorkspaceMemberResponse> result = workspaceService
           .updateMemberRole(testWorkspace.getId(),
-              normalMember.getId(), request, adminUser.getId());
+              normalMember.getUserId(), request, adminUser.getId());
 
       StepVerifier.create(result)
           .assertNext(response -> assertThat(response.role())
@@ -452,7 +452,7 @@ class WorkspaceServiceTest {
 
       // 멤버 삭제
       workspaceService.removeMember(
-          testWorkspace.getId(), added.id(), adminUser.getId())
+          testWorkspace.getId(), added.userId(), adminUser.getId())
           .block();
 
       // 삭제 확인

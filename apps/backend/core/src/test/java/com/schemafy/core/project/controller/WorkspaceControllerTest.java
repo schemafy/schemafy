@@ -428,8 +428,8 @@ class WorkspaceControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/members/{memberId}",
-            workspace.getId(), member2.getId())
+            + "/workspaces/{workspaceId}/members/{userId}",
+            workspace.getId(), testUser2Id)
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isNoContent().expectBody()
         .consumeWith(document("workspace-member-remove",
@@ -512,8 +512,8 @@ class WorkspaceControllerTest {
     // when & then
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/members/{memberId}/role",
-            workspace.getId(), member2.getId())
+            + "/workspaces/{workspaceId}/members/{userId}/role",
+            workspace.getId(), testUser2Id)
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isOk().expectBody()

@@ -39,6 +39,7 @@ public class WorkspaceController {
         .map(BaseResponse::success);
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
   @GetMapping("/workspaces")
   public Mono<BaseResponse<PageResponse<WorkspaceSummaryResponse>>> getWorkspaces(
       @RequestParam(defaultValue = "0") int page,
@@ -102,17 +103,18 @@ public class WorkspaceController {
   }
 
   @PreAuthorize("hasRole('ADMIN')")
-  @DeleteMapping("/workspaces/{workspaceId}/members/{memberId}")
+  @DeleteMapping("/workspaces/{workspaceId}/members/{userId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> removeMember(
       @PathVariable String workspaceId,
-      @PathVariable String memberId,
+      @PathVariable String userId,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.removeMember(workspaceId, memberId,
+    return workspaceService.removeMember(workspaceId, userId,
         requesterId);
   }
 
+  @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
   @DeleteMapping("/workspaces/{workspaceId}/members/me")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> leaveMember(
@@ -123,15 +125,15 @@ public class WorkspaceController {
   }
 
   @PreAuthorize("hasRole('ADMIN')")
-  @PatchMapping("/workspaces/{workspaceId}/members/{memberId}/role")
+  @PatchMapping("/workspaces/{workspaceId}/members/{userId}/role")
   public Mono<BaseResponse<WorkspaceMemberResponse>> updateMemberRole(
       @PathVariable String workspaceId,
-      @PathVariable String memberId,
+      @PathVariable String userId,
       @Valid @RequestBody UpdateMemberRoleRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService
-        .updateMemberRole(workspaceId, memberId, request, requesterId)
+        .updateMemberRole(workspaceId, userId, request, requesterId)
         .map(BaseResponse::success);
   }
 

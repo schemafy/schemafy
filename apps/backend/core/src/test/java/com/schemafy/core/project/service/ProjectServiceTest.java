@@ -57,7 +57,6 @@ class ProjectServiceTest {
   private User ownerUser;
   private User adminUser;
   private User viewerUser;
-  private User outsiderUser;
   private Workspace testWorkspace;
   private Project testProject;
   private ProjectMember ownerMember;
@@ -142,7 +141,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.updateMemberRole(
               testProject.getId(),
-              adminMember.getId(),
+              adminMember.getUserId(),
               request,
               adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
@@ -181,7 +180,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.updateMemberRole(
               testProject.getId(),
-              ownerMember.getId(),
+              ownerMember.getUserId(),
               request,
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
@@ -199,7 +198,7 @@ class ProjectServiceTest {
       Mono<ProjectMemberResponse> result = projectService
           .updateMemberRole(
               testProject.getId(),
-              viewerMember.getId(),
+              viewerMember.getUserId(),
               request,
               adminUser.getId());
 
@@ -252,7 +251,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.removeMember(
               testProject.getId(),
-              ownerMember.getId(),
+              ownerMember.getUserId(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -268,7 +267,7 @@ class ProjectServiceTest {
 
       Mono<Void> result = projectService.removeMember(
           testProject.getId(),
-          viewerMember.getId(),
+          viewerMember.getUserId(),
           adminUser.getId());
 
       StepVerifier.create(result).verifyComplete();

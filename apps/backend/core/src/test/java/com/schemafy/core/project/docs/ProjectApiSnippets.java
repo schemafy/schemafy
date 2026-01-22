@@ -290,9 +290,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
             fieldWithPath("result.content[]")
                 .type(JsonFieldType.ARRAY)
                 .description("멤버 목록"),
-            fieldWithPath("result.content[].id")
+            fieldWithPath("result.content[].projectId")
                 .type(JsonFieldType.STRING)
-                .description("멤버십 ID"),
+                .description("프로젝트 ID"),
             fieldWithPath("result.content[].userId")
                 .type(JsonFieldType.STRING)
                 .description("사용자 ID"),
@@ -321,7 +321,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                 .description("전체 페이지 수")));
   }
 
-  // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role - 멤버 역할 변경 ==========
+  // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role - 멤버 역할 변경 ==========
 
   /** 멤버 역할 변경 경로 파라미터 */
   public static Snippet updateMemberRolePathParameters() {
@@ -329,7 +329,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
         parameterWithName("workspaceId")
             .description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"),
-        parameterWithName("memberId").description("멤버 ID"));
+        parameterWithName("userId").description("사용자 ID"));
   }
 
   /** 멤버 역할 변경 요청 헤더 */
@@ -354,8 +354,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   public static Snippet updateMemberRoleResponse() {
     return createResponseFieldsSnippet(
         successResponseFields(
-            fieldWithPath("result.id").type(JsonFieldType.STRING)
-                .description("멤버십 ID"),
+            fieldWithPath("result.projectId").type(JsonFieldType.STRING)
+                .description("프로젝트 ID"),
             fieldWithPath("result.userId")
                 .type(JsonFieldType.STRING)
                 .description("사용자 ID"),
@@ -372,7 +372,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                 .description("가입 시각")));
   }
 
-  // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/members/{memberId} - 멤버 제거 ==========
+  // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/members/{userId} - 멤버 제거 ==========
 
   /** 멤버 제거 경로 파라미터 */
   public static Snippet removeMemberPathParameters() {
@@ -380,7 +380,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
         parameterWithName("workspaceId")
             .description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"),
-        parameterWithName("memberId").description("멤버 ID"));
+        parameterWithName("userId").description("사용자 ID"));
   }
 
   /** 멤버 제거 요청 헤더 */

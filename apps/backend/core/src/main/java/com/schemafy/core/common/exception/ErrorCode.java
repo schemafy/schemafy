@@ -83,7 +83,7 @@ public enum ErrorCode {
       "이미 워크스페이스 멤버입니다."),
   WORKSPACE_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "W008",
       "워크스페이스 멤버를 찾을 수 없습니다."),
-  WORKSPACE_MEMBER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "W009",
+  WORKSPACE_MEMBER_LIMIT_EXCEED(HttpStatus.BAD_REQUEST, "W009",
       "워크스페이스 멤버 수 제한(30명)을 초과했습니다."),
   LAST_ADMIN_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "W010",
       "마지막 관리자는 워크스페이스를 떠날 수 없습니다."),
@@ -128,7 +128,29 @@ public enum ErrorCode {
   SHARE_LINK_INVALID_CODE(HttpStatus.BAD_REQUEST, "S006",
       "공유 링크 코드가 유효하지 않습니다."),
   SHARE_LINK_INVALID_EXPIRATION(HttpStatus.BAD_REQUEST, "S007",
-      "만료 시간은 미래 시간이어야 합니다.");
+      "만료 시간은 미래 시간이어야 합니다."),
+
+  // INVITATION
+  INVITATION_EMAIL_MISMATCH(HttpStatus.FORBIDDEN, "INV001",
+      "이 초대는 다른 사용자를 위한 것입니다."),
+  INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "INV002",
+      "초대를 찾을 수 없거나 이미 삭제되었습니다."),
+  INVITATION_DUPLICATE_WORKSPACE_MEMBER(HttpStatus.CONFLICT, "INV003",
+      "이미 워크스페이스 멤버입니다."),
+  INVITATION_EXPIRED(HttpStatus.GONE, "INV004",
+      "초대가 만료되었습니다. (생성일로부터 7일 경과)"),
+  WORKSPACE_INVITATION_ALREADY_MODIFICATION(HttpStatus.CONFLICT, "INV005",
+      "이미 처리된 워크스페이스 초대입니다."),
+  PROJECT_INVITATION_ALREADY_MODIFICATION(HttpStatus.CONFLICT, "INV006",
+      "이미 처리된 프로젝트 초대입니다."),
+  INVITATION_CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "INV007",
+      "동시에 처리된 요청입니다. 다시 시도해주세요."),
+  INVITATION_DUPLICATE_MEMBERSHIP_PROJECT(HttpStatus.CONFLICT, "INV008",
+      "이미 프로젝트 멤버입니다."),
+  INVITATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "INV009",
+      "이미 대기 중인 초대가 존재합니다."),
+  PROJECT_MEMBER_NOT_WORKSPACE_MEMBER(HttpStatus.FORBIDDEN, "INV010",
+      "워크스페이스 멤버만 프로젝트에 참여할 수 있습니다.");
 
   private final HttpStatus status;
   private final String code;

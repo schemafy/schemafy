@@ -102,26 +102,26 @@ public class ProjectController {
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
-  @PatchMapping("/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role")
+  @PatchMapping("/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role")
   public Mono<BaseResponse<ProjectMemberResponse>> updateMemberRole(
       @PathVariable String workspaceId, @PathVariable String projectId,
-      @PathVariable String memberId,
+      @PathVariable String userId,
       @Valid @RequestBody UpdateProjectMemberRoleRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return projectService
-        .updateMemberRole(projectId, memberId, request, requesterId)
+        .updateMemberRole(projectId, userId, request, requesterId)
         .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
-  @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}")
+  @DeleteMapping("/workspaces/{workspaceId}/projects/{projectId}/members/{userId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> removeMember(@PathVariable String workspaceId,
-      @PathVariable String projectId, @PathVariable String memberId,
+      @PathVariable String projectId, @PathVariable String userId,
       Authentication authentication) {
     String requester = authentication.getName();
-    return projectService.removeMember(projectId, memberId,
+    return projectService.removeMember(projectId, userId,
         requester);
   }
 

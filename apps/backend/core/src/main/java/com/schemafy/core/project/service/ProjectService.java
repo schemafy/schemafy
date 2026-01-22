@@ -1,5 +1,6 @@
 package com.schemafy.core.project.service;
 
+import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -34,8 +35,6 @@ public class ProjectService {
   private final ProjectMemberRepository projectMemberRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final UserRepository userRepository;
-
-  private static final int MAX_PROJECT_MEMBERS = 30;
 
   public Mono<ProjectResponse> createProject(String workspaceId,
       CreateProjectRequest request, String userId) {
@@ -110,10 +109,7 @@ public class ProjectService {
     return validateMemberAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
-          if (!project.belongsToWorkspace(workspaceId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
-          }
+          project.belongsToWorkspace(workspaceId);
           return buildProjectResponse(project, userId);
         });
   }
@@ -123,11 +119,7 @@ public class ProjectService {
     return validateAdminAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
-          if (!project.belongsToWorkspace(workspaceId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
-          }
-
+          project.belongsToWorkspace(workspaceId);
           ProjectSettings settings = request.getSettingsOrDefault();
           validateSettings(settings);
 
@@ -144,10 +136,7 @@ public class ProjectService {
     return validateAdminAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
-          if (!project.belongsToWorkspace(workspaceId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
-          }
+          project.belongsToWorkspace(workspaceId);
           if (project.isDeleted()) {
             return Mono.error(new BusinessException(
                 ErrorCode.PROJECT_ALREADY_DELETED));
@@ -181,14 +170,13 @@ public class ProjectService {
         });
   }
 
-  /** 프로젝트 멤버 역할 변경 */
-  public Mono<ProjectMemberResponse> updateMemberRole(String projectId, String targetId,
+  public Mono<ProjectMemberResponse> updateMemberRole(String projectId, String targetUserId,
       UpdateProjectMemberRoleRequest request, String requesterId) {
     return validateAdminAccess(projectId, requesterId)
         .then(Mono.zip(
             findProjectMemberByUserIdAndProjectId(requesterId,
                 projectId),
-            findProjectMemberByMemberIdAndProjectId(targetId,
+            findProjectMemberByUserIdAndProjectId(targetUserId,
                 projectId)))
         .flatMap(tuple -> {
           ProjectMember requester = tuple.getT1();
@@ -233,9 +221,9 @@ public class ProjectService {
 
   /** 프로젝트 멤버 제거 (관리자 권한) */
   public Mono<Void> removeMember(String projectId,
-      String targetId, String requesterId) {
+      String targetUserId, String requesterId) {
     return validateAdminAccess(projectId, requesterId)
-        .then(findProjectMemberByMemberIdAndProjectId(targetId,
+        .then(findProjectMemberByUserIdAndProjectId(targetUserId,
             projectId))
         .flatMap(targetMember -> protectAdmin(projectId, targetMember))
         .as(transactionalOperator::transactional);
@@ -308,15 +296,6 @@ public class ProjectService {
         ));
   }
 
-  private Mono<ProjectMember> findProjectMemberByMemberIdAndProjectId(
-      String memberId, String projectId) {
-    return projectMemberRepository
-        .findByProjectIdAndMemberIdAndNotDeleted(projectId, memberId)
-        .filter(member -> member.getProjectId().equals(projectId))
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
-  }
-
   private Mono<ProjectMember> findProjectMemberByUserIdAndProjectId(
       String userId, String projectId) {
     return projectMemberRepository
@@ -347,7 +326,7 @@ public class ProjectService {
         .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
         .switchIfEmpty(Mono.error(new BusinessException(
             ErrorCode.WORKSPACE_ACCESS_DENIED)))
-        .filter(member -> member.isAdmin())
+        .filter(WorkspaceMember::isAdmin)
         .switchIfEmpty(Mono.error(new BusinessException(
             ErrorCode.WORKSPACE_ADMIN_REQUIRED)))
         .then();
