@@ -1,22 +1,11 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { AuthStore } from '../../store/auth.store';
 import { refreshAccessToken } from './refresh';
 
-const BASE_URL: string =
-  import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+const BFF_URL: string = import.meta.env.VITE_BFF_URL || 'http://localhost:4000';
 
-export const apiClient = axios.create({
-  baseURL: BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // 쿠키 전송을 위해 필요 (refresh token)
-});
-
-// 인증이 필요 없는 요청은 별도의 publicClient를 사용하도록 유도한다.
-export const publicClient = axios.create({
-  baseURL: BASE_URL,
+export const bffClient = axios.create({
+  baseURL: BFF_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -26,10 +15,9 @@ export const publicClient = axios.create({
 
 type RequestConfigWithMeta = InternalAxiosRequestConfig & {
   _retry?: boolean;
-  _skipAuth?: boolean;
 };
 
-apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
+bffClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
   const currentToken = AuthStore.getInstance().accessToken;
   if (currentToken) {
     config.headers = config.headers ?? {};
@@ -47,7 +35,7 @@ apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
   return config;
 });
 
-apiClient.interceptors.response.use(
+bffClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const responseStatus = error.response?.status;
@@ -63,7 +51,7 @@ apiClient.interceptors.response.use(
         config.headers = config.headers ?? {};
         (config.headers as Record<string, string>)['Authorization'] =
           `Bearer ${newToken}`;
-        return apiClient(config);
+        return bffClient(config);
       }
     }
 
