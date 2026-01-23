@@ -1,0 +1,15 @@
+package com.schemafy.domain.erd.application.port.in;
+
+public record CreateColumnCommand(
+    String tableId,
+    String name,
+    String dataType,
+    Integer length,
+    Integer precision,
+    Integer scale,
+    int seqNo,
+    boolean autoIncrement,
+    String charset,
+    String collation,
+    String comment) {
+}
