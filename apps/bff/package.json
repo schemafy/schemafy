@@ -18,7 +18,7 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.11",
     "@nestjs/platform-express": "^11.1.11",
-    "axios": "^1.12.2",
+    "axios": "^1.13.2",
     "@nestjs/platform-ws": "^11.1.12",
     "@nestjs/websockets": "^11.1.12",
     "reflect-metadata": "^0.2.2",
