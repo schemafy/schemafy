@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS db_columns (
     seq_no            INT          NOT NULL,
     data_type         VARCHAR(64)  NOT NULL,
     length_scale      VARCHAR(64)  NULL,
-    is_auto_increment BOOLEAN      NULL,
+    auto_increment    BOOLEAN      NULL,
     charset           VARCHAR(64)  NULL,
     collation         VARCHAR(64)  NULL,
     comment           TEXT         NULL,
