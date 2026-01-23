@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { ulid } from 'ulid';
 import {
@@ -33,7 +33,9 @@ import {
   MemoProvider,
   useMemoContext,
 } from '@/features/drawing';
+import { ChatOverlay, ChatInput } from '@/components/Collaboration';
 import { ErdStore } from '@/store/erd.store';
+import { CollaborationStore } from '@/store/collaboration.store';
 
 const NODE_TYPES = {
   table: TableNode,
@@ -44,9 +46,13 @@ const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
+const CURSOR_THROTTLE_MS = 100;
+
 const CanvasContent = () => {
   const erdStore = ErdStore.getInstance();
+  const collaborationStore = CollaborationStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
+  const lastCursorSendTime = useRef<number>(0);
 
   const [relationshipConfig, setRelationshipConfig] =
     useState<RelationshipConfig>({
@@ -59,6 +65,9 @@ const CanvasContent = () => {
     flow: Point;
     screen: Point;
   } | null>(null);
+  const [chatInputPosition, setChatInputPosition] = useState<Point | null>(
+    null,
+  );
 
   const { handleMoveEnd } = useViewport();
 
@@ -85,6 +94,32 @@ const CanvasContent = () => {
       });
     }
   }, [erdStore]);
+
+  useEffect(() => {
+    collaborationStore.connect('06DS8JSJ7Y112MC87X0AB2CE8M');
+
+    return () => {
+      collaborationStore.disconnect();
+    };
+  }, [collaborationStore]);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === '/' && !chatInputPosition && activeTool === 'pointer') {
+        e.preventDefault();
+
+        if (!mousePosition) return;
+
+        setChatInputPosition({
+          x: mousePosition.x,
+          y: mousePosition.y,
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [chatInputPosition, mousePosition, activeTool]);
 
   const { tables, addTable, onTablesChange } = useTables();
 
@@ -144,6 +179,15 @@ const CanvasContent = () => {
     }
   };
 
+  const handleChatSend = (message: string) => {
+    collaborationStore.sendMessage(message);
+    setChatInputPosition(null);
+  };
+
+  const handleChatCancel = () => {
+    setChatInputPosition(null);
+  };
+
   const handlePaneClick = (e: React.MouseEvent) => {
     if (tempMemoPosition) {
       handleMemoCancel();
@@ -179,10 +223,13 @@ const CanvasContent = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (activeTool === 'table' || activeTool === 'memo') {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    } else {
-      setMousePosition(null);
+    const position = { x: e.clientX, y: e.clientY };
+    setMousePosition(position);
+
+    const now = Date.now();
+    if (now - lastCursorSendTime.current >= CURSOR_THROTTLE_MS) {
+      lastCursorSendTime.current = now;
+      collaborationStore.sendCursor(position.x, position.y);
     }
   };
 
@@ -202,56 +249,64 @@ const CanvasContent = () => {
             <SchemaSelector />
           </div>
 
-          <ReactFlow
-            nodes={nodes}
-            edges={relationships}
-            onNodesChange={handleNodesChange}
-            onEdgesChange={onRelationshipsChange}
-            onPaneClick={handlePaneClick}
-            onPaneMouseMove={handleMouseMove}
-            onMoveEnd={handleMoveEnd}
-            nodesDraggable={activeTool !== 'hand'}
-            elementsSelectable={activeTool !== 'hand'}
-            onConnect={onConnect}
-            onEdgeClick={onRelationshipClick}
-            onReconnect={onReconnect}
-            onReconnectStart={onReconnectStart}
-            onReconnectEnd={onReconnectEnd}
-            nodeTypes={NODE_TYPES}
-            edgeTypes={EDGE_TYPES}
-            connectionLineComponent={CustomConnectionLine}
-            proOptions={{ hideAttribution: true }}
-            connectionMode={ConnectionMode.Loose}
-            fitView={false}
-            minZoom={0.1}
-            maxZoom={4}
+          <div
+            style={{
+              cursor: activeTool === 'hand' ? 'grab' : 'default',
+            }}
+            className="w-full h-full"
           >
-            <MiniMap
-              nodeColor={() => 'var(--color-schemafy-text)'}
-              maskColor="var(--color-schemafy-bg-80)"
-              style={{
-                backgroundColor: 'var(--color-schemafy-bg-80)',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                borderRadius: '10px',
-                overflow: 'hidden',
-                position: 'absolute',
-                bottom: '1rem',
-                right: '1rem',
-                margin: '0',
-              }}
-              zoomable
-              pannable
-            />
-            <CustomControls />
-            <Background variant={BackgroundVariant.Dots} />
+            <ReactFlow
+              nodes={nodes}
+              edges={relationships}
+              onNodesChange={handleNodesChange}
+              onEdgesChange={onRelationshipsChange}
+              onPaneClick={handlePaneClick}
+              onPaneMouseMove={handleMouseMove}
+              onMoveEnd={handleMoveEnd}
+              nodesDraggable={activeTool !== 'hand'}
+              elementsSelectable={activeTool !== 'hand'}
+              panOnDrag={activeTool === 'hand'}
+              onConnect={onConnect}
+              onEdgeClick={onRelationshipClick}
+              onReconnect={onReconnect}
+              onReconnectStart={onReconnectStart}
+              onReconnectEnd={onReconnectEnd}
+              nodeTypes={NODE_TYPES}
+              edgeTypes={EDGE_TYPES}
+              connectionLineComponent={CustomConnectionLine}
+              proOptions={{ hideAttribution: true }}
+              connectionMode={ConnectionMode.Loose}
+              fitView={false}
+              minZoom={0.1}
+              maxZoom={4}
+            >
+              <MiniMap
+                nodeColor={() => 'var(--color-schemafy-text)'}
+                maskColor="var(--color-schemafy-bg-80)"
+                style={{
+                  backgroundColor: 'var(--color-schemafy-bg-80)',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  position: 'absolute',
+                  bottom: '1rem',
+                  right: '1rem',
+                  margin: '0',
+                }}
+                zoomable
+                pannable
+              />
+              <CustomControls />
+              <Background variant={BackgroundVariant.Dots} />
 
-            {activeTool === 'table' && (
-              <TablePreview mousePosition={mousePosition} />
-            )}
-            {activeTool === 'memo' && (
-              <MemoPreview mousePosition={mousePosition} />
-            )}
-          </ReactFlow>
+              {activeTool === 'table' && (
+                <TablePreview mousePosition={mousePosition} />
+              )}
+              {activeTool === 'memo' && (
+                <MemoPreview mousePosition={mousePosition} />
+              )}
+            </ReactFlow>
+          </div>
 
           {selectedRelationship && (
             <RelationshipEditor
@@ -271,9 +326,18 @@ const CanvasContent = () => {
               onCancel={handleMemoCancel}
             />
           )}
+
+          {chatInputPosition && (
+            <ChatInput
+              position={chatInputPosition}
+              onSend={handleChatSend}
+              onCancel={handleChatCancel}
+            />
+          )}
         </div>
       </div>
       <FloatingButtons />
+      <ChatOverlay />
     </>
   );
 };
