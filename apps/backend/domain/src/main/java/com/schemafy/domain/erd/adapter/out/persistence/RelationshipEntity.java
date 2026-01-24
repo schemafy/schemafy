@@ -9,6 +9,14 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_relationships")
 public class RelationshipEntity implements Persistable<String> {
 
@@ -41,8 +49,6 @@ public class RelationshipEntity implements Persistable<String> {
 
   private Instant deletedAt;
 
-  protected RelationshipEntity() {}
-
   RelationshipEntity(
       String id,
       String pkTableId,
@@ -68,81 +74,5 @@ public class RelationshipEntity implements Persistable<String> {
   @Override
   public String getId() {
     return this.id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getPkTableId() {
-    return pkTableId;
-  }
-
-  public void setPkTableId(String pkTableId) {
-    this.pkTableId = pkTableId;
-  }
-
-  public String getFkTableId() {
-    return fkTableId;
-  }
-
-  public void setFkTableId(String fkTableId) {
-    this.fkTableId = fkTableId;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getKind() {
-    return kind;
-  }
-
-  public void setKind(String kind) {
-    this.kind = kind;
-  }
-
-  public String getCardinality() {
-    return cardinality;
-  }
-
-  public void setCardinality(String cardinality) {
-    this.cardinality = cardinality;
-  }
-
-  public String getExtra() {
-    return extra;
-  }
-
-  public void setExtra(String extra) {
-    this.extra = extra;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(Instant updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 }

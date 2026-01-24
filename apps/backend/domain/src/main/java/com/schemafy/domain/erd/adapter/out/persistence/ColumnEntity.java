@@ -9,6 +9,14 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_columns")
 public class ColumnEntity implements Persistable<String> {
 
@@ -50,8 +58,6 @@ public class ColumnEntity implements Persistable<String> {
 
   private Instant deletedAt;
 
-  protected ColumnEntity() {}
-
   ColumnEntity(String id, String tableId, String name, String dataType,
       String lengthScale, int seqNo, Boolean autoIncrement, String charset,
       String collation, String comment) {
@@ -73,106 +79,6 @@ public class ColumnEntity implements Persistable<String> {
   @Override
   public String getId() {
     return this.id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getTableId() {
-    return tableId;
-  }
-
-  public void setTableId(String tableId) {
-    this.tableId = tableId;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getDataType() {
-    return dataType;
-  }
-
-  public void setDataType(String dataType) {
-    this.dataType = dataType;
-  }
-
-  public String getLengthScale() {
-    return lengthScale;
-  }
-
-  public void setLengthScale(String lengthScale) {
-    this.lengthScale = lengthScale;
-  }
-
-  public int getSeqNo() {
-    return seqNo;
-  }
-
-  public void setSeqNo(int seqNo) {
-    this.seqNo = seqNo;
-  }
-
-  public Boolean getAutoIncrement() {
-    return autoIncrement;
-  }
-
-  public void setAutoIncrement(Boolean autoIncrement) {
-    this.autoIncrement = autoIncrement;
-  }
-
-  public String getCharset() {
-    return charset;
-  }
-
-  public void setCharset(String charset) {
-    this.charset = charset;
-  }
-
-  public String getCollation() {
-    return collation;
-  }
-
-  public void setCollation(String collation) {
-    this.collation = collation;
-  }
-
-  public String getComment() {
-    return comment;
-  }
-
-  public void setComment(String comment) {
-    this.comment = comment;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(Instant updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 
 }

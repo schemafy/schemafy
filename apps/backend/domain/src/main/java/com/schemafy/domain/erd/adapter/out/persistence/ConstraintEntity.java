@@ -9,6 +9,14 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_constraints")
 public class ConstraintEntity implements Persistable<String> {
 
@@ -38,8 +46,6 @@ public class ConstraintEntity implements Persistable<String> {
 
   private Instant deletedAt;
 
-  protected ConstraintEntity() {}
-
   ConstraintEntity(
       String id,
       String tableId,
@@ -61,74 +67,6 @@ public class ConstraintEntity implements Persistable<String> {
   @Override
   public String getId() {
     return this.id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getTableId() {
-    return tableId;
-  }
-
-  public void setTableId(String tableId) {
-    this.tableId = tableId;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getKind() {
-    return kind;
-  }
-
-  public void setKind(String kind) {
-    this.kind = kind;
-  }
-
-  public String getCheckExpr() {
-    return checkExpr;
-  }
-
-  public void setCheckExpr(String checkExpr) {
-    this.checkExpr = checkExpr;
-  }
-
-  public String getDefaultExpr() {
-    return defaultExpr;
-  }
-
-  public void setDefaultExpr(String defaultExpr) {
-    this.defaultExpr = defaultExpr;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(Instant updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 
 }

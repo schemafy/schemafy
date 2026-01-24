@@ -9,6 +9,14 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_constraint_columns")
 public class ConstraintColumnEntity implements Persistable<String> {
 
@@ -32,8 +40,6 @@ public class ConstraintColumnEntity implements Persistable<String> {
 
   private Instant deletedAt;
 
-  protected ConstraintColumnEntity() {}
-
   ConstraintColumnEntity(
       String id,
       String constraintId,
@@ -51,58 +57,6 @@ public class ConstraintColumnEntity implements Persistable<String> {
   @Override
   public String getId() {
     return this.id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getConstraintId() {
-    return constraintId;
-  }
-
-  public void setConstraintId(String constraintId) {
-    this.constraintId = constraintId;
-  }
-
-  public String getColumnId() {
-    return columnId;
-  }
-
-  public void setColumnId(String columnId) {
-    this.columnId = columnId;
-  }
-
-  public int getSeqNo() {
-    return seqNo;
-  }
-
-  public void setSeqNo(int seqNo) {
-    this.seqNo = seqNo;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(Instant updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 
 }

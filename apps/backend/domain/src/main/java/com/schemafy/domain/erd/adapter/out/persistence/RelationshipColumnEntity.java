@@ -9,6 +9,14 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("db_relationship_columns")
 public class RelationshipColumnEntity implements Persistable<String> {
 
@@ -35,8 +43,6 @@ public class RelationshipColumnEntity implements Persistable<String> {
 
   private Instant deletedAt;
 
-  protected RelationshipColumnEntity() {}
-
   RelationshipColumnEntity(
       String id,
       String relationshipId,
@@ -58,65 +64,5 @@ public class RelationshipColumnEntity implements Persistable<String> {
   @Override
   public String getId() {
     return this.id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getRelationshipId() {
-    return relationshipId;
-  }
-
-  public void setRelationshipId(String relationshipId) {
-    this.relationshipId = relationshipId;
-  }
-
-  public String getPkColumnId() {
-    return pkColumnId;
-  }
-
-  public void setPkColumnId(String pkColumnId) {
-    this.pkColumnId = pkColumnId;
-  }
-
-  public String getFkColumnId() {
-    return fkColumnId;
-  }
-
-  public void setFkColumnId(String fkColumnId) {
-    this.fkColumnId = fkColumnId;
-  }
-
-  public int getSeqNo() {
-    return seqNo;
-  }
-
-  public void setSeqNo(int seqNo) {
-    this.seqNo = seqNo;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(Instant updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public Instant getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(Instant deletedAt) {
-    this.deletedAt = deletedAt;
   }
 }
