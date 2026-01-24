@@ -59,6 +59,13 @@ export class CollaborationStore {
         }, 3000);
       } else if (type === 'WS_ERROR') {
         console.error('WebSocket error from SharedWorker:', event.data.error);
+      } else if (type === 'INITIAL_STATE') {
+        const { cursors } = event.data;
+        runInAction(() => {
+          cursors.forEach((cursor) => {
+            this.cursors.set(cursor.userId, cursor);
+          });
+        });
       }
     };
 

@@ -1,12 +1,22 @@
 /// <reference lib="webworker" />
 
-import type { WorkerMessage, WorkerResponse } from './types';
+import type {
+  CursorPosition,
+  WebSocketMessage,
+} from '../lib/api/collaboration/types';
+import type { UserInfo, WorkerMessage, WorkerResponse } from './types';
 
 declare const self: SharedWorkerGlobalScope;
 
 const sockets = new Map<string, WebSocket>();
 const subscribers = new Map<string, MessagePort[]>();
 const portHeartbeats = new Map<MessagePort, number>();
+
+type ProjectState = {
+  cursors: Map<string, CursorPosition>;
+  users: Map<string, UserInfo>;
+};
+const projectStates = new Map<string, ProjectState>();
 
 const WEBSOCKET_URL =
   import.meta.env.VITE_BFF_WS_URL || 'ws://localhost:4000/ws/collaboration';
@@ -36,6 +46,7 @@ function closePort(port: MessagePort) {
         sockets.delete(projectId);
       }
       subscribers.delete(projectId);
+      projectStates.delete(projectId);
     }
   });
 }
@@ -81,6 +92,13 @@ function handleConnect(projectId: string, port: MessagePort) {
     ports.push(port);
   }
 
+  if (!projectStates.has(projectId)) {
+    projectStates.set(projectId, {
+      cursors: new Map(),
+      users: new Map(),
+    });
+  }
+
   if (!sockets.has(projectId)) {
     const wsUrl = `${WEBSOCKET_URL}?projectId=${projectId}`;
 
@@ -97,7 +115,28 @@ function handleConnect(projectId: string, port: MessagePort) {
 
     ws.onmessage = (event) => {
       try {
-        const payload = JSON.parse(event.data);
+        const payload: WebSocketMessage = JSON.parse(event.data);
+        const state = projectStates.get(projectId);
+
+        if (state) {
+          if (payload.type === 'JOIN') {
+            state.users.set(payload.userId, {
+              userId: payload.userId,
+              userName: payload.userName,
+            });
+          } else if (payload.type === 'LEAVE') {
+            state.users.delete(payload.userId);
+            state.cursors.delete(payload.userId);
+          } else if (payload.type === 'CURSOR') {
+            state.cursors.set(payload.userInfo.userId, {
+              userId: payload.userInfo.userId,
+              userName: payload.userInfo.userName,
+              x: payload.cursor.x,
+              y: payload.cursor.y,
+            });
+          }
+        }
+
         const message: WorkerResponse = {
           type: 'WS_MESSAGE',
           projectId,
@@ -136,12 +175,25 @@ function handleConnect(projectId: string, port: MessagePort) {
   } else {
     const ws = sockets.get(projectId);
     if (ws?.readyState === WebSocket.OPEN) {
-      const message: WorkerResponse = {
+      const openMessage: WorkerResponse = {
         type: 'WS_OPEN',
         projectId,
       };
 
-      port.postMessage(message);
+      port.postMessage(openMessage);
+
+      const state = projectStates.get(projectId);
+
+      if (state) {
+        const initialMessage: WorkerResponse = {
+          type: 'INITIAL_STATE',
+          projectId,
+          cursors: Array.from(state.cursors.values()),
+          users: Array.from(state.users.values()),
+        };
+
+        port.postMessage(initialMessage);
+      }
     }
   }
 }
