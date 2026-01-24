@@ -1,12 +1,15 @@
 package com.schemafy.domain.erd.adapter.out.persistence;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.erd.application.port.out.ChangeConstraintColumnPositionPort;
 import com.schemafy.domain.erd.application.port.out.CreateConstraintColumnPort;
 import com.schemafy.domain.erd.application.port.out.DeleteConstraintColumnPort;
 import com.schemafy.domain.erd.application.port.out.GetConstraintColumnByIdPort;
@@ -17,6 +20,7 @@ import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
 class ConstraintColumnPersistenceAdapter implements
+    ChangeConstraintColumnPositionPort,
     CreateConstraintColumnPort,
     GetConstraintColumnByIdPort,
     GetConstraintColumnsByConstraintIdPort,
@@ -51,6 +55,29 @@ class ConstraintColumnPersistenceAdapter implements
     return constraintColumnRepository.findByConstraintIdAndDeletedAtIsNullOrderBySeqNo(constraintId)
         .map(constraintColumnMapper::toDomain)
         .collectList();
+  }
+
+  @Override
+  public Mono<Void> changeConstraintColumnPositions(
+      String constraintId,
+      List<ConstraintColumn> columns) {
+    if (columns == null || columns.isEmpty()) {
+      return Mono.empty();
+    }
+    Map<String, Integer> positions = new HashMap<>(columns.size());
+    for (ConstraintColumn column : columns) {
+      positions.put(column.id(), column.seqNo());
+    }
+    return constraintColumnRepository.findByConstraintIdAndDeletedAtIsNullOrderBySeqNo(constraintId)
+        .map(entity -> {
+          Integer seqNo = positions.get(entity.getId());
+          if (seqNo != null) {
+            entity.setSeqNo(seqNo);
+          }
+          return entity;
+        })
+        .collectList()
+        .flatMap(entities -> constraintColumnRepository.saveAll(entities).then());
   }
 
   @Override
