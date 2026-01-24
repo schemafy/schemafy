@@ -9,7 +9,7 @@ import type {
   RecieveLeave,
   WebSocketMessage,
 } from '@/lib/api/collaboration/types';
-import type { WorkerMessage, WorkerResponse } from '@/worker/types';
+import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { AuthStore } from './auth.store';
 
 export class CollaborationStore {
@@ -98,11 +98,24 @@ export class CollaborationStore {
 
       const accessToken = AuthStore.getInstance().accessToken ?? '';
 
-      this.worker.port.postMessage({
+      if (!this.currentUser) {
+        console.error('user info is empty');
+        return;
+      }
+
+      const userInfo: UserInfo = {
+        userId: this.currentUser.id,
+        userName: this.currentUser.name,
+      };
+
+      const message: WorkerMessage = {
         type: 'CONNECT',
         projectId,
         token: accessToken,
-      } as WorkerMessage);
+        userInfo,
+      };
+
+      this.worker.port.postMessage(message);
     } catch (error) {
       console.error('Failed to initialize SharedWorker:', error);
     }
@@ -229,6 +242,7 @@ export class CollaborationStore {
       userName: message.userName,
       content: message.content,
       timestamp: message.timestamp,
+      position: message.position,
     };
 
     this.chatMessageListeners.forEach((listener) => listener(chatMessage));

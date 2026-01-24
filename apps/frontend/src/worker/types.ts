@@ -14,7 +14,12 @@ export type UserInfo = {
 };
 
 export type WorkerMessage =
-  | { type: 'CONNECT'; projectId: string; token: string }
+  | {
+      type: 'CONNECT';
+      projectId: string;
+      token: string;
+      userInfo: UserInfo;
+    }
   | { type: 'DISCONNECT'; projectId: string }
   | { type: 'SEND_MESSAGE'; projectId: string; payload: OutgoingMessage };
 

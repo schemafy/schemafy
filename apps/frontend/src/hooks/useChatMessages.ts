@@ -8,6 +8,12 @@ export const useChatMessages = () => {
 
   useEffect(() => {
     const unsubscribe = collaborationStore.onChatMessage((message) => {
+      console.log(message);
+      if (message.position) {
+        setDisplayMessages((prev) => [...prev, message]);
+        return;
+      }
+
       const cursor = collaborationStore.cursors.get(message.userId);
 
       if (!cursor) {

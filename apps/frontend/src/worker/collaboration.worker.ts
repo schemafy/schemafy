@@ -10,6 +10,7 @@ declare const self: SharedWorkerGlobalScope;
 
 const sockets = new Map<string, WebSocket>();
 const subscribers = new Map<string, MessagePort[]>();
+const portUserInfos = new Map<MessagePort, UserInfo>();
 const portHeartbeats = new Map<MessagePort, number>();
 
 type ProjectState = {
@@ -62,12 +63,28 @@ self.onconnect = (e: MessageEvent) => {
     const { type } = event.data;
 
     if (type === 'CONNECT') {
-      const { projectId } = event.data;
+      const { projectId, userInfo } = event.data;
+      portUserInfos.set(port, userInfo);
       handleConnect(projectId, port);
     } else if (type === 'DISCONNECT') {
+      portUserInfos.delete(port);
       closePort(port);
     } else if (type === 'SEND_MESSAGE') {
       const { projectId, payload } = event.data;
+
+      if (payload.type === 'CURSOR') {
+        const userInfo = portUserInfos.get(port);
+        const state = projectStates.get(projectId);
+        if (userInfo && state) {
+          state.cursors.set(userInfo.userId, {
+            userId: userInfo.userId,
+            userName: userInfo.userName,
+            x: payload.cursor.x,
+            y: payload.cursor.y,
+          });
+        }
+      }
+
       const ws = sockets.get(projectId);
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(payload));
@@ -124,6 +141,12 @@ function handleConnect(projectId: string, port: MessagePort) {
               userId: payload.userId,
               userName: payload.userName,
             });
+            state.cursors.set(payload.userId, {
+              userId: payload.userId,
+              userName: payload.userName,
+              x: 0,
+              y: 0,
+            });
           } else if (payload.type === 'LEAVE') {
             state.users.delete(payload.userId);
             state.cursors.delete(payload.userId);
@@ -134,6 +157,12 @@ function handleConnect(projectId: string, port: MessagePort) {
               x: payload.cursor.x,
               y: payload.cursor.y,
             });
+          } else if (payload.type === 'CHAT') {
+            const cursor = state.cursors.get(payload.userId);
+            console.log('cursor', cursor);
+            if (cursor) {
+              payload.position = { x: cursor.x, y: cursor.y };
+            }
           }
         }
 
