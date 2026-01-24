@@ -8,9 +8,9 @@ import reactor.core.publisher.Mono;
 
 interface ConstraintRepository extends ReactiveCrudRepository<ConstraintEntity, String> {
 
-  Mono<ConstraintEntity> findByIdAndDeletedAtIsNull(String id);
+  Flux<ConstraintEntity> findByTableId(String tableId);
 
-  Flux<ConstraintEntity> findByTableIdAndDeletedAtIsNull(String tableId);
+  Mono<Void> deleteByTableId(String tableId);
 
   @Query("""
       SELECT EXISTS(
@@ -18,8 +18,6 @@ interface ConstraintRepository extends ReactiveCrudRepository<ConstraintEntity, 
         JOIN db_tables t ON t.id = c.table_id
         WHERE t.schema_id = :schemaId
           AND c.name = :name
-          AND t.deleted_at IS NULL
-          AND c.deleted_at IS NULL
       )
       """)
   Mono<Boolean> existsBySchemaIdAndName(String schemaId, String name);
@@ -30,8 +28,6 @@ interface ConstraintRepository extends ReactiveCrudRepository<ConstraintEntity, 
         JOIN db_tables t ON t.id = c.table_id
         WHERE t.schema_id = :schemaId
           AND c.name = :name
-          AND t.deleted_at IS NULL
-          AND c.deleted_at IS NULL
           AND c.id <> :constraintId
       )
       """)

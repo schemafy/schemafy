@@ -1,6 +1,5 @@
 package com.schemafy.domain.erd.index.adapter.out.persistence;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,9 +12,12 @@ import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnPosit
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnSortDirectionPort;
 import com.schemafy.domain.erd.index.application.port.out.CreateIndexColumnPort;
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnPort;
+import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnsByColumnIdPort;
+import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
+import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 
 import reactor.core.publisher.Mono;
@@ -27,7 +29,9 @@ class IndexColumnPersistenceAdapter implements
     CreateIndexColumnPort,
     GetIndexColumnByIdPort,
     GetIndexColumnsByIndexIdPort,
-    DeleteIndexColumnPort {
+    DeleteIndexColumnPort,
+    DeleteIndexColumnsByIndexIdPort,
+    DeleteIndexColumnsByColumnIdPort {
 
   private final IndexColumnRepository indexColumnRepository;
   private final IndexColumnMapper indexColumnMapper;
@@ -48,13 +52,13 @@ class IndexColumnPersistenceAdapter implements
 
   @Override
   public Mono<IndexColumn> findIndexColumnById(String indexColumnId) {
-    return indexColumnRepository.findByIdAndDeletedAtIsNull(indexColumnId)
+    return indexColumnRepository.findById(indexColumnId)
         .map(indexColumnMapper::toDomain);
   }
 
   @Override
   public Mono<List<IndexColumn>> findIndexColumnsByIndexId(String indexId) {
-    return indexColumnRepository.findByIndexIdAndDeletedAtIsNullOrderBySeqNo(indexId)
+    return indexColumnRepository.findByIndexIdOrderBySeqNo(indexId)
         .map(indexColumnMapper::toDomain)
         .collectList();
   }
@@ -68,7 +72,7 @@ class IndexColumnPersistenceAdapter implements
     for (IndexColumn column : columns) {
       positions.put(column.id(), column.seqNo());
     }
-    return indexColumnRepository.findByIndexIdAndDeletedAtIsNullOrderBySeqNo(indexId)
+    return indexColumnRepository.findByIndexIdOrderBySeqNo(indexId)
         .map(entity -> {
           Integer seqNo = positions.get(entity.getId());
           if (seqNo != null) {
@@ -84,7 +88,7 @@ class IndexColumnPersistenceAdapter implements
   public Mono<Void> changeIndexColumnSortDirection(
       String indexColumnId,
       SortDirection sortDirection) {
-    return findActiveIndexColumnOrError(indexColumnId)
+    return findIndexColumnOrError(indexColumnId)
         .flatMap((@NonNull IndexColumnEntity indexColumnEntity) -> {
           indexColumnEntity.setSortDirection(sortDirection.name());
           return indexColumnRepository.save(indexColumnEntity);
@@ -94,17 +98,23 @@ class IndexColumnPersistenceAdapter implements
 
   @Override
   public Mono<Void> deleteIndexColumn(String indexColumnId) {
-    return findActiveIndexColumnOrError(indexColumnId)
-        .flatMap((@NonNull IndexColumnEntity indexColumnEntity) -> {
-          indexColumnEntity.setDeletedAt(Instant.now());
-          return indexColumnRepository.save(indexColumnEntity);
-        })
-        .then();
+    return indexColumnRepository.deleteById(indexColumnId);
   }
 
-  private Mono<IndexColumnEntity> findActiveIndexColumnOrError(String indexColumnId) {
-    return indexColumnRepository.findByIdAndDeletedAtIsNull(indexColumnId)
-        .switchIfEmpty(Mono.error(new RuntimeException("Index column not found")));
+  @Override
+  public Mono<Void> deleteByIndexId(String indexId) {
+    return indexColumnRepository.deleteByIndexId(indexId);
+  }
+
+  @Override
+  public Mono<Void> deleteByColumnId(String columnId) {
+    return indexColumnRepository.deleteByColumnId(columnId);
+  }
+
+  private Mono<IndexColumnEntity> findIndexColumnOrError(String indexColumnId) {
+    return indexColumnRepository.findById(indexColumnId)
+        .switchIfEmpty(Mono.error(
+            new IndexColumnNotExistException("Index column not found: " + indexColumnId)));
   }
 
 }

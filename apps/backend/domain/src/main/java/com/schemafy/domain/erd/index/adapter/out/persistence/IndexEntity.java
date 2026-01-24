@@ -38,8 +38,6 @@ public class IndexEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   IndexEntity(
       String id,
       String tableId,
@@ -66,7 +64,5 @@ public class IndexEntity implements Persistable<String> {
   public void setName(String name) { this.name = name; }
 
   public void setType(String type) { this.type = type; }
-
-  public void setDeletedAt(Instant deletedAt) { this.deletedAt = deletedAt; }
 
 }

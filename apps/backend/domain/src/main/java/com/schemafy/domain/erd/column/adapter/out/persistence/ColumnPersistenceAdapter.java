@@ -1,6 +1,5 @@
 package com.schemafy.domain.erd.column.adapter.out.persistence;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,10 +12,12 @@ import com.schemafy.domain.erd.column.application.port.out.ChangeColumnPositionP
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnTypePort;
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
+import com.schemafy.domain.erd.column.application.port.out.DeleteColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 
 import reactor.core.publisher.Mono;
 
@@ -29,7 +30,8 @@ class ColumnPersistenceAdapter implements
     ChangeColumnTypePort,
     ChangeColumnMetaPort,
     ChangeColumnPositionPort,
-    DeleteColumnPort {
+    DeleteColumnPort,
+    DeleteColumnsByTableIdPort {
 
   private final ColumnRepository columnRepository;
   private final ColumnMapper columnMapper;
@@ -48,20 +50,20 @@ class ColumnPersistenceAdapter implements
 
   @Override
   public Mono<Column> findColumnById(String columnId) {
-    return columnRepository.findByIdAndDeletedAtIsNull(columnId)
+    return columnRepository.findById(columnId)
         .map(columnMapper::toDomain);
   }
 
   @Override
   public Mono<List<Column>> findColumnsByTableId(String tableId) {
-    return columnRepository.findByTableIdAndDeletedAtIsNullOrderBySeqNo(tableId)
+    return columnRepository.findByTableIdOrderBySeqNo(tableId)
         .map(columnMapper::toDomain)
         .collectList();
   }
 
   @Override
   public Mono<Void> changeColumnName(String columnId, String newName) {
-    return findActiveColumnOrError(columnId)
+    return findColumnOrError(columnId)
         .flatMap((@NonNull ColumnEntity columnEntity) -> {
           columnEntity.setName(newName);
           return columnRepository.save(columnEntity);
@@ -74,7 +76,7 @@ class ColumnPersistenceAdapter implements
       String columnId,
       String dataType,
       ColumnLengthScale lengthScale) {
-    return findActiveColumnOrError(columnId)
+    return findColumnOrError(columnId)
         .flatMap((@NonNull ColumnEntity columnEntity) -> {
           columnEntity.setDataType(dataType);
           columnEntity.setLengthScale(columnMapper.toLengthScaleJson(lengthScale));
@@ -90,7 +92,7 @@ class ColumnPersistenceAdapter implements
       String charset,
       String collation,
       String comment) {
-    return findActiveColumnOrError(columnId)
+    return findColumnOrError(columnId)
         .flatMap((@NonNull ColumnEntity columnEntity) -> {
           if (autoIncrement != null) {
             columnEntity.setAutoIncrement(autoIncrement);
@@ -111,7 +113,7 @@ class ColumnPersistenceAdapter implements
 
   @Override
   public Mono<Void> changeColumnPosition(String columnId, int seqNo) {
-    return findActiveColumnOrError(columnId)
+    return findColumnOrError(columnId)
         .flatMap((@NonNull ColumnEntity columnEntity) -> {
           columnEntity.setSeqNo(seqNo);
           return columnRepository.save(columnEntity);
@@ -121,17 +123,17 @@ class ColumnPersistenceAdapter implements
 
   @Override
   public Mono<Void> deleteColumn(String columnId) {
-    return findActiveColumnOrError(columnId)
-        .flatMap((@NonNull ColumnEntity columnEntity) -> {
-          columnEntity.setDeletedAt(Instant.now());
-          return columnRepository.save(columnEntity);
-        })
-        .then();
+    return columnRepository.deleteById(columnId);
   }
 
-  private Mono<ColumnEntity> findActiveColumnOrError(String columnId) {
-    return columnRepository.findByIdAndDeletedAtIsNull(columnId)
-        .switchIfEmpty(Mono.error(new RuntimeException("Column not found")));
+  @Override
+  public Mono<Void> deleteColumnsByTableId(String tableId) {
+    return columnRepository.deleteByTableId(tableId);
+  }
+
+  private Mono<ColumnEntity> findColumnOrError(String columnId) {
+    return columnRepository.findById(columnId)
+        .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found: " + columnId)));
   }
 
   private static boolean hasText(String value) {

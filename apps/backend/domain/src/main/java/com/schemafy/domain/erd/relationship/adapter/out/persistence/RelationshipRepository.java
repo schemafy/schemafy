@@ -8,16 +8,19 @@ import reactor.core.publisher.Mono;
 
 interface RelationshipRepository extends ReactiveCrudRepository<RelationshipEntity, String> {
 
-  Mono<RelationshipEntity> findByIdAndDeletedAtIsNull(String id);
+  Flux<RelationshipEntity> findByFkTableId(String fkTableId);
 
-  Flux<RelationshipEntity> findByFkTableIdAndDeletedAtIsNull(String fkTableId);
+  @Query("SELECT * FROM db_relationships WHERE pk_table_id = :tableId OR fk_table_id = :tableId")
+  Flux<RelationshipEntity> findByTableId(String tableId);
+
+  @Query("DELETE FROM db_relationships WHERE pk_table_id = :tableId OR fk_table_id = :tableId")
+  Mono<Void> deleteByTableId(String tableId);
 
   @Query("""
       SELECT EXISTS(
         SELECT 1 FROM db_relationships r
         WHERE r.fk_table_id = :fkTableId
           AND r.name = :name
-          AND r.deleted_at IS NULL
       )
       """)
   Mono<Boolean> existsByFkTableIdAndName(String fkTableId, String name);
@@ -27,7 +30,6 @@ interface RelationshipRepository extends ReactiveCrudRepository<RelationshipEnti
         SELECT 1 FROM db_relationships r
         WHERE r.fk_table_id = :fkTableId
           AND r.name = :name
-          AND r.deleted_at IS NULL
           AND r.id <> :relationshipId
       )
       """)
@@ -40,8 +42,6 @@ interface RelationshipRepository extends ReactiveCrudRepository<RelationshipEnti
       SELECT r.* FROM db_relationships r
       JOIN db_tables t ON t.id = r.fk_table_id
       WHERE t.schema_id = :schemaId
-        AND r.deleted_at IS NULL
-        AND t.deleted_at IS NULL
       """)
   Flux<RelationshipEntity> findBySchemaId(String schemaId);
 

@@ -1,20 +1,20 @@
 package com.schemafy.domain.erd.constraint.adapter.out.persistence;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.springframework.lang.NonNull;
-
 import com.schemafy.domain.common.PersistenceAdapter;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintColumnPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnPort;
+import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
+import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 
 import reactor.core.publisher.Mono;
 
@@ -24,7 +24,9 @@ class ConstraintColumnPersistenceAdapter implements
     CreateConstraintColumnPort,
     GetConstraintColumnByIdPort,
     GetConstraintColumnsByConstraintIdPort,
-    DeleteConstraintColumnPort {
+    DeleteConstraintColumnPort,
+    DeleteConstraintColumnsByConstraintIdPort,
+    DeleteConstraintColumnsByColumnIdPort {
 
   private final ConstraintColumnRepository constraintColumnRepository;
   private final ConstraintColumnMapper constraintColumnMapper;
@@ -46,13 +48,13 @@ class ConstraintColumnPersistenceAdapter implements
 
   @Override
   public Mono<ConstraintColumn> findConstraintColumnById(String constraintColumnId) {
-    return constraintColumnRepository.findByIdAndDeletedAtIsNull(constraintColumnId)
+    return constraintColumnRepository.findById(constraintColumnId)
         .map(constraintColumnMapper::toDomain);
   }
 
   @Override
   public Mono<List<ConstraintColumn>> findConstraintColumnsByConstraintId(String constraintId) {
-    return constraintColumnRepository.findByConstraintIdAndDeletedAtIsNullOrderBySeqNo(constraintId)
+    return constraintColumnRepository.findByConstraintIdOrderBySeqNo(constraintId)
         .map(constraintColumnMapper::toDomain)
         .collectList();
   }
@@ -68,7 +70,7 @@ class ConstraintColumnPersistenceAdapter implements
     for (ConstraintColumn column : columns) {
       positions.put(column.id(), column.seqNo());
     }
-    return constraintColumnRepository.findByConstraintIdAndDeletedAtIsNullOrderBySeqNo(constraintId)
+    return constraintColumnRepository.findByConstraintIdOrderBySeqNo(constraintId)
         .map(entity -> {
           Integer seqNo = positions.get(entity.getId());
           if (seqNo != null) {
@@ -82,17 +84,24 @@ class ConstraintColumnPersistenceAdapter implements
 
   @Override
   public Mono<Void> deleteConstraintColumn(String constraintColumnId) {
-    return findActiveConstraintColumnOrError(constraintColumnId)
-        .flatMap((@NonNull ConstraintColumnEntity constraintColumnEntity) -> {
-          constraintColumnEntity.setDeletedAt(Instant.now());
-          return constraintColumnRepository.save(constraintColumnEntity);
-        })
-        .then();
+    return constraintColumnRepository.deleteById(constraintColumnId);
   }
 
-  private Mono<ConstraintColumnEntity> findActiveConstraintColumnOrError(String constraintColumnId) {
-    return constraintColumnRepository.findByIdAndDeletedAtIsNull(constraintColumnId)
-        .switchIfEmpty(Mono.error(new RuntimeException("Constraint column not found")));
+  @Override
+  public Mono<Void> deleteByConstraintId(String constraintId) {
+    return constraintColumnRepository.deleteByConstraintId(constraintId);
+  }
+
+  @Override
+  public Mono<Void> deleteByColumnId(String columnId) {
+    return constraintColumnRepository.deleteByColumnId(columnId);
+  }
+
+  private Mono<ConstraintColumnEntity> findConstraintColumnOrError(String constraintColumnId) {
+    return constraintColumnRepository.findById(constraintColumnId)
+        .switchIfEmpty(Mono.error(
+            new ConstraintColumnNotExistException(
+                "Constraint column not found: " + constraintColumnId)));
   }
 
 }

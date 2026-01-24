@@ -38,8 +38,6 @@ public class ConstraintColumnEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   ConstraintColumnEntity(
       String id,
       String constraintId,

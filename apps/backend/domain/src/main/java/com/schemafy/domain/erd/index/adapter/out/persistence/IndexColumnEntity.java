@@ -41,8 +41,6 @@ public class IndexColumnEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   IndexColumnEntity(
       String id,
       String indexId,
@@ -73,7 +71,5 @@ public class IndexColumnEntity implements Persistable<String> {
   public void setSeqNo(int seqNo) { this.seqNo = seqNo; }
 
   public void setSortDirection(String sortDirection) { this.sortDirection = sortDirection; }
-
-  public void setDeletedAt(Instant deletedAt) { this.deletedAt = deletedAt; }
 
 }

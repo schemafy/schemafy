@@ -5,8 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication(scanBasePackages = {
-    "com.schemafy.core",
-    "com.schemafy.domain"
+  "com.schemafy.core",
+  "com.schemafy.domain"
 })
 @ConfigurationPropertiesScan
 public class CoreApplication {

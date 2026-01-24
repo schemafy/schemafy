@@ -7,8 +7,8 @@ import reactor.core.publisher.Mono;
 
 interface ColumnRepository extends ReactiveCrudRepository<ColumnEntity, String> {
 
-  Mono<ColumnEntity> findByIdAndDeletedAtIsNull(String id);
+  Flux<ColumnEntity> findByTableIdOrderBySeqNo(String tableId);
 
-  Flux<ColumnEntity> findByTableIdAndDeletedAtIsNullOrderBySeqNo(String tableId);
+  Mono<Void> deleteByTableId(String tableId);
 
 }

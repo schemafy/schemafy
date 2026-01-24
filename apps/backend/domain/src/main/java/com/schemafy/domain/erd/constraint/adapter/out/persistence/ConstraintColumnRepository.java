@@ -7,8 +7,10 @@ import reactor.core.publisher.Mono;
 
 interface ConstraintColumnRepository extends ReactiveCrudRepository<ConstraintColumnEntity, String> {
 
-  Mono<ConstraintColumnEntity> findByIdAndDeletedAtIsNull(String id);
+  Flux<ConstraintColumnEntity> findByConstraintIdOrderBySeqNo(String constraintId);
 
-  Flux<ConstraintColumnEntity> findByConstraintIdAndDeletedAtIsNullOrderBySeqNo(String constraintId);
+  Mono<Void> deleteByConstraintId(String constraintId);
+
+  Mono<Void> deleteByColumnId(String columnId);
 
 }

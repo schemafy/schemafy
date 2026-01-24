@@ -1,6 +1,5 @@
 package com.schemafy.domain.erd.schema.adapter.out.persistence;
 
-import java.time.Instant;
 import java.util.Objects;
 
 import org.springframework.lang.NonNull;
@@ -12,6 +11,7 @@ import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -37,7 +37,7 @@ class SchemaPersistenceAdapter implements
 
   @Override
   public Mono<Schema> findSchemaById(String schemaId) {
-    return schemaRepository.findByIdAndDeletedAtIsNull(schemaId)
+    return schemaRepository.findById(schemaId)
         .map(schemaMapper::toDomain);
   }
 
@@ -48,7 +48,7 @@ class SchemaPersistenceAdapter implements
 
   @Override
   public Mono<Void> changeSchemaName(String schemaId, String newName) {
-    return findActiveSchemaOrError(schemaId)
+    return findSchemaOrError(schemaId)
         .flatMap((@NonNull SchemaEntity schemaEntity) -> {
           schemaEntity.setName(newName);
           return schemaRepository.save(schemaEntity);
@@ -58,17 +58,12 @@ class SchemaPersistenceAdapter implements
 
   @Override
   public Mono<Void> deleteSchema(String schemaId) {
-    return findActiveSchemaOrError(schemaId)
-        .flatMap((@NonNull SchemaEntity schemaEntity) -> {
-          schemaEntity.setDeletedAt(Instant.now());
-          return schemaRepository.save(schemaEntity);
-        })
-        .then();
+    return schemaRepository.deleteById(schemaId);
   }
 
-  private Mono<SchemaEntity> findActiveSchemaOrError(String schemaId) {
-    return schemaRepository.findByIdAndDeletedAtIsNull(schemaId)
-        .switchIfEmpty(Mono.error(new RuntimeException("Schema not found")));
+  private Mono<SchemaEntity> findSchemaOrError(String schemaId) {
+    return schemaRepository.findById(schemaId)
+        .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found: " + schemaId)));
   }
 
 }

@@ -47,8 +47,6 @@ public class RelationshipEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   RelationshipEntity(
       String id,
       String pkTableId,

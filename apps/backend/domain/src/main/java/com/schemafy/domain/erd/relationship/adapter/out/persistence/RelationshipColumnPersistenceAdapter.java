@@ -1,20 +1,20 @@
 package com.schemafy.domain.erd.relationship.adapter.out.persistence;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.springframework.lang.NonNull;
-
 import com.schemafy.domain.common.PersistenceAdapter;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
 import com.schemafy.domain.erd.relationship.application.port.out.CreateRelationshipColumnPort;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
+import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnsByColumnIdPort;
+import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
 
 import reactor.core.publisher.Mono;
 
@@ -24,7 +24,9 @@ class RelationshipColumnPersistenceAdapter implements
     CreateRelationshipColumnPort,
     GetRelationshipColumnByIdPort,
     GetRelationshipColumnsByRelationshipIdPort,
-    DeleteRelationshipColumnPort {
+    DeleteRelationshipColumnPort,
+    DeleteRelationshipColumnsByRelationshipIdPort,
+    DeleteRelationshipColumnsByColumnIdPort {
 
   private final RelationshipColumnRepository relationshipColumnRepository;
   private final RelationshipColumnMapper relationshipColumnMapper;
@@ -46,13 +48,13 @@ class RelationshipColumnPersistenceAdapter implements
 
   @Override
   public Mono<RelationshipColumn> findRelationshipColumnById(String relationshipColumnId) {
-    return relationshipColumnRepository.findByIdAndDeletedAtIsNull(relationshipColumnId)
+    return relationshipColumnRepository.findById(relationshipColumnId)
         .map(relationshipColumnMapper::toDomain);
   }
 
   @Override
   public Mono<List<RelationshipColumn>> findRelationshipColumnsByRelationshipId(String relationshipId) {
-    return relationshipColumnRepository.findByRelationshipIdAndDeletedAtIsNullOrderBySeqNo(relationshipId)
+    return relationshipColumnRepository.findByRelationshipIdOrderBySeqNo(relationshipId)
         .map(relationshipColumnMapper::toDomain)
         .collectList();
   }
@@ -69,7 +71,7 @@ class RelationshipColumnPersistenceAdapter implements
       positions.put(column.id(), column.seqNo());
     }
     return relationshipColumnRepository
-        .findByRelationshipIdAndDeletedAtIsNullOrderBySeqNo(relationshipId)
+        .findByRelationshipIdOrderBySeqNo(relationshipId)
         .map(entity -> {
           Integer seqNo = positions.get(entity.getId());
           if (seqNo != null) {
@@ -83,18 +85,25 @@ class RelationshipColumnPersistenceAdapter implements
 
   @Override
   public Mono<Void> deleteRelationshipColumn(String relationshipColumnId) {
-    return findActiveRelationshipColumnOrError(relationshipColumnId)
-        .flatMap((@NonNull RelationshipColumnEntity relationshipColumnEntity) -> {
-          relationshipColumnEntity.setDeletedAt(Instant.now());
-          return relationshipColumnRepository.save(relationshipColumnEntity);
-        })
-        .then();
+    return relationshipColumnRepository.deleteById(relationshipColumnId);
   }
 
-  private Mono<RelationshipColumnEntity> findActiveRelationshipColumnOrError(
+  @Override
+  public Mono<Void> deleteByRelationshipId(String relationshipId) {
+    return relationshipColumnRepository.deleteByRelationshipId(relationshipId);
+  }
+
+  @Override
+  public Mono<Void> deleteByColumnId(String columnId) {
+    return relationshipColumnRepository.deleteByColumnId(columnId);
+  }
+
+  private Mono<RelationshipColumnEntity> findRelationshipColumnOrError(
       String relationshipColumnId) {
-    return relationshipColumnRepository.findByIdAndDeletedAtIsNull(relationshipColumnId)
-        .switchIfEmpty(Mono.error(new RuntimeException("Relationship column not found")));
+    return relationshipColumnRepository.findById(relationshipColumnId)
+        .switchIfEmpty(Mono.error(
+            new RelationshipColumnNotExistException(
+                "Relationship column not found: " + relationshipColumnId)));
   }
 
 }

@@ -41,8 +41,6 @@ public class RelationshipColumnEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   RelationshipColumnEntity(
       String id,
       String relationshipId,

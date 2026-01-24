@@ -8,16 +8,15 @@ import reactor.core.publisher.Mono;
 
 interface IndexRepository extends ReactiveCrudRepository<IndexEntity, String> {
 
-  Mono<IndexEntity> findByIdAndDeletedAtIsNull(String id);
+  Flux<IndexEntity> findByTableId(String tableId);
 
-  Flux<IndexEntity> findByTableIdAndDeletedAtIsNull(String tableId);
+  Mono<Void> deleteByTableId(String tableId);
 
   @Query("""
       SELECT EXISTS(
         SELECT 1 FROM db_indexes i
         WHERE i.table_id = :tableId
           AND i.name = :name
-          AND i.deleted_at IS NULL
       )
       """)
   Mono<Boolean> existsByTableIdAndName(String tableId, String name);
@@ -27,7 +26,6 @@ interface IndexRepository extends ReactiveCrudRepository<IndexEntity, String> {
         SELECT 1 FROM db_indexes i
         WHERE i.table_id = :tableId
           AND i.name = :name
-          AND i.deleted_at IS NULL
           AND i.id <> :indexId
       )
       """)

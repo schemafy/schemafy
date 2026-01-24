@@ -7,8 +7,10 @@ import reactor.core.publisher.Mono;
 
 interface IndexColumnRepository extends ReactiveCrudRepository<IndexColumnEntity, String> {
 
-  Mono<IndexColumnEntity> findByIdAndDeletedAtIsNull(String id);
+  Flux<IndexColumnEntity> findByIndexIdOrderBySeqNo(String indexId);
 
-  Flux<IndexColumnEntity> findByIndexIdAndDeletedAtIsNullOrderBySeqNo(String indexId);
+  Mono<Void> deleteByIndexId(String indexId);
+
+  Mono<Void> deleteByColumnId(String columnId);
 
 }

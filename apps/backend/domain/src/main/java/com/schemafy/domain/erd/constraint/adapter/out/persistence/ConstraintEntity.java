@@ -44,8 +44,6 @@ public class ConstraintEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   ConstraintEntity(
       String id,
       String tableId,

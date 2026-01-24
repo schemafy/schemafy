@@ -45,8 +45,6 @@ public class TableEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   @Builder
   private TableEntity(String id, String schemaId, String name,
       String charset, String collation) {

@@ -56,8 +56,6 @@ public class ColumnEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   ColumnEntity(String id, String tableId, String name, String dataType,
       String lengthScale, int seqNo, Boolean autoIncrement, String charset,
       String collation, String comment) {

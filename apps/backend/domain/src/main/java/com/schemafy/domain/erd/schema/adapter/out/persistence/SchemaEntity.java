@@ -45,8 +45,6 @@ public class SchemaEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  private Instant deletedAt;
-
   @Builder
   private SchemaEntity(String id, String projectId, String dbVendorName,
       String name, String charset, String collation) {
