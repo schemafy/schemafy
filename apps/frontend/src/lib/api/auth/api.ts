@@ -47,13 +47,13 @@ export const signIn = async (
   return response.data;
 };
 
-const executeRefresh = async (
-  apiCall: () => Promise<AxiosResponse<ApiResponse<null>>>,
-): Promise<string> => {
+export const refreshToken = async (): Promise<string> => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const response = await apiCall();
+        const response = await publicClient.post<ApiResponse<null>>(
+          '/public/api/v1.0/users/refresh',
+        );
         return handleTokenResponse(response);
       } catch (error) {
         AuthStore.getInstance().clearAuth();
@@ -64,12 +64,6 @@ const executeRefresh = async (
     })();
   }
   return refreshPromise;
-};
-
-export const refreshToken = async (): Promise<string> => {
-  return executeRefresh(() =>
-    publicClient.post<ApiResponse<null>>('/public/api/v1.0/users/refresh'),
-  );
 };
 
 export const getMyInfo = async (): Promise<ApiResponse<AuthResponse>> => {
