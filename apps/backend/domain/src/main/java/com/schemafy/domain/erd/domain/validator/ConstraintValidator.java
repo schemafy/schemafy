@@ -16,6 +16,7 @@ import com.schemafy.domain.erd.domain.exception.ConstraintColumnNotExistExceptio
 import com.schemafy.domain.erd.domain.exception.ConstraintDefinitionDuplicateException;
 import com.schemafy.domain.erd.domain.exception.ConstraintNameInvalidException;
 import com.schemafy.domain.erd.domain.exception.ConstraintPositionInvalidException;
+import com.schemafy.domain.erd.domain.exception.MultiplePrimaryKeyConstraintException;
 import com.schemafy.domain.erd.domain.exception.UniqueSameAsPrimaryKeyException;
 import com.schemafy.domain.erd.domain.type.ConstraintKind;
 
@@ -43,6 +44,29 @@ public final class ConstraintValidator {
     if (seqNo < 0) {
       throw new ConstraintPositionInvalidException(
           "Constraint column position must be zero or positive");
+    }
+  }
+
+  public static void validateSeqNoIntegrity(List<Integer> seqNos) {
+    if (seqNos == null || seqNos.isEmpty()) {
+      return;
+    }
+    Set<Integer> uniqueSeqNos = new HashSet<>();
+    for (Integer seqNo : seqNos) {
+      if (seqNo == null || seqNo < 0) {
+        throw new ConstraintPositionInvalidException(
+            "Constraint column position must be zero or positive");
+      }
+      if (!uniqueSeqNos.add(seqNo)) {
+        throw new ConstraintPositionInvalidException(
+            "Constraint column positions must be unique");
+      }
+    }
+    for (int expected = 0; expected < uniqueSeqNos.size(); expected++) {
+      if (!uniqueSeqNos.contains(expected)) {
+        throw new ConstraintPositionInvalidException(
+            "Constraint column positions must be contiguous starting from 0");
+      }
     }
   }
 
@@ -144,6 +168,22 @@ public final class ConstraintValidator {
                 constraintName,
                 constraint.name()));
       }
+    }
+  }
+
+  public static void validatePrimaryKeySingle(
+      List<Constraint> constraints,
+      ConstraintKind kind,
+      String ignoreConstraintId) {
+    if (kind != ConstraintKind.PRIMARY_KEY || constraints == null) {
+      return;
+    }
+    boolean hasPrimaryKey = constraints.stream()
+        .anyMatch(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY
+            && !equalsIgnoreCase(constraint.id(), ignoreConstraintId));
+    if (hasPrimaryKey) {
+      throw new MultiplePrimaryKeyConstraintException(
+          "Only one primary key constraint is allowed per table");
     }
   }
 

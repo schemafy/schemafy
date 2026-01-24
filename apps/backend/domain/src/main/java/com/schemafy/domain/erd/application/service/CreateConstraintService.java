@@ -104,9 +104,14 @@ public class CreateConstraintService implements CreateConstraintUseCase {
     List<String> columnIds = columnCommands.stream()
         .map(CreateConstraintColumnCommand::columnId)
         .toList();
+    List<Integer> seqNos = columnCommands.stream()
+        .map(CreateConstraintColumnCommand::seqNo)
+        .toList();
 
+    ConstraintValidator.validateSeqNoIntegrity(seqNos);
     ConstraintValidator.validateColumnExistence(context.columns(), columnIds, name);
     ConstraintValidator.validateColumnUniqueness(columnIds, name);
+    ConstraintValidator.validatePrimaryKeySingle(context.constraints(), kind, null);
     ConstraintValidator.validateDefinitionUniqueness(
         context.constraints(),
         context.constraintColumns(),

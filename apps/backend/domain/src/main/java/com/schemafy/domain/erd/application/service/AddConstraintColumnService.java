@@ -64,13 +64,21 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
     List<ConstraintColumn> existingColumns = context.constraintColumns()
         .getOrDefault(constraint.id(), List.of());
     List<String> columnIds = new ArrayList<>(existingColumns.size() + 1);
+    List<Integer> seqNos = new ArrayList<>(existingColumns.size() + 1);
     for (ConstraintColumn column : existingColumns) {
       columnIds.add(column.columnId());
+      seqNos.add(column.seqNo());
     }
     columnIds.add(command.columnId());
+    seqNos.add(command.seqNo());
 
+    ConstraintValidator.validateSeqNoIntegrity(seqNos);
     ConstraintValidator.validateColumnExistence(context.columns(), columnIds, constraint.name());
     ConstraintValidator.validateColumnUniqueness(columnIds, constraint.name());
+    ConstraintValidator.validatePrimaryKeySingle(
+        context.constraints(),
+        constraint.kind(),
+        constraint.id());
     ConstraintValidator.validateDefinitionUniqueness(
         context.constraints(),
         context.constraintColumns(),
