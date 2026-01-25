@@ -1,0 +1,86 @@
+package com.schemafy.domain.erd.schema.application.service;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.schemafy.domain.erd.schema.application.port.out.ChangeSchemaNamePort;
+import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
+import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
+
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("ChangeSchemaNameService")
+class ChangeSchemaNameServiceTest {
+
+  @Mock
+  ChangeSchemaNamePort changeSchemaNamePort;
+
+  @Mock
+  SchemaExistsPort schemaExistsPort;
+
+  @InjectMocks
+  ChangeSchemaNameService sut;
+
+  @Nested
+  @DisplayName("changeSchemaName 메서드는")
+  class ChangeSchemaName {
+
+    @Nested
+    @DisplayName("유효한 요청이 주어지면")
+    class WithValidRequest {
+
+      @Test
+      @DisplayName("스키마 이름을 변경한다")
+      void changesSchemaName() {
+        var newName = "new_schema_name";
+        var command = SchemaFixture.changeNameCommand(newName);
+
+        given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(changeSchemaNamePort.changeSchemaName(any(), any()))
+            .willReturn(Mono.empty());
+
+        StepVerifier.create(sut.changeSchemaName(command))
+            .verifyComplete();
+
+        then(schemaExistsPort).should()
+            .existsActiveByProjectIdAndName(command.projectId(), command.newName());
+        then(changeSchemaNamePort).should()
+            .changeSchemaName(command.schemaId(), command.newName());
+      }
+    }
+
+    @Nested
+    @DisplayName("중복된 이름이 존재하면")
+    class WithDuplicateName {
+
+      @Test
+      @DisplayName("IllegalArgumentException을 발생시킨다")
+      void throwsIllegalArgumentException() {
+        var newName = "duplicate_name";
+        var command = SchemaFixture.changeNameCommand(newName);
+
+        given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
+            .willReturn(Mono.just(true));
+
+        StepVerifier.create(sut.changeSchemaName(command))
+            .expectError(IllegalArgumentException.class)
+            .verify();
+
+        then(changeSchemaNamePort).shouldHaveNoInteractions();
+      }
+    }
+  }
+
+}
