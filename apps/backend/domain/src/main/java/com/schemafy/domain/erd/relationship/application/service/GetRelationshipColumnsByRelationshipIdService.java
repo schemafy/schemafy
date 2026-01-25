@@ -17,8 +17,7 @@ import reactor.core.publisher.Mono;
 public class GetRelationshipColumnsByRelationshipIdService
     implements GetRelationshipColumnsByRelationshipIdUseCase {
 
-  private final GetRelationshipColumnsByRelationshipIdPort
-      getRelationshipColumnsByRelationshipIdPort;
+  private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
 
   @Override
   public Mono<List<RelationshipColumn>> getRelationshipColumnsByRelationshipId(

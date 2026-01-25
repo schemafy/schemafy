@@ -1,10 +1,5 @@
 package com.schemafy.domain.erd.schema.application.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,6 +15,11 @@ import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GetSchemaService")
@@ -57,6 +57,7 @@ class GetSchemaServiceTest {
 
         then(getSchemaByIdPort).should().findSchemaById(query.schemaId());
       }
+
     }
 
     @Nested
@@ -77,7 +78,9 @@ class GetSchemaServiceTest {
 
         then(getSchemaByIdPort).should().findSchemaById(query.schemaId());
       }
+
     }
+
   }
 
 }

@@ -1,8 +1,5 @@
 package com.schemafy.domain.erd.schema.domain;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,6 +8,9 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("Schema")
 class SchemaTest {
@@ -95,6 +95,7 @@ class SchemaTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("name");
     }
+
   }
 
   @Nested
@@ -118,6 +119,7 @@ class SchemaTest {
 
       assertThat(schema.charset()).isEqualTo("utf8");
     }
+
   }
 
   @Nested
@@ -141,6 +143,7 @@ class SchemaTest {
 
       assertThat(schema.collation()).isEqualTo("utf8_general_ci");
     }
+
   }
 
 }

@@ -1,14 +1,13 @@
 package com.schemafy.domain.erd.schema.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
@@ -23,6 +22,8 @@ import com.schemafy.domain.erd.table.application.port.in.GetTablesBySchemaIdQuer
 import com.schemafy.domain.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
 
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")

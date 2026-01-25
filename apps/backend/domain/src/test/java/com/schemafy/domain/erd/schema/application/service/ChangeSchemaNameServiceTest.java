@@ -1,9 +1,5 @@
 package com.schemafy.domain.erd.schema.application.service;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +14,10 @@ import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeSchemaNameService")
@@ -59,6 +59,7 @@ class ChangeSchemaNameServiceTest {
         then(changeSchemaNamePort).should()
             .changeSchemaName(command.schemaId(), command.newName());
       }
+
     }
 
     @Nested
@@ -80,7 +81,9 @@ class ChangeSchemaNameServiceTest {
 
         then(changeSchemaNamePort).shouldHaveNoInteractions();
       }
+
     }
+
   }
 
 }

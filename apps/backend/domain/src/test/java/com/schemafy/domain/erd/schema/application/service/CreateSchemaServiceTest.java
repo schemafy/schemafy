@@ -1,10 +1,5 @@
 package com.schemafy.domain.erd.schema.application.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,6 +17,11 @@ import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CreateSchemaService")
@@ -75,6 +75,7 @@ class CreateSchemaServiceTest {
             .existsActiveByProjectIdAndName(command.projectId(), command.name());
         then(createSchemaPort).should().createSchema(any(Schema.class));
       }
+
     }
 
     @Nested
@@ -96,7 +97,9 @@ class CreateSchemaServiceTest {
         then(createSchemaPort).shouldHaveNoInteractions();
         then(ulidGeneratorPort).shouldHaveNoInteractions();
       }
+
     }
+
   }
 
 }

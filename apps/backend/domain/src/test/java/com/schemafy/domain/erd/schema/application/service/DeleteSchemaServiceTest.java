@@ -1,8 +1,6 @@
 package com.schemafy.domain.erd.schema.application.service;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,7 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnsByTableIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CascadeDeleteConstraintsByTableIdPort;
@@ -26,6 +23,10 @@ import com.schemafy.domain.erd.table.domain.Table;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DeleteSchemaService")
@@ -110,6 +111,7 @@ class DeleteSchemaServiceTest {
         then(deleteSchemaPort).should()
             .deleteSchema(command.schemaId());
       }
+
     }
 
     @Nested
@@ -140,7 +142,9 @@ class DeleteSchemaServiceTest {
         then(deleteSchemaPort).should()
             .deleteSchema(command.schemaId());
       }
+
     }
+
   }
 
 }

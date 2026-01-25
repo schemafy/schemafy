@@ -108,7 +108,6 @@ public class SchemaFixture {
     return new DeleteSchemaCommand(schemaId);
   }
 
-  private SchemaFixture() {
-  }
+  private SchemaFixture() {}
 
 }
