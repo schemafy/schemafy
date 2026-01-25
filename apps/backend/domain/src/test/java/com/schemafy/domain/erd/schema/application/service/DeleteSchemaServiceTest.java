@@ -1,11 +1,13 @@
 package com.schemafy.domain.erd.schema.application.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnsByTableIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CascadeDeleteConstraintsByTableIdPort;
@@ -21,6 +23,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -31,6 +34,9 @@ class DeleteSchemaServiceTest {
   private static final String SCHEMA_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
   private static final String TABLE_ID_1 = "01ARZ3NDEKTSV4RRFFQ69G5FA1";
   private static final String TABLE_ID_2 = "01ARZ3NDEKTSV4RRFFQ69G5FA2";
+
+  @Mock
+  TransactionalOperator transactionalOperator;
 
   @Mock
   DeleteSchemaPort deleteSchemaPort;
@@ -55,6 +61,12 @@ class DeleteSchemaServiceTest {
 
   @InjectMocks
   DeleteSchemaService deleteSchemaService;
+
+  @BeforeEach
+  void setUp() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Test
   @DisplayName("스키마 삭제 성공")
