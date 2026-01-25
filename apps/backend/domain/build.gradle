@@ -33,7 +33,15 @@ dependencies {
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.14.2'
+    testImplementation 'io.projectreactor:reactor-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Integration test dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'io.r2dbc:r2dbc-h2'
+    testRuntimeOnly 'com.h2database:h2'
 }
 
 def formatterConfig = file("${projectDir}/../../../gradle/format/java-formatter.xml")
@@ -68,6 +76,10 @@ sourceSets {
             srcDir '../sql-resources'
         }
     }
+}
+
+tasks.named('processTestResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 tasks.named('check') {
