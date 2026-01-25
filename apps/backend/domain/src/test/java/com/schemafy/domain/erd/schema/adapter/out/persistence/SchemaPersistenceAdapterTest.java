@@ -1,22 +1,24 @@
 package com.schemafy.domain.erd.schema.adapter.out.persistence;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
+import org.springframework.context.annotation.Import;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
-import org.springframework.context.annotation.Import;
 
+import com.schemafy.domain.config.R2dbcTestConfiguration;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @DataR2dbcTest
-@Import({ SchemaPersistenceAdapter.class, SchemaMapper.class })
+@Import({ SchemaPersistenceAdapter.class, SchemaMapper.class, R2dbcTestConfiguration.class })
 @DisplayName("SchemaPersistenceAdapter")
 class SchemaPersistenceAdapterTest {
 
@@ -51,6 +53,7 @@ class SchemaPersistenceAdapterTest {
           })
           .verifyComplete();
     }
+
   }
 
   @Nested
@@ -77,6 +80,7 @@ class SchemaPersistenceAdapterTest {
       StepVerifier.create(sut.findSchemaById("non-existent-id"))
           .verifyComplete();
     }
+
   }
 
   @Nested
@@ -90,7 +94,7 @@ class SchemaPersistenceAdapterTest {
       sut.createSchema(schema).block();
 
       StepVerifier.create(sut.existsActiveByProjectIdAndName(
-              schema.projectId(), schema.name()))
+          schema.projectId(), schema.name()))
           .assertNext(exists -> assertThat(exists).isTrue())
           .verifyComplete();
     }
@@ -99,10 +103,11 @@ class SchemaPersistenceAdapterTest {
     @DisplayName("존재하지 않으면 false를 반환한다")
     void returnsFalseWhenNotExists() {
       StepVerifier.create(sut.existsActiveByProjectIdAndName(
-              "non-existent-project", "non-existent-name"))
+          "non-existent-project", "non-existent-name"))
           .assertNext(exists -> assertThat(exists).isFalse())
           .verifyComplete();
     }
+
   }
 
   @Nested
@@ -131,6 +136,7 @@ class SchemaPersistenceAdapterTest {
           .expectError(SchemaNotExistException.class)
           .verify();
     }
+
   }
 
   @Nested
@@ -149,6 +155,7 @@ class SchemaPersistenceAdapterTest {
       StepVerifier.create(sut.findSchemaById(schema.id()))
           .verifyComplete();
     }
+
   }
 
 }
