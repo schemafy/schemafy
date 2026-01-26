@@ -80,7 +80,7 @@ export class CollaborationStore {
   }
 
   connect(projectId: string) {
-    if (this.projectId === projectId && (this.worker || this.port)) {
+    if (this.projectId === projectId && this.worker && this.port) {
       return;
     }
 
