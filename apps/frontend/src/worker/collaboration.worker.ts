@@ -6,12 +6,16 @@ import type {
 } from '../lib/api/collaboration/types';
 import type { UserInfo, WorkerMessage, WorkerResponse } from './types';
 
-declare const self: SharedWorkerGlobalScope;
+declare const self: SharedWorkerGlobalScope | DedicatedWorkerGlobalScope;
+
+type WorkerPort = MessagePort | DedicatedWorkerGlobalScope;
+
+const SHARED_WORKER_ENABLE = typeof SharedWorkerGlobalScope !== 'undefined';
 
 const sockets = new Map<string, WebSocket>();
-const subscribers = new Map<string, MessagePort[]>();
-const portUserInfos = new Map<MessagePort, UserInfo>();
-const portHeartbeats = new Map<MessagePort, number>();
+const subscribers = new Map<string, WorkerPort[]>();
+const portUserInfos = new Map<WorkerPort, UserInfo>();
+const portHeartbeats = new Map<WorkerPort, number>();
 
 type ProjectState = {
   cursors: Map<string, CursorPosition>;
@@ -34,7 +38,7 @@ setInterval(() => {
   });
 }, HEARTBEAT_INTERVAL);
 
-function closePort(port: MessagePort) {
+function closePort(port: WorkerPort) {
   portHeartbeats.delete(port);
 
   subscribers.forEach((ports, projectId) => {
@@ -52,25 +56,24 @@ function closePort(port: MessagePort) {
   });
 }
 
-self.onconnect = (e: MessageEvent) => {
-  const port = e.ports[0];
-
+function handlePort(port: WorkerPort) {
   portHeartbeats.set(port, Date.now());
 
-  port.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
+  const onMessage = (event: Event) => {
+    const messageEvent = event as MessageEvent<WorkerMessage>;
     portHeartbeats.set(port, Date.now());
 
-    const { type } = event.data;
+    const { type } = messageEvent.data;
 
     if (type === 'CONNECT') {
-      const { projectId, userInfo } = event.data;
+      const { projectId, userInfo } = messageEvent.data;
       portUserInfos.set(port, userInfo);
       handleConnect(projectId, port);
     } else if (type === 'DISCONNECT') {
       portUserInfos.delete(port);
       closePort(port);
     } else if (type === 'SEND_MESSAGE') {
-      const { projectId, payload } = event.data;
+      const { projectId, payload } = messageEvent.data;
 
       if (payload.type === 'CURSOR') {
         const userInfo = portUserInfos.get(port);
@@ -89,18 +92,28 @@ self.onconnect = (e: MessageEvent) => {
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(payload));
       } else {
-        console.warn(
-          '[SharedWorker] WebSocket not ready, state:',
-          ws?.readyState,
-        );
+        console.warn('[Worker] WebSocket not ready, state:', ws?.readyState);
       }
     }
-  });
+  };
 
-  port.start();
-};
+  port.addEventListener('message', onMessage);
 
-function handleConnect(projectId: string, port: MessagePort) {
+  if (port instanceof MessagePort) {
+    port.start();
+  }
+}
+
+if (SHARED_WORKER_ENABLE && self instanceof SharedWorkerGlobalScope) {
+  self.onconnect = (e: MessageEvent) => {
+    const port = e.ports[0];
+    handlePort(port);
+  };
+} else {
+  handlePort(self as DedicatedWorkerGlobalScope);
+}
+
+function handleConnect(projectId: string, port: WorkerPort) {
   if (!subscribers.has(projectId)) {
     subscribers.set(projectId, []);
   }
@@ -159,7 +172,7 @@ function handleConnect(projectId: string, port: MessagePort) {
             });
           } else if (payload.type === 'CHAT') {
             const cursor = state.cursors.get(payload.userId);
-            console.log('cursor', cursor);
+
             if (cursor) {
               payload.position = { x: cursor.x, y: cursor.y };
             }

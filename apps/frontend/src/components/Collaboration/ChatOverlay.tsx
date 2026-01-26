@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import type { ChatMessage } from '@/lib/api/collaboration';
 import { useChatMessages } from '@/hooks';
@@ -16,6 +16,11 @@ const FloatingChatMessage = ({
   onExpire,
 }: FloatingChatMessageProps) => {
   const [opacity, setOpacity] = useState(1);
+  const onExpireRef = useRef(onExpire);
+
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+  }, [onExpire]);
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => {
@@ -23,14 +28,16 @@ const FloatingChatMessage = ({
     }, FADE_OUT_START);
 
     const expireTimer = setTimeout(() => {
-      onExpire();
+      if (onExpireRef.current) {
+        onExpireRef.current();
+      }
     }, DISPLAY_DURATION);
 
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(expireTimer);
     };
-  }, [onExpire]);
+  }, []);
 
   if (!message.position) return null;
 

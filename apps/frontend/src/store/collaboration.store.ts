@@ -12,9 +12,12 @@ import type {
 import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { AuthStore } from './auth.store';
 
+const SHARED_WORKER_ENABLE = typeof SharedWorkerGlobalScope !== 'undefined';
+
 export class CollaborationStore {
   private static instance: CollaborationStore;
-  private worker: SharedWorker | null = null;
+  private worker: SharedWorker | Worker | null = null;
+  private port: MessagePort | Worker | null = null;
 
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
@@ -38,16 +41,16 @@ export class CollaborationStore {
   }
 
   private setupWorkerListeners() {
-    if (!this.worker) return;
+    if (!this.port) return;
 
-    this.worker.port.onmessage = (event: MessageEvent<WorkerResponse>) => {
+    this.port.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const { type } = event.data;
 
       if (type === 'WS_MESSAGE') {
         const message = event.data.payload;
         this.handleMessage(message);
       } else if (type === 'WS_OPEN') {
-        console.log('WebSocket connected via SharedWorker');
+        console.log('WebSocket connected via Worker');
       } else if (type === 'WS_CLOSE') {
         if (!this.projectId || this.reconnectTimeoutId) return;
 
@@ -58,7 +61,7 @@ export class CollaborationStore {
           this.connect(this.projectId);
         }, 3000);
       } else if (type === 'WS_ERROR') {
-        console.error('WebSocket error from SharedWorker:', event.data.error);
+        console.error('WebSocket error from Worker:', event.data.error);
       } else if (type === 'INITIAL_STATE') {
         const { cursors } = event.data;
         runInAction(() => {
@@ -69,11 +72,13 @@ export class CollaborationStore {
       }
     };
 
-    this.worker.port.start();
+    if (this.port instanceof MessagePort) {
+      this.port.start();
+    }
   }
 
   connect(projectId: string) {
-    if (this.projectId === projectId && this.worker) {
+    if (this.projectId === projectId && (this.worker || this.port)) {
       return;
     }
 
@@ -87,12 +92,23 @@ export class CollaborationStore {
       if (!this.worker) {
         const userId = this.currentUser?.id ?? 'anonymous';
 
-        const CollaborationWorker = new SharedWorker(
-          new URL('../worker/collaboration.worker.ts', import.meta.url),
-          { type: 'module', name: `collaboration-worker-${userId}` },
-        );
+        if (SHARED_WORKER_ENABLE) {
+          const worker = new SharedWorker(
+            new URL('../worker/collaboration.worker.ts', import.meta.url),
+            { type: 'module', name: `collaboration-worker-${userId}` },
+          );
+          this.worker = worker;
+          this.port = worker.port;
+        } else {
+          console.warn('SharedWorker not supported, falling back to Worker');
+          const worker = new Worker(
+            new URL('../worker/collaboration.worker.ts', import.meta.url),
+            { type: 'module', name: `collaboration-worker-${userId}` },
+          );
+          this.worker = worker;
+          this.port = worker;
+        }
 
-        this.worker = CollaborationWorker;
         this.setupWorkerListeners();
       }
 
@@ -115,23 +131,33 @@ export class CollaborationStore {
         userInfo,
       };
 
-      this.worker.port.postMessage(message);
+      if (!this.port) {
+        console.error('Worker port is not ready');
+        return;
+      }
+
+      this.port.postMessage(message);
     } catch (error) {
       console.error('Failed to initialize SharedWorker:', error);
     }
   }
 
   disconnect() {
-    if (this.worker && this.projectId) {
+    if ((this.worker || this.port) && this.projectId) {
       if (this.reconnectTimeoutId) {
         clearTimeout(this.reconnectTimeoutId);
         this.reconnectTimeoutId = null;
       }
-      this.worker.port.postMessage({
+      if (!this.port) {
+        console.error('Worker port is not ready');
+        return;
+      }
+      this.port.postMessage({
         type: 'DISCONNECT',
         projectId: this.projectId,
       } as WorkerMessage);
       this.worker = null;
+      this.port = null;
     }
 
     runInAction(() => {
@@ -197,13 +223,13 @@ export class CollaborationStore {
     message: PostChat | PostCursor,
     onError?: (error: unknown) => void,
   ) {
-    if (!this.worker || !this.projectId) {
-      console.error('SharedWorker is not ready');
+    if (!this.port || !this.projectId) {
+      console.error('Worker is not ready');
       return;
     }
 
     try {
-      this.worker.port.postMessage({
+      this.port.postMessage({
         type: 'SEND_MESSAGE',
         projectId: this.projectId,
         payload: message,
