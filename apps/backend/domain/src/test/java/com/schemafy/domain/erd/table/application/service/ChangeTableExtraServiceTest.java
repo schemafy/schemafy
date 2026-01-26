@@ -39,7 +39,7 @@ class ChangeTableExtraServiceTest {
       @Test
       @DisplayName("extra 필드를 변경한다")
       void changesExtra() {
-        var command = TableFixture.changeExtraCommand("ENGINE=InnoDB");
+        var command = TableFixture.changeExtraCommand("{\"ui\": {\"x\": 100, \"y\": 200}}");
 
         given(changeTableExtraPort.changeTableExtra(any(), any()))
             .willReturn(Mono.empty());

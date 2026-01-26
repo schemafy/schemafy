@@ -259,15 +259,23 @@ class TablePersistenceAdapterTest {
     void changesExtra() {
       var table = TableFixture.defaultTable();
       sut.createTable(table).block();
+      var newExtra = "{\"ui\": {\"x\": 100, \"y\": 200}}";
 
-      StepVerifier.create(sut.changeTableExtra(table.id(), "ENGINE=InnoDB"))
+      StepVerifier.create(sut.changeTableExtra(table.id(), newExtra))
+          .verifyComplete();
+
+      StepVerifier.create(tableRepository.findById(table.id()))
+          .assertNext(found -> {
+            assertThat(found.getExtra()).isNotNull();
+            assertThat(found.getExtra()).contains("ui");
+          })
           .verifyComplete();
     }
 
     @Test
     @DisplayName("존재하지 않는 테이블이면 예외를 발생시킨다")
     void throwsWhenTableNotExists() {
-      StepVerifier.create(sut.changeTableExtra("non-existent-id", "ENGINE=InnoDB"))
+      StepVerifier.create(sut.changeTableExtra("non-existent-id", "{\"ui\": {}}"))
           .expectError(TableNotExistException.class)
           .verify();
     }
