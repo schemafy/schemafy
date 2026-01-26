@@ -40,8 +40,12 @@ export class CollaborationStore {
     return AuthStore.getInstance().user;
   }
 
+  private heartbeatIntervalId: number | null = null;
+
   private setupWorkerListeners() {
     if (!this.port) return;
+
+    this.startHeartbeat();
 
     this.port.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const { type } = event.data;
@@ -77,6 +81,21 @@ export class CollaborationStore {
     if (this.port instanceof MessagePort) {
       this.port.start();
     }
+  }
+
+  private startHeartbeat() {
+    if (this.heartbeatIntervalId) {
+      clearInterval(this.heartbeatIntervalId);
+    }
+
+    this.heartbeatIntervalId = window.setInterval(() => {
+      if (this.port && this.projectId) {
+        this.port.postMessage({
+          type: 'PING',
+          projectId: this.projectId,
+        } as WorkerMessage);
+      }
+    }, 30000);
   }
 
   connect(projectId: string) {
@@ -153,6 +172,11 @@ export class CollaborationStore {
         clearTimeout(this.reconnectTimeoutId);
 
         this.reconnectTimeoutId = null;
+      }
+
+      if (this.heartbeatIntervalId) {
+        clearInterval(this.heartbeatIntervalId);
+        this.heartbeatIntervalId = null;
       }
 
       this.port.postMessage({

@@ -21,7 +21,8 @@ export type WorkerMessage =
       userInfo: UserInfo;
     }
   | { type: 'DISCONNECT'; projectId: string }
-  | { type: 'SEND_MESSAGE'; projectId: string; payload: OutgoingMessage };
+  | { type: 'SEND_MESSAGE'; projectId: string; payload: OutgoingMessage }
+  | { type: 'PING'; projectId: string };
 
 export type WorkerResponse =
   | { type: 'WS_MESSAGE'; projectId: string; payload: WebSocketMessage }
