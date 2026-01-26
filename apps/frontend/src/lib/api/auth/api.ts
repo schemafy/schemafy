@@ -4,11 +4,18 @@ import { setAccessToken } from '../token';
 import type { ApiResponse } from '../types';
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
 
-const handleTokenResponse = (response: AxiosResponse<ApiResponse<unknown>>) => {
+import { AuthStore } from '@/store';
+
+let refreshPromise: Promise<string> | null = null;
+
+const handleTokenResponse = (
+  response: AxiosResponse<ApiResponse<unknown>>,
+): string => {
   const accessToken = response.headers['authorization'];
   if (accessToken && accessToken.startsWith('Bearer ')) {
     const token = accessToken.replace('Bearer ', '');
     setAccessToken(token);
+    return token;
   } else {
     throw new Error('Failed to get token');
   }
@@ -40,14 +47,23 @@ export const signIn = async (
   return response.data;
 };
 
-export const refreshToken = async (): Promise<ApiResponse<null>> => {
-  const response = await apiClient.post<ApiResponse<null>>(
-    '/public/api/v1.0/users/refresh',
-  );
-
-  handleTokenResponse(response);
-
-  return response.data;
+export const refreshToken = async (): Promise<string> => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const response = await publicClient.post<ApiResponse<null>>(
+          '/public/api/v1.0/users/refresh',
+        );
+        return handleTokenResponse(response);
+      } catch (error) {
+        AuthStore.getInstance().clearAuth();
+        throw error;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+  }
+  return refreshPromise;
 };
 
 export const getMyInfo = async (): Promise<ApiResponse<AuthResponse>> => {

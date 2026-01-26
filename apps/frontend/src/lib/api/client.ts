@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { AuthStore } from '../../store/auth.store';
-import { refreshAccessToken } from './refresh';
+import { refreshToken } from './auth/api';
 
 const BASE_URL: string =
   import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
@@ -38,7 +38,7 @@ apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
     return config;
   }
 
-  const newToken = await refreshAccessToken();
+  const newToken = await refreshToken();
   if (newToken) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['Authorization'] =
@@ -58,7 +58,7 @@ apiClient.interceptors.response.use(
 
     if (responseStatus === 401) {
       config._retry = true;
-      const newToken = await refreshAccessToken();
+      const newToken = await refreshToken();
       if (newToken) {
         config.headers = config.headers ?? {};
         (config.headers as Record<string, string>)['Authorization'] =

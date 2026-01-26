@@ -1,6 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { AuthStore } from '../../store/auth.store';
-import { refreshAccessToken } from './refresh';
+import { refreshToken } from './auth';
 
 const BFF_URL: string = import.meta.env.VITE_BFF_URL || 'http://localhost:4000';
 
@@ -26,7 +26,7 @@ bffClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
     return config;
   }
 
-  const newToken = await refreshAccessToken();
+  const newToken = await refreshToken();
   if (newToken) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['Authorization'] =
@@ -46,7 +46,7 @@ bffClient.interceptors.response.use(
 
     if (responseStatus === 401) {
       config._retry = true;
-      const newToken = await refreshAccessToken();
+      const newToken = await refreshToken();
       if (newToken) {
         config.headers = config.headers ?? {};
         (config.headers as Record<string, string>)['Authorization'] =
