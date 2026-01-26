@@ -48,6 +48,7 @@ export class CollaborationStore {
 
       if (type === 'WS_MESSAGE') {
         const message = event.data.payload;
+
         this.handleMessage(message);
       } else if (type === 'WS_OPEN') {
         console.log('WebSocket connected via Worker');
@@ -64,6 +65,7 @@ export class CollaborationStore {
         console.error('WebSocket error from Worker:', event.data.error);
       } else if (type === 'INITIAL_STATE') {
         const { cursors } = event.data;
+
         runInAction(() => {
           cursors.forEach((cursor) => {
             this.cursors.set(cursor.userId, cursor);
@@ -97,14 +99,17 @@ export class CollaborationStore {
             new URL('../worker/collaboration.worker.ts', import.meta.url),
             { type: 'module', name: `collaboration-worker-${userId}` },
           );
+
           this.worker = worker;
           this.port = worker.port;
         } else {
           console.warn('SharedWorker not supported, falling back to Worker');
+
           const worker = new Worker(
             new URL('../worker/collaboration.worker.ts', import.meta.url),
             { type: 'module', name: `collaboration-worker-${userId}` },
           );
+
           this.worker = worker;
           this.port = worker;
         }
@@ -143,31 +148,33 @@ export class CollaborationStore {
   }
 
   disconnect() {
-    if ((this.worker || this.port) && this.projectId) {
+    if (this.worker && this.port && this.projectId) {
       if (this.reconnectTimeoutId) {
         clearTimeout(this.reconnectTimeoutId);
+
         this.reconnectTimeoutId = null;
       }
-      if (!this.port) {
-        console.error('Worker port is not ready');
-        return;
-      }
+
       this.port.postMessage({
         type: 'DISCONNECT',
         projectId: this.projectId,
       } as WorkerMessage);
+
       this.worker = null;
       this.port = null;
-    }
 
-    runInAction(() => {
-      this.projectId = null;
-      this.cursors.clear();
-    });
+      runInAction(() => {
+        this.projectId = null;
+        this.cursors.clear();
+      });
+    } else {
+      console.error('Worker or port is not ready');
+    }
   }
 
   onChatMessage(listener: (message: ChatMessage) => void) {
     this.chatMessageListeners.add(listener);
+
     return () => {
       this.chatMessageListeners.delete(listener);
     };
@@ -183,7 +190,6 @@ export class CollaborationStore {
       console.error('Failed to send chat message:', error);
       setTimeout(() => {
         try {
-          if (!this.worker) return;
           this.send(message);
         } catch (retryError) {
           console.error('Retry failed:', retryError);

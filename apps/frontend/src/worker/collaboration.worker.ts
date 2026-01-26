@@ -29,6 +29,8 @@ const WEBSOCKET_URL =
 const HEARTBEAT_INTERVAL = 30000;
 const HEARTBEAT_TIMEOUT = 60000;
 
+// SharedWorker에서는 탭 닫힘같은 이벤트를 인식하지 못하기 때문에 주기적으로 제거하면서
+// 메모리 누수를 막는다
 setInterval(() => {
   const now = Date.now();
   portHeartbeats.forEach((lastBeat, port) => {
@@ -44,12 +46,15 @@ function closePort(port: WorkerPort) {
   subscribers.forEach((ports, projectId) => {
     const nextPorts = ports.filter((p) => p !== port);
     subscribers.set(projectId, nextPorts);
+
     if (nextPorts.length === 0) {
       const ws = sockets.get(projectId);
+
       if (ws) {
         ws.close();
         sockets.delete(projectId);
       }
+
       subscribers.delete(projectId);
       projectStates.delete(projectId);
     }
@@ -68,9 +73,11 @@ function handlePort(port: WorkerPort) {
     if (type === 'CONNECT') {
       const { projectId, userInfo } = messageEvent.data;
       portUserInfos.set(port, userInfo);
+
       handleConnect(projectId, port);
     } else if (type === 'DISCONNECT') {
       portUserInfos.delete(port);
+
       closePort(port);
     } else if (type === 'SEND_MESSAGE') {
       const { projectId, payload } = messageEvent.data;
@@ -78,6 +85,7 @@ function handlePort(port: WorkerPort) {
       if (payload.type === 'CURSOR') {
         const userInfo = portUserInfos.get(port);
         const state = projectStates.get(projectId);
+
         if (userInfo && state) {
           state.cursors.set(userInfo.userId, {
             userId: userInfo.userId,
@@ -89,6 +97,7 @@ function handlePort(port: WorkerPort) {
       }
 
       const ws = sockets.get(projectId);
+
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(payload));
       } else {
@@ -109,15 +118,17 @@ if (SHARED_WORKER_ENABLE && self instanceof SharedWorkerGlobalScope) {
     const port = e.ports[0];
     handlePort(port);
   };
-} else {
-  handlePort(self as DedicatedWorkerGlobalScope);
+} else if (self instanceof DedicatedWorkerGlobalScope) {
+  handlePort(self);
 }
 
 function handleConnect(projectId: string, port: WorkerPort) {
   if (!subscribers.has(projectId)) {
     subscribers.set(projectId, []);
   }
+
   const ports = subscribers.get(projectId)!;
+
   if (!ports.includes(port)) {
     ports.push(port);
   }
@@ -150,26 +161,32 @@ function handleConnect(projectId: string, port: WorkerPort) {
 
         if (state) {
           if (payload.type === 'JOIN') {
-            state.users.set(payload.userId, {
+            const userInfo: UserInfo = {
               userId: payload.userId,
               userName: payload.userName,
-            });
-            state.cursors.set(payload.userId, {
+            };
+
+            const cursorInfo: CursorPosition = {
               userId: payload.userId,
               userName: payload.userName,
               x: 0,
               y: 0,
-            });
+            };
+
+            state.users.set(payload.userId, userInfo);
+            state.cursors.set(payload.userId, cursorInfo);
           } else if (payload.type === 'LEAVE') {
             state.users.delete(payload.userId);
             state.cursors.delete(payload.userId);
           } else if (payload.type === 'CURSOR') {
-            state.cursors.set(payload.userInfo.userId, {
+            const cursorInfo: CursorPosition = {
               userId: payload.userInfo.userId,
               userName: payload.userInfo.userName,
               x: payload.cursor.x,
               y: payload.cursor.y,
-            });
+            };
+
+            state.cursors.set(payload.userInfo.userId, cursorInfo);
           } else if (payload.type === 'CHAT') {
             const cursor = state.cursors.get(payload.userId);
 
