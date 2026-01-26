@@ -60,22 +60,24 @@ public class CreateIndexService implements CreateIndexUseCase {
 
   @Override
   public Mono<CreateIndexResult> createIndex(CreateIndexCommand command) {
-    String normalizedName = normalizeName(command.name());
-    List<CreateIndexColumnCommand> columnCommands = normalizeColumns(command.columns());
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.name());
+      List<CreateIndexColumnCommand> columnCommands = normalizeColumns(command.columns());
 
-    IndexValidator.validateName(normalizedName);
-    IndexValidator.validateType(command.type());
+      IndexValidator.validateName(normalizedName);
+      IndexValidator.validateType(command.type());
 
-    return getTableByIdPort.findTableById(command.tableId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
-        .flatMap(table -> indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
-            .flatMap(exists -> {
-              if (exists) {
-                return Mono.error(new IndexNameDuplicateException(
-                    "Index name '%s' already exists in table".formatted(normalizedName)));
-              }
-              return validateAndCreate(table, command, normalizedName, columnCommands);
-            }));
+      return getTableByIdPort.findTableById(command.tableId())
+          .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
+          .flatMap(table -> indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
+              .flatMap(exists -> {
+                if (exists) {
+                  return Mono.error(new IndexNameDuplicateException(
+                      "Index name '%s' already exists in table".formatted(normalizedName)));
+                }
+                return validateAndCreate(table, command, normalizedName, columnCommands);
+              }));
+    });
   }
 
   private Mono<CreateIndexResult> validateAndCreate(

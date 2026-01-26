@@ -31,21 +31,23 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
 
   @Override
   public Mono<Void> changeIndexName(ChangeIndexNameCommand command) {
-    String normalizedName = normalizeName(command.newName());
-    IndexValidator.validateName(normalizedName);
-    return getIndexByIdPort.findIndexById(command.indexId())
-        .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
-        .flatMap(index -> indexExistsPort.existsByTableIdAndNameExcludingId(
-            index.tableId(),
-            normalizedName,
-            index.id())
-            .flatMap(exists -> {
-              if (exists) {
-                return Mono.error(new IndexNameDuplicateException(
-                    "Index name '%s' already exists in table".formatted(normalizedName)));
-              }
-              return changeIndexNamePort.changeIndexName(index.id(), normalizedName);
-            }));
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.newName());
+      IndexValidator.validateName(normalizedName);
+      return getIndexByIdPort.findIndexById(command.indexId())
+          .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+          .flatMap(index -> indexExistsPort.existsByTableIdAndNameExcludingId(
+              index.tableId(),
+              normalizedName,
+              index.id())
+              .flatMap(exists -> {
+                if (exists) {
+                  return Mono.error(new IndexNameDuplicateException(
+                      "Index name '%s' already exists in table".formatted(normalizedName)));
+                }
+                return changeIndexNamePort.changeIndexName(index.id(), normalizedName);
+              }));
+    });
   }
 
   private static String normalizeName(String name) {

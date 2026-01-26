@@ -34,24 +34,26 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
 
   @Override
   public Mono<Void> changeConstraintName(ChangeConstraintNameCommand command) {
-    String normalizedName = normalizeName(command.newName());
-    ConstraintValidator.validateName(normalizedName);
-    return getConstraintByIdPort.findConstraintById(command.constraintId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Constraint not found")))
-        .flatMap(constraint -> getTableByIdPort.findTableById(constraint.tableId())
-            .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
-            .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
-                table.schemaId(),
-                normalizedName,
-                constraint.id())
-                .flatMap(exists -> {
-                  if (exists) {
-                    return Mono.error(new ConstraintNameDuplicateException(
-                        "Constraint name '%s' already exists in schema".formatted(normalizedName)));
-                  }
-                  return changeConstraintNamePort
-                      .changeConstraintName(constraint.id(), normalizedName);
-                })));
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.newName());
+      ConstraintValidator.validateName(normalizedName);
+      return getConstraintByIdPort.findConstraintById(command.constraintId())
+          .switchIfEmpty(Mono.error(new RuntimeException("Constraint not found")))
+          .flatMap(constraint -> getTableByIdPort.findTableById(constraint.tableId())
+              .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
+              .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
+                  table.schemaId(),
+                  normalizedName,
+                  constraint.id())
+                  .flatMap(exists -> {
+                    if (exists) {
+                      return Mono.error(new ConstraintNameDuplicateException(
+                          "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                    }
+                    return changeConstraintNamePort
+                        .changeConstraintName(constraint.id(), normalizedName);
+                  })));
+    });
   }
 
   private static String normalizeName(String name) {

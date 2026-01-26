@@ -40,26 +40,28 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
 
   @Override
   public Mono<Void> changeIndexType(ChangeIndexTypeCommand command) {
-    IndexValidator.validateType(command.type());
-    return getIndexByIdPort.findIndexById(command.indexId())
-        .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
-        .flatMap(index -> getIndexesByTableIdPort.findIndexesByTableId(index.tableId())
-            .defaultIfEmpty(List.of())
-            .flatMap(indexes -> fetchIndexColumns(indexes)
-                .flatMap(indexColumnsByIndexId -> getIndexColumnsByIndexIdPort
-                    .findIndexColumnsByIndexId(index.id())
-                    .defaultIfEmpty(List.of())
-                    .flatMap(columns -> {
-                      IndexValidator.validateDefinitionUniqueness(
-                          indexes,
-                          indexColumnsByIndexId,
-                          command.type(),
-                          columns,
-                          index.name(),
-                          index.id());
-                      return changeIndexTypePort
-                          .changeIndexType(index.id(), command.type());
-                    }))));
+    return Mono.defer(() -> {
+      IndexValidator.validateType(command.type());
+      return getIndexByIdPort.findIndexById(command.indexId())
+          .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+          .flatMap(index -> getIndexesByTableIdPort.findIndexesByTableId(index.tableId())
+              .defaultIfEmpty(List.of())
+              .flatMap(indexes -> fetchIndexColumns(indexes)
+                  .flatMap(indexColumnsByIndexId -> getIndexColumnsByIndexIdPort
+                      .findIndexColumnsByIndexId(index.id())
+                      .defaultIfEmpty(List.of())
+                      .flatMap(columns -> {
+                        IndexValidator.validateDefinitionUniqueness(
+                            indexes,
+                            indexColumnsByIndexId,
+                            command.type(),
+                            columns,
+                            index.name(),
+                            index.id());
+                        return changeIndexTypePort
+                            .changeIndexType(index.id(), command.type());
+                      }))));
+    });
   }
 
   private Mono<Map<String, List<IndexColumn>>> fetchIndexColumns(List<Index> indexes) {

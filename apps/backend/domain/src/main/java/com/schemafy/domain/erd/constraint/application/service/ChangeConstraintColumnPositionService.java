@@ -34,16 +34,18 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
 
   @Override
   public Mono<Void> changeConstraintColumnPosition(ChangeConstraintColumnPositionCommand command) {
-    ConstraintValidator.validatePosition(command.seqNo());
-    return getConstraintColumnByIdPort.findConstraintColumnById(command.constraintColumnId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Constraint column not found")))
-        .flatMap(constraintColumn -> getConstraintColumnsByConstraintIdPort
-            .findConstraintColumnsByConstraintId(constraintColumn.constraintId())
-            .defaultIfEmpty(List.of())
-            .flatMap(columns -> reorderColumns(
-                constraintColumn,
-                columns,
-                command.seqNo())));
+    return Mono.defer(() -> {
+      ConstraintValidator.validatePosition(command.seqNo());
+      return getConstraintColumnByIdPort.findConstraintColumnById(command.constraintColumnId())
+          .switchIfEmpty(Mono.error(new RuntimeException("Constraint column not found")))
+          .flatMap(constraintColumn -> getConstraintColumnsByConstraintIdPort
+              .findConstraintColumnsByConstraintId(constraintColumn.constraintId())
+              .defaultIfEmpty(List.of())
+              .flatMap(columns -> reorderColumns(
+                  constraintColumn,
+                  columns,
+                  command.seqNo())));
+    });
   }
 
   private Mono<Void> reorderColumns(

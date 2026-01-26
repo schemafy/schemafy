@@ -61,32 +61,34 @@ public class CreateConstraintService implements CreateConstraintUseCase {
 
   @Override
   public Mono<CreateConstraintResult> createConstraint(CreateConstraintCommand command) {
-    String normalizedName = normalizeName(command.name());
-    String normalizedCheckExpr = normalizeOptional(command.checkExpr());
-    String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
-    List<CreateConstraintColumnCommand> columnCommands = normalizeColumns(command.columns());
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.name());
+      String normalizedCheckExpr = normalizeOptional(command.checkExpr());
+      String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
+      List<CreateConstraintColumnCommand> columnCommands = normalizeColumns(command.columns());
 
-    ConstraintValidator.validateName(normalizedName);
-    columnCommands.forEach(column -> ConstraintValidator.validatePosition(column.seqNo()));
+      ConstraintValidator.validateName(normalizedName);
+      columnCommands.forEach(column -> ConstraintValidator.validatePosition(column.seqNo()));
 
-    return getTableByIdPort.findTableById(command.tableId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
-        .flatMap(table -> constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
-            .flatMap(exists -> {
-              if (exists) {
-                return Mono.error(new ConstraintNameDuplicateException(
-                    "Constraint name '%s' already exists in schema".formatted(normalizedName)));
-              }
-              return fetchTableContext(table.id())
-                  .flatMap(context -> createConstraint(
-                      table,
-                      context,
-                      command.kind(),
-                      normalizedName,
-                      normalizedCheckExpr,
-                      normalizedDefaultExpr,
-                      columnCommands));
-            }));
+      return getTableByIdPort.findTableById(command.tableId())
+          .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
+          .flatMap(table -> constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
+              .flatMap(exists -> {
+                if (exists) {
+                  return Mono.error(new ConstraintNameDuplicateException(
+                      "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                }
+                return fetchTableContext(table.id())
+                    .flatMap(context -> createConstraint(
+                        table,
+                        context,
+                        command.kind(),
+                        normalizedName,
+                        normalizedCheckExpr,
+                        normalizedDefaultExpr,
+                        columnCommands));
+              }));
+    });
   }
 
   private Mono<CreateConstraintResult> createConstraint(

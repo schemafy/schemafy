@@ -50,11 +50,13 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
 
   @Override
   public Mono<AddConstraintColumnResult> addConstraintColumn(AddConstraintColumnCommand command) {
-    ConstraintValidator.validatePosition(command.seqNo());
-    return getConstraintByIdPort.findConstraintById(command.constraintId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Constraint not found")))
-        .flatMap(constraint -> fetchTableContext(constraint.tableId())
-            .flatMap(context -> addColumn(constraint, context, command)));
+    return Mono.defer(() -> {
+      ConstraintValidator.validatePosition(command.seqNo());
+      return getConstraintByIdPort.findConstraintById(command.constraintId())
+          .switchIfEmpty(Mono.error(new RuntimeException("Constraint not found")))
+          .flatMap(constraint -> fetchTableContext(constraint.tableId())
+              .flatMap(context -> addColumn(constraint, context, command)));
+    });
   }
 
   private Mono<AddConstraintColumnResult> addColumn(

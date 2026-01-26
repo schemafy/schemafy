@@ -25,10 +25,12 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
 
   @Override
   public Mono<Void> changeColumnPosition(ChangeColumnPositionCommand command) {
-    ColumnValidator.validatePosition(command.seqNo());
-    return getColumnByIdPort.findColumnById(command.columnId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Column not found")))
-        .flatMap(column -> changeColumnPositionPort.changeColumnPosition(column.id(), command.seqNo()));
+    return Mono.defer(() -> {
+      ColumnValidator.validatePosition(command.seqNo());
+      return getColumnByIdPort.findColumnById(command.columnId())
+          .switchIfEmpty(Mono.error(new RuntimeException("Column not found")))
+          .flatMap(column -> changeColumnPositionPort.changeColumnPosition(column.id(), command.seqNo()));
+    });
   }
 
 }

@@ -16,7 +16,6 @@ import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -72,8 +71,9 @@ class ChangeColumnPositionServiceTest {
       void throwsColumnPositionInvalidException() {
         var command = ColumnFixture.changePositionCommand(-1);
 
-        assertThatThrownBy(() -> sut.changeColumnPosition(command))
-            .isInstanceOf(ColumnPositionInvalidException.class);
+        StepVerifier.create(sut.changeColumnPosition(command))
+            .expectError(ColumnPositionInvalidException.class)
+            .verify();
 
         then(getColumnByIdPort).shouldHaveNoInteractions();
         then(changeColumnPositionPort).shouldHaveNoInteractions();

@@ -31,22 +31,24 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
 
   @Override
   public Mono<Void> changeRelationshipName(ChangeRelationshipNameCommand command) {
-    String normalizedName = normalizeName(command.newName());
-    RelationshipValidator.validateName(normalizedName);
-    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-        .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
-        .flatMap(relationship -> relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-            relationship.fkTableId(),
-            normalizedName,
-            relationship.id())
-            .flatMap(exists -> {
-              if (exists) {
-                return Mono.error(new RelationshipNameDuplicateException(
-                    "Relationship name '%s' already exists in table".formatted(normalizedName)));
-              }
-              return changeRelationshipNamePort
-                  .changeRelationshipName(relationship.id(), normalizedName);
-            }));
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.newName());
+      RelationshipValidator.validateName(normalizedName);
+      return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+          .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+          .flatMap(relationship -> relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
+              relationship.fkTableId(),
+              normalizedName,
+              relationship.id())
+              .flatMap(exists -> {
+                if (exists) {
+                  return Mono.error(new RelationshipNameDuplicateException(
+                      "Relationship name '%s' already exists in table".formatted(normalizedName)));
+                }
+                return changeRelationshipNamePort
+                    .changeRelationshipName(relationship.id(), normalizedName);
+              }));
+    });
   }
 
   private static String normalizeName(String name) {

@@ -57,26 +57,28 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
 
   @Override
   public Mono<CreateRelationshipResult> createRelationship(CreateRelationshipCommand command) {
-    String normalizedName = normalizeName(command.name());
-    String normalizedExtra = normalizeOptional(command.extra());
-    List<CreateRelationshipColumnCommand> columnCommands = normalizeColumns(command.columns());
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.name());
+      String normalizedExtra = normalizeOptional(command.extra());
+      List<CreateRelationshipColumnCommand> columnCommands = normalizeColumns(command.columns());
 
-    RelationshipValidator.validateName(normalizedName);
-    RelationshipValidator.validateColumnsNotEmpty(toColumns(columnCommands), normalizedName);
+      RelationshipValidator.validateName(normalizedName);
+      RelationshipValidator.validateColumnsNotEmpty(toColumns(columnCommands), normalizedName);
 
-    return getTableByIdPort.findTableById(command.fkTableId())
-        .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
-            "Relationship '%s' fk table not found".formatted(normalizedName))))
-        .flatMap(fkTable -> getTableByIdPort.findTableById(command.pkTableId())
-            .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
-                "Relationship '%s' pk table not found".formatted(normalizedName))))
-            .flatMap(pkTable -> validateAndCreate(
-                fkTable,
-                pkTable,
-                command,
-                normalizedName,
-                normalizedExtra,
-                columnCommands)));
+      return getTableByIdPort.findTableById(command.fkTableId())
+          .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
+              "Relationship '%s' fk table not found".formatted(normalizedName))))
+          .flatMap(fkTable -> getTableByIdPort.findTableById(command.pkTableId())
+              .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
+                  "Relationship '%s' pk table not found".formatted(normalizedName))))
+              .flatMap(pkTable -> validateAndCreate(
+                  fkTable,
+                  pkTable,
+                  command,
+                  normalizedName,
+                  normalizedExtra,
+                  columnCommands)));
+    });
   }
 
   private Mono<CreateRelationshipResult> validateAndCreate(
