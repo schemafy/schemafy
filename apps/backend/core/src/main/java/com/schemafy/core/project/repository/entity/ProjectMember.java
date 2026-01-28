@@ -1,6 +1,6 @@
 package com.schemafy.core.project.repository.entity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -20,17 +20,14 @@ import lombok.NoArgsConstructor;
 public class ProjectMember extends BaseEntity {
 
   private String projectId;
-
   private String userId;
-
   private String role;
-
-  private LocalDateTime joinedAt;
+  private Instant joinedAt;
 
   public static ProjectMember create(String projectId, String userId,
       ProjectRole role) {
     ProjectMember member = new ProjectMember(projectId, userId,
-        role.getValue(), LocalDateTime.now());
+        role.getValue(), Instant.now());
     member.setId(UlidGenerator.generate());
     return member;
   }
@@ -40,8 +37,6 @@ public class ProjectMember extends BaseEntity {
   }
 
   public ProjectRole getRoleAsEnum() { return ProjectRole.fromString(this.role); }
-
-  public boolean isOwner() { return getRoleAsEnum().isOwner(); }
 
   public boolean isAdmin() { return getRoleAsEnum().isAdmin(); }
 

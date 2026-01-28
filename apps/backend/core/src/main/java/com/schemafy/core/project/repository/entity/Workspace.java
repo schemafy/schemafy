@@ -3,7 +3,6 @@ package com.schemafy.core.project.repository.entity;
 import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.common.type.BaseEntity;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 
 import lombok.AccessLevel;
@@ -17,29 +16,18 @@ import lombok.NoArgsConstructor;
 @Table("workspaces")
 public class Workspace extends BaseEntity {
 
-  private String ownerId;
-
   private String name;
-
   private String description;
 
-  private String settings;
-
-  public static Workspace create(String ownerId, String name,
-      String description, WorkspaceSettings settings) {
-    Workspace workspace = new Workspace(ownerId, name, description,
-        settings.toJson());
+  public static Workspace create(String name, String description) {
+    Workspace workspace = new Workspace(name, description);
     workspace.setId(UlidGenerator.generate());
     return workspace;
   }
 
-  public void update(String name, String description,
-      WorkspaceSettings settings) {
+  public void update(String name, String description) {
     this.name = name;
     this.description = description;
-    this.settings = settings.toJson();
   }
-
-  public WorkspaceSettings getSettingsAsVo() { return WorkspaceSettings.fromJson(this.settings); }
 
 }

@@ -34,7 +34,7 @@ public class ColumnController {
 
   private final ColumnService columnService;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/columns")
   public Mono<BaseResponse<AffectedMappingResponse>> createColumn(
       @RequestBody CreateColumnRequest request) {
@@ -42,7 +42,7 @@ public class ColumnController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/columns/{columnId}")
   public Mono<BaseResponse<ColumnResponse>> getColumn(
       @PathVariable String columnId) {
@@ -50,7 +50,7 @@ public class ColumnController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/columns/{columnId}/name")
   public Mono<BaseResponse<ColumnResponse>> updateColumnName(
       @PathVariable String columnId,
@@ -63,7 +63,7 @@ public class ColumnController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/columns/{columnId}/type")
   public Mono<BaseResponse<AffectedColumnsResponse>> updateColumnType(
       @PathVariable String columnId,
@@ -76,7 +76,7 @@ public class ColumnController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/columns/{columnId}/position")
   public Mono<BaseResponse<ColumnResponse>> updateColumnPosition(
       @PathVariable String columnId,
@@ -89,7 +89,7 @@ public class ColumnController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/columns/{columnId}")
   public Mono<BaseResponse<Void>> deleteColumn(
       @PathVariable String columnId,

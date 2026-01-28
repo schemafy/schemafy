@@ -74,15 +74,6 @@ public interface WorkspaceMemberRepository
 
   @Query("""
       SELECT * FROM workspace_members
-      WHERE id = :memberId
-        AND workspace_id = :workspaceId
-        AND deleted_at IS NULL
-      """)
-  Mono<WorkspaceMember> findByIdAndWorkspaceIdAndNotDeleted(String memberId,
-      String workspaceId);
-
-  @Query("""
-      SELECT * FROM workspace_members
       WHERE workspace_id = :workspaceId
         AND user_id = :userId
       ORDER BY created_at DESC

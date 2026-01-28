@@ -1,9 +1,7 @@
 CREATE TABLE IF NOT EXISTS workspaces (
     id          CHAR(26)     NOT NULL,
-    owner_id    CHAR(26)     NOT NULL,
     name        VARCHAR(255) NOT NULL,
     description TEXT         NULL,
-    settings    TEXT         NULL,
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMP    NULL,

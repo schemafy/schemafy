@@ -36,7 +36,7 @@ public class IndexController {
 
   private final IndexService indexService;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/indexes")
   public Mono<BaseResponse<AffectedMappingResponse>> createIndex(
       @RequestBody CreateIndexRequest request) {
@@ -44,7 +44,7 @@ public class IndexController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/indexes/{indexId}")
   public Mono<BaseResponse<IndexResponse>> getIndex(
       @PathVariable String indexId) {
@@ -52,7 +52,7 @@ public class IndexController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/indexes/{indexId}/name")
   public Mono<BaseResponse<IndexResponse>> updateIndexName(
       @PathVariable String indexId,
@@ -65,7 +65,7 @@ public class IndexController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/indexes/{indexId}/type")
   public Mono<BaseResponse<IndexResponse>> updateIndexType(
       @PathVariable String indexId,
@@ -74,7 +74,7 @@ public class IndexController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PostMapping("/indexes/{indexId}/columns")
   public Mono<BaseResponse<IndexColumnResponse>> addColumnToIndex(
       @PathVariable String indexId,
@@ -87,7 +87,7 @@ public class IndexController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @PutMapping("/indexes/{indexId}/columns/{indexColumnId}/sort-dir")
   public Mono<BaseResponse<IndexColumnResponse>> updateIndexColumnSortDir(
       @PathVariable String indexId,
@@ -98,7 +98,7 @@ public class IndexController {
         .map(BaseResponse::success);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/indexes/{indexId}/columns/{columnId}")
   public Mono<BaseResponse<Void>> removeColumnFromIndex(
       @PathVariable String indexId,
@@ -113,7 +113,7 @@ public class IndexController {
         .then(Mono.just(BaseResponse.success(null)));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
   @DeleteMapping("/indexes/{indexId}")
   public Mono<BaseResponse<Void>> deleteIndex(
       @PathVariable String indexId,

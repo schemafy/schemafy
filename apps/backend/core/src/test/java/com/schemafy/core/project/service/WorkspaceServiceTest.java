@@ -25,7 +25,6 @@ import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
@@ -83,10 +82,8 @@ class WorkspaceServiceTest {
         encoder).flatMap(userRepository::save).block();
 
     testWorkspace = Workspace.create(
-        adminUser.getId(),
         "Test Workspace",
-        "Test Description",
-        WorkspaceSettings.defaultSettings());
+        "Test Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 
     adminMember = WorkspaceMember.create(
@@ -108,8 +105,7 @@ class WorkspaceServiceTest {
     void createWorkspace_CreatesOwnerMember() {
       CreateWorkspaceRequest request = new CreateWorkspaceRequest(
           "New Workspace",
-          "New Description",
-          null);
+          "New Description");
 
       Mono<WorkspaceResponse> result = workspaceService.createWorkspace(
           request, outsiderUser.getId());
@@ -143,10 +139,8 @@ class WorkspaceServiceTest {
     void deleteWorkspace_SoftDeletesAllMembers() {
       // 추가 워크스페이스 생성 (기본 워크스페이스는 삭제 불가하므로)
       Workspace newWorkspace = Workspace.create(
-          adminUser.getId(),
           "Deletable Workspace",
-          "Description",
-          WorkspaceSettings.defaultSettings());
+          "Description");
       newWorkspace = workspaceRepository.save(newWorkspace).block();
 
       WorkspaceMember member1 = WorkspaceMember.create(
@@ -181,10 +175,8 @@ class WorkspaceServiceTest {
     @DisplayName("이미 삭제된 워크스페이스 삭제 시 에러 발생")
     void deleteWorkspace_AlreadyDeleted_Fails() {
       Workspace newWorkspace = Workspace.create(
-          adminUser.getId(),
           "Will Delete",
-          "Description",
-          WorkspaceSettings.defaultSettings());
+          "Description");
       newWorkspace = workspaceRepository.save(newWorkspace).block();
 
       WorkspaceMember member = WorkspaceMember.create(
@@ -229,7 +221,7 @@ class WorkspaceServiceTest {
       workspaceMemberRepository.deleteById(normalMember.getId()).block();
 
       StepVerifier.create(workspaceService.removeMember(
-          testWorkspace.getId(), adminMember.getId(),
+          testWorkspace.getId(), adminMember.getUserId(),
           adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -244,7 +236,7 @@ class WorkspaceServiceTest {
           WorkspaceRole.MEMBER);
 
       StepVerifier.create(workspaceService.updateMemberRole(
-          testWorkspace.getId(), adminMember.getId(), request,
+          testWorkspace.getId(), adminMember.getUserId(), request,
           adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -283,13 +275,13 @@ class WorkspaceServiceTest {
           encoder).flatMap(userRepository::save).block();
 
       AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-          newUser.getId(), WorkspaceRole.MEMBER);
+          newUser.getEmail(), WorkspaceRole.MEMBER);
 
       StepVerifier.create(workspaceService.addMember(
           testWorkspace.getId(), request, adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEEDED)
+                  .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEED)
           .verify();
     }
 
@@ -297,7 +289,7 @@ class WorkspaceServiceTest {
     @DisplayName("일반 멤버 제거 성공")
     void removeMember_NormalMember_Success() {
       Mono<Void> result = workspaceService.removeMember(
-          testWorkspace.getId(), normalMember.getId(),
+          testWorkspace.getId(), normalMember.getUserId(),
           adminUser.getId());
 
       StepVerifier.create(result).verifyComplete();
@@ -320,7 +312,7 @@ class WorkspaceServiceTest {
 
       Mono<WorkspaceMemberResponse> result = workspaceService
           .updateMemberRole(testWorkspace.getId(),
-              normalMember.getId(), request, adminUser.getId());
+              normalMember.getUserId(), request, adminUser.getId());
 
       StepVerifier.create(result)
           .assertNext(response -> assertThat(response.role())
@@ -338,7 +330,7 @@ class WorkspaceServiceTest {
           encoder).flatMap(userRepository::save).block();
 
       AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-          newUser.getId(), WorkspaceRole.MEMBER);
+          newUser.getEmail(), WorkspaceRole.MEMBER);
 
       Mono<Long> resultMono = Flux.range(0, 30)
           .flatMap(i -> workspaceService
@@ -420,7 +412,7 @@ class WorkspaceServiceTest {
           .fromIterable(userList)
           .flatMap(user -> {
             AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-                user.getId(), WorkspaceRole.MEMBER);
+                user.getEmail(), WorkspaceRole.MEMBER);
             return workspaceService.addMember(
                 testWorkspace.getId(), request,
                 adminUser.getId())
@@ -450,7 +442,7 @@ class WorkspaceServiceTest {
           encoder).flatMap(userRepository::save).block();
 
       AddWorkspaceMemberRequest addRequest = new AddWorkspaceMemberRequest(
-          newUser.getId(), WorkspaceRole.MEMBER);
+          newUser.getEmail(), WorkspaceRole.MEMBER);
 
       // 멤버 추가
       WorkspaceMemberResponse added = workspaceService.addMember(
@@ -460,7 +452,7 @@ class WorkspaceServiceTest {
 
       // 멤버 삭제
       workspaceService.removeMember(
-          testWorkspace.getId(), added.id(), adminUser.getId())
+          testWorkspace.getId(), added.userId(), adminUser.getId())
           .block();
 
       // 삭제 확인
@@ -472,7 +464,7 @@ class WorkspaceServiceTest {
 
       // 동일 멤버 재초대
       AddWorkspaceMemberRequest readdRequest = new AddWorkspaceMemberRequest(
-          newUser.getId(), WorkspaceRole.ADMIN); // 다른 role로 재초대
+          newUser.getEmail(), WorkspaceRole.ADMIN); // 다른 role로 재초대
 
       WorkspaceMemberResponse readded = workspaceService.addMember(
           testWorkspace.getId(), readdRequest, adminUser.getId())
@@ -503,10 +495,8 @@ class WorkspaceServiceTest {
     void leaveMember_LastMember_DeletesWorkspace() {
       // 새 워크스페이스 생성 (테스트 격리)
       Workspace singleMemberWorkspace = Workspace.create(
-          memberUser.getId(),
           "Single Member Workspace",
-          "Description",
-          WorkspaceSettings.defaultSettings());
+          "Description");
       singleMemberWorkspace = workspaceRepository.save(
           singleMemberWorkspace).block();
 

@@ -6,10 +6,8 @@ import lombok.Getter;
 @Getter
 public enum ProjectRole {
 
-  OWNER(5, "owner"),
-  ADMIN(4, "admin"),
-  EDITOR(3, "editor"),
-  COMMENTER(2, "commenter"),
+  ADMIN(3, "admin"),
+  EDITOR(2, "editor"),
   VIEWER(1, "viewer");
 
   private final int level;
@@ -28,16 +26,10 @@ public enum ProjectRole {
     return this.level >= required.level;
   }
 
-  public boolean isOwner() { return this.level >= OWNER.level; }
-
   public boolean isAdmin() { return this.level >= ADMIN.level; }
 
   public boolean canEdit() {
     return this.level >= EDITOR.level;
-  }
-
-  public boolean canComment() {
-    return this.level >= COMMENTER.level;
   }
 
   /** Spring Security 권한 문자열 생성
