@@ -12,7 +12,7 @@ import type {
 import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { AuthStore } from './auth.store';
 
-const SHARED_WORKER_ENABLE = typeof SharedWorkerGlobalScope !== 'undefined';
+const SHARED_WORKER_ENABLE = typeof SharedWorker !== 'undefined';
 
 export class CollaborationStore {
   private static instance: CollaborationStore;

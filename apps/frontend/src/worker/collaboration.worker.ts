@@ -114,12 +114,13 @@ function handlePort(port: WorkerPort) {
 }
 
 if (SHARED_WORKER_ENABLE && self instanceof SharedWorkerGlobalScope) {
+  console.log('[Worker] SharedWorkerGlobalScope');
   self.onconnect = (e: MessageEvent) => {
     const port = e.ports[0];
     handlePort(port);
   };
-} else if (self instanceof DedicatedWorkerGlobalScope) {
-  handlePort(self);
+} else {
+  handlePort(self as DedicatedWorkerGlobalScope);
 }
 
 function handleConnect(projectId: string, port: WorkerPort) {

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
+import { useReactFlow } from '@xyflow/react';
 import type { ChatMessage } from '@/lib/api/collaboration';
 import { useChatMessages } from '@/hooks';
 
@@ -15,6 +16,7 @@ const FloatingChatMessage = ({
   message,
   onExpire,
 }: FloatingChatMessageProps) => {
+  const { flowToScreenPosition } = useReactFlow();
   const [opacity, setOpacity] = useState(1);
   const onExpireRef = useRef(onExpire);
 
@@ -41,13 +43,15 @@ const FloatingChatMessage = ({
 
   if (!message.position) return null;
 
+  const screenPosition = flowToScreenPosition(message.position);
+
   return (
     <div
       className="fixed pointer-events-none z-50 transition-opacity duration-500"
       style={{
         left: 0,
         top: 0,
-        transform: `translate3d(${message.position.x}px, ${message.position.y}px, 0)`,
+        transform: `translate3d(${screenPosition.x}px, ${screenPosition.y}px, 0)`,
         opacity,
       }}
     >
