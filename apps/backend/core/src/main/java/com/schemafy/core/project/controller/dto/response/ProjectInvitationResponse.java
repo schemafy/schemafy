@@ -2,7 +2,7 @@ package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.repository.entity.ProjectInvitation;
+import com.schemafy.core.project.repository.entity.Invitation;
 
 public record ProjectInvitationResponse(
     String id,
@@ -16,11 +16,11 @@ public record ProjectInvitationResponse(
     Instant resolvedAt,
     Instant createdAt) {
 
-  public static ProjectInvitationResponse of(ProjectInvitation invitation) {
+  public static ProjectInvitationResponse of(Invitation invitation) {
     return new ProjectInvitationResponse(
         invitation.getId(),
-        invitation.getWorkspaceId(),
-        invitation.getProjectId(),
+        invitation.getParentId(),
+        invitation.getTargetId(),
         invitation.getInvitedEmail(),
         invitation.getInvitedRole(),
         invitation.getInvitedBy(),

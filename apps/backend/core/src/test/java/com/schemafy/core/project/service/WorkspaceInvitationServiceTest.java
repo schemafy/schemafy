@@ -15,11 +15,11 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceInvitationRequest;
-import com.schemafy.core.project.repository.WorkspaceInvitationRepository;
+import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.entity.WorkspaceInvitation;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
@@ -42,7 +42,7 @@ class WorkspaceInvitationServiceTest {
   private WorkspaceInvitationService invitationService;
 
   @Autowired
-  private WorkspaceInvitationRepository invitationRepository;
+  private InvitationRepository invitationRepository;
 
   @Autowired
   private WorkspaceRepository workspaceRepository;
@@ -228,9 +228,9 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("관리자는 초대 목록을 조회할 수 있다")
     void listInvitations_Success() {
-      WorkspaceInvitation invitation1 = WorkspaceInvitation.create(
+      Invitation invitation1 = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(), "user1@test.com", WorkspaceRole.MEMBER, adminUser.getId());
-      WorkspaceInvitation invitation2 = WorkspaceInvitation.create(
+      Invitation invitation2 = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(), "user2@test.com", WorkspaceRole.MEMBER, adminUser.getId());
 
       Flux.just(invitation1, invitation2)
@@ -253,7 +253,7 @@ class WorkspaceInvitationServiceTest {
     @DisplayName("페이지네이션이 올바르게 동작한다")
     void listInvitations_Pagination() {
       for (int i = 0; i < 5; i++) {
-        WorkspaceInvitation invitation = WorkspaceInvitation.create(
+        Invitation invitation = Invitation.createWorkspaceInvitation(
             testWorkspace.getId(),
             "user" + i + "@test.com",
             WorkspaceRole.MEMBER,
@@ -314,11 +314,11 @@ class WorkspaceInvitationServiceTest {
       workspace3 = workspaceRepository.save(workspace3).block();
 
       // invitedUser에게 여러 초대 생성
-      WorkspaceInvitation invitation1 = WorkspaceInvitation.create(
+      Invitation invitation1 = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
-      WorkspaceInvitation invitation2 = WorkspaceInvitation.create(
+      Invitation invitation2 = Invitation.createWorkspaceInvitation(
           workspace2.getId(), invitedUser.getEmail(), WorkspaceRole.ADMIN, adminUser.getId());
-      WorkspaceInvitation invitation3 = WorkspaceInvitation.create(
+      Invitation invitation3 = Invitation.createWorkspaceInvitation(
           workspace3.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
 
       Flux.just(invitation1, invitation2, invitation3)
@@ -357,7 +357,7 @@ class WorkspaceInvitationServiceTest {
       for (int i = 0; i < 5; i++) {
         Workspace workspace = Workspace.create("Workspace " + i, "Description " + i);
         workspace = workspaceRepository.save(workspace).block();
-        WorkspaceInvitation invitation = WorkspaceInvitation.create(
+        Invitation invitation = Invitation.createWorkspaceInvitation(
             workspace.getId(),
             invitedUser.getEmail(),
             WorkspaceRole.MEMBER,
@@ -385,14 +385,14 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("수락/거절된 초대는 목록에 포함되지 않는다")
     void listMyInvitations_OnlyPending() {
-      WorkspaceInvitation pending = WorkspaceInvitation.create(
+      Invitation pending = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
       pending = invitationRepository.save(pending).block();
       final String pendingId = pending.getId();
 
       Workspace workspace2 = Workspace.create("Workspace 2", "Description 2");
       workspace2 = workspaceRepository.save(workspace2).block();
-      WorkspaceInvitation accepted = WorkspaceInvitation.create(
+      Invitation accepted = Invitation.createWorkspaceInvitation(
           workspace2.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
       accepted = invitationRepository.save(accepted).block();
       accepted.accept();
@@ -400,7 +400,7 @@ class WorkspaceInvitationServiceTest {
 
       Workspace workspace3 = Workspace.create("Workspace 3", "Description 3");
       workspace3 = workspaceRepository.save(workspace3).block();
-      WorkspaceInvitation rejected = WorkspaceInvitation.create(
+      Invitation rejected = Invitation.createWorkspaceInvitation(
           workspace3.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
       rejected = invitationRepository.save(rejected).block();
       rejected.reject();
@@ -419,11 +419,11 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("다른 사용자에게 온 초대는 보이지 않는다")
     void listMyInvitations_OnlyMyInvitations() {
-      WorkspaceInvitation myInvitation = WorkspaceInvitation.create(
+      Invitation myInvitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
       invitationRepository.save(myInvitation).block();
 
-      WorkspaceInvitation otherInvitation = WorkspaceInvitation.create(
+      Invitation otherInvitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(), memberUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
       invitationRepository.save(otherInvitation).block();
 
@@ -458,7 +458,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("유효한 초대를 수락하면 워크스페이스 멤버가 생성된다")
     void acceptInvitation_Success() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -475,7 +475,7 @@ class WorkspaceInvitationServiceTest {
           })
           .verifyComplete();
 
-      WorkspaceInvitation updated = invitationRepository.findById(invitationId).block();
+      Invitation updated = invitationRepository.findById(invitationId).block();
       assertThat(updated.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
       assertThat(updated.getResolvedAt()).isNotNull();
     }
@@ -496,7 +496,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("초대 이메일과 사용자 이메일이 다르면 실패한다")
     void acceptInvitation_EmailMismatch_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           "other@test.com",
           WorkspaceRole.MEMBER,
@@ -516,7 +516,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("만료된 초대를 수락하면 실패한다")
     void acceptInvitation_Expired_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -544,7 +544,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("이미 수락된 초대를 다시 수락하면 실패한다")
     void acceptInvitation_AlreadyAccepted_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -566,7 +566,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("거절된 초대를 수락하면 실패한다")
     void acceptInvitation_AlreadyRejected_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -592,7 +592,7 @@ class WorkspaceInvitationServiceTest {
           testWorkspace.getId(), invitedUser.getId(), WorkspaceRole.MEMBER);
       memberRepository.save(existingMember).block();
 
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -622,7 +622,7 @@ class WorkspaceInvitationServiceTest {
         memberRepository.save(member).block();
       }
 
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -643,7 +643,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("사용자가 존재하지 않으면 초대 수락에 실패한다")
     void acceptInvitation_UserNotFound_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           "newuser@test.com",
           WorkspaceRole.MEMBER,
@@ -669,7 +669,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("유효한 초대를 거절하면 성공한다")
     void rejectInvitation_Success() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -682,7 +682,7 @@ class WorkspaceInvitationServiceTest {
           invitationService.rejectInvitation(invitationId, invitedUser.getId()))
           .verifyComplete();
 
-      WorkspaceInvitation updated = invitationRepository.findById(invitationId).block();
+      Invitation updated = invitationRepository.findById(invitationId).block();
       assertThat(updated.getStatusAsEnum()).isEqualTo(InvitationStatus.REJECTED);
       assertThat(updated.getResolvedAt()).isNotNull();
     }
@@ -703,7 +703,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("초대 이메일과 사용자 이메일이 다르면 실패한다")
     void rejectInvitation_EmailMismatch_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           "other@test.com",
           WorkspaceRole.MEMBER,
@@ -723,7 +723,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("이미 수락된 초대를 거절하면 실패한다")
     void rejectInvitation_AlreadyAccepted_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -745,7 +745,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("이미 거절된 초대를 다시 거절하면 실패한다")
     void rejectInvitation_AlreadyRejected_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           invitedUser.getEmail(),
           WorkspaceRole.MEMBER,
@@ -767,7 +767,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("사용자가 존재하지 않으면 초대 거절에 실패한다")
     void rejectInvitation_UserNotFound_Fails() {
-      WorkspaceInvitation invitation = WorkspaceInvitation.create(
+      Invitation invitation = Invitation.createWorkspaceInvitation(
           testWorkspace.getId(),
           "newuser@test.com",
           WorkspaceRole.MEMBER,
@@ -780,6 +780,60 @@ class WorkspaceInvitationServiceTest {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
             assertThat(be.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
+          })
+          .verify();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("초대 타입 검증")
+  class InvitationTypeValidationTests {
+
+    @Test
+    @DisplayName("PROJECT 타입 초대를 Workspace 서비스로 수락하면 실패한다")
+    void acceptProjectInvitation_WithWorkspaceService_Fails() {
+      // PROJECT 타입 초대 생성
+      Invitation projectInvitation = Invitation.createProjectInvitation(
+          "project-id",
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          com.schemafy.core.project.repository.vo.ProjectRole.VIEWER,
+          adminUser.getId());
+      projectInvitation = invitationRepository.save(projectInvitation).block();
+      final String invitationId = projectInvitation.getId();
+
+      // WorkspaceInvitationService로 수락 시도
+      StepVerifier.create(
+          invitationService.acceptInvitation(invitationId, invitedUser.getId()))
+          .expectErrorSatisfies(error -> {
+            assertThat(error).isInstanceOf(BusinessException.class);
+            BusinessException be = (BusinessException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_TYPE_MISMATCH);
+          })
+          .verify();
+    }
+
+    @Test
+    @DisplayName("PROJECT 타입 초대를 Workspace 서비스로 거절하면 실패한다")
+    void rejectProjectInvitation_WithWorkspaceService_Fails() {
+      // PROJECT 타입 초대 생성
+      Invitation projectInvitation = Invitation.createProjectInvitation(
+          "project-id",
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          com.schemafy.core.project.repository.vo.ProjectRole.VIEWER,
+          adminUser.getId());
+      projectInvitation = invitationRepository.save(projectInvitation).block();
+      final String invitationId = projectInvitation.getId();
+
+      // WorkspaceInvitationService로 거절 시도
+      StepVerifier.create(
+          invitationService.rejectInvitation(invitationId, invitedUser.getId()))
+          .expectErrorSatisfies(error -> {
+            assertThat(error).isInstanceOf(BusinessException.class);
+            BusinessException be = (BusinessException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_TYPE_MISMATCH);
           })
           .verify();
     }

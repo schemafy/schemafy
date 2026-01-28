@@ -383,6 +383,156 @@ include::{snippets}/workspace-member-update-role/response-fields.adoc[]
 
 ---
 
+=== Workspace 초대 생성
+
+워크스페이스에 새 멤버를 초대합니다. 초대를 받은 사용자는 이메일로 알림을 받습니다.
+
+[source]
+----
+POST /api/v1.0/workspaces/{workspaceId}/invitations
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-invitation-create/http-request.adoc[]
+include::{snippets}/workspace-invitation-create/request-headers.adoc[]
+include::{snippets}/workspace-invitation-create/path-parameters.adoc[]
+include::{snippets}/workspace-invitation-create/request-fields.adoc[]
+include::{snippets}/workspace-invitation-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-invitation-create/response-headers.adoc[]
+include::{snippets}/workspace-invitation-create/response-body.adoc[]
+include::{snippets}/workspace-invitation-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-invitation-create/response-fields.adoc[]
+
+---
+
+=== Workspace 초대 목록 조회
+
+워크스페이스의 초대 목록을 조회합니다. 관리자만 접근 가능합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{workspaceId}/invitations
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-invitation-list/http-request.adoc[]
+include::{snippets}/workspace-invitation-list/request-headers.adoc[]
+include::{snippets}/workspace-invitation-list/path-parameters.adoc[]
+include::{snippets}/workspace-invitation-list/query-parameters.adoc[]
+include::{snippets}/workspace-invitation-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-invitation-list/response-headers.adoc[]
+include::{snippets}/workspace-invitation-list/response-body.adoc[]
+include::{snippets}/workspace-invitation-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-invitation-list/response-fields.adoc[]
+
+---
+
+=== 내 Workspace 초대 목록 조회
+
+현재 사용자가 받은 워크스페이스 초대 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/users/me/invitations/workspaces
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-invitation-list-my/http-request.adoc[]
+include::{snippets}/workspace-invitation-list-my/request-headers.adoc[]
+include::{snippets}/workspace-invitation-list-my/query-parameters.adoc[]
+include::{snippets}/workspace-invitation-list-my/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-invitation-list-my/response-headers.adoc[]
+include::{snippets}/workspace-invitation-list-my/response-body.adoc[]
+include::{snippets}/workspace-invitation-list-my/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-invitation-list-my/response-fields.adoc[]
+
+---
+
+=== Workspace 초대 수락
+
+워크스페이스 초대를 수락하고 멤버로 등록됩니다.
+
+[source]
+----
+PUT /api/v1.0/workspaces/invitations/{invitationId}/accept
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-invitation-accept/http-request.adoc[]
+include::{snippets}/workspace-invitation-accept/request-headers.adoc[]
+include::{snippets}/workspace-invitation-accept/path-parameters.adoc[]
+include::{snippets}/workspace-invitation-accept/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-invitation-accept/response-headers.adoc[]
+include::{snippets}/workspace-invitation-accept/response-body.adoc[]
+include::{snippets}/workspace-invitation-accept/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/workspace-invitation-accept/response-fields.adoc[]
+
+---
+
+=== Workspace 초대 거절
+
+워크스페이스 초대를 거절합니다.
+
+[source]
+----
+PUT /api/v1.0/workspaces/invitations/{invitationId}/reject
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/workspace-invitation-reject/http-request.adoc[]
+include::{snippets}/workspace-invitation-reject/request-headers.adoc[]
+include::{snippets}/workspace-invitation-reject/path-parameters.adoc[]
+include::{snippets}/workspace-invitation-reject/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/workspace-invitation-reject/http-response.adoc[]
+
+---
+
 == Project API
 
 === Project 생성
@@ -645,6 +795,156 @@ include::{snippets}/project-member-leave/curl-request.adoc[]
 ==== 응답
 
 include::{snippets}/project-member-leave/http-response.adoc[]
+
+---
+
+=== Project 초대 생성
+
+프로젝트에 새 멤버를 초대합니다. 초대를 받은 사용자는 이메일로 알림을 받습니다.
+
+[source]
+----
+POST /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/invitations
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-invitation-create/http-request.adoc[]
+include::{snippets}/project-invitation-create/request-headers.adoc[]
+include::{snippets}/project-invitation-create/path-parameters.adoc[]
+include::{snippets}/project-invitation-create/request-fields.adoc[]
+include::{snippets}/project-invitation-create/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-invitation-create/response-headers.adoc[]
+include::{snippets}/project-invitation-create/response-body.adoc[]
+include::{snippets}/project-invitation-create/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-invitation-create/response-fields.adoc[]
+
+---
+
+=== Project 초대 목록 조회
+
+프로젝트의 초대 목록을 조회합니다. 관리자만 접근 가능합니다.
+
+[source]
+----
+GET /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/invitations
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-invitation-list/http-request.adoc[]
+include::{snippets}/project-invitation-list/request-headers.adoc[]
+include::{snippets}/project-invitation-list/path-parameters.adoc[]
+include::{snippets}/project-invitation-list/query-parameters.adoc[]
+include::{snippets}/project-invitation-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-invitation-list/response-headers.adoc[]
+include::{snippets}/project-invitation-list/response-body.adoc[]
+include::{snippets}/project-invitation-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-invitation-list/response-fields.adoc[]
+
+---
+
+=== 내 Project 초대 목록 조회
+
+현재 사용자가 받은 프로젝트 초대 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/users/me/invitations/projects
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-invitation-list-my/http-request.adoc[]
+include::{snippets}/project-invitation-list-my/request-headers.adoc[]
+include::{snippets}/project-invitation-list-my/query-parameters.adoc[]
+include::{snippets}/project-invitation-list-my/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-invitation-list-my/response-headers.adoc[]
+include::{snippets}/project-invitation-list-my/response-body.adoc[]
+include::{snippets}/project-invitation-list-my/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-invitation-list-my/response-fields.adoc[]
+
+---
+
+=== Project 초대 수락
+
+프로젝트 초대를 수락하고 멤버로 등록됩니다.
+
+[source]
+----
+PUT /api/v1.0/projects/invitations/{invitationId}/accept
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-invitation-accept/http-request.adoc[]
+include::{snippets}/project-invitation-accept/request-headers.adoc[]
+include::{snippets}/project-invitation-accept/path-parameters.adoc[]
+include::{snippets}/project-invitation-accept/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-invitation-accept/response-headers.adoc[]
+include::{snippets}/project-invitation-accept/response-body.adoc[]
+include::{snippets}/project-invitation-accept/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/project-invitation-accept/response-fields.adoc[]
+
+---
+
+=== Project 초대 거절
+
+프로젝트 초대를 거절합니다.
+
+[source]
+----
+PUT /api/v1.0/projects/invitations/{invitationId}/reject
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/project-invitation-reject/http-request.adoc[]
+include::{snippets}/project-invitation-reject/request-headers.adoc[]
+include::{snippets}/project-invitation-reject/path-parameters.adoc[]
+include::{snippets}/project-invitation-reject/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/project-invitation-reject/http-response.adoc[]
 
 ---
 

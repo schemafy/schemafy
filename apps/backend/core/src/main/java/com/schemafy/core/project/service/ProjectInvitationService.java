@@ -13,14 +13,15 @@ import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateProjectInvitationRequest;
 import com.schemafy.core.project.controller.dto.response.ProjectInvitationResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
-import com.schemafy.core.project.repository.ProjectInvitationRepository;
+import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
+import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.entity.ProjectInvitation;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 
@@ -36,13 +37,13 @@ public class ProjectInvitationService {
   private static final int PROJECT_MAX_MEMBERS_COUNT = 30;
 
   private final TransactionalOperator transactionalOperator;
-  private final ProjectInvitationRepository invitationRepository;
+  private final InvitationRepository invitationRepository;
   private final ProjectRepository projectRepository;
   private final ProjectMemberRepository projectMemberRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final UserRepository userRepository;
 
-  public Mono<ProjectInvitation> createInvitation(
+  public Mono<Invitation> createInvitation(
       String workspaceId,
       String projectId,
       CreateProjectInvitationRequest request,
@@ -59,7 +60,7 @@ public class ProjectInvitationService {
                 projectId, request.email()))
             .thenReturn(project))
         .flatMap(project -> {
-          ProjectInvitation invitation = ProjectInvitation.create(
+          Invitation invitation = Invitation.createProjectInvitation(
               projectId,
               workspaceId,
               request.email(),
@@ -78,9 +79,9 @@ public class ProjectInvitationService {
       int page,
       int size) {
     return validateProjectAdmin(projectId, currentUserId)
-        .then(invitationRepository.countByProjectIdAndNotDeleted(projectId))
+        .then(invitationRepository.countProjectInvitations(projectId))
         .flatMap(totalElements -> invitationRepository
-            .findByProjectIdAndNotDeleted(projectId, size, page * size)
+            .findProjectInvitations(projectId, size, page * size)
             .map(ProjectInvitationResponse::of)
             .collectList()
             .map(invitations -> PageResponse.of(
@@ -95,9 +96,11 @@ public class ProjectInvitationService {
         .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)))
         .flatMap(user -> {
           String email = user.getEmail();
-          return invitationRepository.countPendingByEmail(email)
+          String targetType = InvitationType.PROJECT.getValue();
+
+          return invitationRepository.countPendingByEmailAndType(email, targetType)
               .flatMap(totalElements -> invitationRepository
-                  .findPendingByEmail(email, size, page * size)
+                  .findPendingByEmailAndType(email, targetType, size, page * size)
                   .map(ProjectInvitationResponse::of)
                   .collectList()
                   .map(invitations -> PageResponse.of(
@@ -113,6 +116,11 @@ public class ProjectInvitationService {
             new BusinessException(ErrorCode.USER_NOT_FOUND)))
         .flatMap(user -> findInvitationOrThrow(invitationId)
             .flatMap(invitation -> {
+              if (!invitation.getTargetTypeAsEnum().isProject()) {
+                return Mono.error(new BusinessException(
+                    ErrorCode.INVITATION_TYPE_MISMATCH));
+              }
+
               invitation.validateInvitedEmailMatches(user.getEmail());
               return checkNotAlreadyProjectMember(invitation.getProjectId(), currentUserId)
                   .then(checkMemberLimit(invitation.getProjectId()))
@@ -123,7 +131,7 @@ public class ProjectInvitationService {
                     ProjectMember member = ProjectMember.create(
                         invitation.getProjectId(),
                         currentUserId,
-                        invitation.getRoleAsEnum());
+                        invitation.getProjectRole());
 
                     return invitationRepository.save(invitation)
                         .then(ensureWorkspaceMember(invitation.getWorkspaceId(), currentUserId))
@@ -148,6 +156,11 @@ public class ProjectInvitationService {
             new BusinessException(ErrorCode.USER_NOT_FOUND)))
         .flatMap(user -> findInvitationOrThrow(invitationId)
             .flatMap(invitation -> {
+              if (!invitation.getTargetTypeAsEnum().isProject()) {
+                return Mono.error(new BusinessException(
+                    ErrorCode.INVITATION_TYPE_MISMATCH));
+              }
+
               invitation.validateInvitedEmailMatches(user.getEmail());
               invitation.reject();
               return invitationRepository.save(invitation);
@@ -162,7 +175,7 @@ public class ProjectInvitationService {
             ErrorCode.INVITATION_CONCURRENT_MODIFICATION));
   }
 
-  private Mono<ProjectInvitation> findInvitationOrThrow(String invitationId) {
+  private Mono<Invitation> findInvitationOrThrow(String invitationId) {
     return invitationRepository.findByIdAndNotDeleted(invitationId)
         .switchIfEmpty(Mono.error(
             new BusinessException(ErrorCode.INVITATION_NOT_FOUND)));
@@ -194,7 +207,7 @@ public class ProjectInvitationService {
       String projectId,
       String email) {
     return invitationRepository
-        .countPendingByProjectAndEmail(projectId, email)
+        .countPendingProjectInvitation(projectId, email)
         .flatMap(count -> {
           if (count > 0) {
             log.warn("Duplicate pending invitation: project={}, email={}",

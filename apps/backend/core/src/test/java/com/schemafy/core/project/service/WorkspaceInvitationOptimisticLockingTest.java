@@ -14,11 +14,11 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.project.repository.WorkspaceInvitationRepository;
+import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.entity.WorkspaceInvitation;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
@@ -33,14 +33,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
-@DisplayName("WorkspaceInvitation Optimistic Locking 테스트")
+@DisplayName("Invitation Optimistic Locking 테스트")
 class WorkspaceInvitationOptimisticLockingTest {
 
   @Autowired
   private WorkspaceInvitationService invitationService;
 
   @Autowired
-  private WorkspaceInvitationRepository invitationRepository;
+  private InvitationRepository invitationRepository;
 
   @Autowired
   private WorkspaceRepository workspaceRepository;
@@ -53,7 +53,7 @@ class WorkspaceInvitationOptimisticLockingTest {
 
   private User invitedUser;
   private Workspace testWorkspace;
-  private WorkspaceInvitation testInvitation;
+  private Invitation testInvitation;
 
   @BeforeEach
   void setUp() {
@@ -80,7 +80,7 @@ class WorkspaceInvitationOptimisticLockingTest {
         testWorkspace.getId(), adminUser.getId(), WorkspaceRole.ADMIN);
     memberRepository.save(adminMember).block();
 
-    testInvitation = WorkspaceInvitation.create(
+    testInvitation = Invitation.createWorkspaceInvitation(
         testWorkspace.getId(),
         invitedUser.getEmail(),
         WorkspaceRole.MEMBER,
@@ -132,7 +132,7 @@ class WorkspaceInvitationOptimisticLockingTest {
     assertThat(successCount.get()).isEqualTo(1);
     assertThat(failureCount.get()).isEqualTo(threadCount - 1);
 
-    WorkspaceInvitation finalInvitation = invitationRepository.findById(invitationId).block();
+    Invitation finalInvitation = invitationRepository.findById(invitationId).block();
     assertThat(finalInvitation.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
 
     long memberCount = memberRepository
@@ -184,7 +184,7 @@ class WorkspaceInvitationOptimisticLockingTest {
     assertThat(successCount.get()).isEqualTo(1);
     assertThat(failureCount.get()).isEqualTo(threadCount - 1);
 
-    WorkspaceInvitation finalInvitation = invitationRepository.findById(invitationId).block();
+    Invitation finalInvitation = invitationRepository.findById(invitationId).block();
     assertThat(finalInvitation.getStatusAsEnum()).isEqualTo(InvitationStatus.REJECTED);
   }
 
@@ -240,7 +240,7 @@ class WorkspaceInvitationOptimisticLockingTest {
     assertThat(totalSuccess).isEqualTo(1);
     assertThat(failureCount.get()).isEqualTo(threadCount - 1);
 
-    WorkspaceInvitation finalInvitation = invitationRepository.findById(invitationId).block();
+    Invitation finalInvitation = invitationRepository.findById(invitationId).block();
     assertThat(finalInvitation.getStatusAsEnum()).isIn(
         InvitationStatus.ACCEPTED, InvitationStatus.REJECTED);
   }

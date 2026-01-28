@@ -149,8 +149,8 @@ public enum ErrorCode {
       "이미 프로젝트 멤버입니다."),
   INVITATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "INV009",
       "이미 대기 중인 초대가 존재합니다."),
-  PROJECT_MEMBER_NOT_WORKSPACE_MEMBER(HttpStatus.FORBIDDEN, "INV010",
-      "워크스페이스 멤버만 프로젝트에 참여할 수 있습니다.");
+  INVITATION_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "INV010",
+      "초대 타입이 일치하지 않습니다.");
 
   private final HttpStatus status;
   private final String code;

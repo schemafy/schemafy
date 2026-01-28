@@ -14,13 +14,13 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.project.repository.ProjectInvitationRepository;
+import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.entity.ProjectInvitation;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
@@ -39,14 +39,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
-@DisplayName("ProjectInvitation Race Condition 테스트")
+@DisplayName("Invitation Race Condition 테스트")
 class ProjectInvitationRaceConditionTest {
 
   @Autowired
   private ProjectInvitationService invitationService;
 
   @Autowired
-  private ProjectInvitationRepository invitationRepository;
+  private InvitationRepository invitationRepository;
 
   @Autowired
   private ProjectRepository projectRepository;
@@ -66,7 +66,7 @@ class ProjectInvitationRaceConditionTest {
   private User invitedUser;
   private Workspace testWorkspace;
   private Project testProject;
-  private ProjectInvitation testInvitation;
+  private Invitation testInvitation;
 
   @BeforeEach
   void setUp() {
@@ -110,7 +110,7 @@ class ProjectInvitationRaceConditionTest {
         testProject.getId(), adminUser.getId(), ProjectRole.ADMIN);
     projectMemberRepository.save(adminProjMember).block();
 
-    testInvitation = ProjectInvitation.create(
+    testInvitation = Invitation.createProjectInvitation(
         testProject.getId(),
         testWorkspace.getId(),
         invitedUser.getEmail(),
@@ -163,7 +163,7 @@ class ProjectInvitationRaceConditionTest {
     assertThat(successCount.get()).isEqualTo(1);
     assertThat(failureCount.get()).isEqualTo(threadCount - 1);
 
-    ProjectInvitation finalInvitation = invitationRepository.findById(invitationId).block();
+    Invitation finalInvitation = invitationRepository.findById(invitationId).block();
     assertThat(finalInvitation.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
 
     long memberCount = projectMemberRepository
@@ -215,7 +215,7 @@ class ProjectInvitationRaceConditionTest {
     assertThat(successCount.get()).isEqualTo(1);
     assertThat(failureCount.get()).isEqualTo(threadCount - 1);
 
-    ProjectInvitation finalInvitation = invitationRepository.findById(invitationId).block();
+    Invitation finalInvitation = invitationRepository.findById(invitationId).block();
     assertThat(finalInvitation.getStatusAsEnum()).isEqualTo(InvitationStatus.REJECTED);
   }
 
@@ -271,7 +271,7 @@ class ProjectInvitationRaceConditionTest {
     assertThat(totalSuccess).isEqualTo(1);
     assertThat(failureCount.get()).isEqualTo(threadCount - 1);
 
-    ProjectInvitation finalInvitation = invitationRepository.findById(invitationId).block();
+    Invitation finalInvitation = invitationRepository.findById(invitationId).block();
     assertThat(finalInvitation.getStatusAsEnum()).isIn(
         InvitationStatus.ACCEPTED, InvitationStatus.REJECTED);
   }
@@ -301,7 +301,7 @@ class ProjectInvitationRaceConditionTest {
         testWorkspace.getId(), lastUser.getId(), WorkspaceRole.MEMBER);
     workspaceMemberRepository.save(lastWsMember).block();
 
-    ProjectInvitation invitation1 = ProjectInvitation.create(
+    Invitation invitation1 = Invitation.createProjectInvitation(
         testProject.getId(),
         testWorkspace.getId(),
         invitedUser.getEmail(),
@@ -309,7 +309,7 @@ class ProjectInvitationRaceConditionTest {
         testProject.getId());
     invitation1 = invitationRepository.save(invitation1).block();
 
-    ProjectInvitation invitation2 = ProjectInvitation.create(
+    Invitation invitation2 = Invitation.createProjectInvitation(
         testProject.getId(),
         testWorkspace.getId(),
         lastUser.getEmail(),

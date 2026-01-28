@@ -13,12 +13,13 @@ import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceInvitationRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceInvitationResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
-import com.schemafy.core.project.repository.WorkspaceInvitationRepository;
+import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.entity.WorkspaceInvitation;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -34,12 +35,12 @@ public class WorkspaceInvitationService {
   private static final int WORKSPACE_MAX_MEMBERS_COUNT = 30;
 
   private final TransactionalOperator transactionalOperator;
-  private final WorkspaceInvitationRepository invitationRepository;
+  private final InvitationRepository invitationRepository;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository memberRepository;
   private final UserRepository userRepository;
 
-  public Mono<WorkspaceInvitation> createInvitation(
+  public Mono<Invitation> createInvitation(
       String workspaceId,
       CreateWorkspaceInvitationRequest request,
       String currentUserId) {
@@ -51,7 +52,7 @@ public class WorkspaceInvitationService {
                 workspaceId, request.email()))
             .thenReturn(workspace))
         .flatMap(workspace -> {
-          WorkspaceInvitation invitation = WorkspaceInvitation.create(
+          Invitation invitation = Invitation.createWorkspaceInvitation(
               workspaceId,
               request.email(),
               request.role(),
@@ -68,9 +69,9 @@ public class WorkspaceInvitationService {
       int page,
       int size) {
     return validateAdmin(workspaceId, currentUserId)
-        .then(invitationRepository.countByWorkspaceIdAndNotDeleted(workspaceId))
+        .then(invitationRepository.countWorkspaceInvitations(workspaceId))
         .flatMap(totalElements -> invitationRepository
-            .findByWorkspaceIdAndNotDeleted(workspaceId, size, page * size)
+            .findWorkspaceInvitations(workspaceId, size, page * size)
             .map(WorkspaceInvitationResponse::of)
             .collectList()
             .map(invitations -> PageResponse.of(
@@ -86,9 +87,11 @@ public class WorkspaceInvitationService {
             new BusinessException(ErrorCode.USER_NOT_FOUND)))
         .flatMap(user -> {
           String email = user.getEmail();
-          return invitationRepository.countPendingByEmail(email)
+          String targetType = InvitationType.WORKSPACE.getValue();
+
+          return invitationRepository.countPendingByEmailAndType(email, targetType)
               .flatMap(totalElements -> invitationRepository
-                  .findPendingByEmail(email, size, page * size)
+                  .findPendingByEmailAndType(email, targetType, size, page * size)
                   .map(WorkspaceInvitationResponse::of)
                   .collectList()
                   .map(invitations -> PageResponse.of(
@@ -104,6 +107,11 @@ public class WorkspaceInvitationService {
             new BusinessException(ErrorCode.USER_NOT_FOUND)))
         .flatMap(user -> findInvitationOrThrow(invitationId)
             .flatMap(invitation -> {
+              if (!invitation.getTargetTypeAsEnum().isWorkspace()) {
+                return Mono.error(new BusinessException(
+                    ErrorCode.INVITATION_TYPE_MISMATCH));
+              }
+
               invitation.validateInvitedEmailMatches(user.getEmail());
               return checkNotAlreadyMember(invitation.getWorkspaceId(), currentUserId)
                   .then(checkMemberLimit(invitation.getWorkspaceId()))
@@ -113,7 +121,7 @@ public class WorkspaceInvitationService {
                     WorkspaceMember member = WorkspaceMember.create(
                         invitation.getWorkspaceId(),
                         currentUserId,
-                        invitation.getRoleAsEnum());
+                        invitation.getWorkspaceRole());
 
                     return invitationRepository.save(invitation)
                         .then(memberRepository.save(member))
@@ -136,6 +144,11 @@ public class WorkspaceInvitationService {
         .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)))
         .flatMap(user -> findInvitationOrThrow(invitationId)
             .flatMap(invitation -> {
+              if (!invitation.getTargetTypeAsEnum().isWorkspace()) {
+                return Mono.error(new BusinessException(
+                    ErrorCode.INVITATION_TYPE_MISMATCH));
+              }
+
               invitation.validateInvitedEmailMatches(user.getEmail());
               invitation.reject();
               return invitationRepository.save(invitation);
@@ -149,7 +162,7 @@ public class WorkspaceInvitationService {
             ErrorCode.INVITATION_CONCURRENT_MODIFICATION)).then();
   }
 
-  private Mono<WorkspaceInvitation> findInvitationOrThrow(String invitationId) {
+  private Mono<Invitation> findInvitationOrThrow(String invitationId) {
     return invitationRepository.findByIdAndNotDeleted(invitationId)
         .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.INVITATION_NOT_FOUND)));
   }
@@ -178,7 +191,7 @@ public class WorkspaceInvitationService {
       String workspaceId,
       String email) {
     return invitationRepository
-        .countPendingByWorkspaceAndEmail(workspaceId, email)
+        .countPendingWorkspaceInvitation(workspaceId, email)
         .flatMap(count -> {
           if (count > 0) {
             log.info("Duplicate pending invitation: workspace={}, email={}",

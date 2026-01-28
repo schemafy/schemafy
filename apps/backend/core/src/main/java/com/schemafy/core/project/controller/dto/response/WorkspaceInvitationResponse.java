@@ -2,7 +2,7 @@ package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.repository.entity.WorkspaceInvitation;
+import com.schemafy.core.project.repository.entity.Invitation;
 
 public record WorkspaceInvitationResponse(
     String id,
@@ -15,7 +15,7 @@ public record WorkspaceInvitationResponse(
     Instant resolvedAt,
     Instant createdAt) {
 
-  public static WorkspaceInvitationResponse of(WorkspaceInvitation invitation) {
+  public static WorkspaceInvitationResponse of(Invitation invitation) {
     return new WorkspaceInvitationResponse(
         invitation.getId(),
         invitation.getWorkspaceId(),
