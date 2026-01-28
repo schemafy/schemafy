@@ -10,6 +10,8 @@ interface RelationshipRepository extends ReactiveCrudRepository<RelationshipEnti
 
   Flux<RelationshipEntity> findByFkTableId(String fkTableId);
 
+  Flux<RelationshipEntity> findByPkTableId(String pkTableId);
+
   @Query("SELECT * FROM db_relationships WHERE pk_table_id = :tableId OR fk_table_id = :tableId")
   Flux<RelationshipEntity> findByTableId(String tableId);
 

@@ -14,6 +14,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelations
 import com.schemafy.domain.erd.relationship.application.port.out.CreateRelationshipPort;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsBySchemaIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.RelationshipExistsPort;
@@ -30,6 +31,7 @@ class RelationshipPersistenceAdapter implements
     GetRelationshipByIdPort,
     GetRelationshipsBySchemaIdPort,
     GetRelationshipsByTableIdPort,
+    GetRelationshipsByPkTableIdPort,
     ChangeRelationshipNamePort,
     ChangeRelationshipKindPort,
     ChangeRelationshipCardinalityPort,
@@ -74,6 +76,13 @@ class RelationshipPersistenceAdapter implements
   @Override
   public Mono<List<Relationship>> findRelationshipsByTableId(String tableId) {
     return relationshipRepository.findByTableId(tableId)
+        .map(relationshipMapper::toDomain)
+        .collectList();
+  }
+
+  @Override
+  public Mono<List<Relationship>> findRelationshipsByPkTableId(String pkTableId) {
+    return relationshipRepository.findByPkTableId(pkTableId)
         .map(relationshipMapper::toDomain)
         .collectList();
   }
