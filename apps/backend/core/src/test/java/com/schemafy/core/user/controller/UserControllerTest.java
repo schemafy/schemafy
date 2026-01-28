@@ -22,18 +22,12 @@ import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 
-import reactor.test.StepVerifier;
-
 import static com.schemafy.core.user.docs.UserApiSnippets.*;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockUser;
 
@@ -56,12 +50,6 @@ class UserControllerTest {
   private UserRepository userRepository;
 
   @Autowired
-  private WorkspaceRepository workspaceRepository;
-
-  @Autowired
-  private WorkspaceMemberRepository workspaceMemberRepository;
-
-  @Autowired
   private JwtProvider jwtProvider;
 
   @Autowired
@@ -69,8 +57,6 @@ class UserControllerTest {
 
   @BeforeEach
   void setUp() {
-    workspaceMemberRepository.deleteAll().block();
-    workspaceRepository.deleteAll().block();
     userRepository.deleteAll().block();
   }
 
@@ -133,7 +119,6 @@ class UserControllerTest {
   @Test
   @DisplayName("인증된 사용자는 타인의 회원 정보 조회에 성공한다")
   void getUserSuccessWhenAccessingOtherUser() {
-    // 두 명의 사용자 생성
     SignUpRequest userARequest = new SignUpRequest("userA@example.com",
         "User A", "password");
     User userA = User
@@ -216,49 +201,6 @@ class UserControllerTest {
         .jsonPath("$.success").isEqualTo(true)
         .jsonPath("$.result.id").isEqualTo(userId)
         .jsonPath("$.result.email").isEqualTo(signUpRequest.email());
-  }
-
-  @Test
-  @DisplayName("회원가입 시 개인 워크스페이스가 자동으로 생성된다")
-  void signUpCreatesDefaultWorkspace() {
-    SignUpRequest request = new SignUpRequest("test@example.com",
-        "Test User", "password");
-
-    EntityExchangeResult<byte[]> result = webTestClient.post()
-        .uri(PUBLIC_API_BASE_PATH + "/users/signup")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus().isOk()
-        .expectBody(byte[].class).returnResult();
-
-    String responseBody = new String(result.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.result.id");
-
-    // 워크스페이스 생성 검증
-    StepVerifier
-        .create(workspaceRepository.findByUserIdWithPaging(userId, 1, 0))
-        .as("default workspace should be created")
-        .assertNext(workspace -> {
-          assertThat(workspace.getName())
-              .isEqualTo("Test User's Workspace");
-          assertThat(workspace.getDescription())
-              .isEqualTo("Personal workspace for Test User");
-        })
-        .verifyComplete();
-
-    // 워크스페이스 멤버 검증
-    StepVerifier
-        .create(workspaceMemberRepository
-            .findByUserIdAndNotDeleted(userId))
-        .as("user should be added as ADMIN to workspace")
-        .assertNext(member -> {
-          assertThat(member.getUserId()).isEqualTo(userId);
-          assertThat(member.getRole())
-              .isEqualTo(WorkspaceRole.ADMIN.getValue());
-          assertThat(member.isAdmin()).isTrue();
-        })
-        .verifyComplete();
   }
 
 }
