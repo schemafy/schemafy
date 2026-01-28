@@ -20,7 +20,7 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
   /** Invitation 생성 응답 필드 (WorkspaceInvitationCreateResponse) */
   private static FieldDescriptor[] invitationCreateResponseFields(String prefix) {
     return new FieldDescriptor[] {
-      fieldWithPath(prefix + "InvitationId").type(JsonFieldType.STRING)
+      fieldWithPath(prefix + "invitationId").type(JsonFieldType.STRING)
           .description("초대 고유 ID"),
       fieldWithPath(prefix + "workspaceId").type(JsonFieldType.STRING)
           .description("워크스페이스 ID"),

@@ -121,7 +121,7 @@ class WorkspaceInvitationControllerTest {
   }
 
   @Nested
-  @DisplayName("POST /api/v1.0/workspaces/{workspaceId}/invitations - 초대 생성")
+  @DisplayName("초대 생성")
   class CreateInvitationTests {
 
     @Test
@@ -221,7 +221,7 @@ class WorkspaceInvitationControllerTest {
   }
 
   @Nested
-  @DisplayName("GET /api/v1.0/workspaces/{workspaceId}/invitations - 초대 목록 조회")
+  @DisplayName("초대 목록 조회")
   class ListInvitationsTests {
 
     @Test
@@ -297,7 +297,7 @@ class WorkspaceInvitationControllerTest {
   }
 
   @Nested
-  @DisplayName("GET /api/v1.0/users/me/invitations/workspaces - 내 초대 목록 조회")
+  @DisplayName("내 초대 목록 조회")
   class ListMyInvitationsTests {
 
     @Test
@@ -432,7 +432,7 @@ class WorkspaceInvitationControllerTest {
   }
 
   @Nested
-  @DisplayName("PUT /api/v1.0/workspaces/invitations/{invitationId}/accept - 초대 수락")
+  @DisplayName("초대 수락")
   class AcceptInvitationTests {
 
     @Test
@@ -531,7 +531,7 @@ class WorkspaceInvitationControllerTest {
   }
 
   @Nested
-  @DisplayName("PUT /api/v1.0/workspaces/invitations/{invitationId}/reject - 초대 거절")
+  @DisplayName("초대 거절")
   class RejectInvitationTests {
 
     @Test
