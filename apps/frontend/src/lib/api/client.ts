@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { AuthStore } from '../../store/auth.store';
+import { authStore } from '../../store/auth.store';
 import { refreshToken } from './auth/api';
 
 const BASE_URL: string =
@@ -30,7 +30,7 @@ type RequestConfigWithMeta = InternalAxiosRequestConfig & {
 };
 
 apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
-  const currentToken = AuthStore.getInstance().accessToken;
+  const currentToken = authStore.accessToken;
   if (currentToken) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['Authorization'] =

@@ -9,7 +9,7 @@ import type {
   RecieveLeave,
   WebSocketMessage,
 } from '@/lib/api/collaboration/types';
-import { AuthStore } from './auth.store';
+import { authStore } from './auth.store';
 
 export class CollaborationStore {
   private static instance: CollaborationStore;
@@ -33,7 +33,7 @@ export class CollaborationStore {
   }
 
   get currentUser() {
-    return AuthStore.getInstance().user;
+    return authStore.user;
   }
 
   private setupWebSocketListeners() {

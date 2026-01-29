@@ -1,15 +1,15 @@
-import { AuthStore } from '../../store/auth.store';
+import { authStore } from '../../store/auth.store';
 
 export const setAccessToken = (token: string | null) => {
-  AuthStore.getInstance().setAccessToken(token);
+  authStore.setAccessToken(token);
 };
 
 export const getAccessToken = () => {
-  return AuthStore.getInstance().accessToken;
+  return authStore.accessToken;
 };
 
 export const removeAccessToken = () => {
-  AuthStore.getInstance().clearAccessToken();
+  authStore.clearAccessToken();
 };
 
 export const clearAuth = (): void => {

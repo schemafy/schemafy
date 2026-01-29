@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib';
 import { logoImg } from '@/assets';
-import { AuthStore } from '@/store/auth.store';
+import { useAuthStore } from '@/store/auth.store';
 import { useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import { CanvasHeader } from './CanvasHeader';
@@ -10,7 +10,7 @@ import { LandingHeader } from './LandingHeader';
 
 export const Header = observer(
   ({ isCanvasPage }: { isCanvasPage: boolean }) => {
-    const authStore = AuthStore.getInstance();
+    const authStore = useAuthStore();
 
     const { isAuthLoading, accessToken, user, isInitialized } = authStore;
 

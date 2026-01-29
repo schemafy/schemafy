@@ -4,7 +4,7 @@ import { setAccessToken } from '../token';
 import type { ApiResponse } from '../types';
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
 
-import { AuthStore } from '@/store';
+import { authStore } from '@/store/auth.store';
 
 let refreshPromise: Promise<string> | null = null;
 
@@ -56,7 +56,7 @@ export const refreshToken = async (): Promise<string> => {
         );
         return handleTokenResponse(response);
       } catch (error) {
-        AuthStore.getInstance().clearAuth();
+        authStore.clearAuth();
         throw error;
       } finally {
         refreshPromise = null;

@@ -1,10 +1,10 @@
-import { AuthStore } from '@/store';
+import { useAuthStore } from '@/store/auth.store';
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 
 export const DashboardHeader = () => {
-  const user = AuthStore.getInstance().user;
+  const { user } = useAuthStore();
 
   return (
     <div className="flex items-center justify-end gap-5 w-full">

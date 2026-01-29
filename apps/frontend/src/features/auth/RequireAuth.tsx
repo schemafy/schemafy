@@ -1,10 +1,10 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { AuthStore } from '@/store/auth.store';
+import { useAuthStore } from '@/store/auth.store';
 import type { PropsWithChildren } from 'react';
 import { observer } from 'mobx-react-lite';
 
 export const RequireAuth = observer(({ children }: PropsWithChildren) => {
-  const authStore = AuthStore.getInstance();
+  const authStore = useAuthStore();
   const { accessToken, user, isAuthLoading, isInitialized } = authStore;
   const location = useLocation();
 
