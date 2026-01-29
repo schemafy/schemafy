@@ -15,6 +15,7 @@ import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnPort;
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnsByColumnIdPort;
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnByIdPort;
+import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByColumnIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
@@ -28,6 +29,7 @@ class IndexColumnPersistenceAdapter implements
     ChangeIndexColumnSortDirectionPort,
     CreateIndexColumnPort,
     GetIndexColumnByIdPort,
+    GetIndexColumnsByColumnIdPort,
     GetIndexColumnsByIndexIdPort,
     DeleteIndexColumnPort,
     DeleteIndexColumnsByIndexIdPort,
@@ -59,6 +61,13 @@ class IndexColumnPersistenceAdapter implements
   @Override
   public Mono<List<IndexColumn>> findIndexColumnsByIndexId(String indexId) {
     return indexColumnRepository.findByIndexIdOrderBySeqNo(indexId)
+        .map(indexColumnMapper::toDomain)
+        .collectList();
+  }
+
+  @Override
+  public Mono<List<IndexColumn>> findIndexColumnsByColumnId(String columnId) {
+    return indexColumnRepository.findByColumnId(columnId)
         .map(indexColumnMapper::toDomain)
         .collectList();
   }

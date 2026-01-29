@@ -9,6 +9,8 @@ interface IndexColumnRepository extends ReactiveCrudRepository<IndexColumnEntity
 
   Flux<IndexColumnEntity> findByIndexIdOrderBySeqNo(String indexId);
 
+  Flux<IndexColumnEntity> findByColumnId(String columnId);
+
   Mono<Void> deleteByIndexId(String indexId);
 
   Mono<Void> deleteByColumnId(String columnId);

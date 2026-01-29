@@ -9,6 +9,8 @@ interface ConstraintColumnRepository extends ReactiveCrudRepository<ConstraintCo
 
   Flux<ConstraintColumnEntity> findByConstraintIdOrderBySeqNo(String constraintId);
 
+  Flux<ConstraintColumnEntity> findByColumnId(String columnId);
+
   Mono<Void> deleteByConstraintId(String constraintId);
 
   Mono<Void> deleteByColumnId(String columnId);

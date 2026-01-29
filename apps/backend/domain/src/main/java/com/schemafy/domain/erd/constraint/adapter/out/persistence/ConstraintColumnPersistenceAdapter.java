@@ -12,9 +12,9 @@ import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintC
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
+import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 
 import reactor.core.publisher.Mono;
 
@@ -23,6 +23,7 @@ class ConstraintColumnPersistenceAdapter implements
     ChangeConstraintColumnPositionPort,
     CreateConstraintColumnPort,
     GetConstraintColumnByIdPort,
+    GetConstraintColumnsByColumnIdPort,
     GetConstraintColumnsByConstraintIdPort,
     DeleteConstraintColumnPort,
     DeleteConstraintColumnsByConstraintIdPort,
@@ -55,6 +56,13 @@ class ConstraintColumnPersistenceAdapter implements
   @Override
   public Mono<List<ConstraintColumn>> findConstraintColumnsByConstraintId(String constraintId) {
     return constraintColumnRepository.findByConstraintIdOrderBySeqNo(constraintId)
+        .map(constraintColumnMapper::toDomain)
+        .collectList();
+  }
+
+  @Override
+  public Mono<List<ConstraintColumn>> findConstraintColumnsByColumnId(String columnId) {
+    return constraintColumnRepository.findByColumnId(columnId)
         .map(constraintColumnMapper::toDomain)
         .collectList();
   }
@@ -95,13 +103,6 @@ class ConstraintColumnPersistenceAdapter implements
   @Override
   public Mono<Void> deleteByColumnId(String columnId) {
     return constraintColumnRepository.deleteByColumnId(columnId);
-  }
-
-  private Mono<ConstraintColumnEntity> findConstraintColumnOrError(String constraintColumnId) {
-    return constraintColumnRepository.findById(constraintColumnId)
-        .switchIfEmpty(Mono.error(
-            new ConstraintColumnNotExistException(
-                "Constraint column not found: " + constraintColumnId)));
   }
 
 }

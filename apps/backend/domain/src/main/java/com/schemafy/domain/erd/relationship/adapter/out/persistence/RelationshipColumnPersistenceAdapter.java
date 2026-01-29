@@ -12,6 +12,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelations
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnsByColumnIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
@@ -23,6 +24,7 @@ class RelationshipColumnPersistenceAdapter implements
     ChangeRelationshipColumnPositionPort,
     CreateRelationshipColumnPort,
     GetRelationshipColumnByIdPort,
+    GetRelationshipColumnsByColumnIdPort,
     GetRelationshipColumnsByRelationshipIdPort,
     DeleteRelationshipColumnPort,
     DeleteRelationshipColumnsByRelationshipIdPort,
@@ -55,6 +57,13 @@ class RelationshipColumnPersistenceAdapter implements
   @Override
   public Mono<List<RelationshipColumn>> findRelationshipColumnsByRelationshipId(String relationshipId) {
     return relationshipColumnRepository.findByRelationshipIdOrderBySeqNo(relationshipId)
+        .map(relationshipColumnMapper::toDomain)
+        .collectList();
+  }
+
+  @Override
+  public Mono<List<RelationshipColumn>> findRelationshipColumnsByColumnId(String columnId) {
+    return relationshipColumnRepository.findByColumnId(columnId)
         .map(relationshipColumnMapper::toDomain)
         .collectList();
   }

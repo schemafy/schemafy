@@ -10,6 +10,9 @@ interface RelationshipColumnRepository extends ReactiveCrudRepository<Relationsh
 
   Flux<RelationshipColumnEntity> findByRelationshipIdOrderBySeqNo(String relationshipId);
 
+  @Query("SELECT * FROM db_relationship_columns WHERE pk_column_id = :columnId OR fk_column_id = :columnId")
+  Flux<RelationshipColumnEntity> findByColumnId(String columnId);
+
   Mono<Void> deleteByRelationshipId(String relationshipId);
 
   @Query("DELETE FROM db_relationship_columns WHERE pk_column_id = :columnId OR fk_column_id = :columnId")
