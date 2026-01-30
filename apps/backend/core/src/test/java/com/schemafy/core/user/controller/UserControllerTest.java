@@ -133,7 +133,6 @@ class UserControllerTest {
   @Test
   @DisplayName("인증된 사용자는 타인의 회원 정보 조회에 성공한다")
   void getUserSuccessWhenAccessingOtherUser() {
-    // 두 명의 사용자 생성
     SignUpRequest userARequest = new SignUpRequest("userA@example.com",
         "User A", "password");
     User userA = User
@@ -216,6 +215,108 @@ class UserControllerTest {
         .jsonPath("$.success").isEqualTo(true)
         .jsonPath("$.result.id").isEqualTo(userId)
         .jsonPath("$.result.email").isEqualTo(signUpRequest.email());
+  }
+
+  @Test
+  @DisplayName("로그아웃에 성공한다 (인증된 사용자)")
+  void logoutSuccess() {
+    SignUpRequest signUpRequest = new SignUpRequest("logout-test@example.com",
+        "Logout User", "password");
+    User user = User
+        .signUp(signUpRequest.toCommand().toUserInfo(), passwordEncoder)
+        .flatMap(userRepository::save)
+        .blockOptional()
+        .orElseThrow();
+
+    String userId = user.getId();
+    String accessToken = generateAccessToken(userId);
+
+    webTestClient
+        .mutateWith(mockUser(userId))
+        .post()
+        .uri(API_BASE_PATH + "/users/logout")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .consumeWith(result -> {
+          var cookies = result.getResponseHeaders().get("Set-Cookie");
+          Assertions.assertNotNull(cookies);
+          Assertions.assertTrue(cookies.stream().anyMatch(c -> c.contains("accessToken=;")));
+          Assertions.assertTrue(cookies.stream().anyMatch(c -> c.contains("refreshToken=;")));
+          Assertions.assertTrue(cookies.stream().allMatch(c -> c.contains("Max-Age=0")));
+        });
+  }
+
+  @Test
+  @DisplayName("인증 없이 로그아웃 시 실패한다")
+  void logoutFailWhenNotAuthenticated() {
+    webTestClient
+        .post()
+        .uri(API_BASE_PATH + "/users/logout")
+        .exchange()
+        .expectStatus().isUnauthorized();
+  }
+
+  @Test
+  @DisplayName("악성 사용자 A가 사용자 B를 로그아웃시킬 수 없다")
+  void cannotLogoutOtherUsers() {
+    SignUpRequest attackerRequest = new SignUpRequest("attacker@example.com",
+        "Attacker", "password");
+    User attacker = User
+        .signUp(attackerRequest.toCommand().toUserInfo(), passwordEncoder)
+        .flatMap(userRepository::save)
+        .blockOptional()
+        .orElseThrow();
+
+    SignUpRequest victimRequest = new SignUpRequest("victim@example.com",
+        "Victim", "password");
+    User victim = User
+        .signUp(victimRequest.toCommand().toUserInfo(), passwordEncoder)
+        .flatMap(userRepository::save)
+        .blockOptional()
+        .orElseThrow();
+
+    String attackerId = attacker.getId();
+    String victimId = victim.getId();
+    String attackerToken = generateAccessToken(attackerId);
+    String victimToken = generateAccessToken(victimId);
+
+    // 공격자 A가 자신의 인증으로 로그아웃 시도
+    // (현재 API는 @AuthenticationPrincipal을 사용하므로 B를 타겟팅할 방법이 없음)
+    webTestClient
+        .mutateWith(mockUser(attackerId))
+        .post()
+        .uri(API_BASE_PATH + "/users/logout")
+        .header("Authorization", "Bearer " + attackerToken)
+        .exchange()
+        .expectStatus().isOk();
+
+    // B는 여전히 자신의 리소스에 접근 가능 (A의 로그아웃은 A 자신에게만 영향, B는 독립적)
+    webTestClient
+        .mutateWith(mockUser(victimId))
+        .get()
+        .uri(API_BASE_PATH + "/users/{userId}", victimId)
+        .header("Authorization", "Bearer " + victimToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.id").isEqualTo(victimId)
+        .jsonPath("$.result.email").isEqualTo("victim@example.com");
+
+    // B는 계속해서 다른 API도 사용 가능
+    webTestClient
+        .mutateWith(mockUser(victimId))
+        .get()
+        .uri(API_BASE_PATH + "/users")
+        .header("Authorization", "Bearer " + victimToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.id").isEqualTo(victimId);
   }
 
   @Test
