@@ -1,13 +1,13 @@
 package com.schemafy.core.common.security.jwt;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.util.Map;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.stereotype.Component;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -23,8 +23,7 @@ public class JwtTokenIssuer {
   private final JwtProvider jwtProvider;
   private final JwtProperties jwtProperties;
 
-  public <T> ResponseEntity<T> issueTokens(String userId, String userName,
-      T body) {
+  public HttpHeaders issueTokens(String userId, String userName) {
     long now = System.currentTimeMillis();
     Map<String, Object> claims = Map.of(CLAIM_NAME, userName);
 
@@ -59,9 +58,7 @@ public class JwtTokenIssuer {
     headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
     headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
 
-    return ResponseEntity.ok()
-        .headers(headers)
-        .body(body);
+    return headers;
   }
 
   public HttpHeaders expireTokens() {
