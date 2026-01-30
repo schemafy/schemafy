@@ -239,6 +239,10 @@ class UserControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .consumeWith(document("user-logout",
+            logoutRequestHeaders(),
+            logoutResponseHeaders(),
+            logoutResponse()))
         .jsonPath("$.success").isEqualTo(true)
         .consumeWith(result -> {
           var cookies = result.getResponseHeaders().get("Set-Cookie");
