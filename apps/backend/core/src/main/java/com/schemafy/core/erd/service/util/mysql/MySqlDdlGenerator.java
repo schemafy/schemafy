@@ -3,11 +3,11 @@ package com.schemafy.core.erd.service.util.mysql;
 import java.time.Instant;
 import java.util.List;
 
-import com.schemafy.core.erd.service.util.DdlGenerator;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.core.erd.controller.dto.response.SchemaDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
+import com.schemafy.core.erd.service.util.DdlGenerator;
 
 import lombok.RequiredArgsConstructor;
 

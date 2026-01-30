@@ -2,9 +2,6 @@ package com.schemafy.core.erd.service.util;
 
 import java.util.List;
 
-import com.schemafy.core.erd.service.util.mysql.MySqlAlterTableGenerator;
-import com.schemafy.core.erd.service.util.mysql.MySqlCreateTableGenerator;
-import com.schemafy.core.erd.service.util.mysql.MySqlDdlGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,6 +16,9 @@ import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.controller.dto.response.SchemaDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
+import com.schemafy.core.erd.service.util.mysql.MySqlAlterTableGenerator;
+import com.schemafy.core.erd.service.util.mysql.MySqlCreateTableGenerator;
+import com.schemafy.core.erd.service.util.mysql.MySqlDdlGenerator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -81,6 +81,7 @@ class MySqlDdlGeneratorTest {
       assertThat(idPos).isLessThan(namePos);
       assertThat(namePos).isLessThan(emailPos);
     }
+
   }
 
   @Nested
@@ -126,6 +127,7 @@ class MySqlDdlGeneratorTest {
       assertThat(ddl).contains(
           "ALTER TABLE `order_items` ADD PRIMARY KEY (`order_id`, `product_id`);");
     }
+
   }
 
   @Nested
@@ -174,6 +176,7 @@ class MySqlDdlGeneratorTest {
       assertThat(ddl).contains(
           "ALTER TABLE `users` ADD UNIQUE KEY `uq_users_name_email` (`name`, `email`);");
     }
+
   }
 
   @Nested
@@ -298,6 +301,7 @@ class MySqlDdlGeneratorTest {
       assertThat(ddl).doesNotContain("ASC");
       assertThat(ddl).doesNotContain("DESC");
     }
+
   }
 
   @Nested
@@ -477,6 +481,7 @@ class MySqlDdlGeneratorTest {
       assertThat(ddl).contains("ON DELETE SET NULL");
       assertThat(ddl).doesNotContain("ON UPDATE");
     }
+
   }
 
   @Nested
@@ -619,6 +624,7 @@ class MySqlDdlGeneratorTest {
 
       assertThat(createTableEndPos).isLessThan(firstAlterTable);
     }
+
   }
 
   @Nested
@@ -652,6 +658,7 @@ class MySqlDdlGeneratorTest {
       assertThat(ddl).contains("CREATE TABLE `simple_table`");
       assertThat(ddl).doesNotContain("ALTER TABLE");
     }
+
   }
 
   @Nested
@@ -716,6 +723,7 @@ class MySqlDdlGeneratorTest {
       assertThat(ddl).contains("`id` INT");
       assertThat(ddl).doesNotContain("INT(");
     }
+
   }
 
   // Helper methods
