@@ -72,6 +72,14 @@ public class AuthController {
             BaseResponse.success(null)));
   }
 
+  /** 로그아웃 API 쿠키에 저장된 토큰을 만료시킵니다. */
+  @PostMapping("/users/logout")
+  public Mono<ResponseEntity<BaseResponse<Void>>> logout() {
+    return Mono.just(ResponseEntity.ok()
+                    .headers(jwtTokenIssuer.expireTokens())
+                    .body(BaseResponse.success(null)));
+  }
+
   /** HTTP 요청의 쿠키에서 Refresh Token을 추출합니다. */
   private String extractRefreshTokenFromCookie(ServerHttpRequest request) {
     var refreshTokenCookie = request.getCookies().getFirst("refreshToken");

@@ -296,4 +296,21 @@ class AuthControllerTest {
         .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
   }
 
+  @Test
+  @DisplayName("로그아웃에 성공한다")
+  void logoutSuccess() {
+    webTestClient.post().uri(API_BASE_PATH + "/users/logout")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .consumeWith(result -> {
+          var cookies = result.getResponseHeaders().get("Set-Cookie");
+          assertThat(cookies).isNotNull();
+          assertThat(cookies).anyMatch(c -> c.contains("accessToken=;"));
+          assertThat(cookies).anyMatch(c -> c.contains("refreshToken=;"));
+          assertThat(cookies).allMatch(c -> c.contains("Max-Age=0"));
+        });
+  }
+
 }

@@ -1,14 +1,13 @@
 package com.schemafy.core.common.security.jwt;
 
-import java.time.Duration;
-import java.util.Map;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import lombok.RequiredArgsConstructor;
+import java.time.Duration;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -63,6 +62,35 @@ public class JwtTokenIssuer {
     return ResponseEntity.ok()
         .headers(headers)
         .body(body);
+  }
+
+  public HttpHeaders expireTokens() {
+    boolean cookieSecure = jwtProperties.getCookie().isSecure();
+    String cookieSameSite = jwtProperties.getCookie().getSameSite();
+
+    ResponseCookie refreshTokenCookie = ResponseCookie
+        .from(REFRESH_TOKEN_COOKIE_NAME, "")
+        .httpOnly(true)
+        .secure(cookieSecure)
+        .path("/")
+        .maxAge(0) // 즉시 만료
+        .sameSite(cookieSameSite)
+        .build();
+
+    ResponseCookie accessTokenCookie = ResponseCookie
+        .from(ACCESS_TOKEN_COOKIE_NAME, "")
+        .httpOnly(true)
+        .secure(cookieSecure)
+        .path("/")
+        .maxAge(0) // 즉시 만료
+        .sameSite(cookieSameSite)
+        .build();
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+    headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+
+    return headers;
   }
 
 }
