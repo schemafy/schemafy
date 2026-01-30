@@ -493,7 +493,8 @@ public class ConstraintFixture {
         DEFAULT_CONSTRAINT_COLUMN_ID,
         DEFAULT_ID,
         DEFAULT_COLUMN_ID,
-        DEFAULT_SEQ_NO);
+        DEFAULT_SEQ_NO,
+        List.of());
   }
 
   public static AddConstraintColumnResult addColumnResultFrom(ConstraintColumn constraintColumn) {
@@ -501,7 +502,8 @@ public class ConstraintFixture {
         constraintColumn.id(),
         constraintColumn.constraintId(),
         constraintColumn.columnId(),
-        constraintColumn.seqNo());
+        constraintColumn.seqNo(),
+        List.of());
   }
 
   private ConstraintFixture() {}

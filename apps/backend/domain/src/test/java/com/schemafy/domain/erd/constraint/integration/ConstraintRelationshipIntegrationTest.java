@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
+import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
+import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
@@ -85,6 +87,9 @@ class ConstraintRelationshipIntegrationTest {
 
   @Autowired
   GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
+
+  @Autowired
+  GetColumnsByTableIdUseCase getColumnsByTableIdUseCase;
 
   private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
 
@@ -427,8 +432,8 @@ class ConstraintRelationshipIntegrationTest {
   class AddPkConstraintColumn {
 
     @Test
-    @DisplayName("PK Constraint 컬럼 추가는 기존 Relationship에 영향 없다")
-    void addingPkConstraintColumnDoesNotAffectExistingRelationship() {
+    @DisplayName("PK Constraint 컬럼 추가 시 FK 테이블에 FK 컬럼과 RelationshipColumn이 자동 생성된다")
+    void cascateCreatesFkColumnAndRelationshipColumnOnPkAdd() {
       // Given: 기존 Relationship이 pk_col1만 참조
       var createRelCommand = new CreateRelationshipCommand(
           fkTableId1,
@@ -450,23 +455,88 @@ class ConstraintRelationshipIntegrationTest {
       // When: PK Constraint에 새 컬럼 추가
       StepVerifier.create(addConstraintColumnUseCase.addConstraintColumn(
           new AddConstraintColumnCommand(pkConstraintId, newPkColumnId, 2)))
-          .assertNext(result -> assertThat(result.columnId()).isEqualTo(newPkColumnId))
+          .assertNext(result -> {
+            assertThat(result.columnId()).isEqualTo(newPkColumnId);
+            assertThat(result.cascadeCreatedColumns()).hasSize(1);
+            var cascade = result.cascadeCreatedColumns().get(0);
+            assertThat(cascade.fkTableId()).isEqualTo(fkTableId1);
+            assertThat(cascade.fkColumnName()).isEqualTo("pk_col3");
+            assertThat(cascade.relationshipId()).isEqualTo(relationshipId);
+          })
           .verifyComplete();
 
-      // Then: 기존 Relationship은 그대로 유지 (새 컬럼은 명시적으로 매핑해야 함)
+      // Then: RelationshipColumn이 2개로 증가 (기존 1 + cascade 1)
       StepVerifier.create(getRelationshipColumnsByRelationshipIdUseCase
           .getRelationshipColumnsByRelationshipId(
               new GetRelationshipColumnsByRelationshipIdQuery(relationshipId)))
           .assertNext(columns -> {
-            assertThat(columns).hasSize(1);
+            assertThat(columns).hasSize(2);
             assertThat(columns.get(0).pkColumnId()).isEqualTo(pkColumnId1);
+            assertThat(columns.get(1).pkColumnId()).isEqualTo(newPkColumnId);
           })
           .verifyComplete();
 
-      // Then: Relationship 자체도 그대로 유지
-      StepVerifier.create(getRelationshipUseCase.getRelationship(
-          new GetRelationshipQuery(relationshipId)))
-          .assertNext(rel -> assertThat(rel.id()).isEqualTo(relationshipId))
+      // Then: FK 테이블에 새 컬럼이 추가됨
+      StepVerifier.create(getColumnsByTableIdUseCase
+          .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId1)))
+          .assertNext(columns -> {
+            assertThat(columns.stream().map(c -> c.name()).toList())
+                .contains("pk_col3");
+          })
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("여러 FK 테이블이 참조할 때 모두 cascade 전파된다")
+    void cascadesToMultipleFkTablesOnPkAdd() {
+      // Given: 두 FK 테이블이 PK 테이블을 참조하는 Relationship 생성
+      var createRelCommand1 = new CreateRelationshipCommand(
+          fkTableId1,
+          pkTableId,
+          "fk_to_table1",
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY,
+          null,
+          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
+      createRelationshipUseCase.createRelationship(createRelCommand1).block();
+
+      var createRelCommand2 = new CreateRelationshipCommand(
+          fkTableId2,
+          pkTableId,
+          "fk_to_table2",
+          RelationshipKind.IDENTIFYING,
+          Cardinality.ONE_TO_ONE,
+          null,
+          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId2_1, 0)));
+      createRelationshipUseCase.createRelationship(createRelCommand2).block();
+
+      // Given: PK 테이블에 새 컬럼 추가
+      var createNewPkColumnCommand = new CreateColumnCommand(
+          pkTableId, "pk_col3", "VARCHAR", 100, null, null, 2, false, "utf8mb4", "utf8mb4_general_ci", "PK Column 3");
+      var newPkColumnResult = createColumnUseCase.createColumn(createNewPkColumnCommand).block();
+      String newPkColumnId = newPkColumnResult.columnId();
+
+      // When: PK Constraint에 새 컬럼 추가
+      StepVerifier.create(addConstraintColumnUseCase.addConstraintColumn(
+          new AddConstraintColumnCommand(pkConstraintId, newPkColumnId, 2)))
+          .assertNext(result -> {
+            assertThat(result.cascadeCreatedColumns()).hasSize(2);
+          })
+          .verifyComplete();
+
+      // Then: 두 FK 테이블 모두에 새 컬럼이 추가됨
+      StepVerifier.create(getColumnsByTableIdUseCase
+          .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId1)))
+          .assertNext(columns ->
+              assertThat(columns.stream().map(c -> c.name()).toList())
+                  .contains("pk_col3"))
+          .verifyComplete();
+
+      StepVerifier.create(getColumnsByTableIdUseCase
+          .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId2)))
+          .assertNext(columns ->
+              assertThat(columns.stream().map(c -> c.name()).toList())
+                  .contains("pk_col3"))
           .verifyComplete();
     }
 
