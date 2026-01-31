@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnsByTableIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CascadeDeleteConstraintsByTableIdPort;
@@ -25,6 +26,9 @@ import static org.mockito.BDDMockito.then;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DeleteTableService")
 class DeleteTableServiceTest {
+
+  @Mock
+  TransactionalOperator transactionalOperator;
 
   @Mock
   DeleteTablePort deleteTablePort;
@@ -67,6 +71,8 @@ class DeleteTableServiceTest {
             .willReturn(Mono.empty());
         given(deleteTablePort.deleteTable(any()))
             .willReturn(Mono.empty());
+        given(transactionalOperator.transactional(any(Mono.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(sut.deleteTable(command))
             .verifyComplete();

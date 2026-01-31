@@ -3,6 +3,7 @@ package com.schemafy.domain.erd.relationship.application.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
@@ -21,6 +22,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class DeleteRelationshipService implements DeleteRelationshipUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final DeleteRelationshipPort deleteRelationshipPort;
   private final DeleteRelationshipColumnsByRelationshipIdPort deleteRelationshipColumnsPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
@@ -44,7 +46,8 @@ public class DeleteRelationshipService implements DeleteRelationshipUseCase {
               .concatMap(fkColumnId -> deleteColumnUseCase.deleteColumn(
                   new DeleteColumnCommand(fkColumnId)))
               .then();
-        });
+        })
+        .as(transactionalOperator::transactional);
   }
 
 }

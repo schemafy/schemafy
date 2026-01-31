@@ -1,6 +1,7 @@
 package com.schemafy.domain.erd.table.application.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnsByTableIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CascadeDeleteConstraintsByTableIdPort;
@@ -17,6 +18,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class DeleteTableService implements DeleteTableUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final DeleteTablePort deleteTablePort;
   private final DeleteColumnsByTableIdPort deleteColumnsByTableIdPort;
   private final CascadeDeleteConstraintsByTableIdPort cascadeDeleteConstraintsPort;
@@ -31,7 +33,8 @@ public class DeleteTableService implements DeleteTableUseCase {
         cascadeDeleteIndexesPort.cascadeDeleteByTableId(tableId),
         cascadeDeleteRelationshipsPort.cascadeDeleteByTableId(tableId)).then(deleteColumnsByTableIdPort
             .deleteColumnsByTableId(tableId))
-        .then(deleteTablePort.deleteTable(tableId));
+        .then(deleteTablePort.deleteTable(tableId))
+        .as(transactionalOperator::transactional);
   }
 
 }

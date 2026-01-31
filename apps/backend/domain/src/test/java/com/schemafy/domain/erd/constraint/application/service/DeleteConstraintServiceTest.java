@@ -5,10 +5,12 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
@@ -35,6 +37,9 @@ import static org.mockito.Mockito.never;
 class DeleteConstraintServiceTest {
 
   @Mock
+  TransactionalOperator transactionalOperator;
+
+  @Mock
   DeleteConstraintPort deleteConstraintPort;
 
   @Mock
@@ -51,6 +56,12 @@ class DeleteConstraintServiceTest {
 
   @InjectMocks
   DeleteConstraintService sut;
+
+  @BeforeEach
+  void setUp() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("deleteConstraint 메서드는")

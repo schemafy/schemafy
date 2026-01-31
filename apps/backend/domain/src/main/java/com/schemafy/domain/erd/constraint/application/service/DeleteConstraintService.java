@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.constraint.application.port.in.DeleteConstraintCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.DeleteConstraintUseCase;
@@ -22,6 +23,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class DeleteConstraintService implements DeleteConstraintUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final DeleteConstraintPort deleteConstraintPort;
   private final DeleteConstraintColumnsByConstraintIdPort deleteConstraintColumnsPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
@@ -41,7 +43,8 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
           }
           return deleteConstraintColumnsPort.deleteByConstraintId(constraintId)
               .then(deleteConstraintPort.deleteConstraint(constraintId));
-        });
+        })
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> cascadeDeleteFkColumns(String pkTableId, String constraintId) {

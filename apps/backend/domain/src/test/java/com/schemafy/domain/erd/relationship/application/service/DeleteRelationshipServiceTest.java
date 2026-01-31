@@ -5,10 +5,12 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
@@ -32,6 +34,9 @@ import static org.mockito.Mockito.inOrder;
 class DeleteRelationshipServiceTest {
 
   @Mock
+  TransactionalOperator transactionalOperator;
+
+  @Mock
   DeleteRelationshipPort deleteRelationshipPort;
 
   @Mock
@@ -45,6 +50,12 @@ class DeleteRelationshipServiceTest {
 
   @InjectMocks
   DeleteRelationshipService sut;
+
+  @BeforeEach
+  void setUp() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("deleteRelationship 메서드는")

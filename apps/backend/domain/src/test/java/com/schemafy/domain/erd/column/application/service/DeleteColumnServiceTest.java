@@ -5,10 +5,12 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
@@ -52,6 +54,9 @@ import static org.mockito.Mockito.times;
 class DeleteColumnServiceTest {
 
   @Mock
+  TransactionalOperator transactionalOperator;
+
+  @Mock
   DeleteColumnPort deleteColumnPort;
 
   @Mock
@@ -91,6 +96,12 @@ class DeleteColumnServiceTest {
 
   @InjectMocks
   DeleteColumnService sut;
+
+  @BeforeEach
+  void setUp() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("deleteColumn 메서드는")

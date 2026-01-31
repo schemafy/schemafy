@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
@@ -41,6 +42,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class DeleteColumnService implements DeleteColumnUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final DeleteColumnPort deleteColumnPort;
 
   private final GetConstraintColumnsByColumnIdPort getConstraintColumnsByColumnIdPort;
@@ -64,7 +66,8 @@ public class DeleteColumnService implements DeleteColumnUseCase {
 
   @Override
   public Mono<Void> deleteColumn(DeleteColumnCommand command) {
-    return deleteColumnInternal(command.columnId(), ConcurrentHashMap.newKeySet());
+    return deleteColumnInternal(command.columnId(), ConcurrentHashMap.newKeySet())
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> deleteColumnInternal(String columnId, Set<String> visitedColumnIds) {
