@@ -77,9 +77,8 @@ public class DeleteColumnService implements DeleteColumnUseCase {
 
     // PK cascade를 먼저 처리해야 FK 컬럼 재귀 삭제가 완료된 후 나머지 정리 가능
     return cascadeDeleteConstraints(columnId, visitedColumnIds)
-        .then(Mono.when(
-            cascadeDeleteIndexes(columnId),
-            cascadeDeleteRelationships(columnId)))
+        .then(cascadeDeleteIndexes(columnId))
+        .then(cascadeDeleteRelationships(columnId))
         .then(deleteColumnPort.deleteColumn(columnId));
   }
 
@@ -110,9 +109,9 @@ public class DeleteColumnService implements DeleteColumnUseCase {
   private Mono<Void> handlePkConstraintCascade(
       Set<String> constraintIds, String columnId, Set<String> visitedColumnIds) {
     return Flux.fromIterable(constraintIds)
-        .flatMap(getConstraintByIdPort::findConstraintById)
+        .concatMap(getConstraintByIdPort::findConstraintById)
         .filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
-        .flatMap(constraint -> cascadeDeleteRelationshipsByPkColumn(constraint, columnId, visitedColumnIds))
+        .concatMap(constraint -> cascadeDeleteRelationshipsByPkColumn(constraint, columnId, visitedColumnIds))
         .then();
   }
 
@@ -120,7 +119,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
       Constraint pkConstraint, String pkColumnId, Set<String> visitedColumnIds) {
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkConstraint.tableId())
         .flatMapMany(Flux::fromIterable)
-        .flatMap(relationship -> cascadeDeleteRelationshipColumnsByPkColumnId(relationship, pkColumnId,
+        .concatMap(relationship -> cascadeDeleteRelationshipColumnsByPkColumnId(relationship, pkColumnId,
             visitedColumnIds))
         .then();
   }
@@ -155,14 +154,14 @@ public class DeleteColumnService implements DeleteColumnUseCase {
           } else {
             // 해당 pkColumnId를 가진 RelationshipColumn만 삭제
             deleteRelationshipColumns = Flux.fromIterable(toRemove)
-                .flatMap(col -> deleteRelationshipColumnPort.deleteRelationshipColumn(col.id()))
+                .concatMap(col -> deleteRelationshipColumnPort.deleteRelationshipColumn(col.id()))
                 .then();
           }
 
           // FK 컬럼들 cascade 삭제
           return deleteRelationshipColumns
               .thenMany(Flux.fromIterable(fkColumnIds))
-              .flatMap(fkColumnId -> deleteColumnInternal(fkColumnId, visitedColumnIds))
+              .concatMap(fkColumnId -> deleteColumnInternal(fkColumnId, visitedColumnIds))
               .then();
         });
   }
@@ -170,7 +169,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
   /** ConstraintColumn 삭제 후 남은 컬럼이 없는 Constraint 삭제 */
   private Mono<Void> deleteOrphanConstraints(Set<String> constraintIds) {
     return Flux.fromIterable(constraintIds)
-        .flatMap(constraintId -> getConstraintColumnsByConstraintIdPort
+        .concatMap(constraintId -> getConstraintColumnsByConstraintIdPort
             .findConstraintColumnsByConstraintId(constraintId)
             .flatMap(columns -> {
               if (columns.isEmpty()) {
@@ -203,7 +202,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
   /** IndexColumn 삭제 후 남은 컬럼이 없는 Index 삭제 */
   private Mono<Void> deleteOrphanIndexes(Set<String> indexIds) {
     return Flux.fromIterable(indexIds)
-        .flatMap(indexId -> getIndexColumnsByIndexIdPort
+        .concatMap(indexId -> getIndexColumnsByIndexIdPort
             .findIndexColumnsByIndexId(indexId)
             .flatMap(columns -> {
               if (columns.isEmpty()) {
@@ -236,7 +235,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
   /** RelationshipColumn 삭제 후 남은 컬럼이 없는 Relationship 삭제 */
   private Mono<Void> deleteOrphanRelationships(Set<String> relationshipIds) {
     return Flux.fromIterable(relationshipIds)
-        .flatMap(relationshipId -> getRelationshipColumnsByRelationshipIdPort
+        .concatMap(relationshipId -> getRelationshipColumnsByRelationshipIdPort
             .findRelationshipColumnsByRelationshipId(relationshipId)
             .flatMap(columns -> {
               if (columns.isEmpty()) {

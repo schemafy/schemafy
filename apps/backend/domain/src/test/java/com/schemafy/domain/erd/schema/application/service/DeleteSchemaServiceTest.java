@@ -10,13 +10,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.domain.erd.column.application.port.out.DeleteColumnsByTableIdPort;
-import com.schemafy.domain.erd.constraint.application.port.out.CascadeDeleteConstraintsByTableIdPort;
-import com.schemafy.domain.erd.index.application.port.out.CascadeDeleteIndexesByTableIdPort;
-import com.schemafy.domain.erd.relationship.application.port.out.CascadeDeleteRelationshipsByTableIdPort;
 import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
-import com.schemafy.domain.erd.table.application.port.out.CascadeDeleteTablesBySchemaIdPort;
+import com.schemafy.domain.erd.table.application.port.in.DeleteTableCommand;
+import com.schemafy.domain.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.domain.erd.table.application.port.out.GetTablesBySchemaIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
 
@@ -27,6 +24,7 @@ import reactor.test.StepVerifier;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.inOrder;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DeleteSchemaService")
@@ -44,19 +42,7 @@ class DeleteSchemaServiceTest {
   GetTablesBySchemaIdPort getTablesBySchemaIdPort;
 
   @Mock
-  CascadeDeleteTablesBySchemaIdPort cascadeDeleteTablesPort;
-
-  @Mock
-  DeleteColumnsByTableIdPort deleteColumnsByTableIdPort;
-
-  @Mock
-  CascadeDeleteConstraintsByTableIdPort cascadeDeleteConstraintsPort;
-
-  @Mock
-  CascadeDeleteIndexesByTableIdPort cascadeDeleteIndexesPort;
-
-  @Mock
-  CascadeDeleteRelationshipsByTableIdPort cascadeDeleteRelationshipsPort;
+  DeleteTableUseCase deleteTableUseCase;
 
   @InjectMocks
   DeleteSchemaService sut;
@@ -78,15 +64,7 @@ class DeleteSchemaServiceTest {
 
         given(getTablesBySchemaIdPort.findTablesBySchemaId(any()))
             .willReturn(Flux.just(table));
-        given(cascadeDeleteConstraintsPort.cascadeDeleteByTableId(any()))
-            .willReturn(Mono.empty());
-        given(cascadeDeleteIndexesPort.cascadeDeleteByTableId(any()))
-            .willReturn(Mono.empty());
-        given(cascadeDeleteRelationshipsPort.cascadeDeleteByTableId(any()))
-            .willReturn(Mono.empty());
-        given(deleteColumnsByTableIdPort.deleteColumnsByTableId(any()))
-            .willReturn(Mono.empty());
-        given(cascadeDeleteTablesPort.cascadeDeleteBySchemaId(any()))
+        given(deleteTableUseCase.deleteTable(any(DeleteTableCommand.class)))
             .willReturn(Mono.empty());
         given(deleteSchemaPort.deleteSchema(any()))
             .willReturn(Mono.empty());
@@ -96,19 +74,44 @@ class DeleteSchemaServiceTest {
         StepVerifier.create(sut.deleteSchema(command))
             .verifyComplete();
 
-        then(getTablesBySchemaIdPort).should()
+        var inOrderVerifier = inOrder(getTablesBySchemaIdPort, deleteTableUseCase, deleteSchemaPort);
+        inOrderVerifier.verify(getTablesBySchemaIdPort)
             .findTablesBySchemaId(command.schemaId());
-        then(cascadeDeleteConstraintsPort).should()
-            .cascadeDeleteByTableId(TABLE_ID);
-        then(cascadeDeleteIndexesPort).should()
-            .cascadeDeleteByTableId(TABLE_ID);
-        then(cascadeDeleteRelationshipsPort).should()
-            .cascadeDeleteByTableId(TABLE_ID);
-        then(deleteColumnsByTableIdPort).should()
-            .deleteColumnsByTableId(TABLE_ID);
-        then(cascadeDeleteTablesPort).should()
-            .cascadeDeleteBySchemaId(command.schemaId());
-        then(deleteSchemaPort).should()
+        inOrderVerifier.verify(deleteTableUseCase)
+            .deleteTable(new DeleteTableCommand(TABLE_ID));
+        inOrderVerifier.verify(deleteSchemaPort)
+            .deleteSchema(command.schemaId());
+      }
+
+      @Test
+      @DisplayName("여러 테이블이 있으면 순서대로 삭제한다")
+      void deletesMultipleTablesInOrder() {
+        var command = SchemaFixture.deleteCommand();
+        var table1 = new Table("table-1", SchemaFixture.DEFAULT_ID, "table_one", "utf8mb4",
+            "utf8mb4_general_ci");
+        var table2 = new Table("table-2", SchemaFixture.DEFAULT_ID, "table_two", "utf8mb4",
+            "utf8mb4_general_ci");
+
+        given(getTablesBySchemaIdPort.findTablesBySchemaId(any()))
+            .willReturn(Flux.just(table1, table2));
+        given(deleteTableUseCase.deleteTable(any(DeleteTableCommand.class)))
+            .willReturn(Mono.empty());
+        given(deleteSchemaPort.deleteSchema(any()))
+            .willReturn(Mono.empty());
+        given(transactionalOperator.transactional(any(Mono.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+
+        StepVerifier.create(sut.deleteSchema(command))
+            .verifyComplete();
+
+        var inOrderVerifier = inOrder(getTablesBySchemaIdPort, deleteTableUseCase, deleteSchemaPort);
+        inOrderVerifier.verify(getTablesBySchemaIdPort)
+            .findTablesBySchemaId(command.schemaId());
+        inOrderVerifier.verify(deleteTableUseCase)
+            .deleteTable(new DeleteTableCommand(table1.id()));
+        inOrderVerifier.verify(deleteTableUseCase)
+            .deleteTable(new DeleteTableCommand(table2.id()));
+        inOrderVerifier.verify(deleteSchemaPort)
             .deleteSchema(command.schemaId());
       }
 
@@ -125,8 +128,6 @@ class DeleteSchemaServiceTest {
 
         given(getTablesBySchemaIdPort.findTablesBySchemaId(any()))
             .willReturn(Flux.empty());
-        given(cascadeDeleteTablesPort.cascadeDeleteBySchemaId(any()))
-            .willReturn(Mono.empty());
         given(deleteSchemaPort.deleteSchema(any()))
             .willReturn(Mono.empty());
         given(transactionalOperator.transactional(any(Mono.class)))
@@ -135,10 +136,7 @@ class DeleteSchemaServiceTest {
         StepVerifier.create(sut.deleteSchema(command))
             .verifyComplete();
 
-        then(cascadeDeleteConstraintsPort).shouldHaveNoInteractions();
-        then(cascadeDeleteIndexesPort).shouldHaveNoInteractions();
-        then(cascadeDeleteRelationshipsPort).shouldHaveNoInteractions();
-        then(deleteColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(deleteTableUseCase).shouldHaveNoInteractions();
         then(deleteSchemaPort).should()
             .deleteSchema(command.schemaId());
       }

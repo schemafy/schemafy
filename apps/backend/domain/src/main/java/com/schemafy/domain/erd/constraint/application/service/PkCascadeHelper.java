@@ -9,7 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
-import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
+import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
+import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -46,7 +47,7 @@ public class PkCascadeHelper {
   private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final CreateColumnPort createColumnPort;
-  private final DeleteColumnPort deleteColumnPort;
+  private final DeleteColumnUseCase deleteColumnUseCase;
   private final GetTableByIdPort getTableByIdPort;
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
@@ -239,7 +240,8 @@ public class PkCascadeHelper {
           }
 
           Mono<Void> deleteFkColumns = Flux.fromIterable(fkColumnIds)
-              .flatMap(deleteColumnPort::deleteColumn)
+              .concatMap(fkColumnId -> deleteColumnUseCase.deleteColumn(
+                  new DeleteColumnCommand(fkColumnId)))
               .then();
 
           return identifyingCascade
