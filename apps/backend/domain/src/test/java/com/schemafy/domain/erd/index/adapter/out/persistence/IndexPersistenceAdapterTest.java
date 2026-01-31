@@ -332,48 +332,4 @@ class IndexPersistenceAdapterTest {
 
   }
 
-  @Nested
-  @DisplayName("cascadeDeleteByTableId 메서드는")
-  class CascadeDeleteByTableId {
-
-    @Test
-    @DisplayName("테이블 삭제 시 관련 인덱스와 컬럼을 모두 삭제한다")
-    void deletesIndexesAndColumnsWhenTableDeleted() {
-      var index = IndexFixture.defaultIndex();
-      var indexColumn = IndexFixture.defaultIndexColumn();
-      sut.createIndex(index).block();
-      indexColumnAdapter.createIndexColumn(indexColumn).block();
-
-      StepVerifier.create(sut.cascadeDeleteByTableId(TABLE_ID))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findIndexById(index.id()))
-          .verifyComplete();
-
-      StepVerifier.create(indexColumnAdapter.findIndexColumnById(indexColumn.id()))
-          .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("여러 인덱스가 있을 때 관련된 인덱스만 삭제한다")
-    void deletesOnlyRelatedIndexes() {
-      var index1 = IndexFixture.indexWithId(INDEX_ID_1);
-      var index2 = new Index(
-          INDEX_ID_2, OTHER_TABLE_ID, "idx_other", IndexType.BTREE);
-      sut.createIndex(index1).block();
-      sut.createIndex(index2).block();
-
-      StepVerifier.create(sut.cascadeDeleteByTableId(TABLE_ID))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findIndexById(INDEX_ID_1))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findIndexById(INDEX_ID_2))
-          .assertNext(found -> assertThat(found.id()).isEqualTo(INDEX_ID_2))
-          .verifyComplete();
-    }
-
-  }
-
 }

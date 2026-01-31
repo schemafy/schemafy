@@ -6,7 +6,6 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
-import com.schemafy.domain.erd.index.application.port.out.CascadeDeleteIndexesByTableIdPort;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexNamePort;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexTypePort;
 import com.schemafy.domain.erd.index.application.port.out.CreateIndexPort;
@@ -28,8 +27,7 @@ class IndexPersistenceAdapter implements
     ChangeIndexNamePort,
     ChangeIndexTypePort,
     DeleteIndexPort,
-    IndexExistsPort,
-    CascadeDeleteIndexesByTableIdPort {
+    IndexExistsPort {
 
   private final IndexRepository indexRepository;
   private final IndexColumnRepository indexColumnRepository;
@@ -100,13 +98,6 @@ class IndexPersistenceAdapter implements
       String name,
       String indexId) {
     return indexRepository.existsByTableIdAndNameExcludingId(tableId, name, indexId);
-  }
-
-  @Override
-  public Mono<Void> cascadeDeleteByTableId(String tableId) {
-    return indexRepository.findByTableId(tableId)
-        .flatMap(index -> indexColumnRepository.deleteByIndexId(index.getId()))
-        .then(indexRepository.deleteByTableId(tableId));
   }
 
   private Mono<IndexEntity> findIndexOrError(String indexId) {

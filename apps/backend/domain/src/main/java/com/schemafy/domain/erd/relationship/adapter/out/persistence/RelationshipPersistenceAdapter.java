@@ -6,7 +6,6 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
-import com.schemafy.domain.erd.relationship.application.port.out.CascadeDeleteRelationshipsByTableIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipCardinalityPort;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipExtraPort;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipKindPort;
@@ -37,8 +36,7 @@ class RelationshipPersistenceAdapter implements
     ChangeRelationshipCardinalityPort,
     ChangeRelationshipExtraPort,
     DeleteRelationshipPort,
-    RelationshipExistsPort,
-    CascadeDeleteRelationshipsByTableIdPort {
+    RelationshipExistsPort {
 
   private final RelationshipRepository relationshipRepository;
   private final RelationshipColumnRepository relationshipColumnRepository;
@@ -148,14 +146,6 @@ class RelationshipPersistenceAdapter implements
         fkTableId,
         name,
         relationshipId);
-  }
-
-  @Override
-  public Mono<Void> cascadeDeleteByTableId(String tableId) {
-    return relationshipRepository.findByTableId(tableId)
-        .flatMap(
-            relationship -> relationshipColumnRepository.deleteByRelationshipId(relationship.getId()))
-        .then(relationshipRepository.deleteByTableId(tableId));
   }
 
   private Mono<RelationshipEntity> findRelationshipOrError(String relationshipId) {

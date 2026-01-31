@@ -443,69 +443,6 @@ class RelationshipPersistenceAdapterTest {
 
   }
 
-  @Nested
-  @DisplayName("cascadeDeleteByTableId 메서드는")
-  class CascadeDeleteByTableId {
-
-    @Test
-    @DisplayName("FK 테이블 삭제 시 관련 관계와 컬럼을 모두 삭제한다")
-    void deletesRelationshipsAndColumnsWhenFkTableDeleted() {
-      var relationship = RelationshipFixture.defaultRelationship();
-      var relationshipColumn = RelationshipFixture.defaultRelationshipColumn();
-      sut.createRelationship(relationship).block();
-      relationshipColumnAdapter.createRelationshipColumn(relationshipColumn).block();
-
-      StepVerifier.create(sut.cascadeDeleteByTableId(FK_TABLE_ID))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findRelationshipById(relationship.id()))
-          .verifyComplete();
-
-      StepVerifier.create(relationshipColumnAdapter.findRelationshipColumnById(relationshipColumn.id()))
-          .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("PK 테이블 삭제 시 관련 관계와 컬럼을 모두 삭제한다")
-    void deletesRelationshipsAndColumnsWhenPkTableDeleted() {
-      var relationship = RelationshipFixture.defaultRelationship();
-      var relationshipColumn = RelationshipFixture.defaultRelationshipColumn();
-      sut.createRelationship(relationship).block();
-      relationshipColumnAdapter.createRelationshipColumn(relationshipColumn).block();
-
-      StepVerifier.create(sut.cascadeDeleteByTableId(PK_TABLE_ID))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findRelationshipById(relationship.id()))
-          .verifyComplete();
-
-      StepVerifier.create(relationshipColumnAdapter.findRelationshipColumnById(relationshipColumn.id()))
-          .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("여러 관계가 있을 때 관련된 관계만 삭제한다")
-    void deletesOnlyRelatedRelationships() {
-      var relationship1 = RelationshipFixture.relationshipWithId(RELATIONSHIP_ID_1);
-      var relationship2 = new Relationship(
-          RELATIONSHIP_ID_2, OTHER_TABLE_ID, OTHER_TABLE_ID, "other_fk",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
-      sut.createRelationship(relationship1).block();
-      sut.createRelationship(relationship2).block();
-
-      StepVerifier.create(sut.cascadeDeleteByTableId(FK_TABLE_ID))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findRelationshipById(RELATIONSHIP_ID_1))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findRelationshipById(RELATIONSHIP_ID_2))
-          .assertNext(found -> assertThat(found.id()).isEqualTo(RELATIONSHIP_ID_2))
-          .verifyComplete();
-    }
-
-  }
-
   private void createTable(String tableId, String schemaId, String name) {
     databaseClient.sql("""
         INSERT INTO db_tables (id, schema_id, name, charset, collation)

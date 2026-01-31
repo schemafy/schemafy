@@ -11,6 +11,7 @@ import com.schemafy.domain.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableUseCase;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -26,6 +27,8 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
   public Mono<Void> deleteSchema(DeleteSchemaCommand command) {
     String schemaId = command.schemaId();
     return getTablesBySchemaIdPort.findTablesBySchemaId(schemaId)
+        .collectList()
+        .flatMapMany(Flux::fromIterable)
         .concatMap(table -> deleteTableUseCase.deleteTable(new DeleteTableCommand(table.id())))
         .then(Mono.defer(() -> deleteSchemaPort.deleteSchema(schemaId)))
         .as(transactionalOperator::transactional);

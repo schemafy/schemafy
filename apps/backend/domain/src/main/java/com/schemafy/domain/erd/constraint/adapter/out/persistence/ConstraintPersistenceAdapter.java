@@ -6,7 +6,6 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
-import com.schemafy.domain.erd.constraint.application.port.out.CascadeDeleteConstraintsByTableIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintPort;
@@ -25,8 +24,7 @@ class ConstraintPersistenceAdapter implements
     GetConstraintsByTableIdPort,
     ChangeConstraintNamePort,
     DeleteConstraintPort,
-    ConstraintExistsPort,
-    CascadeDeleteConstraintsByTableIdPort {
+    ConstraintExistsPort {
 
   private final ConstraintRepository constraintRepository;
   private final ConstraintColumnRepository constraintColumnRepository;
@@ -87,13 +85,6 @@ class ConstraintPersistenceAdapter implements
       String name,
       String constraintId) {
     return constraintRepository.existsBySchemaIdAndNameExcludingId(schemaId, name, constraintId);
-  }
-
-  @Override
-  public Mono<Void> cascadeDeleteByTableId(String tableId) {
-    return constraintRepository.findByTableId(tableId)
-        .flatMap(constraint -> constraintColumnRepository.deleteByConstraintId(constraint.getId()))
-        .then(constraintRepository.deleteByTableId(tableId));
   }
 
   private Mono<ConstraintEntity> findConstraintOrError(String constraintId) {

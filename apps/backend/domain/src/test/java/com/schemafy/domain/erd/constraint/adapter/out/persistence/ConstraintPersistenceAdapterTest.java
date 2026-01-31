@@ -321,51 +321,6 @@ class ConstraintPersistenceAdapterTest {
 
   }
 
-  @Nested
-  @DisplayName("cascadeDeleteByTableId 메서드는")
-  class CascadeDeleteByTableId {
-
-    @Test
-    @DisplayName("테이블 삭제 시 관련 제약조건과 컬럼을 모두 삭제한다")
-    void deletesConstraintsAndColumnsWhenTableDeleted() {
-      var constraint = ConstraintFixture.defaultConstraint();
-      var constraintColumn = ConstraintFixture.defaultConstraintColumn();
-      sut.createConstraint(constraint).block();
-      constraintColumnAdapter.createConstraintColumn(constraintColumn).block();
-
-      StepVerifier.create(sut.cascadeDeleteByTableId(TABLE_ID))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findConstraintById(constraint.id()))
-          .verifyComplete();
-
-      StepVerifier.create(constraintColumnAdapter.findConstraintColumnById(constraintColumn.id()))
-          .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("여러 제약조건이 있을 때 관련된 제약조건만 삭제한다")
-    void deletesOnlyRelatedConstraints() {
-      var constraint1 = ConstraintFixture.constraintWithId(CONSTRAINT_ID_1);
-      var constraint2 = new Constraint(
-          CONSTRAINT_ID_2, OTHER_TABLE_ID, "other_pk",
-          ConstraintKind.PRIMARY_KEY, null, null);
-      sut.createConstraint(constraint1).block();
-      sut.createConstraint(constraint2).block();
-
-      StepVerifier.create(sut.cascadeDeleteByTableId(TABLE_ID))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findConstraintById(CONSTRAINT_ID_1))
-          .verifyComplete();
-
-      StepVerifier.create(sut.findConstraintById(CONSTRAINT_ID_2))
-          .assertNext(found -> assertThat(found.id()).isEqualTo(CONSTRAINT_ID_2))
-          .verifyComplete();
-    }
-
-  }
-
   private void createSchema(String schemaId, String name) {
     databaseClient.sql("""
         INSERT INTO db_schemas (id, project_id, db_vendor_name, name, charset, collation)

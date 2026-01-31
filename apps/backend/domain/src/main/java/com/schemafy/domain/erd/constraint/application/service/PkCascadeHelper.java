@@ -235,7 +235,7 @@ public class PkCascadeHelper {
                 .then(deleteRelationshipPort.deleteRelationship(relationship.id()));
           } else {
             deleteRelColumns = Flux.fromIterable(toRemove)
-                .flatMap(rc -> deleteRelationshipColumnPort.deleteRelationshipColumn(rc.id()))
+                .concatMap(rc -> deleteRelationshipColumnPort.deleteRelationshipColumn(rc.id()))
                 .then();
           }
 
