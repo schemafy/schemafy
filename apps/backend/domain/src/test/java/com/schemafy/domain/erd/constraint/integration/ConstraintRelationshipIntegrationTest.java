@@ -12,6 +12,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaUseCase;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
@@ -90,6 +94,12 @@ class ConstraintRelationshipIntegrationTest {
 
   @Autowired
   GetColumnsByTableIdUseCase getColumnsByTableIdUseCase;
+
+  @Autowired
+  ChangeColumnTypeUseCase changeColumnTypeUseCase;
+
+  @Autowired
+  ChangeColumnMetaUseCase changeColumnMetaUseCase;
 
   private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
 
@@ -588,6 +598,151 @@ class ConstraintRelationshipIntegrationTest {
           .assertNext(columns -> {
             assertThat(columns).hasSize(1);
             assertThat(columns.get(0).pkColumnId()).isEqualTo(pkColumnId1);
+          })
+          .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("PK 컬럼 타입 변경 시 FK 전파")
+  class PkColumnTypeChangePropagation {
+
+    @Test
+    @DisplayName("PK 컬럼 타입 변경 시 FK 컬럼에도 타입이 전파된다")
+    void propagatesTypeChangeToFkColumns() {
+      // Given: Relationship 생성 (pk_col1 참조)
+      var createRelCommand = new CreateRelationshipCommand(
+          fkTableId1,
+          pkTableId,
+          "fk_type_test",
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY,
+          null,
+          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
+      createRelationshipUseCase.createRelationship(createRelCommand).block();
+
+      // When: PK 컬럼 타입을 INT → BIGINT로 변경
+      StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
+          new ChangeColumnTypeCommand(pkColumnId1, "BIGINT", null, null, null)))
+          .verifyComplete();
+
+      // Then: FK 컬럼도 BIGINT로 변경됨
+      StepVerifier.create(getColumnsByTableIdUseCase
+          .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId1)))
+          .assertNext(columns -> {
+            var fkColumn = columns.stream()
+                .filter(c -> c.id().equals(fkColumnId1_1))
+                .findFirst()
+                .orElseThrow();
+            assertThat(fkColumn.dataType()).isEqualTo("BIGINT");
+          })
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("다수의 FK 테이블에 타입이 전파된다")
+    void propagatesTypeChangeToMultipleFkTables() {
+      // Given: 두 FK 테이블이 같은 PK 컬럼을 참조
+      var createRelCommand1 = new CreateRelationshipCommand(
+          fkTableId1,
+          pkTableId,
+          "fk_type_multi_1",
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY,
+          null,
+          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
+      createRelationshipUseCase.createRelationship(createRelCommand1).block();
+
+      var createRelCommand2 = new CreateRelationshipCommand(
+          fkTableId2,
+          pkTableId,
+          "fk_type_multi_2",
+          RelationshipKind.IDENTIFYING,
+          Cardinality.ONE_TO_ONE,
+          null,
+          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId2_1, 0)));
+      createRelationshipUseCase.createRelationship(createRelCommand2).block();
+
+      // When: PK 컬럼 타입을 INT → BIGINT로 변경
+      StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
+          new ChangeColumnTypeCommand(pkColumnId1, "BIGINT", null, null, null)))
+          .verifyComplete();
+
+      // Then: 두 FK 테이블의 컬럼 모두 BIGINT로 변경됨
+      StepVerifier.create(getColumnsByTableIdUseCase
+          .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId1)))
+          .assertNext(columns -> {
+            var fkColumn = columns.stream()
+                .filter(c -> c.id().equals(fkColumnId1_1))
+                .findFirst()
+                .orElseThrow();
+            assertThat(fkColumn.dataType()).isEqualTo("BIGINT");
+          })
+          .verifyComplete();
+
+      StepVerifier.create(getColumnsByTableIdUseCase
+          .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId2)))
+          .assertNext(columns -> {
+            var fkColumn = columns.stream()
+                .filter(c -> c.id().equals(fkColumnId2_1))
+                .findFirst()
+                .orElseThrow();
+            assertThat(fkColumn.dataType()).isEqualTo("BIGINT");
+          })
+          .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("PK 컬럼 charset/collation 변경 시 FK 전파")
+  class PkColumnMetaChangePropagation {
+
+    @Test
+    @DisplayName("PK 컬럼 charset/collation 변경 시 FK 컬럼에도 전파된다")
+    void propagatesCharsetCollationToFkColumns() {
+      // Given: VARCHAR PK 컬럼과 FK 컬럼 생성
+      var createVarcharPkColumnCommand = new CreateColumnCommand(
+          pkTableId, "pk_varchar", "VARCHAR", 100, null, null, 2, false, null, null, null);
+      var varcharPkResult = createColumnUseCase.createColumn(createVarcharPkColumnCommand).block();
+      String varcharPkColumnId = varcharPkResult.columnId();
+
+      var createVarcharFkColumnCommand = new CreateColumnCommand(
+          fkTableId1, "fk_varchar", "VARCHAR", 100, null, null, 2, false, null, null, null);
+      var varcharFkResult = createColumnUseCase.createColumn(createVarcharFkColumnCommand).block();
+      String varcharFkColumnId = varcharFkResult.columnId();
+
+      // PK Constraint에 VARCHAR 컬럼 추가
+      addConstraintColumnUseCase.addConstraintColumn(
+          new AddConstraintColumnCommand(pkConstraintId, varcharPkColumnId, 2)).block();
+
+      // Relationship 생성
+      var createRelCommand = new CreateRelationshipCommand(
+          fkTableId1,
+          pkTableId,
+          "fk_charset_test",
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY,
+          null,
+          List.of(new CreateRelationshipColumnCommand(varcharPkColumnId, varcharFkColumnId, 0)));
+      createRelationshipUseCase.createRelationship(createRelCommand).block();
+
+      // When: PK 컬럼 charset/collation 변경
+      StepVerifier.create(changeColumnMetaUseCase.changeColumnMeta(
+          new ChangeColumnMetaCommand(varcharPkColumnId, null, "utf8mb4", "utf8mb4_unicode_ci", null)))
+          .verifyComplete();
+
+      // Then: FK 컬럼도 charset/collation이 변경됨
+      StepVerifier.create(getColumnsByTableIdUseCase
+          .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId1)))
+          .assertNext(columns -> {
+            var fkColumn = columns.stream()
+                .filter(c -> c.id().equals(varcharFkColumnId))
+                .findFirst()
+                .orElseThrow();
+            assertThat(fkColumn.charset()).isEqualTo("utf8mb4");
+            assertThat(fkColumn.collation()).isEqualTo("utf8mb4_unicode_ci");
           })
           .verifyComplete();
     }
