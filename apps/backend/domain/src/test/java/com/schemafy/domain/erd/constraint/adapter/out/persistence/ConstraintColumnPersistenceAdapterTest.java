@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.constraint.adapter.out.persistence;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
@@ -16,17 +18,15 @@ import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 
 import reactor.test.StepVerifier;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @Import({
-    ConstraintPersistenceAdapter.class,
-    ConstraintColumnPersistenceAdapter.class,
-    ConstraintMapper.class,
-    ConstraintColumnMapper.class,
-    R2dbcTestConfiguration.class
+  ConstraintPersistenceAdapter.class,
+  ConstraintColumnPersistenceAdapter.class,
+  ConstraintMapper.class,
+  ConstraintColumnMapper.class,
+  R2dbcTestConfiguration.class
 })
 @DisplayName("ConstraintColumnPersistenceAdapter")
 class ConstraintColumnPersistenceAdapterTest {
@@ -232,8 +232,7 @@ class ConstraintColumnPersistenceAdapterTest {
       var reorderedColumns = List.of(
           new ConstraintColumn(COLUMN_ID_1, CONSTRAINT_ID_1, TABLE_COLUMN_ID_1, 2),
           new ConstraintColumn(COLUMN_ID_2, CONSTRAINT_ID_1, TABLE_COLUMN_ID_2, 0),
-          new ConstraintColumn(COLUMN_ID_3, CONSTRAINT_ID_1, TABLE_COLUMN_ID_3, 1)
-      );
+          new ConstraintColumn(COLUMN_ID_3, CONSTRAINT_ID_1, TABLE_COLUMN_ID_3, 1));
 
       StepVerifier.create(sut.changeConstraintColumnPositions(CONSTRAINT_ID_1, reorderedColumns))
           .verifyComplete();

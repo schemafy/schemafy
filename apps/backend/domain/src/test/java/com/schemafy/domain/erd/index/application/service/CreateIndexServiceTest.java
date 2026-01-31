@@ -519,6 +519,7 @@ class CreateIndexServiceTest {
           })
           .verifyComplete();
     }
+
   }
 
   private Table createTable(String id, String schemaId) {

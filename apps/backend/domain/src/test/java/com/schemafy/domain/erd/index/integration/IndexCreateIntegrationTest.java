@@ -34,7 +34,6 @@ import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexI
 import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdUseCase;
 import com.schemafy.domain.erd.index.application.port.in.GetIndexQuery;
 import com.schemafy.domain.erd.index.application.port.in.GetIndexUseCase;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuery;
 import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.type.IndexType;

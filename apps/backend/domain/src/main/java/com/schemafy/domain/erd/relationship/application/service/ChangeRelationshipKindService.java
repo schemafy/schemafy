@@ -1,9 +1,11 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
+import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipKindPort;
@@ -16,26 +18,18 @@ import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeRelationshipKindService implements ChangeRelationshipKindUseCase {
 
   private final ChangeRelationshipKindPort changeRelationshipKindPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetRelationshipsBySchemaIdPort getRelationshipsBySchemaIdPort;
-
-  public ChangeRelationshipKindService(
-      ChangeRelationshipKindPort changeRelationshipKindPort,
-      GetRelationshipByIdPort getRelationshipByIdPort,
-      GetTableByIdPort getTableByIdPort,
-      GetRelationshipsBySchemaIdPort getRelationshipsBySchemaIdPort) {
-    this.changeRelationshipKindPort = changeRelationshipKindPort;
-    this.getRelationshipByIdPort = getRelationshipByIdPort;
-    this.getTableByIdPort = getTableByIdPort;
-    this.getRelationshipsBySchemaIdPort = getRelationshipsBySchemaIdPort;
-  }
+  private final PkCascadeHelper pkCascadeHelper;
 
   @Override
   public Mono<Void> changeRelationshipKind(ChangeRelationshipKindCommand command) {
@@ -45,10 +39,15 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
         .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
         .flatMap(relationship -> {
-          if (command.kind() != RelationshipKind.IDENTIFYING) {
-            return changeRelationshipKindPort.changeRelationshipKind(
-                relationship.id(),
-                command.kind());
+          RelationshipKind oldKind = relationship.kind();
+          RelationshipKind newKind = command.kind();
+
+          if (oldKind == newKind) {
+            return Mono.empty();
+          }
+
+          if (newKind != RelationshipKind.IDENTIFYING) {
+            return syncPkAndChangeKind(relationship, oldKind, newKind);
           }
           return getTableByIdPort.findTableById(relationship.fkTableId())
               .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
@@ -59,23 +58,31 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
                   .flatMap(relationships -> validateCycleAndChange(
                       relationship,
                       relationships,
-                      command)));
+                      oldKind,
+                      newKind)));
         });
   }
 
   private Mono<Void> validateCycleAndChange(
       Relationship relationship,
       List<Relationship> relationships,
-      ChangeRelationshipKindCommand command) {
+      RelationshipKind oldKind,
+      RelationshipKind newKind) {
     RelationshipValidator.validateIdentifyingCycle(
         relationships,
         new RelationshipValidator.RelationshipKindChange(
             relationship.id(),
-            command.kind()),
+            newKind),
         null);
-    return changeRelationshipKindPort.changeRelationshipKind(
-        relationship.id(),
-        command.kind());
+    return syncPkAndChangeKind(relationship, oldKind, newKind);
+  }
+
+  private Mono<Void> syncPkAndChangeKind(
+      Relationship relationship,
+      RelationshipKind oldKind,
+      RelationshipKind newKind) {
+    return pkCascadeHelper.syncPkForKindChange(relationship, oldKind, newKind, new HashSet<>())
+        .then(changeRelationshipKindPort.changeRelationshipKind(relationship.id(), newKind));
   }
 
 }

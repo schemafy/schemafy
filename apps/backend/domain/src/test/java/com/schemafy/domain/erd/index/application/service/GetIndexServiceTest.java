@@ -64,6 +64,7 @@ class GetIndexServiceTest {
           .expectError(IndexNotExistException.class)
           .verify();
     }
+
   }
 
 }

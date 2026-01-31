@@ -10,6 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
+import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipPort;
@@ -53,6 +55,9 @@ class RemoveRelationshipColumnServiceTest {
   @Mock
   GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
 
+  @Mock
+  DeleteColumnUseCase deleteColumnUseCase;
+
   @InjectMocks
   RemoveRelationshipColumnService sut;
 
@@ -84,6 +89,8 @@ class RemoveRelationshipColumnServiceTest {
             .willReturn(Mono.just(List.of(remainingColumn)));
         given(changeRelationshipColumnPositionPort
             .changeRelationshipColumnPositions(any(), anyList()))
+            .willReturn(Mono.empty());
+        given(deleteColumnUseCase.deleteColumn(any(DeleteColumnCommand.class)))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.removeRelationshipColumn(command))
@@ -117,6 +124,8 @@ class RemoveRelationshipColumnServiceTest {
         given(changeRelationshipColumnPositionPort
             .changeRelationshipColumnPositions(any(), anyList()))
             .willReturn(Mono.empty());
+        given(deleteColumnUseCase.deleteColumn(any(DeleteColumnCommand.class)))
+            .willReturn(Mono.empty());
 
         StepVerifier.create(sut.removeRelationshipColumn(command))
             .verifyComplete();
@@ -148,6 +157,8 @@ class RemoveRelationshipColumnServiceTest {
             .findRelationshipColumnsByRelationshipId(any()))
             .willReturn(Mono.just(List.of()));
         given(deleteRelationshipPort.deleteRelationship(any()))
+            .willReturn(Mono.empty());
+        given(deleteColumnUseCase.deleteColumn(any(DeleteColumnCommand.class)))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.removeRelationshipColumn(command))

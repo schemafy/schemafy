@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
+import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.RemoveRelationshipColumnUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
@@ -17,9 +19,11 @@ import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class RemoveRelationshipColumnService implements RemoveRelationshipColumnUseCase {
 
   private final DeleteRelationshipColumnPort deleteRelationshipColumnPort;
@@ -28,21 +32,7 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
-
-  public RemoveRelationshipColumnService(
-      DeleteRelationshipColumnPort deleteRelationshipColumnPort,
-      DeleteRelationshipPort deleteRelationshipPort,
-      ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort,
-      GetRelationshipByIdPort getRelationshipByIdPort,
-      GetRelationshipColumnByIdPort getRelationshipColumnByIdPort,
-      GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort) {
-    this.deleteRelationshipColumnPort = deleteRelationshipColumnPort;
-    this.deleteRelationshipPort = deleteRelationshipPort;
-    this.changeRelationshipColumnPositionPort = changeRelationshipColumnPositionPort;
-    this.getRelationshipByIdPort = getRelationshipByIdPort;
-    this.getRelationshipColumnByIdPort = getRelationshipColumnByIdPort;
-    this.getRelationshipColumnsByRelationshipIdPort = getRelationshipColumnsByRelationshipIdPort;
-  }
+  private final DeleteColumnUseCase deleteColumnUseCase;
 
   @Override
   public Mono<Void> removeRelationshipColumn(RemoveRelationshipColumnCommand command) {
@@ -57,9 +47,11 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
                 return Mono.error(new RelationshipColumnNotExistException(
                     "Relationship column not found"));
               }
+              String fkColumnId = relationshipColumn.fkColumnId();
               return deleteRelationshipColumnPort
                   .deleteRelationshipColumn(relationshipColumn.id())
-                  .then(handleRemainingColumns(relationship.id()));
+                  .then(handleRemainingColumns(relationship.id()))
+                  .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)));
             }));
   }
 

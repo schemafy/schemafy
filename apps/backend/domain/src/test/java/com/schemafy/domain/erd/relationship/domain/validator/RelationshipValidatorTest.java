@@ -373,8 +373,8 @@ class RelationshipValidatorTest {
         Relationship ba = new Relationship(
             "rel2", "tableB", "tableA", "fk_b_a",
             RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null);
-        RelationshipValidator.RelationshipKindChange change =
-            new RelationshipValidator.RelationshipKindChange("rel1", RelationshipKind.IDENTIFYING);
+        RelationshipValidator.RelationshipKindChange change = new RelationshipValidator.RelationshipKindChange("rel1",
+            RelationshipKind.IDENTIFYING);
 
         assertThatThrownBy(() -> RelationshipValidator.validateIdentifyingCycle(
             List.of(ab, ba), change, null))
@@ -390,9 +390,8 @@ class RelationshipValidatorTest {
         Relationship ba = new Relationship(
             "rel2", "tableB", "tableA", "fk_b_a",
             RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null);
-        RelationshipValidator.RelationshipKindChange change =
-            new RelationshipValidator.RelationshipKindChange(
-                "rel1", RelationshipKind.NON_IDENTIFYING);
+        RelationshipValidator.RelationshipKindChange change = new RelationshipValidator.RelationshipKindChange(
+            "rel1", RelationshipKind.NON_IDENTIFYING);
 
         assertThatCode(() -> RelationshipValidator.validateIdentifyingCycle(
             List.of(ab, ba), change, null))
@@ -415,8 +414,8 @@ class RelationshipValidatorTest {
             "rel2", "tableB", "tableA", "fk_b_a",
             RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null);
 
-        RelationshipValidator.IdentifyingCycle cycle =
-            RelationshipValidator.detectIdentifyingCycle(List.of(ab, ba), null, null);
+        RelationshipValidator.IdentifyingCycle cycle = RelationshipValidator.detectIdentifyingCycle(List.of(ab, ba),
+            null, null);
 
         org.assertj.core.api.Assertions.assertThat(cycle).isNotNull();
       }
@@ -431,8 +430,8 @@ class RelationshipValidatorTest {
             "rel2", "tableB", "tableC", "fk_b_c",
             RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null);
 
-        RelationshipValidator.IdentifyingCycle cycle =
-            RelationshipValidator.detectIdentifyingCycle(List.of(ab, bc), null, null);
+        RelationshipValidator.IdentifyingCycle cycle = RelationshipValidator.detectIdentifyingCycle(List.of(ab, bc),
+            null, null);
 
         org.assertj.core.api.Assertions.assertThat(cycle).isNull();
       }
@@ -440,8 +439,8 @@ class RelationshipValidatorTest {
       @Test
       @DisplayName("빈 리스트면 null을 반환한다")
       void returnsNullWhenEmpty() {
-        RelationshipValidator.IdentifyingCycle cycle =
-            RelationshipValidator.detectIdentifyingCycle(List.of(), null, null);
+        RelationshipValidator.IdentifyingCycle cycle = RelationshipValidator.detectIdentifyingCycle(List.of(), null,
+            null);
 
         org.assertj.core.api.Assertions.assertThat(cycle).isNull();
       }

@@ -393,9 +393,7 @@ public class RelationshipFixture {
     return new DeleteRelationshipCommand(relationshipId);
   }
 
-  public static GetRelationshipQuery getRelationshipQuery() {
-    return new GetRelationshipQuery(DEFAULT_ID);
-  }
+  public static GetRelationshipQuery getRelationshipQuery() { return new GetRelationshipQuery(DEFAULT_ID); }
 
   public static GetRelationshipQuery getRelationshipQuery(String relationshipId) {
     return new GetRelationshipQuery(relationshipId);
@@ -426,13 +424,12 @@ public class RelationshipFixture {
     return new GetRelationshipColumnQuery(relationshipColumnId);
   }
 
-  public static GetRelationshipColumnsByRelationshipIdQuery
-      getRelationshipColumnsByRelationshipIdQuery() {
+  public static GetRelationshipColumnsByRelationshipIdQuery getRelationshipColumnsByRelationshipIdQuery() {
     return new GetRelationshipColumnsByRelationshipIdQuery(DEFAULT_ID);
   }
 
-  public static GetRelationshipColumnsByRelationshipIdQuery
-      getRelationshipColumnsByRelationshipIdQuery(String relationshipId) {
+  public static GetRelationshipColumnsByRelationshipIdQuery getRelationshipColumnsByRelationshipIdQuery(
+      String relationshipId) {
     return new GetRelationshipColumnsByRelationshipIdQuery(relationshipId);
   }
 

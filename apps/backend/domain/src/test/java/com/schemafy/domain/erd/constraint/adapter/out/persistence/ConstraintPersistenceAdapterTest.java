@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @Import({
-    ConstraintPersistenceAdapter.class,
-    ConstraintColumnPersistenceAdapter.class,
-    ConstraintMapper.class,
-    ConstraintColumnMapper.class,
-    R2dbcTestConfiguration.class
+  ConstraintPersistenceAdapter.class,
+  ConstraintColumnPersistenceAdapter.class,
+  ConstraintMapper.class,
+  ConstraintColumnMapper.class,
+  R2dbcTestConfiguration.class
 })
 @DisplayName("ConstraintPersistenceAdapter")
 class ConstraintPersistenceAdapterTest {

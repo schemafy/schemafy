@@ -164,6 +164,7 @@ class RemoveIndexColumnServiceTest {
 
       then(deleteIndexColumnPort).shouldHaveNoInteractions();
     }
+
   }
 
 }

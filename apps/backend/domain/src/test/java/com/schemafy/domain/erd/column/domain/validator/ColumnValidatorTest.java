@@ -79,7 +79,7 @@ class ColumnValidatorTest {
 
     @ParameterizedTest
     @ValueSource(strings = { "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE",
-        "JOIN", "ORDER", "GROUP", "HAVING", "TABLE", "CREATE" })
+      "JOIN", "ORDER", "GROUP", "HAVING", "TABLE", "CREATE" })
     @DisplayName("예약어면 예외가 발생한다 (대문자)")
     void throwsForReservedKeywordsUppercase(String keyword) {
       assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(keyword))
@@ -89,7 +89,7 @@ class ColumnValidatorTest {
 
     @ParameterizedTest
     @ValueSource(strings = { "select", "insert", "update", "delete", "from", "where",
-        "join", "order", "group", "having", "table", "create" })
+      "join", "order", "group", "having", "table", "create" })
     @DisplayName("예약어면 예외가 발생한다 (소문자)")
     void throwsForReservedKeywordsLowercase(String keyword) {
       assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(keyword))

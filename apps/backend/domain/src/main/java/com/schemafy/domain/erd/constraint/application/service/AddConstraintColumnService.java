@@ -1,14 +1,12 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -24,11 +22,6 @@ import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.domain.validator.ConstraintValidator;
-import com.schemafy.domain.erd.relationship.application.port.out.CreateRelationshipColumnPort;
-import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
-import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
-import com.schemafy.domain.erd.relationship.domain.Relationship;
-import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -46,10 +39,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetColumnByIdPort getColumnByIdPort;
-  private final CreateColumnPort createColumnPort;
-  private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
-  private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
-  private final CreateRelationshipColumnPort createRelationshipColumnPort;
+  private final PkCascadeHelper pkCascadeHelper;
 
   @Override
   public Mono<AddConstraintColumnResult> addConstraintColumn(AddConstraintColumnCommand command) {
@@ -129,79 +119,20 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
 
   private Mono<List<CascadeCreatedColumn>> cascadeCreateFkColumns(
       String pkTableId, String pkColumnId) {
-    return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkTableId)
-        .defaultIfEmpty(List.of())
-        .flatMap(relationships -> {
-          if (relationships.isEmpty()) {
-            return Mono.just(List.<CascadeCreatedColumn>of());
-          }
-          return getColumnByIdPort.findColumnById(pkColumnId)
-              .flatMap(pkColumn -> Flux.fromIterable(relationships)
-                  .flatMap(rel -> createFkColumnForRelationship(rel, pkColumn))
-                  .collectList());
-        });
-  }
-
-  private Mono<CascadeCreatedColumn> createFkColumnForRelationship(
-      Relationship relationship, Column pkColumn) {
-    String fkTableId = relationship.fkTableId();
-
-    Mono<List<Column>> fkColumnsMono = getColumnsByTableIdPort.findColumnsByTableId(fkTableId)
+    return getColumnByIdPort.findColumnById(pkColumnId)
+        .flatMap(pkColumn -> pkCascadeHelper.cascadeAddPkColumn(
+            pkTableId, pkColumn, new HashSet<>())
+            .map(cascadeInfoList -> cascadeInfoList.stream()
+                .map(info -> new CascadeCreatedColumn(
+                    info.fkColumnId(),
+                    info.fkColumnName(),
+                    info.fkTableId(),
+                    info.relationshipColumnId(),
+                    info.relationshipId(),
+                    info.constraintColumnId(),
+                    info.constraintId()))
+                .toList()))
         .defaultIfEmpty(List.of());
-    Mono<List<RelationshipColumn>> relColumnsMono = getRelationshipColumnsByRelationshipIdPort
-        .findRelationshipColumnsByRelationshipId(relationship.id())
-        .defaultIfEmpty(List.of());
-
-    return Mono.zip(fkColumnsMono, relColumnsMono)
-        .flatMap(tuple -> {
-          List<Column> fkColumns = tuple.getT1();
-          List<RelationshipColumn> existingRelColumns = tuple.getT2();
-
-          String fkColumnName = resolveUniqueName(
-              pkColumn.name(),
-              fkColumns.stream().map(Column::name).collect(Collectors.toSet()));
-
-          Column fkColumn = new Column(
-              ulidGeneratorPort.generate(),
-              fkTableId,
-              fkColumnName,
-              pkColumn.dataType(),
-              pkColumn.lengthScale(),
-              fkColumns.size(),
-              false,
-              pkColumn.charset(),
-              pkColumn.collation(),
-              null);
-
-          return createColumnPort.createColumn(fkColumn)
-              .flatMap(savedFkColumn -> {
-                RelationshipColumn relColumn = new RelationshipColumn(
-                    ulidGeneratorPort.generate(),
-                    relationship.id(),
-                    pkColumn.id(),
-                    savedFkColumn.id(),
-                    existingRelColumns.size());
-
-                return createRelationshipColumnPort.createRelationshipColumn(relColumn)
-                    .map(savedRelColumn -> new CascadeCreatedColumn(
-                        savedFkColumn.id(),
-                        savedFkColumn.name(),
-                        fkTableId,
-                        savedRelColumn.id(),
-                        relationship.id()));
-              });
-        });
-  }
-
-  private String resolveUniqueName(String baseName, Set<String> existingNames) {
-    if (!existingNames.contains(baseName)) {
-      return baseName;
-    }
-    int suffix = 1;
-    while (existingNames.contains(baseName + "_" + suffix)) {
-      suffix++;
-    }
-    return baseName + "_" + suffix;
   }
 
   private Mono<TableContext> fetchTableContext(String tableId) {

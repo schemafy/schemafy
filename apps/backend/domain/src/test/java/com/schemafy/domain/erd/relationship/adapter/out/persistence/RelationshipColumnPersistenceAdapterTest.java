@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.relationship.adapter.out.persistence;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
@@ -16,17 +18,15 @@ import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 
 import reactor.test.StepVerifier;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @Import({
-    RelationshipPersistenceAdapter.class,
-    RelationshipColumnPersistenceAdapter.class,
-    RelationshipMapper.class,
-    RelationshipColumnMapper.class,
-    R2dbcTestConfiguration.class
+  RelationshipPersistenceAdapter.class,
+  RelationshipColumnPersistenceAdapter.class,
+  RelationshipMapper.class,
+  RelationshipColumnMapper.class,
+  R2dbcTestConfiguration.class
 })
 @DisplayName("RelationshipColumnPersistenceAdapter")
 class RelationshipColumnPersistenceAdapterTest {
@@ -236,8 +236,7 @@ class RelationshipColumnPersistenceAdapterTest {
       var reorderedColumns = List.of(
           new RelationshipColumn(COLUMN_ID_1, RELATIONSHIP_ID_1, PK_COLUMN_ID_1, FK_COLUMN_ID_1, 2),
           new RelationshipColumn(COLUMN_ID_2, RELATIONSHIP_ID_1, PK_COLUMN_ID_2, FK_COLUMN_ID_2, 0),
-          new RelationshipColumn(COLUMN_ID_3, RELATIONSHIP_ID_1, PK_COLUMN_ID_3, FK_COLUMN_ID_3, 1)
-      );
+          new RelationshipColumn(COLUMN_ID_3, RELATIONSHIP_ID_1, PK_COLUMN_ID_3, FK_COLUMN_ID_3, 1));
 
       StepVerifier.create(sut.changeRelationshipColumnPositions(RELATIONSHIP_ID_1, reorderedColumns))
           .verifyComplete();

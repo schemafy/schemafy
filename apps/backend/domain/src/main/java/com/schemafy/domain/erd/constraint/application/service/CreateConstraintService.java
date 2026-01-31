@@ -1,10 +1,12 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
@@ -25,10 +27,12 @@ import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class CreateConstraintService implements CreateConstraintUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -37,27 +41,10 @@ public class CreateConstraintService implements CreateConstraintUseCase {
   private final ConstraintExistsPort constraintExistsPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final GetColumnByIdPort getColumnByIdPort;
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
-
-  public CreateConstraintService(
-      UlidGeneratorPort ulidGeneratorPort,
-      CreateConstraintPort createConstraintPort,
-      CreateConstraintColumnPort createConstraintColumnPort,
-      ConstraintExistsPort constraintExistsPort,
-      GetTableByIdPort getTableByIdPort,
-      GetColumnsByTableIdPort getColumnsByTableIdPort,
-      GetConstraintsByTableIdPort getConstraintsByTableIdPort,
-      GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort) {
-    this.ulidGeneratorPort = ulidGeneratorPort;
-    this.createConstraintPort = createConstraintPort;
-    this.createConstraintColumnPort = createConstraintColumnPort;
-    this.constraintExistsPort = constraintExistsPort;
-    this.getTableByIdPort = getTableByIdPort;
-    this.getColumnsByTableIdPort = getColumnsByTableIdPort;
-    this.getConstraintsByTableIdPort = getConstraintsByTableIdPort;
-    this.getConstraintColumnsByConstraintIdPort = getConstraintColumnsByConstraintIdPort;
-  }
+  private final PkCascadeHelper pkCascadeHelper;
 
   @Override
   public Mono<CreateConstraintResult> createConstraint(CreateConstraintCommand command) {
@@ -141,6 +128,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
 
     return createConstraintPort.createConstraint(constraint)
         .flatMap(savedConstraint -> createConstraintColumns(savedConstraint.id(), columnCommands)
+            .then(cascadeCreateFkColumnsIfPk(kind, table.id(), columnIds))
             .thenReturn(new CreateConstraintResult(
                 savedConstraint.id(),
                 savedConstraint.name(),
@@ -208,6 +196,18 @@ public class CreateConstraintService implements CreateConstraintUseCase {
       return List.of();
     }
     return List.copyOf(columns);
+  }
+
+  private Mono<Void> cascadeCreateFkColumnsIfPk(
+      ConstraintKind kind, String pkTableId, List<String> pkColumnIds) {
+    if (kind != ConstraintKind.PRIMARY_KEY) {
+      return Mono.empty();
+    }
+    return Flux.fromIterable(pkColumnIds)
+        .concatMap(pkColumnId -> getColumnByIdPort.findColumnById(pkColumnId)
+            .flatMap(pkColumn -> pkCascadeHelper.cascadeAddPkColumn(
+                pkTableId, pkColumn, new HashSet<>())))
+        .then();
   }
 
   private record TableContext(

@@ -435,9 +435,7 @@ public class ConstraintFixture {
 
   // ========== Query Factory Methods ==========
 
-  public static GetConstraintQuery getConstraintQuery() {
-    return new GetConstraintQuery(DEFAULT_ID);
-  }
+  public static GetConstraintQuery getConstraintQuery() { return new GetConstraintQuery(DEFAULT_ID); }
 
   public static GetConstraintQuery getConstraintQuery(String constraintId) {
     return new GetConstraintQuery(constraintId);

@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @Import({
-    IndexPersistenceAdapter.class,
-    IndexColumnPersistenceAdapter.class,
-    IndexMapper.class,
-    IndexColumnMapper.class,
-    R2dbcTestConfiguration.class
+  IndexPersistenceAdapter.class,
+  IndexColumnPersistenceAdapter.class,
+  IndexMapper.class,
+  IndexColumnMapper.class,
+  R2dbcTestConfiguration.class
 })
 @DisplayName("IndexPersistenceAdapter")
 class IndexPersistenceAdapterTest {

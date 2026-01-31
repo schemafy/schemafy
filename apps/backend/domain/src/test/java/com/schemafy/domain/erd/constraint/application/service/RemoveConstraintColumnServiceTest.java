@@ -21,22 +21,16 @@ import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotEx
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
-import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
-import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
-import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipPort;
-import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
-import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
-import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RemoveConstraintColumnService")
@@ -61,19 +55,7 @@ class RemoveConstraintColumnServiceTest {
   GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
 
   @Mock
-  GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
-
-  @Mock
-  GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
-
-  @Mock
-  DeleteRelationshipPort deleteRelationshipPort;
-
-  @Mock
-  DeleteRelationshipColumnsByRelationshipIdPort deleteRelationshipColumnsByRelationshipIdPort;
-
-  @Mock
-  DeleteRelationshipColumnPort deleteRelationshipColumnPort;
+  PkCascadeHelper pkCascadeHelper;
 
   @InjectMocks
   RemoveConstraintColumnService sut;
@@ -188,6 +170,7 @@ class RemoveConstraintColumnServiceTest {
 
       then(deleteConstraintColumnPort).shouldHaveNoInteractions();
     }
+
   }
 
   @Nested
@@ -195,8 +178,8 @@ class RemoveConstraintColumnServiceTest {
   class WhenRemovingPkConstraintColumn {
 
     @Test
-    @DisplayName("해당 pkColumnId를 참조하는 RelationshipColumn만 삭제한다")
-    void deletesRelationshipColumnWhenPkColumnRemoved() {
+    @DisplayName("PkCascadeHelper를 통해 cascade 삭제를 수행한다")
+    void cascadesRemovalViaPkCascadeHelper() {
       var command = ConstraintFixture.removeColumnCommand("pk-constraint", "pk-cc1");
       var pkConstraint = createConstraint("pk-constraint", "pk-table", ConstraintKind.PRIMARY_KEY);
       var pkConstraintColumn = ConstraintFixture.constraintColumn(
@@ -204,24 +187,13 @@ class RemoveConstraintColumnServiceTest {
       var remainingPkColumns = List.of(
           ConstraintFixture.constraintColumn("pk-cc2", "pk-constraint", "pk-col2", 1));
 
-      // Relationship 관련 설정
-      var relationship = RelationshipFixture.relationshipWithTables("pk-table", "fk-table");
-      var relationshipColumns = List.of(
-          RelationshipFixture.relationshipColumn("rc1", relationship.id(), "pk-col1", "fk-col1", 0),
-          RelationshipFixture.relationshipColumn("rc2", relationship.id(), "pk-col2", "fk-col2", 1));
-
       given(getConstraintByIdPort.findConstraintById("pk-constraint"))
           .willReturn(Mono.just(pkConstraint));
       given(getConstraintColumnByIdPort.findConstraintColumnById("pk-cc1"))
           .willReturn(Mono.just(pkConstraintColumn));
       given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
           .willReturn(Mono.empty());
-      given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId("pk-table"))
-          .willReturn(Mono.just(List.of(relationship)));
-      given(getRelationshipColumnsByRelationshipIdPort
-          .findRelationshipColumnsByRelationshipId(relationship.id()))
-          .willReturn(Mono.just(relationshipColumns));
-      given(deleteRelationshipColumnPort.deleteRelationshipColumn("rc1"))
+      given(pkCascadeHelper.cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet()))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
           .willReturn(Mono.just(remainingPkColumns));
@@ -231,22 +203,16 @@ class RemoveConstraintColumnServiceTest {
       StepVerifier.create(sut.removeConstraintColumn(command))
           .verifyComplete();
 
-      then(deleteRelationshipColumnPort).should().deleteRelationshipColumn("rc1");
-      then(deleteRelationshipPort).should(never()).deleteRelationship(any());
+      then(pkCascadeHelper).should().cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet());
     }
 
     @Test
-    @DisplayName("마지막 RelationshipColumn이면 Relationship 자체도 삭제한다")
-    void deletesRelationshipWhenLastRelationshipColumnRemoved() {
+    @DisplayName("마지막 PK 컬럼 삭제 시 제약조건도 함께 삭제한다")
+    void deletesConstraintWhenLastPkColumnRemoved() {
       var command = ConstraintFixture.removeColumnCommand("pk-constraint", "pk-cc1");
       var pkConstraint = createConstraint("pk-constraint", "pk-table", ConstraintKind.PRIMARY_KEY);
       var pkConstraintColumn = ConstraintFixture.constraintColumn(
           "pk-cc1", "pk-constraint", "pk-col1", 0);
-
-      // Relationship에 하나의 컬럼만 있는 경우
-      var relationship = RelationshipFixture.relationshipWithTables("pk-table", "fk-table");
-      var relationshipColumns = List.of(
-          RelationshipFixture.relationshipColumn("rc1", relationship.id(), "pk-col1", "fk-col1", 0));
 
       given(getConstraintByIdPort.findConstraintById("pk-constraint"))
           .willReturn(Mono.just(pkConstraint));
@@ -254,14 +220,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.just(pkConstraintColumn));
       given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
           .willReturn(Mono.empty());
-      given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId("pk-table"))
-          .willReturn(Mono.just(List.of(relationship)));
-      given(getRelationshipColumnsByRelationshipIdPort
-          .findRelationshipColumnsByRelationshipId(relationship.id()))
-          .willReturn(Mono.just(relationshipColumns));
-      given(deleteRelationshipColumnsByRelationshipIdPort.deleteByRelationshipId(relationship.id()))
-          .willReturn(Mono.empty());
-      given(deleteRelationshipPort.deleteRelationship(relationship.id()))
+      given(pkCascadeHelper.cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet()))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
           .willReturn(Mono.just(List.of()));
@@ -271,135 +230,9 @@ class RemoveConstraintColumnServiceTest {
       StepVerifier.create(sut.removeConstraintColumn(command))
           .verifyComplete();
 
-      then(deleteRelationshipColumnsByRelationshipIdPort).should().deleteByRelationshipId(relationship.id());
-      then(deleteRelationshipPort).should().deleteRelationship(relationship.id());
+      then(deleteConstraintPort).should().deleteConstraint("pk-constraint");
     }
 
-    @Test
-    @DisplayName("PK 테이블을 참조하는 Relationship이 없으면 연쇄 삭제가 발생하지 않는다")
-    void noRelationshipCascadeWhenNoRelationshipsExist() {
-      var command = ConstraintFixture.removeColumnCommand("pk-constraint", "pk-cc1");
-      var pkConstraint = createConstraint("pk-constraint", "pk-table", ConstraintKind.PRIMARY_KEY);
-      var pkConstraintColumn = ConstraintFixture.constraintColumn(
-          "pk-cc1", "pk-constraint", "pk-col1", 0);
-      var remainingPkColumns = List.of(
-          ConstraintFixture.constraintColumn("pk-cc2", "pk-constraint", "pk-col2", 1));
-
-      given(getConstraintByIdPort.findConstraintById("pk-constraint"))
-          .willReturn(Mono.just(pkConstraint));
-      given(getConstraintColumnByIdPort.findConstraintColumnById("pk-cc1"))
-          .willReturn(Mono.just(pkConstraintColumn));
-      given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
-          .willReturn(Mono.empty());
-      given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId("pk-table"))
-          .willReturn(Mono.just(List.of()));
-      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
-          .willReturn(Mono.just(remainingPkColumns));
-      given(changeConstraintColumnPositionPort.changeConstraintColumnPositions(anyString(), any()))
-          .willReturn(Mono.empty());
-
-      StepVerifier.create(sut.removeConstraintColumn(command))
-          .verifyComplete();
-
-      then(getRelationshipColumnsByRelationshipIdPort).shouldHaveNoInteractions();
-      then(deleteRelationshipColumnPort).shouldHaveNoInteractions();
-      then(deleteRelationshipPort).shouldHaveNoInteractions();
-    }
-
-    @Test
-    @DisplayName("RelationshipColumn 중 해당 pkColumnId를 참조하는 것이 없으면 삭제하지 않는다")
-    void noDeleteWhenNoMatchingPkColumnId() {
-      var command = ConstraintFixture.removeColumnCommand("pk-constraint", "pk-cc1");
-      var pkConstraint = createConstraint("pk-constraint", "pk-table", ConstraintKind.PRIMARY_KEY);
-      var pkConstraintColumn = ConstraintFixture.constraintColumn(
-          "pk-cc1", "pk-constraint", "pk-col1", 0);
-      var remainingPkColumns = List.of(
-          ConstraintFixture.constraintColumn("pk-cc2", "pk-constraint", "pk-col2", 1));
-
-      // Relationship은 있지만 다른 pkColumnId를 참조
-      var relationship = RelationshipFixture.relationshipWithTables("pk-table", "fk-table");
-      var relationshipColumns = List.of(
-          RelationshipFixture.relationshipColumn("rc1", relationship.id(), "pk-col3", "fk-col3", 0));
-
-      given(getConstraintByIdPort.findConstraintById("pk-constraint"))
-          .willReturn(Mono.just(pkConstraint));
-      given(getConstraintColumnByIdPort.findConstraintColumnById("pk-cc1"))
-          .willReturn(Mono.just(pkConstraintColumn));
-      given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
-          .willReturn(Mono.empty());
-      given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId("pk-table"))
-          .willReturn(Mono.just(List.of(relationship)));
-      given(getRelationshipColumnsByRelationshipIdPort
-          .findRelationshipColumnsByRelationshipId(relationship.id()))
-          .willReturn(Mono.just(relationshipColumns));
-      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
-          .willReturn(Mono.just(remainingPkColumns));
-      given(changeConstraintColumnPositionPort.changeConstraintColumnPositions(anyString(), any()))
-          .willReturn(Mono.empty());
-
-      StepVerifier.create(sut.removeConstraintColumn(command))
-          .verifyComplete();
-
-      then(deleteRelationshipColumnPort).shouldHaveNoInteractions();
-      then(deleteRelationshipPort).shouldHaveNoInteractions();
-    }
-
-    @Test
-    @DisplayName("여러 Relationship에서 해당 pkColumnId를 참조하는 컬럼들을 모두 삭제한다")
-    void deletesFromMultipleRelationships() {
-      var command = ConstraintFixture.removeColumnCommand("pk-constraint", "pk-cc1");
-      var pkConstraint = createConstraint("pk-constraint", "pk-table", ConstraintKind.PRIMARY_KEY);
-      var pkConstraintColumn = ConstraintFixture.constraintColumn(
-          "pk-cc1", "pk-constraint", "pk-col1", 0);
-      var remainingPkColumns = List.of(
-          ConstraintFixture.constraintColumn("pk-cc2", "pk-constraint", "pk-col2", 1));
-
-      // 두 개의 Relationship이 같은 PK 테이블을 참조
-      var relationship1 = new com.schemafy.domain.erd.relationship.domain.Relationship(
-          "rel1", "pk-table", "fk-table1", "fk_rel1",
-          com.schemafy.domain.erd.relationship.domain.type.RelationshipKind.NON_IDENTIFYING,
-          com.schemafy.domain.erd.relationship.domain.type.Cardinality.ONE_TO_MANY, null);
-      var relationship2 = new com.schemafy.domain.erd.relationship.domain.Relationship(
-          "rel2", "pk-table", "fk-table2", "fk_rel2",
-          com.schemafy.domain.erd.relationship.domain.type.RelationshipKind.NON_IDENTIFYING,
-          com.schemafy.domain.erd.relationship.domain.type.Cardinality.ONE_TO_MANY, null);
-
-      var rel1Columns = List.of(
-          RelationshipFixture.relationshipColumn("rc1", "rel1", "pk-col1", "fk-col1", 0),
-          RelationshipFixture.relationshipColumn("rc2", "rel1", "pk-col2", "fk-col2", 1));
-      var rel2Columns = List.of(
-          RelationshipFixture.relationshipColumn("rc3", "rel2", "pk-col1", "fk-col3", 0));
-
-      given(getConstraintByIdPort.findConstraintById("pk-constraint"))
-          .willReturn(Mono.just(pkConstraint));
-      given(getConstraintColumnByIdPort.findConstraintColumnById("pk-cc1"))
-          .willReturn(Mono.just(pkConstraintColumn));
-      given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
-          .willReturn(Mono.empty());
-      given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId("pk-table"))
-          .willReturn(Mono.just(List.of(relationship1, relationship2)));
-      given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId("rel1"))
-          .willReturn(Mono.just(rel1Columns));
-      given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId("rel2"))
-          .willReturn(Mono.just(rel2Columns));
-      given(deleteRelationshipColumnPort.deleteRelationshipColumn("rc1"))
-          .willReturn(Mono.empty());
-      // rel2는 마지막 컬럼이므로 Relationship도 삭제
-      given(deleteRelationshipColumnsByRelationshipIdPort.deleteByRelationshipId("rel2"))
-          .willReturn(Mono.empty());
-      given(deleteRelationshipPort.deleteRelationship("rel2"))
-          .willReturn(Mono.empty());
-      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
-          .willReturn(Mono.just(remainingPkColumns));
-      given(changeConstraintColumnPositionPort.changeConstraintColumnPositions(anyString(), any()))
-          .willReturn(Mono.empty());
-
-      StepVerifier.create(sut.removeConstraintColumn(command))
-          .verifyComplete();
-
-      then(deleteRelationshipColumnPort).should().deleteRelationshipColumn("rc1");
-      then(deleteRelationshipPort).should().deleteRelationship("rel2");
-    }
   }
 
   @Nested
@@ -407,7 +240,7 @@ class RemoveConstraintColumnServiceTest {
   class WhenRemovingUniqueConstraintColumn {
 
     @Test
-    @DisplayName("RelationshipColumn 연쇄 삭제가 발생하지 않는다")
+    @DisplayName("PkCascadeHelper가 호출되지 않는다")
     void noRelationshipCascadeForUniqueConstraint() {
       var command = ConstraintFixture.removeColumnCommand("uq-constraint", "uq-cc1");
       var constraint = createConstraint("uq-constraint", "table1", ConstraintKind.UNIQUE);
@@ -430,11 +263,9 @@ class RemoveConstraintColumnServiceTest {
       StepVerifier.create(sut.removeConstraintColumn(command))
           .verifyComplete();
 
-      then(getRelationshipsByPkTableIdPort).shouldHaveNoInteractions();
-      then(getRelationshipColumnsByRelationshipIdPort).shouldHaveNoInteractions();
-      then(deleteRelationshipColumnPort).shouldHaveNoInteractions();
-      then(deleteRelationshipPort).shouldHaveNoInteractions();
+      then(pkCascadeHelper).shouldHaveNoInteractions();
     }
+
   }
 
   private Constraint createConstraint(String id, String tableId, ConstraintKind kind) {

@@ -68,6 +68,7 @@ class GetIndexesByTableIdServiceTest {
           .assertNext(result -> assertThat(result).isEmpty())
           .verifyComplete();
     }
+
   }
 
 }

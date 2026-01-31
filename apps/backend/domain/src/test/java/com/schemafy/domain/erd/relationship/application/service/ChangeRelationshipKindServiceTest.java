@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipKindPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsBySchemaIdPort;
@@ -26,6 +27,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -47,6 +49,9 @@ class ChangeRelationshipKindServiceTest {
 
   @Mock
   GetRelationshipsBySchemaIdPort getRelationshipsBySchemaIdPort;
+
+  @Mock
+  PkCascadeHelper pkCascadeHelper;
 
   @InjectMocks
   ChangeRelationshipKindService sut;
@@ -72,12 +77,17 @@ class ChangeRelationshipKindServiceTest {
             .willReturn(Mono.just(table));
         given(getRelationshipsBySchemaIdPort.findRelationshipsBySchemaId(SCHEMA_ID))
             .willReturn(Mono.just(List.of(relationship)));
+        given(pkCascadeHelper.syncPkForKindChange(
+            eq(relationship), eq(RelationshipKind.NON_IDENTIFYING), eq(RelationshipKind.IDENTIFYING), anySet()))
+            .willReturn(Mono.empty());
         given(changeRelationshipKindPort.changeRelationshipKind(any(), any()))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeRelationshipKind(command))
             .verifyComplete();
 
+        then(pkCascadeHelper).should().syncPkForKindChange(
+            eq(relationship), eq(RelationshipKind.NON_IDENTIFYING), eq(RelationshipKind.IDENTIFYING), anySet());
         then(changeRelationshipKindPort).should()
             .changeRelationshipKind(eq(relationship.id()), eq(RelationshipKind.IDENTIFYING));
       }
@@ -90,12 +100,17 @@ class ChangeRelationshipKindServiceTest {
 
         given(getRelationshipByIdPort.findRelationshipById(any()))
             .willReturn(Mono.just(relationship));
+        given(pkCascadeHelper.syncPkForKindChange(
+            eq(relationship), eq(RelationshipKind.IDENTIFYING), eq(RelationshipKind.NON_IDENTIFYING), anySet()))
+            .willReturn(Mono.empty());
         given(changeRelationshipKindPort.changeRelationshipKind(any(), any()))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeRelationshipKind(command))
             .verifyComplete();
 
+        then(pkCascadeHelper).should().syncPkForKindChange(
+            eq(relationship), eq(RelationshipKind.IDENTIFYING), eq(RelationshipKind.NON_IDENTIFYING), anySet());
         then(changeRelationshipKindPort).should()
             .changeRelationshipKind(eq(relationship.id()), eq(RelationshipKind.NON_IDENTIFYING));
       }
@@ -227,6 +242,9 @@ class ChangeRelationshipKindServiceTest {
 
         given(getRelationshipByIdPort.findRelationshipById(any()))
             .willReturn(Mono.just(relationship));
+        given(pkCascadeHelper.syncPkForKindChange(
+            eq(relationship), eq(RelationshipKind.IDENTIFYING), eq(RelationshipKind.NON_IDENTIFYING), anySet()))
+            .willReturn(Mono.empty());
         given(changeRelationshipKindPort.changeRelationshipKind(any(), any()))
             .willReturn(Mono.empty());
 

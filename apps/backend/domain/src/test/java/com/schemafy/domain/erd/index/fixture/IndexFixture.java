@@ -398,9 +398,7 @@ public class IndexFixture {
 
   // ========== Query Factory Methods ==========
 
-  public static GetIndexQuery getIndexQuery() {
-    return new GetIndexQuery(DEFAULT_ID);
-  }
+  public static GetIndexQuery getIndexQuery() { return new GetIndexQuery(DEFAULT_ID); }
 
   public static GetIndexQuery getIndexQuery(String indexId) {
     return new GetIndexQuery(indexId);
@@ -414,9 +412,7 @@ public class IndexFixture {
     return new GetIndexesByTableIdQuery(tableId);
   }
 
-  public static GetIndexColumnQuery getIndexColumnQuery() {
-    return new GetIndexColumnQuery(DEFAULT_INDEX_COLUMN_ID);
-  }
+  public static GetIndexColumnQuery getIndexColumnQuery() { return new GetIndexColumnQuery(DEFAULT_INDEX_COLUMN_ID); }
 
   public static GetIndexColumnQuery getIndexColumnQuery(String indexColumnId) {
     return new GetIndexColumnQuery(indexColumnId);

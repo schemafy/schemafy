@@ -19,7 +19,6 @@ import com.schemafy.domain.erd.index.fixture.IndexFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -137,6 +136,7 @@ class ChangeIndexNameServiceTest {
 
       then(changeIndexNamePort).should().changeIndexName("index1", "trimmed_name");
     }
+
   }
 
 }

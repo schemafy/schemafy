@@ -37,7 +37,6 @@ import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipC
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipUseCase;
-import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
@@ -51,9 +50,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * PK Constraint 컬럼 변경이 Relationship에 미치는 영향 테스트
- */
+/** PK Constraint 컬럼 변경이 Relationship에 미치는 영향 테스트 */
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Constraint-Relationship 연쇄 삭제 통합 테스트")
@@ -537,16 +534,14 @@ class ConstraintRelationshipIntegrationTest {
       // Then: 두 FK 테이블 모두에 새 컬럼이 추가됨
       StepVerifier.create(getColumnsByTableIdUseCase
           .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId1)))
-          .assertNext(columns ->
-              assertThat(columns.stream().map(c -> c.name()).toList())
-                  .contains("pk_col3"))
+          .assertNext(columns -> assertThat(columns.stream().map(c -> c.name()).toList())
+              .contains("pk_col3"))
           .verifyComplete();
 
       StepVerifier.create(getColumnsByTableIdUseCase
           .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId2)))
-          .assertNext(columns ->
-              assertThat(columns.stream().map(c -> c.name()).toList())
-                  .contains("pk_col3"))
+          .assertNext(columns -> assertThat(columns.stream().map(c -> c.name()).toList())
+              .contains("pk_col3"))
           .verifyComplete();
     }
 

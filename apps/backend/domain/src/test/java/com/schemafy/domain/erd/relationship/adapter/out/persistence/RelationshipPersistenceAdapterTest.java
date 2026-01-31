@@ -23,11 +23,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @Import({
-    RelationshipPersistenceAdapter.class,
-    RelationshipColumnPersistenceAdapter.class,
-    RelationshipMapper.class,
-    RelationshipColumnMapper.class,
-    R2dbcTestConfiguration.class
+  RelationshipPersistenceAdapter.class,
+  RelationshipColumnPersistenceAdapter.class,
+  RelationshipMapper.class,
+  RelationshipColumnMapper.class,
+  R2dbcTestConfiguration.class
 })
 @DisplayName("RelationshipPersistenceAdapter")
 class RelationshipPersistenceAdapterTest {

@@ -67,6 +67,7 @@ class DeleteIndexServiceTest {
 
       then(deleteIndexPort).should().deleteIndex("index1");
     }
+
   }
 
 }

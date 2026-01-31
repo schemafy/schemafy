@@ -71,6 +71,7 @@ class GetIndexColumnsByIndexIdServiceTest {
           .assertNext(result -> assertThat(result).isEmpty())
           .verifyComplete();
     }
+
   }
 
 }

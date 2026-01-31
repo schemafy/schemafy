@@ -64,7 +64,7 @@ class RelationshipCyclicReferenceIntegrationTest {
   void setUp(TestInfo testInfo) {
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
     String schemaName = "cyclic_" + uniqueSuffix;
-    
+
     var createSchemaCommand = new CreateSchemaCommand(
         PROJECT_ID, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");

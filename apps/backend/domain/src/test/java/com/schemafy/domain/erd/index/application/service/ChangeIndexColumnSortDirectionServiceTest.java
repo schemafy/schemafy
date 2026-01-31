@@ -1,7 +1,6 @@
 package com.schemafy.domain.erd.index.application.service;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

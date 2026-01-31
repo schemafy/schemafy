@@ -67,6 +67,7 @@ class GetIndexColumnServiceTest {
           .expectError(IndexColumnNotExistException.class)
           .verify();
     }
+
   }
 
 }

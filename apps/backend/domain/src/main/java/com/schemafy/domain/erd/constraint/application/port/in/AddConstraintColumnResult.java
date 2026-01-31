@@ -14,5 +14,19 @@ public record AddConstraintColumnResult(
       String fkColumnName,
       String fkTableId,
       String relationshipColumnId,
-      String relationshipId) {}
+      String relationshipId,
+      String pkConstraintColumnId,
+      String pkConstraintId) {
+
+    public CascadeCreatedColumn(
+        String fkColumnId,
+        String fkColumnName,
+        String fkTableId,
+        String relationshipColumnId,
+        String relationshipId) {
+      this(fkColumnId, fkColumnName, fkTableId, relationshipColumnId, relationshipId, null, null);
+    }
+
+  }
+
 }

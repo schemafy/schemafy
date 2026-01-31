@@ -293,9 +293,7 @@ public class ColumnFixture {
     return new DeleteColumnCommand(columnId);
   }
 
-  public static GetColumnQuery getColumnQuery() {
-    return new GetColumnQuery(DEFAULT_ID);
-  }
+  public static GetColumnQuery getColumnQuery() { return new GetColumnQuery(DEFAULT_ID); }
 
   public static GetColumnQuery getColumnQuery(String columnId) {
     return new GetColumnQuery(columnId);

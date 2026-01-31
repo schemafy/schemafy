@@ -14,7 +14,6 @@ import com.schemafy.domain.erd.index.application.port.out.ChangeIndexTypePort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
-import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.exception.IndexTypeInvalidException;
@@ -25,8 +24,6 @@ import com.schemafy.domain.erd.index.fixture.IndexFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -130,6 +127,7 @@ class ChangeIndexTypeServiceTest {
 
       then(changeIndexTypePort).shouldHaveNoInteractions();
     }
+
   }
 
 }
