@@ -17,6 +17,10 @@ import com.schemafy.domain.erd.column.domain.exception.ColumnNameDuplicateExcept
 import com.schemafy.domain.erd.column.domain.exception.ColumnNameInvalidException;
 import com.schemafy.domain.erd.column.domain.exception.ColumnNameReservedException;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
+import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
+import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -38,6 +42,12 @@ class ChangeColumnNameServiceTest {
   @Mock
   GetColumnsByTableIdPort getColumnsByTableIdPort;
 
+  @Mock
+  GetTableByIdPort getTableByIdPort;
+
+  @Mock
+  GetSchemaByIdPort getSchemaByIdPort;
+
   @InjectMocks
   ChangeColumnNameService sut;
 
@@ -55,9 +65,15 @@ class ChangeColumnNameServiceTest {
         var newName = "new_column_name";
         var command = ColumnFixture.changeNameCommand(newName);
         var column = ColumnFixture.defaultColumn();
+        var table = TableFixture.defaultTable();
+        var schema = SchemaFixture.defaultSchema();
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of(column)));
         given(changeColumnNamePort.changeColumnName(any(), any()))
@@ -105,9 +121,15 @@ class ChangeColumnNameServiceTest {
         var existingColumn = ColumnFixture.columnWithIdAndName(
             "01ARZ3NDEKTSV4RRFFQ69G5EXS", "existing_column");
         var columns = List.of(column, existingColumn);
+        var table = TableFixture.defaultTable();
+        var schema = SchemaFixture.defaultSchema();
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(columns));
 
@@ -129,9 +151,15 @@ class ChangeColumnNameServiceTest {
       void throwsColumnNameReservedException() {
         var command = ColumnFixture.changeNameCommand("SELECT");
         var column = ColumnFixture.defaultColumn();
+        var table = TableFixture.defaultTable();
+        var schema = SchemaFixture.defaultSchema();
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of(column)));
 
@@ -153,9 +181,15 @@ class ChangeColumnNameServiceTest {
       void throwsColumnNameInvalidException() {
         var command = ColumnFixture.changeNameCommand("123invalid");
         var column = ColumnFixture.defaultColumn();
+        var table = TableFixture.defaultTable();
+        var schema = SchemaFixture.defaultSchema();
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of(column)));
 

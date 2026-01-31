@@ -161,6 +161,20 @@ public class ColumnFixture {
         null);
   }
 
+  public static Column varcharColumnWithIdAndCharset(String id, String charset, String collation) {
+    return new Column(
+        id,
+        DEFAULT_TABLE_ID,
+        DEFAULT_NAME,
+        DEFAULT_DATA_TYPE,
+        new ColumnLengthScale(DEFAULT_LENGTH, null, null),
+        DEFAULT_SEQ_NO,
+        false,
+        charset,
+        collation,
+        null);
+  }
+
   public static CreateColumnCommand createCommand() {
     return new CreateColumnCommand(
         DEFAULT_TABLE_ID,

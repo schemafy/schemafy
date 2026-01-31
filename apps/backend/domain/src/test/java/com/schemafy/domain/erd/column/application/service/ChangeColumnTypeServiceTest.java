@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.erd.column.application.port.out.ChangeColumnMetaPort;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnTypePort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -47,6 +48,9 @@ class ChangeColumnTypeServiceTest {
 
   @Mock
   ChangeColumnTypePort changeColumnTypePort;
+
+  @Mock
+  ChangeColumnMetaPort changeColumnMetaPort;
 
   @Mock
   GetColumnByIdPort getColumnByIdPort;
@@ -253,6 +257,8 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(pkColumn)));
         given(changeColumnTypePort.changeColumnType(any(), any(), any()))
             .willReturn(Mono.empty());
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+            .willReturn(Mono.empty());
         given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
             .willReturn(Mono.just(List.of(constraintColumn)));
         given(getConstraintByIdPort.findConstraintById(constraintId))
@@ -299,6 +305,8 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(pkColumn)));
         given(changeColumnTypePort.changeColumnType(any(), any(), any()))
             .willReturn(Mono.empty());
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+            .willReturn(Mono.empty());
         given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
             .willReturn(Mono.just(List.of(constraintColumn)));
         given(getConstraintByIdPort.findConstraintById(constraintId))
@@ -318,6 +326,99 @@ class ChangeColumnTypeServiceTest {
         then(changeColumnTypePort).should(times(3)).changeColumnType(any(), any(), any());
         then(changeColumnTypePort).should().changeColumnType(eq(fkCol1), eq("BIGINT"), any());
         then(changeColumnTypePort).should().changeColumnType(eq(fkCol2), eq("BIGINT"), any());
+      }
+
+      @Test
+      @DisplayName("VARCHAR에서 INT로 변경하면 FK 컬럼의 charset/collation이 제거된다")
+      void clearsCharsetCollationOnFkColumnsWhenChangingToNonTextType() {
+        var command = ColumnFixture.changeTypeCommand("INT", null, null, null);
+        var pkColumn = ColumnFixture.defaultColumn(); // VARCHAR column
+        var constraintId = "constraint-1";
+        var relationshipId = "relationship-1";
+        var fkColumnId = "fk-column-1";
+        var fkColumn = ColumnFixture.varcharColumnWithIdAndCharset(
+            fkColumnId, "utf8mb4", "utf8mb4_general_ci");
+
+        var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumn.id(), 0);
+        var constraint = new Constraint(constraintId, pkColumn.tableId(), "pk_constraint",
+            ConstraintKind.PRIMARY_KEY, null, null);
+        var relationship = new Relationship(relationshipId, pkColumn.tableId(), "fk-table-1",
+            "rel_name", RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
+        var relationshipColumn = new RelationshipColumn("rc-1", relationshipId, pkColumn.id(),
+            fkColumnId, 0);
+
+        given(getColumnByIdPort.findColumnById(pkColumn.id()))
+            .willReturn(Mono.just(pkColumn));
+        given(getColumnByIdPort.findColumnById(fkColumnId))
+            .willReturn(Mono.just(fkColumn));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(pkColumn)));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
+            .willReturn(Mono.just(List.of(constraintColumn)));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(fkColumnId))
+            .willReturn(Mono.just(List.of()));
+        given(getConstraintByIdPort.findConstraintById(constraintId))
+            .willReturn(Mono.just(constraint));
+        given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId()))
+            .willReturn(Mono.just(List.of(relationship)));
+        given(getRelationshipColumnsByRelationshipIdPort
+            .findRelationshipColumnsByRelationshipId(relationshipId))
+            .willReturn(Mono.just(List.of(relationshipColumn)));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .verifyComplete();
+
+        then(changeColumnMetaPort).should()
+            .changeColumnMeta(eq(fkColumnId), eq(null), eq(""), eq(""), eq(null));
+      }
+
+      @Test
+      @DisplayName("VARCHAR에서 TEXT로 변경하면 FK 컬럼의 charset/collation이 유지된다")
+      void keepsCharsetCollationOnFkColumnsWhenChangingToTextType() {
+        var command = ColumnFixture.changeTypeCommand("TEXT", null, null, null);
+        var pkColumn = ColumnFixture.defaultColumn(); // VARCHAR column
+        var constraintId = "constraint-1";
+        var relationshipId = "relationship-1";
+        var fkColumnId = "fk-column-1";
+        var fkColumn = ColumnFixture.varcharColumnWithIdAndCharset(
+            fkColumnId, "utf8mb4", "utf8mb4_general_ci");
+
+        var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumn.id(), 0);
+        var constraint = new Constraint(constraintId, pkColumn.tableId(), "pk_constraint",
+            ConstraintKind.PRIMARY_KEY, null, null);
+        var relationship = new Relationship(relationshipId, pkColumn.tableId(), "fk-table-1",
+            "rel_name", RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
+        var relationshipColumn = new RelationshipColumn("rc-1", relationshipId, pkColumn.id(),
+            fkColumnId, 0);
+
+        given(getColumnByIdPort.findColumnById(pkColumn.id()))
+            .willReturn(Mono.just(pkColumn));
+        given(getColumnByIdPort.findColumnById(fkColumnId))
+            .willReturn(Mono.just(fkColumn));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(pkColumn)));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
+            .willReturn(Mono.just(List.of(constraintColumn)));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(fkColumnId))
+            .willReturn(Mono.just(List.of()));
+        given(getConstraintByIdPort.findConstraintById(constraintId))
+            .willReturn(Mono.just(constraint));
+        given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId()))
+            .willReturn(Mono.just(List.of(relationship)));
+        given(getRelationshipColumnsByRelationshipIdPort
+            .findRelationshipColumnsByRelationshipId(relationshipId))
+            .willReturn(Mono.just(List.of(relationshipColumn)));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .verifyComplete();
+
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
       }
 
     }
@@ -354,6 +455,8 @@ class ChangeColumnTypeServiceTest {
         given(getColumnsByTableIdPort.findColumnsByTableId("table-a"))
             .willReturn(Mono.just(List.of(colA)));
         given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
             .willReturn(Mono.empty());
 
         given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(colAId))

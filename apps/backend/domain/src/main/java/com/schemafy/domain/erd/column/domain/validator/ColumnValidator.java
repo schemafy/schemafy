@@ -23,19 +23,6 @@ public final class ColumnValidator {
   private static final int NAME_MIN_LENGTH = 1;
   private static final int NAME_MAX_LENGTH = 40;
   private static final Pattern NAME_PATTERN = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
-  private static final Set<String> RESERVED_KEYWORDS = Set.of(
-      "SELECT",
-      "INSERT",
-      "UPDATE",
-      "DELETE",
-      "FROM",
-      "WHERE",
-      "JOIN",
-      "ORDER",
-      "GROUP",
-      "HAVING",
-      "TABLE",
-      "CREATE");
 
   private static final Set<String> SUPPORTED_TYPES = Set.of(
       "TINYINT",
@@ -116,11 +103,13 @@ public final class ColumnValidator {
     }
   }
 
-  public static void validateReservedKeyword(String name) {
-    if (name == null) {
-      return;
-    }
-    if (RESERVED_KEYWORDS.contains(name.trim().toUpperCase(Locale.ROOT))) {
+  /** Validates that the given name is not a reserved SQL keyword for the specified database vendor.
+   *
+   * @param dbVendorName the database vendor name (e.g., "mysql", "mariadb")
+   * @param name the column name to validate
+   * @throws ColumnNameReservedException if the name is a reserved keyword */
+  public static void validateReservedKeyword(String dbVendorName, String name) {
+    if (ReservedKeywordRegistry.isReserved(dbVendorName, name)) {
       throw new ColumnNameReservedException("Column name is a reserved keyword: " + name);
     }
   }
@@ -219,6 +208,13 @@ public final class ColumnValidator {
 
   private static boolean hasText(String value) {
     return value != null && !value.isBlank();
+  }
+
+  public static boolean isTextType(String dataType) {
+    if (dataType == null || dataType.isBlank()) {
+      return false;
+    }
+    return TEXT_TYPES.contains(dataType.trim().toUpperCase(Locale.ROOT));
   }
 
 }

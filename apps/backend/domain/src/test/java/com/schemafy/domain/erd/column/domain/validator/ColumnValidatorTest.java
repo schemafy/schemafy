@@ -77,12 +77,14 @@ class ColumnValidatorTest {
   @DisplayName("validateReservedKeyword 메서드는")
   class ValidateReservedKeyword {
 
+    private static final String MYSQL = "mysql";
+
     @ParameterizedTest
     @ValueSource(strings = { "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE",
       "JOIN", "ORDER", "GROUP", "HAVING", "TABLE", "CREATE" })
     @DisplayName("예약어면 예외가 발생한다 (대문자)")
     void throwsForReservedKeywordsUppercase(String keyword) {
-      assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(keyword))
+      assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(MYSQL, keyword))
           .isInstanceOf(ColumnNameReservedException.class)
           .hasMessageContaining("reserved keyword");
     }
@@ -92,7 +94,7 @@ class ColumnValidatorTest {
       "join", "order", "group", "having", "table", "create" })
     @DisplayName("예약어면 예외가 발생한다 (소문자)")
     void throwsForReservedKeywordsLowercase(String keyword) {
-      assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(keyword))
+      assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(MYSQL, keyword))
           .isInstanceOf(ColumnNameReservedException.class)
           .hasMessageContaining("reserved keyword");
     }
@@ -101,15 +103,31 @@ class ColumnValidatorTest {
     @ValueSource(strings = { "column_name", "user_select", "order_id", "table_name" })
     @DisplayName("예약어가 아니면 통과한다")
     void passesForNonReservedKeywords(String name) {
-      assertThatCode(() -> ColumnValidator.validateReservedKeyword(name))
+      assertThatCode(() -> ColumnValidator.validateReservedKeyword(MYSQL, name))
           .doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("null이면 통과한다")
-    void passesForNull() {
-      assertThatCode(() -> ColumnValidator.validateReservedKeyword(null))
+    @DisplayName("null 이름이면 통과한다")
+    void passesForNullName() {
+      assertThatCode(() -> ColumnValidator.validateReservedKeyword(MYSQL, null))
           .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("null 벤더면 MySQL 기본값으로 검사한다")
+    void usesDefaultVendorWhenNull() {
+      assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(null, "SELECT"))
+          .isInstanceOf(ColumnNameReservedException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "INDEX", "KEY", "PRIMARY", "FOREIGN", "REFERENCES" })
+    @DisplayName("확장된 예약어도 검사한다")
+    void throwsForExtendedReservedKeywords(String keyword) {
+      assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(MYSQL, keyword))
+          .isInstanceOf(ColumnNameReservedException.class)
+          .hasMessageContaining("reserved keyword");
     }
 
   }
@@ -410,6 +428,54 @@ class ColumnValidatorTest {
       var result = ColumnValidator.normalizeDataType("  varchar  ");
 
       assertThat(result).isEqualTo("VARCHAR");
+    }
+
+  }
+
+  @Nested
+  @DisplayName("isTextType 메서드는")
+  class IsTextType {
+
+    @ParameterizedTest
+    @ValueSource(strings = { "CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET" })
+    @DisplayName("텍스트 타입이면 true를 반환한다")
+    void returnsTrueForTextTypes(String dataType) {
+      assertThat(ColumnValidator.isTextType(dataType)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "char", "varchar", "text", "enum" })
+    @DisplayName("소문자 텍스트 타입도 true를 반환한다")
+    void returnsTrueForLowercaseTextTypes(String dataType) {
+      assertThat(ColumnValidator.isTextType(dataType)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "INT", "BIGINT", "DECIMAL", "FLOAT", "DOUBLE", "DATE", "DATETIME", "BOOLEAN", "BLOB", "JSON" })
+    @DisplayName("비텍스트 타입이면 false를 반환한다")
+    void returnsFalseForNonTextTypes(String dataType) {
+      assertThat(ColumnValidator.isTextType(dataType)).isFalse();
+    }
+
+    @Test
+    @DisplayName("null이면 false를 반환한다")
+    void returnsFalseForNull() {
+      assertThat(ColumnValidator.isTextType(null)).isFalse();
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = { "  ", "\t" })
+    @DisplayName("blank면 false를 반환한다")
+    void returnsFalseForBlank(String dataType) {
+      assertThat(ColumnValidator.isTextType(dataType)).isFalse();
+    }
+
+    @Test
+    @DisplayName("공백이 있는 타입명은 trim 후 검사한다")
+    void trimsWhitespace() {
+      assertThat(ColumnValidator.isTextType("  VARCHAR  ")).isTrue();
+      assertThat(ColumnValidator.isTextType("  INT  ")).isFalse();
     }
 
   }

@@ -11,38 +11,56 @@ import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
+import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.domain.erd.schema.domain.Schema;
+import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.domain.erd.table.domain.Table;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple3;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeColumnNameService implements ChangeColumnNameUseCase {
 
   private final ChangeColumnNamePort changeColumnNamePort;
   private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
-
-  public ChangeColumnNameService(
-      ChangeColumnNamePort changeColumnNamePort,
-      GetColumnByIdPort getColumnByIdPort,
-      GetColumnsByTableIdPort getColumnsByTableIdPort) {
-    this.changeColumnNamePort = changeColumnNamePort;
-    this.getColumnByIdPort = getColumnByIdPort;
-    this.getColumnsByTableIdPort = getColumnsByTableIdPort;
-  }
+  private final GetTableByIdPort getTableByIdPort;
+  private final GetSchemaByIdPort getSchemaByIdPort;
 
   @Override
   public Mono<Void> changeColumnName(ChangeColumnNameCommand command) {
     return getColumnByIdPort.findColumnById(command.columnId())
         .switchIfEmpty(Mono.error(new RuntimeException("Column not found")))
-        .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-            .defaultIfEmpty(List.of())
-            .flatMap(columns -> applyChange(column, columns, command.newName())));
+        .flatMap(column -> fetchTableSchemaAndColumns(column)
+            .flatMap(tuple -> applyChange(column, tuple, command.newName())));
   }
 
-  private Mono<Void> applyChange(Column column, List<Column> columns, String newName) {
+  private Mono<Tuple3<Table, Schema, List<Column>>> fetchTableSchemaAndColumns(Column column) {
+    Mono<Table> tableMono = getTableByIdPort.findTableById(column.tableId())
+        .switchIfEmpty(Mono.error(new RuntimeException("Table not found")));
+
+    return tableMono.flatMap(table -> {
+      Mono<Schema> schemaMono = getSchemaByIdPort.findSchemaById(table.schemaId())
+          .switchIfEmpty(Mono.error(new RuntimeException("Schema not found")));
+      Mono<List<Column>> columnsMono = getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+          .defaultIfEmpty(List.of());
+      return Mono.zip(Mono.just(table), schemaMono, columnsMono);
+    });
+  }
+
+  private Mono<Void> applyChange(
+      Column column,
+      Tuple3<Table, Schema, List<Column>> tuple,
+      String newName) {
+    Schema schema = tuple.getT2();
+    List<Column> columns = tuple.getT3();
+
     String normalizedName = normalizeName(newName);
     ColumnValidator.validateName(normalizedName);
-    ColumnValidator.validateReservedKeyword(normalizedName);
+    ColumnValidator.validateReservedKeyword(schema.dbVendorName(), normalizedName);
     ColumnValidator.validateNameUniqueness(columns, normalizedName, column.id());
     return changeColumnNamePort.changeColumnName(column.id(), normalizedName);
   }

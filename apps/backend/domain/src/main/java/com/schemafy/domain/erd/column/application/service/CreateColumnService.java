@@ -69,6 +69,7 @@ public class CreateColumnService implements CreateColumnUseCase {
       Tuple2<Schema, List<Column>> tuple,
       CreateColumnCommand command,
       ColumnLengthScale lengthScale) {
+    Schema schema = tuple.getT1();
     List<Column> existingColumns = tuple.getT2();
     String normalizedName = normalizeName(command.name());
     String normalizedDataType = ColumnValidator.normalizeDataType(command.dataType());
@@ -77,7 +78,7 @@ public class CreateColumnService implements CreateColumnUseCase {
     String comment = normalizeOptional(command.comment());
 
     ColumnValidator.validateName(normalizedName);
-    ColumnValidator.validateReservedKeyword(normalizedName);
+    ColumnValidator.validateReservedKeyword(schema.dbVendorName(), normalizedName);
     ColumnValidator.validateNameUniqueness(existingColumns, normalizedName, null);
     ColumnValidator.validateDataType(normalizedDataType);
     ColumnValidator.validateLengthScale(normalizedDataType, lengthScale);

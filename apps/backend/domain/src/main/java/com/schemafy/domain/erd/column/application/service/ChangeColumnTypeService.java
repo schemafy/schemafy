@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeUseCase;
+import com.schemafy.domain.erd.column.application.port.out.ChangeColumnMetaPort;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnTypePort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -29,6 +30,7 @@ import reactor.core.publisher.Mono;
 public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
 
   private final ChangeColumnTypePort changeColumnTypePort;
+  private final ChangeColumnMetaPort changeColumnMetaPort;
   private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetConstraintColumnsByColumnIdPort getConstraintColumnsByColumnIdPort;
@@ -96,11 +98,24 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
             .defaultIfEmpty(List.of())
             .flatMapMany(Flux::fromIterable)
             .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
-            .flatMap(rc -> changeColumnTypePort.changeColumnType(
-                rc.fkColumnId(), dataType, lengthScale)
-                .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
-                    .flatMap(fkCol -> cascadeTypeToFkColumns(
-                        fkCol, dataType, lengthScale, visited)))))
+            .flatMap(rc -> {
+              Mono<Void> changeType = changeColumnTypePort.changeColumnType(
+                  rc.fkColumnId(), dataType, lengthScale);
+              Mono<Void> clearCharsetCollation = ColumnValidator.isTextType(dataType)
+                  ? Mono.empty()
+                  : changeColumnMetaPort.changeColumnMeta(
+                      rc.fkColumnId(),
+                      null,
+                      "",
+                      "",
+                      null);
+
+              return changeType
+                  .then(clearCharsetCollation)
+                  .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
+                      .flatMap(fkCol -> cascadeTypeToFkColumns(
+                          fkCol, dataType, lengthScale, visited)));
+            }))
         .then();
   }
 
