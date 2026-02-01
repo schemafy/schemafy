@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.index.application.service;
 
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
-
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +22,7 @@ import com.schemafy.domain.erd.index.domain.exception.IndexNameDuplicateExceptio
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;

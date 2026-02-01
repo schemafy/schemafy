@@ -1,9 +1,8 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
-
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipCardinalityUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipCardinalityPort;

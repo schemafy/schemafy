@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,6 +13,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsP
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameInvalidException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;

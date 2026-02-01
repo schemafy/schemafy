@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.domain.config.R2dbcTestConfiguration;
-import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;

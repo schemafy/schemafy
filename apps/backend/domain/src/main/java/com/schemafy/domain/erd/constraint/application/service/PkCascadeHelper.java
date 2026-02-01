@@ -8,9 +8,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
+import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;

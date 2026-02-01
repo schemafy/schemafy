@@ -371,9 +371,11 @@ class CreateRelationshipServiceTest {
           .expectError(RelationshipCyclicReferenceException.class)
           .verify();
     }
+
   }
 
   private Table createTable(String tableId, String schemaId, String name) {
     return new Table(tableId, schemaId, name, "utf8mb4", "utf8mb4_general_ci");
   }
+
 }

@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
-
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipKindPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;

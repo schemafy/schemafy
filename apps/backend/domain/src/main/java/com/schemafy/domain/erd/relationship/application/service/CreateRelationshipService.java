@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +10,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -120,7 +119,6 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
             }));
   }
 
-
   private Mono<CreateRelationshipResult> persistAutoRelationship(
       Table fkTable,
       Table pkTable,
@@ -211,7 +209,6 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
         })
         .then();
   }
-
 
   private static String normalizeName(String name) {
     return name == null ? null : name.trim();

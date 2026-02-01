@@ -6,9 +6,9 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
-import com.schemafy.domain.erd.table.application.port.out.GetTablesBySchemaIdPort;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableUseCase;
+import com.schemafy.domain.erd.table.application.port.out.GetTablesBySchemaIdPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;

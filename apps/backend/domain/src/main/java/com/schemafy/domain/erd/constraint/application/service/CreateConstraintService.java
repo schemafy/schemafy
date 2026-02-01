@@ -1,15 +1,12 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
-
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -29,6 +26,7 @@ import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.domain.validator.ConstraintValidator;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.column.application.service;
 
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +17,7 @@ import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
 import com.schemafy.domain.erd.column.domain.exception.ColumnAutoIncrementNotAllowedException;
 import com.schemafy.domain.erd.column.domain.exception.ColumnCharsetNotAllowedException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.domain.exception.MultipleAutoIncrementColumnException;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;

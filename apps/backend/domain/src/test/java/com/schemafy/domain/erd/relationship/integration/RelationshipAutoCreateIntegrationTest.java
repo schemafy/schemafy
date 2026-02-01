@@ -83,9 +83,9 @@ class RelationshipAutoCreateIntegrationTest {
         new CreateConstraintColumnCommand(pkCol2Id, 1)));
 
     var createCommand = new CreateRelationshipCommand(fkTableId,
-          pkTableId,
-          RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY);
     var result = createRelationshipUseCase.createRelationship(createCommand).block();
 
     assertThat(result.name()).isEqualTo("rel_fk_table_to_pk_table");
@@ -127,15 +127,15 @@ class RelationshipAutoCreateIntegrationTest {
         new CreateConstraintColumnCommand(childPkId, 0)));
 
     var childToGrandchild = new CreateRelationshipCommand(grandchildTableId,
-          childTableId,
-          RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+        childTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY);
     var childRelationship = createRelationshipUseCase.createRelationship(childToGrandchild).block();
 
     var parentToChild = new CreateRelationshipCommand(childTableId,
-          parentTableId,
-          RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+        parentTableId,
+        RelationshipKind.IDENTIFYING,
+        Cardinality.ONE_TO_MANY);
     createRelationshipUseCase.createRelationship(parentToChild).block();
 
     StepVerifier.create(getColumnsByTableIdUseCase.getColumnsByTableId(
@@ -167,9 +167,9 @@ class RelationshipAutoCreateIntegrationTest {
     createColumn(pkTableId, "pk_col1", "INT", 0);
 
     var createCommand = new CreateRelationshipCommand(fkTableId,
-          pkTableId,
-          RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY);
 
     StepVerifier.create(createRelationshipUseCase.createRelationship(createCommand))
         .expectError(InvalidValueException.class)
@@ -207,4 +207,5 @@ class RelationshipAutoCreateIntegrationTest {
         tableId, name, ConstraintKind.PRIMARY_KEY, null, null, columns);
     createConstraintUseCase.createConstraint(createConstraintCommand).block();
   }
+
 }

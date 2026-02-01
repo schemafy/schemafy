@@ -451,7 +451,8 @@ class ColumnValidatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "INT", "BIGINT", "DECIMAL", "FLOAT", "DOUBLE", "DATE", "DATETIME", "BOOLEAN", "BLOB", "JSON" })
+    @ValueSource(strings = { "INT", "BIGINT", "DECIMAL", "FLOAT", "DOUBLE", "DATE", "DATETIME", "BOOLEAN", "BLOB",
+      "JSON" })
     @DisplayName("비텍스트 타입이면 false를 반환한다")
     void returnsFalseForNonTextTypes(String dataType) {
       assertThat(ColumnValidator.isTextType(dataType)).isFalse();

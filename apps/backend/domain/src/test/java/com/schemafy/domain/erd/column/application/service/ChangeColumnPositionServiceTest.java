@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.column.application.service;
 
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnPositionPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.domain.exception.ColumnPositionInvalidException;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 

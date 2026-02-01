@@ -1,8 +1,5 @@
 package com.schemafy.domain.erd.column.application.service;
 
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
-
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -17,8 +14,10 @@ import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +20,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColu
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.domain.validator.ConstraintValidator;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;

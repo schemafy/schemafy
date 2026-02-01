@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
-
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +23,7 @@ import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;

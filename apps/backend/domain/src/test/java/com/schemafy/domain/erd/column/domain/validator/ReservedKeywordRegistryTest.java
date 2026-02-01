@@ -18,11 +18,11 @@ class ReservedKeywordRegistryTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE",
-        "JOIN", "ORDER", "GROUP", "HAVING", "TABLE", "CREATE",
-        "INDEX", "KEY", "PRIMARY", "FOREIGN", "REFERENCES", "CONSTRAINT",
-        "AND", "OR", "NOT", "IN", "BETWEEN", "LIKE", "IS", "NULL",
-        "INT", "VARCHAR", "TEXT", "DATE", "DATETIME", "BOOLEAN", "JSON"
+      "SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "WHERE",
+      "JOIN", "ORDER", "GROUP", "HAVING", "TABLE", "CREATE",
+      "INDEX", "KEY", "PRIMARY", "FOREIGN", "REFERENCES", "CONSTRAINT",
+      "AND", "OR", "NOT", "IN", "BETWEEN", "LIKE", "IS", "NULL",
+      "INT", "VARCHAR", "TEXT", "DATE", "DATETIME", "BOOLEAN", "JSON"
     })
     @DisplayName("MySQL 예약어면 true를 반환한다 (대문자)")
     void returnsTrueForMySqlReservedKeywordsUppercase(String keyword) {
@@ -31,8 +31,8 @@ class ReservedKeywordRegistryTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "select", "insert", "update", "delete", "from", "where",
-        "join", "order", "group", "having", "table", "create"
+      "select", "insert", "update", "delete", "from", "where",
+      "join", "order", "group", "having", "table", "create"
     })
     @DisplayName("MySQL 예약어면 true를 반환한다 (소문자)")
     void returnsTrueForMySqlReservedKeywordsLowercase(String keyword) {
@@ -48,8 +48,8 @@ class ReservedKeywordRegistryTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "column_name", "user_select", "order_id", "table_name",
-        "my_column", "customer", "product", "amount"
+      "column_name", "user_select", "order_id", "table_name",
+      "my_column", "customer", "product", "amount"
     })
     @DisplayName("예약어가 아니면 false를 반환한다")
     void returnsFalseForNonReservedKeywords(String name) {

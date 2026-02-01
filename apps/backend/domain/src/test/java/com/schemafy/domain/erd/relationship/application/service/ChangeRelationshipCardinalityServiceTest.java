@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipCardinalityPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;

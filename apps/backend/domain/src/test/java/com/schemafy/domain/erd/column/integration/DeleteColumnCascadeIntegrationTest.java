@@ -417,9 +417,9 @@ class DeleteColumnCascadeIntegrationTest {
       String pkTableId,
       RelationshipKind kind) {
     var createCommand = new CreateRelationshipCommand(fkTableId,
-          pkTableId,
-          kind,
-          Cardinality.ONE_TO_MANY);
+        pkTableId,
+        kind,
+        Cardinality.ONE_TO_MANY);
     var result = createRelationshipUseCase.createRelationship(createCommand).block();
     var columns = getRelationshipColumnsByRelationshipIdUseCase
         .getRelationshipColumnsByRelationshipId(

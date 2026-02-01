@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.domain.config.R2dbcTestConfiguration;
-import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;

@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +11,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintC
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
 import com.schemafy.domain.erd.constraint.domain.validator.ConstraintValidator;
 

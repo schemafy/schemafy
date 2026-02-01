@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.column.application.service;
 
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,6 +14,7 @@ import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;

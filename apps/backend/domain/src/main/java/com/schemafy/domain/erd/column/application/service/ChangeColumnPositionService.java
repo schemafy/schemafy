@@ -1,13 +1,12 @@
 package com.schemafy.domain.erd.column.application.service;
 
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionUseCase;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnPositionPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 
 import lombok.RequiredArgsConstructor;

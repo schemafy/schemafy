@@ -21,7 +21,6 @@ import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
