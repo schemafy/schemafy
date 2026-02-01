@@ -11,7 +11,6 @@ import io.r2dbc.spi.ConnectionFactory;
 
 @TestConfiguration
 public class R2dbcTestConfiguration {
-  // @DataR2dbcTest에서는 spring.sql.init이 처리되지 않음, @SpringBootTest에서는 처리됨
 
   @Bean
   public ConnectionFactoryInitializer connectionFactoryInitializer(ConnectionFactory connectionFactory) {

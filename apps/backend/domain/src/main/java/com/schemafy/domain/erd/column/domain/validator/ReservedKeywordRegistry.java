@@ -7,48 +7,33 @@ import java.util.Set;
 public final class ReservedKeywordRegistry {
 
   private static final Set<String> MYSQL_RESERVED_KEYWORDS = Set.of(
-      // DML
       "SELECT", "INSERT", "UPDATE", "DELETE", "REPLACE",
-      // DDL
       "CREATE", "ALTER", "DROP", "TRUNCATE", "RENAME",
-      // Table/Column related
       "TABLE", "COLUMN", "INDEX", "KEY", "PRIMARY", "FOREIGN", "REFERENCES",
       "CONSTRAINT", "UNIQUE", "DEFAULT", "AUTO_INCREMENT",
-      // Join/Query
       "FROM", "WHERE", "JOIN", "INNER", "LEFT", "RIGHT", "OUTER", "CROSS",
       "ON", "USING", "NATURAL",
-      // Sorting/Grouping
       "ORDER", "GROUP", "BY", "HAVING", "ASC", "DESC",
-      // Set operations
       "UNION", "INTERSECT", "EXCEPT", "ALL", "DISTINCT",
-      // Conditions
       "AND", "OR", "NOT", "IN", "BETWEEN", "LIKE", "IS", "NULL", "TRUE", "FALSE",
       "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END", "IF",
-      // Functions/Operators
       "AS", "CAST", "CONVERT", "COALESCE", "NULLIF",
-      // Limits
       "LIMIT", "OFFSET", "FETCH", "FIRST", "NEXT", "ROWS", "ONLY",
-      // Transaction
       "BEGIN", "COMMIT", "ROLLBACK", "SAVEPOINT", "TRANSACTION",
-      // Privileges
       "GRANT", "REVOKE", "PRIVILEGES",
-      // Others
       "DATABASE", "SCHEMA", "USE", "SHOW", "DESCRIBE", "EXPLAIN",
       "SET", "VALUES", "INTO", "PROCEDURE", "FUNCTION", "TRIGGER", "VIEW",
       "CURSOR", "DECLARE", "HANDLER", "LOOP", "WHILE", "REPEAT", "LEAVE",
       "ITERATE", "RETURN", "CALL", "DO",
-      // MySQL specific
       "ANALYZE", "OPTIMIZE", "REPAIR", "LOCK", "UNLOCK", "FORCE",
       "IGNORE", "DELAYED", "HIGH_PRIORITY", "LOW_PRIORITY",
       "PARTITION", "RANGE", "LIST", "HASH", "LINEAR",
       "FULLTEXT", "SPATIAL", "MATCH", "AGAINST",
-      // Data types (could cause confusion when used as names)
       "INT", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT",
       "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "REAL",
       "CHAR", "VARCHAR", "TEXT", "BLOB", "BINARY", "VARBINARY",
       "DATE", "TIME", "DATETIME", "TIMESTAMP", "YEAR",
       "BOOLEAN", "BOOL", "BIT", "JSON", "ENUM",
-      // Additional commonly used reserved words
       "ADD", "CHANGE", "MODIFY", "AFTER", "BEFORE",
       "CASCADE", "RESTRICT", "NO", "ACTION",
       "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP", "CURRENT_USER",

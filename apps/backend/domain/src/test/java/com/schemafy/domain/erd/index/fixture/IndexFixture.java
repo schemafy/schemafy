@@ -24,22 +24,17 @@ import com.schemafy.domain.erd.index.domain.type.SortDirection;
 
 public class IndexFixture {
 
-  // Default Index constants
   public static final String DEFAULT_ID = "01ARZ3NDEKTSV4RRFFQ69G5IDX";
   public static final String DEFAULT_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5TBL";
   public static final String DEFAULT_NAME = "idx_test_index";
   public static final IndexType DEFAULT_TYPE = IndexType.BTREE;
 
-  // Default IndexColumn constants
   public static final String DEFAULT_INDEX_COLUMN_ID = "01ARZ3NDEKTSV4RRFFQ69G5ICL";
   public static final String DEFAULT_COLUMN_ID = "01ARZ3NDEKTSV4RRFFQ69G5COL";
   public static final int DEFAULT_SEQ_NO = 0;
   public static final SortDirection DEFAULT_SORT_DIRECTION = SortDirection.ASC;
 
-  // Other constants
   public static final String DEFAULT_SCHEMA_ID = "01ARZ3NDEKTSV4RRFFQ69G5SCH";
-
-  // ========== Index Domain Object Factory Methods ==========
 
   public static Index defaultIndex() {
     return new Index(
@@ -141,8 +136,6 @@ public class IndexFixture {
     return new Index(id, tableId, name, type);
   }
 
-  // ========== IndexColumn Domain Object Factory Methods ==========
-
   public static IndexColumn defaultIndexColumn() {
     return new IndexColumn(
         DEFAULT_INDEX_COLUMN_ID,
@@ -219,8 +212,6 @@ public class IndexFixture {
       String id, String indexId, String columnId, int seqNo, SortDirection sortDirection) {
     return new IndexColumn(id, indexId, columnId, seqNo, sortDirection);
   }
-
-  // ========== CreateIndexCommand Factory Methods ==========
 
   public static CreateIndexCommand createCommand() {
     return new CreateIndexCommand(
@@ -312,8 +303,6 @@ public class IndexFixture {
         columns);
   }
 
-  // ========== CreateIndexColumnCommand Factory Methods ==========
-
   public static CreateIndexColumnCommand createColumnCommand() {
     return new CreateIndexColumnCommand(
         DEFAULT_COLUMN_ID, DEFAULT_SEQ_NO, DEFAULT_SORT_DIRECTION);
@@ -331,8 +320,6 @@ public class IndexFixture {
   public static CreateIndexColumnCommand createDescColumnCommand(String columnId, int seqNo) {
     return new CreateIndexColumnCommand(columnId, seqNo, SortDirection.DESC);
   }
-
-  // ========== Other Command Factory Methods ==========
 
   public static ChangeIndexNameCommand changeNameCommand(String newName) {
     return new ChangeIndexNameCommand(DEFAULT_ID, newName);
@@ -396,8 +383,6 @@ public class IndexFixture {
     return new DeleteIndexCommand(indexId);
   }
 
-  // ========== Query Factory Methods ==========
-
   public static GetIndexQuery getIndexQuery() { return new GetIndexQuery(DEFAULT_ID); }
 
   public static GetIndexQuery getIndexQuery(String indexId) {
@@ -425,8 +410,6 @@ public class IndexFixture {
   public static GetIndexColumnsByIndexIdQuery getIndexColumnsByIndexIdQuery(String indexId) {
     return new GetIndexColumnsByIndexIdQuery(indexId);
   }
-
-  // ========== Result Factory Methods ==========
 
   public static CreateIndexResult createResult() {
     return new CreateIndexResult(

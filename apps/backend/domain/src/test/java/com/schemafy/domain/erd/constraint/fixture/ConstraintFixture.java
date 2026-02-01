@@ -21,7 +21,6 @@ import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 public class ConstraintFixture {
 
-  // Default Constraint constants
   public static final String DEFAULT_ID = "01ARZ3NDEKTSV4RRFFQ69G5CNT";
   public static final String DEFAULT_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5TBL";
   public static final String DEFAULT_NAME = "pk_test_constraint";
@@ -29,15 +28,11 @@ public class ConstraintFixture {
   public static final String DEFAULT_CHECK_EXPR = null;
   public static final String DEFAULT_DEFAULT_EXPR = null;
 
-  // Default ConstraintColumn constants
   public static final String DEFAULT_CONSTRAINT_COLUMN_ID = "01ARZ3NDEKTSV4RRFFQ69G5CCL";
   public static final String DEFAULT_COLUMN_ID = "01ARZ3NDEKTSV4RRFFQ69G5COL";
   public static final int DEFAULT_SEQ_NO = 0;
 
-  // Other constants
   public static final String DEFAULT_SCHEMA_ID = "01ARZ3NDEKTSV4RRFFQ69G5SCH";
-
-  // ========== Constraint Domain Object Factory Methods ==========
 
   public static Constraint defaultConstraint() {
     return new Constraint(
@@ -205,8 +200,6 @@ public class ConstraintFixture {
     return new Constraint(id, tableId, name, kind, checkExpr, defaultExpr);
   }
 
-  // ========== ConstraintColumn Domain Object Factory Methods ==========
-
   public static ConstraintColumn defaultConstraintColumn() {
     return new ConstraintColumn(
         DEFAULT_CONSTRAINT_COLUMN_ID,
@@ -251,8 +244,6 @@ public class ConstraintFixture {
       String id, String constraintId, String columnId, int seqNo) {
     return new ConstraintColumn(id, constraintId, columnId, seqNo);
   }
-
-  // ========== CreateConstraintCommand Factory Methods ==========
 
   public static CreateConstraintCommand createCommand() {
     return new CreateConstraintCommand(
@@ -377,8 +368,6 @@ public class ConstraintFixture {
         columns);
   }
 
-  // ========== CreateConstraintColumnCommand Factory Methods ==========
-
   public static CreateConstraintColumnCommand createColumnCommand() {
     return new CreateConstraintColumnCommand(DEFAULT_COLUMN_ID, DEFAULT_SEQ_NO);
   }
@@ -386,8 +375,6 @@ public class ConstraintFixture {
   public static CreateConstraintColumnCommand createColumnCommand(String columnId, int seqNo) {
     return new CreateConstraintColumnCommand(columnId, seqNo);
   }
-
-  // ========== Other Command Factory Methods ==========
 
   public static ChangeConstraintNameCommand changeNameCommand(String newName) {
     return new ChangeConstraintNameCommand(DEFAULT_ID, newName);
@@ -433,8 +420,6 @@ public class ConstraintFixture {
     return new DeleteConstraintCommand(constraintId);
   }
 
-  // ========== Query Factory Methods ==========
-
   public static GetConstraintQuery getConstraintQuery() { return new GetConstraintQuery(DEFAULT_ID); }
 
   public static GetConstraintQuery getConstraintQuery(String constraintId) {
@@ -465,8 +450,6 @@ public class ConstraintFixture {
       String constraintId) {
     return new GetConstraintColumnsByConstraintIdQuery(constraintId);
   }
-
-  // ========== Result Factory Methods ==========
 
   public static CreateConstraintResult createResult() {
     return new CreateConstraintResult(

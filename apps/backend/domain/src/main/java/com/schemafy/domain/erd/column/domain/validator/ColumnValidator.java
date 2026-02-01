@@ -103,11 +103,6 @@ public final class ColumnValidator {
     }
   }
 
-  /** Validates that the given name is not a reserved SQL keyword for the specified database vendor.
-   *
-   * @param dbVendorName the database vendor name (e.g., "mysql", "mariadb")
-   * @param name the column name to validate
-   * @throws ColumnNameReservedException if the name is a reserved keyword */
   public static void validateReservedKeyword(String dbVendorName, String name) {
     if (ReservedKeywordRegistry.isReserved(dbVendorName, name)) {
       throw new ColumnNameReservedException("Column name is a reserved keyword: " + name);

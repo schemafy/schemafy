@@ -75,17 +75,12 @@ public class DeleteColumnService implements DeleteColumnUseCase {
       return Mono.empty();
     }
 
-    // PK cascade를 먼저 처리해야 FK 컬럼 재귀 삭제가 완료된 후 나머지 정리 가능
     return cascadeDeleteConstraints(columnId, visitedColumnIds)
         .then(cascadeDeleteIndexes(columnId))
         .then(cascadeDeleteRelationships(columnId))
         .then(deleteColumnPort.deleteColumn(columnId));
   }
 
-  /** Constraint cascade 삭제
-   * 1. PK constraint인 경우 관련 Relationship cascade 처리
-   * 2. ConstraintColumn 삭제
-   * 3. 마지막 ConstraintColumn이면 Constraint 자체도 삭제 */
   private Mono<Void> cascadeDeleteConstraints(String columnId, Set<String> visitedColumnIds) {
     return getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(columnId)
         .flatMap(constraintColumns -> {
@@ -97,15 +92,12 @@ public class DeleteColumnService implements DeleteColumnUseCase {
               .map(ConstraintColumn::constraintId)
               .collect(Collectors.toSet());
 
-          // PK constraint cascade 처리 후 constraint column 삭제 및 orphan constraint 삭제
           return handlePkConstraintCascade(affectedConstraintIds, columnId, visitedColumnIds)
               .then(deleteConstraintColumnsPort.deleteByColumnId(columnId))
               .then(deleteOrphanConstraints(affectedConstraintIds));
         });
   }
 
-  /** PK Constraint의 컬럼이 삭제될 때, 해당 컬럼을 pkColumnId로 참조하는
-   * RelationshipColumn들을 삭제하고, 마지막 RelationshipColumn이면 Relationship도 삭제 */
   private Mono<Void> handlePkConstraintCascade(
       Set<String> constraintIds, String columnId, Set<String> visitedColumnIds) {
     return Flux.fromIterable(constraintIds)
@@ -147,18 +139,15 @@ public class DeleteColumnService implements DeleteColumnUseCase {
 
           Mono<Void> deleteRelationshipColumns;
           if (remaining.isEmpty()) {
-            // 마지막 RelationshipColumn이면 Relationship 자체 삭제
             deleteRelationshipColumns = deleteRelationshipColumnsByRelationshipIdPort
                 .deleteByRelationshipId(relationship.id())
                 .then(deleteRelationshipPort.deleteRelationship(relationship.id()));
           } else {
-            // 해당 pkColumnId를 가진 RelationshipColumn만 삭제
             deleteRelationshipColumns = Flux.fromIterable(toRemove)
                 .concatMap(col -> deleteRelationshipColumnPort.deleteRelationshipColumn(col.id()))
                 .then();
           }
 
-          // FK 컬럼들 cascade 삭제
           return deleteRelationshipColumns
               .thenMany(Flux.fromIterable(fkColumnIds))
               .concatMap(fkColumnId -> deleteColumnInternal(fkColumnId, visitedColumnIds))
@@ -166,7 +155,6 @@ public class DeleteColumnService implements DeleteColumnUseCase {
         });
   }
 
-  /** ConstraintColumn 삭제 후 남은 컬럼이 없는 Constraint 삭제 */
   private Mono<Void> deleteOrphanConstraints(Set<String> constraintIds) {
     return Flux.fromIterable(constraintIds)
         .concatMap(constraintId -> getConstraintColumnsByConstraintIdPort
@@ -180,9 +168,6 @@ public class DeleteColumnService implements DeleteColumnUseCase {
         .then();
   }
 
-  /** Index cascade 삭제
-   * 1. IndexColumn 삭제
-   * 2. 마지막 IndexColumn이면 Index 자체도 삭제 */
   private Mono<Void> cascadeDeleteIndexes(String columnId) {
     return getIndexColumnsByColumnIdPort.findIndexColumnsByColumnId(columnId)
         .flatMap(indexColumns -> {
@@ -199,7 +184,6 @@ public class DeleteColumnService implements DeleteColumnUseCase {
         });
   }
 
-  /** IndexColumn 삭제 후 남은 컬럼이 없는 Index 삭제 */
   private Mono<Void> deleteOrphanIndexes(Set<String> indexIds) {
     return Flux.fromIterable(indexIds)
         .concatMap(indexId -> getIndexColumnsByIndexIdPort
@@ -213,9 +197,6 @@ public class DeleteColumnService implements DeleteColumnUseCase {
         .then();
   }
 
-  /** Relationship cascade 삭제
-   * 1. RelationshipColumn 삭제
-   * 2. 마지막 RelationshipColumn이면 Relationship 자체도 삭제 */
   private Mono<Void> cascadeDeleteRelationships(String columnId) {
     return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
         .flatMap(relationshipColumns -> {
@@ -232,7 +213,6 @@ public class DeleteColumnService implements DeleteColumnUseCase {
         });
   }
 
-  /** RelationshipColumn 삭제 후 남은 컬럼이 없는 Relationship 삭제 */
   private Mono<Void> deleteOrphanRelationships(Set<String> relationshipIds) {
     return Flux.fromIterable(relationshipIds)
         .concatMap(relationshipId -> getRelationshipColumnsByRelationshipIdPort
