@@ -14,6 +14,7 @@ import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
+import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintColumnPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnPort;
@@ -44,6 +45,7 @@ import reactor.core.publisher.Mono;
 public class PkCascadeHelper {
 
   private final UlidGeneratorPort ulidGeneratorPort;
+  private final ConstraintExistsPort constraintExistsPort;
   private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final CreateColumnPort createColumnPort;
@@ -332,18 +334,19 @@ public class PkCascadeHelper {
           }
 
           return getTableByIdPort.findTableById(tableId)
-              .flatMap(table -> {
-                String pkName = "pk_" + table.name();
-                Constraint newPk = new Constraint(
-                    ulidGeneratorPort.generate(),
-                    tableId,
-                    pkName,
-                    ConstraintKind.PRIMARY_KEY,
-                    null,
-                    null);
+              .flatMap(table -> resolveUniqueConstraintName(
+                  table.schemaId(), "pk_" + table.name())
+                  .flatMap(pkName -> {
+                    Constraint newPk = new Constraint(
+                        ulidGeneratorPort.generate(),
+                        tableId,
+                        pkName,
+                        ConstraintKind.PRIMARY_KEY,
+                        null,
+                        null);
 
-                return createConstraintPort.createConstraint(newPk);
-              });
+                    return createConstraintPort.createConstraint(newPk);
+                  }));
         });
   }
 
@@ -384,6 +387,22 @@ public class PkCascadeHelper {
                     .then(cascadeRemovePkColumn(fkTableId, fkColumnId, visited));
               })
               .then();
+        });
+  }
+
+  private Mono<String> resolveUniqueConstraintName(String schemaId, String baseName) {
+    return resolveUniqueConstraintName(schemaId, baseName, 0);
+  }
+
+  private Mono<String> resolveUniqueConstraintName(
+      String schemaId, String baseName, int suffix) {
+    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+    return constraintExistsPort.existsBySchemaIdAndName(schemaId, candidate)
+        .flatMap(exists -> {
+          if (exists) {
+            return resolveUniqueConstraintName(schemaId, baseName, suffix + 1);
+          }
+          return Mono.just(candidate);
         });
   }
 
