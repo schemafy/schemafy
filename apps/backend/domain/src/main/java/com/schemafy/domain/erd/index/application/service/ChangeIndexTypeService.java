@@ -16,27 +16,18 @@ import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
 
   private final ChangeIndexTypePort changeIndexTypePort;
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
-
-  public ChangeIndexTypeService(
-      ChangeIndexTypePort changeIndexTypePort,
-      GetIndexByIdPort getIndexByIdPort,
-      GetIndexesByTableIdPort getIndexesByTableIdPort,
-      GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort) {
-    this.changeIndexTypePort = changeIndexTypePort;
-    this.getIndexByIdPort = getIndexByIdPort;
-    this.getIndexesByTableIdPort = getIndexesByTableIdPort;
-    this.getIndexColumnsByIndexIdPort = getIndexColumnsByIndexIdPort;
-  }
 
   @Override
   public Mono<Void> changeIndexType(ChangeIndexTypeCommand command) {

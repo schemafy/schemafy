@@ -11,23 +11,16 @@ import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNameDup
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
 import com.schemafy.domain.erd.relationship.domain.validator.RelationshipValidator;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeRelationshipNameService implements ChangeRelationshipNameUseCase {
 
   private final ChangeRelationshipNamePort changeRelationshipNamePort;
   private final RelationshipExistsPort relationshipExistsPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
-
-  public ChangeRelationshipNameService(
-      ChangeRelationshipNamePort changeRelationshipNamePort,
-      RelationshipExistsPort relationshipExistsPort,
-      GetRelationshipByIdPort getRelationshipByIdPort) {
-    this.changeRelationshipNamePort = changeRelationshipNamePort;
-    this.relationshipExistsPort = relationshipExistsPort;
-    this.getRelationshipByIdPort = getRelationshipByIdPort;
-  }
 
   @Override
   public Mono<Void> changeRelationshipName(ChangeRelationshipNameCommand command) {

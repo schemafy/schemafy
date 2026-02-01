@@ -17,9 +17,11 @@ import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
+@RequiredArgsConstructor
 class IndexPersistenceAdapter implements
     CreateIndexPort,
     GetIndexByIdPort,
@@ -32,15 +34,6 @@ class IndexPersistenceAdapter implements
   private final IndexRepository indexRepository;
   private final IndexColumnRepository indexColumnRepository;
   private final IndexMapper indexMapper;
-
-  IndexPersistenceAdapter(
-      IndexRepository indexRepository,
-      IndexColumnRepository indexColumnRepository,
-      IndexMapper indexMapper) {
-    this.indexRepository = indexRepository;
-    this.indexColumnRepository = indexColumnRepository;
-    this.indexMapper = indexMapper;
-  }
 
   @Override
   public Mono<Index> createIndex(Index index) {

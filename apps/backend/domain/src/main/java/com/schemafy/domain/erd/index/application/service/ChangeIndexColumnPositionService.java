@@ -13,23 +13,16 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndex
 import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.index.domain.exception.IndexPositionInvalidException;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositionUseCase {
 
   private final ChangeIndexColumnPositionPort changeIndexColumnPositionPort;
   private final GetIndexColumnByIdPort getIndexColumnByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
-
-  public ChangeIndexColumnPositionService(
-      ChangeIndexColumnPositionPort changeIndexColumnPositionPort,
-      GetIndexColumnByIdPort getIndexColumnByIdPort,
-      GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort) {
-    this.changeIndexColumnPositionPort = changeIndexColumnPositionPort;
-    this.getIndexColumnByIdPort = getIndexColumnByIdPort;
-    this.getIndexColumnsByIndexIdPort = getIndexColumnsByIndexIdPort;
-  }
 
   @Override
   public Mono<Void> changeIndexColumnPosition(ChangeIndexColumnPositionCommand command) {

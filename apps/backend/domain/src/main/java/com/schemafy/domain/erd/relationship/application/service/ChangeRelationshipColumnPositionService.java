@@ -13,24 +13,17 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeRelationshipColumnPositionService
     implements ChangeRelationshipColumnPositionUseCase {
 
   private final ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort;
   private final GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
-
-  public ChangeRelationshipColumnPositionService(
-      ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort,
-      GetRelationshipColumnByIdPort getRelationshipColumnByIdPort,
-      GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort) {
-    this.changeRelationshipColumnPositionPort = changeRelationshipColumnPositionPort;
-    this.getRelationshipColumnByIdPort = getRelationshipColumnByIdPort;
-    this.getRelationshipColumnsByRelationshipIdPort = getRelationshipColumnsByRelationshipIdPort;
-  }
 
   @Override
   public Mono<Void> changeRelationshipColumnPosition(ChangeRelationshipColumnPositionCommand command) {

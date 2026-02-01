@@ -18,10 +18,12 @@ import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
 @Service
+@RequiredArgsConstructor
 public class CreateColumnService implements CreateColumnUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -29,19 +31,6 @@ public class CreateColumnService implements CreateColumnUseCase {
   private final GetTableByIdPort getTableByIdPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
-
-  public CreateColumnService(
-      UlidGeneratorPort ulidGeneratorPort,
-      CreateColumnPort createColumnPort,
-      GetTableByIdPort getTableByIdPort,
-      GetSchemaByIdPort getSchemaByIdPort,
-      GetColumnsByTableIdPort getColumnsByTableIdPort) {
-    this.ulidGeneratorPort = ulidGeneratorPort;
-    this.createColumnPort = createColumnPort;
-    this.getTableByIdPort = getTableByIdPort;
-    this.getSchemaByIdPort = getSchemaByIdPort;
-    this.getColumnsByTableIdPort = getColumnsByTableIdPort;
-  }
 
   @Override
   public Mono<CreateColumnResult> createColumn(CreateColumnCommand command) {

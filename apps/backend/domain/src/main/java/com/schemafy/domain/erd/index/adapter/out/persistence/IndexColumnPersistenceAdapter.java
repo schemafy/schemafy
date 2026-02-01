@@ -21,9 +21,11 @@ import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
+@RequiredArgsConstructor
 class IndexColumnPersistenceAdapter implements
     ChangeIndexColumnPositionPort,
     ChangeIndexColumnSortDirectionPort,
@@ -37,13 +39,6 @@ class IndexColumnPersistenceAdapter implements
 
   private final IndexColumnRepository indexColumnRepository;
   private final IndexColumnMapper indexColumnMapper;
-
-  IndexColumnPersistenceAdapter(
-      IndexColumnRepository indexColumnRepository,
-      IndexColumnMapper indexColumnMapper) {
-    this.indexColumnRepository = indexColumnRepository;
-    this.indexColumnMapper = indexColumnMapper;
-  }
 
   @Override
   public Mono<IndexColumn> createIndexColumn(IndexColumn indexColumn) {

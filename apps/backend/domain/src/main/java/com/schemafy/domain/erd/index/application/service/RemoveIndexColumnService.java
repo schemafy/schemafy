@@ -17,9 +17,11 @@ import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
 
   private final DeleteIndexColumnPort deleteIndexColumnPort;
@@ -28,21 +30,6 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexColumnByIdPort getIndexColumnByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
-
-  public RemoveIndexColumnService(
-      DeleteIndexColumnPort deleteIndexColumnPort,
-      DeleteIndexPort deleteIndexPort,
-      ChangeIndexColumnPositionPort changeIndexColumnPositionPort,
-      GetIndexByIdPort getIndexByIdPort,
-      GetIndexColumnByIdPort getIndexColumnByIdPort,
-      GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort) {
-    this.deleteIndexColumnPort = deleteIndexColumnPort;
-    this.deleteIndexPort = deleteIndexPort;
-    this.changeIndexColumnPositionPort = changeIndexColumnPositionPort;
-    this.getIndexByIdPort = getIndexByIdPort;
-    this.getIndexColumnByIdPort = getIndexColumnByIdPort;
-    this.getIndexColumnsByIndexIdPort = getIndexColumnsByIndexIdPort;
-  }
 
   @Override
   public Mono<Void> removeIndexColumn(RemoveIndexColumnCommand command) {

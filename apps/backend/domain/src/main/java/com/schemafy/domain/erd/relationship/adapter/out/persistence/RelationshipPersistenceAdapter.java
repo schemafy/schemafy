@@ -22,9 +22,11 @@ import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExis
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
+@RequiredArgsConstructor
 class RelationshipPersistenceAdapter implements
     CreateRelationshipPort,
     GetRelationshipByIdPort,
@@ -41,15 +43,6 @@ class RelationshipPersistenceAdapter implements
   private final RelationshipRepository relationshipRepository;
   private final RelationshipColumnRepository relationshipColumnRepository;
   private final RelationshipMapper relationshipMapper;
-
-  RelationshipPersistenceAdapter(
-      RelationshipRepository relationshipRepository,
-      RelationshipColumnRepository relationshipColumnRepository,
-      RelationshipMapper relationshipMapper) {
-    this.relationshipRepository = relationshipRepository;
-    this.relationshipColumnRepository = relationshipColumnRepository;
-    this.relationshipMapper = relationshipMapper;
-  }
 
   @Override
   public Mono<Relationship> createRelationship(Relationship relationship) {

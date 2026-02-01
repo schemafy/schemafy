@@ -24,10 +24,12 @@ import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class CreateRelationshipService implements CreateRelationshipUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -37,23 +39,6 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetRelationshipsBySchemaIdPort getRelationshipsBySchemaIdPort;
-
-  public CreateRelationshipService(
-      UlidGeneratorPort ulidGeneratorPort,
-      CreateRelationshipPort createRelationshipPort,
-      CreateRelationshipColumnPort createRelationshipColumnPort,
-      RelationshipExistsPort relationshipExistsPort,
-      GetTableByIdPort getTableByIdPort,
-      GetColumnsByTableIdPort getColumnsByTableIdPort,
-      GetRelationshipsBySchemaIdPort getRelationshipsBySchemaIdPort) {
-    this.ulidGeneratorPort = ulidGeneratorPort;
-    this.createRelationshipPort = createRelationshipPort;
-    this.createRelationshipColumnPort = createRelationshipColumnPort;
-    this.relationshipExistsPort = relationshipExistsPort;
-    this.getTableByIdPort = getTableByIdPort;
-    this.getColumnsByTableIdPort = getColumnsByTableIdPort;
-    this.getRelationshipsBySchemaIdPort = getRelationshipsBySchemaIdPort;
-  }
 
   @Override
   public Mono<CreateRelationshipResult> createRelationship(CreateRelationshipCommand command) {

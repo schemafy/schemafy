@@ -11,26 +11,17 @@ import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplica
 import com.schemafy.domain.erd.constraint.domain.validator.ConstraintValidator;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeConstraintNameService implements ChangeConstraintNameUseCase {
 
   private final ChangeConstraintNamePort changeConstraintNamePort;
   private final ConstraintExistsPort constraintExistsPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetTableByIdPort getTableByIdPort;
-
-  public ChangeConstraintNameService(
-      ChangeConstraintNamePort changeConstraintNamePort,
-      ConstraintExistsPort constraintExistsPort,
-      GetConstraintByIdPort getConstraintByIdPort,
-      GetTableByIdPort getTableByIdPort) {
-    this.changeConstraintNamePort = changeConstraintNamePort;
-    this.constraintExistsPort = constraintExistsPort;
-    this.getConstraintByIdPort = getConstraintByIdPort;
-    this.getTableByIdPort = getTableByIdPort;
-  }
 
   @Override
   public Mono<Void> changeConstraintName(ChangeConstraintNameCommand command) {

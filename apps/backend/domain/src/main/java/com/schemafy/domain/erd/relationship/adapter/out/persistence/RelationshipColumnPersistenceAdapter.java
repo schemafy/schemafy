@@ -17,9 +17,11 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
+@RequiredArgsConstructor
 class RelationshipColumnPersistenceAdapter implements
     ChangeRelationshipColumnPositionPort,
     CreateRelationshipColumnPort,
@@ -32,13 +34,6 @@ class RelationshipColumnPersistenceAdapter implements
 
   private final RelationshipColumnRepository relationshipColumnRepository;
   private final RelationshipColumnMapper relationshipColumnMapper;
-
-  RelationshipColumnPersistenceAdapter(
-      RelationshipColumnRepository relationshipColumnRepository,
-      RelationshipColumnMapper relationshipColumnMapper) {
-    this.relationshipColumnRepository = relationshipColumnRepository;
-    this.relationshipColumnMapper = relationshipColumnMapper;
-  }
 
   @Override
   public Mono<RelationshipColumn> createRelationshipColumn(RelationshipColumn relationshipColumn) {

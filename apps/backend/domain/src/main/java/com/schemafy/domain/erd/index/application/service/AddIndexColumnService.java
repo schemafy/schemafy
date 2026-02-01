@@ -21,10 +21,12 @@ import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class AddIndexColumnService implements AddIndexColumnUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -33,21 +35,6 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
-
-  public AddIndexColumnService(
-      UlidGeneratorPort ulidGeneratorPort,
-      CreateIndexColumnPort createIndexColumnPort,
-      GetIndexByIdPort getIndexByIdPort,
-      GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort,
-      GetIndexesByTableIdPort getIndexesByTableIdPort,
-      GetColumnsByTableIdPort getColumnsByTableIdPort) {
-    this.ulidGeneratorPort = ulidGeneratorPort;
-    this.createIndexColumnPort = createIndexColumnPort;
-    this.getIndexByIdPort = getIndexByIdPort;
-    this.getIndexColumnsByIndexIdPort = getIndexColumnsByIndexIdPort;
-    this.getIndexesByTableIdPort = getIndexesByTableIdPort;
-    this.getColumnsByTableIdPort = getColumnsByTableIdPort;
-  }
 
   @Override
   public Mono<AddIndexColumnResult> addIndexColumn(AddIndexColumnCommand command) {

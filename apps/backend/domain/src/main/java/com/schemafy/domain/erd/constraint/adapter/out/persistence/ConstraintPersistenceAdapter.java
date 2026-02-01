@@ -15,9 +15,11 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByT
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
+@RequiredArgsConstructor
 class ConstraintPersistenceAdapter implements
     CreateConstraintPort,
     GetConstraintByIdPort,
@@ -29,15 +31,6 @@ class ConstraintPersistenceAdapter implements
   private final ConstraintRepository constraintRepository;
   private final ConstraintColumnRepository constraintColumnRepository;
   private final ConstraintMapper constraintMapper;
-
-  ConstraintPersistenceAdapter(
-      ConstraintRepository constraintRepository,
-      ConstraintColumnRepository constraintColumnRepository,
-      ConstraintMapper constraintMapper) {
-    this.constraintRepository = constraintRepository;
-    this.constraintColumnRepository = constraintColumnRepository;
-    this.constraintMapper = constraintMapper;
-  }
 
   @Override
   public Mono<Constraint> createConstraint(Constraint constraint) {

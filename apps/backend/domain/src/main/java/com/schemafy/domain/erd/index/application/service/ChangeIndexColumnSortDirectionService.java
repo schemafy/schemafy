@@ -19,10 +19,12 @@ import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionIn
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeIndexColumnSortDirectionService
     implements ChangeIndexColumnSortDirectionUseCase {
 
@@ -31,19 +33,6 @@ public class ChangeIndexColumnSortDirectionService
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
-
-  public ChangeIndexColumnSortDirectionService(
-      ChangeIndexColumnSortDirectionPort changeIndexColumnSortDirectionPort,
-      GetIndexColumnByIdPort getIndexColumnByIdPort,
-      GetIndexByIdPort getIndexByIdPort,
-      GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort,
-      GetIndexesByTableIdPort getIndexesByTableIdPort) {
-    this.changeIndexColumnSortDirectionPort = changeIndexColumnSortDirectionPort;
-    this.getIndexColumnByIdPort = getIndexColumnByIdPort;
-    this.getIndexByIdPort = getIndexByIdPort;
-    this.getIndexColumnsByIndexIdPort = getIndexColumnsByIndexIdPort;
-    this.getIndexesByTableIdPort = getIndexesByTableIdPort;
-  }
 
   @Override
   public Mono<Void> changeIndexColumnSortDirection(ChangeIndexColumnSortDirectionCommand command) {

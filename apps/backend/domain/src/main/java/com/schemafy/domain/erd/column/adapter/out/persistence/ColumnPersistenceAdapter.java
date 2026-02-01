@@ -19,9 +19,11 @@ import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
 import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
+@RequiredArgsConstructor
 class ColumnPersistenceAdapter implements
     CreateColumnPort,
     GetColumnByIdPort,
@@ -35,11 +37,6 @@ class ColumnPersistenceAdapter implements
 
   private final ColumnRepository columnRepository;
   private final ColumnMapper columnMapper;
-
-  ColumnPersistenceAdapter(ColumnRepository columnRepository, ColumnMapper columnMapper) {
-    this.columnRepository = columnRepository;
-    this.columnMapper = columnMapper;
-  }
 
   @Override
   public Mono<Column> createColumn(Column column) {

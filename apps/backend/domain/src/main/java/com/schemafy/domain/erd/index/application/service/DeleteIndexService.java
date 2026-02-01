@@ -7,20 +7,15 @@ import com.schemafy.domain.erd.index.application.port.in.DeleteIndexUseCase;
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteIndexService implements DeleteIndexUseCase {
 
   private final DeleteIndexPort deleteIndexPort;
   private final DeleteIndexColumnsByIndexIdPort deleteIndexColumnsPort;
-
-  public DeleteIndexService(
-      DeleteIndexPort deleteIndexPort,
-      DeleteIndexColumnsByIndexIdPort deleteIndexColumnsPort) {
-    this.deleteIndexPort = deleteIndexPort;
-    this.deleteIndexColumnsPort = deleteIndexColumnsPort;
-  }
 
   @Override
   public Mono<Void> deleteIndex(DeleteIndexCommand command) {

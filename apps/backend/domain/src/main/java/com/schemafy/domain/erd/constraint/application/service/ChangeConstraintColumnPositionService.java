@@ -14,23 +14,16 @@ import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
 import com.schemafy.domain.erd.constraint.domain.validator.ConstraintValidator;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeConstraintColumnPositionService implements ChangeConstraintColumnPositionUseCase {
 
   private final ChangeConstraintColumnPositionPort changeConstraintColumnPositionPort;
   private final GetConstraintColumnByIdPort getConstraintColumnByIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
-
-  public ChangeConstraintColumnPositionService(
-      ChangeConstraintColumnPositionPort changeConstraintColumnPositionPort,
-      GetConstraintColumnByIdPort getConstraintColumnByIdPort,
-      GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort) {
-    this.changeConstraintColumnPositionPort = changeConstraintColumnPositionPort;
-    this.getConstraintColumnByIdPort = getConstraintColumnByIdPort;
-    this.getConstraintColumnsByConstraintIdPort = getConstraintColumnsByConstraintIdPort;
-  }
 
   @Override
   public Mono<Void> changeConstraintColumnPosition(ChangeConstraintColumnPositionCommand command) {

@@ -22,9 +22,11 @@ import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class AddRelationshipColumnService implements AddRelationshipColumnUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -33,21 +35,6 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
-
-  public AddRelationshipColumnService(
-      UlidGeneratorPort ulidGeneratorPort,
-      CreateRelationshipColumnPort createRelationshipColumnPort,
-      GetRelationshipByIdPort getRelationshipByIdPort,
-      GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort,
-      GetTableByIdPort getTableByIdPort,
-      GetColumnsByTableIdPort getColumnsByTableIdPort) {
-    this.ulidGeneratorPort = ulidGeneratorPort;
-    this.createRelationshipColumnPort = createRelationshipColumnPort;
-    this.getRelationshipByIdPort = getRelationshipByIdPort;
-    this.getRelationshipColumnsByRelationshipIdPort = getRelationshipColumnsByRelationshipIdPort;
-    this.getTableByIdPort = getTableByIdPort;
-    this.getColumnsByTableIdPort = getColumnsByTableIdPort;
-  }
 
   @Override
   public Mono<AddRelationshipColumnResult> addRelationshipColumn(AddRelationshipColumnCommand command) {

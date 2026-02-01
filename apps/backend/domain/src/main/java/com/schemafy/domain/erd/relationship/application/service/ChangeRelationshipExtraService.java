@@ -8,20 +8,15 @@ import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelations
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUseCase {
 
   private final ChangeRelationshipExtraPort changeRelationshipExtraPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
-
-  public ChangeRelationshipExtraService(
-      ChangeRelationshipExtraPort changeRelationshipExtraPort,
-      GetRelationshipByIdPort getRelationshipByIdPort) {
-    this.changeRelationshipExtraPort = changeRelationshipExtraPort;
-    this.getRelationshipByIdPort = getRelationshipByIdPort;
-  }
 
   @Override
   public Mono<Void> changeRelationshipExtra(ChangeRelationshipExtraCommand command) {

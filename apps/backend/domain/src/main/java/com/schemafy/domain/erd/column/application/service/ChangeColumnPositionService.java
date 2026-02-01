@@ -8,20 +8,15 @@ import com.schemafy.domain.erd.column.application.port.out.ChangeColumnPositionP
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeColumnPositionService implements ChangeColumnPositionUseCase {
 
   private final ChangeColumnPositionPort changeColumnPositionPort;
   private final GetColumnByIdPort getColumnByIdPort;
-
-  public ChangeColumnPositionService(
-      ChangeColumnPositionPort changeColumnPositionPort,
-      GetColumnByIdPort getColumnByIdPort) {
-    this.changeColumnPositionPort = changeColumnPositionPort;
-    this.getColumnByIdPort = getColumnByIdPort;
-  }
 
   @Override
   public Mono<Void> changeColumnPosition(ChangeColumnPositionCommand command) {

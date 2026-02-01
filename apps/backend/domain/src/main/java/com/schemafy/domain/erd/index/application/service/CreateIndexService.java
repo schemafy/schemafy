@@ -24,10 +24,12 @@ import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class CreateIndexService implements CreateIndexUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -38,25 +40,6 @@ public class CreateIndexService implements CreateIndexUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
-
-  public CreateIndexService(
-      UlidGeneratorPort ulidGeneratorPort,
-      CreateIndexPort createIndexPort,
-      CreateIndexColumnPort createIndexColumnPort,
-      IndexExistsPort indexExistsPort,
-      GetTableByIdPort getTableByIdPort,
-      GetColumnsByTableIdPort getColumnsByTableIdPort,
-      GetIndexesByTableIdPort getIndexesByTableIdPort,
-      GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort) {
-    this.ulidGeneratorPort = ulidGeneratorPort;
-    this.createIndexPort = createIndexPort;
-    this.createIndexColumnPort = createIndexColumnPort;
-    this.indexExistsPort = indexExistsPort;
-    this.getTableByIdPort = getTableByIdPort;
-    this.getColumnsByTableIdPort = getColumnsByTableIdPort;
-    this.getIndexesByTableIdPort = getIndexesByTableIdPort;
-    this.getIndexColumnsByIndexIdPort = getIndexColumnsByIndexIdPort;
-  }
 
   @Override
   public Mono<CreateIndexResult> createIndex(CreateIndexCommand command) {

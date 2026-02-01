@@ -11,23 +11,16 @@ import com.schemafy.domain.erd.index.domain.exception.IndexNameDuplicateExceptio
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeIndexNameService implements ChangeIndexNameUseCase {
 
   private final ChangeIndexNamePort changeIndexNamePort;
   private final IndexExistsPort indexExistsPort;
   private final GetIndexByIdPort getIndexByIdPort;
-
-  public ChangeIndexNameService(
-      ChangeIndexNamePort changeIndexNamePort,
-      IndexExistsPort indexExistsPort,
-      GetIndexByIdPort getIndexByIdPort) {
-    this.changeIndexNamePort = changeIndexNamePort;
-    this.indexExistsPort = indexExistsPort;
-    this.getIndexByIdPort = getIndexByIdPort;
-  }
 
   @Override
   public Mono<Void> changeIndexName(ChangeIndexNameCommand command) {

@@ -16,9 +16,11 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColu
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
+@RequiredArgsConstructor
 class ConstraintColumnPersistenceAdapter implements
     ChangeConstraintColumnPositionPort,
     CreateConstraintColumnPort,
@@ -31,13 +33,6 @@ class ConstraintColumnPersistenceAdapter implements
 
   private final ConstraintColumnRepository constraintColumnRepository;
   private final ConstraintColumnMapper constraintColumnMapper;
-
-  ConstraintColumnPersistenceAdapter(
-      ConstraintColumnRepository constraintColumnRepository,
-      ConstraintColumnMapper constraintColumnMapper) {
-    this.constraintColumnRepository = constraintColumnRepository;
-    this.constraintColumnMapper = constraintColumnMapper;
-  }
 
   @Override
   public Mono<ConstraintColumn> createConstraintColumn(ConstraintColumn constraintColumn) {
