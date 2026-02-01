@@ -1,6 +1,9 @@
 package com.schemafy.domain.erd.relationship.domain.exception;
 
-public class RelationshipNameInvalidException extends RuntimeException {
+import com.schemafy.domain.common.exception.InvalidValueException;
+
+
+public class RelationshipNameInvalidException extends InvalidValueException {
 
   public RelationshipNameInvalidException(String message) {
     super(message);

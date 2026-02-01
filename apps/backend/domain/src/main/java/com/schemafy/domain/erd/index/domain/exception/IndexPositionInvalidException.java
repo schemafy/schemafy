@@ -1,6 +1,9 @@
 package com.schemafy.domain.erd.index.domain.exception;
 
-public class IndexPositionInvalidException extends RuntimeException {
+import com.schemafy.domain.common.exception.InvalidValueException;
+
+
+public class IndexPositionInvalidException extends InvalidValueException {
 
   public IndexPositionInvalidException(String message) {
     super(message);

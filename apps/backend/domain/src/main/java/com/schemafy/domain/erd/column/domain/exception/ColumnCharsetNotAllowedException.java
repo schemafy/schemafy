@@ -1,6 +1,9 @@
 package com.schemafy.domain.erd.column.domain.exception;
 
-public class ColumnCharsetNotAllowedException extends RuntimeException {
+import com.schemafy.domain.common.exception.InvalidValueException;
+
+
+public class ColumnCharsetNotAllowedException extends InvalidValueException {
 
   public ColumnCharsetNotAllowedException(String message) {
     super(message);

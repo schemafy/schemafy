@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.constraint.domain.exception;
 
-public class ConstraintColumnDuplicateException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class ConstraintColumnDuplicateException extends DomainException {
 
   public ConstraintColumnDuplicateException(String message) {
     super(message);

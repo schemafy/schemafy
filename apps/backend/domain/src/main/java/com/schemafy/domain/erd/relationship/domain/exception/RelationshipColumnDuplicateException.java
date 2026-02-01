@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.relationship.domain.exception;
 
-public class RelationshipColumnDuplicateException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class RelationshipColumnDuplicateException extends DomainException {
 
   public RelationshipColumnDuplicateException(String message) {
     super(message);

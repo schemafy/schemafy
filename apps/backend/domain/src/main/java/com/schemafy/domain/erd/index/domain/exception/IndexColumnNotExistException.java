@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.index.domain.exception;
 
-public class IndexColumnNotExistException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class IndexColumnNotExistException extends DomainException {
 
   public IndexColumnNotExistException(String message) {
     super(message);

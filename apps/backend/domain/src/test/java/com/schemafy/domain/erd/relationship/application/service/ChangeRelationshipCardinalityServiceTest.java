@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -98,7 +100,7 @@ class ChangeRelationshipCardinalityServiceTest {
           RelationshipFixture.DEFAULT_ID, null);
 
       StepVerifier.create(sut.changeRelationshipCardinality(command))
-          .expectError(IllegalArgumentException.class)
+          .expectError(InvalidValueException.class)
           .verify();
 
       then(changeRelationshipCardinalityPort).shouldHaveNoInteractions();

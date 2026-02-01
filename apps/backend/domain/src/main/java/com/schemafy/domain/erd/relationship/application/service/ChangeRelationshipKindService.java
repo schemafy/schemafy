@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
 import java.util.HashSet;
 import java.util.List;
 
@@ -34,7 +36,7 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
   @Override
   public Mono<Void> changeRelationshipKind(ChangeRelationshipKindCommand command) {
     if (command.kind() == null) {
-      return Mono.error(new IllegalArgumentException("Relationship kind is required"));
+      return Mono.error(new InvalidValueException("Relationship kind is required"));
     }
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
         .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))

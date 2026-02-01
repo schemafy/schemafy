@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -78,7 +80,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
           "Relationship '%s' tables must belong to the same schema".formatted(normalizedName)));
     }
     if (command.kind() == null || command.cardinality() == null) {
-      return Mono.error(new IllegalArgumentException("Relationship kind and cardinality are required"));
+      return Mono.error(new InvalidValueException("Relationship kind and cardinality are required"));
     }
 
     return relationshipExistsPort.existsByFkTableIdAndName(fkTable.id(), normalizedName)

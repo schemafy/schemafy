@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.schema.domain.exception;
 
-public class SchemaNotExistException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class SchemaNotExistException extends DomainException {
 
   public SchemaNotExistException(String message) {
     super(message);

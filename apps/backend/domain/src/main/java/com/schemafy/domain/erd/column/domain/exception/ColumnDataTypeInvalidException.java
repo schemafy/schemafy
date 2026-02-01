@@ -1,6 +1,9 @@
 package com.schemafy.domain.erd.column.domain.exception;
 
-public class ColumnDataTypeInvalidException extends RuntimeException {
+import com.schemafy.domain.common.exception.InvalidValueException;
+
+
+public class ColumnDataTypeInvalidException extends InvalidValueException {
 
   public ColumnDataTypeInvalidException(String message) {
     super(message);

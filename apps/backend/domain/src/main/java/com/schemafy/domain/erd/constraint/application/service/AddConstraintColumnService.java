@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -46,7 +48,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
     return Mono.defer(() -> {
       ConstraintValidator.validatePosition(command.seqNo());
       return getConstraintByIdPort.findConstraintById(command.constraintId())
-          .switchIfEmpty(Mono.error(new RuntimeException("Constraint not found")))
+          .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
           .flatMap(constraint -> fetchTableContext(constraint.tableId())
               .flatMap(context -> addColumn(constraint, context, command)));
     });

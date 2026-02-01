@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+
 import java.util.HashSet;
 import java.util.List;
 
@@ -34,7 +36,7 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
   public Mono<Void> deleteConstraint(DeleteConstraintCommand command) {
     String constraintId = command.constraintId();
     return getConstraintByIdPort.findConstraintById(constraintId)
-        .switchIfEmpty(Mono.error(new RuntimeException("Constraint not found")))
+        .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
         .flatMap(constraint -> {
           if (constraint.kind() == ConstraintKind.PRIMARY_KEY) {
             return cascadeDeleteFkColumns(constraint.tableId(), constraintId)

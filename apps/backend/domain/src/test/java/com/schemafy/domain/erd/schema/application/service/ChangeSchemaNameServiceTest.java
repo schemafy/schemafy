@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.schema.application.port.out.ChangeSchemaNamePort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import reactor.core.publisher.Mono;
@@ -67,8 +68,8 @@ class ChangeSchemaNameServiceTest {
     class WithDuplicateName {
 
       @Test
-      @DisplayName("IllegalArgumentException을 발생시킨다")
-      void throwsIllegalArgumentException() {
+      @DisplayName("SchemaNameDuplicateException을 발생시킨다")
+      void throwsSchemaNameDuplicateException() {
         var newName = "duplicate_name";
         var command = SchemaFixture.changeNameCommand(newName);
 
@@ -76,7 +77,7 @@ class ChangeSchemaNameServiceTest {
             .willReturn(Mono.just(true));
 
         StepVerifier.create(sut.changeSchemaName(command))
-            .expectError(IllegalArgumentException.class)
+            .expectError(SchemaNameDuplicateException.class)
             .verify();
 
         then(changeSchemaNamePort).shouldHaveNoInteractions();

@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.column.application.service;
 
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionCommand;
@@ -23,7 +25,7 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
     return Mono.defer(() -> {
       ColumnValidator.validatePosition(command.seqNo());
       return getColumnByIdPort.findColumnById(command.columnId())
-          .switchIfEmpty(Mono.error(new RuntimeException("Column not found")))
+          .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
           .flatMap(column -> changeColumnPositionPort.changeColumnPosition(column.id(), command.seqNo()));
     });
   }

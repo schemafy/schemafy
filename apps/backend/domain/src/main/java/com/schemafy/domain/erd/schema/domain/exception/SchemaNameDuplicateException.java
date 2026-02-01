@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.schema.domain.exception;
 
-public class SchemaNameDuplicateException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class SchemaNameDuplicateException extends DomainException {
 
   public SchemaNameDuplicateException(String message) {
     super(message);

@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +32,7 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
     return Mono.defer(() -> {
       ConstraintValidator.validatePosition(command.seqNo());
       return getConstraintColumnByIdPort.findConstraintColumnById(command.constraintColumnId())
-          .switchIfEmpty(Mono.error(new RuntimeException("Constraint column not found")))
+          .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException("Constraint column not found")))
           .flatMap(constraintColumn -> getConstraintColumnsByConstraintIdPort
               .findConstraintColumnsByConstraintId(constraintColumn.constraintId())
               .defaultIfEmpty(List.of())
@@ -46,7 +48,7 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
       List<ConstraintColumn> columns,
       int nextPosition) {
     if (columns.isEmpty()) {
-      return Mono.error(new RuntimeException("Constraint column not found"));
+      return Mono.error(new ConstraintColumnNotExistException("Constraint column not found"));
     }
     if (nextPosition < 0 || nextPosition >= columns.size()) {
       return Mono.error(new ConstraintPositionInvalidException(
@@ -56,7 +58,7 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
     List<ConstraintColumn> reordered = new ArrayList<>(columns);
     int currentIndex = findIndex(reordered, constraintColumn.id());
     if (currentIndex < 0) {
-      return Mono.error(new RuntimeException("Constraint column not found"));
+      return Mono.error(new ConstraintColumnNotExistException("Constraint column not found"));
     }
     ConstraintColumn movingColumn = reordered.remove(currentIndex);
     reordered.add(nextPosition, movingColumn);

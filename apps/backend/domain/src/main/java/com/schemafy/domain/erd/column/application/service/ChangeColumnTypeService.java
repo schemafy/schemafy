@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.column.application.service;
 
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +48,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         command.scale());
 
     return getColumnByIdPort.findColumnById(command.columnId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Column not found")))
+        .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
         .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
             .defaultIfEmpty(List.of())
             .flatMap(columns -> applyChange(column, columns, command.dataType(), lengthScale)));

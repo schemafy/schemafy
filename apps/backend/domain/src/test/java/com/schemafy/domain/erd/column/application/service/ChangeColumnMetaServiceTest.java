@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.column.application.service;
 
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -159,7 +161,7 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnMeta(command))
-            .expectError(RuntimeException.class)
+            .expectError(ColumnNotExistException.class)
             .verify();
 
         then(changeColumnMetaPort).shouldHaveNoInteractions();

@@ -1,6 +1,9 @@
 package com.schemafy.domain.erd.column.domain.exception;
 
-public class ColumnPositionInvalidException extends RuntimeException {
+import com.schemafy.domain.common.exception.InvalidValueException;
+
+
+public class ColumnPositionInvalidException extends InvalidValueException {
 
   public ColumnPositionInvalidException(String message) {
     super(message);

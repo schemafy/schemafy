@@ -32,6 +32,7 @@ import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -278,7 +279,7 @@ class CreateIndexServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(RuntimeException.class)
+          .expectError(TableNotExistException.class)
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();

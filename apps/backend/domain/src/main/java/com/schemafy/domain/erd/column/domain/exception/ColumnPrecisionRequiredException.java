@@ -1,6 +1,9 @@
 package com.schemafy.domain.erd.column.domain.exception;
 
-public class ColumnPrecisionRequiredException extends RuntimeException {
+import com.schemafy.domain.common.exception.InvalidValueException;
+
+
+public class ColumnPrecisionRequiredException extends InvalidValueException {
 
   public ColumnPrecisionRequiredException(String message) {
     super(message);

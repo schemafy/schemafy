@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.index.domain.exception;
 
-public class IndexColumnDuplicateException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class IndexColumnDuplicateException extends DomainException {
 
   public IndexColumnDuplicateException(String message) {
     super(message);

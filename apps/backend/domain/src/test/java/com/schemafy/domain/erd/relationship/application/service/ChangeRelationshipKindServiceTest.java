@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -149,7 +151,7 @@ class ChangeRelationshipKindServiceTest {
             RelationshipFixture.DEFAULT_ID, null);
 
         StepVerifier.create(sut.changeRelationshipKind(command))
-            .expectError(IllegalArgumentException.class)
+            .expectError(InvalidValueException.class)
             .verify();
 
         then(changeRelationshipKindPort).shouldHaveNoInteractions();

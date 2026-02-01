@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
+
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -111,7 +113,7 @@ class ChangeConstraintColumnPositionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
-          .expectError(RuntimeException.class)
+          .expectError(ConstraintColumnNotExistException.class)
           .verify();
 
       then(changeConstraintColumnPositionPort).shouldHaveNoInteractions();

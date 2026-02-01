@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.relationship.domain.exception;
 
-public class RelationshipEmptyException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class RelationshipEmptyException extends DomainException {
 
   public RelationshipEmptyException(String message) {
     super(message);

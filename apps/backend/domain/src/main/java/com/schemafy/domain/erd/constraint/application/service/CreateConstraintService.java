@@ -1,5 +1,9 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +62,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
       columnCommands.forEach(column -> ConstraintValidator.validatePosition(column.seqNo()));
 
       return getTableByIdPort.findTableById(command.tableId())
-          .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
+          .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
           .flatMap(table -> constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
               .flatMap(exists -> {
                 if (exists) {
@@ -87,7 +91,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
       String defaultExpr,
       List<CreateConstraintColumnCommand> columnCommands) {
     if (kind == null) {
-      return Mono.error(new IllegalArgumentException("Constraint kind must not be null"));
+      return Mono.error(new InvalidValueException("Constraint kind must not be null"));
     }
 
     List<String> columnIds = columnCommands.stream()

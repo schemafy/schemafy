@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.index.application.service;
 
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -51,7 +53,7 @@ public class CreateIndexService implements CreateIndexUseCase {
       IndexValidator.validateType(command.type());
 
       return getTableByIdPort.findTableById(command.tableId())
-          .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
+          .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
           .flatMap(table -> indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
               .flatMap(exists -> {
                 if (exists) {

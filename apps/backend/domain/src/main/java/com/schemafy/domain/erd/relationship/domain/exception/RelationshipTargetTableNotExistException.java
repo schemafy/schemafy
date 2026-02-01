@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.relationship.domain.exception;
 
-public class RelationshipTargetTableNotExistException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class RelationshipTargetTableNotExistException extends DomainException {
 
   public RelationshipTargetTableNotExistException(String message) {
     super(message);

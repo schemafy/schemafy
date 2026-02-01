@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.column.domain.exception;
 
-public class MultipleAutoIncrementColumnException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class MultipleAutoIncrementColumnException extends DomainException {
 
   public MultipleAutoIncrementColumnException(String message) {
     super(message);

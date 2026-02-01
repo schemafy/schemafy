@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.table.application.port.out.ChangeTableNamePort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
+import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -66,15 +67,15 @@ class ChangeTableNameServiceTest {
     class WithDuplicateName {
 
       @Test
-      @DisplayName("IllegalArgumentException을 발생시킨다")
-      void throwsIllegalArgumentException() {
+      @DisplayName("TableNameDuplicateException을 발생시킨다")
+      void throwsTableNameDuplicateException() {
         var command = TableFixture.changeNameCommand("existing_table_name");
 
         given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
             .willReturn(Mono.just(true));
 
         StepVerifier.create(sut.changeTableName(command))
-            .expectError(IllegalArgumentException.class)
+            .expectError(TableNameDuplicateException.class)
             .verify();
 
         then(changeTableNamePort).shouldHaveNoInteractions();

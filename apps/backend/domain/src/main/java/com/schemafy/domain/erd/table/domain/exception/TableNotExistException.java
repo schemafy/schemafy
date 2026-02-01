@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.table.domain.exception;
 
-public class TableNotExistException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class TableNotExistException extends DomainException {
 
   public TableNotExistException(String message) {
     super(message);

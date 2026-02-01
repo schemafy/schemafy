@@ -16,10 +16,12 @@ import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPo
 import com.schemafy.domain.erd.column.domain.exception.ColumnNameDuplicateException;
 import com.schemafy.domain.erd.column.domain.exception.ColumnNameInvalidException;
 import com.schemafy.domain.erd.column.domain.exception.ColumnNameReservedException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -101,7 +103,7 @@ class ChangeColumnNameServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnName(command))
-            .expectError(RuntimeException.class)
+            .expectError(ColumnNotExistException.class)
             .verify();
 
         then(changeColumnNamePort).shouldHaveNoInteractions();

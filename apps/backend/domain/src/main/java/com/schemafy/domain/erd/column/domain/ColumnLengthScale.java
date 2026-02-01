@@ -3,6 +3,8 @@ package com.schemafy.domain.erd.column.domain;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
 public record ColumnLengthScale(
     Integer length,
     Integer precision,
@@ -14,22 +16,22 @@ public record ColumnLengthScale(
 
   public ColumnLengthScale {
     if (length != null && (precision != null || scale != null)) {
-      throw new IllegalArgumentException("length cannot be combined with precision/scale");
+      throw new InvalidValueException("length cannot be combined with precision/scale");
     }
     if (length != null && length <= 0) {
-      throw new IllegalArgumentException("length must be positive");
+      throw new InvalidValueException("length must be positive");
     }
     if (precision != null && precision <= 0) {
-      throw new IllegalArgumentException("precision must be positive");
+      throw new InvalidValueException("precision must be positive");
     }
     if (scale != null && scale < 0) {
-      throw new IllegalArgumentException("scale must be zero or positive");
+      throw new InvalidValueException("scale must be zero or positive");
     }
     if (precision != null && scale == null) {
-      throw new IllegalArgumentException("scale is required when precision is provided");
+      throw new InvalidValueException("scale is required when precision is provided");
     }
     if (precision == null && scale != null) {
-      throw new IllegalArgumentException("precision is required when scale is provided");
+      throw new InvalidValueException("precision is required when scale is provided");
     }
   }
 

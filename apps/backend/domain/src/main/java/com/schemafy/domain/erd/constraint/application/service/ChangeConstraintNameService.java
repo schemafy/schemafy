@@ -1,5 +1,8 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameCommand;
@@ -29,9 +32,9 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
       String normalizedName = normalizeName(command.newName());
       ConstraintValidator.validateName(normalizedName);
       return getConstraintByIdPort.findConstraintById(command.constraintId())
-          .switchIfEmpty(Mono.error(new RuntimeException("Constraint not found")))
+          .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
           .flatMap(constraint -> getTableByIdPort.findTableById(constraint.tableId())
-              .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
+              .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
               .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
                   table.schemaId(),
                   normalizedName,

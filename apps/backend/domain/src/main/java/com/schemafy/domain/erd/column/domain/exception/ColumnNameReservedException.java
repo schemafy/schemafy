@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.column.domain.exception;
 
-public class ColumnNameReservedException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class ColumnNameReservedException extends DomainException {
 
   public ColumnNameReservedException(String message) {
     super(message);

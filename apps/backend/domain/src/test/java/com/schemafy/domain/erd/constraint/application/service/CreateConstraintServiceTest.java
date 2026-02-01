@@ -1,5 +1,9 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -187,7 +191,7 @@ class CreateConstraintServiceTest {
       given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.empty());
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(RuntimeException.class)
+          .expectError(TableNotExistException.class)
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -358,7 +362,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(IllegalArgumentException.class)
+          .expectError(InvalidValueException.class)
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();

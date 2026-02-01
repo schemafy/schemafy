@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.constraint.domain.exception;
 
-public class ConstraintNotExistException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class ConstraintNotExistException extends DomainException {
 
   public ConstraintNotExistException(String message) {
     super(message);

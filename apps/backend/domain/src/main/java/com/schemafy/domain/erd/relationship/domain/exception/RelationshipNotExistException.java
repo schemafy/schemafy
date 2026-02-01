@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.relationship.domain.exception;
 
-public class RelationshipNotExistException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class RelationshipNotExistException extends DomainException {
 
   public RelationshipNotExistException(String message) {
     super(message);

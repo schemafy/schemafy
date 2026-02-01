@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
@@ -21,7 +23,7 @@ public class ChangeRelationshipCardinalityService implements ChangeRelationshipC
   @Override
   public Mono<Void> changeRelationshipCardinality(ChangeRelationshipCardinalityCommand command) {
     if (command.cardinality() == null) {
-      return Mono.error(new IllegalArgumentException("Relationship cardinality is required"));
+      return Mono.error(new InvalidValueException("Relationship cardinality is required"));
     }
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
         .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))

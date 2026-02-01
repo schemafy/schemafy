@@ -23,8 +23,10 @@ import com.schemafy.domain.erd.column.domain.exception.MultipleAutoIncrementColu
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -166,7 +168,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(RuntimeException.class)
+            .expectError(TableNotExistException.class)
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -190,7 +192,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(RuntimeException.class)
+            .expectError(SchemaNotExistException.class)
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();

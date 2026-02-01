@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.schema.domain;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,7 +46,7 @@ class SchemaTest {
           SchemaFixture.DEFAULT_NAME,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
-          .isInstanceOf(IllegalArgumentException.class)
+          .isInstanceOf(InvalidValueException.class)
           .hasMessageContaining("id");
     }
 
@@ -60,7 +62,7 @@ class SchemaTest {
           SchemaFixture.DEFAULT_NAME,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
-          .isInstanceOf(IllegalArgumentException.class)
+          .isInstanceOf(InvalidValueException.class)
           .hasMessageContaining("projectId");
     }
 
@@ -76,7 +78,7 @@ class SchemaTest {
           SchemaFixture.DEFAULT_NAME,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
-          .isInstanceOf(IllegalArgumentException.class)
+          .isInstanceOf(InvalidValueException.class)
           .hasMessageContaining("dbVendorName");
     }
 
@@ -92,7 +94,7 @@ class SchemaTest {
           invalidName,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
-          .isInstanceOf(IllegalArgumentException.class)
+          .isInstanceOf(InvalidValueException.class)
           .hasMessageContaining("name");
     }
 

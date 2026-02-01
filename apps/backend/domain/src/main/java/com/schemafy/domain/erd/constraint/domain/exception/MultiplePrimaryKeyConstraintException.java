@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.constraint.domain.exception;
 
-public class MultiplePrimaryKeyConstraintException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class MultiplePrimaryKeyConstraintException extends DomainException {
 
   public MultiplePrimaryKeyConstraintException(String message) {
     super(message);

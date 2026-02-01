@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -106,7 +108,7 @@ class ChangeConstraintNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintName(command))
-          .expectError(RuntimeException.class)
+          .expectError(ConstraintNotExistException.class)
           .verify();
 
       then(changeConstraintNamePort).shouldHaveNoInteractions();

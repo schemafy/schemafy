@@ -1,5 +1,8 @@
 package com.schemafy.domain.erd.column.application.service;
 
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -40,14 +43,14 @@ public class CreateColumnService implements CreateColumnUseCase {
         command.scale());
 
     return getTableByIdPort.findTableById(command.tableId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Table not found")))
+        .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
         .flatMap(table -> fetchSchemaAndColumns(table)
             .flatMap(tuple -> createColumn(table, tuple, command, lengthScale)));
   }
 
   private Mono<Tuple2<Schema, List<Column>>> fetchSchemaAndColumns(Table table) {
     Mono<Schema> schemaMono = getSchemaByIdPort.findSchemaById(table.schemaId())
-        .switchIfEmpty(Mono.error(new RuntimeException("Schema not found")));
+        .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found")));
     Mono<List<Column>> columnsMono = getColumnsByTableIdPort.findColumnsByTableId(table.id())
         .defaultIfEmpty(List.of());
     return Mono.zip(schemaMono, columnsMono);

@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.column.application.service;
 
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -94,7 +96,7 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnPosition(command))
-            .expectError(RuntimeException.class)
+            .expectError(ColumnNotExistException.class)
             .verify();
 
         then(changeColumnPositionPort).shouldHaveNoInteractions();

@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.table.domain.exception;
 
-public class TableNameDuplicateException extends RuntimeException {
+import com.schemafy.domain.common.exception.DomainException;
+
+public class TableNameDuplicateException extends DomainException {
 
   public TableNameDuplicateException(String message) {
     super(message);

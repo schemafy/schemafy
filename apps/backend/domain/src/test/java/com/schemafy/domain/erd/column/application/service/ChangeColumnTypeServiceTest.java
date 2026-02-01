@@ -19,6 +19,7 @@ import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
 import com.schemafy.domain.erd.column.domain.exception.ColumnAutoIncrementNotAllowedException;
 import com.schemafy.domain.erd.column.domain.exception.ColumnCharsetNotAllowedException;
 import com.schemafy.domain.erd.column.domain.exception.ColumnPrecisionRequiredException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
@@ -140,7 +141,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectError(RuntimeException.class)
+            .expectError(ColumnNotExistException.class)
             .verify();
 
         then(changeColumnTypePort).shouldHaveNoInteractions();

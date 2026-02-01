@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -131,7 +133,7 @@ class AddConstraintColumnServiceTest {
       given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.empty());
 
       StepVerifier.create(sut.addConstraintColumn(command))
-          .expectError(RuntimeException.class)
+          .expectError(ConstraintNotExistException.class)
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
