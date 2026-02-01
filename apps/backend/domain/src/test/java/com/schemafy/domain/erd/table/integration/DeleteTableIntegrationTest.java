@@ -28,7 +28,6 @@ import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuer
 import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
-import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
@@ -129,6 +128,11 @@ class DeleteTableIntegrationTest {
         var pkColumnResult = createColumnUseCase.createColumn(createPkColumnCommand).block();
         pkColumnId = pkColumnResult.columnId();
 
+        var createPkConstraintCommand = new CreateConstraintCommand(
+            pkTableId, "pk_pk_table", ConstraintKind.PRIMARY_KEY, null, null,
+            List.of(new CreateConstraintColumnCommand(pkColumnId, 0)));
+        createConstraintUseCase.createConstraint(createPkConstraintCommand).block();
+
         var createFkColumnCommand = new CreateColumnCommand(
             fkTableId, "pk_id", "INT", null, null, null, 0, false, null, null, "FK column");
         var fkColumnResult = createColumnUseCase.createColumn(createFkColumnCommand).block();
@@ -147,7 +151,7 @@ class DeleteTableIntegrationTest {
         var createRelationshipCommand = new CreateRelationshipCommand(
             fkTableId, pkTableId, "fk_relationship",
             RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-            List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0)));
+            List.of());
         createRelationshipUseCase.createRelationship(createRelationshipCommand).block();
       }
 

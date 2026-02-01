@@ -190,6 +190,8 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(table));
         given(getSchemaByIdPort.findSchemaById(any()))
             .willReturn(Mono.empty());
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.createColumn(command))
             .expectError(SchemaNotExistException.class)

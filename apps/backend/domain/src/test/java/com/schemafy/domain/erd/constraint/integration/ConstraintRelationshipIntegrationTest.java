@@ -30,14 +30,12 @@ import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColum
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
-import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipUseCase;
-import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
@@ -84,9 +82,6 @@ class ConstraintRelationshipIntegrationTest {
   GetRelationshipUseCase getRelationshipUseCase;
 
   @Autowired
-  GetRelationshipsByTableIdUseCase getRelationshipsByTableIdUseCase;
-
-  @Autowired
   GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
 
   @Autowired
@@ -110,13 +105,9 @@ class ConstraintRelationshipIntegrationTest {
 
   // FK Table 1 (참조하는 테이블)
   private String fkTableId1;
-  private String fkColumnId1_1;
-  private String fkColumnId1_2;
 
   // FK Table 2 (참조하는 테이블 - 다중 Relationship 테스트용)
   private String fkTableId2;
-  private String fkColumnId2_1;
-  private String fkColumnId2_2;
 
   @BeforeEach
   void setUp() {
@@ -162,33 +153,11 @@ class ConstraintRelationshipIntegrationTest {
     var fkTable1Result = createTableUseCase.createTable(createFkTable1Command).block();
     fkTableId1 = fkTable1Result.tableId();
 
-    // FK Table 1 컬럼 생성
-    var createFkColumn1_1Command = new CreateColumnCommand(
-        fkTableId1, "fk_col1", "INT", null, null, null, 0, false, null, null, "FK Column 1");
-    var fkColumn1_1Result = createColumnUseCase.createColumn(createFkColumn1_1Command).block();
-    fkColumnId1_1 = fkColumn1_1Result.columnId();
-
-    var createFkColumn1_2Command = new CreateColumnCommand(
-        fkTableId1, "fk_col2", "INT", null, null, null, 1, false, null, null, "FK Column 2");
-    var fkColumn1_2Result = createColumnUseCase.createColumn(createFkColumn1_2Command).block();
-    fkColumnId1_2 = fkColumn1_2Result.columnId();
-
     // FK Table 2 생성 (다중 Relationship 테스트용)
     var createFkTable2Command = new CreateTableCommand(
         schemaId, "fk_table_2", "utf8mb4", "utf8mb4_general_ci");
     var fkTable2Result = createTableUseCase.createTable(createFkTable2Command).block();
     fkTableId2 = fkTable2Result.tableId();
-
-    // FK Table 2 컬럼 생성
-    var createFkColumn2_1Command = new CreateColumnCommand(
-        fkTableId2, "ref_col1", "INT", null, null, null, 0, false, null, null, "Ref Column 1");
-    var fkColumn2_1Result = createColumnUseCase.createColumn(createFkColumn2_1Command).block();
-    fkColumnId2_1 = fkColumn2_1Result.columnId();
-
-    var createFkColumn2_2Command = new CreateColumnCommand(
-        fkTableId2, "ref_col2", "INT", null, null, null, 1, false, null, null, "Ref Column 2");
-    var fkColumn2_2Result = createColumnUseCase.createColumn(createFkColumn2_2Command).block();
-    fkColumnId2_2 = fkColumn2_2Result.columnId();
   }
 
   @Nested
@@ -206,9 +175,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(
-              new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0),
-              new CreateRelationshipColumnCommand(pkColumnId2, fkColumnId1_2, 1)));
+          List.of());
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -250,7 +217,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
+          List.of());
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -264,10 +231,20 @@ class ConstraintRelationshipIntegrationTest {
           .findFirst()
           .orElseThrow()
           .id();
+      String constraintColumnIdForPkCol2 = constraintColumns.stream()
+          .filter(cc -> cc.columnId().equals(pkColumnId2))
+          .findFirst()
+          .orElseThrow()
+          .id();
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
           new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          .verifyComplete();
+
+      // When: 마지막 PK 컬럼 제거
+      StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
+          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol2)))
           .verifyComplete();
 
       // Then: Relationship 자체가 삭제됨
@@ -288,9 +265,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(
-              new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0),
-              new CreateRelationshipColumnCommand(pkColumnId2, fkColumnId1_2, 1)));
+          List.of());
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -332,9 +307,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(
-              new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0),
-              new CreateRelationshipColumnCommand(pkColumnId2, fkColumnId1_2, 1)));
+          List.of());
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -376,9 +349,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(
-              new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0),
-              new CreateRelationshipColumnCommand(pkColumnId2, fkColumnId1_2, 1)));
+          List.of());
       var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block();
       String relationshipId1 = relResult1.relationshipId();
 
@@ -389,9 +360,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.IDENTIFYING,
           Cardinality.ONE_TO_ONE,
           null,
-          List.of(
-              new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId2_1, 0),
-              new CreateRelationshipColumnCommand(pkColumnId2, fkColumnId2_2, 1)));
+          List.of());
       var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block();
       String relationshipId2 = relResult2.relationshipId();
 
@@ -441,7 +410,7 @@ class ConstraintRelationshipIntegrationTest {
     @Test
     @DisplayName("PK Constraint 컬럼 추가 시 FK 테이블에 FK 컬럼과 RelationshipColumn이 자동 생성된다")
     void cascateCreatesFkColumnAndRelationshipColumnOnPkAdd() {
-      // Given: 기존 Relationship이 pk_col1만 참조
+      // Given: 기존 Relationship 생성 (PK 컬럼 전체 참조)
       var createRelCommand = new CreateRelationshipCommand(
           fkTableId1,
           pkTableId,
@@ -449,7 +418,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
+          List.of());
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -472,14 +441,14 @@ class ConstraintRelationshipIntegrationTest {
           })
           .verifyComplete();
 
-      // Then: RelationshipColumn이 2개로 증가 (기존 1 + cascade 1)
+      // Then: RelationshipColumn이 3개로 증가 (기존 2 + cascade 1)
       StepVerifier.create(getRelationshipColumnsByRelationshipIdUseCase
           .getRelationshipColumnsByRelationshipId(
               new GetRelationshipColumnsByRelationshipIdQuery(relationshipId)))
           .assertNext(columns -> {
-            assertThat(columns).hasSize(2);
-            assertThat(columns.get(0).pkColumnId()).isEqualTo(pkColumnId1);
-            assertThat(columns.get(1).pkColumnId()).isEqualTo(newPkColumnId);
+            assertThat(columns).hasSize(3);
+            assertThat(columns).extracting(c -> c.pkColumnId())
+                .containsExactlyInAnyOrder(pkColumnId1, pkColumnId2, newPkColumnId);
           })
           .verifyComplete();
 
@@ -504,7 +473,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createRelCommand1).block();
 
       var createRelCommand2 = new CreateRelationshipCommand(
@@ -514,7 +483,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.IDENTIFYING,
           Cardinality.ONE_TO_ONE,
           null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId2_1, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createRelCommand2).block();
 
       // Given: PK 테이블에 새 컬럼 추가
@@ -562,7 +531,7 @@ class ConstraintRelationshipIntegrationTest {
           createUniqueConstraintCommand).block();
       String uniqueConstraintId = uniqueConstraintResult.constraintId();
 
-      // Given: Relationship 생성 (pk_col1 참조)
+      // Given: Relationship 생성 (PK 컬럼 전체 참조)
       var createRelCommand = new CreateRelationshipCommand(
           fkTableId1,
           pkTableId,
@@ -570,7 +539,7 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
+          List.of());
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -591,8 +560,9 @@ class ConstraintRelationshipIntegrationTest {
           .getRelationshipColumnsByRelationshipId(
               new GetRelationshipColumnsByRelationshipIdQuery(relationshipId)))
           .assertNext(columns -> {
-            assertThat(columns).hasSize(1);
-            assertThat(columns.get(0).pkColumnId()).isEqualTo(pkColumnId1);
+            assertThat(columns).hasSize(2);
+            assertThat(columns).extracting(c -> c.pkColumnId())
+                .containsExactlyInAnyOrder(pkColumnId1, pkColumnId2);
           })
           .verifyComplete();
     }
@@ -614,8 +584,9 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
-      createRelationshipUseCase.createRelationship(createRelCommand).block();
+          List.of());
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      String fkColumnId = getFkColumnId(relResult.relationshipId(), pkColumnId1);
 
       // When: PK 컬럼 타입을 INT → BIGINT로 변경
       StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
@@ -627,7 +598,7 @@ class ConstraintRelationshipIntegrationTest {
           .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId1)))
           .assertNext(columns -> {
             var fkColumn = columns.stream()
-                .filter(c -> c.id().equals(fkColumnId1_1))
+                .filter(c -> c.id().equals(fkColumnId))
                 .findFirst()
                 .orElseThrow();
             assertThat(fkColumn.dataType()).isEqualTo("BIGINT");
@@ -646,8 +617,9 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId1_1, 0)));
-      createRelationshipUseCase.createRelationship(createRelCommand1).block();
+          List.of());
+      var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block();
+      String fkColumnId1 = getFkColumnId(relResult1.relationshipId(), pkColumnId1);
 
       var createRelCommand2 = new CreateRelationshipCommand(
           fkTableId2,
@@ -656,8 +628,9 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.IDENTIFYING,
           Cardinality.ONE_TO_ONE,
           null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId1, fkColumnId2_1, 0)));
-      createRelationshipUseCase.createRelationship(createRelCommand2).block();
+          List.of());
+      var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block();
+      String fkColumnId2 = getFkColumnId(relResult2.relationshipId(), pkColumnId1);
 
       // When: PK 컬럼 타입을 INT → BIGINT로 변경
       StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
@@ -669,7 +642,7 @@ class ConstraintRelationshipIntegrationTest {
           .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId1)))
           .assertNext(columns -> {
             var fkColumn = columns.stream()
-                .filter(c -> c.id().equals(fkColumnId1_1))
+                .filter(c -> c.id().equals(fkColumnId1))
                 .findFirst()
                 .orElseThrow();
             assertThat(fkColumn.dataType()).isEqualTo("BIGINT");
@@ -680,7 +653,7 @@ class ConstraintRelationshipIntegrationTest {
           .getColumnsByTableId(new GetColumnsByTableIdQuery(fkTableId2)))
           .assertNext(columns -> {
             var fkColumn = columns.stream()
-                .filter(c -> c.id().equals(fkColumnId2_1))
+                .filter(c -> c.id().equals(fkColumnId2))
                 .findFirst()
                 .orElseThrow();
             assertThat(fkColumn.dataType()).isEqualTo("BIGINT");
@@ -703,11 +676,6 @@ class ConstraintRelationshipIntegrationTest {
       var varcharPkResult = createColumnUseCase.createColumn(createVarcharPkColumnCommand).block();
       String varcharPkColumnId = varcharPkResult.columnId();
 
-      var createVarcharFkColumnCommand = new CreateColumnCommand(
-          fkTableId1, "fk_varchar", "VARCHAR", 100, null, null, 2, false, null, null, null);
-      var varcharFkResult = createColumnUseCase.createColumn(createVarcharFkColumnCommand).block();
-      String varcharFkColumnId = varcharFkResult.columnId();
-
       // PK Constraint에 VARCHAR 컬럼 추가
       addConstraintColumnUseCase.addConstraintColumn(
           new AddConstraintColumnCommand(pkConstraintId, varcharPkColumnId, 2)).block();
@@ -720,8 +688,9 @@ class ConstraintRelationshipIntegrationTest {
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY,
           null,
-          List.of(new CreateRelationshipColumnCommand(varcharPkColumnId, varcharFkColumnId, 0)));
-      createRelationshipUseCase.createRelationship(createRelCommand).block();
+          List.of());
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      String varcharFkColumnId = getFkColumnId(relResult.relationshipId(), varcharPkColumnId);
 
       // When: PK 컬럼 charset/collation 변경
       StepVerifier.create(changeColumnMetaUseCase.changeColumnMeta(
@@ -742,6 +711,18 @@ class ConstraintRelationshipIntegrationTest {
           .verifyComplete();
     }
 
+  }
+
+  private String getFkColumnId(String relationshipId, String pkColumnId) {
+    var columns = getRelationshipColumnsByRelationshipIdUseCase
+        .getRelationshipColumnsByRelationshipId(
+            new GetRelationshipColumnsByRelationshipIdQuery(relationshipId))
+        .block();
+    return columns.stream()
+        .filter(column -> column.pkColumnId().equals(pkColumnId))
+        .findFirst()
+        .orElseThrow()
+        .fkColumnId();
   }
 
 }

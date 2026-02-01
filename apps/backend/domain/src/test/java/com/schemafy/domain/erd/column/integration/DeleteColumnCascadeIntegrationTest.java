@@ -17,7 +17,6 @@ import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnQuery;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnUseCase;
-import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
@@ -32,11 +31,13 @@ import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuer
 import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
-import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipUseCase;
+import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdQuery;
+import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
+import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
@@ -69,9 +70,6 @@ class DeleteColumnCascadeIntegrationTest {
   GetColumnUseCase getColumnUseCase;
 
   @Autowired
-  GetColumnsByTableIdUseCase getColumnsByTableIdUseCase;
-
-  @Autowired
   CreateConstraintUseCase createConstraintUseCase;
 
   @Autowired
@@ -85,6 +83,9 @@ class DeleteColumnCascadeIntegrationTest {
 
   @Autowired
   CreateRelationshipUseCase createRelationshipUseCase;
+
+  @Autowired
+  GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
 
   @Autowired
   GetRelationshipsByTableIdUseCase getRelationshipsByTableIdUseCase;
@@ -124,13 +125,12 @@ class DeleteColumnCascadeIntegrationTest {
             pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block();
         pkColumnId = pkColumnResult.columnId();
 
-        var fkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            fkTableId, "pk_id", "INT", null, null, null, 0, false, null, null, null)).block();
-        fkColumnId = fkColumnResult.columnId();
-
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
             pkTableId, "pk_id_constraint", ConstraintKind.PRIMARY_KEY, null, null,
             List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+        var relationship = createAutoRelationship(fkTableId, pkTableId, RelationshipKind.NON_IDENTIFYING);
+        fkColumnId = findFkColumnId(relationship.columns(), pkColumnId);
 
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
             fkTableId, "fk_not_null", ConstraintKind.NOT_NULL, null, null,
@@ -139,11 +139,6 @@ class DeleteColumnCascadeIntegrationTest {
         createIndexUseCase.createIndex(new CreateIndexCommand(
             fkTableId, "idx_fk_col", IndexType.BTREE,
             List.of(new CreateIndexColumnCommand(fkColumnId, 0, SortDirection.ASC)))).block();
-
-        createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
-            fkTableId, pkTableId, "fk_relationship",
-            RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-            List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0)))).block();
       }
 
       @Test
@@ -213,27 +208,15 @@ class DeleteColumnCascadeIntegrationTest {
             pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block();
         pkColumnId = pkColumnResult.columnId();
 
-        var fkColumnResult1 = createColumnUseCase.createColumn(new CreateColumnCommand(
-            fkTableId1, "ref_id", "INT", null, null, null, 0, false, null, null, null)).block();
-        fkColumnId1 = fkColumnResult1.columnId();
-
-        var fkColumnResult2 = createColumnUseCase.createColumn(new CreateColumnCommand(
-            fkTableId2, "ref_id", "INT", null, null, null, 0, false, null, null, null)).block();
-        fkColumnId2 = fkColumnResult2.columnId();
-
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
             pkTableId, "pk_constraint", ConstraintKind.PRIMARY_KEY, null, null,
             List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
 
-        createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
-            fkTableId1, pkTableId, "fk_rel_1",
-            RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-            List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId1, 0)))).block();
+        var rel1 = createAutoRelationship(fkTableId1, pkTableId, RelationshipKind.NON_IDENTIFYING);
+        fkColumnId1 = findFkColumnId(rel1.columns(), pkColumnId);
 
-        createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
-            fkTableId2, pkTableId, "fk_rel_2",
-            RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-            List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId2, 0)))).block();
+        var rel2 = createAutoRelationship(fkTableId2, pkTableId, RelationshipKind.NON_IDENTIFYING);
+        fkColumnId2 = findFkColumnId(rel2.columns(), pkColumnId);
       }
 
       @Test
@@ -298,31 +281,15 @@ class DeleteColumnCascadeIntegrationTest {
             tableAId, "id", "INT", null, null, null, 0, true, null, null, null)).block();
         colAId = colAResult.columnId();
 
-        var colBResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            tableBId, "a_id", "INT", null, null, null, 0, false, null, null, null)).block();
-        colBId = colBResult.columnId();
-
-        var colCResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            tableCId, "b_id", "INT", null, null, null, 0, false, null, null, null)).block();
-        colCId = colCResult.columnId();
-
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
             tableAId, "pk_a", ConstraintKind.PRIMARY_KEY, null, null,
             List.of(new CreateConstraintColumnCommand(colAId, 0)))).block();
 
-        createConstraintUseCase.createConstraint(new CreateConstraintCommand(
-            tableBId, "pk_b", ConstraintKind.PRIMARY_KEY, null, null,
-            List.of(new CreateConstraintColumnCommand(colBId, 0)))).block();
+        var abRelationship = createAutoRelationship(tableBId, tableAId, RelationshipKind.IDENTIFYING);
+        colBId = findFkColumnId(abRelationship.columns(), colAId);
 
-        createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
-            tableBId, tableAId, "fk_a_to_b",
-            RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-            List.of(new CreateRelationshipColumnCommand(colAId, colBId, 0)))).block();
-
-        createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
-            tableCId, tableBId, "fk_b_to_c",
-            RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-            List.of(new CreateRelationshipColumnCommand(colBId, colCId, 0)))).block();
+        var bcRelationship = createAutoRelationship(tableCId, tableBId, RelationshipKind.NON_IDENTIFYING);
+        colCId = findFkColumnId(bcRelationship.columns(), colBId);
       }
 
       @Test
@@ -392,13 +359,12 @@ class DeleteColumnCascadeIntegrationTest {
           pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block();
       pkColumnId = pkColumnResult.columnId();
 
-      var fkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-          fkTableId, "ref_id", "INT", null, null, null, 0, false, null, null, null)).block();
-      fkColumnId = fkColumnResult.columnId();
-
       createConstraintUseCase.createConstraint(new CreateConstraintCommand(
           pkTableId, "pk_constraint", ConstraintKind.PRIMARY_KEY, null, null,
           List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+      var relationship = createAutoRelationship(fkTableId, pkTableId, RelationshipKind.NON_IDENTIFYING);
+      fkColumnId = findFkColumnId(relationship.columns(), pkColumnId);
 
       createConstraintUseCase.createConstraint(new CreateConstraintCommand(
           fkTableId, "fk_not_null", ConstraintKind.NOT_NULL, null, null,
@@ -407,11 +373,6 @@ class DeleteColumnCascadeIntegrationTest {
       createIndexUseCase.createIndex(new CreateIndexCommand(
           fkTableId, "idx_ref_id", IndexType.BTREE,
           List.of(new CreateIndexColumnCommand(fkColumnId, 0, SortDirection.ASC)))).block();
-
-      createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
-          fkTableId, pkTableId, "fk_relationship",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0)))).block();
     }
 
     @Test
@@ -449,6 +410,33 @@ class DeleteColumnCascadeIntegrationTest {
           .verifyComplete();
     }
 
+  }
+
+  private AutoRelationship createAutoRelationship(
+      String fkTableId,
+      String pkTableId,
+      RelationshipKind kind) {
+    var createCommand = new CreateRelationshipCommand(
+        fkTableId, pkTableId, null,
+        kind, Cardinality.ONE_TO_MANY, null,
+        List.of());
+    var result = createRelationshipUseCase.createRelationship(createCommand).block();
+    var columns = getRelationshipColumnsByRelationshipIdUseCase
+        .getRelationshipColumnsByRelationshipId(
+            new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId()))
+        .block();
+    return new AutoRelationship(result.relationshipId(), columns);
+  }
+
+  private String findFkColumnId(List<RelationshipColumn> columns, String pkColumnId) {
+    return columns.stream()
+        .filter(column -> column.pkColumnId().equals(pkColumnId))
+        .findFirst()
+        .orElseThrow()
+        .fkColumnId();
+  }
+
+  private record AutoRelationship(String relationshipId, List<RelationshipColumn> columns) {
   }
 
 }

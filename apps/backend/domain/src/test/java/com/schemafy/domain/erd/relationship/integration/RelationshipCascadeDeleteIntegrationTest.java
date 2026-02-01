@@ -17,7 +17,10 @@ import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
-import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipColumnCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintUseCase;
+import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdQuery;
@@ -28,6 +31,7 @@ import com.schemafy.domain.erd.relationship.application.port.in.GetRelationships
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.RemoveRelationshipColumnUseCase;
+import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
@@ -60,6 +64,9 @@ class RelationshipCascadeDeleteIntegrationTest {
   CreateColumnUseCase createColumnUseCase;
 
   @Autowired
+  CreateConstraintUseCase createConstraintUseCase;
+
+  @Autowired
   DeleteColumnUseCase deleteColumnUseCase;
 
   @Autowired
@@ -84,8 +91,6 @@ class RelationshipCascadeDeleteIntegrationTest {
   private String fkTableId;
   private String pkColumnId;
   private String pkColumn2Id;
-  private String fkColumnId;
-  private String fkColumn2Id;
 
   @BeforeEach
   void setUp(TestInfo testInfo) {
@@ -118,15 +123,16 @@ class RelationshipCascadeDeleteIntegrationTest {
     var pkColumn2Result = createColumnUseCase.createColumn(createPkColumn2Command).block();
     pkColumn2Id = pkColumn2Result.columnId();
 
-    var createFkColumnCommand = new CreateColumnCommand(
-        fkTableId, "pk_id", "INT", null, null, null, 0, false, null, null, "FK");
-    var fkColumnResult = createColumnUseCase.createColumn(createFkColumnCommand).block();
-    fkColumnId = fkColumnResult.columnId();
-
-    var createFkColumn2Command = new CreateColumnCommand(
-        fkTableId, "pk_code", "VARCHAR", 50, null, null, 1, false, null, null, "FK2");
-    var fkColumn2Result = createColumnUseCase.createColumn(createFkColumn2Command).block();
-    fkColumn2Id = fkColumn2Result.columnId();
+    var createPkConstraintCommand = new CreateConstraintCommand(
+        pkTableId,
+        "pk_pk_table",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(
+            new CreateConstraintColumnCommand(pkColumnId, 0),
+            new CreateConstraintColumnCommand(pkColumn2Id, 1)));
+    createConstraintUseCase.createConstraint(createPkConstraintCommand).block();
   }
 
   @Nested
@@ -136,17 +142,13 @@ class RelationshipCascadeDeleteIntegrationTest {
     @Test
     @DisplayName("FK 테이블 삭제 시 관계와 관계 컬럼이 모두 삭제된다")
     void deletesRelationshipWhenFkTableDeleted() {
-      var createCommand = new CreateRelationshipCommand(
-          fkTableId, pkTableId, "fk_test",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0)));
-      var result = createRelationshipUseCase.createRelationship(createCommand).block();
+      var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
 
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(fkTableId)))
           .verifyComplete();
 
       StepVerifier.create(getRelationshipUseCase.getRelationship(
-          new GetRelationshipQuery(result.relationshipId())))
+          new GetRelationshipQuery(relationship.relationshipId())))
           .expectError(RelationshipNotExistException.class)
           .verify();
     }
@@ -154,17 +156,13 @@ class RelationshipCascadeDeleteIntegrationTest {
     @Test
     @DisplayName("PK 테이블 삭제 시 관계와 관계 컬럼이 모두 삭제된다")
     void deletesRelationshipWhenPkTableDeleted() {
-      var createCommand = new CreateRelationshipCommand(
-          fkTableId, pkTableId, "fk_test",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0)));
-      var result = createRelationshipUseCase.createRelationship(createCommand).block();
+      var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
 
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(pkTableId)))
           .verifyComplete();
 
       StepVerifier.create(getRelationshipUseCase.getRelationship(
-          new GetRelationshipQuery(result.relationshipId())))
+          new GetRelationshipQuery(relationship.relationshipId())))
           .expectError(RelationshipNotExistException.class)
           .verify();
     }
@@ -173,11 +171,7 @@ class RelationshipCascadeDeleteIntegrationTest {
     @DisplayName("여러 관계가 있을 때 관련된 관계만 삭제된다")
     void deletesOnlyRelatedRelationships() {
       // FK 테이블 -> PK 테이블 관계
-      var createCommand = new CreateRelationshipCommand(
-          fkTableId, pkTableId, "fk_test",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0)));
-      createRelationshipUseCase.createRelationship(createCommand).block();
+      createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
 
       // FK 테이블 삭제
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(fkTableId)))
@@ -205,25 +199,24 @@ class RelationshipCascadeDeleteIntegrationTest {
     @Test
     @DisplayName("FK 컬럼 삭제 시 해당 관계 컬럼이 삭제된다")
     void deletesRelationshipColumnWhenFkColumnDeleted() {
-      var createCommand = new CreateRelationshipCommand(
-          fkTableId, pkTableId, "fk_test",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(
-              new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0),
-              new CreateRelationshipColumnCommand(pkColumn2Id, fkColumn2Id, 1)));
-      var result = createRelationshipUseCase.createRelationship(createCommand).block();
+      var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
+      String fkColumnToDelete = relationship.columns().stream()
+          .filter(column -> column.pkColumnId().equals(pkColumnId))
+          .findFirst()
+          .orElseThrow()
+          .fkColumnId();
 
       // FK 컬럼 삭제
-      StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)))
+      StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnToDelete)))
           .verifyComplete();
 
       // 관계는 남아있지만 컬럼은 하나만 남아야 함
       StepVerifier.create(getRelationshipColumnsByRelationshipIdUseCase
           .getRelationshipColumnsByRelationshipId(
-              new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId())))
+              new GetRelationshipColumnsByRelationshipIdQuery(relationship.relationshipId())))
           .assertNext(columns -> {
             assertThat(columns).hasSize(1);
-            assertThat(columns.get(0).fkColumnId()).isEqualTo(fkColumn2Id);
+            assertThat(columns.get(0).pkColumnId()).isEqualTo(pkColumn2Id);
           })
           .verifyComplete();
     }
@@ -231,13 +224,7 @@ class RelationshipCascadeDeleteIntegrationTest {
     @Test
     @DisplayName("PK 컬럼 삭제 시 해당 관계 컬럼이 삭제된다")
     void deletesRelationshipColumnWhenPkColumnDeleted() {
-      var createCommand = new CreateRelationshipCommand(
-          fkTableId, pkTableId, "fk_test",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(
-              new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0),
-              new CreateRelationshipColumnCommand(pkColumn2Id, fkColumn2Id, 1)));
-      var result = createRelationshipUseCase.createRelationship(createCommand).block();
+      var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
 
       // PK 컬럼 삭제
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(pkColumnId)))
@@ -246,7 +233,7 @@ class RelationshipCascadeDeleteIntegrationTest {
       // 관계는 남아있지만 컬럼은 하나만 남아야 함
       StepVerifier.create(getRelationshipColumnsByRelationshipIdUseCase
           .getRelationshipColumnsByRelationshipId(
-              new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId())))
+              new GetRelationshipColumnsByRelationshipIdQuery(relationship.relationshipId())))
           .assertNext(columns -> {
             assertThat(columns).hasSize(1);
             assertThat(columns.get(0).pkColumnId()).isEqualTo(pkColumn2Id);
@@ -263,28 +250,30 @@ class RelationshipCascadeDeleteIntegrationTest {
     @Test
     @DisplayName("마지막 관계 컬럼을 제거하면 관계 자체가 삭제된다")
     void deletesRelationshipWhenLastColumnRemoved() {
-      var createCommand = new CreateRelationshipCommand(
-          fkTableId, pkTableId, "fk_test",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0)));
-      var result = createRelationshipUseCase.createRelationship(createCommand).block();
+      var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
 
       // 관계 컬럼 ID 조회
       var columns = getRelationshipColumnsByRelationshipIdUseCase
           .getRelationshipColumnsByRelationshipId(
-              new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId()))
+              new GetRelationshipColumnsByRelationshipIdQuery(relationship.relationshipId()))
           .block();
-      assertThat(columns).hasSize(1);
-      String columnId = columns.get(0).id();
+      assertThat(columns).hasSize(2);
+      String firstColumnId = columns.get(0).id();
+      String secondColumnId = columns.get(1).id();
+
+      // 관계 컬럼 제거 (첫 번째)
+      StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
+          new RemoveRelationshipColumnCommand(relationship.relationshipId(), firstColumnId)))
+          .verifyComplete();
 
       // 마지막 컬럼 제거
       StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
-          new RemoveRelationshipColumnCommand(result.relationshipId(), columnId)))
+          new RemoveRelationshipColumnCommand(relationship.relationshipId(), secondColumnId)))
           .verifyComplete();
 
       // 관계도 삭제되어야 함
       StepVerifier.create(getRelationshipUseCase.getRelationship(
-          new GetRelationshipQuery(result.relationshipId())))
+          new GetRelationshipQuery(relationship.relationshipId())))
           .expectError(RelationshipNotExistException.class)
           .verify();
     }
@@ -292,39 +281,51 @@ class RelationshipCascadeDeleteIntegrationTest {
     @Test
     @DisplayName("마지막이 아닌 컬럼을 제거하면 관계는 유지되고 위치가 재정렬된다")
     void repositionsColumnsWhenNonLastColumnRemoved() {
-      var createCommand = new CreateRelationshipCommand(
-          fkTableId, pkTableId, "fk_test",
-          RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(
-              new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, 0),
-              new CreateRelationshipColumnCommand(pkColumn2Id, fkColumn2Id, 1)));
-      var result = createRelationshipUseCase.createRelationship(createCommand).block();
+      var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
 
       // 첫 번째 관계 컬럼 ID 조회
       var columns = getRelationshipColumnsByRelationshipIdUseCase
           .getRelationshipColumnsByRelationshipId(
-              new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId()))
+              new GetRelationshipColumnsByRelationshipIdQuery(relationship.relationshipId()))
           .block();
       assertThat(columns).hasSize(2);
+      columns.sort((left, right) -> Integer.compare(left.seqNo(), right.seqNo()));
       String firstColumnId = columns.get(0).id();
+      String remainingPkColumnId = columns.get(1).pkColumnId();
 
       // 첫 번째 컬럼 제거
       StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
-          new RemoveRelationshipColumnCommand(result.relationshipId(), firstColumnId)))
+          new RemoveRelationshipColumnCommand(relationship.relationshipId(), firstColumnId)))
           .verifyComplete();
 
       // 관계는 유지되고 남은 컬럼의 위치가 0으로 재정렬됨
       StepVerifier.create(getRelationshipColumnsByRelationshipIdUseCase
           .getRelationshipColumnsByRelationshipId(
-              new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId())))
+              new GetRelationshipColumnsByRelationshipIdQuery(relationship.relationshipId())))
           .assertNext(remainingColumns -> {
             assertThat(remainingColumns).hasSize(1);
             assertThat(remainingColumns.get(0).seqNo()).isEqualTo(0);
-            assertThat(remainingColumns.get(0).fkColumnId()).isEqualTo(fkColumn2Id);
+            assertThat(remainingColumns.get(0).pkColumnId()).isEqualTo(remainingPkColumnId);
           })
           .verifyComplete();
     }
 
+  }
+
+  private AutoRelationship createAutoRelationship(RelationshipKind kind) {
+    var createCommand = new CreateRelationshipCommand(
+        fkTableId, pkTableId, null,
+        kind, Cardinality.ONE_TO_MANY, null,
+        List.of());
+    var result = createRelationshipUseCase.createRelationship(createCommand).block();
+    var columns = getRelationshipColumnsByRelationshipIdUseCase
+        .getRelationshipColumnsByRelationshipId(
+            new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId()))
+        .block();
+    return new AutoRelationship(result.relationshipId(), columns);
+  }
+
+  private record AutoRelationship(String relationshipId, List<RelationshipColumn> columns) {
   }
 
 }

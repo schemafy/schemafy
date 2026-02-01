@@ -15,9 +15,12 @@ import org.junit.jupiter.api.TestInfo;
 
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintUseCase;
+import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
-import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipUseCase;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipCyclicReferenceException;
@@ -43,6 +46,9 @@ class RelationshipCyclicReferenceIntegrationTest {
 
   @Autowired
   CreateColumnUseCase createColumnUseCase;
+
+  @Autowired
+  CreateConstraintUseCase createConstraintUseCase;
 
   @Autowired
   CreateRelationshipUseCase createRelationshipUseCase;
@@ -90,16 +96,19 @@ class RelationshipCyclicReferenceIntegrationTest {
         tableAId, "id", "INT", null, null, null, 0, true, null, null, "PK");
     var columnAResult = createColumnUseCase.createColumn(createColumnACommand).block();
     columnAId = columnAResult.columnId();
+    createPrimaryKey(tableAId, "pk_table_a", columnAId);
 
     var createColumnBCommand = new CreateColumnCommand(
         tableBId, "id", "INT", null, null, null, 0, true, null, null, "PK");
     var columnBResult = createColumnUseCase.createColumn(createColumnBCommand).block();
     columnBId = columnBResult.columnId();
+    createPrimaryKey(tableBId, "pk_table_b", columnBId);
 
     var createColumnCCommand = new CreateColumnCommand(
         tableCId, "id", "INT", null, null, null, 0, true, null, null, "PK");
     var columnCResult = createColumnUseCase.createColumn(createColumnCCommand).block();
     columnCId = columnCResult.columnId();
+    createPrimaryKey(tableCId, "pk_table_c", columnCId);
   }
 
   @Nested
@@ -111,16 +120,16 @@ class RelationshipCyclicReferenceIntegrationTest {
     void throwsOnDirectCyclicReference() {
       // A -> B (IDENTIFYING)
       var createABCommand = new CreateRelationshipCommand(
-          tableAId, tableBId, "fk_a_b",
+          tableAId, tableBId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnBId, columnAId, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createABCommand).block();
 
       // B -> A (IDENTIFYING) - 순환 참조!
       var createBACommand = new CreateRelationshipCommand(
-          tableBId, tableAId, "fk_b_a",
+          tableBId, tableAId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnAId, columnBId, 0)));
+          List.of());
 
       StepVerifier.create(createRelationshipUseCase.createRelationship(createBACommand))
           .expectError(RelationshipCyclicReferenceException.class)
@@ -132,23 +141,23 @@ class RelationshipCyclicReferenceIntegrationTest {
     void throwsOnIndirectCyclicReference() {
       // A -> B (IDENTIFYING)
       var createABCommand = new CreateRelationshipCommand(
-          tableAId, tableBId, "fk_a_b",
+          tableAId, tableBId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnBId, columnAId, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createABCommand).block();
 
       // B -> C (IDENTIFYING)
       var createBCCommand = new CreateRelationshipCommand(
-          tableBId, tableCId, "fk_b_c",
+          tableBId, tableCId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnCId, columnBId, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createBCCommand).block();
 
       // C -> A (IDENTIFYING) - 간접 순환 참조!
       var createCACommand = new CreateRelationshipCommand(
-          tableCId, tableAId, "fk_c_a",
+          tableCId, tableAId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnAId, columnCId, 0)));
+          List.of());
 
       StepVerifier.create(createRelationshipUseCase.createRelationship(createCACommand))
           .expectError(RelationshipCyclicReferenceException.class)
@@ -160,16 +169,16 @@ class RelationshipCyclicReferenceIntegrationTest {
     void allowsCyclicReferenceForNonIdentifying() {
       // A -> B (NON_IDENTIFYING)
       var createABCommand = new CreateRelationshipCommand(
-          tableAId, tableBId, "fk_a_b",
+          tableAId, tableBId, null,
           RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnBId, columnAId, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createABCommand).block();
 
       // B -> A (NON_IDENTIFYING) - 허용됨
       var createBACommand = new CreateRelationshipCommand(
-          tableBId, tableAId, "fk_b_a",
+          tableBId, tableAId, null,
           RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnAId, columnBId, 0)));
+          List.of());
 
       StepVerifier.create(createRelationshipUseCase.createRelationship(createBACommand))
           .expectNextCount(1)
@@ -181,16 +190,16 @@ class RelationshipCyclicReferenceIntegrationTest {
     void checksOnlyIdentifyingRelationshipsForCycle() {
       // A -> B (NON_IDENTIFYING)
       var createABCommand = new CreateRelationshipCommand(
-          tableAId, tableBId, "fk_a_b",
+          tableAId, tableBId, null,
           RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnBId, columnAId, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createABCommand).block();
 
       // B -> A (IDENTIFYING) - NON_IDENTIFYING은 그래프에 없으므로 허용됨
       var createBACommand = new CreateRelationshipCommand(
-          tableBId, tableAId, "fk_b_a",
+          tableBId, tableAId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnAId, columnBId, 0)));
+          List.of());
 
       StepVerifier.create(createRelationshipUseCase.createRelationship(createBACommand))
           .expectNextCount(1)
@@ -208,16 +217,16 @@ class RelationshipCyclicReferenceIntegrationTest {
     void throwsOnCyclicReferenceWhenChangingToIdentifying() {
       // A -> B (NON_IDENTIFYING)
       var createABCommand = new CreateRelationshipCommand(
-          tableAId, tableBId, "fk_a_b",
+          tableAId, tableBId, null,
           RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnBId, columnAId, 0)));
+          List.of());
       var abResult = createRelationshipUseCase.createRelationship(createABCommand).block();
 
       // B -> A (IDENTIFYING)
       var createBACommand = new CreateRelationshipCommand(
-          tableBId, tableAId, "fk_b_a",
+          tableBId, tableAId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnAId, columnBId, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createBACommand).block();
 
       // A -> B를 IDENTIFYING로 변경 - 순환 참조!
@@ -234,9 +243,9 @@ class RelationshipCyclicReferenceIntegrationTest {
     void allowsChangingFromIdentifyingToNonIdentifying() {
       // A -> B (IDENTIFYING)
       var createABCommand = new CreateRelationshipCommand(
-          tableAId, tableBId, "fk_a_b",
+          tableAId, tableBId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnBId, columnAId, 0)));
+          List.of());
       var abResult = createRelationshipUseCase.createRelationship(createABCommand).block();
 
       // A -> B를 NON_IDENTIFYING로 변경
@@ -252,23 +261,23 @@ class RelationshipCyclicReferenceIntegrationTest {
     void detectsIndirectCycleWhenChangingKind() {
       // A -> B (IDENTIFYING)
       var createABCommand = new CreateRelationshipCommand(
-          tableAId, tableBId, "fk_a_b",
+          tableAId, tableBId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnBId, columnAId, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createABCommand).block();
 
       // B -> C (IDENTIFYING)
       var createBCCommand = new CreateRelationshipCommand(
-          tableBId, tableCId, "fk_b_c",
+          tableBId, tableCId, null,
           RelationshipKind.IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnCId, columnBId, 0)));
+          List.of());
       createRelationshipUseCase.createRelationship(createBCCommand).block();
 
       // C -> A (NON_IDENTIFYING)
       var createCACommand = new CreateRelationshipCommand(
-          tableCId, tableAId, "fk_c_a",
+          tableCId, tableAId, null,
           RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-          List.of(new CreateRelationshipColumnCommand(columnAId, columnCId, 0)));
+          List.of());
       var caResult = createRelationshipUseCase.createRelationship(createCACommand).block();
 
       // C -> A를 IDENTIFYING로 변경 - 간접 순환 참조!
@@ -280,6 +289,17 @@ class RelationshipCyclicReferenceIntegrationTest {
           .verify();
     }
 
+  }
+
+  private void createPrimaryKey(String tableId, String name, String columnId) {
+    var createConstraintCommand = new CreateConstraintCommand(
+        tableId,
+        name,
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(columnId, 0)));
+    createConstraintUseCase.createConstraint(createConstraintCommand).block();
   }
 
 }

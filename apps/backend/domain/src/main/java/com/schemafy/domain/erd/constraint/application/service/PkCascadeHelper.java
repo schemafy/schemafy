@@ -121,6 +121,15 @@ public class PkCascadeHelper {
     }
   }
 
+  public Mono<Void> addPkColumnAndCascade(
+      String pkTableId,
+      Column pkColumn,
+      Set<String> visited) {
+    return addColumnToFkTablePk(pkTableId, pkColumn)
+        .then(cascadeAddPkColumn(pkTableId, pkColumn, visited))
+        .then();
+  }
+
   private Mono<List<CascadeCreatedInfo>> cascadeAddToRelationship(
       Relationship relationship,
       Column pkColumn,
