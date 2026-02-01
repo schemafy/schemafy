@@ -1,13 +1,10 @@
 package com.schemafy.domain.erd.relationship.fixture;
 
-import java.util.List;
-
 import com.schemafy.domain.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipExtraCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipNameCommand;
-import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipResult;
 import com.schemafy.domain.erd.relationship.application.port.in.DeleteRelationshipCommand;
@@ -218,28 +215,8 @@ public class RelationshipFixture {
     return new CreateRelationshipCommand(
         DEFAULT_FK_TABLE_ID,
         DEFAULT_PK_TABLE_ID,
-        DEFAULT_NAME,
         DEFAULT_KIND,
-        DEFAULT_CARDINALITY,
-        DEFAULT_EXTRA,
-        List.of(new CreateRelationshipColumnCommand(
-            DEFAULT_PK_COLUMN_ID,
-            DEFAULT_FK_COLUMN_ID,
-            DEFAULT_SEQ_NO)));
-  }
-
-  public static CreateRelationshipCommand createCommandWithName(String name) {
-    return new CreateRelationshipCommand(
-        DEFAULT_FK_TABLE_ID,
-        DEFAULT_PK_TABLE_ID,
-        name,
-        DEFAULT_KIND,
-        DEFAULT_CARDINALITY,
-        DEFAULT_EXTRA,
-        List.of(new CreateRelationshipColumnCommand(
-            DEFAULT_PK_COLUMN_ID,
-            DEFAULT_FK_COLUMN_ID,
-            DEFAULT_SEQ_NO)));
+        DEFAULT_CARDINALITY);
   }
 
   public static CreateRelationshipCommand createCommandWithTables(
@@ -247,93 +224,33 @@ public class RelationshipFixture {
     return new CreateRelationshipCommand(
         fkTableId,
         pkTableId,
-        DEFAULT_NAME,
         DEFAULT_KIND,
-        DEFAULT_CARDINALITY,
-        DEFAULT_EXTRA,
-        List.of(new CreateRelationshipColumnCommand(
-            DEFAULT_PK_COLUMN_ID,
-            DEFAULT_FK_COLUMN_ID,
-            DEFAULT_SEQ_NO)));
+        DEFAULT_CARDINALITY);
   }
 
   public static CreateRelationshipCommand createIdentifyingCommand() {
     return new CreateRelationshipCommand(
         DEFAULT_FK_TABLE_ID,
         DEFAULT_PK_TABLE_ID,
-        DEFAULT_NAME,
         RelationshipKind.IDENTIFYING,
-        DEFAULT_CARDINALITY,
-        DEFAULT_EXTRA,
-        List.of(new CreateRelationshipColumnCommand(
-            DEFAULT_PK_COLUMN_ID,
-            DEFAULT_FK_COLUMN_ID,
-            DEFAULT_SEQ_NO)));
+        DEFAULT_CARDINALITY);
   }
 
   public static CreateRelationshipCommand createIdentifyingCommandWithTables(
-      String fkTableId, String pkTableId, String name,
-      List<CreateRelationshipColumnCommand> columns) {
+      String fkTableId, String pkTableId) {
     return new CreateRelationshipCommand(
         fkTableId,
         pkTableId,
-        name,
         RelationshipKind.IDENTIFYING,
-        DEFAULT_CARDINALITY,
-        DEFAULT_EXTRA,
-        columns);
+        DEFAULT_CARDINALITY);
   }
 
   public static CreateRelationshipCommand createCommandWithKind(RelationshipKind kind) {
     return new CreateRelationshipCommand(
         DEFAULT_FK_TABLE_ID,
         DEFAULT_PK_TABLE_ID,
-        DEFAULT_NAME,
         kind,
-        DEFAULT_CARDINALITY,
-        DEFAULT_EXTRA,
-        List.of(new CreateRelationshipColumnCommand(
-            DEFAULT_PK_COLUMN_ID,
-            DEFAULT_FK_COLUMN_ID,
-            DEFAULT_SEQ_NO)));
-  }
-
-  public static CreateRelationshipCommand createCommandWithColumns(
-      List<CreateRelationshipColumnCommand> columns) {
-    return new CreateRelationshipCommand(
-        DEFAULT_FK_TABLE_ID,
-        DEFAULT_PK_TABLE_ID,
-        DEFAULT_NAME,
-        DEFAULT_KIND,
-        DEFAULT_CARDINALITY,
-        DEFAULT_EXTRA,
-        columns);
-  }
-
-  public static CreateRelationshipCommand createCommandWithExtra(String extra) {
-    return new CreateRelationshipCommand(
-        DEFAULT_FK_TABLE_ID,
-        DEFAULT_PK_TABLE_ID,
-        DEFAULT_NAME,
-        DEFAULT_KIND,
-        DEFAULT_CARDINALITY,
-        extra,
-        List.of(new CreateRelationshipColumnCommand(
-            DEFAULT_PK_COLUMN_ID,
-            DEFAULT_FK_COLUMN_ID,
-            DEFAULT_SEQ_NO)));
-  }
-
-  public static CreateRelationshipColumnCommand createColumnCommand() {
-    return new CreateRelationshipColumnCommand(
-        DEFAULT_PK_COLUMN_ID,
-        DEFAULT_FK_COLUMN_ID,
-        DEFAULT_SEQ_NO);
-  }
-
-  public static CreateRelationshipColumnCommand createColumnCommand(
-      String pkColumnId, String fkColumnId, int seqNo) {
-    return new CreateRelationshipColumnCommand(pkColumnId, fkColumnId, seqNo);
+        DEFAULT_CARDINALITY);
   }
 
   public static ChangeRelationshipNameCommand changeNameCommand(String newName) {

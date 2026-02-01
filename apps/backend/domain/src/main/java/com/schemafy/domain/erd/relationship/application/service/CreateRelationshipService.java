@@ -21,7 +21,6 @@ import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
-import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipResult;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipUseCase;
@@ -61,12 +60,6 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   @Override
   public Mono<CreateRelationshipResult> createRelationship(CreateRelationshipCommand command) {
     return Mono.defer(() -> {
-      String normalizedExtra = normalizeOptional(command.extra());
-      List<CreateRelationshipColumnCommand> columnCommands = command.columns();
-      if (columnCommands != null && !columnCommands.isEmpty()) {
-        return Mono.error(new InvalidValueException("Manual relationship column mapping is not supported"));
-      }
-
       return getTableByIdPort.findTableById(command.fkTableId())
           .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
               "Relationship fk table not found")))
@@ -76,16 +69,14 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
               .flatMap(pkTable -> createRelationshipAuto(
                   fkTable,
                   pkTable,
-                  command,
-                  normalizedExtra)));
+                  command)));
     });
   }
 
   private Mono<CreateRelationshipResult> createRelationshipAuto(
       Table fkTable,
       Table pkTable,
-      CreateRelationshipCommand command,
-      String normalizedExtra) {
+      CreateRelationshipCommand command) {
     if (!fkTable.schemaId().equals(pkTable.schemaId())) {
       return Mono.error(new RelationshipTargetTableNotExistException(
           "Relationship tables must belong to the same schema"));
@@ -116,7 +107,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                         normalizedName,
                         command.kind(),
                         command.cardinality(),
-                        normalizedExtra));
+                        null));
               }
 
               return persistAutoRelationship(
@@ -124,7 +115,6 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                   pkTable,
                   command,
                   normalizedName,
-                  normalizedExtra,
                   pkColumns,
                   fkColumns);
             }));
@@ -136,7 +126,6 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       Table pkTable,
       CreateRelationshipCommand command,
       String normalizedName,
-      String normalizedExtra,
       List<Column> pkColumns,
       List<Column> fkColumns) {
     String relationshipId = ulidGeneratorPort.generate();
@@ -147,7 +136,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
         normalizedName,
         command.kind(),
         command.cardinality(),
-        normalizedExtra);
+        null);
 
     return createRelationshipPort.createRelationship(relationship)
         .flatMap(savedRelationship -> createAutoRelationshipColumns(
@@ -329,13 +318,6 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
 
   private static String normalizeId(String value) {
     return value == null ? null : value.toUpperCase(Locale.ROOT);
-  }
-
-  private static String normalizeOptional(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.trim();
   }
 
 }

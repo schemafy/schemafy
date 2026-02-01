@@ -168,14 +168,10 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("PK Constraint 컬럼 제거 시 해당 컬럼을 참조하는 RelationshipColumn이 삭제된다")
     void deletesRelationshipColumnWhenPkConstraintColumnRemoved() {
       // Given: Relationship 생성 (pk_col1, pk_col2 모두 참조)
-      var createRelCommand = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_composite",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -210,14 +206,10 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("PK Constraint의 마지막 컬럼 제거 시 Relationship 자체가 삭제된다")
     void deletesRelationshipWhenLastPkConstraintColumnRemoved() {
       // Given: 단일 PK 컬럼을 참조하는 Relationship 생성
-      var createRelCommand = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_single",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -258,14 +250,10 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("IDENTIFYING Relationship에서 PK 컬럼 제거 시 연쇄 삭제된다")
     void cascadeDeletesIdentifyingRelationshipColumn() {
       // Given: IDENTIFYING Relationship 생성
-      var createRelCommand = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_identifying",
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -300,14 +288,10 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("NON_IDENTIFYING Relationship에서도 PK 컬럼 제거 시 연쇄 삭제된다")
     void cascadeDeletesNonIdentifyingRelationshipColumn() {
       // Given: NON_IDENTIFYING Relationship 생성
-      var createRelCommand = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_non_identifying",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -342,25 +326,17 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("여러 Relationship이 같은 PK 컬럼을 참조할 때 모두 영향받는다")
     void affectsAllRelationshipsReferencingSamePkColumn() {
       // Given: 두 개의 Relationship이 같은 PK 테이블을 참조
-      var createRelCommand1 = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand1 = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_to_table1",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block();
       String relationshipId1 = relResult1.relationshipId();
 
-      var createRelCommand2 = new CreateRelationshipCommand(
-          fkTableId2,
+      var createRelCommand2 = new CreateRelationshipCommand(fkTableId2,
           pkTableId,
-          "fk_to_table2",
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_ONE,
-          null,
-          List.of());
+          Cardinality.ONE_TO_ONE);
       var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block();
       String relationshipId2 = relResult2.relationshipId();
 
@@ -411,14 +387,10 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("PK Constraint 컬럼 추가 시 FK 테이블에 FK 컬럼과 RelationshipColumn이 자동 생성된다")
     void cascateCreatesFkColumnAndRelationshipColumnOnPkAdd() {
       // Given: 기존 Relationship 생성 (PK 컬럼 전체 참조)
-      var createRelCommand = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_existing",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -466,24 +438,16 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("여러 FK 테이블이 참조할 때 모두 cascade 전파된다")
     void cascadesToMultipleFkTablesOnPkAdd() {
       // Given: 두 FK 테이블이 PK 테이블을 참조하는 Relationship 생성
-      var createRelCommand1 = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand1 = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_to_table1",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       createRelationshipUseCase.createRelationship(createRelCommand1).block();
 
-      var createRelCommand2 = new CreateRelationshipCommand(
-          fkTableId2,
+      var createRelCommand2 = new CreateRelationshipCommand(fkTableId2,
           pkTableId,
-          "fk_to_table2",
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_ONE,
-          null,
-          List.of());
+          Cardinality.ONE_TO_ONE);
       createRelationshipUseCase.createRelationship(createRelCommand2).block();
 
       // Given: PK 테이블에 새 컬럼 추가
@@ -532,14 +496,10 @@ class ConstraintRelationshipIntegrationTest {
       String uniqueConstraintId = uniqueConstraintResult.constraintId();
 
       // Given: Relationship 생성 (PK 컬럼 전체 참조)
-      var createRelCommand = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_to_pk",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String relationshipId = relResult.relationshipId();
 
@@ -577,14 +537,10 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("PK 컬럼 타입 변경 시 FK 컬럼에도 타입이 전파된다")
     void propagatesTypeChangeToFkColumns() {
       // Given: Relationship 생성 (pk_col1 참조)
-      var createRelCommand = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_type_test",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String fkColumnId = getFkColumnId(relResult.relationshipId(), pkColumnId1);
 
@@ -610,25 +566,17 @@ class ConstraintRelationshipIntegrationTest {
     @DisplayName("다수의 FK 테이블에 타입이 전파된다")
     void propagatesTypeChangeToMultipleFkTables() {
       // Given: 두 FK 테이블이 같은 PK 컬럼을 참조
-      var createRelCommand1 = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand1 = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_type_multi_1",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block();
       String fkColumnId1 = getFkColumnId(relResult1.relationshipId(), pkColumnId1);
 
-      var createRelCommand2 = new CreateRelationshipCommand(
-          fkTableId2,
+      var createRelCommand2 = new CreateRelationshipCommand(fkTableId2,
           pkTableId,
-          "fk_type_multi_2",
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_ONE,
-          null,
-          List.of());
+          Cardinality.ONE_TO_ONE);
       var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block();
       String fkColumnId2 = getFkColumnId(relResult2.relationshipId(), pkColumnId1);
 
@@ -681,14 +629,10 @@ class ConstraintRelationshipIntegrationTest {
           new AddConstraintColumnCommand(pkConstraintId, varcharPkColumnId, 2)).block();
 
       // Relationship 생성
-      var createRelCommand = new CreateRelationshipCommand(
-          fkTableId1,
+      var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
-          "fk_charset_test",
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
       String varcharFkColumnId = getFkColumnId(relResult.relationshipId(), varcharPkColumnId);
 

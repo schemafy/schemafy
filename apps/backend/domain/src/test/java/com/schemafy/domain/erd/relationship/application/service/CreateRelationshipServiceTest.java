@@ -21,7 +21,6 @@ import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
-import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.out.CreateRelationshipColumnPort;
 import com.schemafy.domain.erd.relationship.application.port.out.CreateRelationshipPort;
@@ -101,14 +100,10 @@ class CreateRelationshipServiceTest {
     @Test
     @DisplayName("NON_IDENTIFYING 자동 관계를 생성한다")
     void createsNonIdentifyingRelationship() {
-      var command = new CreateRelationshipCommand(
-          FK_TABLE_ID,
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
-          null,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
@@ -167,14 +162,10 @@ class CreateRelationshipServiceTest {
     @Test
     @DisplayName("IDENTIFYING 자동 관계 생성 시 전파를 호출한다")
     void createsIdentifyingRelationshipWithCascade() {
-      var command = new CreateRelationshipCommand(
-          FK_TABLE_ID,
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
-          null,
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
@@ -228,14 +219,10 @@ class CreateRelationshipServiceTest {
     @Test
     @DisplayName("관계 이름이 중복되면 suffix로 자동 생성한다")
     void appendsSuffixWhenNameExists() {
-      var command = new CreateRelationshipCommand(
-          FK_TABLE_ID,
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
-          null,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
@@ -285,35 +272,12 @@ class CreateRelationshipServiceTest {
     }
 
     @Test
-    @DisplayName("수동 매핑이 제공되면 예외가 발생한다")
-    void throwsWhenManualMappingProvided() {
-      var command = new CreateRelationshipCommand(
-          FK_TABLE_ID,
-          PK_TABLE_ID,
-          null,
-          RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of(new CreateRelationshipColumnCommand(PK_COLUMN_ID, "fk-col", 0)));
-
-      StepVerifier.create(sut.createRelationship(command))
-          .expectError(InvalidValueException.class)
-          .verify();
-
-      then(getTableByIdPort).shouldHaveNoInteractions();
-    }
-
-    @Test
     @DisplayName("PK 제약이 없으면 예외가 발생한다")
     void throwsWhenPkMissing() {
-      var command = new CreateRelationshipCommand(
-          FK_TABLE_ID,
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
-          null,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
 
@@ -338,14 +302,10 @@ class CreateRelationshipServiceTest {
     @Test
     @DisplayName("테이블이 다른 스키마에 있으면 예외가 발생한다")
     void throwsWhenTablesInDifferentSchemas() {
-      var command = new CreateRelationshipCommand(
-          FK_TABLE_ID,
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
-          null,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, OTHER_SCHEMA_ID, "pk_table");
 
@@ -362,14 +322,10 @@ class CreateRelationshipServiceTest {
     @Test
     @DisplayName("IDENTIFYING 관계 생성 시 순환이 발생하면 예외가 발생한다")
     void throwsWhenIdentifyingCyclicReference() {
-      var command = new CreateRelationshipCommand(
-          FK_TABLE_ID,
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
-          null,
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_MANY,
-          null,
-          List.of());
+          Cardinality.ONE_TO_MANY);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);

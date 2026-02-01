@@ -148,10 +148,10 @@ class DeleteTableIntegrationTest {
             List.of(new CreateIndexColumnCommand(fkColumnId, 0, SortDirection.ASC)));
         createIndexUseCase.createIndex(createIndexCommand).block();
 
-        var createRelationshipCommand = new CreateRelationshipCommand(
-            fkTableId, pkTableId, "fk_relationship",
-            RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null,
-            List.of());
+        var createRelationshipCommand = new CreateRelationshipCommand(fkTableId,
+          pkTableId,
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY);
         createRelationshipUseCase.createRelationship(createRelationshipCommand).block();
       }
 

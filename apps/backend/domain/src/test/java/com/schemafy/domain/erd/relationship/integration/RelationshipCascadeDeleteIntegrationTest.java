@@ -313,10 +313,10 @@ class RelationshipCascadeDeleteIntegrationTest {
   }
 
   private AutoRelationship createAutoRelationship(RelationshipKind kind) {
-    var createCommand = new CreateRelationshipCommand(
-        fkTableId, pkTableId, null,
-        kind, Cardinality.ONE_TO_MANY, null,
-        List.of());
+    var createCommand = new CreateRelationshipCommand(fkTableId,
+          pkTableId,
+          kind,
+          Cardinality.ONE_TO_MANY);
     var result = createRelationshipUseCase.createRelationship(createCommand).block();
     var columns = getRelationshipColumnsByRelationshipIdUseCase
         .getRelationshipColumnsByRelationshipId(
