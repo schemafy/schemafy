@@ -15,7 +15,6 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -100,14 +99,6 @@ class RelationshipColumnPersistenceAdapter implements
   @Override
   public Mono<Void> deleteByColumnId(String columnId) {
     return relationshipColumnRepository.deleteByColumnId(columnId);
-  }
-
-  private Mono<RelationshipColumnEntity> findRelationshipColumnOrError(
-      String relationshipColumnId) {
-    return relationshipColumnRepository.findById(relationshipColumnId)
-        .switchIfEmpty(Mono.error(
-            new RelationshipColumnNotExistException(
-                "Relationship column not found: " + relationshipColumnId)));
   }
 
 }
