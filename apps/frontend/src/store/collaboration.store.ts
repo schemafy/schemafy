@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { createContext, useContext } from 'react';
 import type {
   ChatMessage,
   CursorPosition,
@@ -9,31 +10,23 @@ import type {
   RecieveLeave,
   WebSocketMessage,
 } from '@/lib/api/collaboration/types';
-import { authStore } from './auth.store';
+import { type AuthStore, authStore } from './auth.store';
 
 export class CollaborationStore {
-  private static instance: CollaborationStore;
   private ws: WebSocket | null = null;
 
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
 
-  private constructor() {
+  constructor(private authStore: AuthStore) {
     makeAutoObservable(this);
   }
 
   private reconnectTimeoutId: number | null = null;
 
-  static getInstance(): CollaborationStore {
-    if (!CollaborationStore.instance) {
-      CollaborationStore.instance = new CollaborationStore();
-    }
-    return CollaborationStore.instance;
-  }
-
   get currentUser() {
-    return authStore.user;
+    return this.authStore.user;
   }
 
   private setupWebSocketListeners() {
@@ -226,3 +219,11 @@ export class CollaborationStore {
     });
   }
 }
+
+export const collaborationStore = new CollaborationStore(authStore);
+
+const CollaborationContext = createContext<CollaborationStore>(collaborationStore);
+
+export const CollaborationProvider = CollaborationContext.Provider;
+
+export const useCollaborationStore = () => useContext(CollaborationContext);

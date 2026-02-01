@@ -1,9 +1,9 @@
-import { CollaborationStore } from '@/store';
+import { useCollaborationStore } from '@/store';
 import type { ChatMessage } from '@/lib/api/collaboration';
 import { useEffect, useState } from 'react';
 
 export const useChatMessages = () => {
-  const collaborationStore = CollaborationStore.getInstance();
+  const collaborationStore = useCollaborationStore();
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {

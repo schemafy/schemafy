@@ -35,7 +35,7 @@ import {
 } from '@/features/drawing';
 import { ChatOverlay, ChatInput } from '@/components/Collaboration';
 import { ErdStore } from '@/store/erd.store';
-import { CollaborationStore } from '@/store/collaboration.store';
+import { useCollaborationStore } from '@/store/collaboration.store';
 
 const NODE_TYPES = {
   table: TableNode,
@@ -50,7 +50,7 @@ const CURSOR_THROTTLE_MS = 100;
 
 const CanvasContent = () => {
   const erdStore = ErdStore.getInstance();
-  const collaborationStore = CollaborationStore.getInstance();
+  const collaborationStore = useCollaborationStore();
   const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
 
