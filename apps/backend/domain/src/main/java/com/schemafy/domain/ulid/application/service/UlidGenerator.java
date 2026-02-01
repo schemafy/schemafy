@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.time.Instant;
 
+import com.schemafy.domain.common.exception.InvalidValueException;
+
 public class UlidGenerator {
 
   private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -83,7 +85,7 @@ public class UlidGenerator {
 
   public static long extractTimestamp(String ulid) {
     if (ulid == null || ulid.length() != 26) {
-      throw new IllegalArgumentException("Invalid ULID format");
+      throw new InvalidValueException("Invalid ULID format");
     }
 
     byte[] data = decodeBase32(ulid);
@@ -122,7 +124,7 @@ public class UlidGenerator {
     for (char c : base32.toCharArray()) {
       int index = charToIndex[c];
       if (index == -1) {
-        throw new IllegalArgumentException(
+        throw new InvalidValueException(
             "Invalid Base32 character: " + c);
       }
 
