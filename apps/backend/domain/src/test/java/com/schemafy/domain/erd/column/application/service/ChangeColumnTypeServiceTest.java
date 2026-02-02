@@ -2,6 +2,7 @@ package com.schemafy.domain.erd.column.application.service;
 
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColu
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
@@ -66,6 +68,9 @@ class ChangeColumnTypeServiceTest {
   GetConstraintByIdPort getConstraintByIdPort;
 
   @Mock
+  GetRelationshipColumnsByColumnIdPort getRelationshipColumnsByColumnIdPort;
+
+  @Mock
   GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
 
   @Mock
@@ -77,6 +82,12 @@ class ChangeColumnTypeServiceTest {
   @Nested
   @DisplayName("changeColumnType 메서드는")
   class ChangeColumnType {
+
+    @BeforeEach
+    void setUpFkCheck() {
+      given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(any()))
+          .willReturn(Mono.just(List.of()));
+    }
 
     @Nested
     @DisplayName("유효한 요청이 주어지면")

@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
+import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
@@ -196,35 +197,21 @@ class DeleteColumnServiceTest {
     }
 
     @Test
-    @DisplayName("마지막 relationship column이 삭제되면 relationship도 삭제한다")
-    void deletesOrphanRelationshipWhenLastColumnDeleted() {
+    @DisplayName("FK 컬럼을 직접 삭제하면 ForeignKeyColumnProtectedException이 발생한다")
+    void rejectsDeletionOfForeignKeyColumn() {
       var command = ColumnFixture.deleteCommand();
       String relationshipId = "rel-1";
       var relationshipColumn = new RelationshipColumn(
           "rc-1", relationshipId, "pk-col", command.columnId(), 0);
 
-      given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
-          .willReturn(Mono.just(List.of()));
-      given(getIndexColumnsByColumnIdPort.findIndexColumnsByColumnId(any()))
-          .willReturn(Mono.just(List.of()));
-
       given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(command.columnId()))
           .willReturn(Mono.just(List.of(relationshipColumn)));
-      given(deleteRelationshipColumnsPort.deleteByColumnId(command.columnId()))
-          .willReturn(Mono.empty());
-      given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(relationshipId))
-          .willReturn(Mono.just(List.of())); // 삭제 후 빈 목록
-      given(deleteRelationshipPort.deleteRelationship(relationshipId))
-          .willReturn(Mono.empty());
-
-      given(deleteColumnPort.deleteColumn(any()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
-          .verifyComplete();
+          .expectError(ForeignKeyColumnProtectedException.class)
+          .verify();
 
-      then(deleteRelationshipColumnsPort).should().deleteByColumnId(command.columnId());
-      then(deleteRelationshipPort).should().deleteRelationship(relationshipId);
+      then(deleteColumnPort).shouldHaveNoInteractions();
     }
 
     @Test
@@ -242,10 +229,15 @@ class DeleteColumnServiceTest {
       var indexColumn = new IndexColumn("ic-1", indexId, command.columnId(), 0, SortDirection.ASC);
       var remainingIndexColumn = new IndexColumn("ic-2", indexId, "other-col", 1, SortDirection.ASC);
 
+      // 컬럼이 PK 쪽에 있는 relationship (FK가 아니므로 삭제 가능)
       var relationshipColumn = new RelationshipColumn(
-          "rc-1", relationshipId, "pk-col", command.columnId(), 0);
+          "rc-1", relationshipId, command.columnId(), "fk-col", 0);
       var remainingRelationshipColumn = new RelationshipColumn(
           "rc-2", relationshipId, "pk-col-2", "other-col", 1);
+
+      // FK 컬럼이 아니므로 보호 검증 통과
+      given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(command.columnId()))
+          .willReturn(Mono.just(List.of(relationshipColumn)));
 
       given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(command.columnId()))
           .willReturn(Mono.just(List.of(constraintColumn)));
@@ -263,8 +255,6 @@ class DeleteColumnServiceTest {
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(indexId))
           .willReturn(Mono.just(List.of(remainingIndexColumn)));
 
-      given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(command.columnId()))
-          .willReturn(Mono.just(List.of(relationshipColumn)));
       given(deleteRelationshipColumnsPort.deleteByColumnId(command.columnId()))
           .willReturn(Mono.empty());
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(relationshipId))

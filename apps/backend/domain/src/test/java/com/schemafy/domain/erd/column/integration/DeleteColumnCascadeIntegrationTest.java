@@ -18,6 +18,7 @@ import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnQuery;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnUseCase;
 import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintUseCase;
@@ -376,37 +377,15 @@ class DeleteColumnCascadeIntegrationTest {
     }
 
     @Test
-    @DisplayName("FK 컬럼 삭제 시 관련 Constraint, Index, Relationship이 삭제되고 PK 컬럼은 유지된다")
-    void deletesFkColumnWithoutAffectingPkColumn() {
+    @DisplayName("FK 컬럼은 직접 삭제할 수 없다")
+    void rejectsDeletionOfForeignKeyColumn() {
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)))
-          .verifyComplete();
-
-      StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(fkColumnId)))
-          .expectError(ColumnNotExistException.class)
+          .expectError(ForeignKeyColumnProtectedException.class)
           .verify();
 
-      StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(pkColumnId)))
-          .assertNext(column -> assertThat(column.id()).isEqualTo(pkColumnId))
-          .verifyComplete();
-
-      StepVerifier.create(getConstraintsByTableIdUseCase.getConstraintsByTableId(
-          new GetConstraintsByTableIdQuery(fkTableId)))
-          .assertNext(constraints -> assertThat(constraints).isEmpty())
-          .verifyComplete();
-
-      StepVerifier.create(getIndexesByTableIdUseCase.getIndexesByTableId(
-          new GetIndexesByTableIdQuery(fkTableId)))
-          .assertNext(indexes -> assertThat(indexes).isEmpty())
-          .verifyComplete();
-
-      StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
-          new GetRelationshipsByTableIdQuery(fkTableId)))
-          .assertNext(relationships -> assertThat(relationships).isEmpty())
-          .verifyComplete();
-
-      StepVerifier.create(getConstraintsByTableIdUseCase.getConstraintsByTableId(
-          new GetConstraintsByTableIdQuery(pkTableId)))
-          .assertNext(constraints -> assertThat(constraints).hasSize(1))
+      // FK 컬럼이 여전히 존재하는지 확인
+      StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(fkColumnId)))
+          .assertNext(column -> assertThat(column.id()).isEqualTo(fkColumnId))
           .verifyComplete();
     }
 

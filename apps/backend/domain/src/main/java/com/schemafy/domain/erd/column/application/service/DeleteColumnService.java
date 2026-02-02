@@ -11,6 +11,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
+import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
@@ -66,8 +67,22 @@ public class DeleteColumnService implements DeleteColumnUseCase {
 
   @Override
   public Mono<Void> deleteColumn(DeleteColumnCommand command) {
-    return deleteColumnInternal(command.columnId(), ConcurrentHashMap.newKeySet())
+    return rejectIfForeignKeyColumn(command.columnId())
+        .then(Mono.defer(() -> deleteColumnInternal(command.columnId(), ConcurrentHashMap.newKeySet())))
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<Void> rejectIfForeignKeyColumn(String columnId) {
+    return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
+        .flatMap(relationshipColumns -> {
+          boolean isFk = relationshipColumns.stream()
+              .anyMatch(rc -> rc.fkColumnId().equals(columnId));
+          if (isFk) {
+            return Mono.error(new ForeignKeyColumnProtectedException(
+                "Foreign key columns cannot be deleted directly"));
+          }
+          return Mono.empty();
+        });
   }
 
   private Mono<Void> deleteColumnInternal(String columnId, Set<String> visitedColumnIds) {

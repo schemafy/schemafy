@@ -17,6 +17,7 @@ import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
+import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintUseCase;
@@ -197,8 +198,8 @@ class RelationshipCascadeDeleteIntegrationTest {
   class DeleteColumn {
 
     @Test
-    @DisplayName("FK 컬럼 삭제 시 해당 관계 컬럼이 삭제된다")
-    void deletesRelationshipColumnWhenFkColumnDeleted() {
+    @DisplayName("FK 컬럼은 직접 삭제할 수 없다")
+    void rejectsDeletionOfForeignKeyColumn() {
       var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
       String fkColumnToDelete = relationship.columns().stream()
           .filter(column -> column.pkColumnId().equals(pkColumnId))
@@ -206,19 +207,10 @@ class RelationshipCascadeDeleteIntegrationTest {
           .orElseThrow()
           .fkColumnId();
 
-      // FK 컬럼 삭제
+      // FK 컬럼 직접 삭제 시 예외 발생
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnToDelete)))
-          .verifyComplete();
-
-      // 관계는 남아있지만 컬럼은 하나만 남아야 함
-      StepVerifier.create(getRelationshipColumnsByRelationshipIdUseCase
-          .getRelationshipColumnsByRelationshipId(
-              new GetRelationshipColumnsByRelationshipIdQuery(relationship.relationshipId())))
-          .assertNext(columns -> {
-            assertThat(columns).hasSize(1);
-            assertThat(columns.get(0).pkColumnId()).isEqualTo(pkColumn2Id);
-          })
-          .verifyComplete();
+          .expectError(ForeignKeyColumnProtectedException.class)
+          .verify();
     }
 
     @Test

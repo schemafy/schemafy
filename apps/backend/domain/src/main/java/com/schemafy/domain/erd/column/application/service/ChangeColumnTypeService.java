@@ -15,10 +15,12 @@ import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPo
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
 import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
 
@@ -36,6 +38,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetConstraintColumnsByColumnIdPort getConstraintColumnsByColumnIdPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
+  private final GetRelationshipColumnsByColumnIdPort getRelationshipColumnsByColumnIdPort;
   private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
 
@@ -46,11 +49,25 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         command.precision(),
         command.scale());
 
-    return getColumnByIdPort.findColumnById(command.columnId())
+    return rejectIfForeignKeyColumn(command.columnId())
+        .then(getColumnByIdPort.findColumnById(command.columnId()))
         .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
         .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
             .defaultIfEmpty(List.of())
             .flatMap(columns -> applyChange(column, columns, command.dataType(), lengthScale)));
+  }
+
+  private Mono<Void> rejectIfForeignKeyColumn(String columnId) {
+    return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
+        .flatMap(relationshipColumns -> {
+          boolean isFk = relationshipColumns.stream()
+              .anyMatch(rc -> rc.fkColumnId().equals(columnId));
+          if (isFk) {
+            return Mono.error(new ForeignKeyColumnProtectedException(
+                "Foreign key column type cannot be changed directly"));
+          }
+          return Mono.empty();
+        });
   }
 
   private Mono<Void> applyChange(
