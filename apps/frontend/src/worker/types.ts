@@ -17,7 +17,6 @@ export type WorkerMessage =
   | {
       type: 'CONNECT';
       projectId: string;
-      token: string;
       userInfo: UserInfo;
     }
   | { type: 'DISCONNECT'; projectId: string }

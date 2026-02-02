@@ -63,7 +63,7 @@ export class CollaborationStore {
           if (!this.projectId) return;
 
           this.reconnectTimeoutId = null;
-          this.connect(this.projectId);
+          this.connect(this.projectId, true);
         }, 3000);
       } else if (type === 'WS_ERROR') {
         console.error('WebSocket error from Worker:', event.data.error);
@@ -98,8 +98,13 @@ export class CollaborationStore {
     }, 30000);
   }
 
-  connect(projectId: string) {
-    if (this.projectId === projectId && this.worker && this.port) {
+  connect(projectId: string, isReconnect = false) {
+    if (
+      !isReconnect &&
+      this.projectId === projectId &&
+      this.worker &&
+      this.port
+    ) {
       return;
     }
 
@@ -136,8 +141,6 @@ export class CollaborationStore {
         this.setupWorkerListeners();
       }
 
-      const accessToken = AuthStore.getInstance().accessToken ?? '';
-
       if (!this.currentUser) {
         console.error('user info is empty');
         return;
@@ -151,7 +154,6 @@ export class CollaborationStore {
       const message: WorkerMessage = {
         type: 'CONNECT',
         projectId,
-        token: accessToken,
         userInfo,
       };
 
