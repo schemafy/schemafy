@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
@@ -48,6 +49,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   private final CreateRelationshipPort createRelationshipPort;
   private final CreateRelationshipColumnPort createRelationshipColumnPort;
   private final CreateColumnPort createColumnPort;
+  private final TransactionalOperator transactionalOperator;
   private final RelationshipExistsPort relationshipExistsPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
@@ -69,7 +71,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                   fkTable,
                   pkTable,
                   command)));
-    });
+    }).as(transactionalOperator::transactional);
   }
 
   private Mono<CreateRelationshipResult> createRelationshipAuto(

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeUseCase;
@@ -33,6 +34,7 @@ import reactor.core.publisher.Mono;
 public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
 
   private final ChangeColumnTypePort changeColumnTypePort;
+  private final TransactionalOperator transactionalOperator;
   private final ChangeColumnMetaPort changeColumnMetaPort;
   private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
@@ -54,7 +56,8 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
         .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
             .defaultIfEmpty(List.of())
-            .flatMap(columns -> applyChange(column, columns, command.dataType(), lengthScale)));
+            .flatMap(columns -> applyChange(column, columns, command.dataType(), lengthScale)))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> rejectIfForeignKeyColumn(String columnId) {

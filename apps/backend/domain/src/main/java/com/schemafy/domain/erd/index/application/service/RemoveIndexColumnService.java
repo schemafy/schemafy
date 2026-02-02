@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.index.application.port.in.RemoveIndexColumnCommand;
 import com.schemafy.domain.erd.index.application.port.in.RemoveIndexColumnUseCase;
@@ -26,6 +27,7 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
 
   private final DeleteIndexColumnPort deleteIndexColumnPort;
   private final DeleteIndexPort deleteIndexPort;
+  private final TransactionalOperator transactionalOperator;
   private final ChangeIndexColumnPositionPort changeIndexColumnPositionPort;
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexColumnByIdPort getIndexColumnByIdPort;
@@ -44,7 +46,8 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
               }
               return deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
                   .then(handleRemainingColumns(index.id()));
-            }));
+            }))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> handleRemainingColumns(String indexId) {

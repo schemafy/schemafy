@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -36,6 +37,7 @@ public class CreateIndexService implements CreateIndexUseCase {
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateIndexPort createIndexPort;
   private final CreateIndexColumnPort createIndexColumnPort;
+  private final TransactionalOperator transactionalOperator;
   private final IndexExistsPort indexExistsPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
@@ -61,7 +63,7 @@ public class CreateIndexService implements CreateIndexUseCase {
                 }
                 return validateAndCreate(table, command, normalizedName, columnCommands);
               }));
-    });
+    }).as(transactionalOperator::transactional);
   }
 
   private Mono<CreateIndexResult> validateAndCreate(

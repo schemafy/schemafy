@@ -3,6 +3,9 @@ package com.schemafy.domain.erd.constraint.application.service;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.transaction.reactive.TransactionalOperator;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -80,8 +83,17 @@ class CreateConstraintServiceTest {
   @Mock
   PkCascadeHelper pkCascadeHelper;
 
+  @Mock
+  TransactionalOperator transactionalOperator;
+
   @InjectMocks
   CreateConstraintService sut;
+
+  @BeforeEach
+  void setUpTransaction() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("createConstraint 메서드는")

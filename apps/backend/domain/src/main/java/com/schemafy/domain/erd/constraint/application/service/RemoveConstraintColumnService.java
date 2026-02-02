@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
@@ -29,6 +30,7 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
 
   private final DeleteConstraintColumnPort deleteConstraintColumnPort;
   private final DeleteConstraintPort deleteConstraintPort;
+  private final TransactionalOperator transactionalOperator;
   private final ChangeConstraintColumnPositionPort changeConstraintColumnPositionPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetConstraintColumnByIdPort getConstraintColumnByIdPort;
@@ -52,7 +54,8 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
               return deleteConstraintColumnPort.deleteConstraintColumn(constraintColumn.id())
                   .then(handlePkConstraintColumnRemoval(constraint, constraintColumn.columnId()))
                   .then(reorderOrDeleteConstraint(constraint.id()));
-            }));
+            }))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> handlePkConstraintColumnRemoval(Constraint constraint, String columnId) {

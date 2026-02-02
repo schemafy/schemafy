@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -35,6 +36,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateConstraintColumnPort createConstraintColumnPort;
+  private final TransactionalOperator transactionalOperator;
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
@@ -50,7 +52,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
           .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
           .flatMap(constraint -> fetchTableContext(constraint.tableId())
               .flatMap(context -> addColumn(constraint, context, command)));
-    });
+    }).as(transactionalOperator::transactional);
   }
 
   private Mono<AddConstraintColumnResult> addColumn(

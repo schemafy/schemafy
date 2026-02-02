@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
@@ -27,6 +28,7 @@ import reactor.core.publisher.Mono;
 public class ChangeRelationshipKindService implements ChangeRelationshipKindUseCase {
 
   private final ChangeRelationshipKindPort changeRelationshipKindPort;
+  private final TransactionalOperator transactionalOperator;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetRelationshipsBySchemaIdPort getRelationshipsBySchemaIdPort;
@@ -61,7 +63,8 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
                       relationships,
                       oldKind,
                       newKind)));
-        });
+        })
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> validateCycleAndChange(

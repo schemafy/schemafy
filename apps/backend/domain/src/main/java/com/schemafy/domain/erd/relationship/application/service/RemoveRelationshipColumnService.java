@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
@@ -28,6 +29,7 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
 
   private final DeleteRelationshipColumnPort deleteRelationshipColumnPort;
   private final DeleteRelationshipPort deleteRelationshipPort;
+  private final TransactionalOperator transactionalOperator;
   private final ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;
@@ -52,7 +54,8 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
                   .deleteRelationshipColumn(relationshipColumn.id())
                   .then(handleRemainingColumns(relationship.id()))
                   .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)));
-            }));
+            }))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> handleRemainingColumns(String relationshipId) {

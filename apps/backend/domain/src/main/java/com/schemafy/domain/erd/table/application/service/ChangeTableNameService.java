@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
@@ -35,6 +36,7 @@ import reactor.core.publisher.Mono;
 public class ChangeTableNameService implements ChangeTableNameUseCase {
 
   private final ChangeTableNamePort changeTableNamePort;
+  private final TransactionalOperator transactionalOperator;
   private final TableExistsPort tableExistsPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
@@ -61,7 +63,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
                   command.newName())
                   .then(renamePkConstraint(command.schemaId(), command.tableId(), command.newName()))
                   .then(renameAutoRelationshipNames(table, command.newName())));
-        });
+        })
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> renamePkConstraint(String schemaId, String tableId, String newTableName) {

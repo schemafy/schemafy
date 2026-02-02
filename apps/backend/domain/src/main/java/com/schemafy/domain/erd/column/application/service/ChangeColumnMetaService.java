@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaUseCase;
@@ -31,6 +32,7 @@ import reactor.core.publisher.Mono;
 public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
 
   private final ChangeColumnMetaPort changeColumnMetaPort;
+  private final TransactionalOperator transactionalOperator;
   private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetConstraintColumnsByColumnIdPort getConstraintColumnsByColumnIdPort;
@@ -46,7 +48,8 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
         .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
         .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
             .defaultIfEmpty(List.of())
-            .flatMap(columns -> applyChange(column, columns, command)));
+            .flatMap(columns -> applyChange(column, columns, command)))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> rejectIfForeignKeyColumn(String columnId) {

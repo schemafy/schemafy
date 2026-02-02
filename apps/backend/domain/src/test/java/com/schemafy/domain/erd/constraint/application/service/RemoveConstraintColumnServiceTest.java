@@ -2,6 +2,9 @@ package com.schemafy.domain.erd.constraint.application.service;
 
 import java.util.List;
 
+import org.springframework.transaction.reactive.TransactionalOperator;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,8 +60,17 @@ class RemoveConstraintColumnServiceTest {
   @Mock
   PkCascadeHelper pkCascadeHelper;
 
+  @Mock
+  TransactionalOperator transactionalOperator;
+
   @InjectMocks
   RemoveConstraintColumnService sut;
+
+  @BeforeEach
+  void setUpTransaction() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("removeConstraintColumn 메서드는")

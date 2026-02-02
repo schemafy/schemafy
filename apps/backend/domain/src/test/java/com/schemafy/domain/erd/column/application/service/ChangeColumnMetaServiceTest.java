@@ -2,6 +2,8 @@ package com.schemafy.domain.erd.column.application.service;
 
 import java.util.List;
 
+import org.springframework.transaction.reactive.TransactionalOperator;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -73,8 +75,17 @@ class ChangeColumnMetaServiceTest {
   @Mock
   GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
 
+  @Mock
+  TransactionalOperator transactionalOperator;
+
   @InjectMocks
   ChangeColumnMetaService sut;
+
+  @BeforeEach
+  void setUpTransaction() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("changeColumnMeta 메서드는")

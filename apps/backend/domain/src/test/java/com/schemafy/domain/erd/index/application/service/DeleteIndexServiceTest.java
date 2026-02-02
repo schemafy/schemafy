@@ -1,5 +1,8 @@
 package com.schemafy.domain.erd.index.application.service;
 
+import org.springframework.transaction.reactive.TransactionalOperator;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,6 +18,7 @@ import com.schemafy.domain.erd.index.fixture.IndexFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -28,8 +32,17 @@ class DeleteIndexServiceTest {
   @Mock
   DeleteIndexColumnsByIndexIdPort deleteIndexColumnsPort;
 
+  @Mock
+  TransactionalOperator transactionalOperator;
+
   @InjectMocks
   DeleteIndexService sut;
+
+  @BeforeEach
+  void setUpTransaction() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("deleteIndex 메서드는")

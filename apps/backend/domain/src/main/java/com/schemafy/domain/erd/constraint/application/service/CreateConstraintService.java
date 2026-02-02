@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
@@ -40,6 +41,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateConstraintPort createConstraintPort;
   private final CreateConstraintColumnPort createConstraintColumnPort;
+  private final TransactionalOperator transactionalOperator;
   private final ConstraintExistsPort constraintExistsPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
@@ -77,7 +79,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
                         normalizedDefaultExpr,
                         columnCommands));
               }));
-    });
+    }).as(transactionalOperator::transactional);
   }
 
   private Mono<CreateConstraintResult> createConstraint(
