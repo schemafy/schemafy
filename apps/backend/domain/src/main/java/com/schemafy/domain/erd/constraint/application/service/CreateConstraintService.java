@@ -119,6 +119,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
         columnIds,
         name,
         null);
+    ConstraintValidator.validateExpressionRequired(kind, checkExpr, defaultExpr);
 
     Constraint constraint = new Constraint(
         ulidGeneratorPort.generate(),

@@ -14,6 +14,7 @@ import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintExpressionRequiredException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
@@ -168,6 +169,20 @@ public final class ConstraintValidator {
                 constraintName,
                 constraint.name()));
       }
+    }
+  }
+
+  public static void validateExpressionRequired(
+      ConstraintKind kind,
+      String checkExpr,
+      String defaultExpr) {
+    if (kind == ConstraintKind.CHECK && (checkExpr == null || checkExpr.isBlank())) {
+      throw new ConstraintExpressionRequiredException(
+          "CHECK constraint requires a check expression");
+    }
+    if (kind == ConstraintKind.DEFAULT && (defaultExpr == null || defaultExpr.isBlank())) {
+      throw new ConstraintExpressionRequiredException(
+          "DEFAULT constraint requires a default expression");
     }
   }
 

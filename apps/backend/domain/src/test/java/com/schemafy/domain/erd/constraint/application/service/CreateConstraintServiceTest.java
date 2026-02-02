@@ -25,6 +25,7 @@ import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintExpressionRequiredException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
@@ -446,6 +447,50 @@ class CreateConstraintServiceTest {
                 assertThat(result.defaultExpr()).isEqualTo("0");
               })
           .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("CHECK 제약조건에 checkExpr이 없으면 예외가 발생한다")
+    void throwsWhenCheckExprMissing() {
+      var command = ConstraintFixture.createCheckCommand(null);
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "ck_test"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+
+      StepVerifier.create(sut.createConstraint(command))
+          .expectError(ConstraintExpressionRequiredException.class)
+          .verify();
+
+      then(createConstraintPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("DEFAULT 제약조건에 defaultExpr이 없으면 예외가 발생한다")
+    void throwsWhenDefaultExprMissing() {
+      var command = ConstraintFixture.createDefaultCommand(null);
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "df_test"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+
+      StepVerifier.create(sut.createConstraint(command))
+          .expectError(ConstraintExpressionRequiredException.class)
+          .verify();
+
+      then(createConstraintPort).shouldHaveNoInteractions();
     }
 
   }

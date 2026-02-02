@@ -17,6 +17,7 @@ import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintExpressionRequiredException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
@@ -422,6 +423,64 @@ class ConstraintValidatorTest {
           List.of("col1"),
           "uq_test",
           pk.id()))
+          .doesNotThrowAnyException();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("validateExpressionRequired 메서드는")
+  class ValidateExpressionRequired {
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = { "   ", "\t" })
+    @DisplayName("CHECK인데 checkExpr이 null이거나 빈 문자열이면 예외가 발생한다")
+    void throwsWhenCheckExprMissing(String checkExpr) {
+      assertThatThrownBy(() -> ConstraintValidator.validateExpressionRequired(
+          ConstraintKind.CHECK, checkExpr, null))
+          .isInstanceOf(ConstraintExpressionRequiredException.class);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = { "   ", "\t" })
+    @DisplayName("DEFAULT인데 defaultExpr이 null이거나 빈 문자열이면 예외가 발생한다")
+    void throwsWhenDefaultExprMissing(String defaultExpr) {
+      assertThatThrownBy(() -> ConstraintValidator.validateExpressionRequired(
+          ConstraintKind.DEFAULT, null, defaultExpr))
+          .isInstanceOf(ConstraintExpressionRequiredException.class);
+    }
+
+    @Test
+    @DisplayName("CHECK에 유효한 checkExpr이면 통과한다")
+    void passesWithValidCheckExpr() {
+      assertThatCode(() -> ConstraintValidator.validateExpressionRequired(
+          ConstraintKind.CHECK, "value > 0", null))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("DEFAULT에 유효한 defaultExpr이면 통과한다")
+    void passesWithValidDefaultExpr() {
+      assertThatCode(() -> ConstraintValidator.validateExpressionRequired(
+          ConstraintKind.DEFAULT, null, "0"))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("PRIMARY_KEY는 표현식 없이도 통과한다")
+    void passesWithPrimaryKeyWithoutExpr() {
+      assertThatCode(() -> ConstraintValidator.validateExpressionRequired(
+          ConstraintKind.PRIMARY_KEY, null, null))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("UNIQUE는 표현식 없이도 통과한다")
+    void passesWithUniqueWithoutExpr() {
+      assertThatCode(() -> ConstraintValidator.validateExpressionRequired(
+          ConstraintKind.UNIQUE, null, null))
           .doesNotThrowAnyException();
     }
 
