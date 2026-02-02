@@ -35,7 +35,7 @@ ext {
 }
 
 dependencies {
-	implementation project(':validation')
+	implementation project(':domain')
 
 	// webflux
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
@@ -181,7 +181,7 @@ sourceSets {
 	main {
 		resources {
 			srcDir 'src/main/resources'
-			srcDir 'sql'
+			srcDir '../sql-resources'
 		}
 	}
 }

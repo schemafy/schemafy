@@ -1,0 +1,6 @@
+package com.schemafy.domain.erd.constraint.application.port.in;
+
+public record CreateConstraintColumnCommand(
+    String columnId,
+    int seqNo) {
+}

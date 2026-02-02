@@ -1,0 +1,87 @@
+plugins {
+    id 'java'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '6.25.0'
+}
+
+group = 'com.schemafy'
+version = '0.0.1-SNAPSHOT'
+description = 'Domain module - pure Java domain models'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom 'org.springframework.boot:spring-boot-dependencies:3.5.5'
+    }
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.14.2'
+    testImplementation 'io.projectreactor:reactor-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Integration test dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'io.r2dbc:r2dbc-h2'
+    testRuntimeOnly 'com.h2database:h2'
+}
+
+def formatterConfig = file("${projectDir}/../../../gradle/format/java-formatter.xml")
+
+spotless {
+    java {
+        target 'src/**/*.java'
+        eclipse().configFile(formatterConfig)
+        removeUnusedImports()
+        importOrder(
+                'java',
+                'jakarta',
+                'org.springframework',
+                'org',
+                'com',
+                '',
+                '\\#'
+        )
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+sourceSets {
+    test {
+        resources {
+            srcDir 'src/test/resources'
+            srcDir '../sql-resources'
+        }
+    }
+}
+
+tasks.named('processTestResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.named('check') {
+    dependsOn 'spotlessCheck'
+}

@@ -1,0 +1,15 @@
+spring:
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:ddl/h2/*.sql
+
+logging:
+  level:
+    com.schemafy: DEBUG
+    io.r2dbc.h2: DEBUG
+    org.springframework.data.r2dbc.core: DEBUG
