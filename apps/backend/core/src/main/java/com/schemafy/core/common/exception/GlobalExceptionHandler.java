@@ -21,6 +21,20 @@ import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplica
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
 import com.schemafy.domain.erd.constraint.domain.exception.UniqueSameAsPrimaryKeyException;
+import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
+import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionInvalidException;
+import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
+import com.schemafy.domain.erd.index.domain.exception.IndexNameDuplicateException;
+import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexTypeInvalidException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnDuplicateException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipCyclicReferenceException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipEmptyException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNameDuplicateException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipTargetTableNotExistException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
@@ -100,6 +114,21 @@ public class GlobalExceptionHandler {
     if (e instanceof ConstraintColumnNotExistException) {
       return ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND;
     }
+    if (e instanceof RelationshipNotExistException) {
+      return ErrorCode.ERD_RELATIONSHIP_NOT_FOUND;
+    }
+    if (e instanceof RelationshipColumnNotExistException) {
+      return ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND;
+    }
+    if (e instanceof RelationshipTargetTableNotExistException) {
+      return ErrorCode.ERD_TABLE_NOT_FOUND;
+    }
+    if (e instanceof IndexNotExistException) {
+      return ErrorCode.ERD_INDEX_NOT_FOUND;
+    }
+    if (e instanceof IndexColumnNotExistException) {
+      return ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND;
+    }
     if (e instanceof ColumnNameDuplicateException
         || e instanceof ColumnNameReservedException
         || e instanceof MultipleAutoIncrementColumnException
@@ -109,6 +138,15 @@ public class GlobalExceptionHandler {
         || e instanceof ConstraintDefinitionDuplicateException
         || e instanceof UniqueSameAsPrimaryKeyException
         || e instanceof MultiplePrimaryKeyConstraintException
+        || e instanceof RelationshipColumnDuplicateException
+        || e instanceof RelationshipCyclicReferenceException
+        || e instanceof RelationshipEmptyException
+        || e instanceof RelationshipNameDuplicateException
+        || e instanceof IndexNameDuplicateException
+        || e instanceof IndexTypeInvalidException
+        || e instanceof IndexColumnDuplicateException
+        || e instanceof IndexColumnSortDirectionInvalidException
+        || e instanceof IndexDefinitionDuplicateException
         || e instanceof InvalidValueException) {
       return ErrorCode.COMMON_INVALID_PARAMETER;
     }
