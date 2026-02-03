@@ -1,11 +1,9 @@
-import { useAuthStore } from '@/store/auth.store';
+import { authStore } from '@/store/auth.store';
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 
 export const DashboardHeader = () => {
-  const { user } = useAuthStore();
-
   return (
     <div className="flex items-center justify-end gap-5 w-full">
       <div className="flex items-center gap-9 ml-8">
@@ -27,7 +25,7 @@ export const DashboardHeader = () => {
           </Button>
         </div>
         <span className="flex items-center font-body-sm text-schemafy-dark-gray">
-          {user?.name}
+          {authStore.user?.name}
         </span>
         <Avatar src="https://picsum.photos/200/300?random=1" />
       </div>

@@ -1,9 +1,8 @@
-import { useCollaborationStore } from '@/store';
+import { collaborationStore } from '@/store';
 import type { ChatMessage } from '@/lib/api/collaboration';
 import { useEffect, useState } from 'react';
 
 export const useChatMessages = () => {
-  const collaborationStore = useCollaborationStore();
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
@@ -24,7 +23,7 @@ export const useChatMessages = () => {
     });
 
     return unsubscribe;
-  }, [collaborationStore]);
+  }, []);
 
   const removeMessage = (messageId: string) => {
     setDisplayMessages((prev) =>

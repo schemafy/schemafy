@@ -1,8 +1,7 @@
 import { makeAutoObservable } from 'mobx';
-import { createContext, useContext } from 'react';
 import type { AuthResponse } from '../lib/api/auth/types';
 
-export class AuthStore {
+class AuthStore {
   accessToken: string | null = null;
   user: AuthResponse | null = null;
   isAuthLoading: boolean = false;
@@ -43,9 +42,3 @@ export class AuthStore {
 }
 
 export const authStore = new AuthStore();
-
-const AuthContext = createContext<AuthStore>(authStore);
-
-export const AuthProvider = AuthContext.Provider;
-
-export const useAuthStore = () => useContext(AuthContext);
