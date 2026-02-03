@@ -1,5 +1,8 @@
 package com.schemafy.core.common.exception;
 
+import java.util.Map;
+import java.util.Set;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -45,6 +48,39 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+  private static final Map<Class<? extends DomainException>, ErrorCode> DOMAIN_ERROR_CODE_MAP =
+      Map.ofEntries(
+          Map.entry(SchemaNotExistException.class, ErrorCode.ERD_SCHEMA_NOT_FOUND),
+          Map.entry(SchemaNameDuplicateException.class, ErrorCode.ERD_SCHEMA_NAME_DUPLICATE),
+          Map.entry(TableNotExistException.class, ErrorCode.ERD_TABLE_NOT_FOUND),
+          Map.entry(TableNameDuplicateException.class, ErrorCode.ERD_TABLE_NAME_DUPLICATE),
+          Map.entry(ColumnNotExistException.class, ErrorCode.ERD_COLUMN_NOT_FOUND),
+          Map.entry(ConstraintNotExistException.class, ErrorCode.ERD_CONSTRAINT_NOT_FOUND),
+          Map.entry(ConstraintColumnNotExistException.class, ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND),
+          Map.entry(RelationshipNotExistException.class, ErrorCode.ERD_RELATIONSHIP_NOT_FOUND),
+          Map.entry(RelationshipColumnNotExistException.class, ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND),
+          Map.entry(RelationshipTargetTableNotExistException.class, ErrorCode.ERD_TABLE_NOT_FOUND),
+          Map.entry(IndexNotExistException.class, ErrorCode.ERD_INDEX_NOT_FOUND),
+          Map.entry(IndexColumnNotExistException.class, ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND));
+
+  private static final Set<Class<? extends DomainException>> INVALID_PARAMETER_EXCEPTIONS = Set.of(
+      ColumnNameDuplicateException.class,
+      ColumnNameReservedException.class,
+      MultipleAutoIncrementColumnException.class,
+      ForeignKeyColumnProtectedException.class,
+      ConstraintNameDuplicateException.class,
+      ConstraintColumnDuplicateException.class,
+      ConstraintDefinitionDuplicateException.class,
+      UniqueSameAsPrimaryKeyException.class,
+      MultiplePrimaryKeyConstraintException.class,
+      RelationshipColumnDuplicateException.class,
+      RelationshipCyclicReferenceException.class,
+      RelationshipEmptyException.class,
+      RelationshipNameDuplicateException.class,
+      IndexNameDuplicateException.class,
+      IndexColumnDuplicateException.class,
+      IndexDefinitionDuplicateException.class);
 
   @ExceptionHandler(BusinessException.class)
   public ResponseEntity<BaseResponse<Object>> handleBusinessException(
@@ -93,64 +129,28 @@ public class GlobalExceptionHandler {
   }
 
   private ErrorCode mapDomainExceptionToErrorCode(DomainException e) {
-    if (e instanceof SchemaNotExistException) {
-      return ErrorCode.ERD_SCHEMA_NOT_FOUND;
+    for (Map.Entry<Class<? extends DomainException>, ErrorCode> entry
+        : DOMAIN_ERROR_CODE_MAP.entrySet()) {
+      if (entry.getKey().isInstance(e)) {
+        return entry.getValue();
+      }
     }
-    if (e instanceof SchemaNameDuplicateException) {
-      return ErrorCode.ERD_SCHEMA_NAME_DUPLICATE;
-    }
-    if (e instanceof TableNotExistException) {
-      return ErrorCode.ERD_TABLE_NOT_FOUND;
-    }
-    if (e instanceof TableNameDuplicateException) {
-      return ErrorCode.ERD_TABLE_NAME_DUPLICATE;
-    }
-    if (e instanceof ColumnNotExistException) {
-      return ErrorCode.ERD_COLUMN_NOT_FOUND;
-    }
-    if (e instanceof ConstraintNotExistException) {
-      return ErrorCode.ERD_CONSTRAINT_NOT_FOUND;
-    }
-    if (e instanceof ConstraintColumnNotExistException) {
-      return ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND;
-    }
-    if (e instanceof RelationshipNotExistException) {
-      return ErrorCode.ERD_RELATIONSHIP_NOT_FOUND;
-    }
-    if (e instanceof RelationshipColumnNotExistException) {
-      return ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND;
-    }
-    if (e instanceof RelationshipTargetTableNotExistException) {
-      return ErrorCode.ERD_TABLE_NOT_FOUND;
-    }
-    if (e instanceof IndexNotExistException) {
-      return ErrorCode.ERD_INDEX_NOT_FOUND;
-    }
-    if (e instanceof IndexColumnNotExistException) {
-      return ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND;
-    }
-    if (e instanceof ColumnNameDuplicateException
-        || e instanceof ColumnNameReservedException
-        || e instanceof MultipleAutoIncrementColumnException
-        || e instanceof ForeignKeyColumnProtectedException
-        || e instanceof ConstraintNameDuplicateException
-        || e instanceof ConstraintColumnDuplicateException
-        || e instanceof ConstraintDefinitionDuplicateException
-        || e instanceof UniqueSameAsPrimaryKeyException
-        || e instanceof MultiplePrimaryKeyConstraintException
-        || e instanceof RelationshipColumnDuplicateException
-        || e instanceof RelationshipCyclicReferenceException
-        || e instanceof RelationshipEmptyException
-        || e instanceof RelationshipNameDuplicateException
-        || e instanceof IndexNameDuplicateException
-        || e instanceof IndexTypeInvalidException
-        || e instanceof IndexColumnDuplicateException
-        || e instanceof IndexColumnSortDirectionInvalidException
-        || e instanceof IndexDefinitionDuplicateException
-        || e instanceof InvalidValueException) {
+    if (matchesInvalidParameter(e)) {
       return ErrorCode.COMMON_INVALID_PARAMETER;
     }
     return ErrorCode.COMMON_SYSTEM_ERROR;
+  }
+
+  private boolean matchesInvalidParameter(DomainException e) {
+    if (e instanceof InvalidValueException) {
+      return true;
+    }
+    for (Class<? extends DomainException> exceptionClass : INVALID_PARAMETER_EXCEPTIONS) {
+      if (exceptionClass.isInstance(e)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @ExceptionHandler(Exception.class)
