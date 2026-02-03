@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service.util.mysql;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -41,25 +42,33 @@ public class MySqlAlterTableGenerator {
     List<String> alterStatements = new ArrayList<>();
 
     for (TableDetailResponse table : tables) {
-      Map<String, String> columnIdToName = tableColumnMaps.get(table.getId());
+      if (table == null) {
+        continue;
+      }
+      Map<String, String> columnIdToName = tableColumnMaps.getOrDefault(
+          table.getId(), Collections.emptyMap());
 
       generatePrimaryKeyAlter(table, columnIdToName)
           .ifPresent(alterStatements::add);
 
-      table.getConstraints().stream()
+      getConstraints(table).stream()
           .filter(c -> "UNIQUE".equals(c.getKind()))
           .map(c -> generateUniqueAlter(table.getName(), c, columnIdToName))
           .forEach(alterStatements::add);
 
-      table.getIndexes().stream()
+      getIndexes(table).stream()
           .map(idx -> generateIndexAlter(table.getName(), idx, columnIdToName))
           .forEach(alterStatements::add);
     }
 
     for (TableDetailResponse table : tables) {
-      Map<String, String> columnIdToName = tableColumnMaps.get(table.getId());
+      if (table == null) {
+        continue;
+      }
+      Map<String, String> columnIdToName = tableColumnMaps.getOrDefault(
+          table.getId(), Collections.emptyMap());
 
-      table.getRelationships().stream()
+      getRelationships(table).stream()
           .filter(r -> table.getId().equals(r.getFkTableId()))
           .map(r -> generateForeignKeyAlter(table.getName(), r, tableIdToName,
               columnIdToName, tableColumnMaps))
@@ -75,14 +84,15 @@ public class MySqlAlterTableGenerator {
   private Optional<String> generatePrimaryKeyAlter(
       TableDetailResponse table,
       Map<String, String> columnIdToName) {
-    return table.getConstraints().stream()
+    return getConstraints(table).stream()
         .filter(c -> "PRIMARY_KEY".equals(c.getKind()))
         .findFirst()
         .map(pk -> {
-          String columns = pk.getColumns().stream()
-              .sorted(Comparator.comparing(ConstraintColumnResponse::getSeqNo))
+          String columns = getConstraintColumns(pk).stream()
+              .sorted(Comparator.comparing(ConstraintColumnResponse::getSeqNo,
+                  Comparator.nullsLast(Comparator.naturalOrder())))
               .map(cc -> "`" + escapeIdentifier(
-                  columnIdToName.get(cc.getColumnId())) + "`")
+                  getColumnName(columnIdToName, cc.getColumnId())) + "`")
               .collect(Collectors.joining(", "));
 
           return String.format("ALTER TABLE `%s` ADD PRIMARY KEY (%s);",
@@ -93,10 +103,11 @@ public class MySqlAlterTableGenerator {
   private String generateUniqueAlter(String tableName,
       ConstraintResponse constraint,
       Map<String, String> columnIdToName) {
-    String columns = constraint.getColumns().stream()
-        .sorted(Comparator.comparing(ConstraintColumnResponse::getSeqNo))
+    String columns = getConstraintColumns(constraint).stream()
+        .sorted(Comparator.comparing(ConstraintColumnResponse::getSeqNo,
+            Comparator.nullsLast(Comparator.naturalOrder())))
         .map(cc -> "`" + escapeIdentifier(
-            columnIdToName.get(cc.getColumnId())) + "`")
+            getColumnName(columnIdToName, cc.getColumnId())) + "`")
         .collect(Collectors.joining(", "));
 
     return String.format("ALTER TABLE `%s` ADD UNIQUE KEY `%s` (%s);",
@@ -110,6 +121,10 @@ public class MySqlAlterTableGenerator {
     idx.append(escapeIdentifier(tableName)).append("` ADD ");
 
     String type = sanitizeIndexType(index.getType());
+    if (type == null) {
+      type = "BTREE";
+    }
+
     if ("FULLTEXT".equals(type)) {
       idx.append("FULLTEXT ");
     } else if ("SPATIAL".equals(type)) {
@@ -119,11 +134,12 @@ public class MySqlAlterTableGenerator {
     idx.append("INDEX `").append(escapeIdentifier(index.getName()))
         .append("` (");
 
-    String columns = index.getColumns().stream()
-        .sorted(Comparator.comparing(IndexColumnResponse::getSeqNo))
+    String columns = getIndexColumns(index).stream()
+        .sorted(Comparator.comparing(IndexColumnResponse::getSeqNo,
+            Comparator.nullsLast(Comparator.naturalOrder())))
         .map(ic -> {
           String col = "`" + escapeIdentifier(
-              columnIdToName.get(ic.getColumnId())) + "`";
+              getColumnName(columnIdToName, ic.getColumnId())) + "`";
           String sortDir = sanitizeSortDirection(ic.getSortDir());
           if (sortDir != null) {
             col += " " + sortDir;
@@ -153,24 +169,27 @@ public class MySqlAlterTableGenerator {
     fk.append(escapeIdentifier(relationship.getName()))
         .append("` FOREIGN KEY (");
 
-    String fkColumns = relationship.getColumns().stream()
-        .sorted(Comparator.comparing(RelationshipColumnResponse::getSeqNo))
+    String fkColumns = getRelationshipColumns(relationship).stream()
+        .sorted(Comparator.comparing(RelationshipColumnResponse::getSeqNo,
+            Comparator.nullsLast(Comparator.naturalOrder())))
         .map(rc -> "`" + escapeIdentifier(
-            columnIdToName.get(rc.getFkColumnId())) + "`")
+            getColumnName(columnIdToName, rc.getFkColumnId())) + "`")
         .collect(Collectors.joining(", "));
 
     fk.append(fkColumns).append(") REFERENCES `");
 
-    String pkTableName = tableIdToName.get(relationship.getPkTableId());
+    String pkTableName = tableIdToName.getOrDefault(
+        relationship.getPkTableId(), "UNKNOWN_TABLE");
     fk.append(escapeIdentifier(pkTableName)).append("` (");
 
-    Map<String, String> pkColumnIdToName = tableColumnMaps
-        .get(relationship.getPkTableId());
+    Map<String, String> pkColumnIdToName = tableColumnMaps.getOrDefault(
+        relationship.getPkTableId(), Collections.emptyMap());
 
-    String pkColumns = relationship.getColumns().stream()
-        .sorted(Comparator.comparing(RelationshipColumnResponse::getSeqNo))
+    String pkColumns = getRelationshipColumns(relationship).stream()
+        .sorted(Comparator.comparing(RelationshipColumnResponse::getSeqNo,
+            Comparator.nullsLast(Comparator.naturalOrder())))
         .map(rc -> "`" + escapeIdentifier(
-            pkColumnIdToName.get(rc.getPkColumnId())) + "`")
+            getColumnName(pkColumnIdToName, rc.getPkColumnId())) + "`")
         .collect(Collectors.joining(", "));
 
     fk.append(pkColumns).append(")");
@@ -192,20 +211,78 @@ public class MySqlAlterTableGenerator {
   private Map<String, String> buildTableMap(
       List<TableDetailResponse> tables) {
     return tables.stream()
+        .filter(t -> t != null && t.getId() != null && t.getName() != null)
         .collect(Collectors.toMap(
             TableDetailResponse::getId,
-            TableDetailResponse::getName));
+            TableDetailResponse::getName,
+            (existing, replacement) -> existing));
   }
 
   private Map<String, Map<String, String>> buildAllColumnMaps(
       List<TableDetailResponse> tables) {
     return tables.stream()
+        .filter(t -> t != null && t.getId() != null)
         .collect(Collectors.toMap(
             TableDetailResponse::getId,
-            table -> table.getColumns().stream()
+            table -> getColumns(table).stream()
+                .filter(c -> c != null && c.getId() != null
+                    && c.getName() != null)
                 .collect(Collectors.toMap(
                     ColumnResponse::getId,
-                    ColumnResponse::getName))));
+                    ColumnResponse::getName,
+                    (existing, replacement) -> existing)),
+            (existing, replacement) -> existing));
+  }
+
+  private List<ColumnResponse> getColumns(TableDetailResponse table) {
+    return table.getColumns() != null
+        ? table.getColumns()
+        : Collections.emptyList();
+  }
+
+  private List<ConstraintResponse> getConstraints(TableDetailResponse table) {
+    return table.getConstraints() != null
+        ? table.getConstraints()
+        : Collections.emptyList();
+  }
+
+  private List<IndexResponse> getIndexes(TableDetailResponse table) {
+    return table.getIndexes() != null
+        ? table.getIndexes()
+        : Collections.emptyList();
+  }
+
+  private List<RelationshipResponse> getRelationships(
+      TableDetailResponse table) {
+    return table.getRelationships() != null
+        ? table.getRelationships()
+        : Collections.emptyList();
+  }
+
+  private List<ConstraintColumnResponse> getConstraintColumns(
+      ConstraintResponse constraint) {
+    return constraint.getColumns() != null
+        ? constraint.getColumns()
+        : Collections.emptyList();
+  }
+
+  private List<IndexColumnResponse> getIndexColumns(IndexResponse index) {
+    return index.getColumns() != null
+        ? index.getColumns()
+        : Collections.emptyList();
+  }
+
+  private List<RelationshipColumnResponse> getRelationshipColumns(
+      RelationshipResponse relationship) {
+    return relationship.getColumns() != null
+        ? relationship.getColumns()
+        : Collections.emptyList();
+  }
+
+  private String getColumnName(Map<String, String> columnIdToName,
+      String columnId) {
+    String name = columnIdToName.get(columnId);
+    return name != null ? name : "UNKNOWN_COLUMN";
   }
 
   private String escapeIdentifier(String identifier) {

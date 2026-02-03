@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.service.util.mysql;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -24,12 +25,19 @@ public class MySqlDdlGenerator implements DdlGenerator {
     StringBuilder ddl = new StringBuilder();
     ddl.append(generateHeader(schema));
 
-    for (TableDetailResponse table : tables) {
+    List<TableDetailResponse> safeTables = tables != null
+        ? tables
+        : Collections.emptyList();
+
+    for (TableDetailResponse table : safeTables) {
+      if (table == null) {
+        continue;
+      }
       ddl.append(createTableGenerator.generate(table));
       ddl.append("\n\n");
     }
 
-    ddl.append(alterTableGenerator.generate(tables));
+    ddl.append(alterTableGenerator.generate(safeTables));
 
     return ddl.toString();
   }

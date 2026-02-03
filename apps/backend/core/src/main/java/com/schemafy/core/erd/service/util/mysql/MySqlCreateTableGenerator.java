@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.service.util.mysql;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -23,12 +24,22 @@ public class MySqlCreateTableGenerator {
       .compile("^[a-zA-Z][a-zA-Z0-9_]*$");
 
   public String generate(TableDetailResponse table) {
+    List<ColumnResponse> columns = table.getColumns() != null
+        ? table.getColumns().stream().filter(c -> c != null).toList()
+        : Collections.emptyList();
+
+    if (columns.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Table must have at least one column: " + table.getName());
+    }
+
     StringBuilder ddl = new StringBuilder();
     ddl.append("CREATE TABLE `").append(escapeIdentifier(table.getName()))
         .append("` (\n");
 
-    List<String> columnDefs = table.getColumns().stream()
-        .sorted(Comparator.comparing(ColumnResponse::getSeqNo))
+    List<String> columnDefs = columns.stream()
+        .sorted(Comparator.comparing(ColumnResponse::getSeqNo,
+            Comparator.nullsLast(Comparator.naturalOrder())))
         .map(this::generateColumnDefinition)
         .toList();
 

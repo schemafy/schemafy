@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.service;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -23,17 +24,26 @@ public class ExportService {
 
   public Mono<ExportResponse> exportSchemaToMySqlDdl(String schemaId) {
     return schemaService.getSchema(schemaId)
-        .flatMap(schema -> fetchAllTableDetails(schema.getTables())
-            .collectList()
-            .map(tableDetails -> {
-              String ddl = ddlGenerator.generateSchemaDdl(schema, tableDetails);
-              return ExportResponse.of(schema.getName(), ddl,
-                  tableDetails.size());
-            }));
+        .flatMap(schema -> {
+          List<TableResponse> tables = schema.getTables() != null
+              ? schema.getTables()
+              : Collections.emptyList();
+          return fetchAllTableDetails(tables)
+              .collectList()
+              .map(tableDetails -> {
+                String ddl = ddlGenerator.generateSchemaDdl(schema,
+                    tableDetails);
+                return ExportResponse.of(schema.getName(), ddl,
+                    tableDetails.size());
+              });
+        });
   }
 
   private Flux<TableDetailResponse> fetchAllTableDetails(
       List<TableResponse> tables) {
+    if (tables == null || tables.isEmpty()) {
+      return Flux.empty();
+    }
     return Flux.fromIterable(tables)
         .flatMap(table -> tableService.getTable(table.getId()));
   }
