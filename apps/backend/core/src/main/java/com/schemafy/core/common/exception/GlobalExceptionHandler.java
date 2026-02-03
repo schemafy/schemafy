@@ -8,6 +8,12 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNameDuplicateException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNameReservedException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
+import com.schemafy.domain.erd.column.domain.exception.MultipleAutoIncrementColumnException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
@@ -77,6 +83,16 @@ public class GlobalExceptionHandler {
     }
     if (e instanceof TableNameDuplicateException) {
       return ErrorCode.ERD_TABLE_NAME_DUPLICATE;
+    }
+    if (e instanceof ColumnNotExistException) {
+      return ErrorCode.ERD_COLUMN_NOT_FOUND;
+    }
+    if (e instanceof ColumnNameDuplicateException
+        || e instanceof ColumnNameReservedException
+        || e instanceof MultipleAutoIncrementColumnException
+        || e instanceof ForeignKeyColumnProtectedException
+        || e instanceof InvalidValueException) {
+      return ErrorCode.COMMON_INVALID_PARAMETER;
     }
     return ErrorCode.COMMON_SYSTEM_ERROR;
   }
