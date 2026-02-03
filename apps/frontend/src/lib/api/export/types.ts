@@ -10,8 +10,8 @@ export interface ExportResponse {
 
 export const EXPORT_CONFIG: Record<
   ExportFormat,
-  { title: string; extension: string }
+  { title: string; extension: string; language: string }
 > = {
-  ddl: { title: 'Export DDL', extension: '.sql' },
-  mermaid: { title: 'Export Mermaid', extension: '.mmd' },
+  ddl: { title: 'Export DDL', extension: '.sql', language: 'sql' },
+  mermaid: { title: 'Export Mermaid', extension: '.mmd', language: 'mermaid' },
 };

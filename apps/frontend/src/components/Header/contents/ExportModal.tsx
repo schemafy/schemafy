@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Copy, Download, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import {
+  oneDark,
+  oneLight,
+} from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../Dialog';
 import { Button } from '../../Button';
 import { EXPORT_CONFIG, type ExportResponse } from '@/lib/api/export';
+import { useTheme } from '@/hooks/useTheme';
 
 interface ExportModalProps {
   open: boolean;
@@ -18,8 +25,18 @@ export const ExportModal = ({
   isLoading = false,
 }: ExportModalProps) => {
   const [copied, setCopied] = useState(false);
+  const { theme } = useTheme();
 
   const config = data ? EXPORT_CONFIG[data.format] : null;
+
+  const syntaxStyle = useMemo(() => {
+    if (theme === 'dark') return oneDark;
+    if (theme === 'light') return oneLight;
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? oneDark
+      : oneLight;
+  }, [theme]);
 
   const handleCopy = async () => {
     if (!data?.content) return;
@@ -28,23 +45,27 @@ export const ExportModal = ({
       await navigator.clipboard.writeText(data.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      toast.error('Failed to copy to clipboard');
     }
   };
 
   const handleDownload = () => {
     if (!data?.content || !config) return;
 
-    const blob = new Blob([data.content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${data.schemaName || 'schema'}${config.extension}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const blob = new Blob([data.content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data.schemaName || 'schema'}${config.extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Failed to download file');
+    }
   };
 
   return (
@@ -90,10 +111,18 @@ export const ExportModal = ({
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto rounded-lg bg-schemafy-secondary border border-schemafy-dark-gray/20">
-              <pre className="p-4 text-sm text-schemafy-text font-mono whitespace-pre overflow-x-auto">
+            <div className="flex-1 overflow-auto rounded-lg border border-schemafy-dark-gray/20">
+              <SyntaxHighlighter
+                language={config?.language ?? 'text'}
+                style={syntaxStyle}
+                customStyle={{
+                  margin: 0,
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                }}
+              >
                 {data.content}
-              </pre>
+              </SyntaxHighlighter>
             </div>
           </>
         ) : (
