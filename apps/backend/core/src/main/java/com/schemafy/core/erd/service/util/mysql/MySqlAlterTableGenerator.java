@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -20,6 +21,14 @@ import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 
 @Component
 public class MySqlAlterTableGenerator {
+
+  private static final Set<String> VALID_REFERENTIAL_ACTIONS = Set.of(
+      "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION");
+
+  private static final Set<String> VALID_SORT_DIRECTIONS = Set.of("ASC", "DESC");
+
+  private static final Set<String> VALID_INDEX_TYPES = Set.of(
+      "BTREE", "HASH", "FULLTEXT", "SPATIAL");
 
   public String generate(List<TableDetailResponse> tables) {
     if (tables == null || tables.isEmpty()) {
@@ -72,11 +81,12 @@ public class MySqlAlterTableGenerator {
         .map(pk -> {
           String columns = pk.getColumns().stream()
               .sorted(Comparator.comparing(ConstraintColumnResponse::getSeqNo))
-              .map(cc -> "`" + columnIdToName.get(cc.getColumnId()) + "`")
+              .map(cc -> "`" + escapeIdentifier(
+                  columnIdToName.get(cc.getColumnId())) + "`")
               .collect(Collectors.joining(", "));
 
           return String.format("ALTER TABLE `%s` ADD PRIMARY KEY (%s);",
-              table.getName(), columns);
+              escapeIdentifier(table.getName()), columns);
         });
   }
 
@@ -85,33 +95,38 @@ public class MySqlAlterTableGenerator {
       Map<String, String> columnIdToName) {
     String columns = constraint.getColumns().stream()
         .sorted(Comparator.comparing(ConstraintColumnResponse::getSeqNo))
-        .map(cc -> "`" + columnIdToName.get(cc.getColumnId()) + "`")
+        .map(cc -> "`" + escapeIdentifier(
+            columnIdToName.get(cc.getColumnId())) + "`")
         .collect(Collectors.joining(", "));
 
     return String.format("ALTER TABLE `%s` ADD UNIQUE KEY `%s` (%s);",
-        tableName, constraint.getName(), columns);
+        escapeIdentifier(tableName), escapeIdentifier(constraint.getName()),
+        columns);
   }
 
   private String generateIndexAlter(String tableName, IndexResponse index,
       Map<String, String> columnIdToName) {
     StringBuilder idx = new StringBuilder("ALTER TABLE `");
-    idx.append(tableName).append("` ADD ");
+    idx.append(escapeIdentifier(tableName)).append("` ADD ");
 
-    String type = index.getType();
+    String type = sanitizeIndexType(index.getType());
     if ("FULLTEXT".equals(type)) {
       idx.append("FULLTEXT ");
     } else if ("SPATIAL".equals(type)) {
       idx.append("SPATIAL ");
     }
 
-    idx.append("INDEX `").append(index.getName()).append("` (");
+    idx.append("INDEX `").append(escapeIdentifier(index.getName()))
+        .append("` (");
 
     String columns = index.getColumns().stream()
         .sorted(Comparator.comparing(IndexColumnResponse::getSeqNo))
         .map(ic -> {
-          String col = "`" + columnIdToName.get(ic.getColumnId()) + "`";
-          if (ic.getSortDir() != null && !ic.getSortDir().isEmpty()) {
-            col += " " + ic.getSortDir();
+          String col = "`" + escapeIdentifier(
+              columnIdToName.get(ic.getColumnId())) + "`";
+          String sortDir = sanitizeSortDirection(ic.getSortDir());
+          if (sortDir != null) {
+            col += " " + sortDir;
           }
           return col;
         })
@@ -134,36 +149,39 @@ public class MySqlAlterTableGenerator {
       Map<String, String> columnIdToName,
       Map<String, Map<String, String>> tableColumnMaps) {
     StringBuilder fk = new StringBuilder("ALTER TABLE `");
-    fk.append(tableName).append("` ADD CONSTRAINT `");
-    fk.append(relationship.getName()).append("` FOREIGN KEY (");
+    fk.append(escapeIdentifier(tableName)).append("` ADD CONSTRAINT `");
+    fk.append(escapeIdentifier(relationship.getName()))
+        .append("` FOREIGN KEY (");
 
     String fkColumns = relationship.getColumns().stream()
         .sorted(Comparator.comparing(RelationshipColumnResponse::getSeqNo))
-        .map(rc -> "`" + columnIdToName.get(rc.getFkColumnId()) + "`")
+        .map(rc -> "`" + escapeIdentifier(
+            columnIdToName.get(rc.getFkColumnId())) + "`")
         .collect(Collectors.joining(", "));
 
     fk.append(fkColumns).append(") REFERENCES `");
 
     String pkTableName = tableIdToName.get(relationship.getPkTableId());
-    fk.append(pkTableName).append("` (");
+    fk.append(escapeIdentifier(pkTableName)).append("` (");
 
     Map<String, String> pkColumnIdToName = tableColumnMaps
         .get(relationship.getPkTableId());
 
     String pkColumns = relationship.getColumns().stream()
         .sorted(Comparator.comparing(RelationshipColumnResponse::getSeqNo))
-        .map(rc -> "`" + pkColumnIdToName.get(rc.getPkColumnId()) + "`")
+        .map(rc -> "`" + escapeIdentifier(
+            pkColumnIdToName.get(rc.getPkColumnId())) + "`")
         .collect(Collectors.joining(", "));
 
     fk.append(pkColumns).append(")");
 
-    if (relationship.getOnDelete() != null
-        && !relationship.getOnDelete().isEmpty()) {
-      fk.append(" ON DELETE ").append(relationship.getOnDelete());
+    String onDelete = sanitizeReferentialAction(relationship.getOnDelete());
+    if (onDelete != null) {
+      fk.append(" ON DELETE ").append(onDelete);
     }
-    if (relationship.getOnUpdate() != null
-        && !relationship.getOnUpdate().isEmpty()) {
-      fk.append(" ON UPDATE ").append(relationship.getOnUpdate());
+    String onUpdate = sanitizeReferentialAction(relationship.getOnUpdate());
+    if (onUpdate != null) {
+      fk.append(" ON UPDATE ").append(onUpdate);
     }
 
     fk.append(";");
@@ -188,6 +206,47 @@ public class MySqlAlterTableGenerator {
                 .collect(Collectors.toMap(
                     ColumnResponse::getId,
                     ColumnResponse::getName))));
+  }
+
+  private String escapeIdentifier(String identifier) {
+    if (identifier == null) {
+      return "";
+    }
+    return identifier.replace("`", "``");
+  }
+
+  private String sanitizeIndexType(String indexType) {
+    if (indexType == null || indexType.isEmpty()) {
+      return null;
+    }
+    String normalized = indexType.toUpperCase().trim();
+    if (!VALID_INDEX_TYPES.contains(normalized)) {
+      throw new IllegalArgumentException("Invalid index type: " + indexType);
+    }
+    return normalized;
+  }
+
+  private String sanitizeSortDirection(String sortDir) {
+    if (sortDir == null || sortDir.isEmpty()) {
+      return null;
+    }
+    String normalized = sortDir.toUpperCase().trim();
+    if (!VALID_SORT_DIRECTIONS.contains(normalized)) {
+      throw new IllegalArgumentException("Invalid sort direction: " + sortDir);
+    }
+    return normalized;
+  }
+
+  private String sanitizeReferentialAction(String action) {
+    if (action == null || action.isEmpty()) {
+      return null;
+    }
+    String normalized = action.toUpperCase().trim();
+    if (!VALID_REFERENTIAL_ACTIONS.contains(normalized)) {
+      throw new IllegalArgumentException(
+          "Invalid referential action: " + action);
+    }
+    return normalized;
   }
 
 }
