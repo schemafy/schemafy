@@ -22,6 +22,9 @@ import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 public class MySqlAlterTableGenerator {
 
   public String generate(List<TableDetailResponse> tables) {
+    if (tables == null || tables.isEmpty()) {
+      return "";
+    }
     Map<String, String> tableIdToName = buildTableMap(tables);
     Map<String, Map<String, String>> tableColumnMaps = buildAllColumnMaps(
         tables);
