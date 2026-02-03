@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
 import com.schemafy.core.common.type.BaseResponse;
+import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,6 +49,28 @@ public class GlobalExceptionHandler {
     return ResponseEntity
         .status(errorCode.getStatus())
         .body(BaseResponse.error(errorCode.getCode(), e.getReason()));
+  }
+
+  @ExceptionHandler(DomainException.class)
+  public ResponseEntity<BaseResponse<Object>> handleDomainException(
+      DomainException e) {
+    ErrorCode errorCode = mapDomainExceptionToErrorCode(e);
+    log.warn("[DomainException] Domain exception occurred: {}",
+        e.getMessage(), e);
+    return ResponseEntity
+        .status(errorCode.getStatus())
+        .body(BaseResponse.error(errorCode.getCode(),
+            errorCode.getMessage()));
+  }
+
+  private ErrorCode mapDomainExceptionToErrorCode(DomainException e) {
+    if (e instanceof SchemaNotExistException) {
+      return ErrorCode.ERD_SCHEMA_NOT_FOUND;
+    }
+    if (e instanceof SchemaNameDuplicateException) {
+      return ErrorCode.ERD_SCHEMA_NAME_DUPLICATE;
+    }
+    return ErrorCode.COMMON_SYSTEM_ERROR;
   }
 
   @ExceptionHandler(Exception.class)

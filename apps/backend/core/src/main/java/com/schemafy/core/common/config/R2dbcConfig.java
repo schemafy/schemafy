@@ -14,6 +14,7 @@ import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
 import org.springframework.data.r2dbc.convert.R2dbcCustomConversions;
 import org.springframework.data.r2dbc.dialect.MySqlDialect;
+import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 import org.springframework.r2dbc.connection.R2dbcTransactionManager;
 import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -22,6 +23,10 @@ import io.r2dbc.spi.ConnectionFactory;
 
 @Configuration
 @EnableR2dbcAuditing
+@EnableR2dbcRepositories(basePackages = {
+    "com.schemafy.core",
+    "com.schemafy.domain"
+})
 public class R2dbcConfig {
 
   @Bean
