@@ -2,7 +2,6 @@ package com.schemafy.core.erd.service.util.mysql;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
