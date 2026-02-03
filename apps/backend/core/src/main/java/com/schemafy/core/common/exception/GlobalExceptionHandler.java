@@ -14,6 +14,13 @@ import com.schemafy.domain.erd.column.domain.exception.ColumnNameReservedExcepti
 import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.column.domain.exception.MultipleAutoIncrementColumnException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplicateException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
+import com.schemafy.domain.erd.constraint.domain.exception.UniqueSameAsPrimaryKeyException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
@@ -87,10 +94,21 @@ public class GlobalExceptionHandler {
     if (e instanceof ColumnNotExistException) {
       return ErrorCode.ERD_COLUMN_NOT_FOUND;
     }
+    if (e instanceof ConstraintNotExistException) {
+      return ErrorCode.ERD_CONSTRAINT_NOT_FOUND;
+    }
+    if (e instanceof ConstraintColumnNotExistException) {
+      return ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND;
+    }
     if (e instanceof ColumnNameDuplicateException
         || e instanceof ColumnNameReservedException
         || e instanceof MultipleAutoIncrementColumnException
         || e instanceof ForeignKeyColumnProtectedException
+        || e instanceof ConstraintNameDuplicateException
+        || e instanceof ConstraintColumnDuplicateException
+        || e instanceof ConstraintDefinitionDuplicateException
+        || e instanceof UniqueSameAsPrimaryKeyException
+        || e instanceof MultiplePrimaryKeyConstraintException
         || e instanceof InvalidValueException) {
       return ErrorCode.COMMON_INVALID_PARAMETER;
     }
