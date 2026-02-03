@@ -10,6 +10,8 @@ import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,6 +71,12 @@ public class GlobalExceptionHandler {
     }
     if (e instanceof SchemaNameDuplicateException) {
       return ErrorCode.ERD_SCHEMA_NAME_DUPLICATE;
+    }
+    if (e instanceof TableNotExistException) {
+      return ErrorCode.ERD_TABLE_NOT_FOUND;
+    }
+    if (e instanceof TableNameDuplicateException) {
+      return ErrorCode.ERD_TABLE_NAME_DUPLICATE;
     }
     return ErrorCode.COMMON_SYSTEM_ERROR;
   }
