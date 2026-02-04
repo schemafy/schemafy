@@ -19,6 +19,10 @@ import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 import com.schemafy.core.erd.service.util.mysql.MySqlAlterTableGenerator;
 import com.schemafy.core.erd.service.util.mysql.MySqlCreateTableGenerator;
 import com.schemafy.core.erd.service.util.mysql.MySqlDdlGenerator;
+import com.schemafy.core.erd.service.util.mysql.MySqlForeignKeyGenerator;
+import com.schemafy.core.erd.service.util.mysql.MySqlIndexGenerator;
+import com.schemafy.core.erd.service.util.mysql.MySqlPrimaryKeyGenerator;
+import com.schemafy.core.erd.service.util.mysql.MySqlUniqueKeyGenerator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,7 +35,11 @@ class MySqlDdlGeneratorTest {
   void setUp() {
     generator = new MySqlDdlGenerator(
         new MySqlCreateTableGenerator(),
-        new MySqlAlterTableGenerator());
+        new MySqlAlterTableGenerator(
+            new MySqlPrimaryKeyGenerator(),
+            new MySqlUniqueKeyGenerator(),
+            new MySqlIndexGenerator(),
+            new MySqlForeignKeyGenerator()));
   }
 
   @Nested
