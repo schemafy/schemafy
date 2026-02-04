@@ -2,18 +2,8 @@ package com.schemafy.core.erd.service.util.mysql;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 public final class MySqlDdlUtils {
-
-  private static final Pattern VALID_DATA_TYPE_PATTERN = Pattern
-      .compile("^[A-Z][A-Z0-9_ ]*$");
-
-  private static final Pattern VALID_LENGTH_SCALE_PATTERN = Pattern
-      .compile("^[0-9]+(,[0-9]+)?$");
-
-  private static final Pattern VALID_CHARSET_PATTERN = Pattern
-      .compile("^[a-zA-Z][a-zA-Z0-9_]*$");
 
   private static final Set<String> VALID_REFERENTIAL_ACTIONS = Set.of(
       "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION");
@@ -40,11 +30,12 @@ public final class MySqlDdlUtils {
   }
 
   public static String sanitizeDataType(String dataType) {
-    if (dataType == null || dataType.isEmpty())
+    if (dataType == null || dataType.isEmpty()) {
       throw new IllegalArgumentException("Data type cannot be null or empty");
+    }
 
     String normalized = dataType.toUpperCase().trim();
-    if (!VALID_DATA_TYPE_PATTERN.matcher(normalized).matches()) {
+    if (!isValidDataType(normalized)) {
       throw new IllegalArgumentException(
           "Invalid data type format: " + dataType);
     }
@@ -55,7 +46,7 @@ public final class MySqlDdlUtils {
     if (lengthScale == null || lengthScale.isEmpty()) return Optional.empty();
 
     String trimmed = lengthScale.trim();
-    if (!VALID_LENGTH_SCALE_PATTERN.matcher(trimmed).matches()) {
+    if (!isValidLengthScale(trimmed)) {
       throw new IllegalArgumentException(
           "Invalid length/scale format: " + lengthScale);
     }
@@ -66,7 +57,7 @@ public final class MySqlDdlUtils {
     if (charset == null || charset.isEmpty()) return Optional.empty();
 
     String trimmed = charset.trim();
-    if (!VALID_CHARSET_PATTERN.matcher(trimmed).matches()) {
+    if (!isValidIdentifierFormat(trimmed)) {
       throw new IllegalArgumentException("Invalid charset format: " + charset);
     }
     return Optional.of(trimmed);
@@ -76,7 +67,7 @@ public final class MySqlDdlUtils {
     if (collation == null || collation.isEmpty()) return Optional.empty();
 
     String trimmed = collation.trim();
-    if (!VALID_CHARSET_PATTERN.matcher(trimmed).matches()) {
+    if (!isValidIdentifierFormat(trimmed)) {
       throw new IllegalArgumentException(
           "Invalid collation format: " + collation);
     }
@@ -112,6 +103,71 @@ public final class MySqlDdlUtils {
           "Invalid referential action: " + action);
     }
     return Optional.of(normalized);
+  }
+
+  // ^[A-Z][A-Z0-9_ ]*$
+  private static boolean isValidDataType(String value) {
+    if (value.isEmpty()) return false;
+
+    char first = value.charAt(0);
+    if (first < 'A' || first > 'Z') return false;
+
+    for (int i = 1; i < value.length(); i++) {
+      char c = value.charAt(i);
+      boolean valid = (c >= 'A' && c <= 'Z')
+          || (c >= '0' && c <= '9')
+          || c == '_'
+          || c == ' ';
+      if (!valid) return false;
+    }
+    return true;
+  }
+
+  // ^[0-9]+(,[0-9]+)?$
+  private static boolean isValidLengthScale(String value) {
+    if (value.isEmpty()) return false;
+
+    int commaIndex = value.indexOf(',');
+
+    if (commaIndex == -1) {
+      return isDigitsOnly(value);
+    }
+
+    if (commaIndex == 0 || commaIndex == value.length() - 1) return false;
+
+    String before = value.substring(0, commaIndex);
+    String after = value.substring(commaIndex + 1);
+
+    return isDigitsOnly(before) && isDigitsOnly(after);
+  }
+
+  private static boolean isDigitsOnly(String value) {
+    if (value.isEmpty()) return false;
+    for (int i = 0; i < value.length(); i++) {
+      char c = value.charAt(i);
+      if (c < '0' || c > '9') return false;
+    }
+    return true;
+  }
+
+  // ^[a-zA-Z][a-zA-Z0-9_]*$
+  private static boolean isValidIdentifierFormat(String value) {
+    if (value.isEmpty()) return false;
+
+    char first = value.charAt(0);
+    boolean validFirst = (first >= 'a' && first <= 'z')
+        || (first >= 'A' && first <= 'Z');
+    if (!validFirst) return false;
+
+    for (int i = 1; i < value.length(); i++) {
+      char c = value.charAt(i);
+      boolean valid = (c >= 'a' && c <= 'z')
+          || (c >= 'A' && c <= 'Z')
+          || (c >= '0' && c <= '9')
+          || c == '_';
+      if (!valid) return false;
+    }
+    return true;
   }
 
 }
