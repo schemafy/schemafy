@@ -228,7 +228,11 @@ const CanvasContent = () => {
     const now = Date.now();
     if (now - lastCursorSendTime.current >= CURSOR_THROTTLE_MS) {
       lastCursorSendTime.current = now;
-      collaborationStore.sendCursor(position.x, position.y);
+      const flowPosition = screenToFlowPosition({
+        x: position.x,
+        y: position.y,
+      });
+      collaborationStore.sendCursor(flowPosition.x, flowPosition.y);
     }
   };
 

@@ -7,6 +7,16 @@ export const useChatMessages = () => {
 
   useEffect(() => {
     const unsubscribe = collaborationStore.onChatMessage((message) => {
+      if (message.position) {
+        setDisplayMessages((prev) => {
+          if (prev.some((msg) => msg.messageId === message.messageId)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
+        return;
+      }
+
       const cursor = collaborationStore.cursors.get(message.userId);
 
       if (!cursor) {
@@ -19,7 +29,12 @@ export const useChatMessages = () => {
         position: { x: cursor.x + 20, y: cursor.y + 20 },
       };
 
-      setDisplayMessages((prev) => [...prev, messageWithPosition]);
+      setDisplayMessages((prev) => {
+        if (prev.some((msg) => msg.messageId === message.messageId)) {
+          return prev;
+        }
+        return [...prev, messageWithPosition];
+      });
     });
 
     return unsubscribe;

@@ -59,6 +59,7 @@ export type RecieveChat = {
   userName: string;
   content: string;
   timestamp: string;
+  position?: { x: number; y: number };
 };
 
 export type WebSocketMessage =
