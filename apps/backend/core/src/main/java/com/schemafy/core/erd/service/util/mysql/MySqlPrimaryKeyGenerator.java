@@ -1,8 +1,5 @@
 package com.schemafy.core.erd.service.util.mysql;
 
-import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
-import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -15,6 +12,9 @@ import org.springframework.stereotype.Component;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
+
+import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
+import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
 
 @Component
 public class MySqlPrimaryKeyGenerator {

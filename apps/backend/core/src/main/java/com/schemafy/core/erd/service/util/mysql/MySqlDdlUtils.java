@@ -14,7 +14,8 @@ public final class MySqlDdlUtils {
       "BTREE", "HASH", "FULLTEXT", "SPATIAL");
 
   public static String escapeIdentifier(String identifier) {
-    if (identifier == null) return "";
+    if (identifier == null)
+      return "";
     return identifier.replace("`", "``");
   }
 
@@ -25,7 +26,8 @@ public final class MySqlDdlUtils {
   }
 
   public static String escapeString(String str) {
-    if (str == null) return "";
+    if (str == null)
+      return "";
     return str.replace("\\", "\\\\").replace("'", "''");
   }
 
@@ -43,7 +45,8 @@ public final class MySqlDdlUtils {
   }
 
   public static Optional<String> sanitizeLengthScale(String lengthScale) {
-    if (lengthScale == null || lengthScale.isEmpty()) return Optional.empty();
+    if (lengthScale == null || lengthScale.isEmpty())
+      return Optional.empty();
 
     String trimmed = lengthScale.trim();
     if (!isValidLengthScale(trimmed)) {
@@ -54,7 +57,8 @@ public final class MySqlDdlUtils {
   }
 
   public static Optional<String> sanitizeCharset(String charset) {
-    if (charset == null || charset.isEmpty()) return Optional.empty();
+    if (charset == null || charset.isEmpty())
+      return Optional.empty();
 
     String trimmed = charset.trim();
     if (!isValidIdentifierFormat(trimmed)) {
@@ -64,7 +68,8 @@ public final class MySqlDdlUtils {
   }
 
   public static Optional<String> sanitizeCollation(String collation) {
-    if (collation == null || collation.isEmpty()) return Optional.empty();
+    if (collation == null || collation.isEmpty())
+      return Optional.empty();
 
     String trimmed = collation.trim();
     if (!isValidIdentifierFormat(trimmed)) {
@@ -75,7 +80,8 @@ public final class MySqlDdlUtils {
   }
 
   public static Optional<String> sanitizeIndexType(String indexType) {
-    if (indexType == null || indexType.isEmpty()) return Optional.empty();
+    if (indexType == null || indexType.isEmpty())
+      return Optional.empty();
 
     String normalized = indexType.toUpperCase().trim();
     if (!VALID_INDEX_TYPES.contains(normalized)) {
@@ -85,7 +91,8 @@ public final class MySqlDdlUtils {
   }
 
   public static Optional<String> sanitizeSortDirection(String sortDir) {
-    if (sortDir == null || sortDir.isEmpty()) return Optional.empty();
+    if (sortDir == null || sortDir.isEmpty())
+      return Optional.empty();
 
     String normalized = sortDir.toUpperCase().trim();
     if (!VALID_SORT_DIRECTIONS.contains(normalized)) {
@@ -95,7 +102,8 @@ public final class MySqlDdlUtils {
   }
 
   public static Optional<String> sanitizeReferentialAction(String action) {
-    if (action == null || action.isEmpty()) return Optional.empty();
+    if (action == null || action.isEmpty())
+      return Optional.empty();
 
     String normalized = action.toUpperCase().trim();
     if (!VALID_REFERENTIAL_ACTIONS.contains(normalized)) {
@@ -107,10 +115,12 @@ public final class MySqlDdlUtils {
 
   // ^[A-Z][A-Z0-9_ ]*$
   private static boolean isValidDataType(String value) {
-    if (value.isEmpty()) return false;
+    if (value.isEmpty())
+      return false;
 
     char first = value.charAt(0);
-    if (first < 'A' || first > 'Z') return false;
+    if (first < 'A' || first > 'Z')
+      return false;
 
     for (int i = 1; i < value.length(); i++) {
       char c = value.charAt(i);
@@ -118,14 +128,16 @@ public final class MySqlDdlUtils {
           || (c >= '0' && c <= '9')
           || c == '_'
           || c == ' ';
-      if (!valid) return false;
+      if (!valid)
+        return false;
     }
     return true;
   }
 
   // ^[0-9]+(,[0-9]+)?$
   private static boolean isValidLengthScale(String value) {
-    if (value.isEmpty()) return false;
+    if (value.isEmpty())
+      return false;
 
     int commaIndex = value.indexOf(',');
 
@@ -133,7 +145,8 @@ public final class MySqlDdlUtils {
       return isDigitsOnly(value);
     }
 
-    if (commaIndex == 0 || commaIndex == value.length() - 1) return false;
+    if (commaIndex == 0 || commaIndex == value.length() - 1)
+      return false;
 
     String before = value.substring(0, commaIndex);
     String after = value.substring(commaIndex + 1);
@@ -142,22 +155,26 @@ public final class MySqlDdlUtils {
   }
 
   private static boolean isDigitsOnly(String value) {
-    if (value.isEmpty()) return false;
+    if (value.isEmpty())
+      return false;
     for (int i = 0; i < value.length(); i++) {
       char c = value.charAt(i);
-      if (c < '0' || c > '9') return false;
+      if (c < '0' || c > '9')
+        return false;
     }
     return true;
   }
 
   // ^[a-zA-Z][a-zA-Z0-9_]*$
   private static boolean isValidIdentifierFormat(String value) {
-    if (value.isEmpty()) return false;
+    if (value.isEmpty())
+      return false;
 
     char first = value.charAt(0);
     boolean validFirst = (first >= 'a' && first <= 'z')
         || (first >= 'A' && first <= 'Z');
-    if (!validFirst) return false;
+    if (!validFirst)
+      return false;
 
     for (int i = 1; i < value.length(); i++) {
       char c = value.charAt(i);
@@ -165,7 +182,8 @@ public final class MySqlDdlUtils {
           || (c >= 'A' && c <= 'Z')
           || (c >= '0' && c <= '9')
           || c == '_';
-      if (!valid) return false;
+      if (!valid)
+        return false;
     }
     return true;
   }

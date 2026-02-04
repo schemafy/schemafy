@@ -1,10 +1,5 @@
 package com.schemafy.core.erd.service.util.mysql;
 
-import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
-import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
-import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.sanitizeIndexType;
-import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.sanitizeSortDirection;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -16,6 +11,11 @@ import org.springframework.stereotype.Component;
 import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.IndexResponse;
 import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
+
+import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
+import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
+import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.sanitizeIndexType;
+import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.sanitizeSortDirection;
 
 @Component
 public class MySqlIndexGenerator {
