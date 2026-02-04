@@ -8,9 +8,11 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
+import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
@@ -29,6 +31,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelations
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnsByColumnIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipPort;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
@@ -45,6 +48,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;
   private final DeleteColumnPort deleteColumnPort;
+  private final GetColumnByIdPort getColumnByIdPort;
 
   private final GetConstraintColumnsByColumnIdPort getConstraintColumnsByColumnIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
@@ -63,12 +67,18 @@ public class DeleteColumnService implements DeleteColumnUseCase {
   private final DeleteRelationshipColumnsByColumnIdPort deleteRelationshipColumnsPort;
   private final DeleteRelationshipColumnsByRelationshipIdPort deleteRelationshipColumnsByRelationshipIdPort;
   private final DeleteRelationshipPort deleteRelationshipPort;
+  private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
 
   @Override
-  public Mono<Void> deleteColumn(DeleteColumnCommand command) {
+  public Mono<MutationResult<Void>> deleteColumn(DeleteColumnCommand command) {
+    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
     return rejectIfForeignKeyColumn(command.columnId())
-        .then(Mono.defer(() -> deleteColumnInternal(command.columnId(), ConcurrentHashMap.newKeySet())))
+        .then(Mono.defer(() -> deleteColumnInternal(
+            command.columnId(),
+            ConcurrentHashMap.newKeySet(),
+            affectedTableIds)))
+        .thenReturn(MutationResult.<Void>of(null, affectedTableIds))
         .as(transactionalOperator::transactional);
   }
 
@@ -85,18 +95,29 @@ public class DeleteColumnService implements DeleteColumnUseCase {
         });
   }
 
-  private Mono<Void> deleteColumnInternal(String columnId, Set<String> visitedColumnIds) {
+  private Mono<Void> deleteColumnInternal(
+      String columnId,
+      Set<String> visitedColumnIds,
+      Set<String> affectedTableIds) {
     if (!visitedColumnIds.add(columnId)) {
       return Mono.empty();
     }
 
-    return cascadeDeleteConstraints(columnId, visitedColumnIds)
+    Mono<Void> trackTableId = getColumnByIdPort.findColumnById(columnId)
+        .doOnNext(column -> affectedTableIds.add(column.tableId()))
+        .then();
+
+    return trackTableId
+        .then(cascadeDeleteConstraints(columnId, visitedColumnIds, affectedTableIds))
         .then(cascadeDeleteIndexes(columnId))
-        .then(cascadeDeleteRelationships(columnId))
+        .then(cascadeDeleteRelationships(columnId, affectedTableIds))
         .then(deleteColumnPort.deleteColumn(columnId));
   }
 
-  private Mono<Void> cascadeDeleteConstraints(String columnId, Set<String> visitedColumnIds) {
+  private Mono<Void> cascadeDeleteConstraints(
+      String columnId,
+      Set<String> visitedColumnIds,
+      Set<String> affectedTableIds) {
     return getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(columnId)
         .flatMap(constraintColumns -> {
           if (constraintColumns.isEmpty()) {
@@ -107,32 +128,52 @@ public class DeleteColumnService implements DeleteColumnUseCase {
               .map(ConstraintColumn::constraintId)
               .collect(Collectors.toSet());
 
-          return handlePkConstraintCascade(affectedConstraintIds, columnId, visitedColumnIds)
+          return handlePkConstraintCascade(
+              affectedConstraintIds,
+              columnId,
+              visitedColumnIds,
+              affectedTableIds)
               .then(deleteConstraintColumnsPort.deleteByColumnId(columnId))
               .then(deleteOrphanConstraints(affectedConstraintIds));
         });
   }
 
   private Mono<Void> handlePkConstraintCascade(
-      Set<String> constraintIds, String columnId, Set<String> visitedColumnIds) {
+      Set<String> constraintIds,
+      String columnId,
+      Set<String> visitedColumnIds,
+      Set<String> affectedTableIds) {
     return Flux.fromIterable(constraintIds)
         .concatMap(getConstraintByIdPort::findConstraintById)
         .filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
-        .concatMap(constraint -> cascadeDeleteRelationshipsByPkColumn(constraint, columnId, visitedColumnIds))
+        .concatMap(constraint -> cascadeDeleteRelationshipsByPkColumn(
+            constraint,
+            columnId,
+            visitedColumnIds,
+            affectedTableIds))
         .then();
   }
 
   private Mono<Void> cascadeDeleteRelationshipsByPkColumn(
-      Constraint pkConstraint, String pkColumnId, Set<String> visitedColumnIds) {
+      Constraint pkConstraint,
+      String pkColumnId,
+      Set<String> visitedColumnIds,
+      Set<String> affectedTableIds) {
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkConstraint.tableId())
         .flatMapMany(Flux::fromIterable)
         .concatMap(relationship -> cascadeDeleteRelationshipColumnsByPkColumnId(relationship, pkColumnId,
-            visitedColumnIds))
+            visitedColumnIds,
+            affectedTableIds))
         .then();
   }
 
   private Mono<Void> cascadeDeleteRelationshipColumnsByPkColumnId(
-      Relationship relationship, String pkColumnId, Set<String> visitedColumnIds) {
+      Relationship relationship,
+      String pkColumnId,
+      Set<String> visitedColumnIds,
+      Set<String> affectedTableIds) {
+    affectedTableIds.add(relationship.fkTableId());
+    affectedTableIds.add(relationship.pkTableId());
     return getRelationshipColumnsByRelationshipIdPort
         .findRelationshipColumnsByRelationshipId(relationship.id())
         .flatMap(columns -> {
@@ -165,7 +206,10 @@ public class DeleteColumnService implements DeleteColumnUseCase {
 
           return deleteRelationshipColumns
               .thenMany(Flux.fromIterable(fkColumnIds))
-              .concatMap(fkColumnId -> deleteColumnInternal(fkColumnId, visitedColumnIds))
+              .concatMap(fkColumnId -> deleteColumnInternal(
+                  fkColumnId,
+                  visitedColumnIds,
+                  affectedTableIds))
               .then();
         });
   }
@@ -212,7 +256,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
         .then();
   }
 
-  private Mono<Void> cascadeDeleteRelationships(String columnId) {
+  private Mono<Void> cascadeDeleteRelationships(String columnId, Set<String> affectedTableIds) {
     return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
         .flatMap(relationshipColumns -> {
           if (relationshipColumns.isEmpty()) {
@@ -224,17 +268,24 @@ public class DeleteColumnService implements DeleteColumnUseCase {
               .collect(Collectors.toSet());
 
           return deleteRelationshipColumnsPort.deleteByColumnId(columnId)
-              .then(deleteOrphanRelationships(affectedRelationshipIds));
+              .then(deleteOrphanRelationships(affectedRelationshipIds, affectedTableIds));
         });
   }
 
-  private Mono<Void> deleteOrphanRelationships(Set<String> relationshipIds) {
+  private Mono<Void> deleteOrphanRelationships(
+      Set<String> relationshipIds,
+      Set<String> affectedTableIds) {
     return Flux.fromIterable(relationshipIds)
         .concatMap(relationshipId -> getRelationshipColumnsByRelationshipIdPort
             .findRelationshipColumnsByRelationshipId(relationshipId)
             .flatMap(columns -> {
               if (columns.isEmpty()) {
-                return deleteRelationshipPort.deleteRelationship(relationshipId);
+                return getRelationshipByIdPort.findRelationshipById(relationshipId)
+                    .doOnNext(rel -> {
+                      affectedTableIds.add(rel.fkTableId());
+                      affectedTableIds.add(rel.pkTableId());
+                    })
+                    .then(deleteRelationshipPort.deleteRelationship(relationshipId));
               }
               return Mono.empty();
             }))

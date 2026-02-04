@@ -2,6 +2,7 @@ package com.schemafy.domain.erd.table.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.CreateTableResult;
 import com.schemafy.domain.erd.table.application.port.in.CreateTableUseCase;
@@ -23,7 +24,7 @@ public class CreateTableService implements CreateTableUseCase {
   private final TableExistsPort tableExistsPort;
 
   @Override
-  public Mono<CreateTableResult> createTable(CreateTableCommand command) {
+  public Mono<MutationResult<CreateTableResult>> createTable(CreateTableCommand command) {
     return tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.name())
         .flatMap(exists -> {
           if (exists) {
@@ -45,7 +46,8 @@ public class CreateTableService implements CreateTableUseCase {
                   savedTable.id(),
                   savedTable.name(),
                   savedTable.charset(),
-                  savedTable.collation()));
+                  savedTable.collation()))
+              .map(result -> MutationResult.of(result, id));
         });
   }
 

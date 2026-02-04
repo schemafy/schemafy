@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.controller;
 
+import java.util.Comparator;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -16,11 +17,41 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
+import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableExtraRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableMetaRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequest;
+import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.core.erd.controller.dto.response.ConstraintSnapshotResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexSnapshotResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
+import com.schemafy.core.erd.controller.dto.response.RelationshipSnapshotResponse;
 import com.schemafy.core.erd.controller.dto.response.TableResponse;
+import com.schemafy.core.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
+import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdUseCase;
+import com.schemafy.domain.erd.column.domain.Column;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdQuery;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
+import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdQuery;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdUseCase;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuery;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
+import com.schemafy.domain.erd.index.domain.IndexColumn;
+import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdQuery;
+import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
+import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
+import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
+import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableExtraUseCase;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableMetaCommand;
@@ -37,6 +68,7 @@ import com.schemafy.domain.erd.table.application.port.in.GetTablesBySchemaIdQuer
 import com.schemafy.domain.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -47,6 +79,13 @@ public class TableController {
   private final CreateTableUseCase createTableUseCase;
   private final GetTableUseCase getTableUseCase;
   private final GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
+  private final GetColumnsByTableIdUseCase getColumnsByTableIdUseCase;
+  private final GetConstraintsByTableIdUseCase getConstraintsByTableIdUseCase;
+  private final GetConstraintColumnsByConstraintIdUseCase getConstraintColumnsByConstraintIdUseCase;
+  private final GetIndexesByTableIdUseCase getIndexesByTableIdUseCase;
+  private final GetIndexColumnsByIndexIdUseCase getIndexColumnsByIndexIdUseCase;
+  private final GetRelationshipsByTableIdUseCase getRelationshipsByTableIdUseCase;
+  private final GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
   private final ChangeTableNameUseCase changeTableNameUseCase;
   private final ChangeTableMetaUseCase changeTableMetaUseCase;
   private final ChangeTableExtraUseCase changeTableExtraUseCase;
@@ -54,7 +93,7 @@ public class TableController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/tables")
-  public Mono<BaseResponse<TableResponse>> createTable(
+  public Mono<BaseResponse<MutationResponse<TableResponse>>> createTable(
       @Valid @RequestBody CreateTableRequest request) {
     CreateTableCommand command = new CreateTableCommand(
         request.schemaId(),
@@ -62,7 +101,9 @@ public class TableController {
         request.charset(),
         request.collation());
     return createTableUseCase.createTable(command)
-        .map(result -> TableResponse.from(result, request.schemaId()))
+        .map(result -> MutationResponse.of(
+            TableResponse.from(result.result(), request.schemaId()),
+            result.affectedTableIds()))
         .map(BaseResponse::success);
   }
 
@@ -73,6 +114,82 @@ public class TableController {
     GetTableQuery query = new GetTableQuery(tableId);
     return getTableUseCase.getTable(query)
         .map(TableResponse::from)
+        .map(BaseResponse::success);
+  }
+
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/tables/{tableId}/snapshot")
+  public Mono<BaseResponse<TableSnapshotResponse>> getTableSnapshot(
+      @PathVariable String tableId) {
+    Mono<TableResponse> tableMono = getTableUseCase
+        .getTable(new GetTableQuery(tableId))
+        .map(TableResponse::from);
+
+    Mono<List<ColumnResponse>> columnsMono = getColumnsByTableIdUseCase
+        .getColumnsByTableId(new GetColumnsByTableIdQuery(tableId))
+        .defaultIfEmpty(List.of())
+        .map(columns -> columns.stream()
+            .sorted(Comparator.comparingInt(Column::seqNo))
+            .map(ColumnResponse::from)
+            .toList());
+
+    Mono<List<ConstraintSnapshotResponse>> constraintsMono = getConstraintsByTableIdUseCase
+        .getConstraintsByTableId(new GetConstraintsByTableIdQuery(tableId))
+        .defaultIfEmpty(List.of())
+        .flatMap(constraints -> Flux.fromIterable(constraints)
+            .concatMap(constraint -> getConstraintColumnsByConstraintIdUseCase
+                .getConstraintColumnsByConstraintId(
+                    new GetConstraintColumnsByConstraintIdQuery(constraint.id()))
+                .defaultIfEmpty(List.of())
+                .map(columns -> columns.stream()
+                    .sorted(Comparator.comparingInt(ConstraintColumn::seqNo))
+                    .map(ConstraintColumnResponse::from)
+                    .toList())
+                .map(columns -> new ConstraintSnapshotResponse(
+                    ConstraintResponse.from(constraint),
+                    columns)))
+            .collectList());
+
+    Mono<List<IndexSnapshotResponse>> indexesMono = getIndexesByTableIdUseCase
+        .getIndexesByTableId(new GetIndexesByTableIdQuery(tableId))
+        .defaultIfEmpty(List.of())
+        .flatMap(indexes -> Flux.fromIterable(indexes)
+            .concatMap(index -> getIndexColumnsByIndexIdUseCase
+                .getIndexColumnsByIndexId(new GetIndexColumnsByIndexIdQuery(index.id()))
+                .defaultIfEmpty(List.of())
+                .map(columns -> columns.stream()
+                    .sorted(Comparator.comparingInt(IndexColumn::seqNo))
+                    .map(IndexColumnResponse::from)
+                    .toList())
+                .map(columns -> new IndexSnapshotResponse(
+                    IndexResponse.from(index),
+                    columns)))
+            .collectList());
+
+    Mono<List<RelationshipSnapshotResponse>> relationshipsMono = getRelationshipsByTableIdUseCase
+        .getRelationshipsByTableId(new GetRelationshipsByTableIdQuery(tableId))
+        .defaultIfEmpty(List.of())
+        .flatMap(relationships -> Flux.fromIterable(relationships)
+            .concatMap(relationship -> getRelationshipColumnsByRelationshipIdUseCase
+                .getRelationshipColumnsByRelationshipId(
+                    new GetRelationshipColumnsByRelationshipIdQuery(relationship.id()))
+                .defaultIfEmpty(List.of())
+                .map(columns -> columns.stream()
+                    .sorted(Comparator.comparingInt(RelationshipColumn::seqNo))
+                    .map(RelationshipColumnResponse::from)
+                    .toList())
+                .map(columns -> new RelationshipSnapshotResponse(
+                    RelationshipResponse.from(relationship),
+                    columns)))
+            .collectList());
+
+    return Mono.zip(tableMono, columnsMono, constraintsMono, indexesMono, relationshipsMono)
+        .map(tuple -> new TableSnapshotResponse(
+            tuple.getT1(),
+            tuple.getT2(),
+            tuple.getT3(),
+            tuple.getT4(),
+            tuple.getT5()))
         .map(BaseResponse::success);
   }
 
@@ -89,7 +206,7 @@ public class TableController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/name")
-  public Mono<BaseResponse<Void>> changeTableName(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeTableName(
       @PathVariable String tableId,
       @Valid @RequestBody ChangeTableNameRequest request) {
     ChangeTableNameCommand command = new ChangeTableNameCommand(
@@ -97,12 +214,13 @@ public class TableController {
         tableId,
         request.newName());
     return changeTableNameUseCase.changeTableName(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/meta")
-  public Mono<BaseResponse<Void>> changeTableMeta(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeTableMeta(
       @PathVariable String tableId,
       @RequestBody ChangeTableMetaRequest request) {
     ChangeTableMetaCommand command = new ChangeTableMetaCommand(
@@ -110,28 +228,31 @@ public class TableController {
         request.charset(),
         request.collation());
     return changeTableMetaUseCase.changeTableMeta(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/extra")
-  public Mono<BaseResponse<Void>> changeTableExtra(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeTableExtra(
       @PathVariable String tableId,
       @RequestBody ChangeTableExtraRequest request) {
     ChangeTableExtraCommand command = new ChangeTableExtraCommand(
         tableId,
         request.extra());
     return changeTableExtraUseCase.changeTableExtra(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/tables/{tableId}")
-  public Mono<BaseResponse<Void>> deleteTable(
+  public Mono<BaseResponse<MutationResponse<Void>>> deleteTable(
       @PathVariable String tableId) {
     DeleteTableCommand command = new DeleteTableCommand(tableId);
     return deleteTableUseCase.deleteTable(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
 }

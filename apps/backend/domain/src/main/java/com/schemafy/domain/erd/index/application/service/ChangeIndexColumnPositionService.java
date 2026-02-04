@@ -5,12 +5,15 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexColumnPositionCommand;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexColumnPositionUseCase;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnPositionPort;
+import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
+import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
 import com.schemafy.domain.erd.index.domain.exception.IndexPositionInvalidException;
 
 import lombok.RequiredArgsConstructor;
@@ -23,19 +26,24 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
   private final ChangeIndexColumnPositionPort changeIndexColumnPositionPort;
   private final GetIndexColumnByIdPort getIndexColumnByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
+  private final GetIndexByIdPort getIndexByIdPort;
 
   @Override
-  public Mono<Void> changeIndexColumnPosition(ChangeIndexColumnPositionCommand command) {
+  public Mono<MutationResult<Void>> changeIndexColumnPosition(
+      ChangeIndexColumnPositionCommand command) {
     if (command.seqNo() < 0) {
       return Mono.error(new IndexPositionInvalidException(
           "Index column position must be zero or positive"));
     }
     return getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
         .switchIfEmpty(Mono.error(new IndexPositionInvalidException("Index column not found")))
-        .flatMap(indexColumn -> getIndexColumnsByIndexIdPort
-            .findIndexColumnsByIndexId(indexColumn.indexId())
-            .defaultIfEmpty(List.of())
-            .flatMap(columns -> reorderColumns(indexColumn, columns, command.seqNo())));
+        .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
+            .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+            .flatMap(index -> getIndexColumnsByIndexIdPort
+                .findIndexColumnsByIndexId(indexColumn.indexId())
+                .defaultIfEmpty(List.of())
+                .flatMap(columns -> reorderColumns(indexColumn, columns, command.seqNo()))
+                .thenReturn(MutationResult.<Void>of(null, index.tableId()))));
   }
 
   private Mono<Void> reorderColumns(

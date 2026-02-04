@@ -2,6 +2,7 @@ package com.schemafy.domain.erd.column.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionUseCase;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnPositionPort;
@@ -20,12 +21,14 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
   private final GetColumnByIdPort getColumnByIdPort;
 
   @Override
-  public Mono<Void> changeColumnPosition(ChangeColumnPositionCommand command) {
+  public Mono<MutationResult<Void>> changeColumnPosition(ChangeColumnPositionCommand command) {
     return Mono.defer(() -> {
       ColumnValidator.validatePosition(command.seqNo());
       return getColumnByIdPort.findColumnById(command.columnId())
           .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
-          .flatMap(column -> changeColumnPositionPort.changeColumnPosition(column.id(), command.seqNo()));
+          .flatMap(column -> changeColumnPositionPort
+              .changeColumnPosition(column.id(), command.seqNo())
+              .thenReturn(MutationResult.<Void>of(null, column.tableId())));
     });
   }
 

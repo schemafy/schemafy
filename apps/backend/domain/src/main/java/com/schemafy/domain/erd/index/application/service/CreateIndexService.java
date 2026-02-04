@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.index.application.port.in.CreateIndexColumnCommand;
@@ -45,7 +46,7 @@ public class CreateIndexService implements CreateIndexUseCase {
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
 
   @Override
-  public Mono<CreateIndexResult> createIndex(CreateIndexCommand command) {
+  public Mono<MutationResult<CreateIndexResult>> createIndex(CreateIndexCommand command) {
     return Mono.defer(() -> {
       String normalizedName = normalizeName(command.name());
       List<CreateIndexColumnCommand> columnCommands = normalizeColumns(command.columns());
@@ -61,7 +62,8 @@ public class CreateIndexService implements CreateIndexUseCase {
                   return Mono.error(new IndexNameDuplicateException(
                       "Index name '%s' already exists in table".formatted(normalizedName)));
                 }
-                return validateAndCreate(table, command, normalizedName, columnCommands);
+                return validateAndCreate(table, command, normalizedName, columnCommands)
+                    .map(result -> MutationResult.of(result, table.id()));
               }));
     }).as(transactionalOperator::transactional);
   }

@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.index.application.port.in.RemoveIndexColumnCommand;
 import com.schemafy.domain.erd.index.application.port.in.RemoveIndexColumnUseCase;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnPositionPort;
@@ -34,7 +35,7 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
 
   @Override
-  public Mono<Void> removeIndexColumn(RemoveIndexColumnCommand command) {
+  public Mono<MutationResult<Void>> removeIndexColumn(RemoveIndexColumnCommand command) {
     return getIndexByIdPort.findIndexById(command.indexId())
         .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
         .flatMap(index -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
@@ -45,7 +46,8 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
                 return Mono.error(new IndexColumnNotExistException("Index column not found"));
               }
               return deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
-                  .then(handleRemainingColumns(index.id()));
+                  .then(handleRemainingColumns(index.id()))
+                  .thenReturn(MutationResult.<Void>of(null, index.tableId()));
             }))
         .as(transactionalOperator::transactional);
   }

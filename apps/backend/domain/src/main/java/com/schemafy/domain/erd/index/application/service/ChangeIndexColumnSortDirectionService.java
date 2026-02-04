@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexColumnSortDirectionCommand;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexColumnSortDirectionUseCase;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnSortDirectionPort;
@@ -35,7 +36,8 @@ public class ChangeIndexColumnSortDirectionService
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
 
   @Override
-  public Mono<Void> changeIndexColumnSortDirection(ChangeIndexColumnSortDirectionCommand command) {
+  public Mono<MutationResult<Void>> changeIndexColumnSortDirection(
+      ChangeIndexColumnSortDirectionCommand command) {
     if (command.sortDirection() == null) {
       return Mono.error(new IndexColumnSortDirectionInvalidException(
           "Sort direction is invalid for index column"));
@@ -45,7 +47,8 @@ public class ChangeIndexColumnSortDirectionService
             "Index column not found")))
         .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
             .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
-            .flatMap(index -> validateAndChange(index, indexColumn, command)));
+            .flatMap(index -> validateAndChange(index, indexColumn, command)
+                .thenReturn(MutationResult.<Void>of(null, index.tableId()))));
   }
 
   private Mono<Void> validateAndChange(

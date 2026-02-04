@@ -2,6 +2,7 @@ package com.schemafy.domain.erd.table.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableMetaCommand;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableMetaUseCase;
 import com.schemafy.domain.erd.table.application.port.out.ChangeTableMetaPort;
@@ -16,11 +17,12 @@ public class ChangeTableMetaService implements ChangeTableMetaUseCase {
   private final ChangeTableMetaPort changeTableMetaPort;
 
   @Override
-  public Mono<Void> changeTableMeta(ChangeTableMetaCommand command) {
+  public Mono<MutationResult<Void>> changeTableMeta(ChangeTableMetaCommand command) {
     return changeTableMetaPort.changeTableMeta(
         command.tableId(),
         command.charset(),
-        command.collation());
+        command.collation())
+        .thenReturn(MutationResult.<Void>of(null, command.tableId()));
   }
 
 }

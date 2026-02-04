@@ -1,11 +1,14 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
@@ -37,24 +40,31 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
   private final DeleteColumnUseCase deleteColumnUseCase;
 
   @Override
-  public Mono<Void> removeRelationshipColumn(RemoveRelationshipColumnCommand command) {
+  public Mono<MutationResult<Void>> removeRelationshipColumn(RemoveRelationshipColumnCommand command) {
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
         .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
-        .flatMap(relationship -> getRelationshipColumnByIdPort
-            .findRelationshipColumnById(command.relationshipColumnId())
-            .switchIfEmpty(Mono.error(new RelationshipColumnNotExistException(
-                "Relationship column not found")))
-            .flatMap(relationshipColumn -> {
-              if (!relationshipColumn.relationshipId().equalsIgnoreCase(relationship.id())) {
-                return Mono.error(new RelationshipColumnNotExistException(
-                    "Relationship column not found"));
-              }
-              String fkColumnId = relationshipColumn.fkColumnId();
-              return deleteRelationshipColumnPort
-                  .deleteRelationshipColumn(relationshipColumn.id())
-                  .then(handleRemainingColumns(relationship.id()))
-                  .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)));
-            }))
+        .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
+          return getRelationshipColumnByIdPort
+              .findRelationshipColumnById(command.relationshipColumnId())
+              .switchIfEmpty(Mono.error(new RelationshipColumnNotExistException(
+                  "Relationship column not found")))
+              .flatMap(relationshipColumn -> {
+                if (!relationshipColumn.relationshipId().equalsIgnoreCase(relationship.id())) {
+                  return Mono.error(new RelationshipColumnNotExistException(
+                      "Relationship column not found"));
+                }
+                String fkColumnId = relationshipColumn.fkColumnId();
+                return deleteRelationshipColumnPort
+                    .deleteRelationshipColumn(relationshipColumn.id())
+                    .then(handleRemainingColumns(relationship.id()))
+                    .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)))
+                    .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+                    .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+              });
+        })
         .as(transactionalOperator::transactional);
   }
 

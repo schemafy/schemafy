@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
+import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintNameRequest;
@@ -67,7 +68,7 @@ public class ConstraintController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/constraints")
-  public Mono<BaseResponse<ConstraintResponse>> createConstraint(
+  public Mono<BaseResponse<MutationResponse<ConstraintResponse>>> createConstraint(
       @Valid @RequestBody CreateConstraintRequest request) {
     CreateConstraintCommand command = new CreateConstraintCommand(
         request.tableId(),
@@ -77,7 +78,9 @@ public class ConstraintController {
         request.defaultExpr(),
         mapConstraintColumns(request.columns()));
     return createConstraintUseCase.createConstraint(command)
-        .map(result -> ConstraintResponse.from(result, request.tableId()))
+        .map(result -> MutationResponse.of(
+            ConstraintResponse.from(result.result(), request.tableId()),
+            result.affectedTableIds()))
         .map(BaseResponse::success);
   }
 
@@ -105,23 +108,25 @@ public class ConstraintController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/constraints/{constraintId}/name")
-  public Mono<BaseResponse<Void>> changeConstraintName(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeConstraintName(
       @PathVariable String constraintId,
       @Valid @RequestBody ChangeConstraintNameRequest request) {
     ChangeConstraintNameCommand command = new ChangeConstraintNameCommand(
         constraintId,
         request.newName());
     return changeConstraintNameUseCase.changeConstraintName(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/constraints/{constraintId}")
-  public Mono<BaseResponse<Void>> deleteConstraint(
+  public Mono<BaseResponse<MutationResponse<Void>>> deleteConstraint(
       @PathVariable String constraintId) {
     DeleteConstraintCommand command = new DeleteConstraintCommand(constraintId);
     return deleteConstraintUseCase.deleteConstraint(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -139,7 +144,7 @@ public class ConstraintController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/constraints/{constraintId}/columns")
-  public Mono<BaseResponse<AddConstraintColumnResponse>> addConstraintColumn(
+  public Mono<BaseResponse<MutationResponse<AddConstraintColumnResponse>>> addConstraintColumn(
       @PathVariable String constraintId,
       @Valid @RequestBody AddConstraintColumnRequest request) {
     AddConstraintColumnCommand command = new AddConstraintColumnCommand(
@@ -147,20 +152,23 @@ public class ConstraintController {
         request.columnId(),
         request.seqNo());
     return addConstraintColumnUseCase.addConstraintColumn(command)
-        .map(AddConstraintColumnResponse::from)
+        .map(result -> MutationResponse.of(
+            AddConstraintColumnResponse.from(result.result()),
+            result.affectedTableIds()))
         .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @DeleteMapping("/constraints/{constraintId}/columns/{constraintColumnId}")
-  public Mono<BaseResponse<Void>> removeConstraintColumn(
+  public Mono<BaseResponse<MutationResponse<Void>>> removeConstraintColumn(
       @PathVariable String constraintId,
       @PathVariable String constraintColumnId) {
     RemoveConstraintColumnCommand command = new RemoveConstraintColumnCommand(
         constraintId,
         constraintColumnId);
     return removeConstraintColumnUseCase.removeConstraintColumn(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -175,14 +183,15 @@ public class ConstraintController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/constraint-columns/{constraintColumnId}/position")
-  public Mono<BaseResponse<Void>> changeConstraintColumnPosition(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeConstraintColumnPosition(
       @PathVariable String constraintColumnId,
       @RequestBody ChangeConstraintColumnPositionRequest request) {
     ChangeConstraintColumnPositionCommand command = new ChangeConstraintColumnPositionCommand(
         constraintColumnId,
         request.seqNo());
     return changeConstraintColumnPositionUseCase.changeConstraintColumnPosition(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   private static List<CreateConstraintColumnCommand> mapConstraintColumns(

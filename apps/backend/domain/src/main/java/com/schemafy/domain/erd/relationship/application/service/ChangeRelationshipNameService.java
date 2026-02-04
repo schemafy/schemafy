@@ -2,6 +2,10 @@ package com.schemafy.domain.erd.relationship.application.service;
 
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipNameCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipNameUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipNamePort;
@@ -23,7 +27,7 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
   private final GetRelationshipByIdPort getRelationshipByIdPort;
 
   @Override
-  public Mono<Void> changeRelationshipName(ChangeRelationshipNameCommand command) {
+  public Mono<MutationResult<Void>> changeRelationshipName(ChangeRelationshipNameCommand command) {
     return Mono.defer(() -> {
       String normalizedName = normalizeName(command.newName());
       RelationshipValidator.validateName(normalizedName);
@@ -38,8 +42,12 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
                   return Mono.error(new RelationshipNameDuplicateException(
                       "Relationship name '%s' already exists in table".formatted(normalizedName)));
                 }
+                Set<String> affectedTableIds = new HashSet<>();
+                affectedTableIds.add(relationship.fkTableId());
+                affectedTableIds.add(relationship.pkTableId());
                 return changeRelationshipNamePort
-                    .changeRelationshipName(relationship.id(), normalizedName);
+                    .changeRelationshipName(relationship.id(), normalizedName)
+                    .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
               }));
     });
   }

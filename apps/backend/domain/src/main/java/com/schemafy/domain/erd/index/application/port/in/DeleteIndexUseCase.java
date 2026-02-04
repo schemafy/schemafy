@@ -1,9 +1,11 @@
 package com.schemafy.domain.erd.index.application.port.in;
 
+import com.schemafy.domain.common.MutationResult;
+
 import reactor.core.publisher.Mono;
 
 public interface DeleteIndexUseCase {
 
-  Mono<Void> deleteIndex(DeleteIndexCommand command);
+  Mono<MutationResult<Void>> deleteIndex(DeleteIndexCommand command);
 
 }

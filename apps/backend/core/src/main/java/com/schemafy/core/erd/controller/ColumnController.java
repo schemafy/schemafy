@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
+import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnMetaRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnNameRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnPositionRequest;
@@ -58,7 +59,7 @@ public class ColumnController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/columns")
-  public Mono<BaseResponse<ColumnResponse>> createColumn(
+  public Mono<BaseResponse<MutationResponse<ColumnResponse>>> createColumn(
       @Valid @RequestBody CreateColumnRequest request) {
     CreateColumnCommand command = new CreateColumnCommand(
         request.tableId(),
@@ -73,7 +74,9 @@ public class ColumnController {
         request.collation(),
         request.comment());
     return createColumnUseCase.createColumn(command)
-        .map(result -> ColumnResponse.from(result, request.tableId()))
+        .map(result -> MutationResponse.of(
+            ColumnResponse.from(result.result(), request.tableId()),
+            result.affectedTableIds()))
         .map(BaseResponse::success);
   }
 
@@ -101,19 +104,20 @@ public class ColumnController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/name")
-  public Mono<BaseResponse<Void>> changeColumnName(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeColumnName(
       @PathVariable String columnId,
       @Valid @RequestBody ChangeColumnNameRequest request) {
     ChangeColumnNameCommand command = new ChangeColumnNameCommand(
         columnId,
         request.newName());
     return changeColumnNameUseCase.changeColumnName(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/type")
-  public Mono<BaseResponse<Void>> changeColumnType(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeColumnType(
       @PathVariable String columnId,
       @Valid @RequestBody ChangeColumnTypeRequest request) {
     ChangeColumnTypeCommand command = new ChangeColumnTypeCommand(
@@ -123,12 +127,13 @@ public class ColumnController {
         request.precision(),
         request.scale());
     return changeColumnTypeUseCase.changeColumnType(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/meta")
-  public Mono<BaseResponse<Void>> changeColumnMeta(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeColumnMeta(
       @PathVariable String columnId,
       @RequestBody ChangeColumnMetaRequest request) {
     ChangeColumnMetaCommand command = new ChangeColumnMetaCommand(
@@ -138,28 +143,31 @@ public class ColumnController {
         request.collation(),
         request.comment());
     return changeColumnMetaUseCase.changeColumnMeta(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/position")
-  public Mono<BaseResponse<Void>> changeColumnPosition(
+  public Mono<BaseResponse<MutationResponse<Void>>> changeColumnPosition(
       @PathVariable String columnId,
       @RequestBody ChangeColumnPositionRequest request) {
     ChangeColumnPositionCommand command = new ChangeColumnPositionCommand(
         columnId,
         request.seqNo());
     return changeColumnPositionUseCase.changeColumnPosition(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/columns/{columnId}")
-  public Mono<BaseResponse<Void>> deleteColumn(
+  public Mono<BaseResponse<MutationResponse<Void>>> deleteColumn(
       @PathVariable String columnId) {
     DeleteColumnCommand command = new DeleteColumnCommand(columnId);
     return deleteColumnUseCase.deleteColumn(command)
-        .then(Mono.just(BaseResponse.success(null)));
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
   }
 
 }

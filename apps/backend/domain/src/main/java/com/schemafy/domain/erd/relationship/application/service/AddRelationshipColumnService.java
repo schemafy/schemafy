@@ -1,10 +1,13 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.relationship.application.port.in.AddRelationshipColumnCommand;
@@ -37,11 +40,22 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Override
-  public Mono<AddRelationshipColumnResult> addRelationshipColumn(AddRelationshipColumnCommand command) {
+  public Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumn(
+      AddRelationshipColumnCommand command) {
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
         .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
-        .flatMap(relationship -> loadTables(relationship)
-            .flatMap(tables -> addColumn(relationship, tables.fkTable(), tables.pkTable(), command)));
+        .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
+          return loadTables(relationship)
+              .flatMap(tables -> addColumn(
+                  relationship,
+                  tables.fkTable(),
+                  tables.pkTable(),
+                  command))
+              .map(result -> MutationResult.of(result, affectedTableIds));
+        });
   }
 
   private Mono<TablePair> loadTables(Relationship relationship) {

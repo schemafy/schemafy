@@ -3,10 +3,13 @@ package com.schemafy.domain.erd.constraint.application.service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -51,7 +54,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
   private final PkCascadeHelper pkCascadeHelper;
 
   @Override
-  public Mono<CreateConstraintResult> createConstraint(CreateConstraintCommand command) {
+  public Mono<MutationResult<CreateConstraintResult>> createConstraint(CreateConstraintCommand command) {
     return Mono.defer(() -> {
       String normalizedName = normalizeName(command.name());
       String normalizedCheckExpr = normalizeOptional(command.checkExpr());
@@ -63,33 +66,39 @@ public class CreateConstraintService implements CreateConstraintUseCase {
 
       return getTableByIdPort.findTableById(command.tableId())
           .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
-          .flatMap(table -> constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
-              .flatMap(exists -> {
-                if (exists) {
-                  return Mono.error(new ConstraintNameDuplicateException(
-                      "Constraint name '%s' already exists in schema".formatted(normalizedName)));
-                }
-                return fetchTableContext(table.id())
-                    .flatMap(context -> createConstraint(
-                        table,
-                        context,
-                        command.kind(),
-                        normalizedName,
-                        normalizedCheckExpr,
-                        normalizedDefaultExpr,
-                        columnCommands));
-              }));
+          .flatMap(table -> {
+            Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+            affectedTableIds.add(table.id());
+            return constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
+                .flatMap(exists -> {
+                  if (exists) {
+                    return Mono.error(new ConstraintNameDuplicateException(
+                        "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                  }
+                  return fetchTableContext(table.id())
+                      .flatMap(context -> createConstraint(
+                          table,
+                          context,
+                          command.kind(),
+                          normalizedName,
+                          normalizedCheckExpr,
+                          normalizedDefaultExpr,
+                          columnCommands,
+                          affectedTableIds));
+                });
+          });
     }).as(transactionalOperator::transactional);
   }
 
-  private Mono<CreateConstraintResult> createConstraint(
+  private Mono<MutationResult<CreateConstraintResult>> createConstraint(
       Table table,
       TableContext context,
       ConstraintKind kind,
       String name,
       String checkExpr,
       String defaultExpr,
-      List<CreateConstraintColumnCommand> columnCommands) {
+      List<CreateConstraintColumnCommand> columnCommands,
+      Set<String> affectedTableIds) {
     if (kind == null) {
       return Mono.error(new InvalidValueException("Constraint kind must not be null"));
     }
@@ -133,13 +142,14 @@ public class CreateConstraintService implements CreateConstraintUseCase {
 
     return createConstraintPort.createConstraint(constraint)
         .flatMap(savedConstraint -> createConstraintColumns(savedConstraint.id(), columnCommands)
-            .then(cascadeCreateFkColumnsIfPk(kind, table.id(), columnIds))
+            .then(cascadeCreateFkColumnsIfPk(kind, table.id(), columnIds, affectedTableIds))
             .thenReturn(new CreateConstraintResult(
                 savedConstraint.id(),
                 savedConstraint.name(),
                 savedConstraint.kind(),
                 savedConstraint.checkExpr(),
-                savedConstraint.defaultExpr())));
+                savedConstraint.defaultExpr())))
+        .map(result -> MutationResult.of(result, affectedTableIds));
   }
 
   private Mono<TableContext> fetchTableContext(String tableId) {
@@ -204,14 +214,20 @@ public class CreateConstraintService implements CreateConstraintUseCase {
   }
 
   private Mono<Void> cascadeCreateFkColumnsIfPk(
-      ConstraintKind kind, String pkTableId, List<String> pkColumnIds) {
+      ConstraintKind kind,
+      String pkTableId,
+      List<String> pkColumnIds,
+      Set<String> affectedTableIds) {
     if (kind != ConstraintKind.PRIMARY_KEY) {
       return Mono.empty();
     }
     return Flux.fromIterable(pkColumnIds)
         .concatMap(pkColumnId -> getColumnByIdPort.findColumnById(pkColumnId)
             .flatMap(pkColumn -> pkCascadeHelper.cascadeAddPkColumn(
-                pkTableId, pkColumn, new HashSet<>())))
+                pkTableId,
+                pkColumn,
+                new HashSet<>(),
+                affectedTableIds)))
         .then();
   }
 

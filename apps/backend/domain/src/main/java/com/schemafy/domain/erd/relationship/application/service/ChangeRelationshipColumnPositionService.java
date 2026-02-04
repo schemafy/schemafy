@@ -1,16 +1,22 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipColumnPositionUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
+import com.schemafy.domain.erd.relationship.domain.Relationship;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
 
 import lombok.RequiredArgsConstructor;
@@ -24,9 +30,11 @@ public class ChangeRelationshipColumnPositionService
   private final ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort;
   private final GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
+  private final GetRelationshipByIdPort getRelationshipByIdPort;
 
   @Override
-  public Mono<Void> changeRelationshipColumnPosition(ChangeRelationshipColumnPositionCommand command) {
+  public Mono<MutationResult<Void>> changeRelationshipColumnPosition(
+      ChangeRelationshipColumnPositionCommand command) {
     if (command.seqNo() < 0) {
       return Mono.error(new RelationshipPositionInvalidException(
           "Relationship column position must be zero or positive"));
@@ -34,13 +42,24 @@ public class ChangeRelationshipColumnPositionService
     return getRelationshipColumnByIdPort.findRelationshipColumnById(command.relationshipColumnId())
         .switchIfEmpty(Mono.error(new RelationshipPositionInvalidException(
             "Relationship column not found")))
-        .flatMap(relationshipColumn -> getRelationshipColumnsByRelationshipIdPort
-            .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
-            .defaultIfEmpty(List.of())
-            .flatMap(columns -> reorderColumns(
-                relationshipColumn,
-                columns,
-                command.seqNo())));
+        .flatMap(relationshipColumn -> getRelationshipByIdPort
+            .findRelationshipById(relationshipColumn.relationshipId())
+            .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+            .flatMap(relationship -> getRelationshipColumnsByRelationshipIdPort
+                .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
+                .defaultIfEmpty(List.of())
+                .flatMap(columns -> reorderColumns(
+                    relationshipColumn,
+                    columns,
+                    command.seqNo()))
+                .thenReturn(MutationResult.<Void>of(null, toTableIdSet(relationship)))));
+  }
+
+  private static Set<String> toTableIdSet(Relationship relationship) {
+    Set<String> affectedTableIds = new HashSet<>();
+    affectedTableIds.add(relationship.fkTableId());
+    affectedTableIds.add(relationship.pkTableId());
+    return affectedTableIds;
   }
 
   private Mono<Void> reorderColumns(

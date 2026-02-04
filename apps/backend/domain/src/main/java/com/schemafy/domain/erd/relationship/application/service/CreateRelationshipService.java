@@ -11,6 +11,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -59,7 +60,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   private final PkCascadeHelper pkCascadeHelper;
 
   @Override
-  public Mono<CreateRelationshipResult> createRelationship(CreateRelationshipCommand command) {
+  public Mono<MutationResult<CreateRelationshipResult>> createRelationship(
+      CreateRelationshipCommand command) {
     return Mono.defer(() -> {
       return getTableByIdPort.findTableById(command.fkTableId())
           .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
@@ -67,17 +69,24 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
           .flatMap(fkTable -> getTableByIdPort.findTableById(command.pkTableId())
               .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
                   "Relationship pk table not found")))
-              .flatMap(pkTable -> createRelationshipAuto(
-                  fkTable,
-                  pkTable,
-                  command)));
+              .flatMap(pkTable -> {
+                Set<String> affectedTableIds = new HashSet<>();
+                affectedTableIds.add(fkTable.id());
+                affectedTableIds.add(pkTable.id());
+                return createRelationshipAuto(
+                    fkTable,
+                    pkTable,
+                    command,
+                    affectedTableIds);
+              }));
     }).as(transactionalOperator::transactional);
   }
 
-  private Mono<CreateRelationshipResult> createRelationshipAuto(
+  private Mono<MutationResult<CreateRelationshipResult>> createRelationshipAuto(
       Table fkTable,
       Table pkTable,
-      CreateRelationshipCommand command) {
+      CreateRelationshipCommand command,
+      Set<String> affectedTableIds) {
     if (!fkTable.schemaId().equals(pkTable.schemaId())) {
       return Mono.error(new RelationshipTargetTableNotExistException(
           "Relationship tables must belong to the same schema"));
@@ -117,17 +126,19 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                   command,
                   normalizedName,
                   pkColumns,
-                  fkColumns);
+                  fkColumns,
+                  affectedTableIds);
             }));
   }
 
-  private Mono<CreateRelationshipResult> persistAutoRelationship(
+  private Mono<MutationResult<CreateRelationshipResult>> persistAutoRelationship(
       Table fkTable,
       Table pkTable,
       CreateRelationshipCommand command,
       String normalizedName,
       List<Column> pkColumns,
-      List<Column> fkColumns) {
+      List<Column> fkColumns,
+      Set<String> affectedTableIds) {
     String relationshipId = ulidGeneratorPort.generate();
     Relationship relationship = new Relationship(
         relationshipId,
@@ -144,7 +155,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
             fkTable,
             command.kind(),
             pkColumns,
-            fkColumns)
+            fkColumns,
+            affectedTableIds)
             .thenReturn(new CreateRelationshipResult(
                 savedRelationship.id(),
                 savedRelationship.fkTableId(),
@@ -152,7 +164,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                 savedRelationship.name(),
                 savedRelationship.kind(),
                 savedRelationship.cardinality(),
-                savedRelationship.extra())));
+                savedRelationship.extra())))
+        .map(result -> MutationResult.of(result, affectedTableIds));
   }
 
   private Mono<Void> createAutoRelationshipColumns(
@@ -160,7 +173,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       Table fkTable,
       RelationshipKind kind,
       List<Column> pkColumns,
-      List<Column> existingFkColumns) {
+      List<Column> existingFkColumns,
+      Set<String> affectedTableIds) {
     Set<String> existingNames = new HashSet<>();
     for (Column column : existingFkColumns) {
       existingNames.add(column.name());
@@ -206,7 +220,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                 return createRelColumn.then(pkCascadeHelper.addPkColumnAndCascade(
                     fkTable.id(),
                     savedFkColumn,
-                    new HashSet<>()));
+                    new HashSet<>(),
+                    affectedTableIds));
               });
         })
         .then();

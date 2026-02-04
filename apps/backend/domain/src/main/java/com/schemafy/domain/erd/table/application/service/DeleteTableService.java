@@ -1,10 +1,13 @@
 package com.schemafy.domain.erd.table.application.service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -31,18 +34,25 @@ public class DeleteTableService implements DeleteTableUseCase {
   private final DeleteColumnUseCase deleteColumnUseCase;
 
   @Override
-  public Mono<Void> deleteTable(DeleteTableCommand command) {
+  public Mono<MutationResult<Void>> deleteTable(DeleteTableCommand command) {
     String tableId = command.tableId();
+    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+    affectedTableIds.add(tableId);
     return getRelationshipsByTableIdPort.findRelationshipsByTableId(tableId)
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
         .concatMap(relationship -> deleteRelationshipUseCase.deleteRelationship(
-            new DeleteRelationshipCommand(relationship.id())))
+            new DeleteRelationshipCommand(relationship.id()))
+            .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+            .then())
         .then(Mono.defer(() -> getColumnsByTableIdPort.findColumnsByTableId(tableId)))
         .flatMapMany(Flux::fromIterable)
         .concatMap(column -> deleteColumnUseCase.deleteColumn(
-            new DeleteColumnCommand(column.id())))
+            new DeleteColumnCommand(column.id()))
+            .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+            .then())
         .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
+        .thenReturn(MutationResult.<Void>of(null, affectedTableIds))
         .as(transactionalOperator::transactional);
   }
 

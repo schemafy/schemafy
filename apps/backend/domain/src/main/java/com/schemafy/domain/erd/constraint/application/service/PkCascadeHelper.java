@@ -67,12 +67,14 @@ public class PkCascadeHelper {
   public Mono<List<CascadeCreatedInfo>> cascadeAddPkColumn(
       String pkTableId,
       Column pkColumn,
-      Set<String> visited) {
+      Set<String> visited,
+      Set<String> affectedTableIds) {
 
     String visitKey = pkTableId + ":" + pkColumn.id();
     if (!visited.add(visitKey)) {
       return Mono.just(List.of());
     }
+    affectedTableIds.add(pkTableId);
 
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkTableId)
         .defaultIfEmpty(List.of())
@@ -81,7 +83,7 @@ public class PkCascadeHelper {
             return Mono.just(List.of());
           }
           return Flux.fromIterable(relationships)
-              .concatMap(rel -> cascadeAddToRelationship(rel, pkColumn, visited))
+              .concatMap(rel -> cascadeAddToRelationship(rel, pkColumn, visited, affectedTableIds))
               .collectList()
               .map(lists -> lists.stream()
                   .flatMap(List::stream)
@@ -92,17 +94,19 @@ public class PkCascadeHelper {
   public Mono<Void> cascadeRemovePkColumn(
       String pkTableId,
       String pkColumnId,
-      Set<String> visited) {
+      Set<String> visited,
+      Set<String> affectedTableIds) {
 
     String visitKey = pkTableId + ":" + pkColumnId;
     if (!visited.add(visitKey)) {
       return Mono.empty();
     }
+    affectedTableIds.add(pkTableId);
 
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkTableId)
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
-        .concatMap(rel -> cascadeRemoveFromRelationship(rel, pkColumnId, visited))
+        .concatMap(rel -> cascadeRemoveFromRelationship(rel, pkColumnId, visited, affectedTableIds))
         .then();
   }
 
@@ -110,34 +114,38 @@ public class PkCascadeHelper {
       Relationship relationship,
       RelationshipKind oldKind,
       RelationshipKind newKind,
-      Set<String> visited) {
+      Set<String> visited,
+      Set<String> affectedTableIds) {
 
     if (oldKind == newKind) {
       return Mono.empty();
     }
 
     if (newKind == RelationshipKind.IDENTIFYING) {
-      return addFkColumnsToPk(relationship, visited);
+      return addFkColumnsToPk(relationship, visited, affectedTableIds);
     } else {
-      return removeFkColumnsFromPk(relationship, visited);
+      return removeFkColumnsFromPk(relationship, visited, affectedTableIds);
     }
   }
 
   public Mono<Void> addPkColumnAndCascade(
       String pkTableId,
       Column pkColumn,
-      Set<String> visited) {
-    return addColumnToFkTablePk(pkTableId, pkColumn)
-        .then(cascadeAddPkColumn(pkTableId, pkColumn, visited))
+      Set<String> visited,
+      Set<String> affectedTableIds) {
+    return addColumnToFkTablePk(pkTableId, pkColumn, affectedTableIds)
+        .then(cascadeAddPkColumn(pkTableId, pkColumn, visited, affectedTableIds))
         .then();
   }
 
   private Mono<List<CascadeCreatedInfo>> cascadeAddToRelationship(
       Relationship relationship,
       Column pkColumn,
-      Set<String> visited) {
+      Set<String> visited,
+      Set<String> affectedTableIds) {
 
     String fkTableId = relationship.fkTableId();
+    affectedTableIds.add(fkTableId);
 
     return Mono.zip(
         getColumnsByTableIdPort.findColumnsByTableId(fkTableId).defaultIfEmpty(List.of()),
@@ -185,13 +193,17 @@ public class PkCascadeHelper {
                               null);
 
                           if (relationship.kind() == RelationshipKind.IDENTIFYING) {
-                            return addColumnToFkTablePk(fkTableId, savedFkColumn)
+                            return addColumnToFkTablePk(fkTableId, savedFkColumn, affectedTableIds)
                                 .flatMap(pkInfo -> {
                                   results.add(baseInfo.withPkInfo(
                                       pkInfo.constraintColumnId(),
                                       pkInfo.constraintId()));
 
-                                  return cascadeAddPkColumn(fkTableId, savedFkColumn, visited)
+                                  return cascadeAddPkColumn(
+                                      fkTableId,
+                                      savedFkColumn,
+                                      visited,
+                                      affectedTableIds)
                                       .map(childResults -> {
                                         results.addAll(childResults);
                                         return results;
@@ -209,8 +221,10 @@ public class PkCascadeHelper {
   private Mono<Void> cascadeRemoveFromRelationship(
       Relationship relationship,
       String pkColumnId,
-      Set<String> visited) {
+      Set<String> visited,
+      Set<String> affectedTableIds) {
 
+    affectedTableIds.add(relationship.fkTableId());
     return getRelationshipColumnsByRelationshipIdPort
         .findRelationshipColumnsByRelationshipId(relationship.id())
         .defaultIfEmpty(List.of())
@@ -234,8 +248,15 @@ public class PkCascadeHelper {
           Mono<Void> identifyingCascade = Mono.empty();
           if (relationship.kind() == RelationshipKind.IDENTIFYING) {
             identifyingCascade = Flux.fromIterable(fkColumnIds)
-                .concatMap(fkColumnId -> removeColumnFromFkTablePk(relationship.fkTableId(), fkColumnId)
-                    .then(cascadeRemovePkColumn(relationship.fkTableId(), fkColumnId, visited)))
+                .concatMap(fkColumnId -> removeColumnFromFkTablePk(
+                    relationship.fkTableId(),
+                    fkColumnId,
+                    affectedTableIds)
+                    .then(cascadeRemovePkColumn(
+                        relationship.fkTableId(),
+                        fkColumnId,
+                        visited,
+                        affectedTableIds)))
                 .then();
           }
 
@@ -252,7 +273,9 @@ public class PkCascadeHelper {
 
           Mono<Void> deleteFkColumns = Flux.fromIterable(fkColumnIds)
               .concatMap(fkColumnId -> deleteColumnUseCase.deleteColumn(
-                  new DeleteColumnCommand(fkColumnId)))
+                  new DeleteColumnCommand(fkColumnId))
+                  .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+                  .then())
               .then();
 
           return identifyingCascade
@@ -261,7 +284,11 @@ public class PkCascadeHelper {
         });
   }
 
-  private Mono<PkAddResult> addColumnToFkTablePk(String fkTableId, Column fkColumn) {
+  private Mono<PkAddResult> addColumnToFkTablePk(
+      String fkTableId,
+      Column fkColumn,
+      Set<String> affectedTableIds) {
+    affectedTableIds.add(fkTableId);
     return findOrCreatePkConstraint(fkTableId)
         .flatMap(pkConstraint -> getConstraintColumnsByConstraintIdPort
             .findConstraintColumnsByConstraintId(pkConstraint.id())
@@ -278,7 +305,11 @@ public class PkCascadeHelper {
             }));
   }
 
-  private Mono<Void> removeColumnFromFkTablePk(String fkTableId, String fkColumnId) {
+  private Mono<Void> removeColumnFromFkTablePk(
+      String fkTableId,
+      String fkColumnId,
+      Set<String> affectedTableIds) {
+    affectedTableIds.add(fkTableId);
     return getConstraintsByTableIdPort.findConstraintsByTableId(fkTableId)
         .defaultIfEmpty(List.of())
         .flatMap(constraints -> {
@@ -350,8 +381,12 @@ public class PkCascadeHelper {
         });
   }
 
-  private Mono<Void> addFkColumnsToPk(Relationship relationship, Set<String> visited) {
+  private Mono<Void> addFkColumnsToPk(
+      Relationship relationship,
+      Set<String> visited,
+      Set<String> affectedTableIds) {
     String fkTableId = relationship.fkTableId();
+    affectedTableIds.add(fkTableId);
 
     return getRelationshipColumnsByRelationshipIdPort
         .findRelationshipColumnsByRelationshipId(relationship.id())
@@ -363,14 +398,25 @@ public class PkCascadeHelper {
 
           return Flux.fromIterable(relColumns)
               .concatMap(rc -> getColumnByIdPort.findColumnById(rc.fkColumnId())
-                  .flatMap(fkColumn -> addColumnToFkTablePk(fkTableId, fkColumn)
-                      .then(cascadeAddPkColumn(fkTableId, fkColumn, visited))))
+                  .flatMap(fkColumn -> addColumnToFkTablePk(
+                      fkTableId,
+                      fkColumn,
+                      affectedTableIds)
+                      .then(cascadeAddPkColumn(
+                          fkTableId,
+                          fkColumn,
+                          visited,
+                          affectedTableIds))))
               .then();
         });
   }
 
-  private Mono<Void> removeFkColumnsFromPk(Relationship relationship, Set<String> visited) {
+  private Mono<Void> removeFkColumnsFromPk(
+      Relationship relationship,
+      Set<String> visited,
+      Set<String> affectedTableIds) {
     String fkTableId = relationship.fkTableId();
+    affectedTableIds.add(fkTableId);
 
     return getRelationshipColumnsByRelationshipIdPort
         .findRelationshipColumnsByRelationshipId(relationship.id())
@@ -383,8 +429,15 @@ public class PkCascadeHelper {
           return Flux.fromIterable(relColumns)
               .concatMap(rc -> {
                 String fkColumnId = rc.fkColumnId();
-                return removeColumnFromFkTablePk(fkTableId, fkColumnId)
-                    .then(cascadeRemovePkColumn(fkTableId, fkColumnId, visited));
+                return removeColumnFromFkTablePk(
+                    fkTableId,
+                    fkColumnId,
+                    affectedTableIds)
+                    .then(cascadeRemovePkColumn(
+                        fkTableId,
+                        fkColumnId,
+                        visited,
+                        affectedTableIds));
               })
               .then();
         });
