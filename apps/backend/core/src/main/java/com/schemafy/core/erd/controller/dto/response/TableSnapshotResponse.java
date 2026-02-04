@@ -6,7 +6,6 @@ public record TableSnapshotResponse(
     TableResponse table,
     List<ColumnResponse> columns,
     List<ConstraintSnapshotResponse> constraints,
-    List<IndexSnapshotResponse> indexes, // TODO: 이거 제거
     List<RelationshipSnapshotResponse> relationships) {
 }
 

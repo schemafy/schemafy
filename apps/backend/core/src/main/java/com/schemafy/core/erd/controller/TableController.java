@@ -2,6 +2,8 @@ package com.schemafy.core.erd.controller;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import jakarta.validation.Valid;
 
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
@@ -26,9 +29,6 @@ import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintSnapshotResponse;
-import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
-import com.schemafy.core.erd.controller.dto.response.IndexResponse;
-import com.schemafy.core.erd.controller.dto.response.IndexSnapshotResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipSnapshotResponse;
@@ -42,11 +42,6 @@ import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColum
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdQuery;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdUseCase;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuery;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
-import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
@@ -82,8 +77,6 @@ public class TableController {
   private final GetColumnsByTableIdUseCase getColumnsByTableIdUseCase;
   private final GetConstraintsByTableIdUseCase getConstraintsByTableIdUseCase;
   private final GetConstraintColumnsByConstraintIdUseCase getConstraintColumnsByConstraintIdUseCase;
-  private final GetIndexesByTableIdUseCase getIndexesByTableIdUseCase;
-  private final GetIndexColumnsByIndexIdUseCase getIndexColumnsByIndexIdUseCase;
   private final GetRelationshipsByTableIdUseCase getRelationshipsByTableIdUseCase;
   private final GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
   private final ChangeTableNameUseCase changeTableNameUseCase;
@@ -121,6 +114,22 @@ public class TableController {
   @GetMapping("/tables/{tableId}/snapshot")
   public Mono<BaseResponse<TableSnapshotResponse>> getTableSnapshot(
       @PathVariable String tableId) {
+    return fetchTableSnapshot(tableId)
+        .map(BaseResponse::success);
+  }
+
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/tables/snapshots")
+  public Mono<BaseResponse<Map<String, TableSnapshotResponse>>> getTableSnapshots(
+      @RequestParam List<String> tableIds) {
+    return Flux.fromIterable(tableIds)
+        .flatMap(tableId -> fetchTableSnapshot(tableId)
+            .onErrorResume(e -> Mono.empty()))
+        .collectMap(snapshot -> snapshot.table().id(), Function.identity())
+        .map(BaseResponse::success);
+  }
+
+  private Mono<TableSnapshotResponse> fetchTableSnapshot(String tableId) {
     Mono<TableResponse> tableMono = getTableUseCase
         .getTable(new GetTableQuery(tableId))
         .map(TableResponse::from);
@@ -150,22 +159,6 @@ public class TableController {
                     columns)))
             .collectList());
 
-    Mono<List<IndexSnapshotResponse>> indexesMono = getIndexesByTableIdUseCase
-        .getIndexesByTableId(new GetIndexesByTableIdQuery(tableId))
-        .defaultIfEmpty(List.of())
-        .flatMap(indexes -> Flux.fromIterable(indexes)
-            .concatMap(index -> getIndexColumnsByIndexIdUseCase
-                .getIndexColumnsByIndexId(new GetIndexColumnsByIndexIdQuery(index.id()))
-                .defaultIfEmpty(List.of())
-                .map(columns -> columns.stream()
-                    .sorted(Comparator.comparingInt(IndexColumn::seqNo))
-                    .map(IndexColumnResponse::from)
-                    .toList())
-                .map(columns -> new IndexSnapshotResponse(
-                    IndexResponse.from(index),
-                    columns)))
-            .collectList());
-
     Mono<List<RelationshipSnapshotResponse>> relationshipsMono = getRelationshipsByTableIdUseCase
         .getRelationshipsByTableId(new GetRelationshipsByTableIdQuery(tableId))
         .defaultIfEmpty(List.of())
@@ -183,14 +176,12 @@ public class TableController {
                     columns)))
             .collectList());
 
-    return Mono.zip(tableMono, columnsMono, constraintsMono, indexesMono, relationshipsMono)
+    return Mono.zip(tableMono, columnsMono, constraintsMono, relationshipsMono)
         .map(tuple -> new TableSnapshotResponse(
             tuple.getT1(),
             tuple.getT2(),
             tuple.getT3(),
-            tuple.getT4(),
-            tuple.getT5()))
-        .map(BaseResponse::success);
+            tuple.getT4()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
