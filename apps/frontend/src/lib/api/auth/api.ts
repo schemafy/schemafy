@@ -1,6 +1,5 @@
 import type { AxiosResponse } from 'axios';
 import { apiClient, publicClient } from '../client';
-import { setAccessToken } from '../token';
 import type { ApiResponse } from '../types';
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
 
@@ -14,7 +13,7 @@ const handleTokenResponse = (
   const accessToken = response.headers['authorization'];
   if (accessToken && accessToken.startsWith('Bearer ')) {
     const token = accessToken.replace('Bearer ', '');
-    setAccessToken(token);
+    authStore.setAccessToken(token);
     return token;
   } else {
     throw new Error('Failed to get token');
