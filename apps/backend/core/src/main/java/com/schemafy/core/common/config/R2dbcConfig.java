@@ -24,8 +24,8 @@ import io.r2dbc.spi.ConnectionFactory;
 @Configuration
 @EnableR2dbcAuditing
 @EnableR2dbcRepositories(basePackages = {
-    "com.schemafy.core",
-    "com.schemafy.domain"
+  "com.schemafy.core",
+  "com.schemafy.domain"
 })
 public class R2dbcConfig {
 

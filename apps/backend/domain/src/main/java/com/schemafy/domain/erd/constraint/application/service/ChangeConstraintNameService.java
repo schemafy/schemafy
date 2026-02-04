@@ -40,14 +40,14 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
                   normalizedName,
                   constraint.id())
                   .flatMap(exists -> {
-                if (exists) {
-                  return Mono.error(new ConstraintNameDuplicateException(
-                      "Constraint name '%s' already exists in schema".formatted(normalizedName)));
-                }
-                return changeConstraintNamePort
-                    .changeConstraintName(constraint.id(), normalizedName)
-                    .thenReturn(MutationResult.<Void>of(null, constraint.tableId()));
-              })));
+                    if (exists) {
+                      return Mono.error(new ConstraintNameDuplicateException(
+                          "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                    }
+                    return changeConstraintNamePort
+                        .changeConstraintName(constraint.id(), normalizedName)
+                        .thenReturn(MutationResult.<Void>of(null, constraint.tableId()));
+                  })));
     });
   }
 

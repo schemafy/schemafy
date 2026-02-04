@@ -180,8 +180,7 @@ public class RelationshipController {
   @GetMapping("/relationships/{relationshipId}/columns")
   public Mono<BaseResponse<List<RelationshipColumnResponse>>> getRelationshipColumns(
       @PathVariable String relationshipId) {
-    GetRelationshipColumnsByRelationshipIdQuery query =
-        new GetRelationshipColumnsByRelationshipIdQuery(relationshipId);
+    GetRelationshipColumnsByRelationshipIdQuery query = new GetRelationshipColumnsByRelationshipIdQuery(relationshipId);
     return getRelationshipColumnsByRelationshipIdUseCase
         .getRelationshipColumnsByRelationshipId(query)
         .map(columns -> columns.stream()

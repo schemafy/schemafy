@@ -26,11 +26,9 @@ import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyCon
 import com.schemafy.domain.erd.constraint.domain.exception.UniqueSameAsPrimaryKeyException;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionInvalidException;
 import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
 import com.schemafy.domain.erd.index.domain.exception.IndexNameDuplicateException;
 import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
-import com.schemafy.domain.erd.index.domain.exception.IndexTypeInvalidException;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnDuplicateException;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipCyclicReferenceException;
@@ -49,20 +47,19 @@ import lombok.extern.slf4j.Slf4j;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  private static final Map<Class<? extends DomainException>, ErrorCode> DOMAIN_ERROR_CODE_MAP =
-      Map.ofEntries(
-          Map.entry(SchemaNotExistException.class, ErrorCode.ERD_SCHEMA_NOT_FOUND),
-          Map.entry(SchemaNameDuplicateException.class, ErrorCode.ERD_SCHEMA_NAME_DUPLICATE),
-          Map.entry(TableNotExistException.class, ErrorCode.ERD_TABLE_NOT_FOUND),
-          Map.entry(TableNameDuplicateException.class, ErrorCode.ERD_TABLE_NAME_DUPLICATE),
-          Map.entry(ColumnNotExistException.class, ErrorCode.ERD_COLUMN_NOT_FOUND),
-          Map.entry(ConstraintNotExistException.class, ErrorCode.ERD_CONSTRAINT_NOT_FOUND),
-          Map.entry(ConstraintColumnNotExistException.class, ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND),
-          Map.entry(RelationshipNotExistException.class, ErrorCode.ERD_RELATIONSHIP_NOT_FOUND),
-          Map.entry(RelationshipColumnNotExistException.class, ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND),
-          Map.entry(RelationshipTargetTableNotExistException.class, ErrorCode.ERD_TABLE_NOT_FOUND),
-          Map.entry(IndexNotExistException.class, ErrorCode.ERD_INDEX_NOT_FOUND),
-          Map.entry(IndexColumnNotExistException.class, ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND));
+  private static final Map<Class<? extends DomainException>, ErrorCode> DOMAIN_ERROR_CODE_MAP = Map.ofEntries(
+      Map.entry(SchemaNotExistException.class, ErrorCode.ERD_SCHEMA_NOT_FOUND),
+      Map.entry(SchemaNameDuplicateException.class, ErrorCode.ERD_SCHEMA_NAME_DUPLICATE),
+      Map.entry(TableNotExistException.class, ErrorCode.ERD_TABLE_NOT_FOUND),
+      Map.entry(TableNameDuplicateException.class, ErrorCode.ERD_TABLE_NAME_DUPLICATE),
+      Map.entry(ColumnNotExistException.class, ErrorCode.ERD_COLUMN_NOT_FOUND),
+      Map.entry(ConstraintNotExistException.class, ErrorCode.ERD_CONSTRAINT_NOT_FOUND),
+      Map.entry(ConstraintColumnNotExistException.class, ErrorCode.ERD_CONSTRAINT_COLUMN_NOT_FOUND),
+      Map.entry(RelationshipNotExistException.class, ErrorCode.ERD_RELATIONSHIP_NOT_FOUND),
+      Map.entry(RelationshipColumnNotExistException.class, ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND),
+      Map.entry(RelationshipTargetTableNotExistException.class, ErrorCode.ERD_TABLE_NOT_FOUND),
+      Map.entry(IndexNotExistException.class, ErrorCode.ERD_INDEX_NOT_FOUND),
+      Map.entry(IndexColumnNotExistException.class, ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND));
 
   private static final Set<Class<? extends DomainException>> INVALID_PARAMETER_EXCEPTIONS = Set.of(
       ColumnNameDuplicateException.class,
@@ -129,8 +126,7 @@ public class GlobalExceptionHandler {
   }
 
   private ErrorCode mapDomainExceptionToErrorCode(DomainException e) {
-    for (Map.Entry<Class<? extends DomainException>, ErrorCode> entry
-        : DOMAIN_ERROR_CODE_MAP.entrySet()) {
+    for (Map.Entry<Class<? extends DomainException>, ErrorCode> entry : DOMAIN_ERROR_CODE_MAP.entrySet()) {
       if (entry.getKey().isInstance(e)) {
         return entry.getValue();
       }

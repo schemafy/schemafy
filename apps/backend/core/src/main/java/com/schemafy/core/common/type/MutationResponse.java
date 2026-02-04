@@ -11,4 +11,5 @@ public record MutationResponse<T>(T data, List<String> affectedTableIds) {
     }
     return new MutationResponse<>(data, List.copyOf(affectedTableIds));
   }
+
 }

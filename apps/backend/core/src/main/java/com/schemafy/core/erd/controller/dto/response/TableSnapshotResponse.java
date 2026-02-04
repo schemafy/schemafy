@@ -8,4 +8,3 @@ public record TableSnapshotResponse(
     List<ConstraintSnapshotResponse> constraints,
     List<RelationshipSnapshotResponse> relationships) {
 }
-

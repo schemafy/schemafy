@@ -133,8 +133,7 @@ public class ConstraintController {
   @GetMapping("/constraints/{constraintId}/columns")
   public Mono<BaseResponse<List<ConstraintColumnResponse>>> getConstraintColumns(
       @PathVariable String constraintId) {
-    GetConstraintColumnsByConstraintIdQuery query =
-        new GetConstraintColumnsByConstraintIdQuery(constraintId);
+    GetConstraintColumnsByConstraintIdQuery query = new GetConstraintColumnsByConstraintIdQuery(constraintId);
     return getConstraintColumnsByConstraintIdUseCase.getConstraintColumnsByConstraintId(query)
         .map(columns -> columns.stream()
             .map(ConstraintColumnResponse::from)
