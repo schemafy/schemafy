@@ -1,8 +1,9 @@
 package com.schemafy.domain.common;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public record MutationResult<T>(
     T result,
@@ -33,9 +34,9 @@ public record MutationResult<T>(
     if (additionalTableIds == null || additionalTableIds.isEmpty()) {
       return this;
     }
-    Set<String> merged = new HashSet<>(affectedTableIds);
-    merged.addAll(additionalTableIds);
-    return new MutationResult<>(result, merged);
+    return new MutationResult<>(result,
+        Stream.concat(affectedTableIds.stream(), additionalTableIds.stream())
+            .collect(Collectors.toUnmodifiableSet()));
   }
 
 }

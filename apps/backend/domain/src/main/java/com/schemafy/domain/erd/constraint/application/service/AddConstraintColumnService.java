@@ -106,33 +106,36 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
         constraint.name(),
         constraint.id());
 
-    ConstraintColumn constraintColumn = new ConstraintColumn(
-        ulidGeneratorPort.generate(),
-        constraint.id(),
-        command.columnId(),
-        command.seqNo());
+    return Mono.fromCallable(ulidGeneratorPort::generate)
+        .flatMap(id -> {
+          ConstraintColumn constraintColumn = new ConstraintColumn(
+              id,
+              constraint.id(),
+              command.columnId(),
+              command.seqNo());
 
-    return createConstraintColumnPort.createConstraintColumn(constraintColumn)
-        .flatMap(savedColumn -> {
-          if (constraint.kind() != ConstraintKind.PRIMARY_KEY) {
-            AddConstraintColumnResult result = new AddConstraintColumnResult(
-                savedColumn.id(),
-                savedColumn.constraintId(),
-                savedColumn.columnId(),
-                savedColumn.seqNo(),
-                List.of());
-            return Mono.just(MutationResult.of(result, affectedTableIds));
-          }
-          return cascadeCreateFkColumns(constraint.tableId(), command.columnId(), affectedTableIds)
-              .map(cascadeResults -> {
-                cascadeResults.forEach(info -> affectedTableIds.add(info.fkTableId()));
-                AddConstraintColumnResult result = new AddConstraintColumnResult(
-                    savedColumn.id(),
-                    savedColumn.constraintId(),
-                    savedColumn.columnId(),
-                    savedColumn.seqNo(),
-                    cascadeResults);
-                return MutationResult.of(result, affectedTableIds);
+          return createConstraintColumnPort.createConstraintColumn(constraintColumn)
+              .flatMap(savedColumn -> {
+                if (constraint.kind() != ConstraintKind.PRIMARY_KEY) {
+                  AddConstraintColumnResult result = new AddConstraintColumnResult(
+                      savedColumn.id(),
+                      savedColumn.constraintId(),
+                      savedColumn.columnId(),
+                      savedColumn.seqNo(),
+                      List.of());
+                  return Mono.just(MutationResult.of(result, affectedTableIds));
+                }
+                return cascadeCreateFkColumns(constraint.tableId(), command.columnId(), affectedTableIds)
+                    .map(cascadeResults -> {
+                      cascadeResults.forEach(info -> affectedTableIds.add(info.fkTableId()));
+                      AddConstraintColumnResult result = new AddConstraintColumnResult(
+                          savedColumn.id(),
+                          savedColumn.constraintId(),
+                          savedColumn.columnId(),
+                          savedColumn.seqNo(),
+                          cascadeResults);
+                      return MutationResult.of(result, affectedTableIds);
+                    });
               });
         });
   }

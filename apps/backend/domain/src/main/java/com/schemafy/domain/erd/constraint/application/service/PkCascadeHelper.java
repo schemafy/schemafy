@@ -159,61 +159,65 @@ public class PkCascadeHelper {
                   pkColumn.name(),
                   fkColumns.stream().map(Column::name).collect(Collectors.toSet()));
 
-              Column fkColumn = new Column(
-                  ulidGeneratorPort.generate(),
-                  fkTableId,
-                  fkColumnName,
-                  pkColumn.dataType(),
-                  pkColumn.lengthScale(),
-                  fkColumns.size(),
-                  false,
-                  pkColumn.charset(),
-                  pkColumn.collation(),
-                  null);
+              return Mono.fromCallable(ulidGeneratorPort::generate)
+                  .flatMap(fkColumnId -> {
+                    Column fkColumn = new Column(
+                        fkColumnId,
+                        fkTableId,
+                        fkColumnName,
+                        pkColumn.dataType(),
+                        pkColumn.lengthScale(),
+                        fkColumns.size(),
+                        false,
+                        pkColumn.charset(),
+                        pkColumn.collation(),
+                        null);
 
-              return createColumnPort.createColumn(fkColumn)
-                  .flatMap(savedFkColumn -> {
-                    RelationshipColumn relColumn = new RelationshipColumn(
-                        ulidGeneratorPort.generate(),
-                        relationship.id(),
-                        pkColumn.id(),
-                        savedFkColumn.id(),
-                        existingRelColumns.size());
+                    return createColumnPort.createColumn(fkColumn)
+                        .flatMap(savedFkColumn -> Mono.fromCallable(ulidGeneratorPort::generate)
+                            .flatMap(relColumnId -> {
+                              RelationshipColumn relColumn = new RelationshipColumn(
+                                  relColumnId,
+                                  relationship.id(),
+                                  pkColumn.id(),
+                                  savedFkColumn.id(),
+                                  existingRelColumns.size());
 
-                    return createRelationshipColumnPort.createRelationshipColumn(relColumn)
-                        .flatMap(savedRelColumn -> {
-                          List<CascadeCreatedInfo> results = new ArrayList<>();
-                          CascadeCreatedInfo baseInfo = new CascadeCreatedInfo(
-                              savedFkColumn.id(),
-                              savedFkColumn.name(),
-                              fkTableId,
-                              savedRelColumn.id(),
-                              relationship.id(),
-                              null,
-                              null);
+                              return createRelationshipColumnPort.createRelationshipColumn(relColumn)
+                                  .flatMap(savedRelColumn -> {
+                                    List<CascadeCreatedInfo> results = new ArrayList<>();
+                                    CascadeCreatedInfo baseInfo = new CascadeCreatedInfo(
+                                        savedFkColumn.id(),
+                                        savedFkColumn.name(),
+                                        fkTableId,
+                                        savedRelColumn.id(),
+                                        relationship.id(),
+                                        null,
+                                        null);
 
-                          if (relationship.kind() == RelationshipKind.IDENTIFYING) {
-                            return addColumnToFkTablePk(fkTableId, savedFkColumn, affectedTableIds)
-                                .flatMap(pkInfo -> {
-                                  results.add(baseInfo.withPkInfo(
-                                      pkInfo.constraintColumnId(),
-                                      pkInfo.constraintId()));
+                                    if (relationship.kind() == RelationshipKind.IDENTIFYING) {
+                                      return addColumnToFkTablePk(fkTableId, savedFkColumn, affectedTableIds)
+                                          .flatMap(pkInfo -> {
+                                            results.add(baseInfo.withPkInfo(
+                                                pkInfo.constraintColumnId(),
+                                                pkInfo.constraintId()));
 
-                                  return cascadeAddPkColumn(
-                                      fkTableId,
-                                      savedFkColumn,
-                                      visited,
-                                      affectedTableIds)
-                                      .map(childResults -> {
-                                        results.addAll(childResults);
-                                        return results;
-                                      });
-                                });
-                          }
+                                            return cascadeAddPkColumn(
+                                                fkTableId,
+                                                savedFkColumn,
+                                                visited,
+                                                affectedTableIds)
+                                                .map(childResults -> {
+                                                  results.addAll(childResults);
+                                                  return results;
+                                                });
+                                          });
+                                    }
 
-                          results.add(baseInfo);
-                          return Mono.just(results);
-                        });
+                                    results.add(baseInfo);
+                                    return Mono.just(results);
+                                  });
+                            }));
                   });
             });
   }
@@ -293,16 +297,17 @@ public class PkCascadeHelper {
         .flatMap(pkConstraint -> getConstraintColumnsByConstraintIdPort
             .findConstraintColumnsByConstraintId(pkConstraint.id())
             .defaultIfEmpty(List.of())
-            .flatMap(existingColumns -> {
-              ConstraintColumn cc = new ConstraintColumn(
-                  ulidGeneratorPort.generate(),
-                  pkConstraint.id(),
-                  fkColumn.id(),
-                  existingColumns.size());
+            .flatMap(existingColumns -> Mono.fromCallable(ulidGeneratorPort::generate)
+                .flatMap(ccId -> {
+                  ConstraintColumn cc = new ConstraintColumn(
+                      ccId,
+                      pkConstraint.id(),
+                      fkColumn.id(),
+                      existingColumns.size());
 
-              return createConstraintColumnPort.createConstraintColumn(cc)
-                  .map(saved -> new PkAddResult(saved.id(), pkConstraint.id()));
-            }));
+                  return createConstraintColumnPort.createConstraintColumn(cc)
+                      .map(saved -> new PkAddResult(saved.id(), pkConstraint.id()));
+                })));
   }
 
   private Mono<Void> removeColumnFromFkTablePk(
@@ -367,17 +372,18 @@ public class PkCascadeHelper {
           return getTableByIdPort.findTableById(tableId)
               .flatMap(table -> resolveUniqueConstraintName(
                   table.schemaId(), "pk_" + table.name())
-                  .flatMap(pkName -> {
-                    Constraint newPk = new Constraint(
-                        ulidGeneratorPort.generate(),
-                        tableId,
-                        pkName,
-                        ConstraintKind.PRIMARY_KEY,
-                        null,
-                        null);
+                  .flatMap(pkName -> Mono.fromCallable(ulidGeneratorPort::generate)
+                      .flatMap(pkId -> {
+                        Constraint newPk = new Constraint(
+                            pkId,
+                            tableId,
+                            pkName,
+                            ConstraintKind.PRIMARY_KEY,
+                            null,
+                            null);
 
-                    return createConstraintPort.createConstraint(newPk);
-                  }));
+                        return createConstraintPort.createConstraint(newPk);
+                      })));
         });
   }
 

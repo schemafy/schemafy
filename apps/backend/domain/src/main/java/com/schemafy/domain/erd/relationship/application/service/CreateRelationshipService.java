@@ -139,33 +139,35 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       List<Column> pkColumns,
       List<Column> fkColumns,
       Set<String> affectedTableIds) {
-    String relationshipId = ulidGeneratorPort.generate();
-    Relationship relationship = new Relationship(
-        relationshipId,
-        pkTable.id(),
-        fkTable.id(),
-        normalizedName,
-        command.kind(),
-        command.cardinality(),
-        null);
+    return Mono.fromCallable(ulidGeneratorPort::generate)
+        .flatMap(relationshipId -> {
+          Relationship relationship = new Relationship(
+              relationshipId,
+              pkTable.id(),
+              fkTable.id(),
+              normalizedName,
+              command.kind(),
+              command.cardinality(),
+              null);
 
-    return createRelationshipPort.createRelationship(relationship)
-        .flatMap(savedRelationship -> createAutoRelationshipColumns(
-            relationshipId,
-            fkTable,
-            command.kind(),
-            pkColumns,
-            fkColumns,
-            affectedTableIds)
-            .thenReturn(new CreateRelationshipResult(
-                savedRelationship.id(),
-                savedRelationship.fkTableId(),
-                savedRelationship.pkTableId(),
-                savedRelationship.name(),
-                savedRelationship.kind(),
-                savedRelationship.cardinality(),
-                savedRelationship.extra())))
-        .map(result -> MutationResult.of(result, affectedTableIds));
+          return createRelationshipPort.createRelationship(relationship)
+              .flatMap(savedRelationship -> createAutoRelationshipColumns(
+                  relationshipId,
+                  fkTable,
+                  command.kind(),
+                  pkColumns,
+                  fkColumns,
+                  affectedTableIds)
+                  .thenReturn(new CreateRelationshipResult(
+                      savedRelationship.id(),
+                      savedRelationship.fkTableId(),
+                      savedRelationship.pkTableId(),
+                      savedRelationship.name(),
+                      savedRelationship.kind(),
+                      savedRelationship.cardinality(),
+                      savedRelationship.extra())))
+              .map(result -> MutationResult.of(result, affectedTableIds));
+        });
   }
 
   private Mono<Void> createAutoRelationshipColumns(
@@ -188,40 +190,43 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
           Column pkColumn = tuple.getT2();
           String fkColumnName = resolveUniqueName(pkColumn.name(), existingNames);
           existingNames.add(fkColumnName);
-
-          Column fkColumn = new Column(
-              ulidGeneratorPort.generate(),
-              fkTable.id(),
-              fkColumnName,
-              pkColumn.dataType(),
-              pkColumn.lengthScale(),
-              baseSeqNo + seqNo,
-              false,
-              pkColumn.charset(),
-              pkColumn.collation(),
-              null);
-
-          return createColumnPort.createColumn(fkColumn)
-              .flatMap(savedFkColumn -> {
-                RelationshipColumn relColumn = new RelationshipColumn(
-                    ulidGeneratorPort.generate(),
-                    relationshipId,
-                    pkColumn.id(),
-                    savedFkColumn.id(),
-                    seqNo);
-
-                Mono<Void> createRelColumn = createRelationshipColumnPort
-                    .createRelationshipColumn(relColumn)
-                    .then();
-
-                if (kind != RelationshipKind.IDENTIFYING) {
-                  return createRelColumn;
-                }
-                return createRelColumn.then(pkCascadeHelper.addPkColumnAndCascade(
+          return Mono.fromCallable(ulidGeneratorPort::generate)
+              .flatMap(fkColumnId -> {
+                Column fkColumn = new Column(
+                    fkColumnId,
                     fkTable.id(),
-                    savedFkColumn,
-                    new HashSet<>(),
-                    affectedTableIds));
+                    fkColumnName,
+                    pkColumn.dataType(),
+                    pkColumn.lengthScale(),
+                    baseSeqNo + seqNo,
+                    false,
+                    pkColumn.charset(),
+                    pkColumn.collation(),
+                    null);
+
+                return createColumnPort.createColumn(fkColumn)
+                    .flatMap(savedFkColumn -> Mono.fromCallable(ulidGeneratorPort::generate)
+                        .flatMap(relColumnId -> {
+                          RelationshipColumn relColumn = new RelationshipColumn(
+                              relColumnId,
+                              relationshipId,
+                              pkColumn.id(),
+                              savedFkColumn.id(),
+                              seqNo);
+
+                          Mono<Void> createRelColumn = createRelationshipColumnPort
+                              .createRelationshipColumn(relColumn)
+                              .then();
+
+                          if (kind != RelationshipKind.IDENTIFYING) {
+                            return createRelColumn;
+                          }
+                          return createRelColumn.then(pkCascadeHelper.addPkColumnAndCascade(
+                              fkTable.id(),
+                              savedFkColumn,
+                              new HashSet<>(),
+                              affectedTableIds));
+                        }));
               });
         })
         .then();

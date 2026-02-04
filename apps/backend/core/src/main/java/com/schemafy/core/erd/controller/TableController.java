@@ -146,7 +146,7 @@ public class TableController {
         .getConstraintsByTableId(new GetConstraintsByTableIdQuery(tableId))
         .defaultIfEmpty(List.of())
         .flatMap(constraints -> Flux.fromIterable(constraints)
-            .concatMap(constraint -> getConstraintColumnsByConstraintIdUseCase
+            .flatMap(constraint -> getConstraintColumnsByConstraintIdUseCase
                 .getConstraintColumnsByConstraintId(
                     new GetConstraintColumnsByConstraintIdQuery(constraint.id()))
                 .defaultIfEmpty(List.of())
@@ -163,7 +163,7 @@ public class TableController {
         .getRelationshipsByTableId(new GetRelationshipsByTableIdQuery(tableId))
         .defaultIfEmpty(List.of())
         .flatMap(relationships -> Flux.fromIterable(relationships)
-            .concatMap(relationship -> getRelationshipColumnsByRelationshipIdUseCase
+            .flatMap(relationship -> getRelationshipColumnsByRelationshipIdUseCase
                 .getRelationshipColumnsByRelationshipId(
                     new GetRelationshipColumnsByRelationshipIdQuery(relationship.id()))
                 .defaultIfEmpty(List.of())

@@ -33,25 +33,26 @@ class CreateSchemaService implements CreateSchemaUseCase {
                 "Schema name '%s' already exists in project".formatted(command.name())));
           }
 
-          String id = ulidGeneratorPort.generate();
+          return Mono.fromCallable(ulidGeneratorPort::generate)
+              .flatMap(id -> {
+                Schema schema = new Schema(
+                    id,
+                    command.projectId(),
+                    command.dbVendorName(),
+                    command.name(),
+                    command.charset(),
+                    command.collation());
 
-          Schema schema = new Schema(
-              id,
-              command.projectId(),
-              command.dbVendorName(),
-              command.name(),
-              command.charset(),
-              command.collation());
-
-          return createSchemaPort.createSchema(schema)
-              .map(savedSchema -> new CreateSchemaResult(
-                  savedSchema.id(),
-                  savedSchema.projectId(),
-                  savedSchema.dbVendorName(),
-                  savedSchema.name(),
-                  savedSchema.charset(),
-                  savedSchema.collation()))
-              .map(MutationResult::empty);
+                return createSchemaPort.createSchema(schema)
+                    .map(savedSchema -> new CreateSchemaResult(
+                        savedSchema.id(),
+                        savedSchema.projectId(),
+                        savedSchema.dbVendorName(),
+                        savedSchema.name(),
+                        savedSchema.charset(),
+                        savedSchema.collation()))
+                    .map(MutationResult::empty);
+              });
         });
   }
 

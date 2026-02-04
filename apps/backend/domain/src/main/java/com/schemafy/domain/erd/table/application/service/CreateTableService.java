@@ -32,22 +32,23 @@ public class CreateTableService implements CreateTableUseCase {
                 "Table name '%s' already exists in schema".formatted(command.name())));
           }
 
-          String id = ulidGeneratorPort.generate();
+          return Mono.fromCallable(ulidGeneratorPort::generate)
+              .flatMap(id -> {
+                Table table = new Table(
+                    id,
+                    command.schemaId(),
+                    command.name(),
+                    command.charset(),
+                    command.collation());
 
-          Table table = new Table(
-              id,
-              command.schemaId(),
-              command.name(),
-              command.charset(),
-              command.collation());
-
-          return createTablePort.createTable(table)
-              .map(savedTable -> new CreateTableResult(
-                  savedTable.id(),
-                  savedTable.name(),
-                  savedTable.charset(),
-                  savedTable.collation()))
-              .map(result -> MutationResult.of(result, id));
+                return createTablePort.createTable(table)
+                    .map(savedTable -> new CreateTableResult(
+                        savedTable.id(),
+                        savedTable.name(),
+                        savedTable.charset(),
+                        savedTable.collation()))
+                    .map(result -> MutationResult.of(result, id));
+              });
         });
   }
 

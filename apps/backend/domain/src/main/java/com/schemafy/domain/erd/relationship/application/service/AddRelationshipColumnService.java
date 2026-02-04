@@ -104,21 +104,23 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
               updatedColumns,
               relationship.name());
           RelationshipValidator.validateColumnUniqueness(updatedColumns, relationship.name());
+          return Mono.fromCallable(ulidGeneratorPort::generate)
+              .flatMap(relationshipColumnId -> {
+                RelationshipColumn relationshipColumn = new RelationshipColumn(
+                    relationshipColumnId,
+                    relationship.id(),
+                    command.pkColumnId(),
+                    command.fkColumnId(),
+                    command.seqNo());
 
-          RelationshipColumn relationshipColumn = new RelationshipColumn(
-              ulidGeneratorPort.generate(),
-              relationship.id(),
-              command.pkColumnId(),
-              command.fkColumnId(),
-              command.seqNo());
-
-          return createRelationshipColumnPort.createRelationshipColumn(relationshipColumn)
-              .map(savedColumn -> new AddRelationshipColumnResult(
-                  savedColumn.id(),
-                  savedColumn.relationshipId(),
-                  savedColumn.pkColumnId(),
-                  savedColumn.fkColumnId(),
-                  savedColumn.seqNo()));
+                return createRelationshipColumnPort.createRelationshipColumn(relationshipColumn)
+                    .map(savedColumn -> new AddRelationshipColumnResult(
+                        savedColumn.id(),
+                        savedColumn.relationshipId(),
+                        savedColumn.pkColumnId(),
+                        savedColumn.fkColumnId(),
+                        savedColumn.seqNo()));
+              });
         });
   }
 

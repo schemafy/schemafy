@@ -84,20 +84,23 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
                   index.name(),
                   index.id());
 
-              IndexColumn indexColumn = new IndexColumn(
-                  ulidGeneratorPort.generate(),
-                  index.id(),
-                  command.columnId(),
-                  command.seqNo(),
-                  command.sortDirection());
+              return Mono.fromCallable(ulidGeneratorPort::generate)
+                  .flatMap(id -> {
+                    IndexColumn indexColumn = new IndexColumn(
+                        id,
+                        index.id(),
+                        command.columnId(),
+                        command.seqNo(),
+                        command.sortDirection());
 
-              return createIndexColumnPort.createIndexColumn(indexColumn)
-                  .map(savedColumn -> new AddIndexColumnResult(
-                      savedColumn.id(),
-                      savedColumn.indexId(),
-                      savedColumn.columnId(),
-                      savedColumn.seqNo(),
-                      savedColumn.sortDirection()));
+                    return createIndexColumnPort.createIndexColumn(indexColumn)
+                        .map(savedColumn -> new AddIndexColumnResult(
+                            savedColumn.id(),
+                            savedColumn.indexId(),
+                            savedColumn.columnId(),
+                            savedColumn.seqNo(),
+                            savedColumn.sortDirection()));
+                  });
             }));
   }
 

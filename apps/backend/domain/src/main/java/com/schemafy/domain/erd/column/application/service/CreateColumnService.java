@@ -83,29 +83,32 @@ public class CreateColumnService implements CreateColumnUseCase {
     ColumnValidator.validateCharsetAndCollation(normalizedDataType, charset, collation);
     ColumnValidator.validatePosition(command.seqNo());
 
-    Column column = new Column(
-        ulidGeneratorPort.generate(),
-        table.id(),
-        normalizedName,
-        normalizedDataType,
-        lengthScale,
-        command.seqNo(),
-        command.autoIncrement(),
-        charset,
-        collation,
-        comment);
+    return Mono.fromCallable(ulidGeneratorPort::generate)
+        .flatMap(id -> {
+          Column column = new Column(
+              id,
+              table.id(),
+              normalizedName,
+              normalizedDataType,
+              lengthScale,
+              command.seqNo(),
+              command.autoIncrement(),
+              charset,
+              collation,
+              comment);
 
-    return createColumnPort.createColumn(column)
-        .map(savedColumn -> new CreateColumnResult(
-            savedColumn.id(),
-            savedColumn.name(),
-            savedColumn.dataType(),
-            savedColumn.lengthScale(),
-            savedColumn.seqNo(),
-            savedColumn.autoIncrement(),
-            savedColumn.charset(),
-            savedColumn.collation(),
-            savedColumn.comment()));
+          return createColumnPort.createColumn(column)
+              .map(savedColumn -> new CreateColumnResult(
+                  savedColumn.id(),
+                  savedColumn.name(),
+                  savedColumn.dataType(),
+                  savedColumn.lengthScale(),
+                  savedColumn.seqNo(),
+                  savedColumn.autoIncrement(),
+                  savedColumn.charset(),
+                  savedColumn.collation(),
+                  savedColumn.comment()));
+        });
   }
 
   private static String normalizeName(String name) {

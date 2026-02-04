@@ -107,14 +107,16 @@ public class CreateIndexService implements CreateIndexUseCase {
       CreateIndexCommand command,
       String normalizedName,
       List<CreateIndexColumnCommand> columnCommands) {
-    String indexId = ulidGeneratorPort.generate();
-    Index index = new Index(indexId, table.id(), normalizedName, command.type());
-    return createIndexPort.createIndex(index)
-        .flatMap(savedIndex -> createIndexColumns(indexId, columnCommands)
-            .thenReturn(new CreateIndexResult(
-                savedIndex.id(),
-                savedIndex.name(),
-                savedIndex.type())));
+    return Mono.fromCallable(ulidGeneratorPort::generate)
+        .flatMap(indexId -> {
+          Index index = new Index(indexId, table.id(), normalizedName, command.type());
+          return createIndexPort.createIndex(index)
+              .flatMap(savedIndex -> createIndexColumns(indexId, columnCommands)
+                  .thenReturn(new CreateIndexResult(
+                      savedIndex.id(),
+                      savedIndex.name(),
+                      savedIndex.type())));
+        });
   }
 
   private Mono<Map<String, List<IndexColumn>>> fetchIndexColumns(List<Index> indexes) {
@@ -135,13 +137,14 @@ public class CreateIndexService implements CreateIndexUseCase {
       return Mono.empty();
     }
     return Flux.fromIterable(columnCommands)
-        .concatMap(command -> createIndexColumnPort.createIndexColumn(
-            new IndexColumn(
-                ulidGeneratorPort.generate(),
-                indexId,
-                command.columnId(),
-                command.seqNo(),
-                command.sortDirection())))
+        .concatMap(command -> Mono.fromCallable(ulidGeneratorPort::generate)
+            .flatMap(id -> createIndexColumnPort.createIndexColumn(
+                new IndexColumn(
+                    id,
+                    indexId,
+                    command.columnId(),
+                    command.seqNo(),
+                    command.sortDirection()))))
         .then();
   }
 

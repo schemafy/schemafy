@@ -132,24 +132,27 @@ public class CreateConstraintService implements CreateConstraintUseCase {
         null);
     ConstraintValidator.validateExpressionRequired(kind, checkExpr, defaultExpr);
 
-    Constraint constraint = new Constraint(
-        ulidGeneratorPort.generate(),
-        table.id(),
-        name,
-        kind,
-        checkExpr,
-        defaultExpr);
+    return Mono.fromCallable(ulidGeneratorPort::generate)
+        .flatMap(id -> {
+          Constraint constraint = new Constraint(
+              id,
+              table.id(),
+              name,
+              kind,
+              checkExpr,
+              defaultExpr);
 
-    return createConstraintPort.createConstraint(constraint)
-        .flatMap(savedConstraint -> createConstraintColumns(savedConstraint.id(), columnCommands)
-            .then(cascadeCreateFkColumnsIfPk(kind, table.id(), columnIds, affectedTableIds))
-            .thenReturn(new CreateConstraintResult(
-                savedConstraint.id(),
-                savedConstraint.name(),
-                savedConstraint.kind(),
-                savedConstraint.checkExpr(),
-                savedConstraint.defaultExpr())))
-        .map(result -> MutationResult.of(result, affectedTableIds));
+          return createConstraintPort.createConstraint(constraint)
+              .flatMap(savedConstraint -> createConstraintColumns(savedConstraint.id(), columnCommands)
+                  .then(cascadeCreateFkColumnsIfPk(kind, table.id(), columnIds, affectedTableIds))
+                  .thenReturn(new CreateConstraintResult(
+                      savedConstraint.id(),
+                      savedConstraint.name(),
+                      savedConstraint.kind(),
+                      savedConstraint.checkExpr(),
+                      savedConstraint.defaultExpr())))
+              .map(result -> MutationResult.of(result, affectedTableIds));
+        });
   }
 
   private Mono<TableContext> fetchTableContext(String tableId) {
@@ -185,12 +188,13 @@ public class CreateConstraintService implements CreateConstraintUseCase {
       return Mono.empty();
     }
     return Flux.fromIterable(columns)
-        .concatMap(column -> createConstraintColumnPort.createConstraintColumn(
-            new ConstraintColumn(
-                ulidGeneratorPort.generate(),
-                constraintId,
-                column.columnId(),
-                column.seqNo())))
+        .concatMap(column -> Mono.fromCallable(ulidGeneratorPort::generate)
+            .flatMap(id -> createConstraintColumnPort.createConstraintColumn(
+                new ConstraintColumn(
+                    id,
+                    constraintId,
+                    column.columnId(),
+                    column.seqNo()))))
         .then();
   }
 
