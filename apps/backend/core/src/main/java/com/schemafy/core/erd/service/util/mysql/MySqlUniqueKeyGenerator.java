@@ -13,6 +13,7 @@ import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 
 import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
+import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.quoteColumn;
 import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
 
 @Component
@@ -48,15 +49,6 @@ public class MySqlUniqueKeyGenerator {
         escapeIdentifier(tableName),
         escapeIdentifier(constraint.getName()),
         columns);
-  }
-
-  private String quoteColumn(Map<String, String> columnIdToName,
-      String columnId) {
-    String name = columnIdToName.get(columnId);
-    if (name == null) {
-      throw new IllegalStateException("Column not found: " + columnId);
-    }
-    return "`" + escapeIdentifier(name) + "`";
   }
 
   private List<ConstraintResponse> getConstraints(TableDetailResponse table) {

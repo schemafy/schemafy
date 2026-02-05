@@ -13,6 +13,7 @@ import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.controller.dto.response.TableDetailResponse;
 
 import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
+import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.quoteColumn;
 import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
 import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.sanitizeReferentialAction;
 
@@ -102,15 +103,6 @@ public class MySqlForeignKeyGenerator {
 
     sanitizeReferentialAction(relationship.getOnUpdate())
         .ifPresent(action -> sql.append(" ON UPDATE ").append(action));
-  }
-
-  private String quoteColumn(Map<String, String> columnIdToName,
-      String columnId) {
-    String name = columnIdToName.get(columnId);
-    if (name == null) {
-      throw new IllegalStateException("Column not found: " + columnId);
-    }
-    return "`" + escapeIdentifier(name) + "`";
   }
 
   private List<RelationshipResponse> getRelationships(

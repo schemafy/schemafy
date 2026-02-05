@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.service.util.mysql;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -115,6 +116,15 @@ public final class MySqlDdlUtils {
           "Invalid referential action: " + action);
     }
     return Optional.of(normalized);
+  }
+
+  public static String quoteColumn(Map<String, String> columnIdToName,
+      String columnId) {
+    String name = columnIdToName.get(columnId);
+    if (name == null) {
+      throw new IllegalStateException("Column not found: " + columnId);
+    }
+    return "`" + escapeIdentifier(name) + "`";
   }
 
   // ^[A-Z][A-Z0-9_ ]*$
