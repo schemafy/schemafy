@@ -82,7 +82,13 @@ public class MySqlForeignKeyGenerator {
 
   private String buildPkColumnList(RelationshipResponse relationship,
       Map<String, String> pkColumnIdToName) {
-    return getColumns(relationship).stream()
+    List<RelationshipColumnResponse> cols = getColumns(relationship);
+    if (cols.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Foreign key must have at least one referenced column: " + relationship.getName());
+    }
+
+    return cols.stream()
         .sorted(Comparator.comparing(RelationshipColumnResponse::getSeqNo,
             Comparator.nullsLast(Comparator.naturalOrder())))
         .map(rc -> quoteColumn(pkColumnIdToName, rc.getPkColumnId()))
