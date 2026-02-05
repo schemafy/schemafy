@@ -111,19 +111,19 @@ class DeleteColumnCascadeIntegrationTest {
       void setUp() {
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
             PROJECT_ID, "MySQL", "pk_delete_single_fk_schema",
-            "utf8mb4", "utf8mb4_general_ci")).block();
+            "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
         var pkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block();
+            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
         pkTableId = pkTableResult.tableId();
 
         var fkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci")).block();
+            schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
         fkTableId = fkTableResult.tableId();
 
         var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block();
+            pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block().result();
         pkColumnId = pkColumnResult.columnId();
 
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
@@ -146,6 +146,7 @@ class DeleteColumnCascadeIntegrationTest {
       @DisplayName("FK 컬럼과 관련 Constraint, Index, Relationship이 모두 cascade 삭제된다")
       void cascadeDeletesFkColumnAndRelatedEntities() {
         StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(pkColumnId)))
+            .expectNextCount(1)
             .verifyComplete();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(pkColumnId)))
@@ -190,23 +191,23 @@ class DeleteColumnCascadeIntegrationTest {
       void setUp() {
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
             PROJECT_ID, "MySQL", "pk_delete_multi_fk_schema",
-            "utf8mb4", "utf8mb4_general_ci")).block();
+            "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
         var pkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block();
+            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
         pkTableId = pkTableResult.tableId();
 
         var fkTableResult1 = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "fk_table_1", "utf8mb4", "utf8mb4_general_ci")).block();
+            schemaId, "fk_table_1", "utf8mb4", "utf8mb4_general_ci")).block().result();
         fkTableId1 = fkTableResult1.tableId();
 
         var fkTableResult2 = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "fk_table_2", "utf8mb4", "utf8mb4_general_ci")).block();
+            schemaId, "fk_table_2", "utf8mb4", "utf8mb4_general_ci")).block().result();
         fkTableId2 = fkTableResult2.tableId();
 
         var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block();
+            pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block().result();
         pkColumnId = pkColumnResult.columnId();
 
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
@@ -224,6 +225,7 @@ class DeleteColumnCascadeIntegrationTest {
       @DisplayName("모든 FK 컬럼과 Relationship이 cascade 삭제된다")
       void cascadeDeletesAllFkColumnsAndRelationships() {
         StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(pkColumnId)))
+            .expectNextCount(1)
             .verifyComplete();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(fkColumnId1)))
@@ -263,23 +265,23 @@ class DeleteColumnCascadeIntegrationTest {
       void setUp() {
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
             PROJECT_ID, "MySQL", "chain_cascade_schema",
-            "utf8mb4", "utf8mb4_general_ci")).block();
+            "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
         var tableAResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "table_a", "utf8mb4", "utf8mb4_general_ci")).block();
+            schemaId, "table_a", "utf8mb4", "utf8mb4_general_ci")).block().result();
         tableAId = tableAResult.tableId();
 
         var tableBResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "table_b", "utf8mb4", "utf8mb4_general_ci")).block();
+            schemaId, "table_b", "utf8mb4", "utf8mb4_general_ci")).block().result();
         tableBId = tableBResult.tableId();
 
         var tableCResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "table_c", "utf8mb4", "utf8mb4_general_ci")).block();
+            schemaId, "table_c", "utf8mb4", "utf8mb4_general_ci")).block().result();
         tableCId = tableCResult.tableId();
 
         var colAResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            tableAId, "id", "INT", null, null, null, 0, true, null, null, null)).block();
+            tableAId, "id", "INT", null, null, null, 0, true, null, null, null)).block().result();
         colAId = colAResult.columnId();
 
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
@@ -297,6 +299,7 @@ class DeleteColumnCascadeIntegrationTest {
       @DisplayName("A 컬럼 삭제 시 B, C 컬럼 모두 cascade 삭제된다")
       void cascadeDeletesEntireChain() {
         StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(colAId)))
+            .expectNextCount(1)
             .verifyComplete();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(colAId)))
@@ -345,19 +348,19 @@ class DeleteColumnCascadeIntegrationTest {
     void setUp() {
       var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
           PROJECT_ID, "MySQL", "fk_only_delete_schema",
-          "utf8mb4", "utf8mb4_general_ci")).block();
+          "utf8mb4", "utf8mb4_general_ci")).block().result();
       schemaId = schemaResult.id();
 
       var pkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-          schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block();
+          schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
       pkTableId = pkTableResult.tableId();
 
       var fkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-          schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci")).block();
+          schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
       fkTableId = fkTableResult.tableId();
 
       var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-          pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block();
+          pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block().result();
       pkColumnId = pkColumnResult.columnId();
 
       createConstraintUseCase.createConstraint(new CreateConstraintCommand(
@@ -399,7 +402,7 @@ class DeleteColumnCascadeIntegrationTest {
         pkTableId,
         kind,
         Cardinality.ONE_TO_MANY);
-    var result = createRelationshipUseCase.createRelationship(createCommand).block();
+    var result = createRelationshipUseCase.createRelationship(createCommand).block().result();
     var columns = getRelationshipColumnsByRelationshipIdUseCase
         .getRelationshipColumnsByRelationshipId(
             new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId()))

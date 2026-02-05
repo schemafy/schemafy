@@ -92,27 +92,27 @@ class ConstraintCascadeDeleteIntegrationTest {
     var createSchemaCommand = new CreateSchemaCommand(
         PROJECT_ID, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
-    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();
 
     var createTableCommand = new CreateTableCommand(
         schemaId, "test_table", "utf8mb4", "utf8mb4_general_ci");
-    var tableResult = createTableUseCase.createTable(createTableCommand).block();
+    var tableResult = createTableUseCase.createTable(createTableCommand).block().result();
     tableId = tableResult.tableId();
 
     var createColumn1Command = new CreateColumnCommand(
         tableId, "id", "INT", null, null, null, 0, true, null, null, "PK");
-    var column1Result = createColumnUseCase.createColumn(createColumn1Command).block();
+    var column1Result = createColumnUseCase.createColumn(createColumn1Command).block().result();
     columnId1 = column1Result.columnId();
 
     var createColumn2Command = new CreateColumnCommand(
         tableId, "name", "VARCHAR", 100, null, null, 1, false, null, null, "Name");
-    var column2Result = createColumnUseCase.createColumn(createColumn2Command).block();
+    var column2Result = createColumnUseCase.createColumn(createColumn2Command).block().result();
     columnId2 = column2Result.columnId();
 
     var createColumn3Command = new CreateColumnCommand(
         tableId, "email", "VARCHAR", 255, null, null, 2, false, null, null, "Email");
-    var column3Result = createColumnUseCase.createColumn(createColumn3Command).block();
+    var column3Result = createColumnUseCase.createColumn(createColumn3Command).block().result();
     columnId3 = column3Result.columnId();
   }
 
@@ -126,9 +126,10 @@ class ConstraintCascadeDeleteIntegrationTest {
       var createCommand = new CreateConstraintCommand(
           tableId, "pk_test", ConstraintKind.PRIMARY_KEY, null, null,
           List.of(new CreateConstraintColumnCommand(columnId1, 0)));
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(tableId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getConstraintUseCase.getConstraint(
@@ -154,6 +155,7 @@ class ConstraintCascadeDeleteIntegrationTest {
 
       // 테이블 삭제
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(tableId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 모든 제약조건이 삭제되어야 함
@@ -177,10 +179,11 @@ class ConstraintCascadeDeleteIntegrationTest {
           List.of(
               new CreateConstraintColumnCommand(columnId1, 0),
               new CreateConstraintColumnCommand(columnId2, 1)));
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       // 컬럼 삭제
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(columnId1)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 제약조건은 남아있지만 컬럼은 하나만 남아야 함
@@ -201,7 +204,7 @@ class ConstraintCascadeDeleteIntegrationTest {
       var createCommand1 = new CreateConstraintCommand(
           tableId, "pk_test", ConstraintKind.PRIMARY_KEY, null, null,
           List.of(new CreateConstraintColumnCommand(columnId1, 0)));
-      var result1 = createConstraintUseCase.createConstraint(createCommand1).block();
+      var result1 = createConstraintUseCase.createConstraint(createCommand1).block().result();
 
       // UNIQUE 제약조건 (columnId1, columnId2 사용)
       var createCommand2 = new CreateConstraintCommand(
@@ -209,10 +212,11 @@ class ConstraintCascadeDeleteIntegrationTest {
           List.of(
               new CreateConstraintColumnCommand(columnId1, 0),
               new CreateConstraintColumnCommand(columnId2, 1)));
-      var result2 = createConstraintUseCase.createConstraint(createCommand2).block();
+      var result2 = createConstraintUseCase.createConstraint(createCommand2).block().result();
 
       // columnId1 삭제
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(columnId1)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // PRIMARY KEY 제약조건의 컬럼은 모두 삭제됨
@@ -245,7 +249,7 @@ class ConstraintCascadeDeleteIntegrationTest {
       var createCommand = new CreateConstraintCommand(
           tableId, "pk_test", ConstraintKind.PRIMARY_KEY, null, null,
           List.of(new CreateConstraintColumnCommand(columnId1, 0)));
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       // 제약조건 컬럼 ID 조회
       var columns = getConstraintColumnsByConstraintIdUseCase
@@ -258,6 +262,7 @@ class ConstraintCascadeDeleteIntegrationTest {
       // 마지막 컬럼 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
           new RemoveConstraintColumnCommand(result.constraintId(), constraintColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 제약조건도 삭제되어야 함
@@ -276,7 +281,7 @@ class ConstraintCascadeDeleteIntegrationTest {
               new CreateConstraintColumnCommand(columnId1, 0),
               new CreateConstraintColumnCommand(columnId2, 1),
               new CreateConstraintColumnCommand(columnId3, 2)));
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       // 첫 번째 제약조건 컬럼 ID 조회
       var columns = getConstraintColumnsByConstraintIdUseCase
@@ -289,6 +294,7 @@ class ConstraintCascadeDeleteIntegrationTest {
       // 첫 번째 컬럼 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
           new RemoveConstraintColumnCommand(result.constraintId(), firstColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 제약조건은 유지되고 남은 컬럼의 위치가 재정렬됨

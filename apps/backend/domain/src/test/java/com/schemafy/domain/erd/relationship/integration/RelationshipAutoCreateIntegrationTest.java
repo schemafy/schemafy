@@ -86,7 +86,7 @@ class RelationshipAutoCreateIntegrationTest {
         pkTableId,
         RelationshipKind.NON_IDENTIFYING,
         Cardinality.ONE_TO_MANY);
-    var result = createRelationshipUseCase.createRelationship(createCommand).block();
+    var result = createRelationshipUseCase.createRelationship(createCommand).block().result();
 
     assertThat(result.name()).isEqualTo("rel_fk_table_to_pk_table");
 
@@ -130,7 +130,7 @@ class RelationshipAutoCreateIntegrationTest {
         childTableId,
         RelationshipKind.NON_IDENTIFYING,
         Cardinality.ONE_TO_MANY);
-    var childRelationship = createRelationshipUseCase.createRelationship(childToGrandchild).block();
+    var childRelationship = createRelationshipUseCase.createRelationship(childToGrandchild).block().result();
 
     var parentToChild = new CreateRelationshipCommand(childTableId,
         parentTableId,
@@ -181,21 +181,21 @@ class RelationshipAutoCreateIntegrationTest {
     var createSchemaCommand = new CreateSchemaCommand(
         PROJECT_ID, "MySQL", prefix + "_" + uniqueSuffix,
         "utf8mb4", "utf8mb4_general_ci");
-    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     return schemaResult.id();
   }
 
   private String createTable(String schemaId, String name) {
     var createTableCommand = new CreateTableCommand(
         schemaId, name, "utf8mb4", "utf8mb4_general_ci");
-    var tableResult = createTableUseCase.createTable(createTableCommand).block();
+    var tableResult = createTableUseCase.createTable(createTableCommand).block().result();
     return tableResult.tableId();
   }
 
   private String createColumn(String tableId, String name, String dataType, int seqNo) {
     var createColumnCommand = new CreateColumnCommand(
         tableId, name, dataType, null, null, null, seqNo, false, null, null, null);
-    var columnResult = createColumnUseCase.createColumn(createColumnCommand).block();
+    var columnResult = createColumnUseCase.createColumn(createColumnCommand).block().result();
     return columnResult.columnId();
   }
 
