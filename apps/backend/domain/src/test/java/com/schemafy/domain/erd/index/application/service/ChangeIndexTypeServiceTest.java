@@ -67,6 +67,7 @@ class ChangeIndexTypeServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexType(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexTypePort).should().changeIndexType("index1", IndexType.HASH);

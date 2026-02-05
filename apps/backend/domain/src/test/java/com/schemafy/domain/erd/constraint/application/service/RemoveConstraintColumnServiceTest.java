@@ -97,6 +97,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteConstraintColumnPort).should().deleteConstraintColumn("cc1");
@@ -124,6 +125,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteConstraintColumnPort).should().deleteConstraintColumn("cc1");
@@ -205,7 +207,8 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.just(pkConstraintColumn));
       given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
           .willReturn(Mono.empty());
-      given(pkCascadeHelper.cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet()))
+      given(pkCascadeHelper.cascadeRemovePkColumn(
+          eq("pk-table"), eq("pk-col1"), anySet(), anySet()))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
           .willReturn(Mono.just(remainingPkColumns));
@@ -213,9 +216,11 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
-      then(pkCascadeHelper).should().cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet());
+      then(pkCascadeHelper).should().cascadeRemovePkColumn(
+          eq("pk-table"), eq("pk-col1"), anySet(), anySet());
     }
 
     @Test
@@ -232,7 +237,8 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.just(pkConstraintColumn));
       given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
           .willReturn(Mono.empty());
-      given(pkCascadeHelper.cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet()))
+      given(pkCascadeHelper.cascadeRemovePkColumn(
+          eq("pk-table"), eq("pk-col1"), anySet(), anySet()))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
           .willReturn(Mono.just(List.of()));
@@ -240,6 +246,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteConstraintPort).should().deleteConstraint("pk-constraint");
@@ -273,6 +280,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(pkCascadeHelper).shouldHaveNoInteractions();

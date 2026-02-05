@@ -90,10 +90,11 @@ class CreateColumnServiceTest {
 
         StepVerifier.create(sut.createColumn(command))
             .assertNext(result -> {
-              assertThat(result.columnId()).isEqualTo(ColumnFixture.DEFAULT_ID);
-              assertThat(result.name()).isEqualTo(command.name());
-              assertThat(result.dataType()).isEqualTo("VARCHAR");
-              assertThat(result.lengthScale().length()).isEqualTo(command.length());
+              var payload = result.result();
+              assertThat(payload.columnId()).isEqualTo(ColumnFixture.DEFAULT_ID);
+              assertThat(payload.name()).isEqualTo(command.name());
+              assertThat(payload.dataType()).isEqualTo("VARCHAR");
+              assertThat(payload.lengthScale().length()).isEqualTo(command.length());
             })
             .verifyComplete();
 
@@ -120,8 +121,9 @@ class CreateColumnServiceTest {
 
         StepVerifier.create(sut.createColumn(command))
             .assertNext(result -> {
-              assertThat(result.dataType()).isEqualTo("INT");
-              assertThat(result.lengthScale()).isNull();
+              var payload = result.result();
+              assertThat(payload.dataType()).isEqualTo("INT");
+              assertThat(payload.lengthScale()).isNull();
             })
             .verifyComplete();
       }
@@ -146,9 +148,10 @@ class CreateColumnServiceTest {
 
         StepVerifier.create(sut.createColumn(command))
             .assertNext(result -> {
-              assertThat(result.dataType()).isEqualTo("DECIMAL");
-              assertThat(result.lengthScale().precision()).isEqualTo(10);
-              assertThat(result.lengthScale().scale()).isEqualTo(2);
+              var payload = result.result();
+              assertThat(payload.dataType()).isEqualTo("DECIMAL");
+              assertThat(payload.lengthScale().precision()).isEqualTo(10);
+              assertThat(payload.lengthScale().scale()).isEqualTo(2);
             })
             .verifyComplete();
       }

@@ -11,8 +11,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
+import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
+import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
@@ -32,6 +34,9 @@ class ChangeConstraintColumnPositionServiceTest {
 
   @Mock
   ChangeConstraintColumnPositionPort changeConstraintColumnPositionPort;
+
+  @Mock
+  GetConstraintByIdPort getConstraintByIdPort;
 
   @Mock
   GetConstraintColumnByIdPort getConstraintColumnByIdPort;
@@ -58,12 +63,22 @@ class ChangeConstraintColumnPositionServiceTest {
 
       given(getConstraintColumnByIdPort.findConstraintColumnById(any()))
           .willReturn(Mono.just(constraintColumn));
+      given(getConstraintByIdPort.findConstraintById("constraint1"))
+          .willReturn(Mono.just(
+              ConstraintFixture.constraint(
+                  "constraint1",
+                  "table1",
+                  "pk_test",
+                  ConstraintKind.PRIMARY_KEY,
+                  null,
+                  null)));
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
           .willReturn(Mono.just(columns));
       given(changeConstraintColumnPositionPort.changeConstraintColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeConstraintColumnPositionPort).should()
@@ -93,6 +108,15 @@ class ChangeConstraintColumnPositionServiceTest {
 
       given(getConstraintColumnByIdPort.findConstraintColumnById(any()))
           .willReturn(Mono.just(constraintColumn));
+      given(getConstraintByIdPort.findConstraintById("constraint1"))
+          .willReturn(Mono.just(
+              ConstraintFixture.constraint(
+                  "constraint1",
+                  "table1",
+                  "pk_test",
+                  ConstraintKind.PRIMARY_KEY,
+                  null,
+                  null)));
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
           .willReturn(Mono.just(columns));
 

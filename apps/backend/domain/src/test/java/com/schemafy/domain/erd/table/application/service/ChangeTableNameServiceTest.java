@@ -104,6 +104,7 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(tableExistsPort).should()
@@ -167,6 +168,7 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeRelationshipNamePort).should()
@@ -221,6 +223,7 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.just(List.of(relationship)));
 
         StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeRelationshipNamePort).shouldHaveNoInteractions();

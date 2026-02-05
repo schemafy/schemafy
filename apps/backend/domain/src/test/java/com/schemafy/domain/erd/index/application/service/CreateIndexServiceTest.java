@@ -115,9 +115,9 @@ class CreateIndexServiceTest {
 
       StepVerifier.create(sut.createIndex(command))
           .assertNext(result -> {
-            assertThat(result.indexId()).isEqualTo("new-index-id");
-            assertThat(result.name()).isEqualTo("idx_btree");
-            assertThat(result.type()).isEqualTo(IndexType.BTREE);
+            assertThat(result.result().indexId()).isEqualTo("new-index-id");
+            assertThat(result.result().name()).isEqualTo("idx_btree");
+            assertThat(result.result().type()).isEqualTo(IndexType.BTREE);
           })
           .verifyComplete();
 
@@ -149,7 +149,7 @@ class CreateIndexServiceTest {
 
       StepVerifier.create(sut.createIndex(command))
           .assertNext(result -> {
-            assertThat(result.type()).isEqualTo(IndexType.HASH);
+            assertThat(result.result().type()).isEqualTo(IndexType.HASH);
           })
           .verifyComplete();
     }
@@ -178,7 +178,7 @@ class CreateIndexServiceTest {
 
       StepVerifier.create(sut.createIndex(command))
           .assertNext(result -> {
-            assertThat(result.type()).isEqualTo(IndexType.FULLTEXT);
+            assertThat(result.result().type()).isEqualTo(IndexType.FULLTEXT);
           })
           .verifyComplete();
     }
@@ -207,7 +207,7 @@ class CreateIndexServiceTest {
 
       StepVerifier.create(sut.createIndex(command))
           .assertNext(result -> {
-            assertThat(result.type()).isEqualTo(IndexType.SPATIAL);
+            assertThat(result.result().type()).isEqualTo(IndexType.SPATIAL);
           })
           .verifyComplete();
     }
@@ -240,8 +240,8 @@ class CreateIndexServiceTest {
 
       StepVerifier.create(sut.createIndex(command))
           .assertNext(result -> {
-            assertThat(result.indexId()).isEqualTo("new-index-id");
-            assertThat(result.name()).isEqualTo("idx_btree");
+            assertThat(result.result().indexId()).isEqualTo("new-index-id");
+            assertThat(result.result().name()).isEqualTo("idx_btree");
           })
           .verifyComplete();
     }
@@ -473,7 +473,7 @@ class CreateIndexServiceTest {
 
       StepVerifier.create(sut.createIndex(command))
           .assertNext(result -> {
-            assertThat(result.type()).isEqualTo(IndexType.HASH);
+            assertThat(result.result().type()).isEqualTo(IndexType.HASH);
           })
           .verifyComplete();
     }
@@ -498,7 +498,7 @@ class CreateIndexServiceTest {
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createIndex(command))
-          .assertNext(result -> assertThat(result.indexId()).isEqualTo("new-index-id"))
+          .assertNext(result -> assertThat(result.result().indexId()).isEqualTo("new-index-id"))
           .verifyComplete();
 
       then(createIndexColumnPort).shouldHaveNoInteractions();
@@ -528,7 +528,7 @@ class CreateIndexServiceTest {
 
       StepVerifier.create(sut.createIndex(command))
           .assertNext(result -> {
-            assertThat(result.name()).isEqualTo("idx_test");
+            assertThat(result.result().name()).isEqualTo("idx_test");
           })
           .verifyComplete();
     }

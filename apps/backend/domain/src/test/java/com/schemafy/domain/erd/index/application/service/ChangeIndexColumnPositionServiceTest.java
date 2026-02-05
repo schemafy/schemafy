@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnPositionPort;
+import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.domain.exception.IndexPositionInvalidException;
@@ -32,6 +33,9 @@ class ChangeIndexColumnPositionServiceTest {
 
   @Mock
   ChangeIndexColumnPositionPort changeIndexColumnPositionPort;
+
+  @Mock
+  GetIndexByIdPort getIndexByIdPort;
 
   @Mock
   GetIndexColumnByIdPort getIndexColumnByIdPort;
@@ -58,12 +62,15 @@ class ChangeIndexColumnPositionServiceTest {
 
       given(getIndexColumnByIdPort.findIndexColumnById(any()))
           .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(columns));
       given(changeIndexColumnPositionPort.changeIndexColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexColumnPositionPort).should()
@@ -82,12 +89,15 @@ class ChangeIndexColumnPositionServiceTest {
 
       given(getIndexColumnByIdPort.findIndexColumnById(any()))
           .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(columns));
       given(changeIndexColumnPositionPort.changeIndexColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexColumnPositionPort).should()
@@ -106,12 +116,15 @@ class ChangeIndexColumnPositionServiceTest {
 
       given(getIndexColumnByIdPort.findIndexColumnById(any()))
           .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(columns));
       given(changeIndexColumnPositionPort.changeIndexColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexColumnPositionPort).should()
@@ -141,6 +154,8 @@ class ChangeIndexColumnPositionServiceTest {
 
       given(getIndexColumnByIdPort.findIndexColumnById(any()))
           .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(columns));
 
@@ -174,6 +189,8 @@ class ChangeIndexColumnPositionServiceTest {
 
       given(getIndexColumnByIdPort.findIndexColumnById(any()))
           .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(List.of()));
 
@@ -195,12 +212,15 @@ class ChangeIndexColumnPositionServiceTest {
 
       given(getIndexColumnByIdPort.findIndexColumnById(any()))
           .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(columns));
       given(changeIndexColumnPositionPort.changeIndexColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexColumnPositionPort).should()

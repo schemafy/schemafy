@@ -99,10 +99,11 @@ class AddRelationshipColumnServiceTest {
 
       StepVerifier.create(sut.addRelationshipColumn(command))
           .assertNext(result -> {
-            assertThat(result.relationshipColumnId()).isEqualTo("new_column_id");
-            assertThat(result.pkColumnId()).isEqualTo(NEW_PK_COLUMN_ID);
-            assertThat(result.fkColumnId()).isEqualTo(NEW_FK_COLUMN_ID);
-            assertThat(result.seqNo()).isEqualTo(1);
+            var payload = result.result();
+            assertThat(payload.relationshipColumnId()).isEqualTo("new_column_id");
+            assertThat(payload.pkColumnId()).isEqualTo(NEW_PK_COLUMN_ID);
+            assertThat(payload.fkColumnId()).isEqualTo(NEW_FK_COLUMN_ID);
+            assertThat(payload.seqNo()).isEqualTo(1);
           })
           .verifyComplete();
 

@@ -159,10 +159,11 @@ class CreateRelationshipServiceTest {
 
       StepVerifier.create(sut.createRelationship(command))
           .assertNext(result -> {
-            assertThat(result.relationshipId()).isEqualTo(REL_ID);
-            assertThat(result.name()).isEqualTo("rel_fk_table_to_pk_table");
-            assertThat(result.kind()).isEqualTo(RelationshipKind.NON_IDENTIFYING);
-            assertThat(result.cardinality()).isEqualTo(Cardinality.ONE_TO_MANY);
+            var payload = result.result();
+            assertThat(payload.relationshipId()).isEqualTo(REL_ID);
+            assertThat(payload.name()).isEqualTo("rel_fk_table_to_pk_table");
+            assertThat(payload.kind()).isEqualTo(RelationshipKind.NON_IDENTIFYING);
+            assertThat(payload.cardinality()).isEqualTo(Cardinality.ONE_TO_MANY);
           })
           .verifyComplete();
 
@@ -218,14 +219,15 @@ class CreateRelationshipServiceTest {
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(createRelationshipColumnPort.createRelationshipColumn(any(RelationshipColumn.class)))
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-      given(pkCascadeHelper.addPkColumnAndCascade(any(), any(), any()))
+      given(pkCascadeHelper.addPkColumnAndCascade(any(), any(), any(), any()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.createRelationship(command))
-          .assertNext(result -> assertThat(result.kind()).isEqualTo(RelationshipKind.IDENTIFYING))
+          .assertNext(result -> assertThat(result.result().kind()).isEqualTo(RelationshipKind.IDENTIFYING))
           .verifyComplete();
 
-      then(pkCascadeHelper).should().addPkColumnAndCascade(eq(FK_TABLE_ID), any(Column.class), any());
+      then(pkCascadeHelper).should()
+          .addPkColumnAndCascade(eq(FK_TABLE_ID), any(Column.class), any(), any());
     }
 
     @Test
@@ -279,7 +281,7 @@ class CreateRelationshipServiceTest {
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createRelationship(command))
-          .assertNext(result -> assertThat(result.name()).isEqualTo("rel_fk_table_to_pk_table_1"))
+          .assertNext(result -> assertThat(result.result().name()).isEqualTo("rel_fk_table_to_pk_table_1"))
           .verifyComplete();
     }
 

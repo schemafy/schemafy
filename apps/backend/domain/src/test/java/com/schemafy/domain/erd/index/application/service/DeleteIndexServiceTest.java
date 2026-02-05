@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexPort;
+import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
 
 import reactor.core.publisher.Mono;
@@ -31,6 +32,9 @@ class DeleteIndexServiceTest {
 
   @Mock
   DeleteIndexColumnsByIndexIdPort deleteIndexColumnsPort;
+
+  @Mock
+  GetIndexByIdPort getIndexByIdPort;
 
   @Mock
   TransactionalOperator transactionalOperator;
@@ -52,13 +56,17 @@ class DeleteIndexServiceTest {
     @DisplayName("인덱스 컬럼을 먼저 삭제하고 인덱스를 삭제한다")
     void deletesColumnsFirstThenIndex() {
       var command = IndexFixture.deleteCommand("index1");
+      var index = IndexFixture.indexWithId("index1");
 
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
       given(deleteIndexColumnsPort.deleteByIndexId("index1"))
           .willReturn(Mono.empty());
       given(deleteIndexPort.deleteIndex("index1"))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteIndex(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteIndexColumnsPort).should().deleteByIndexId("index1");
@@ -69,13 +77,17 @@ class DeleteIndexServiceTest {
     @DisplayName("컬럼이 없는 인덱스도 삭제한다")
     void deletesIndexWithoutColumns() {
       var command = IndexFixture.deleteCommand("index1");
+      var index = IndexFixture.indexWithId("index1");
 
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
       given(deleteIndexColumnsPort.deleteByIndexId("index1"))
           .willReturn(Mono.empty());
       given(deleteIndexPort.deleteIndex("index1"))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteIndex(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteIndexPort).should().deleteIndex("index1");

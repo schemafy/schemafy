@@ -45,6 +45,7 @@ class ChangeTableExtraServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeTableExtra(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeTableExtraPort).should()

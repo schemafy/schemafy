@@ -121,15 +121,15 @@ class CreateConstraintServiceTest {
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(getColumnByIdPort.findColumnById("col1"))
           .willReturn(Mono.just(ColumnFixture.columnWithId("col1")));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
           .assertNext(
               result -> {
-                assertThat(result.constraintId()).isEqualTo("new-constraint-id");
-                assertThat(result.name()).isEqualTo("pk_test");
-                assertThat(result.kind()).isEqualTo(ConstraintKind.PRIMARY_KEY);
+                assertThat(result.result().constraintId()).isEqualTo("new-constraint-id");
+                assertThat(result.result().name()).isEqualTo("pk_test");
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.PRIMARY_KEY);
               })
           .verifyComplete();
 
@@ -163,9 +163,9 @@ class CreateConstraintServiceTest {
       StepVerifier.create(sut.createConstraint(command))
           .assertNext(
               result -> {
-                assertThat(result.constraintId()).isEqualTo("new-constraint-id");
-                assertThat(result.name()).isEqualTo("uq_test");
-                assertThat(result.kind()).isEqualTo(ConstraintKind.UNIQUE);
+                assertThat(result.result().constraintId()).isEqualTo("new-constraint-id");
+                assertThat(result.result().name()).isEqualTo("uq_test");
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.UNIQUE);
               })
           .verifyComplete();
     }
@@ -397,7 +397,7 @@ class CreateConstraintServiceTest {
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createConstraint(command))
-          .assertNext(result -> assertThat(result.constraintId()).isEqualTo("new-constraint-id"))
+          .assertNext(result -> assertThat(result.result().constraintId()).isEqualTo("new-constraint-id"))
           .verifyComplete();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
@@ -426,8 +426,8 @@ class CreateConstraintServiceTest {
       StepVerifier.create(sut.createConstraint(command))
           .assertNext(
               result -> {
-                assertThat(result.kind()).isEqualTo(ConstraintKind.CHECK);
-                assertThat(result.checkExpr()).isEqualTo("value > 0");
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.CHECK);
+                assertThat(result.result().checkExpr()).isEqualTo("value > 0");
               })
           .verifyComplete();
     }
@@ -455,8 +455,8 @@ class CreateConstraintServiceTest {
       StepVerifier.create(sut.createConstraint(command))
           .assertNext(
               result -> {
-                assertThat(result.kind()).isEqualTo(ConstraintKind.DEFAULT);
-                assertThat(result.defaultExpr()).isEqualTo("0");
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.DEFAULT);
+                assertThat(result.result().defaultExpr()).isEqualTo("0");
               })
           .verifyComplete();
     }

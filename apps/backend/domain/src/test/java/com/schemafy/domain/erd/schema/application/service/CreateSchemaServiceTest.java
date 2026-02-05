@@ -62,12 +62,13 @@ class CreateSchemaServiceTest {
 
         StepVerifier.create(sut.createSchema(command))
             .assertNext(result -> {
-              assertThat(result.id()).isEqualTo(SchemaFixture.DEFAULT_ID);
-              assertThat(result.projectId()).isEqualTo(command.projectId());
-              assertThat(result.dbVendorName()).isEqualTo(command.dbVendorName());
-              assertThat(result.name()).isEqualTo(command.name());
-              assertThat(result.charset()).isEqualTo(command.charset());
-              assertThat(result.collation()).isEqualTo(command.collation());
+              var payload = result.result();
+              assertThat(payload.id()).isEqualTo(SchemaFixture.DEFAULT_ID);
+              assertThat(payload.projectId()).isEqualTo(command.projectId());
+              assertThat(payload.dbVendorName()).isEqualTo(command.dbVendorName());
+              assertThat(payload.name()).isEqualTo(command.name());
+              assertThat(payload.charset()).isEqualTo(command.charset());
+              assertThat(payload.collation()).isEqualTo(command.collation());
             })
             .verifyComplete();
 

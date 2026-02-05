@@ -92,6 +92,7 @@ class RemoveIndexColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeIndexColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteIndexColumnPort).should().deleteIndexColumn("ic1");
@@ -118,6 +119,7 @@ class RemoveIndexColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeIndexColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteIndexColumnPort).should().deleteIndexColumn("ic1");

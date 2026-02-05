@@ -87,11 +87,12 @@ class AddIndexColumnServiceTest {
 
       StepVerifier.create(sut.addIndexColumn(command))
           .assertNext(result -> {
-            assertThat(result.indexColumnId()).isEqualTo("new-column-id");
-            assertThat(result.indexId()).isEqualTo("index1");
-            assertThat(result.columnId()).isEqualTo("col2");
-            assertThat(result.seqNo()).isEqualTo(1);
-            assertThat(result.sortDirection()).isEqualTo(SortDirection.ASC);
+            var payload = result.result();
+            assertThat(payload.indexColumnId()).isEqualTo("new-column-id");
+            assertThat(payload.indexId()).isEqualTo("index1");
+            assertThat(payload.columnId()).isEqualTo("col2");
+            assertThat(payload.seqNo()).isEqualTo(1);
+            assertThat(payload.sortDirection()).isEqualTo(SortDirection.ASC);
           })
           .verifyComplete();
 
@@ -189,7 +190,7 @@ class AddIndexColumnServiceTest {
 
       StepVerifier.create(sut.addIndexColumn(command))
           .assertNext(result -> {
-            assertThat(result.sortDirection()).isEqualTo(SortDirection.DESC);
+            assertThat(result.result().sortDirection()).isEqualTo(SortDirection.DESC);
           })
           .verifyComplete();
     }

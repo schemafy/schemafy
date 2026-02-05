@@ -53,6 +53,7 @@ class ChangeSchemaNameServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeSchemaName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(schemaExistsPort).should()

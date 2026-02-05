@@ -117,6 +117,7 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnMetaPort).should()
@@ -139,6 +140,7 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnMetaPort).should()
@@ -161,6 +163,7 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnMetaPort).should()
@@ -303,6 +306,7 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of(relationshipColumn)));
 
         StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnMetaPort).should()
@@ -378,6 +382,7 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnMetaPort).should()
@@ -420,6 +425,7 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(constraint));
 
         StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnMetaPort).should(times(1)).changeColumnMeta(any(), any(), any(), any(), any());

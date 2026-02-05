@@ -17,6 +17,7 @@ import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelationshipPort;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
@@ -49,6 +50,9 @@ class DeleteRelationshipServiceTest {
   @Mock
   DeleteColumnUseCase deleteColumnUseCase;
 
+  @Mock
+  GetRelationshipByIdPort getRelationshipByIdPort;
+
   @InjectMocks
   DeleteRelationshipService sut;
 
@@ -69,6 +73,8 @@ class DeleteRelationshipServiceTest {
       var relColumns = List.of(
           new RelationshipColumn("rc1", RelationshipFixture.DEFAULT_ID, "pk1", "fk1", 0));
 
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort
           .findRelationshipColumnsByRelationshipId(RelationshipFixture.DEFAULT_ID))
           .willReturn(Mono.just(relColumns));
@@ -80,6 +86,7 @@ class DeleteRelationshipServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteRelationship(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       var inOrderVerifier = inOrder(
@@ -97,6 +104,8 @@ class DeleteRelationshipServiceTest {
     void deletesRelationshipWithoutFkColumnsWhenNoRelColumns() {
       var command = RelationshipFixture.deleteCommand();
 
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort
           .findRelationshipColumnsByRelationshipId(RelationshipFixture.DEFAULT_ID))
           .willReturn(Mono.just(List.of()));
@@ -106,6 +115,7 @@ class DeleteRelationshipServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteRelationship(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteColumnUseCase).shouldHaveNoInteractions();

@@ -120,6 +120,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnTypePort).should()
@@ -142,6 +143,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnTypePort).should()
@@ -293,6 +295,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(relationshipColumn)));
 
         StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnTypePort).should()
@@ -344,6 +347,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(rc2)));
 
         StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnTypePort).should(times(3)).changeColumnType(any(), any(), any());
@@ -393,6 +397,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(relationshipColumn)));
 
         StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnMetaPort).should()
@@ -439,6 +444,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(relationshipColumn)));
 
         StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnMetaPort).shouldHaveNoInteractions();
@@ -506,6 +512,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnTypePort).should().changeColumnType(eq(colAId), eq("BIGINT"), any());
@@ -542,6 +549,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(constraint));
 
         StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnTypePort).should(times(1)).changeColumnType(any(), any(), any());

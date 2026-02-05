@@ -55,6 +55,7 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnPosition(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnPositionPort).should()

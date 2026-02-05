@@ -107,17 +107,18 @@ class AddConstraintColumnServiceTest {
           .willReturn(
               Mono.just(
                   new Column("col2", "table1", "col2", "INT", null, 1, false, null, null, null)));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.constraintColumnId()).isEqualTo("new-column-id");
-                assertThat(result.constraintId()).isEqualTo("constraint1");
-                assertThat(result.columnId()).isEqualTo("col2");
-                assertThat(result.seqNo()).isEqualTo(1);
-                assertThat(result.cascadeCreatedColumns()).isEmpty();
+                var payload = result.result();
+                assertThat(payload.constraintColumnId()).isEqualTo("new-column-id");
+                assertThat(payload.constraintId()).isEqualTo("constraint1");
+                assertThat(payload.columnId()).isEqualTo("col2");
+                assertThat(payload.seqNo()).isEqualTo(1);
+                assertThat(payload.cascadeCreatedColumns()).isEmpty();
               })
           .verifyComplete();
 
@@ -241,14 +242,15 @@ class AddConstraintColumnServiceTest {
       given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(getColumnByIdPort.findColumnById("col2")).willReturn(Mono.just(pkColumn));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of(cascadeInfo)));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.cascadeCreatedColumns()).hasSize(1);
-                var cascade = result.cascadeCreatedColumns().get(0);
+                var payload = result.result();
+                assertThat(payload.cascadeCreatedColumns()).hasSize(1);
+                var cascade = payload.cascadeCreatedColumns().get(0);
                 assertThat(cascade.fkColumnId()).isEqualTo("new-fk-col-id");
                 assertThat(cascade.fkColumnName()).isEqualTo("pk_col2");
                 assertThat(cascade.fkTableId()).isEqualTo("fk-table1");
@@ -283,13 +285,13 @@ class AddConstraintColumnServiceTest {
       given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(getColumnByIdPort.findColumnById("col2")).willReturn(Mono.just(pkColumn));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of(cascadeInfo1, cascadeInfo2)));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.cascadeCreatedColumns()).hasSize(2);
+                assertThat(result.result().cascadeCreatedColumns()).hasSize(2);
               })
           .verifyComplete();
     }
@@ -315,11 +317,11 @@ class AddConstraintColumnServiceTest {
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.cascadeCreatedColumns()).isEmpty();
+                assertThat(result.result().cascadeCreatedColumns()).isEmpty();
               })
           .verifyComplete();
 
-      then(pkCascadeHelper).should(never()).cascadeAddPkColumn(any(), any(), any());
+      then(pkCascadeHelper).should(never()).cascadeAddPkColumn(any(), any(), any(), any());
     }
 
     @Test
@@ -346,14 +348,15 @@ class AddConstraintColumnServiceTest {
       given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(getColumnByIdPort.findColumnById("col2")).willReturn(Mono.just(pkColumn));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of(cascadeInfo)));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.cascadeCreatedColumns()).hasSize(1);
-                assertThat(result.cascadeCreatedColumns().get(0).fkColumnName())
+                var payload = result.result();
+                assertThat(payload.cascadeCreatedColumns()).hasSize(1);
+                assertThat(payload.cascadeCreatedColumns().get(0).fkColumnName())
                     .isEqualTo("pk_col_1");
               })
           .verifyComplete();

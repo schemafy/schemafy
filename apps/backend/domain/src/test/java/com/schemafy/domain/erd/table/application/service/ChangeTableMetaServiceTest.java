@@ -45,6 +45,7 @@ class ChangeTableMetaServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeTableMeta(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeTableMetaPort).should()

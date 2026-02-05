@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
@@ -32,6 +33,9 @@ class ChangeRelationshipColumnPositionServiceTest {
 
   @Mock
   ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort;
+
+  @Mock
+  GetRelationshipByIdPort getRelationshipByIdPort;
 
   @Mock
   GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;
@@ -58,12 +62,15 @@ class ChangeRelationshipColumnPositionServiceTest {
 
       given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
           .willReturn(Mono.just(column1));
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
           .willReturn(Mono.just(List.of(column1, column2)));
       given(changeRelationshipColumnPositionPort.changeRelationshipColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeRelationshipColumnPositionPort).should()
@@ -81,12 +88,15 @@ class ChangeRelationshipColumnPositionServiceTest {
 
       given(getRelationshipColumnByIdPort.findRelationshipColumnById("col2"))
           .willReturn(Mono.just(column2));
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
           .willReturn(Mono.just(List.of(column1, column2)));
       given(changeRelationshipColumnPositionPort.changeRelationshipColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
     }
 
@@ -127,6 +137,8 @@ class ChangeRelationshipColumnPositionServiceTest {
 
       given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
           .willReturn(Mono.just(column));
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
           .willReturn(Mono.just(List.of(column)));
 

@@ -106,6 +106,7 @@ class RemoveRelationshipColumnServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.removeRelationshipColumn(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(deleteRelationshipColumnPort).should()
@@ -140,6 +141,7 @@ class RemoveRelationshipColumnServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.removeRelationshipColumn(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeRelationshipColumnPositionPort).should()
@@ -174,6 +176,7 @@ class RemoveRelationshipColumnServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.removeRelationshipColumn(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(deleteRelationshipColumnPort).should()
