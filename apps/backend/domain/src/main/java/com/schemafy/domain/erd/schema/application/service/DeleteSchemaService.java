@@ -10,6 +10,8 @@ import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
+import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.domain.erd.table.application.port.out.GetTablesBySchemaIdPort;
@@ -24,6 +26,7 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
 
   private final TransactionalOperator transactionalOperator;
   private final DeleteSchemaPort deleteSchemaPort;
+  private final GetSchemaByIdPort getSchemaByIdPort;
   private final GetTablesBySchemaIdPort getTablesBySchemaIdPort;
   private final DeleteTableUseCase deleteTableUseCase;
 
@@ -31,8 +34,12 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
   public Mono<MutationResult<Void>> deleteSchema(DeleteSchemaCommand command) {
     String schemaId = command.schemaId();
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
-    return getTablesBySchemaIdPort.findTablesBySchemaId(schemaId)
-        .collectList()
+    Mono<Void> ensureExists = getSchemaByIdPort.findSchemaById(schemaId)
+        .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found: " + schemaId)))
+        .then();
+    return ensureExists
+        .then(getTablesBySchemaIdPort.findTablesBySchemaId(schemaId)
+            .collectList())
         .flatMapMany(Flux::fromIterable)
         .concatMap(table -> {
           affectedTableIds.add(table.id());

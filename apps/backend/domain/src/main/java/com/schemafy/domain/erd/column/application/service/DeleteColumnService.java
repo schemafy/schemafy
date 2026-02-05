@@ -13,6 +13,7 @@ import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
@@ -104,6 +105,8 @@ public class DeleteColumnService implements DeleteColumnUseCase {
     }
 
     Mono<Void> trackTableId = getColumnByIdPort.findColumnById(columnId)
+        .switchIfEmpty(Mono.error(
+            new ColumnNotExistException("Column not found: " + columnId)))
         .doOnNext(column -> affectedTableIds.add(column.tableId()))
         .then();
 
