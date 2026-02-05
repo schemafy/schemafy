@@ -55,13 +55,13 @@ public class MySqlPrimaryKeyGenerator {
     return "`" + escapeIdentifier(name) + "`";
   }
 
-  private List<ConstraintResponse> getConstraints(TableDetailResponse table) {
+  public static List<ConstraintResponse> getConstraints(TableDetailResponse table) {
     return table.getConstraints() != null
         ? table.getConstraints()
         : Collections.emptyList();
   }
 
-  private List<ConstraintColumnResponse> getColumns(ConstraintResponse c) {
+  public static List<ConstraintColumnResponse> getColumns(ConstraintResponse c) {
     return c.getColumns() != null ? c.getColumns() : Collections.emptyList();
   }
 
