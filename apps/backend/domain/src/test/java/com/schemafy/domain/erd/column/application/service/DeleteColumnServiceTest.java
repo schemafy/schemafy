@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
+import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
+import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
@@ -46,6 +48,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -60,6 +63,9 @@ class DeleteColumnServiceTest {
 
   @Mock
   DeleteColumnPort deleteColumnPort;
+
+  @Mock
+  GetColumnByIdPort getColumnByIdPort;
 
   @Mock
   GetConstraintColumnsByColumnIdPort getConstraintColumnsByColumnIdPort;
@@ -105,6 +111,11 @@ class DeleteColumnServiceTest {
         .willAnswer(invocation -> invocation.getArgument(0));
   }
 
+  private void stubColumnExists() {
+    given(getColumnByIdPort.findColumnById(any()))
+        .willReturn(Mono.just(ColumnFixture.defaultColumn()));
+  }
+
   @Nested
   @DisplayName("deleteColumn 메서드는")
   class DeleteColumn {
@@ -114,6 +125,7 @@ class DeleteColumnServiceTest {
     void deletesOnlyColumnWhenNoRelatedEntities() {
       var command = ColumnFixture.deleteCommand();
 
+      stubColumnExists();
       given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
           .willReturn(Mono.just(List.of()));
       given(getIndexColumnsByColumnIdPort.findIndexColumnsByColumnId(any()))
@@ -124,12 +136,34 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteColumnPort).should().deleteColumn(command.columnId());
       then(deleteConstraintColumnsPort).should(never()).deleteByColumnId(any());
       then(deleteIndexColumnsPort).should(never()).deleteByColumnId(any());
       then(deleteRelationshipColumnsPort).should(never()).deleteByColumnId(any());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 컬럼이면 ColumnNotExistException이 발생한다")
+    void rejectsDeletionWhenColumnDoesNotExist() {
+      var command = ColumnFixture.deleteCommand("missing-column");
+
+      given(getColumnByIdPort.findColumnById(anyString()))
+          .willReturn(Mono.empty());
+      given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(command.columnId()))
+          .willReturn(Mono.just(List.of()));
+      given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(anyString()))
+          .willReturn(Mono.just(List.of()));
+      given(getIndexColumnsByColumnIdPort.findIndexColumnsByColumnId(anyString()))
+          .willReturn(Mono.just(List.of()));
+      given(deleteColumnPort.deleteColumn(anyString()))
+          .willReturn(Mono.empty());
+
+      StepVerifier.create(sut.deleteColumn(command))
+          .expectError(ColumnNotExistException.class)
+          .verify();
     }
 
     @Test
@@ -140,6 +174,7 @@ class DeleteColumnServiceTest {
       var constraintColumn = new ConstraintColumn("cc-1", constraintId, command.columnId(), 0);
       var constraint = new Constraint(constraintId, "table-1", "uk_test", ConstraintKind.UNIQUE, null, null);
 
+      stubColumnExists();
       given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(command.columnId()))
           .willReturn(Mono.just(List.of(constraintColumn)));
       given(getConstraintByIdPort.findConstraintById(constraintId))
@@ -159,6 +194,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteConstraintColumnsPort).should().deleteByColumnId(command.columnId());
@@ -172,6 +208,7 @@ class DeleteColumnServiceTest {
       String indexId = "index-1";
       var indexColumn = new IndexColumn("ic-1", indexId, command.columnId(), 0, SortDirection.ASC);
 
+      stubColumnExists();
       given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
           .willReturn(Mono.just(List.of()));
 
@@ -190,6 +227,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteIndexColumnsPort).should().deleteByColumnId(command.columnId());
@@ -222,6 +260,7 @@ class DeleteColumnServiceTest {
       String indexId = "index-1";
       String relationshipId = "rel-1";
 
+      stubColumnExists();
       var constraintColumn = new ConstraintColumn("cc-1", constraintId, command.columnId(), 0);
       var remainingConstraintColumn = new ConstraintColumn("cc-2", constraintId, "other-col", 1);
       var constraint = new Constraint(constraintId, "table-1", "uk_test", ConstraintKind.UNIQUE, null, null);
@@ -264,6 +303,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteConstraintPort).should(never()).deleteConstraint(any());
@@ -282,6 +322,7 @@ class DeleteColumnServiceTest {
       String relationshipId = "rel-1";
 
       var command = ColumnFixture.deleteCommand(pkColumnId);
+      stubColumnExists();
       var pkConstraint = new Constraint(constraintId, tableId, "pk_test", ConstraintKind.PRIMARY_KEY, null, null);
       var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumnId, 0);
       var relationship = new Relationship(
@@ -328,6 +369,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       // FK 컬럼이 삭제되었는지 확인
@@ -349,6 +391,7 @@ class DeleteColumnServiceTest {
       String relationshipId2 = "rel-2";
 
       var command = ColumnFixture.deleteCommand(pkColumnId);
+      stubColumnExists();
       var pkConstraint = new Constraint(constraintId, tableId, "pk_test", ConstraintKind.PRIMARY_KEY, null, null);
       var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumnId, 0);
       var relationship1 = new Relationship(
@@ -409,6 +452,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteColumnPort).should().deleteColumn(fkColumnId1);
@@ -428,6 +472,7 @@ class DeleteColumnServiceTest {
       String relationshipId = "rel-1";
 
       var command = ColumnFixture.deleteCommand(pkColumnId1);
+      stubColumnExists();
       var pkConstraint = new Constraint(constraintId, tableId, "pk_test", ConstraintKind.PRIMARY_KEY, null, null);
       var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumnId1, 0);
       var relationship = new Relationship(
@@ -472,6 +517,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       // RelationshipColumn만 삭제되고, Relationship은 삭제되지 않음
@@ -486,6 +532,7 @@ class DeleteColumnServiceTest {
       String columnId = "col-1";
 
       var command = ColumnFixture.deleteCommand(columnId);
+      stubColumnExists();
       String tableId = "table-1";
       String constraintId = "pk-constraint-1";
       String relationshipId = "rel-1";
@@ -525,6 +572,7 @@ class DeleteColumnServiceTest {
 
       // 무한 루프 없이 완료되어야 함
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 컬럼은 정확히 한 번만 삭제됨
@@ -544,6 +592,7 @@ class DeleteColumnServiceTest {
       String relationshipId = "rel-1";
 
       var command = ColumnFixture.deleteCommand(pkColumnId);
+      stubColumnExists();
       var pkConstraint = new Constraint(pkConstraintId, tableId, "pk_test", ConstraintKind.PRIMARY_KEY, null, null);
       var pkConstraintColumn = new ConstraintColumn("cc-1", pkConstraintId, pkColumnId, 0);
       var relationship = new Relationship(
@@ -609,6 +658,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       // FK 컬럼의 Constraint와 Index도 삭제되었는지 확인
@@ -634,6 +684,7 @@ class DeleteColumnServiceTest {
       String relBC = "rel-bc";
 
       var command = ColumnFixture.deleteCommand(colA);
+      stubColumnExists();
 
       // 테이블 A: colA가 PK
       var pkConstraintA = new Constraint(constraintA, tableA, "pk_a", ConstraintKind.PRIMARY_KEY, null, null);
@@ -713,6 +764,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       // A, B, C 모두 삭제되었는지 확인
@@ -738,6 +790,7 @@ class DeleteColumnServiceTest {
       String pkConstraintColumnIdC = "cc-pk-c";
 
       var command = ColumnFixture.deleteCommand(colB);
+      stubColumnExists();
 
       // A 테이블의 PK Constraint
       var pkConstraintA = new Constraint(
@@ -820,6 +873,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteColumnPort).should(times(1)).deleteColumn(colD);
