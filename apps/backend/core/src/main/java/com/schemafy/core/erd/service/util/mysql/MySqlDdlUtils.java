@@ -1,8 +1,12 @@
 package com.schemafy.core.erd.service.util.mysql;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import java.util.Optional;
 import java.util.Set;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MySqlDdlUtils {
 
   private static final Set<String> VALID_REFERENTIAL_ACTIONS = Set.of(
