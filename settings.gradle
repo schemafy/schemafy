@@ -3,6 +3,3 @@ rootProject.name = 'schemafy'
 include ':core', ':domain'
 project(':core').projectDir = file('apps/backend/core')
 project(':domain').projectDir = file('apps/backend/domain')
-
-include ':apps:backend:core', ':apps:backend:domain'
-
