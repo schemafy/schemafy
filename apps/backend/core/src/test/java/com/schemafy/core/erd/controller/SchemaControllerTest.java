@@ -28,6 +28,7 @@ import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaUseCase;
 import com.schemafy.domain.erd.schema.domain.Schema;
+import com.schemafy.domain.common.MutationResult;
 
 import reactor.core.publisher.Mono;
 
@@ -91,7 +92,7 @@ class SchemaControllerTest {
         "utf8mb4_general_ci");
 
     given(createSchemaUseCase.createSchema(any(CreateSchemaCommand.class)))
-        .willReturn(Mono.just(result));
+        .willReturn(Mono.just(MutationResult.empty(result)));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/schemas")
@@ -119,13 +120,18 @@ class SchemaControllerTest {
                     .description("응답 컨텐츠 타입")),
             responseFields(
                 fieldWithPath("success").description("요청 성공 여부"),
-                fieldWithPath("result").description("생성된 스키마 정보"),
-                fieldWithPath("result.id").description("스키마 ID"),
-                fieldWithPath("result.projectId").description("프로젝트 ID"),
-                fieldWithPath("result.dbVendorName").description("DB 벤더 이름"),
-                fieldWithPath("result.name").description("스키마 이름"),
-                fieldWithPath("result.charset").description("문자셋"),
-                fieldWithPath("result.collation").description("콜레이션"))));
+                fieldWithPath("result").description("뮤테이션 결과"),
+                fieldWithPath("result.data").description("생성된 스키마 정보").optional(),
+                fieldWithPath("result.data.id").description("스키마 ID"),
+                fieldWithPath("result.data.projectId").description("프로젝트 ID"),
+                fieldWithPath("result.data.dbVendorName").description("DB 벤더 이름"),
+                fieldWithPath("result.data.name").description("스키마 이름"),
+                fieldWithPath("result.data.charset").description("문자셋").optional(),
+                fieldWithPath("result.data.collation").description("콜레이션").optional(),
+                fieldWithPath("result.affectedTableIds").description("영향받은 테이블 ID 목록"),
+                fieldWithPath("error")
+                    .type(JsonFieldType.NULL)
+                    .description("에러 정보 (성공 시 null)").optional())));
   }
 
   @Test
@@ -181,7 +187,7 @@ class SchemaControllerTest {
         "new_schema_name");
 
     given(changeSchemaNameUseCase.changeSchemaName(any(ChangeSchemaNameCommand.class)))
-        .willReturn(Mono.empty());
+        .willReturn(Mono.just(MutationResult.empty(null)));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/schemas/{schemaId}/name", schemaId)
@@ -212,9 +218,18 @@ class SchemaControllerTest {
                     .type(JsonFieldType.BOOLEAN)
                     .description("요청 성공 여부"),
                 fieldWithPath("result")
+                    .type(JsonFieldType.OBJECT)
+                    .description("뮤테이션 결과"),
+                fieldWithPath("result.data")
                     .type(JsonFieldType.NULL)
-                    .description("응답 데이터 (null)")
-                    .optional())));
+                    .description("응답 데이터 (없음)")
+                    .optional(),
+                fieldWithPath("result.affectedTableIds")
+                    .type(JsonFieldType.ARRAY)
+                    .description("영향받은 테이블 ID 목록"),
+                fieldWithPath("error")
+                    .type(JsonFieldType.NULL)
+                    .description("에러 정보 (성공 시 null)").optional())));
   }
 
   @Test
@@ -224,7 +239,7 @@ class SchemaControllerTest {
     String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
 
     given(deleteSchemaUseCase.deleteSchema(any(DeleteSchemaCommand.class)))
-        .willReturn(Mono.empty());
+        .willReturn(Mono.just(MutationResult.empty(null)));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/schemas/{schemaId}", schemaId)
@@ -248,9 +263,18 @@ class SchemaControllerTest {
                     .type(JsonFieldType.BOOLEAN)
                     .description("요청 성공 여부"),
                 fieldWithPath("result")
+                    .type(JsonFieldType.OBJECT)
+                    .description("뮤테이션 결과"),
+                fieldWithPath("result.data")
                     .type(JsonFieldType.NULL)
-                    .description("응답 데이터 (null)")
-                    .optional())));
+                    .description("응답 데이터 (없음)")
+                    .optional(),
+                fieldWithPath("result.affectedTableIds")
+                    .type(JsonFieldType.ARRAY)
+                    .description("영향받은 테이블 ID 목록"),
+                fieldWithPath("error")
+                    .type(JsonFieldType.NULL)
+                    .description("에러 정보 (성공 시 null)").optional())));
   }
 
 }

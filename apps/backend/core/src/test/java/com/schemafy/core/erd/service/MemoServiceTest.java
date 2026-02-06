@@ -26,6 +26,7 @@ import com.schemafy.core.erd.repository.entity.MemoComment;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaResult;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
@@ -66,13 +67,14 @@ class MemoServiceTest {
   @Test
   @DisplayName("createMemo: 스키마가 존재하면 메모와 초기 댓글을 생성한다")
   void createMemo_success() {
-    CreateSchemaResult schema = createSchemaUseCase.createSchema(
+    MutationResult<CreateSchemaResult> mutation = createSchemaUseCase.createSchema(
         new CreateSchemaCommand(
             "06D4K6TTEWXW8VQR8EZXDPWP3C",
             "mysql",
             "test-schema",
             null,
             null)).block();
+    CreateSchemaResult schema = mutation.result();
 
     User author = TestFixture
         .createTestUser("author@example.com", "메모 작성자", "password")
