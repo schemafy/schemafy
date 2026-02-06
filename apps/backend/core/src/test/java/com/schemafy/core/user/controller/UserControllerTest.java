@@ -133,7 +133,6 @@ class UserControllerTest {
   @Test
   @DisplayName("인증된 사용자는 타인의 회원 정보 조회에 성공한다")
   void getUserSuccessWhenAccessingOtherUser() {
-    // 두 명의 사용자 생성
     SignUpRequest userARequest = new SignUpRequest("userA@example.com",
         "User A", "password");
     User userA = User
@@ -216,6 +215,111 @@ class UserControllerTest {
         .jsonPath("$.success").isEqualTo(true)
         .jsonPath("$.result.id").isEqualTo(userId)
         .jsonPath("$.result.email").isEqualTo(signUpRequest.email());
+  }
+
+  @Test
+  @DisplayName("로그아웃에 성공한다 (인증된 사용자)")
+  void logoutSuccess() {
+    SignUpRequest signUpRequest = new SignUpRequest("logout-test@example.com",
+        "Logout User", "password");
+    User user = User
+        .signUp(signUpRequest.toCommand().toUserInfo(), passwordEncoder)
+        .flatMap(userRepository::save)
+        .blockOptional()
+        .orElseThrow();
+
+    String userId = user.getId();
+    String accessToken = generateAccessToken(userId);
+
+    webTestClient
+        .mutateWith(mockUser(userId))
+        .post()
+        .uri(API_BASE_PATH + "/users/logout")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .consumeWith(document("user-logout",
+            logoutRequestHeaders(),
+            logoutResponseHeaders(),
+            logoutResponse()))
+        .jsonPath("$.success").isEqualTo(true)
+        .consumeWith(result -> {
+          var cookies = result.getResponseHeaders().get("Set-Cookie");
+          Assertions.assertNotNull(cookies);
+          Assertions.assertTrue(cookies.stream().anyMatch(c -> c.contains("accessToken=;")));
+          Assertions.assertTrue(cookies.stream().anyMatch(c -> c.contains("refreshToken=;")));
+          Assertions.assertTrue(cookies.stream().allMatch(c -> c.contains("Max-Age=0")));
+        });
+  }
+
+  @Test
+  @DisplayName("인증 없이 로그아웃 시 실패한다")
+  void logoutFailWhenNotAuthenticated() {
+    webTestClient
+        .post()
+        .uri(API_BASE_PATH + "/users/logout")
+        .exchange()
+        .expectStatus().isUnauthorized();
+  }
+
+  @Test
+  @DisplayName("사용자 A의 로그아웃이 사용자 B에게 영향을 주지 않는다")
+  void logoutDoesNotAffectOtherUsers() {
+    SignUpRequest userARequest = new SignUpRequest("userA@example.com",
+        "UserA", "password");
+    User userA = User
+        .signUp(userARequest.toCommand().toUserInfo(), passwordEncoder)
+        .flatMap(userRepository::save)
+        .blockOptional()
+        .orElseThrow();
+
+    SignUpRequest userBRequest = new SignUpRequest("userB@example.com",
+        "UserB", "password");
+    User userB = User
+        .signUp(userBRequest.toCommand().toUserInfo(), passwordEncoder)
+        .flatMap(userRepository::save)
+        .blockOptional()
+        .orElseThrow();
+
+    String userAId = userA.getId();
+    String userBId = userB.getId();
+    String userAToken = generateAccessToken(userAId);
+    String userBToken = generateAccessToken(userBId);
+
+    // 사용자 A가 로그아웃 수행
+    webTestClient
+        .mutateWith(mockUser(userAId))
+        .post()
+        .uri(API_BASE_PATH + "/users/logout")
+        .header("Authorization", "Bearer " + userAToken)
+        .exchange()
+        .expectStatus().isOk();
+
+    // 사용자 B는 여전히 정상적으로 자신의 리소스에 접근 가능
+    webTestClient
+        .mutateWith(mockUser(userBId))
+        .get()
+        .uri(API_BASE_PATH + "/users/{userId}", userBId)
+        .header("Authorization", "Bearer " + userBToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.id").isEqualTo(userBId)
+        .jsonPath("$.result.email").isEqualTo("userB@example.com");
+
+    // 사용자 B는 다른 API도 정상적으로 사용 가능
+    webTestClient
+        .mutateWith(mockUser(userBId))
+        .get()
+        .uri(API_BASE_PATH + "/users")
+        .header("Authorization", "Bearer " + userBToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.id").isEqualTo(userBId);
   }
 
   @Test

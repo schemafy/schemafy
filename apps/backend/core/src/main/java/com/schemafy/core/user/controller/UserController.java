@@ -4,10 +4,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
@@ -24,6 +26,7 @@ import reactor.core.publisher.Mono;
 public class UserController {
 
   private final UserService userService;
+  private final JwtTokenIssuer jwtTokenIssuer;
 
   @GetMapping("/users")
   public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo(
@@ -42,6 +45,16 @@ public class UserController {
       @PathVariable String userId) {
     return userService.getUserById(userId).map(BaseResponse::success)
         .map(ResponseEntity::ok);
+  }
+
+  /** 로그아웃 API - 인증된 사용자만 호출 가능하며, 쿠키에 저장된 토큰을 만료시킵니다. */
+  @PostMapping("/users/logout")
+  public Mono<ResponseEntity<BaseResponse<Void>>> logout(
+      @AuthenticationPrincipal AuthenticatedUser user) {
+    log.info("User logout: userId={}", user.userId());
+    return Mono.just(ResponseEntity.ok()
+        .headers(jwtTokenIssuer.expireTokens())
+        .body(BaseResponse.success(null)));
   }
 
 }

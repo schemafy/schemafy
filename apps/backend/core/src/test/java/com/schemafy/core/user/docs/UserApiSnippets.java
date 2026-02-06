@@ -8,6 +8,7 @@ import com.schemafy.core.common.docs.RestDocsSnippets;
 
 import static org.springframework.restdocs.cookies.CookieDocumentation.cookieWithName;
 import static org.springframework.restdocs.cookies.CookieDocumentation.requestCookies;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -98,6 +99,23 @@ public class UserApiSnippets extends RestDocsSnippets {
   }
 
   public static Snippet refreshTokenResponse() {
+    return createResponseFieldsSnippet(
+        successResponseFieldsWithNullResult());
+  }
+
+  // ========== 로그아웃 API ==========
+
+  public static Snippet logoutRequestHeaders() {
+    return createRequestHeadersSnippet(authorizationHeader());
+  }
+
+  public static Snippet logoutResponseHeaders() {
+    return createResponseHeadersSnippet(
+        headerWithName("Set-Cookie")
+            .description("만료된 accessToken 및 refreshToken 쿠키 (Max-Age=0)"));
+  }
+
+  public static Snippet logoutResponse() {
     return createResponseFieldsSnippet(
         successResponseFieldsWithNullResult());
   }
