@@ -262,7 +262,7 @@ class IndexCascadeDeleteIntegrationTest {
 
       // 마지막 컬럼 제거
       StepVerifier.create(removeIndexColumnUseCase.removeIndexColumn(
-          new RemoveIndexColumnCommand(result.indexId(), indexColumnId)))
+          new RemoveIndexColumnCommand(indexColumnId)))
           .expectNextCount(1)
           .verifyComplete();
 
@@ -294,7 +294,7 @@ class IndexCascadeDeleteIntegrationTest {
 
       // 첫 번째 컬럼 제거
       StepVerifier.create(removeIndexColumnUseCase.removeIndexColumn(
-          new RemoveIndexColumnCommand(result.indexId(), firstColumnId)))
+          new RemoveIndexColumnCommand(firstColumnId)))
           .expectNextCount(1)
           .verifyComplete();
 

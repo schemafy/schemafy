@@ -201,7 +201,6 @@ public class TableController {
       @PathVariable String tableId,
       @Valid @RequestBody ChangeTableNameRequest request) {
     ChangeTableNameCommand command = new ChangeTableNameCommand(
-        request.schemaId(),
         tableId,
         request.newName());
     return changeTableNameUseCase.changeTableName(command)

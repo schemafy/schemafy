@@ -207,12 +207,10 @@ public class RelationshipController {
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-  @DeleteMapping("/relationships/{relationshipId}/columns/{relationshipColumnId}")
+  @DeleteMapping("/relationship-columns/{relationshipColumnId}")
   public Mono<BaseResponse<MutationResponse<Void>>> removeRelationshipColumn(
-      @PathVariable String relationshipId,
       @PathVariable String relationshipColumnId) {
     RemoveRelationshipColumnCommand command = new RemoveRelationshipColumnCommand(
-        relationshipId,
         relationshipColumnId);
     return removeRelationshipColumnUseCase.removeRelationshipColumn(command)
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))

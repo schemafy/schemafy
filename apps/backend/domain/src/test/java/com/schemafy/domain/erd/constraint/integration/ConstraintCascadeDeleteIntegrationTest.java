@@ -261,7 +261,7 @@ class ConstraintCascadeDeleteIntegrationTest {
 
       // 마지막 컬럼 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(result.constraintId(), constraintColumnId)))
+          new RemoveConstraintColumnCommand(constraintColumnId)))
           .expectNextCount(1)
           .verifyComplete();
 
@@ -293,7 +293,7 @@ class ConstraintCascadeDeleteIntegrationTest {
 
       // 첫 번째 컬럼 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(result.constraintId(), firstColumnId)))
+          new RemoveConstraintColumnCommand(firstColumnId)))
           .expectNextCount(1)
           .verifyComplete();
 

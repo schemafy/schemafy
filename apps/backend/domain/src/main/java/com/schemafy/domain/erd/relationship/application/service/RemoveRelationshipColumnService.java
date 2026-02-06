@@ -41,30 +41,25 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
 
   @Override
   public Mono<MutationResult<Void>> removeRelationshipColumn(RemoveRelationshipColumnCommand command) {
-    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-        .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
-        .flatMap(relationship -> {
-          Set<String> affectedTableIds = new HashSet<>();
-          affectedTableIds.add(relationship.fkTableId());
-          affectedTableIds.add(relationship.pkTableId());
-          return getRelationshipColumnByIdPort
-              .findRelationshipColumnById(command.relationshipColumnId())
-              .switchIfEmpty(Mono.error(new RelationshipColumnNotExistException(
-                  "Relationship column not found")))
-              .flatMap(relationshipColumn -> {
-                if (!relationshipColumn.relationshipId().equalsIgnoreCase(relationship.id())) {
-                  return Mono.error(new RelationshipColumnNotExistException(
-                      "Relationship column not found"));
-                }
-                String fkColumnId = relationshipColumn.fkColumnId();
-                return deleteRelationshipColumnPort
-                    .deleteRelationshipColumn(relationshipColumn.id())
-                    .then(handleRemainingColumns(relationship.id()))
-                    .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)))
-                    .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
-                    .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
-              });
-        })
+    return getRelationshipColumnByIdPort
+        .findRelationshipColumnById(command.relationshipColumnId())
+        .switchIfEmpty(Mono.error(new RelationshipColumnNotExistException(
+            "Relationship column not found")))
+        .flatMap(relationshipColumn -> getRelationshipByIdPort
+            .findRelationshipById(relationshipColumn.relationshipId())
+            .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+            .flatMap(relationship -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(relationship.fkTableId());
+              affectedTableIds.add(relationship.pkTableId());
+              String fkColumnId = relationshipColumn.fkColumnId();
+              return deleteRelationshipColumnPort
+                  .deleteRelationshipColumn(relationshipColumn.id())
+                  .then(handleRemainingColumns(relationship.id()))
+                  .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)))
+                  .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+            }))
         .as(transactionalOperator::transactional);
   }
 

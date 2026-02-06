@@ -90,10 +90,10 @@ class RemoveRelationshipColumnServiceTest {
         var remainingColumn = RelationshipFixture.relationshipColumn(
             "remaining", RelationshipFixture.DEFAULT_ID, "pk2", "fk2", 1);
 
-        given(getRelationshipByIdPort.findRelationshipById(any()))
-            .willReturn(Mono.just(relationship));
         given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
             .willReturn(Mono.just(columnToRemove));
+        given(getRelationshipByIdPort.findRelationshipById(any()))
+            .willReturn(Mono.just(relationship));
         given(deleteRelationshipColumnPort.deleteRelationshipColumn(any()))
             .willReturn(Mono.empty());
         given(getRelationshipColumnsByRelationshipIdPort
@@ -125,10 +125,10 @@ class RemoveRelationshipColumnServiceTest {
         var remaining2 = RelationshipFixture.relationshipColumn(
             "col2", RelationshipFixture.DEFAULT_ID, "pk2", "fk2", 3);
 
-        given(getRelationshipByIdPort.findRelationshipById(any()))
-            .willReturn(Mono.just(relationship));
         given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
             .willReturn(Mono.just(columnToRemove));
+        given(getRelationshipByIdPort.findRelationshipById(any()))
+            .willReturn(Mono.just(relationship));
         given(deleteRelationshipColumnPort.deleteRelationshipColumn(any()))
             .willReturn(Mono.empty());
         given(getRelationshipColumnsByRelationshipIdPort
@@ -161,10 +161,10 @@ class RemoveRelationshipColumnServiceTest {
         var relationship = RelationshipFixture.defaultRelationship();
         var columnToRemove = RelationshipFixture.defaultRelationshipColumn();
 
-        given(getRelationshipByIdPort.findRelationshipById(any()))
-            .willReturn(Mono.just(relationship));
         given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
             .willReturn(Mono.just(columnToRemove));
+        given(getRelationshipByIdPort.findRelationshipById(any()))
+            .willReturn(Mono.just(relationship));
         given(deleteRelationshipColumnPort.deleteRelationshipColumn(any()))
             .willReturn(Mono.empty());
         given(getRelationshipColumnsByRelationshipIdPort
@@ -197,7 +197,15 @@ class RemoveRelationshipColumnServiceTest {
       @DisplayName("예외가 발생한다")
       void throwsException() {
         var command = RelationshipFixture.removeColumnCommand();
+        var relationshipColumn = RelationshipFixture.relationshipColumn(
+            RelationshipFixture.DEFAULT_COLUMN_ID,
+            "missing-relationship",
+            RelationshipFixture.DEFAULT_PK_COLUMN_ID,
+            RelationshipFixture.DEFAULT_FK_COLUMN_ID,
+            0);
 
+        given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
+            .willReturn(Mono.just(relationshipColumn));
         given(getRelationshipByIdPort.findRelationshipById(any()))
             .willReturn(Mono.empty());
 
@@ -219,43 +227,8 @@ class RemoveRelationshipColumnServiceTest {
       @DisplayName("예외가 발생한다")
       void throwsException() {
         var command = RelationshipFixture.removeColumnCommand();
-        var relationship = RelationshipFixture.defaultRelationship();
-
-        given(getRelationshipByIdPort.findRelationshipById(any()))
-            .willReturn(Mono.just(relationship));
         given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
             .willReturn(Mono.empty());
-
-        StepVerifier.create(sut.removeRelationshipColumn(command))
-            .expectError(RelationshipColumnNotExistException.class)
-            .verify();
-
-        then(deleteRelationshipColumnPort).shouldHaveNoInteractions();
-        then(deleteRelationshipPort).shouldHaveNoInteractions();
-      }
-
-    }
-
-    @Nested
-    @DisplayName("관계 컬럼이 다른 관계에 속해 있으면")
-    class WhenColumnBelongsToDifferentRelationship {
-
-      @Test
-      @DisplayName("예외가 발생한다")
-      void throwsException() {
-        var command = RelationshipFixture.removeColumnCommand();
-        var relationship = RelationshipFixture.defaultRelationship();
-        var columnFromDifferentRelationship = new RelationshipColumn(
-            RelationshipFixture.DEFAULT_COLUMN_ID,
-            "different_relationship_id",
-            RelationshipFixture.DEFAULT_PK_COLUMN_ID,
-            RelationshipFixture.DEFAULT_FK_COLUMN_ID,
-            0);
-
-        given(getRelationshipByIdPort.findRelationshipById(any()))
-            .willReturn(Mono.just(relationship));
-        given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
-            .willReturn(Mono.just(columnFromDifferentRelationship));
 
         StepVerifier.create(sut.removeRelationshipColumn(command))
             .expectError(RelationshipColumnNotExistException.class)

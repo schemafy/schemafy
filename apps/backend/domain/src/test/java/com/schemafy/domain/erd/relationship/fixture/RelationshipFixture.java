@@ -294,12 +294,12 @@ public class RelationshipFixture {
   }
 
   public static RemoveRelationshipColumnCommand removeColumnCommand() {
-    return new RemoveRelationshipColumnCommand(DEFAULT_ID, DEFAULT_COLUMN_ID);
+    return new RemoveRelationshipColumnCommand(DEFAULT_COLUMN_ID);
   }
 
   public static RemoveRelationshipColumnCommand removeColumnCommand(
-      String relationshipId, String relationshipColumnId) {
-    return new RemoveRelationshipColumnCommand(relationshipId, relationshipColumnId);
+      String relationshipColumnId) {
+    return new RemoveRelationshipColumnCommand(relationshipColumnId);
   }
 
   public static DeleteRelationshipCommand deleteCommand() {

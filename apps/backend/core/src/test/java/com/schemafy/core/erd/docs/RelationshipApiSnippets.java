@@ -309,11 +309,10 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
         mutationResponseFields(relationshipColumnResponseFields("result.data.")));
   }
 
-  // ========== DELETE /api/relationships/{relationshipId}/columns/{relationshipColumnId} ==========
+  // ========== DELETE /api/relationship-columns/{relationshipColumnId} ==========
 
   public static Snippet removeRelationshipColumnPathParameters() {
     return pathParameters(
-        parameterWithName("relationshipId").description("관계 ID (ULID)"),
         parameterWithName("relationshipColumnId").description("관계 컬럼 ID (ULID)"));
   }
 

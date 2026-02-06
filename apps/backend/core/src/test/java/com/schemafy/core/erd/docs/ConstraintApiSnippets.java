@@ -245,11 +245,10 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
                 .description("FK 제약조건 추가 시 자동 생성된 컬럼 목록").optional()));
   }
 
-  // ========== DELETE /api/constraints/{constraintId}/columns/{constraintColumnId} ==========
+  // ========== DELETE /api/constraint-columns/{constraintColumnId} ==========
 
   public static Snippet removeConstraintColumnPathParameters() {
     return pathParameters(
-        parameterWithName("constraintId").description("제약조건 ID (ULID)"),
         parameterWithName("constraintColumnId").description("제약조건 컬럼 ID (ULID)"));
   }
 

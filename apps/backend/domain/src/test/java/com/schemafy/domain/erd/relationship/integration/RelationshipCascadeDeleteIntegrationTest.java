@@ -259,13 +259,13 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       // 관계 컬럼 제거 (첫 번째)
       StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
-          new RemoveRelationshipColumnCommand(relationship.relationshipId(), firstColumnId)))
+          new RemoveRelationshipColumnCommand(firstColumnId)))
           .expectNextCount(1)
           .verifyComplete();
 
       // 마지막 컬럼 제거
       StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
-          new RemoveRelationshipColumnCommand(relationship.relationshipId(), secondColumnId)))
+          new RemoveRelationshipColumnCommand(secondColumnId)))
           .expectNextCount(1)
           .verifyComplete();
 
@@ -293,7 +293,7 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       // 첫 번째 컬럼 제거
       StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
-          new RemoveRelationshipColumnCommand(relationship.relationshipId(), firstColumnId)))
+          new RemoveRelationshipColumnCommand(firstColumnId)))
           .expectNextCount(1)
           .verifyComplete();
 

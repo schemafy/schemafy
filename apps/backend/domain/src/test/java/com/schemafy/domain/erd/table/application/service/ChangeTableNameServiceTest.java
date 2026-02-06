@@ -27,7 +27,6 @@ import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.domain.erd.table.domain.Table;
 import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -109,32 +108,9 @@ class ChangeTableNameServiceTest {
             .verifyComplete();
 
         then(tableExistsPort).should()
-            .existsBySchemaIdAndName(command.schemaId(), command.newName());
+            .existsBySchemaIdAndName(TableFixture.DEFAULT_SCHEMA_ID, command.newName());
         then(changeTableNamePort).should()
             .changeTableName(command.tableId(), command.newName());
-      }
-
-    }
-
-    @Nested
-    @DisplayName("요청 schemaId와 테이블 schemaId가 다르면")
-    class WithSchemaMismatch {
-
-      @Test
-      @DisplayName("TableNotExistException을 발생시킨다")
-      void throwsTableNotExistException() {
-        var command = TableFixture.changeNameCommand("new_table_name");
-        var table = TableFixture.tableWithSchemaId("other-schema-id");
-
-        given(getTableByIdPort.findTableById(command.tableId()))
-            .willReturn(Mono.just(table));
-
-        StepVerifier.create(sut.changeTableName(command))
-            .expectError(TableNotExistException.class)
-            .verify();
-
-        then(tableExistsPort).shouldHaveNoInteractions();
-        then(changeTableNamePort).shouldHaveNoInteractions();
       }
 
     }
@@ -167,7 +143,6 @@ class ChangeTableNameServiceTest {
             Cardinality.ONE_TO_MANY,
             null);
         var command = new com.schemafy.domain.erd.table.application.port.in.ChangeTableNameCommand(
-            oldTable.schemaId(),
             oldTable.id(),
             "orders_v2");
 
@@ -229,7 +204,6 @@ class ChangeTableNameServiceTest {
             Cardinality.ONE_TO_MANY,
             null);
         var command = new com.schemafy.domain.erd.table.application.port.in.ChangeTableNameCommand(
-            oldTable.schemaId(),
             oldTable.id(),
             "orders_v2");
 

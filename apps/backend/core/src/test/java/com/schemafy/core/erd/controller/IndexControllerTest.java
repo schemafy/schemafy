@@ -367,7 +367,6 @@ class IndexControllerTest {
   @Test
   @DisplayName("인덱스 컬럼 제거 API 문서화")
   void removeIndexColumn() {
-    String indexId = "06D6W6CAHD51T5NJPK29Q6BCRG";
     String indexColumnId = "06D6W7CAHD51T5NJPK29Q6BCRI";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
@@ -375,8 +374,7 @@ class IndexControllerTest {
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
     webTestClient.delete()
-        .uri(API_BASE_PATH + "/indexes/{indexId}/columns/{indexColumnId}",
-            indexId, indexColumnId)
+        .uri(API_BASE_PATH + "/index-columns/{indexColumnId}", indexColumnId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()

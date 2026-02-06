@@ -257,11 +257,10 @@ public class IndexApiSnippets extends RestDocsSnippets {
         mutationResponseFields(indexColumnResponseFields("result.data.")));
   }
 
-  // ========== DELETE /api/indexes/{indexId}/columns/{indexColumnId} ==========
+  // ========== DELETE /api/index-columns/{indexColumnId} ==========
 
   public static Snippet removeIndexColumnPathParameters() {
     return pathParameters(
-        parameterWithName("indexId").description("인덱스 ID (ULID)"),
         parameterWithName("indexColumnId").description("인덱스 컬럼 ID (ULID)"));
   }
 

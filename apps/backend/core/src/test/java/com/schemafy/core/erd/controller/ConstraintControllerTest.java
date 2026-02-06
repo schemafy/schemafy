@@ -337,7 +337,6 @@ class ConstraintControllerTest {
   @Test
   @DisplayName("제약조건 컬럼 제거 API 문서화")
   void removeConstraintColumn() {
-    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
     String constraintColumnId = "06D6W5CAHD51T5NJPK29Q6BCRE";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
@@ -345,8 +344,7 @@ class ConstraintControllerTest {
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
     webTestClient.delete()
-        .uri(API_BASE_PATH + "/constraints/{constraintId}/columns/{constraintColumnId}",
-            constraintId, constraintColumnId)
+        .uri(API_BASE_PATH + "/constraint-columns/{constraintColumnId}", constraintColumnId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()

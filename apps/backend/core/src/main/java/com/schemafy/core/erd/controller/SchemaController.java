@@ -73,7 +73,6 @@ public class SchemaController {
       @PathVariable String schemaId,
       @Valid @RequestBody ChangeSchemaNameRequest request) {
     ChangeSchemaNameCommand command = new ChangeSchemaNameCommand(
-        request.projectId(),
         schemaId,
         request.newName());
     return changeSchemaNameUseCase.changeSchemaName(command)

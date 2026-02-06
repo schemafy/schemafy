@@ -188,7 +188,7 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol1)))
           .expectNextCount(1)
           .verifyComplete();
 
@@ -232,13 +232,13 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol1)))
           .expectNextCount(1)
           .verifyComplete();
 
       // When: 마지막 PK 컬럼 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol2)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol2)))
           .expectNextCount(1)
           .verifyComplete();
 
@@ -273,7 +273,7 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol1)))
           .expectNextCount(1)
           .verifyComplete();
 
@@ -312,7 +312,7 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col2 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol2)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol2)))
           .expectNextCount(1)
           .verifyComplete();
 
@@ -358,7 +358,7 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol1)))
           .expectNextCount(1)
           .verifyComplete();
 
@@ -519,7 +519,7 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: UNIQUE Constraint에서 컬럼 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(uniqueConstraintId, uniqueConstraintColumnId)))
+          new RemoveConstraintColumnCommand(uniqueConstraintColumnId)))
           .expectNextCount(1)
           .verifyComplete();
 

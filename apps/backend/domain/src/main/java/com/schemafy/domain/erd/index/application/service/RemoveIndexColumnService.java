@@ -36,19 +36,14 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
 
   @Override
   public Mono<MutationResult<Void>> removeIndexColumn(RemoveIndexColumnCommand command) {
-    return getIndexByIdPort.findIndexById(command.indexId())
-        .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
-        .flatMap(index -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-            .switchIfEmpty(Mono.error(new IndexColumnNotExistException(
-                "Index column not found")))
-            .flatMap(indexColumn -> {
-              if (!indexColumn.indexId().equalsIgnoreCase(index.id())) {
-                return Mono.error(new IndexColumnNotExistException("Index column not found"));
-              }
-              return deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
-                  .then(handleRemainingColumns(index.id()))
-                  .thenReturn(MutationResult.<Void>of(null, index.tableId()));
-            }))
+    return getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
+        .switchIfEmpty(Mono.error(new IndexColumnNotExistException(
+            "Index column not found")))
+        .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
+            .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+            .flatMap(index -> deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
+                .then(handleRemainingColumns(index.id()))
+                .thenReturn(MutationResult.<Void>of(null, index.tableId()))))
         .as(transactionalOperator::transactional);
   }
 

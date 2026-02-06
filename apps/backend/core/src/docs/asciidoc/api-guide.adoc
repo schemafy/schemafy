@@ -1883,7 +1883,7 @@ include::{snippets}/constraint-column-add/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/constraints/{constraintId}/columns/{constraintColumnId}
+DELETE /api/v1.0/constraint-columns/{constraintColumnId}
 ----
 
 [discrete]
@@ -2230,7 +2230,7 @@ include::{snippets}/index-column-add/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/indexes/{indexId}/columns/{indexColumnId}
+DELETE /api/v1.0/index-columns/{indexColumnId}
 ----
 
 [discrete]
@@ -2673,7 +2673,7 @@ include::{snippets}/relationship-column-add/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/relationships/{relationshipId}/columns/{relationshipColumnId}
+DELETE /api/v1.0/relationship-columns/{relationshipColumnId}
 ----
 
 [discrete]

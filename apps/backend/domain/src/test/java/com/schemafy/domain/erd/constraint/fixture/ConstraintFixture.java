@@ -395,12 +395,12 @@ public class ConstraintFixture {
   }
 
   public static RemoveConstraintColumnCommand removeColumnCommand() {
-    return new RemoveConstraintColumnCommand(DEFAULT_ID, DEFAULT_CONSTRAINT_COLUMN_ID);
+    return new RemoveConstraintColumnCommand(DEFAULT_CONSTRAINT_COLUMN_ID);
   }
 
   public static RemoveConstraintColumnCommand removeColumnCommand(
-      String constraintId, String constraintColumnId) {
-    return new RemoveConstraintColumnCommand(constraintId, constraintColumnId);
+      String constraintColumnId) {
+    return new RemoveConstraintColumnCommand(constraintColumnId);
   }
 
   public static ChangeConstraintColumnPositionCommand changeColumnPositionCommand(int seqNo) {

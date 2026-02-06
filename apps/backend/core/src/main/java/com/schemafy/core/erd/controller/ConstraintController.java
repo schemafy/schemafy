@@ -158,12 +158,10 @@ public class ConstraintController {
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-  @DeleteMapping("/constraints/{constraintId}/columns/{constraintColumnId}")
+  @DeleteMapping("/constraint-columns/{constraintColumnId}")
   public Mono<BaseResponse<MutationResponse<Void>>> removeConstraintColumn(
-      @PathVariable String constraintId,
       @PathVariable String constraintColumnId) {
     RemoveConstraintColumnCommand command = new RemoveConstraintColumnCommand(
-        constraintId,
         constraintColumnId);
     return removeConstraintColumnUseCase.removeConstraintColumn(command)
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))

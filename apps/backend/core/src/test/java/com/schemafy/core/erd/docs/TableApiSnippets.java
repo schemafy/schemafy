@@ -346,8 +346,6 @@ public class TableApiSnippets extends RestDocsSnippets {
   /** 테이블 이름 변경 요청 바디 */
   public static Snippet changeTableNameRequest() {
     return requestFields(
-        fieldWithPath("schemaId").type(JsonFieldType.STRING)
-            .description("스키마 ID (ULID)"),
         fieldWithPath("newName").type(JsonFieldType.STRING)
             .description("변경할 테이블 이름"));
   }

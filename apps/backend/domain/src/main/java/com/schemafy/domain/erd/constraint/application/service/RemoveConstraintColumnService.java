@@ -41,30 +41,25 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
 
   @Override
   public Mono<MutationResult<Void>> removeConstraintColumn(RemoveConstraintColumnCommand command) {
-    return getConstraintByIdPort.findConstraintById(command.constraintId())
-        .switchIfEmpty(Mono.error(new ConstraintNotExistException(
-            "Constraint not found: " + command.constraintId())))
-        .flatMap(constraint -> {
-          Set<String> affectedTableIds = new HashSet<>();
-          affectedTableIds.add(constraint.tableId());
-          return getConstraintColumnByIdPort
-              .findConstraintColumnById(command.constraintColumnId())
-              .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException(
-                  "Constraint column not found: " + command.constraintColumnId())))
-              .flatMap(constraintColumn -> {
-                if (!constraintColumn.constraintId().equalsIgnoreCase(constraint.id())) {
-                  return Mono.error(new ConstraintColumnNotExistException(
-                      "Constraint column does not belong to the constraint"));
-                }
-                return deleteConstraintColumnPort.deleteConstraintColumn(constraintColumn.id())
-                    .then(handlePkConstraintColumnRemoval(
-                        constraint,
-                        constraintColumn.columnId(),
-                        affectedTableIds))
-                    .then(reorderOrDeleteConstraint(constraint.id()))
-                    .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
-              });
-        })
+    return getConstraintColumnByIdPort
+        .findConstraintColumnById(command.constraintColumnId())
+        .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException(
+            "Constraint column not found: " + command.constraintColumnId())))
+        .flatMap(constraintColumn -> getConstraintByIdPort
+            .findConstraintById(constraintColumn.constraintId())
+            .switchIfEmpty(Mono.error(new ConstraintNotExistException(
+                "Constraint not found: " + constraintColumn.constraintId())))
+            .flatMap(constraint -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(constraint.tableId());
+              return deleteConstraintColumnPort.deleteConstraintColumn(constraintColumn.id())
+                  .then(handlePkConstraintColumnRemoval(
+                      constraint,
+                      constraintColumn.columnId(),
+                      affectedTableIds))
+                  .then(reorderOrDeleteConstraint(constraint.id()))
+                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+            }))
         .as(transactionalOperator::transactional);
   }
 

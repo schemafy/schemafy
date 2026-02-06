@@ -1,7 +1,5 @@
 package com.schemafy.domain.erd.schema.application.service;
 
-import java.util.Objects;
-
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
@@ -27,9 +25,8 @@ public class ChangeSchemaNameService implements ChangeSchemaNameUseCase {
   @Override
   public Mono<MutationResult<Void>> changeSchemaName(ChangeSchemaNameCommand command) {
     return getSchemaByIdPort.findSchemaById(command.schemaId())
-        .filter(schema -> Objects.equals(schema.projectId(), command.projectId()))
         .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found: " + command.schemaId())))
-        .flatMap(schema -> schemaExistsPort.existsActiveByProjectIdAndName(command.projectId(), command.newName())
+        .flatMap(schema -> schemaExistsPort.existsActiveByProjectIdAndName(schema.projectId(), command.newName())
             .flatMap(exists -> {
               if (exists) {
                 return Mono.error(new SchemaNameDuplicateException(

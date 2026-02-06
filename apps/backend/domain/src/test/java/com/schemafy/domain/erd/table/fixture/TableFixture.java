@@ -100,7 +100,6 @@ public class TableFixture {
 
   public static ChangeTableNameCommand changeNameCommand(String newName) {
     return new ChangeTableNameCommand(
-        DEFAULT_SCHEMA_ID,
         DEFAULT_ID,
         newName);
   }

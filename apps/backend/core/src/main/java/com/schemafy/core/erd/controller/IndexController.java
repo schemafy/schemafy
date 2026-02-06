@@ -178,11 +178,10 @@ public class IndexController {
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
-  @DeleteMapping("/indexes/{indexId}/columns/{indexColumnId}")
+  @DeleteMapping("/index-columns/{indexColumnId}")
   public Mono<BaseResponse<MutationResponse<Void>>> removeIndexColumn(
-      @PathVariable String indexId,
       @PathVariable String indexColumnId) {
-    RemoveIndexColumnCommand command = new RemoveIndexColumnCommand(indexId, indexColumnId);
+    RemoveIndexColumnCommand command = new RemoveIndexColumnCommand(indexColumnId);
     return removeIndexColumnUseCase.removeIndexColumn(command)
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);

@@ -1,7 +1,6 @@
 package com.schemafy.domain.erd.table.application.service;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -51,10 +50,9 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   @Override
   public Mono<MutationResult<Void>> changeTableName(ChangeTableNameCommand command) {
     return getTableByIdPort.findTableById(command.tableId())
-        .filter(table -> Objects.equals(table.schemaId(), command.schemaId()))
         .switchIfEmpty(Mono.error(
             new TableNotExistException("Table not found: " + command.tableId())))
-        .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.newName())
+        .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
             .flatMap(exists -> {
               if (exists) {
                 return Mono.error(new TableNameDuplicateException(
@@ -64,7 +62,7 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
               return changeTableNamePort.changeTableName(
                   command.tableId(),
                   command.newName())
-                  .then(renamePkConstraint(command.schemaId(), command.tableId(), command.newName()))
+                  .then(renamePkConstraint(table.schemaId(), command.tableId(), command.newName()))
                   .then(renameAutoRelationshipNames(table, command.newName()))
                   .thenReturn(MutationResult.<Void>of(null, table.id()));
             }))

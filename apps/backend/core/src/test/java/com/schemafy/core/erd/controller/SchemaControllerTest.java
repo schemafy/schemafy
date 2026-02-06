@@ -182,9 +182,7 @@ class SchemaControllerTest {
   @DisplayName("스키마 이름 변경 API 문서화")
   void changeSchemaName() throws Exception {
     String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
-    ChangeSchemaNameRequest request = new ChangeSchemaNameRequest(
-        "06D6VZBWHSDJBBG0H7D156YZ98",
-        "new_schema_name");
+    ChangeSchemaNameRequest request = new ChangeSchemaNameRequest("new_schema_name");
 
     given(changeSchemaNameUseCase.changeSchemaName(any(ChangeSchemaNameCommand.class)))
         .willReturn(Mono.just(MutationResult.empty(null)));
@@ -208,7 +206,6 @@ class SchemaControllerTest {
                 headerWithName("Accept")
                     .description("응답 포맷 (application/json)")),
             requestFields(
-                fieldWithPath("projectId").description("프로젝트 ID"),
                 fieldWithPath("newName").description("변경할 스키마 이름")),
             responseHeaders(
                 headerWithName("Content-Type")

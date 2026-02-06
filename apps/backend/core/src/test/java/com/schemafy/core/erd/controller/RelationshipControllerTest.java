@@ -483,7 +483,6 @@ class RelationshipControllerTest {
   @Test
   @DisplayName("관계 컬럼 제거 API 문서화")
   void removeRelationshipColumn() {
-    String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";
     String relationshipColumnId = "06D6W9CAHD51T5NJPK29Q6BCRM";
     String fkTableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
     String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
@@ -492,8 +491,7 @@ class RelationshipControllerTest {
         .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
 
     webTestClient.delete()
-        .uri(API_BASE_PATH + "/relationships/{relationshipId}/columns/{relationshipColumnId}",
-            relationshipId, relationshipColumnId)
+        .uri(API_BASE_PATH + "/relationship-columns/{relationshipColumnId}", relationshipColumnId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()

@@ -11,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.domain.erd.schema.application.port.out.ChangeSchemaNamePort;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
-import com.schemafy.domain.erd.schema.domain.Schema;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
@@ -65,38 +64,9 @@ class ChangeSchemaNameServiceTest {
             .verifyComplete();
 
         then(schemaExistsPort).should()
-            .existsActiveByProjectIdAndName(command.projectId(), command.newName());
+            .existsActiveByProjectIdAndName(SchemaFixture.DEFAULT_PROJECT_ID, command.newName());
         then(changeSchemaNamePort).should()
             .changeSchemaName(command.schemaId(), command.newName());
-      }
-
-    }
-
-    @Nested
-    @DisplayName("요청 projectId와 스키마 projectId가 다르면")
-    class WithProjectMismatch {
-
-      @Test
-      @DisplayName("SchemaNotExistException을 발생시킨다")
-      void throwsSchemaNotExistException() {
-        var command = SchemaFixture.changeNameCommand("new_schema_name");
-        var schema = new Schema(
-            command.schemaId(),
-            "other-project-id",
-            SchemaFixture.DEFAULT_DB_VENDOR,
-            SchemaFixture.DEFAULT_NAME,
-            SchemaFixture.DEFAULT_CHARSET,
-            SchemaFixture.DEFAULT_COLLATION);
-
-        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
-            .willReturn(Mono.just(schema));
-
-        StepVerifier.create(sut.changeSchemaName(command))
-            .expectError(SchemaNotExistException.class)
-            .verify();
-
-        then(schemaExistsPort).shouldHaveNoInteractions();
-        then(changeSchemaNamePort).shouldHaveNoInteractions();
       }
 
     }

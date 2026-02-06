@@ -326,9 +326,7 @@ class TableControllerTest {
   @DisplayName("테이블 이름 변경 API 문서화")
   void changeTableName() throws Exception {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
-    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
-
-    ChangeTableNameRequest request = new ChangeTableNameRequest(schemaId, "new_users");
+    ChangeTableNameRequest request = new ChangeTableNameRequest("new_users");
 
     given(changeTableNameUseCase.changeTableName(any(ChangeTableNameCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
