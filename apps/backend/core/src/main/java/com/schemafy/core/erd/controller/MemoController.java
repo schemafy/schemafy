@@ -54,6 +54,15 @@ public class MemoController {
         .map(BaseResponse::success);
   }
 
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/schemas/{schemaId}/memos")
+  public Mono<BaseResponse<List<MemoResponse>>> getMemosBySchemaId(
+      @PathVariable String schemaId) {
+    return memoService.getMemosBySchemaId(schemaId)
+        .collectList()
+        .map(BaseResponse::success);
+  }
+
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PutMapping("/memos/{memoId}")
   public Mono<BaseResponse<MemoResponse>> updateMemo(
