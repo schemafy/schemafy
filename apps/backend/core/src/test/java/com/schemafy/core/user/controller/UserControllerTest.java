@@ -264,63 +264,62 @@ class UserControllerTest {
   }
 
   @Test
-  @DisplayName("악성 사용자 A가 사용자 B를 로그아웃시킬 수 없다")
-  void cannotLogoutOtherUsers() {
-    SignUpRequest attackerRequest = new SignUpRequest("attacker@example.com",
-        "Attacker", "password");
-    User attacker = User
-        .signUp(attackerRequest.toCommand().toUserInfo(), passwordEncoder)
+  @DisplayName("사용자 A의 로그아웃이 사용자 B에게 영향을 주지 않는다")
+  void logoutDoesNotAffectOtherUsers() {
+    SignUpRequest userARequest = new SignUpRequest("userA@example.com",
+        "UserA", "password");
+    User userA = User
+        .signUp(userARequest.toCommand().toUserInfo(), passwordEncoder)
         .flatMap(userRepository::save)
         .blockOptional()
         .orElseThrow();
 
-    SignUpRequest victimRequest = new SignUpRequest("victim@example.com",
-        "Victim", "password");
-    User victim = User
-        .signUp(victimRequest.toCommand().toUserInfo(), passwordEncoder)
+    SignUpRequest userBRequest = new SignUpRequest("userB@example.com",
+        "UserB", "password");
+    User userB = User
+        .signUp(userBRequest.toCommand().toUserInfo(), passwordEncoder)
         .flatMap(userRepository::save)
         .blockOptional()
         .orElseThrow();
 
-    String attackerId = attacker.getId();
-    String victimId = victim.getId();
-    String attackerToken = generateAccessToken(attackerId);
-    String victimToken = generateAccessToken(victimId);
+    String userAId = userA.getId();
+    String userBId = userB.getId();
+    String userAToken = generateAccessToken(userAId);
+    String userBToken = generateAccessToken(userBId);
 
-    // 공격자 A가 자신의 인증으로 로그아웃 시도
-    // (현재 API는 @AuthenticationPrincipal을 사용하므로 B를 타겟팅할 방법이 없음)
+    // 사용자 A가 로그아웃 수행
     webTestClient
-        .mutateWith(mockUser(attackerId))
+        .mutateWith(mockUser(userAId))
         .post()
         .uri(API_BASE_PATH + "/users/logout")
-        .header("Authorization", "Bearer " + attackerToken)
+        .header("Authorization", "Bearer " + userAToken)
         .exchange()
         .expectStatus().isOk();
 
-    // B는 여전히 자신의 리소스에 접근 가능 (A의 로그아웃은 A 자신에게만 영향, B는 독립적)
+    // 사용자 B는 여전히 정상적으로 자신의 리소스에 접근 가능
     webTestClient
-        .mutateWith(mockUser(victimId))
+        .mutateWith(mockUser(userBId))
         .get()
-        .uri(API_BASE_PATH + "/users/{userId}", victimId)
-        .header("Authorization", "Bearer " + victimToken)
+        .uri(API_BASE_PATH + "/users/{userId}", userBId)
+        .header("Authorization", "Bearer " + userBToken)
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(victimId)
-        .jsonPath("$.result.email").isEqualTo("victim@example.com");
+        .jsonPath("$.result.id").isEqualTo(userBId)
+        .jsonPath("$.result.email").isEqualTo("userB@example.com");
 
-    // B는 계속해서 다른 API도 사용 가능
+    // 사용자 B는 다른 API도 정상적으로 사용 가능
     webTestClient
-        .mutateWith(mockUser(victimId))
+        .mutateWith(mockUser(userBId))
         .get()
         .uri(API_BASE_PATH + "/users")
-        .header("Authorization", "Bearer " + victimToken)
+        .header("Authorization", "Bearer " + userBToken)
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(victimId);
+        .jsonPath("$.result.id").isEqualTo(userBId);
   }
 
   @Test
