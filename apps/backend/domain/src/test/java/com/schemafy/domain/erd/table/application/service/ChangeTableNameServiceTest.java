@@ -27,6 +27,7 @@ import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.domain.erd.table.domain.Table;
 import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -111,6 +112,29 @@ class ChangeTableNameServiceTest {
             .existsBySchemaIdAndName(command.schemaId(), command.newName());
         then(changeTableNamePort).should()
             .changeTableName(command.tableId(), command.newName());
+      }
+
+    }
+
+    @Nested
+    @DisplayName("요청 schemaId와 테이블 schemaId가 다르면")
+    class WithSchemaMismatch {
+
+      @Test
+      @DisplayName("TableNotExistException을 발생시킨다")
+      void throwsTableNotExistException() {
+        var command = TableFixture.changeNameCommand("new_table_name");
+        var table = TableFixture.tableWithSchemaId("other-schema-id");
+
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(table));
+
+        StepVerifier.create(sut.changeTableName(command))
+            .expectError(TableNotExistException.class)
+            .verify();
+
+        then(tableExistsPort).shouldHaveNoInteractions();
+        then(changeTableNamePort).shouldHaveNoInteractions();
       }
 
     }
@@ -239,7 +263,10 @@ class ChangeTableNameServiceTest {
       @DisplayName("TableNameDuplicateException을 발생시킨다")
       void throwsTableNameDuplicateException() {
         var command = TableFixture.changeNameCommand("existing_table_name");
+        var table = TableFixture.defaultTable();
 
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(table));
         given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
             .willReturn(Mono.just(true));
 

@@ -9,8 +9,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.schema.application.port.out.ChangeSchemaNamePort;
+import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
+import com.schemafy.domain.erd.schema.domain.Schema;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import reactor.core.publisher.Mono;
@@ -30,6 +33,9 @@ class ChangeSchemaNameServiceTest {
   @Mock
   SchemaExistsPort schemaExistsPort;
 
+  @Mock
+  GetSchemaByIdPort getSchemaByIdPort;
+
   @InjectMocks
   ChangeSchemaNameService sut;
 
@@ -47,6 +53,8 @@ class ChangeSchemaNameServiceTest {
         var newName = "new_schema_name";
         var command = SchemaFixture.changeNameCommand(newName);
 
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
         given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
             .willReturn(Mono.just(false));
         given(changeSchemaNamePort.changeSchemaName(any(), any()))
@@ -65,6 +73,35 @@ class ChangeSchemaNameServiceTest {
     }
 
     @Nested
+    @DisplayName("요청 projectId와 스키마 projectId가 다르면")
+    class WithProjectMismatch {
+
+      @Test
+      @DisplayName("SchemaNotExistException을 발생시킨다")
+      void throwsSchemaNotExistException() {
+        var command = SchemaFixture.changeNameCommand("new_schema_name");
+        var schema = new Schema(
+            command.schemaId(),
+            "other-project-id",
+            SchemaFixture.DEFAULT_DB_VENDOR,
+            SchemaFixture.DEFAULT_NAME,
+            SchemaFixture.DEFAULT_CHARSET,
+            SchemaFixture.DEFAULT_COLLATION);
+
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(schema));
+
+        StepVerifier.create(sut.changeSchemaName(command))
+            .expectError(SchemaNotExistException.class)
+            .verify();
+
+        then(schemaExistsPort).shouldHaveNoInteractions();
+        then(changeSchemaNamePort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
     @DisplayName("중복된 이름이 존재하면")
     class WithDuplicateName {
 
@@ -74,6 +111,8 @@ class ChangeSchemaNameServiceTest {
         var newName = "duplicate_name";
         var command = SchemaFixture.changeNameCommand(newName);
 
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
         given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
             .willReturn(Mono.just(true));
 

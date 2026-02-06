@@ -1,6 +1,7 @@
 package com.schemafy.domain.erd.table.application.service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -49,23 +50,24 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
 
   @Override
   public Mono<MutationResult<Void>> changeTableName(ChangeTableNameCommand command) {
-    return tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.newName())
-        .flatMap(exists -> {
-          if (exists) {
-            return Mono.error(new TableNameDuplicateException(
-                "A table with the name '" + command.newName() + "' already exists in the schema."));
-          }
+    return getTableByIdPort.findTableById(command.tableId())
+        .filter(table -> Objects.equals(table.schemaId(), command.schemaId()))
+        .switchIfEmpty(Mono.error(
+            new TableNotExistException("Table not found: " + command.tableId())))
+        .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.newName())
+            .flatMap(exists -> {
+              if (exists) {
+                return Mono.error(new TableNameDuplicateException(
+                    "A table with the name '" + command.newName() + "' already exists in the schema."));
+              }
 
-          return getTableByIdPort.findTableById(command.tableId())
-              .switchIfEmpty(Mono.error(
-                  new TableNotExistException("Table not found: " + command.tableId())))
-              .flatMap(table -> changeTableNamePort.changeTableName(
+              return changeTableNamePort.changeTableName(
                   command.tableId(),
                   command.newName())
                   .then(renamePkConstraint(command.schemaId(), command.tableId(), command.newName()))
                   .then(renameAutoRelationshipNames(table, command.newName()))
-                  .thenReturn(MutationResult.<Void>of(null, table.id())));
-        })
+                  .thenReturn(MutationResult.<Void>of(null, table.id()));
+            }))
         .as(transactionalOperator::transactional);
   }
 
