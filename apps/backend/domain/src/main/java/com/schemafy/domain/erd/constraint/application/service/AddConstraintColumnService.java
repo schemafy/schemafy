@@ -50,7 +50,6 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
   public Mono<MutationResult<AddConstraintColumnResult>> addConstraintColumn(
       AddConstraintColumnCommand command) {
     return Mono.defer(() -> {
-      ConstraintValidator.validatePosition(command.seqNo());
       return getConstraintByIdPort.findConstraintById(command.constraintId())
           .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
           .flatMap(constraint -> {
@@ -73,6 +72,8 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
       Set<String> affectedTableIds) {
     List<ConstraintColumn> existingColumns = context.constraintColumns()
         .getOrDefault(constraint.id(), List.of());
+    int resolvedSeqNo = resolveSeqNo(command.seqNo(), existingColumns);
+    ConstraintValidator.validatePosition(resolvedSeqNo);
     List<String> columnIds = new ArrayList<>(existingColumns.size() + 1);
     List<Integer> seqNos = new ArrayList<>(existingColumns.size() + 1);
     for (ConstraintColumn column : existingColumns) {
@@ -80,7 +81,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
       seqNos.add(column.seqNo());
     }
     columnIds.add(command.columnId());
-    seqNos.add(command.seqNo());
+    seqNos.add(resolvedSeqNo);
 
     ConstraintValidator.validateSeqNoIntegrity(seqNos);
     ConstraintValidator.validateColumnExistence(context.columns(), columnIds, constraint.name());
@@ -112,7 +113,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
               id,
               constraint.id(),
               command.columnId(),
-              command.seqNo());
+              resolvedSeqNo);
 
           return createConstraintColumnPort.createConstraintColumn(constraintColumn)
               .flatMap(savedColumn -> {
@@ -193,6 +194,16 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
       List<Column> columns,
       List<Constraint> constraints,
       Map<String, List<ConstraintColumn>> constraintColumns) {
+  }
+
+  private static int resolveSeqNo(Integer requestedSeqNo, List<ConstraintColumn> existingColumns) {
+    if (requestedSeqNo != null) {
+      return requestedSeqNo;
+    }
+    return existingColumns.stream()
+        .mapToInt(ConstraintColumn::seqNo)
+        .max()
+        .orElse(-1) + 1;
   }
 
 }

@@ -65,7 +65,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
         fieldWithPath("columns[].columnId").type(JsonFieldType.STRING)
             .description("컬럼 ID (ULID)").optional(),
         fieldWithPath("columns[].seqNo").type(JsonFieldType.NUMBER)
-            .description("순서 번호").optional(),
+            .description("순서 번호 (미입력 시 0부터 자동 배정)").optional(),
         fieldWithPath("columns[].sortDirection").type(JsonFieldType.STRING)
             .description("정렬 방향 (ASC, DESC)").optional());
   }
@@ -243,7 +243,8 @@ public class IndexApiSnippets extends RestDocsSnippets {
   public static Snippet addIndexColumnRequest() {
     return requestFields(
         fieldWithPath("columnId").type(JsonFieldType.STRING).description("추가할 컬럼 ID (ULID)"),
-        fieldWithPath("seqNo").type(JsonFieldType.NUMBER).description("순서 번호"),
+        fieldWithPath("seqNo").type(JsonFieldType.NUMBER)
+            .description("순서 번호 (미입력 시 마지막 위치로 자동 설정)").optional(),
         fieldWithPath("sortDirection").type(JsonFieldType.STRING).description("정렬 방향 (ASC, DESC)"));
   }
 

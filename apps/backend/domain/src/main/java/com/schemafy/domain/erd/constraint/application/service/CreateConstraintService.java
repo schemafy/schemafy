@@ -1,5 +1,6 @@
 package com.schemafy.domain.erd.constraint.application.service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
       String normalizedName = normalizeName(command.name());
       String normalizedCheckExpr = normalizeOptional(command.checkExpr());
       String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
-      List<CreateConstraintColumnCommand> columnCommands = normalizeColumns(command.columns());
+      List<CreateConstraintColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
 
       ConstraintValidator.validateName(normalizedName);
       columnCommands.forEach(column -> ConstraintValidator.validatePosition(column.seqNo()));
@@ -215,6 +216,37 @@ public class CreateConstraintService implements CreateConstraintUseCase {
       return List.of();
     }
     return List.copyOf(columns);
+  }
+
+  private static List<CreateConstraintColumnCommand> resolveColumnSeqNos(
+      List<CreateConstraintColumnCommand> columns) {
+    if (columns == null || columns.isEmpty()) {
+      return List.of();
+    }
+    Set<Integer> usedSeqNos = new HashSet<>();
+    for (CreateConstraintColumnCommand column : columns) {
+      if (column.seqNo() != null) {
+        usedSeqNos.add(column.seqNo());
+      }
+    }
+
+    int nextSeqNo = 0;
+    List<CreateConstraintColumnCommand> resolved = new ArrayList<>(columns.size());
+    for (CreateConstraintColumnCommand column : columns) {
+      Integer seqNo = column.seqNo();
+      if (seqNo == null) {
+        while (usedSeqNos.contains(nextSeqNo)) {
+          nextSeqNo++;
+        }
+        seqNo = nextSeqNo;
+        usedSeqNos.add(seqNo);
+        nextSeqNo++;
+      }
+      resolved.add(new CreateConstraintColumnCommand(
+          column.columnId(),
+          seqNo));
+    }
+    return List.copyOf(resolved);
   }
 
   private Mono<Void> cascadeCreateFkColumnsIfPk(

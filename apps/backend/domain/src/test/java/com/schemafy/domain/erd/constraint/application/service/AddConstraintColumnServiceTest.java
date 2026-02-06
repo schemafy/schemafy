@@ -22,6 +22,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintById
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper.CascadeCreatedInfo;
+import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
@@ -128,13 +129,49 @@ class AddConstraintColumnServiceTest {
     @Test
     @DisplayName("음수 seqNo면 예외가 발생한다")
     void throwsWhenNegativeSeqNo() {
-      var command = ConstraintFixture.addColumnCommand("constraint1", "col1", -1);
+      AddConstraintColumnCommand command = new AddConstraintColumnCommand("constraint1", "col1", -1);
+      var constraint = createConstraint("constraint1", "table1", ConstraintKind.UNIQUE);
+
+      given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.just(constraint));
+      given(getColumnsByTableIdPort.findColumnsByTableId("table1"))
+          .willReturn(Mono.just(List.of(ColumnFixture.columnWithId("col1"))));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .expectError(ConstraintPositionInvalidException.class)
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("seqNo가 없으면 마지막 위치로 자동 추가한다")
+    void addsColumnWithAutoSeqNoWhenMissing() {
+      AddConstraintColumnCommand command = new AddConstraintColumnCommand(
+          "constraint1",
+          "col2",
+          null);
+      var constraint = createConstraint("constraint1", "table1", ConstraintKind.UNIQUE);
+      var existingColumns = List.of(ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0));
+      var tableColumns = List.of(ColumnFixture.columnWithId("col1"), ColumnFixture.columnWithId("col2"));
+
+      given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.just(constraint));
+      given(getColumnsByTableIdPort.findColumnsByTableId("table1"))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(existingColumns));
+      given(ulidGeneratorPort.generate()).willReturn("new-column-id");
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+      StepVerifier.create(sut.addConstraintColumn(command))
+          .assertNext(result -> assertThat(result.result().seqNo()).isEqualTo(1))
+          .verifyComplete();
     }
 
     @Test

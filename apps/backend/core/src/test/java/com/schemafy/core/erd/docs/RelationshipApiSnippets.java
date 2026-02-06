@@ -296,7 +296,8 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
     return requestFields(
         fieldWithPath("pkColumnId").type(JsonFieldType.STRING).description("PK 컬럼 ID (ULID)"),
         fieldWithPath("fkColumnId").type(JsonFieldType.STRING).description("FK 컬럼 ID (ULID)"),
-        fieldWithPath("seqNo").type(JsonFieldType.NUMBER).description("순서 번호"));
+        fieldWithPath("seqNo").type(JsonFieldType.NUMBER)
+            .description("순서 번호 (미입력 시 마지막 위치로 자동 설정)").optional());
   }
 
   public static Snippet addRelationshipColumnResponseHeaders() {

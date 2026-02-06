@@ -16,6 +16,7 @@ import com.schemafy.domain.erd.index.application.port.out.CreateIndexColumnPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
+import com.schemafy.domain.erd.index.application.port.in.AddIndexColumnCommand;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
@@ -97,6 +98,39 @@ class AddIndexColumnServiceTest {
           .verifyComplete();
 
       then(createIndexColumnPort).should().createIndexColumn(any(IndexColumn.class));
+    }
+
+    @Test
+    @DisplayName("seqNo가 없으면 마지막 위치로 자동 추가한다")
+    void addsColumnWithAutoSeqNoWhenMissing() {
+      AddIndexColumnCommand command = new AddIndexColumnCommand(
+          "index1",
+          "col2",
+          null,
+          SortDirection.ASC);
+      var index = IndexFixture.indexWithId("index1");
+      var existingColumns = List.of(
+          IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC));
+      var tableColumns = List.of(
+          ColumnFixture.columnWithId("col1"),
+          ColumnFixture.columnWithId("col2"));
+
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
+      given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId("index1"))
+          .willReturn(Mono.just(existingColumns));
+      given(getColumnsByTableIdPort.findColumnsByTableId(index.tableId()))
+          .willReturn(Mono.just(tableColumns));
+      given(getIndexesByTableIdPort.findIndexesByTableId(index.tableId()))
+          .willReturn(Mono.just(List.of(index)));
+      given(ulidGeneratorPort.generate())
+          .willReturn("new-column-id");
+      given(createIndexColumnPort.createIndexColumn(any(IndexColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+      StepVerifier.create(sut.addIndexColumn(command))
+          .assertNext(result -> assertThat(result.result().seqNo()).isEqualTo(1))
+          .verifyComplete();
     }
 
     @Test

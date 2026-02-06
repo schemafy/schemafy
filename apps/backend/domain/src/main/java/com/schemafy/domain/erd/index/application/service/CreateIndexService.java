@@ -1,7 +1,10 @@
 package com.schemafy.domain.erd.index.application.service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -49,7 +52,7 @@ public class CreateIndexService implements CreateIndexUseCase {
   public Mono<MutationResult<CreateIndexResult>> createIndex(CreateIndexCommand command) {
     return Mono.defer(() -> {
       String normalizedName = normalizeName(command.name());
-      List<CreateIndexColumnCommand> columnCommands = normalizeColumns(command.columns());
+      List<CreateIndexColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
 
       IndexValidator.validateName(normalizedName);
       IndexValidator.validateType(command.type());
@@ -154,6 +157,38 @@ public class CreateIndexService implements CreateIndexUseCase {
       return List.of();
     }
     return List.copyOf(columns);
+  }
+
+  private static List<CreateIndexColumnCommand> resolveColumnSeqNos(
+      List<CreateIndexColumnCommand> columns) {
+    if (columns == null || columns.isEmpty()) {
+      return List.of();
+    }
+    Set<Integer> usedSeqNos = new HashSet<>();
+    for (CreateIndexColumnCommand column : columns) {
+      if (column.seqNo() != null) {
+        usedSeqNos.add(column.seqNo());
+      }
+    }
+
+    int nextSeqNo = 0;
+    List<CreateIndexColumnCommand> resolved = new ArrayList<>(columns.size());
+    for (CreateIndexColumnCommand column : columns) {
+      Integer seqNo = column.seqNo();
+      if (seqNo == null) {
+        while (usedSeqNos.contains(nextSeqNo)) {
+          nextSeqNo++;
+        }
+        seqNo = nextSeqNo;
+        usedSeqNos.add(seqNo);
+        nextSeqNo++;
+      }
+      resolved.add(new CreateIndexColumnCommand(
+          column.columnId(),
+          seqNo,
+          column.sortDirection()));
+    }
+    return List.copyOf(resolved);
   }
 
   private static List<IndexColumn> toColumns(List<CreateIndexColumnCommand> commands) {

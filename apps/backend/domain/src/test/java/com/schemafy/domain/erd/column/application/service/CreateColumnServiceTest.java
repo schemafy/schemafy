@@ -156,6 +156,43 @@ class CreateColumnServiceTest {
             .verifyComplete();
       }
 
+      @Test
+      @DisplayName("seqNo가 없으면 마지막 위치로 자동 추가한다")
+      void createsColumnWithAutoSeqNoWhenMissing() {
+        var command = new com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand(
+            ColumnFixture.DEFAULT_TABLE_ID,
+            "new_col",
+            "VARCHAR",
+            255,
+            null,
+            null,
+            null,
+            false,
+            null,
+            null,
+            null);
+        var table = createTable();
+        var schema = createSchema();
+        var existingColumns = List.of(
+            new Column("col1", ColumnFixture.DEFAULT_TABLE_ID, "col1", "INT", null, 0, false, null, null, null),
+            new Column("col2", ColumnFixture.DEFAULT_TABLE_ID, "col2", "INT", null, 1, false, null, null, null));
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(existingColumns));
+        given(ulidGeneratorPort.generate())
+            .willReturn(ColumnFixture.DEFAULT_ID);
+        given(createColumnPort.createColumn(any(Column.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createColumn(command))
+            .assertNext(result -> assertThat(result.result().seqNo()).isEqualTo(2))
+            .verifyComplete();
+      }
+
     }
 
     @Nested

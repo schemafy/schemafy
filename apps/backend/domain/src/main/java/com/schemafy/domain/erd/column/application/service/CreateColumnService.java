@@ -81,7 +81,8 @@ public class CreateColumnService implements CreateColumnUseCase {
         existingColumns,
         null);
     ColumnValidator.validateCharsetAndCollation(normalizedDataType, charset, collation);
-    ColumnValidator.validatePosition(command.seqNo());
+    int resolvedSeqNo = resolveSeqNo(command.seqNo(), existingColumns);
+    ColumnValidator.validatePosition(resolvedSeqNo);
 
     return Mono.fromCallable(ulidGeneratorPort::generate)
         .flatMap(id -> {
@@ -91,7 +92,7 @@ public class CreateColumnService implements CreateColumnUseCase {
               normalizedName,
               normalizedDataType,
               lengthScale,
-              command.seqNo(),
+              resolvedSeqNo,
               command.autoIncrement(),
               charset,
               collation,
@@ -120,6 +121,16 @@ public class CreateColumnService implements CreateColumnUseCase {
       return null;
     }
     return value.trim();
+  }
+
+  private static int resolveSeqNo(Integer requestedSeqNo, List<Column> existingColumns) {
+    if (requestedSeqNo != null) {
+      return requestedSeqNo;
+    }
+    return existingColumns.stream()
+        .mapToInt(Column::seqNo)
+        .max()
+        .orElse(-1) + 1;
   }
 
 }

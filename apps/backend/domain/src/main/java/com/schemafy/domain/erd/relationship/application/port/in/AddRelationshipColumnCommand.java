@@ -4,5 +4,5 @@ public record AddRelationshipColumnCommand(
     String relationshipId,
     String pkColumnId,
     String fkColumnId,
-    int seqNo) {
+    Integer seqNo) {
 }

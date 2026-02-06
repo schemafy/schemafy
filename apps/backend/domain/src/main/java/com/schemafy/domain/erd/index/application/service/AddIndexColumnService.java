@@ -58,6 +58,7 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
               List<IndexColumn> existingColumns = tuple.getT1();
               List<Column> tableColumns = tuple.getT2();
               List<Index> indexes = tuple.getT3();
+              int resolvedSeqNo = resolveSeqNo(command.seqNo(), existingColumns);
 
               List<IndexColumn> updatedColumns = new ArrayList<>(existingColumns.size() + 1);
               updatedColumns.addAll(existingColumns);
@@ -65,7 +66,7 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
                   null,
                   index.id(),
                   command.columnId(),
-                  command.seqNo(),
+                  resolvedSeqNo,
                   command.sortDirection()));
 
               List<Integer> seqNos = updatedColumns.stream()
@@ -90,7 +91,7 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
                         id,
                         index.id(),
                         command.columnId(),
-                        command.seqNo(),
+                        resolvedSeqNo,
                         command.sortDirection());
 
                     return createIndexColumnPort.createIndexColumn(indexColumn)
@@ -114,6 +115,16 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
             .defaultIfEmpty(List.of())
             .map(columns -> Map.entry(indexItem.id(), columns)))
         .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+  }
+
+  private static int resolveSeqNo(Integer requestedSeqNo, List<IndexColumn> existingColumns) {
+    if (requestedSeqNo != null) {
+      return requestedSeqNo;
+    }
+    return existingColumns.stream()
+        .mapToInt(IndexColumn::seqNo)
+        .max()
+        .orElse(-1) + 1;
   }
 
 }

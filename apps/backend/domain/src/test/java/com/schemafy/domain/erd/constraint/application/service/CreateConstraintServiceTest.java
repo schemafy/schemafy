@@ -23,6 +23,8 @@ import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintC
 import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
@@ -168,6 +170,46 @@ class CreateConstraintServiceTest {
                 assertThat(result.result().kind()).isEqualTo(ConstraintKind.UNIQUE);
               })
           .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("컬럼 seqNo가 없으면 0부터 자동 배정한다")
+    void createsConstraintWithAutoSeqNosWhenMissing() {
+      CreateConstraintCommand command = new CreateConstraintCommand(
+          "table1",
+          "uq_auto",
+          ConstraintKind.UNIQUE,
+          null,
+          null,
+          List.of(
+              new CreateConstraintColumnCommand("col1", null),
+              new CreateConstraintColumnCommand("col2", null)));
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId("col1"), ColumnFixture.columnWithId("col2"));
+      List<ConstraintColumn> capturedColumns = new java.util.ArrayList<>();
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "uq_auto"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "cc1", "cc2");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> {
+            ConstraintColumn column = invocation.getArgument(0);
+            capturedColumns.add(column);
+            return Mono.just(column);
+          });
+
+      StepVerifier.create(sut.createConstraint(command))
+          .assertNext(result -> assertThat(result.result().constraintId()).isEqualTo("new-constraint-id"))
+          .verifyComplete();
+
+      assertThat(capturedColumns).extracting(ConstraintColumn::seqNo).containsExactly(0, 1);
     }
 
     @Test

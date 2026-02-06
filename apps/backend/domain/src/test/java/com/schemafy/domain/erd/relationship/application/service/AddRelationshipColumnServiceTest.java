@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
+import com.schemafy.domain.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.out.CreateRelationshipColumnPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
@@ -108,6 +109,45 @@ class AddRelationshipColumnServiceTest {
           .verifyComplete();
 
       then(createRelationshipColumnPort).should().createRelationshipColumn(any(RelationshipColumn.class));
+    }
+
+    @Test
+    @DisplayName("seqNo가 없으면 마지막 위치로 자동 추가한다")
+    void addsColumnWithAutoSeqNoWhenMissing() {
+      AddRelationshipColumnCommand command = new AddRelationshipColumnCommand(
+          RelationshipFixture.DEFAULT_ID,
+          NEW_PK_COLUMN_ID,
+          NEW_FK_COLUMN_ID,
+          null);
+      var relationship = RelationshipFixture.defaultRelationship();
+      var fkTable = createTable(RelationshipFixture.DEFAULT_FK_TABLE_ID, SCHEMA_ID);
+      var pkTable = createTable(RelationshipFixture.DEFAULT_PK_TABLE_ID, SCHEMA_ID);
+      var existingColumn = RelationshipFixture.defaultRelationshipColumn();
+      var newFkColumn = ColumnFixture.columnWithId(NEW_FK_COLUMN_ID);
+      var newPkColumn = ColumnFixture.columnWithId(NEW_PK_COLUMN_ID);
+      var existingFkColumn = ColumnFixture.columnWithId(RelationshipFixture.DEFAULT_FK_COLUMN_ID);
+      var existingPkColumn = ColumnFixture.columnWithId(RelationshipFixture.DEFAULT_PK_COLUMN_ID);
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(relationship));
+      given(getTableByIdPort.findTableById(RelationshipFixture.DEFAULT_FK_TABLE_ID))
+          .willReturn(Mono.just(fkTable));
+      given(getTableByIdPort.findTableById(RelationshipFixture.DEFAULT_PK_TABLE_ID))
+          .willReturn(Mono.just(pkTable));
+      given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
+          .willReturn(Mono.just(List.of(existingColumn)));
+      given(getColumnsByTableIdPort.findColumnsByTableId(RelationshipFixture.DEFAULT_FK_TABLE_ID))
+          .willReturn(Mono.just(List.of(existingFkColumn, newFkColumn)));
+      given(getColumnsByTableIdPort.findColumnsByTableId(RelationshipFixture.DEFAULT_PK_TABLE_ID))
+          .willReturn(Mono.just(List.of(existingPkColumn, newPkColumn)));
+      given(ulidGeneratorPort.generate())
+          .willReturn("new_column_id");
+      given(createRelationshipColumnPort.createRelationshipColumn(any(RelationshipColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+      StepVerifier.create(sut.addRelationshipColumn(command))
+          .assertNext(result -> assertThat(result.result().seqNo()).isEqualTo(1))
+          .verifyComplete();
     }
 
     @Test

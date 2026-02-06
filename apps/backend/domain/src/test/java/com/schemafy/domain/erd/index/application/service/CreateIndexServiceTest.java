@@ -20,6 +20,8 @@ import com.schemafy.domain.erd.index.application.port.out.CreateIndexPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.domain.erd.index.application.port.out.IndexExistsPort;
+import com.schemafy.domain.erd.index.application.port.in.CreateIndexColumnCommand;
+import com.schemafy.domain.erd.index.application.port.in.CreateIndexCommand;
 import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
@@ -152,6 +154,48 @@ class CreateIndexServiceTest {
             assertThat(result.result().type()).isEqualTo(IndexType.HASH);
           })
           .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("컬럼 seqNo가 없으면 0부터 자동 배정한다")
+    void createsIndexWithAutoSeqNosWhenMissing() {
+      CreateIndexCommand command = new CreateIndexCommand(
+          "table1",
+          "idx_auto",
+          IndexType.BTREE,
+          List.of(
+              new CreateIndexColumnCommand("col1", null, SortDirection.ASC),
+              new CreateIndexColumnCommand("col2", null, SortDirection.DESC)));
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(
+          ColumnFixture.columnWithId("col1"),
+          ColumnFixture.columnWithId("col2"));
+      List<IndexColumn> capturedColumns = new java.util.ArrayList<>();
+
+      given(getTableByIdPort.findTableById(command.tableId()))
+          .willReturn(Mono.just(table));
+      given(indexExistsPort.existsByTableIdAndName(table.id(), "idx_auto"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getIndexesByTableIdPort.findIndexesByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate())
+          .willReturn("new-index-id", "ic1", "ic2");
+      given(createIndexPort.createIndex(any(Index.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createIndexColumnPort.createIndexColumn(any(IndexColumn.class)))
+          .willAnswer(invocation -> {
+            IndexColumn column = invocation.getArgument(0);
+            capturedColumns.add(column);
+            return Mono.just(column);
+          });
+
+      StepVerifier.create(sut.createIndex(command))
+          .assertNext(result -> assertThat(result.result().indexId()).isEqualTo("new-index-id"))
+          .verifyComplete();
+
+      assertThat(capturedColumns).extracting(IndexColumn::seqNo).containsExactly(0, 1);
     }
 
     @Test

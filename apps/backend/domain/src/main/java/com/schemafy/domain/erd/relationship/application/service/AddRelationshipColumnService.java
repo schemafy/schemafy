@@ -83,6 +83,7 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
           List<RelationshipColumn> existingColumns = tuple.getT1();
           List<Column> fkColumns = tuple.getT2();
           List<Column> pkColumns = tuple.getT3();
+          int resolvedSeqNo = resolveSeqNo(command.seqNo(), existingColumns);
 
           List<RelationshipColumn> updatedColumns = new ArrayList<>(existingColumns.size() + 1);
           updatedColumns.addAll(existingColumns);
@@ -91,7 +92,7 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
               relationship.id(),
               command.pkColumnId(),
               command.fkColumnId(),
-              command.seqNo()));
+              resolvedSeqNo));
 
           List<Integer> seqNos = updatedColumns.stream()
               .map(RelationshipColumn::seqNo)
@@ -111,7 +112,7 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
                     relationship.id(),
                     command.pkColumnId(),
                     command.fkColumnId(),
-                    command.seqNo());
+                    resolvedSeqNo);
 
                 return createRelationshipColumnPort.createRelationshipColumn(relationshipColumn)
                     .map(savedColumn -> new AddRelationshipColumnResult(
@@ -125,6 +126,16 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   }
 
   private record TablePair(Table fkTable, Table pkTable) {
+  }
+
+  private static int resolveSeqNo(Integer requestedSeqNo, List<RelationshipColumn> existingColumns) {
+    if (requestedSeqNo != null) {
+      return requestedSeqNo;
+    }
+    return existingColumns.stream()
+        .mapToInt(RelationshipColumn::seqNo)
+        .max()
+        .orElse(-1) + 1;
   }
 
 }

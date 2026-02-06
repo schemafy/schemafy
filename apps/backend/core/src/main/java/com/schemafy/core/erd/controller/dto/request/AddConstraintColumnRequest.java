@@ -4,5 +4,5 @@ import jakarta.validation.constraints.NotBlank;
 
 public record AddConstraintColumnRequest(
     @NotBlank(message = "columnId는 필수입니다.") String columnId,
-    int seqNo) {
+    Integer seqNo) {
 }

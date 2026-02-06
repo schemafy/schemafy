@@ -5,5 +5,5 @@ import jakarta.validation.constraints.NotBlank;
 public record AddRelationshipColumnRequest(
     @NotBlank(message = "pkColumnId는 필수입니다.") String pkColumnId,
     @NotBlank(message = "fkColumnId는 필수입니다.") String fkColumnId,
-    int seqNo) {
+    Integer seqNo) {
 }

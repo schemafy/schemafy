@@ -73,7 +73,7 @@ public class ColumnApiSnippets extends RestDocsSnippets {
         fieldWithPath("scale").type(JsonFieldType.NUMBER)
             .description("스케일 (DECIMAL 등에 사용)").optional(),
         fieldWithPath("seqNo").type(JsonFieldType.NUMBER)
-            .description("순서 번호"),
+            .description("순서 번호 (미입력 시 마지막 위치로 자동 설정)").optional(),
         fieldWithPath("autoIncrement").type(JsonFieldType.BOOLEAN)
             .description("자동 증가 여부"),
         fieldWithPath("charset").type(JsonFieldType.STRING)
