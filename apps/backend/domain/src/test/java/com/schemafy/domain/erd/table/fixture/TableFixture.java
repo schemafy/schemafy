@@ -70,6 +70,18 @@ public class TableFixture {
         DEFAULT_COLLATION);
   }
 
+  public static CreateTableCommand createCommandWithMeta(String charset, String collation) {
+    return new CreateTableCommand(
+        DEFAULT_SCHEMA_ID,
+        DEFAULT_NAME,
+        charset,
+        collation);
+  }
+
+  public static CreateTableCommand createCommandWithoutMeta() {
+    return createCommandWithMeta(null, null);
+  }
+
   public static CreateTableResult createResult() {
     return new CreateTableResult(
         DEFAULT_ID,
