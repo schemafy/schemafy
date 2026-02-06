@@ -21,7 +21,6 @@ import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddRelationshipColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipCardinalityRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipColumnPositionRequest;
-import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipExtraRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipKindRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateRelationshipRequest;
@@ -64,6 +63,7 @@ import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
@@ -324,13 +324,11 @@ class RelationshipControllerTest {
   }
 
   @Test
-  @DisplayName("관계 추가정보 변경 API 문서화")
+  @DisplayName("관계 프론트엔드 메타데이터 변경 API 문서화")
   void changeRelationshipExtra() throws Exception {
     String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";
     String fkTableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
     String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
-
-    ChangeRelationshipExtraRequest request = new ChangeRelationshipExtraRequest("{\"description\":\"User orders\"}");
 
     given(changeRelationshipExtraUseCase.changeRelationshipExtra(any(ChangeRelationshipExtraCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
@@ -338,7 +336,9 @@ class RelationshipControllerTest {
     webTestClient.patch()
         .uri(API_BASE_PATH + "/relationships/{relationshipId}/extra", relationshipId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(objectMapper.writeValueAsString(request))
+        .bodyValue("""
+            {"extra":{"position":{"x":210,"y":140},"color":"#f97316","lineStyle":{"dash":[4,2]}}}
+            """)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
@@ -351,6 +351,33 @@ class RelationshipControllerTest {
             RelationshipApiSnippets.changeRelationshipExtraRequest(),
             RelationshipApiSnippets.changeRelationshipExtraResponseHeaders(),
             RelationshipApiSnippets.changeRelationshipExtraResponse()));
+  }
+
+  @Test
+  @DisplayName("관계 추가정보 변경 API는 extra 객체를 허용한다")
+  void changeRelationshipExtraAcceptsObjectValue() {
+    String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";
+    String fkTableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+    String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
+
+    given(changeRelationshipExtraUseCase.changeRelationshipExtra(any(ChangeRelationshipExtraCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/relationships/{relationshipId}/extra", relationshipId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"extra":{"position":{"x":60,"y":90},"color":"#6366f1"}}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray();
+
+    then(changeRelationshipExtraUseCase).should().changeRelationshipExtra(
+        new ChangeRelationshipExtraCommand(relationshipId, "{\"position\":{\"x\":60,\"y\":90},\"color\":\"#6366f1\"}"));
   }
 
   @Test

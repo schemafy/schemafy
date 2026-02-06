@@ -8,6 +8,7 @@ import com.schemafy.core.common.docs.RestDocsSnippets;
 
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 
@@ -32,7 +33,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "cardinality").type(JsonFieldType.STRING)
           .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY, MANY_TO_MANY)"),
       fieldWithPath(prefix + "extra").type(JsonFieldType.STRING)
-          .description("추가 정보 (JSON)").optional()
+          .description("프론트엔드 메타데이터(JSON 문자열, 예: position, color)").optional()
     };
   }
 
@@ -217,8 +218,9 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
 
   public static Snippet changeRelationshipExtraRequest() {
     return requestFields(
-        fieldWithPath("extra").type(JsonFieldType.STRING)
-            .description("변경할 추가 정보 (JSON)").optional());
+        subsectionWithPath("extra")
+            .description("변경할 프론트엔드 메타데이터 (예: position, color 등 임의 JSON 구조, 문자열도 허용)")
+            .optional());
   }
 
   public static Snippet changeRelationshipExtraResponseHeaders() {

@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
-import com.schemafy.core.erd.controller.dto.request.ChangeTableExtraRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableMetaRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequest;
@@ -64,6 +63,7 @@ import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
@@ -380,11 +380,9 @@ class TableControllerTest {
   }
 
   @Test
-  @DisplayName("테이블 추가정보 변경 API 문서화")
+  @DisplayName("테이블 프론트엔드 메타데이터 변경 API 문서화")
   void changeTableExtra() throws Exception {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
-
-    ChangeTableExtraRequest request = new ChangeTableExtraRequest("{\"engine\": \"InnoDB\"}");
 
     given(changeTableExtraUseCase.changeTableExtra(any(ChangeTableExtraCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
@@ -392,7 +390,9 @@ class TableControllerTest {
     webTestClient.patch()
         .uri(API_BASE_PATH + "/tables/{tableId}/extra", tableId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(objectMapper.writeValueAsString(request))
+        .bodyValue("""
+            {"extra":{"position":{"x":120,"y":80},"color":"#0ea5e9","ui":{"collapsed":false}}}
+            """)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
@@ -405,6 +405,31 @@ class TableControllerTest {
             TableApiSnippets.changeTableExtraRequest(),
             TableApiSnippets.changeTableExtraResponseHeaders(),
             TableApiSnippets.changeTableExtraResponse()));
+  }
+
+  @Test
+  @DisplayName("테이블 추가정보 변경 API는 extra 객체를 허용한다")
+  void changeTableExtraAcceptsObjectValue() {
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeTableExtraUseCase.changeTableExtra(any(ChangeTableExtraCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/tables/{tableId}/extra", tableId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"extra":{"position":{"x":24,"y":48},"color":"#22c55e"}}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray();
+
+    then(changeTableExtraUseCase).should()
+        .changeTableExtra(new ChangeTableExtraCommand(tableId, "{\"position\":{\"x\":24,\"y\":48},\"color\":\"#22c55e\"}"));
   }
 
   @Test

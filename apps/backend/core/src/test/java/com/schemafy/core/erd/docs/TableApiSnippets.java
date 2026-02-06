@@ -116,7 +116,7 @@ public class TableApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "cardinality").type(JsonFieldType.STRING)
           .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY, MANY_TO_MANY)"),
       fieldWithPath(prefix + "extra").type(JsonFieldType.STRING)
-          .description("추가 정보").optional()
+          .description("프론트엔드 메타데이터(JSON 문자열, 예: position, color)").optional()
     };
   }
 
@@ -412,8 +412,9 @@ public class TableApiSnippets extends RestDocsSnippets {
   /** 테이블 추가정보 변경 요청 바디 */
   public static Snippet changeTableExtraRequest() {
     return requestFields(
-        fieldWithPath("extra").type(JsonFieldType.STRING)
-            .description("추가 정보").optional());
+        subsectionWithPath("extra")
+            .description("프론트엔드 메타데이터 (예: position, color 등 임의 JSON 구조, 문자열도 허용)")
+            .optional());
   }
 
   /** 테이블 추가정보 변경 응답 헤더 */
