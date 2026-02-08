@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
@@ -54,6 +55,7 @@ import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
@@ -143,6 +145,31 @@ class ConstraintControllerTest {
             ConstraintApiSnippets.createConstraintRequest(),
             ConstraintApiSnippets.createConstraintResponseHeaders(),
             ConstraintApiSnippets.createConstraintResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 생성 시 잘못된 kind 값이면 400 에러를 반환한다")
+  void createConstraintWithInvalidKindReturnsBadRequest() {
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/constraints")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "tableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+              "name": "pk_users",
+              "kind": "WRONG_KIND",
+              "columns": [{"columnId":"06D6W3CAHD51T5NJPK29Q6BCRA","seqNo":0}]
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(false)
+        .jsonPath("$.error.code")
+        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+
+    then(createConstraintUseCase).shouldHaveNoInteractions();
   }
 
   @Test

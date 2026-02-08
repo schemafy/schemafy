@@ -8,6 +8,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ServerWebInputException;
 
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.domain.common.exception.DomainException;
@@ -111,6 +112,20 @@ public class GlobalExceptionHandler {
     return ResponseEntity
         .status(errorCode.getStatus())
         .body(BaseResponse.error(errorCode.getCode(), e.getReason()));
+  }
+
+  @ExceptionHandler(ServerWebInputException.class)
+  public ResponseEntity<BaseResponse<Object>> handleServerWebInputException(
+      ServerWebInputException e) {
+    ErrorCode errorCode = ErrorCode.COMMON_INVALID_PARAMETER;
+    String message = (e.getReason() != null && !e.getReason().isBlank())
+        ? e.getReason()
+        : errorCode.getMessage();
+    log.warn("[ServerWebInputException] Request input decoding failed: {}",
+        e.getMessage());
+    return ResponseEntity
+        .status(errorCode.getStatus())
+        .body(BaseResponse.error(errorCode.getCode(), message));
   }
 
   @ExceptionHandler(DomainException.class)

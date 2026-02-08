@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddRelationshipColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipCardinalityRequest;
@@ -162,6 +163,56 @@ class RelationshipControllerTest {
             RelationshipApiSnippets.createRelationshipRequest(),
             RelationshipApiSnippets.createRelationshipResponseHeaders(),
             RelationshipApiSnippets.createRelationshipResponse()));
+  }
+
+  @Test
+  @DisplayName("관계 생성 시 잘못된 kind 값이면 400 에러를 반환한다")
+  void createRelationshipWithInvalidKindReturnsBadRequest() {
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/relationships")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "fkTableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+              "pkTableId": "06D6W2CAHD51T5NJPK29Q6BCRA",
+              "kind": "WRONG_KIND",
+              "cardinality": "ONE_TO_MANY"
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(false)
+        .jsonPath("$.error.code")
+        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+
+    then(createRelationshipUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("관계 생성 시 잘못된 cardinality 값이면 400 에러를 반환한다")
+  void createRelationshipWithInvalidCardinalityReturnsBadRequest() {
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/relationships")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "fkTableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+              "pkTableId": "06D6W2CAHD51T5NJPK29Q6BCRA",
+              "kind": "NON_IDENTIFYING",
+              "cardinality": "WRONG_CARDINALITY"
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(false)
+        .jsonPath("$.error.code")
+        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+
+    then(createRelationshipUseCase).shouldHaveNoInteractions();
   }
 
   @Test
