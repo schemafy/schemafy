@@ -54,20 +54,33 @@ public class CreateIndexService implements CreateIndexUseCase {
       String normalizedName = normalizeName(command.name());
       List<CreateIndexColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
 
-      IndexValidator.validateName(normalizedName);
+      boolean autoName = normalizedName == null || normalizedName.isBlank();
+      if (!autoName) {
+        IndexValidator.validateName(normalizedName);
+      }
       IndexValidator.validateType(command.type());
 
       return getTableByIdPort.findTableById(command.tableId())
           .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
-          .flatMap(table -> indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
-              .flatMap(exists -> {
-                if (exists) {
-                  return Mono.error(new IndexNameDuplicateException(
-                      "Index name '%s' already exists in table".formatted(normalizedName)));
-                }
-                return validateAndCreate(table, command, normalizedName, columnCommands)
-                    .map(result -> MutationResult.of(result, table.id()));
-              }));
+          .flatMap(table -> {
+            Mono<String> nameMono;
+            if (autoName) {
+              nameMono = resolveAutoIndexName(table);
+            } else {
+              nameMono = indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
+                  .flatMap(exists -> {
+                    if (exists) {
+                      return Mono.error(new IndexNameDuplicateException(
+                          "Index name '%s' already exists in table".formatted(normalizedName)));
+                    }
+                    return Mono.just(normalizedName);
+                  });
+            }
+
+            return nameMono.flatMap(resolvedName ->
+                validateAndCreate(table, command, resolvedName, columnCommands)
+                    .map(result -> MutationResult.of(result, table.id())));
+          });
     }).as(transactionalOperator::transactional);
   }
 
@@ -203,6 +216,22 @@ public class CreateIndexService implements CreateIndexUseCase {
             command.seqNo(),
             command.sortDirection()))
         .toList();
+  }
+
+  private Mono<String> resolveAutoIndexName(Table table) {
+    String baseName = "idx_" + table.name();
+    return resolveUniqueIndexName(table.id(), baseName, 0);
+  }
+
+  private Mono<String> resolveUniqueIndexName(String tableId, String baseName, int suffix) {
+    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+    return indexExistsPort.existsByTableIdAndName(tableId, candidate)
+        .flatMap(exists -> {
+          if (exists) {
+            return resolveUniqueIndexName(tableId, baseName, suffix + 1);
+          }
+          return Mono.just(candidate);
+        });
   }
 
   private static String normalizeName(String name) {

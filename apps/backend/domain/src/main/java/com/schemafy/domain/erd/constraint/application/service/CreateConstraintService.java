@@ -62,7 +62,10 @@ public class CreateConstraintService implements CreateConstraintUseCase {
       String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
       List<CreateConstraintColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
 
-      ConstraintValidator.validateName(normalizedName);
+      boolean autoName = normalizedName == null || normalizedName.isBlank();
+      if (!autoName) {
+        ConstraintValidator.validateName(normalizedName);
+      }
       columnCommands.forEach(column -> ConstraintValidator.validatePosition(column.seqNo()));
 
       return getTableByIdPort.findTableById(command.tableId())
@@ -70,23 +73,31 @@ public class CreateConstraintService implements CreateConstraintUseCase {
           .flatMap(table -> {
             Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
             affectedTableIds.add(table.id());
-            return constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
-                .flatMap(exists -> {
-                  if (exists) {
-                    return Mono.error(new ConstraintNameDuplicateException(
-                        "Constraint name '%s' already exists in schema".formatted(normalizedName)));
-                  }
-                  return fetchTableContext(table.id())
-                      .flatMap(context -> createConstraint(
-                          table,
-                          context,
-                          command.kind(),
-                          normalizedName,
-                          normalizedCheckExpr,
-                          normalizedDefaultExpr,
-                          columnCommands,
-                          affectedTableIds));
-                });
+
+            Mono<String> nameMono;
+            if (autoName) {
+              nameMono = resolveAutoConstraintName(table, command.kind());
+            } else {
+              nameMono = constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
+                  .flatMap(exists -> {
+                    if (exists) {
+                      return Mono.error(new ConstraintNameDuplicateException(
+                          "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                    }
+                    return Mono.just(normalizedName);
+                  });
+            }
+
+            return nameMono.flatMap(resolvedName -> fetchTableContext(table.id())
+                .flatMap(context -> createConstraint(
+                    table,
+                    context,
+                    command.kind(),
+                    resolvedName,
+                    normalizedCheckExpr,
+                    normalizedDefaultExpr,
+                    columnCommands,
+                    affectedTableIds)));
           });
     }).as(transactionalOperator::transactional);
   }
@@ -197,6 +208,32 @@ public class CreateConstraintService implements CreateConstraintUseCase {
                     column.columnId(),
                     column.seqNo()))))
         .then();
+  }
+
+  private Mono<String> resolveAutoConstraintName(Table table, ConstraintKind kind) {
+    String baseName = constraintKindPrefix(kind) + table.name();
+    return resolveUniqueConstraintName(table.schemaId(), baseName, 0);
+  }
+
+  private Mono<String> resolveUniqueConstraintName(String schemaId, String baseName, int suffix) {
+    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+    return constraintExistsPort.existsBySchemaIdAndName(schemaId, candidate)
+        .flatMap(exists -> {
+          if (exists) {
+            return resolveUniqueConstraintName(schemaId, baseName, suffix + 1);
+          }
+          return Mono.just(candidate);
+        });
+  }
+
+  private static String constraintKindPrefix(ConstraintKind kind) {
+    return switch (kind) {
+      case PRIMARY_KEY -> "pk_";
+      case UNIQUE -> "uq_";
+      case CHECK -> "ck_";
+      case DEFAULT -> "df_";
+      case NOT_NULL -> "nn_";
+    };
   }
 
   private static String normalizeName(String name) {

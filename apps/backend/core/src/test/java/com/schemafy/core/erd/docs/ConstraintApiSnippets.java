@@ -59,7 +59,7 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
         fieldWithPath("tableId").type(JsonFieldType.STRING)
             .description("테이블 ID (ULID)"),
         fieldWithPath("name").type(JsonFieldType.STRING)
-            .description("제약조건 이름"),
+            .description("제약조건 이름 (미입력 시 자동 생성)").optional(),
         fieldWithPath("kind").type(JsonFieldType.STRING)
             .description("제약조건 종류 (PRIMARY_KEY, UNIQUE, CHECK, DEFAULT, NOT_NULL)"),
         fieldWithPath("checkExpr").type(JsonFieldType.STRING)

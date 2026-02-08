@@ -29,7 +29,6 @@ import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistExcepti
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionInvalidException;
 import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
 import com.schemafy.domain.erd.index.domain.exception.IndexNameDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNameInvalidException;
 import com.schemafy.domain.erd.index.domain.exception.IndexPositionInvalidException;
 import com.schemafy.domain.erd.index.domain.exception.IndexTypeInvalidException;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
@@ -291,27 +290,92 @@ class CreateIndexServiceTest {
     }
 
     @Test
-    @DisplayName("이름이 null이면 예외가 발생한다")
-    void throwsWhenNameIsNull() {
+    @DisplayName("이름이 null이면 자동 생성한다")
+    void autoGeneratesNameWhenNull() {
       var command = IndexFixture.createCommandWithName(null);
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId(IndexFixture.DEFAULT_COLUMN_ID));
+
+      given(getTableByIdPort.findTableById(command.tableId()))
+          .willReturn(Mono.just(table));
+      given(indexExistsPort.existsByTableIdAndName(table.id(), "idx_test_table"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getIndexesByTableIdPort.findIndexesByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate())
+          .willReturn("new-index-id", "new-column-id");
+      given(createIndexPort.createIndex(any(Index.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createIndexColumnPort.createIndexColumn(any(IndexColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexNameInvalidException.class)
-          .verify();
-
-      then(createIndexPort).shouldHaveNoInteractions();
+          .assertNext(result -> {
+            assertThat(result.result().name()).isEqualTo("idx_test_table");
+            assertThat(result.result().type()).isEqualTo(IndexType.BTREE);
+          })
+          .verifyComplete();
     }
 
     @Test
-    @DisplayName("이름이 빈 문자열이면 예외가 발생한다")
-    void throwsWhenNameIsEmpty() {
+    @DisplayName("이름이 빈 문자열이면 자동 생성한다")
+    void autoGeneratesNameWhenEmpty() {
       var command = IndexFixture.createCommandWithName("  ");
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId(IndexFixture.DEFAULT_COLUMN_ID));
+
+      given(getTableByIdPort.findTableById(command.tableId()))
+          .willReturn(Mono.just(table));
+      given(indexExistsPort.existsByTableIdAndName(table.id(), "idx_test_table"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getIndexesByTableIdPort.findIndexesByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate())
+          .willReturn("new-index-id", "new-column-id");
+      given(createIndexPort.createIndex(any(Index.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createIndexColumnPort.createIndexColumn(any(IndexColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexNameInvalidException.class)
-          .verify();
+          .assertNext(result -> {
+            assertThat(result.result().name()).isEqualTo("idx_test_table");
+            assertThat(result.result().type()).isEqualTo(IndexType.BTREE);
+          })
+          .verifyComplete();
+    }
 
-      then(createIndexPort).shouldHaveNoInteractions();
+    @Test
+    @DisplayName("자동 생성 이름이 중복이면 suffix를 증가시킨다")
+    void autoGeneratesNameWithSuffixWhenDuplicate() {
+      var command = IndexFixture.createCommandWithName(null);
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId(IndexFixture.DEFAULT_COLUMN_ID));
+
+      given(getTableByIdPort.findTableById(command.tableId()))
+          .willReturn(Mono.just(table));
+      given(indexExistsPort.existsByTableIdAndName(table.id(), "idx_test_table"))
+          .willReturn(Mono.just(true));
+      given(indexExistsPort.existsByTableIdAndName(table.id(), "idx_test_table_1"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getIndexesByTableIdPort.findIndexesByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate())
+          .willReturn("new-index-id", "new-column-id");
+      given(createIndexPort.createIndex(any(Index.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createIndexColumnPort.createIndexColumn(any(IndexColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+      StepVerifier.create(sut.createIndex(command))
+          .assertNext(result -> assertThat(result.result().name()).isEqualTo("idx_test_table_1"))
+          .verifyComplete();
     }
 
     @Test

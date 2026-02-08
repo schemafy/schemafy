@@ -57,7 +57,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
         fieldWithPath("tableId").type(JsonFieldType.STRING)
             .description("테이블 ID (ULID)"),
         fieldWithPath("name").type(JsonFieldType.STRING)
-            .description("인덱스 이름"),
+            .description("인덱스 이름 (미입력 시 자동 생성)").optional(),
         fieldWithPath("type").type(JsonFieldType.STRING)
             .description("인덱스 타입 (BTREE, HASH, FULLTEXT, SPATIAL)"),
         fieldWithPath("columns").type(JsonFieldType.ARRAY)
