@@ -29,12 +29,6 @@ spring:
       mode: always
       schema-locations: classpath:ddl/mariadb/**/*.sql
 
-grpc:
-  validation:
-    host: ${GRPC_VALIDATION_HOST:localhost}
-    port: ${GRPC_VALIDATION_PORT:50051}
-    deadline-seconds: 30
-
 cache:
   caffeine:
     enabled: true

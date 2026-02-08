@@ -70,6 +70,8 @@ public enum ErrorCode {
   ERD_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "E011", "메모를 찾을 수 없습니다."),
   ERD_MEMO_COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E012",
       "메모 댓글을 찾을 수 없습니다."),
+  ERD_SCHEMA_NAME_DUPLICATE(HttpStatus.CONFLICT, "E013", "스키마 이름이 중복됩니다."),
+  ERD_TABLE_NAME_DUPLICATE(HttpStatus.CONFLICT, "E014", "테이블 이름이 중복됩니다."),
 
   // WORKSPACE
   WORKSPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "W001", "워크스페이스를 찾을 수 없습니다."),

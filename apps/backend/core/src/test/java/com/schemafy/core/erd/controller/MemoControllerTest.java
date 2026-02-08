@@ -264,6 +264,40 @@ class MemoControllerTest {
   }
 
   @Test
+  @DisplayName("스키마별 메모 목록 조회")
+  void getMemosBySchemaId() throws Exception {
+    String schemaId = "06D6VZBWHSDJBBG0H7D156YZ98";
+
+    MemoResponse response = objectMapper.treeToValue(
+        objectMapper.readTree("""
+            {
+                "id": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+                "author": {
+                    "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                    "name": "testuser"
+                },
+                "positions": "{}",
+                "createdAt": "2025-11-23T10:00:00Z",
+                "updatedAt": "2025-11-23T10:00:00Z"
+            }
+            """), MemoResponse.class);
+
+    given(memoService.getMemosBySchemaId(schemaId))
+        .willReturn(Flux.just(response));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/schemas/{schemaId}/memos", schemaId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result").isArray()
+        .jsonPath("$.result[0].schemaId").isEqualTo(schemaId);
+  }
+
+  @Test
   @DisplayName("메모 수정 API 문서화")
   void updateMemo() throws Exception {
     String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";

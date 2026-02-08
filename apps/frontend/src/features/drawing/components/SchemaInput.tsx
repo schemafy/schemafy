@@ -1,5 +1,5 @@
 import { Button } from '@/components';
-import { SCHEMA_NAME_CONSTRAINTS } from '@schemafy/validator';
+import { SCHEMA_NAME_CONSTRAINTS } from '@/types/erd.types';
 import { validateSchemaName } from '../utils/validateSchemaName';
 
 interface SchemaInputProps {

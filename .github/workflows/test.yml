@@ -36,7 +36,7 @@ jobs:
         run: npm ci
 
       - name: Make gradlew executable
-        run: chmod +x apps/backend/core/gradlew
+        run: chmod +x gradlew
 
       - name: Cache Turbo
         uses: actions/cache@v4

@@ -21,13 +21,14 @@ import com.schemafy.core.erd.controller.dto.response.MemoDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoResponse;
 import com.schemafy.core.erd.repository.MemoCommentRepository;
 import com.schemafy.core.erd.repository.MemoRepository;
-import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.user.controller.dto.response.UserSummaryResponse;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
+import com.schemafy.domain.erd.schema.application.port.in.GetSchemaUseCase;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -37,7 +38,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class MemoService {
 
-  private final SchemaRepository schemaRepository;
+  private final GetSchemaUseCase getSchemaUseCase;
   private final MemoRepository memoRepository;
   private final MemoCommentRepository memoCommentRepository;
   private final UserRepository userRepository;
@@ -298,9 +299,7 @@ public class MemoService {
   }
 
   private Mono<Void> ensureSchemaExists(String schemaId) {
-    return schemaRepository.findByIdAndDeletedAtIsNull(schemaId)
-        .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.ERD_SCHEMA_NOT_FOUND)))
+    return getSchemaUseCase.getSchema(new GetSchemaQuery(schemaId))
         .then();
   }
 

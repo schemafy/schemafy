@@ -1,48 +1,35 @@
 package com.schemafy.core.erd.controller.dto.response;
 
-import java.util.Collections;
-import java.util.List;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintResult;
+import com.schemafy.domain.erd.constraint.domain.Constraint;
+import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
-import com.schemafy.core.erd.repository.entity.Constraint;
-import com.schemafy.core.erd.repository.entity.ConstraintColumn;
+public record ConstraintResponse(
+    String id,
+    String tableId,
+    String name,
+    ConstraintKind kind,
+    String checkExpr,
+    String defaultExpr) {
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-
-@Getter
-@Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ConstraintResponse {
-
-  private String id;
-  private String tableId;
-  private String name;
-  private String kind;
-  private List<ConstraintColumnResponse> columns;
-
-  public static ConstraintResponse from(Constraint constraint) {
-    return ConstraintResponse.builder()
-        .id(constraint.getId())
-        .tableId(constraint.getTableId())
-        .name(constraint.getName())
-        .kind(constraint.getKind())
-        .columns(Collections.emptyList())
-        .build();
+  public static ConstraintResponse from(CreateConstraintResult result, String tableId) {
+    return new ConstraintResponse(
+        result.constraintId(),
+        tableId,
+        result.name(),
+        result.kind(),
+        result.checkExpr(),
+        result.defaultExpr());
   }
 
-  public static ConstraintResponse from(Constraint constraint,
-      List<ConstraintColumn> columns) {
-    return ConstraintResponse.builder()
-        .id(constraint.getId())
-        .tableId(constraint.getTableId())
-        .name(constraint.getName())
-        .kind(constraint.getKind())
-        .columns(columns.stream()
-            .map(ConstraintColumnResponse::from)
-            .toList())
-        .build();
+  public static ConstraintResponse from(Constraint constraint) {
+    return new ConstraintResponse(
+        constraint.id(),
+        constraint.tableId(),
+        constraint.name(),
+        constraint.kind(),
+        constraint.checkExpr(),
+        constraint.defaultExpr());
   }
 
 }

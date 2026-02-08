@@ -22,6 +22,7 @@ export const useColumns = ({
     erdStore.createColumn(schemaId, tableId, {
       id: ulid(),
       name: generateUniqueName(existingColumnNames, 'Column'),
+      seqNo: columns.length,
       ordinalPosition: columns.length,
       dataType: 'VARCHAR',
       lengthScale: '255',

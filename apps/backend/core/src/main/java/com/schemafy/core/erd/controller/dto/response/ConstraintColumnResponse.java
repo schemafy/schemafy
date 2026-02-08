@@ -1,30 +1,19 @@
 package com.schemafy.core.erd.controller.dto.response;
 
-import com.schemafy.core.erd.repository.entity.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+public record ConstraintColumnResponse(
+    String id,
+    String constraintId,
+    String columnId,
+    int seqNo) {
 
-@Getter
-@Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ConstraintColumnResponse {
-
-  private String id;
-  private String constraintId;
-  private String columnId;
-  private Integer seqNo;
-
-  public static ConstraintColumnResponse from(
-      ConstraintColumn constraintColumn) {
-    return ConstraintColumnResponse.builder()
-        .id(constraintColumn.getId())
-        .constraintId(constraintColumn.getConstraintId())
-        .columnId(constraintColumn.getColumnId())
-        .seqNo(constraintColumn.getSeqNo())
-        .build();
+  public static ConstraintColumnResponse from(ConstraintColumn column) {
+    return new ConstraintColumnResponse(
+        column.id(),
+        column.constraintId(),
+        column.columnId(),
+        column.seqNo());
   }
 
 }
