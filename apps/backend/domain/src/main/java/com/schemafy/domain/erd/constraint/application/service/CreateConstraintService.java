@@ -228,11 +228,11 @@ public class CreateConstraintService implements CreateConstraintUseCase {
 
   private static String constraintKindPrefix(ConstraintKind kind) {
     return switch (kind) {
-      case PRIMARY_KEY -> "pk_";
-      case UNIQUE -> "uq_";
-      case CHECK -> "ck_";
-      case DEFAULT -> "df_";
-      case NOT_NULL -> "nn_";
+    case PRIMARY_KEY -> "pk_";
+    case UNIQUE -> "uq_";
+    case CHECK -> "ck_";
+    case DEFAULT -> "df_";
+    case NOT_NULL -> "nn_";
     };
   }
 

@@ -1,22 +1,22 @@
-import { ERROR_CODES } from "./codes";
-import { createErrorClass } from "./base";
+import { ERROR_CODES } from './codes';
+import { createErrorClass } from './base';
 
 export const DatabaseEmptySchemaError = createErrorClass(
-  "DatabaseEmptySchema",
+  'DatabaseEmptySchema',
   {
     code: ERROR_CODES.DATABASE_EMPTY_SCHEMA,
-    messageTemplate: "Database must contain at least one schema",
+    messageTemplate: 'Database must contain at least one schema',
     createDetails: () => ({}),
   },
 );
 
-export const SchemaNotExistError = createErrorClass("SchemaNotExist", {
+export const SchemaNotExistError = createErrorClass('SchemaNotExist', {
   code: ERROR_CODES.SCHEMA_NOT_EXIST,
   messageTemplate: "Schema with ID '{0}' does not exist",
   createDetails: (schemaId: string) => ({ schemaId }),
 });
 
-export const SchemaNameInvalidError = createErrorClass("SchemaNameInvalid", {
+export const SchemaNameInvalidError = createErrorClass('SchemaNameInvalid', {
   code: ERROR_CODES.SCHEMA_INVALID,
   messageTemplate:
     "Schema name '{0}' is invalid. Name must be between {1} and {2} characters",
@@ -29,7 +29,7 @@ export const SchemaNameInvalidError = createErrorClass("SchemaNameInvalid", {
 });
 
 export const SchemaNameNotUniqueError = createErrorClass(
-  "SchemaNameNotUnique",
+  'SchemaNameNotUnique',
   {
     code: ERROR_CODES.SCHEMA_NAME_NOT_UNIQUE,
     messageTemplate:

@@ -77,9 +77,8 @@ public class CreateIndexService implements CreateIndexUseCase {
                   });
             }
 
-            return nameMono.flatMap(resolvedName ->
-                validateAndCreate(table, command, resolvedName, columnCommands)
-                    .map(result -> MutationResult.of(result, table.id())));
+            return nameMono.flatMap(resolvedName -> validateAndCreate(table, command, resolvedName, columnCommands)
+                .map(result -> MutationResult.of(result, table.id())));
           });
     }).as(transactionalOperator::transactional);
   }

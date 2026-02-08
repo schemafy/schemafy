@@ -251,8 +251,7 @@ public class TableApiSnippets extends RestDocsSnippets {
                                 },
                                 concat(
                                     relationshipResponseFields("result.relationships[].relationship."),
-                                    relationshipColumnResponseFields("result.relationships[].columns[]."))
-                            ))))))));
+                                    relationshipColumnResponseFields("result.relationships[].columns[]."))))))))));
   }
 
   // ========== GET /api/tables/snapshots - 배치 테이블 스냅샷 조회 ==========

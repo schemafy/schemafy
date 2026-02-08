@@ -25,85 +25,85 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("ChangeTableMetaService")
 class ChangeTableMetaServiceTest {
 
-	@Mock
-	ChangeTableMetaPort changeTableMetaPort;
+  @Mock
+  ChangeTableMetaPort changeTableMetaPort;
 
-	@InjectMocks
-	ChangeTableMetaService sut;
+  @InjectMocks
+  ChangeTableMetaService sut;
 
-	@Nested
-	@DisplayName("changeTableMeta 메서드는")
-	class ChangeTableMeta {
+  @Nested
+  @DisplayName("changeTableMeta 메서드는")
+  class ChangeTableMeta {
 
-		@Nested
-		@DisplayName("유효한 요청이 주어지면")
-		class WithValidRequest {
+    @Nested
+    @DisplayName("유효한 요청이 주어지면")
+    class WithValidRequest {
 
-			@Test
-			@DisplayName("charset과 collation을 변경한다")
-			void changesCharsetAndCollation() {
-				var command = TableFixture.changeMetaCommand(
-						PatchField.of("utf8"), PatchField.of("utf8_general_ci"));
+      @Test
+      @DisplayName("charset과 collation을 변경한다")
+      void changesCharsetAndCollation() {
+        var command = TableFixture.changeMetaCommand(
+            PatchField.of("utf8"), PatchField.of("utf8_general_ci"));
 
-				given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
-						.willReturn(Mono.empty());
+        given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
+            .willReturn(Mono.empty());
 
-				StepVerifier.create(sut.changeTableMeta(command))
-						.expectNextCount(1)
-						.verifyComplete();
+        StepVerifier.create(sut.changeTableMeta(command))
+            .expectNextCount(1)
+            .verifyComplete();
 
-				then(changeTableMetaPort).should()
-						.changeTableMeta(eq(command.tableId()), eq("utf8"), eq("utf8_general_ci"));
-			}
+        then(changeTableMetaPort).should()
+            .changeTableMeta(eq(command.tableId()), eq("utf8"), eq("utf8_general_ci"));
+      }
 
-		}
+    }
 
-		@Nested
-		@DisplayName("필드가 생략되면")
-		class WithAbsentFields {
+    @Nested
+    @DisplayName("필드가 생략되면")
+    class WithAbsentFields {
 
-			@Test
-			@DisplayName("생략된 필드는 포트에 null로 전달된다")
-			void skipsAbsentFields() {
-				var command = TableFixture.changeMetaCommand(
-						PatchField.of("utf8"), PatchField.absent());
+      @Test
+      @DisplayName("생략된 필드는 포트에 null로 전달된다")
+      void skipsAbsentFields() {
+        var command = TableFixture.changeMetaCommand(
+            PatchField.of("utf8"), PatchField.absent());
 
-				given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
-						.willReturn(Mono.empty());
+        given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
+            .willReturn(Mono.empty());
 
-				StepVerifier.create(sut.changeTableMeta(command))
-						.expectNextCount(1)
-						.verifyComplete();
+        StepVerifier.create(sut.changeTableMeta(command))
+            .expectNextCount(1)
+            .verifyComplete();
 
-				then(changeTableMetaPort).should()
-						.changeTableMeta(eq(command.tableId()), eq("utf8"), isNull());
-			}
+        then(changeTableMetaPort).should()
+            .changeTableMeta(eq(command.tableId()), eq("utf8"), isNull());
+      }
 
-		}
+    }
 
-		@Nested
-		@DisplayName("명시적 null로 클리어 시")
-		class WithExplicitNullClear {
+    @Nested
+    @DisplayName("명시적 null로 클리어 시")
+    class WithExplicitNullClear {
 
-			@Test
-			@DisplayName("charset을 null로 설정하면 빈 문자열이 포트에 전달된다")
-			void clearsCharsetToNull() {
-				var command = TableFixture.changeMetaCommand(
-						PatchField.of(null), PatchField.absent());
+      @Test
+      @DisplayName("charset을 null로 설정하면 빈 문자열이 포트에 전달된다")
+      void clearsCharsetToNull() {
+        var command = TableFixture.changeMetaCommand(
+            PatchField.of(null), PatchField.absent());
 
-				given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
-						.willReturn(Mono.empty());
+        given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
+            .willReturn(Mono.empty());
 
-				StepVerifier.create(sut.changeTableMeta(command))
-						.expectNextCount(1)
-						.verifyComplete();
+        StepVerifier.create(sut.changeTableMeta(command))
+            .expectNextCount(1)
+            .verifyComplete();
 
-				then(changeTableMetaPort).should()
-						.changeTableMeta(eq(command.tableId()), eq(""), isNull());
-			}
+        then(changeTableMetaPort).should()
+            .changeTableMeta(eq(command.tableId()), eq(""), isNull());
+      }
 
-		}
+    }
 
-	}
+  }
 
 }

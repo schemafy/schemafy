@@ -1,8 +1,8 @@
-import { ERROR_CODES } from "./codes";
-import { createErrorClass } from "./base";
+import { ERROR_CODES } from './codes';
+import { createErrorClass } from './base';
 
 export const ConstraintNameNotUniqueError = createErrorClass(
-  "ConstraintNameNotUnique",
+  'ConstraintNameNotUnique',
   {
     code: ERROR_CODES.CONSTRAINT_NAME_NOT_UNIQUE,
     messageTemplate:
@@ -12,7 +12,7 @@ export const ConstraintNameNotUniqueError = createErrorClass(
 );
 
 export const ConstraintColumnNotExistError = createErrorClass(
-  "ConstraintColumnNotExist",
+  'ConstraintColumnNotExist',
   {
     code: ERROR_CODES.CONSTRAINT_COLUMN_NOT_EXIST,
     messageTemplate:
@@ -25,7 +25,7 @@ export const ConstraintColumnNotExistError = createErrorClass(
 );
 
 export const ConstraintColumnNotUniqueError = createErrorClass(
-  "ConstraintColumnNotUnique",
+  'ConstraintColumnNotUnique',
   {
     code: ERROR_CODES.CONSTRAINT_COLUMN_NOT_UNIQUE,
     messageTemplate:
@@ -38,7 +38,7 @@ export const ConstraintColumnNotUniqueError = createErrorClass(
 );
 
 export const DuplicateKeyDefinitionError = createErrorClass(
-  "DuplicateKeyDefinition",
+  'DuplicateKeyDefinition',
   {
     code: ERROR_CODES.DUPLICATE_KEY_DEFINITION,
     messageTemplate:
@@ -53,7 +53,7 @@ export const DuplicateKeyDefinitionError = createErrorClass(
   },
 );
 
-export const ConstraintNotExistError = createErrorClass("ConstraintNotExist", {
+export const ConstraintNotExistError = createErrorClass('ConstraintNotExist', {
   code: ERROR_CODES.CONSTRAINT_NOT_EXIST,
   messageTemplate: "Constraint '{0}' does not exist in table '{1}'",
   createDetails: (constraintId: string, tableId: string) => ({
@@ -63,7 +63,7 @@ export const ConstraintNotExistError = createErrorClass("ConstraintNotExist", {
 });
 
 export const UniqueSameAsPrimaryKeyError = createErrorClass(
-  "UniqueSameAsPrimaryKey",
+  'UniqueSameAsPrimaryKey',
   {
     code: ERROR_CODES.UNIQUE_SAME_AS_PRIMARY_KEY,
     messageTemplate:

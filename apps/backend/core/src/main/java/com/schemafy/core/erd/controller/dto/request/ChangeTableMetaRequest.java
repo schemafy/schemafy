@@ -6,13 +6,13 @@ public record ChangeTableMetaRequest(
     JsonNullable<String> charset,
     JsonNullable<String> collation) {
 
-	public ChangeTableMetaRequest {
-		if (charset == null) {
-			charset = JsonNullable.undefined();
-		}
-		if (collation == null) {
-			collation = JsonNullable.undefined();
-		}
-	}
+  public ChangeTableMetaRequest {
+    if (charset == null) {
+      charset = JsonNullable.undefined();
+    }
+    if (collation == null) {
+      collation = JsonNullable.undefined();
+    }
+  }
 
 }

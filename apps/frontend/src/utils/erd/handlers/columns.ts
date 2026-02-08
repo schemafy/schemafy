@@ -10,8 +10,8 @@ import {
   MultipleAutoIncrementColumnsError,
   SchemaNotExistError,
   TableNotExistError,
-} from "../errors";
-import * as helper from "../helper";
+} from '../errors';
+import * as helper from '../helper';
 import type {
   Column,
   Constraint,
@@ -20,7 +20,7 @@ import type {
   Relationship,
   Schema,
   Table,
-} from "@/types/erd.types";
+} from '@/types/erd.types';
 
 const isValidColumnNameLength = (name: string) =>
   name.length >= 1 && name.length <= 40;
@@ -28,37 +28,37 @@ const isValidColumnNameLength = (name: string) =>
 export interface ColumnHandlers {
   createColumn: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    column: Omit<Column, "tableId">,
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    column: Omit<Column, 'tableId'>,
   ) => Database;
   deleteColumn: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    columnId: Column["id"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    columnId: Column['id'],
   ) => Database;
   changeColumnName: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    columnId: Column["id"],
-    newName: Column["name"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    columnId: Column['id'],
+    newName: Column['name'],
   ) => Database;
   changeColumnType: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    columnId: Column["id"],
-    dataType: Column["dataType"],
-    lengthScale?: Column["lengthScale"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    columnId: Column['id'],
+    dataType: Column['dataType'],
+    lengthScale?: Column['lengthScale'],
   ) => Database;
   changeColumnPosition: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    columnId: Column["id"],
-    newPosition: Column["seqNo"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    columnId: Column['id'],
+    newPosition: Column['seqNo'],
   ) => Database;
 }
 
@@ -80,7 +80,7 @@ export const columnHandlers: ColumnHandlers = {
         throw new MultipleAutoIncrementColumnsError(tableId);
     }
 
-    const reservedKeywords = ["TABLE", "SELECT", "CREATE"];
+    const reservedKeywords = ['TABLE', 'SELECT', 'CREATE'];
     if (reservedKeywords.some((keyword) => column.name.includes(keyword)))
       throw new ColumnNameIsReservedKeywordError(
         column.name,

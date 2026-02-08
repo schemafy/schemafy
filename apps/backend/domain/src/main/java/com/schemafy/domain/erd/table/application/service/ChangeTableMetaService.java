@@ -16,33 +16,33 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ChangeTableMetaService implements ChangeTableMetaUseCase {
 
-	private final ChangeTableMetaPort changeTableMetaPort;
+  private final ChangeTableMetaPort changeTableMetaPort;
 
-	@Override
-	public Mono<MutationResult<Void>> changeTableMeta(ChangeTableMetaCommand command) {
-		String portCharset = command.charset().isPresent()
-				? normalizeForPort(command.charset().get())
-				: null;
-		String portCollation = command.collation().isPresent()
-				? normalizeForPort(command.collation().get())
-				: null;
+  @Override
+  public Mono<MutationResult<Void>> changeTableMeta(ChangeTableMetaCommand command) {
+    String portCharset = command.charset().isPresent()
+        ? normalizeForPort(command.charset().get())
+        : null;
+    String portCollation = command.collation().isPresent()
+        ? normalizeForPort(command.collation().get())
+        : null;
 
-		return changeTableMetaPort.changeTableMeta(
-				command.tableId(),
-				portCharset,
-				portCollation)
-				.thenReturn(MutationResult.<Void>of(null, command.tableId()));
-	}
+    return changeTableMetaPort.changeTableMeta(
+        command.tableId(),
+        portCharset,
+        portCollation)
+        .thenReturn(MutationResult.<Void>of(null, command.tableId()));
+  }
 
-	private static String normalizeForPort(String value) {
-		return Objects.toString(normalizeOptional(value), "");
-	}
+  private static String normalizeForPort(String value) {
+    return Objects.toString(normalizeOptional(value), "");
+  }
 
-	private static String normalizeOptional(String value) {
-		if (value == null || value.isBlank()) {
-			return null;
-		}
-		return value.trim();
-	}
+  private static String normalizeOptional(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return value.trim();
+  }
 
 }

@@ -86,13 +86,9 @@ public class IndexApiSnippets extends RestDocsSnippets {
         parameterWithName("indexId").description("조회할 인덱스 ID (ULID)"));
   }
 
-  public static Snippet getIndexRequestHeaders() {
-    return createRequestHeadersSnippet(commonRequestHeaders());
-  }
+  public static Snippet getIndexRequestHeaders() { return createRequestHeadersSnippet(commonRequestHeaders()); }
 
-  public static Snippet getIndexResponseHeaders() {
-    return createResponseHeadersSnippet(commonResponseHeaders());
-  }
+  public static Snippet getIndexResponseHeaders() { return createResponseHeadersSnippet(commonResponseHeaders()); }
 
   public static Snippet getIndexResponse() {
     return createResponseFieldsSnippet(
@@ -205,9 +201,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
         parameterWithName("indexId").description("인덱스 ID (ULID)"));
   }
 
-  public static Snippet getIndexColumnsRequestHeaders() {
-    return createRequestHeadersSnippet(commonRequestHeaders());
-  }
+  public static Snippet getIndexColumnsRequestHeaders() { return createRequestHeadersSnippet(commonRequestHeaders()); }
 
   public static Snippet getIndexColumnsResponseHeaders() {
     return createResponseHeadersSnippet(commonResponseHeaders());
@@ -283,9 +277,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
         parameterWithName("indexColumnId").description("조회할 인덱스 컬럼 ID (ULID)"));
   }
 
-  public static Snippet getIndexColumnRequestHeaders() {
-    return createRequestHeadersSnippet(commonRequestHeaders());
-  }
+  public static Snippet getIndexColumnRequestHeaders() { return createRequestHeadersSnippet(commonRequestHeaders()); }
 
   public static Snippet getIndexColumnResponseHeaders() {
     return createResponseHeadersSnippet(commonResponseHeaders());

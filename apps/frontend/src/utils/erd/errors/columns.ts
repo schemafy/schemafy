@@ -1,14 +1,14 @@
-import { ERROR_CODES } from "./codes";
-import { createErrorClass } from "./base";
+import { ERROR_CODES } from './codes';
+import { createErrorClass } from './base';
 
-export const ColumnNotExistError = createErrorClass("ColumnNotExist", {
+export const ColumnNotExistError = createErrorClass('ColumnNotExist', {
   code: ERROR_CODES.COLUMN_NOT_EXIST,
   messageTemplate: "Column with ID '{0}' does not exist in table '{1}'",
   createDetails: (columnId: string, tableId: string) => ({ columnId, tableId }),
 });
 
 export const ColumnNameNotUniqueError = createErrorClass(
-  "ColumnNameNotUnique",
+  'ColumnNameNotUnique',
   {
     code: ERROR_CODES.COLUMN_NAME_NOT_UNIQUE,
     messageTemplate:
@@ -18,7 +18,7 @@ export const ColumnNameNotUniqueError = createErrorClass(
 );
 
 export const ColumnDataTypeRequiredError = createErrorClass(
-  "ColumnDataTypeRequired",
+  'ColumnDataTypeRequired',
   {
     code: ERROR_CODES.COLUMN_DATA_TYPE_REQUIRED,
     messageTemplate: "Data type is required for column '{0}' in table '{1}'",
@@ -30,7 +30,7 @@ export const ColumnDataTypeRequiredError = createErrorClass(
 );
 
 export const ColumnDataTypeInvalidError = createErrorClass(
-  "ColumnDataTypeInvalid",
+  'ColumnDataTypeInvalid',
   {
     code: ERROR_CODES.COLUMN_DATA_TYPE_INVALID,
     messageTemplate:
@@ -43,7 +43,7 @@ export const ColumnDataTypeInvalidError = createErrorClass(
 );
 
 export const ColumnLengthRequiredError = createErrorClass(
-  "ColumnLengthRequired",
+  'ColumnLengthRequired',
   {
     code: ERROR_CODES.COLUMN_LENGTH_REQUIRED,
     messageTemplate:
@@ -56,7 +56,7 @@ export const ColumnLengthRequiredError = createErrorClass(
 );
 
 export const ColumnPrecisionRequiredError = createErrorClass(
-  "ColumnPrecisionRequired",
+  'ColumnPrecisionRequired',
   {
     code: ERROR_CODES.COLUMN_PRECISION_REQUIRED,
     messageTemplate:
@@ -68,7 +68,7 @@ export const ColumnPrecisionRequiredError = createErrorClass(
   },
 );
 
-export const ColumnInvalidError = createErrorClass("ColumnNameInvalid", {
+export const ColumnInvalidError = createErrorClass('ColumnNameInvalid', {
   code: ERROR_CODES.COLUMN_INVALID,
   messageTemplate:
     "Column parsing '{0}' is invalid. Name must be between {1} and {2} characters.",
@@ -81,7 +81,7 @@ export const ColumnInvalidError = createErrorClass("ColumnNameInvalid", {
 });
 
 export const ColumnInvalidFormatError = createErrorClass(
-  "ColumnNameInvalidFormat",
+  'ColumnNameInvalidFormat',
   {
     code: ERROR_CODES.COLUMN_INVALID_FORMAT,
     messageTemplate:
@@ -91,7 +91,7 @@ export const ColumnInvalidFormatError = createErrorClass(
 );
 
 export const ColumnNameIsReservedKeywordError = createErrorClass(
-  "ColumnNameIsReservedKeyword",
+  'ColumnNameIsReservedKeyword',
   {
     code: ERROR_CODES.COLUMN_NAME_IS_RESERVED,
     messageTemplate:
@@ -101,7 +101,7 @@ export const ColumnNameIsReservedKeywordError = createErrorClass(
 );
 
 export const MultipleAutoIncrementColumnsError = createErrorClass(
-  "MultipleAutoIncrementColumns",
+  'MultipleAutoIncrementColumns',
   {
     code: ERROR_CODES.MULTIPLE_AUTO_INCREMENT,
     messageTemplate:
@@ -111,7 +111,7 @@ export const MultipleAutoIncrementColumnsError = createErrorClass(
 );
 
 export const ColumnTypeIncompatibleError = createErrorClass(
-  "ColumnTypeIncompatible",
+  'ColumnTypeIncompatible',
   {
     code: ERROR_CODES.COLUMN_TYPE_INCOMPATIBLE,
     messageTemplate: "Cannot change column '{0}' type from '{1}' to '{2}': {3}",

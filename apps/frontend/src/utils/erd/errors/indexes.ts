@@ -1,20 +1,20 @@
-import { ERROR_CODES } from "./codes";
-import { createErrorClass } from "./base";
+import { ERROR_CODES } from './codes';
+import { createErrorClass } from './base';
 
-export const IndexParseInvalidError = createErrorClass("IndexParseInvalid", {
+export const IndexParseInvalidError = createErrorClass('IndexParseInvalid', {
   code: ERROR_CODES.INDEX_PARSE_INVALID,
-  messageTemplate: "Invalid index: {0}",
+  messageTemplate: 'Invalid index: {0}',
   createDetails: (reason: string) => ({ reason }),
 });
 
-export const IndexNameNotUniqueError = createErrorClass("IndexNameNotUnique", {
+export const IndexNameNotUniqueError = createErrorClass('IndexNameNotUnique', {
   code: ERROR_CODES.INDEX_NAME_NOT_UNIQUE,
   messageTemplate:
     "Index name '{0}' already exists in the table. Index names must be unique within a table.",
   createDetails: (name: string, tableId: string) => ({ name, tableId }),
 });
 
-export const IndexTypeInvalidError = createErrorClass("IndexTypeInvalid", {
+export const IndexTypeInvalidError = createErrorClass('IndexTypeInvalid', {
   code: ERROR_CODES.INDEX_TYPE_INVALID,
   messageTemplate:
     "Index type '{0}' is not valid for the database vendor '{1}'.",
@@ -22,7 +22,7 @@ export const IndexTypeInvalidError = createErrorClass("IndexTypeInvalid", {
 });
 
 export const IndexColumnNotUniqueError = createErrorClass(
-  "IndexColumnNotUnique",
+  'IndexColumnNotUnique',
   {
     code: ERROR_CODES.INDEX_COLUMN_NOT_UNIQUE,
     messageTemplate: "Index '{0}' has duplicate columns.",
@@ -31,7 +31,7 @@ export const IndexColumnNotUniqueError = createErrorClass(
 );
 
 export const DuplicateIndexDefinitionError = createErrorClass(
-  "DuplicateIndexDefinition",
+  'DuplicateIndexDefinition',
   {
     code: ERROR_CODES.DUPLICATE_INDEX_DEFINITION,
     messageTemplate:
@@ -44,7 +44,7 @@ export const DuplicateIndexDefinitionError = createErrorClass(
 );
 
 export const IndexColumnNotExistError = createErrorClass(
-  "IndexColumnNotExist",
+  'IndexColumnNotExist',
   {
     code: ERROR_CODES.INDEX_COLUMN_NOT_EXIST,
     messageTemplate:
@@ -57,7 +57,7 @@ export const IndexColumnNotExistError = createErrorClass(
 );
 
 export const IndexColumnSortDirInvalidError = createErrorClass(
-  "IndexColumnSortDirInvalid",
+  'IndexColumnSortDirInvalid',
   {
     code: ERROR_CODES.INDEX_COLUMN_SORT_DIR_INVALID,
     messageTemplate:
@@ -69,7 +69,7 @@ export const IndexColumnSortDirInvalidError = createErrorClass(
   },
 );
 
-export const IndexNotExistError = createErrorClass("IndexNotExist", {
+export const IndexNotExistError = createErrorClass('IndexNotExist', {
   code: ERROR_CODES.INDEX_NOT_EXIST,
   messageTemplate: "Index '{0}' does not exist in table '{1}'",
   createDetails: (indexId: string, tableId: string) => ({ indexId, tableId }),

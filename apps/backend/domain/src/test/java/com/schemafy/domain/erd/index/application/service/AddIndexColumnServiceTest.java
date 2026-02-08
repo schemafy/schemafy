@@ -12,11 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
+import com.schemafy.domain.erd.index.application.port.in.AddIndexColumnCommand;
 import com.schemafy.domain.erd.index.application.port.out.CreateIndexColumnPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
-import com.schemafy.domain.erd.index.application.port.in.AddIndexColumnCommand;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
 import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;

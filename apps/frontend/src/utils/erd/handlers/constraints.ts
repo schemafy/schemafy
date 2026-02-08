@@ -7,7 +7,7 @@ import {
   SchemaNotExistError,
   TableNotExistError,
   UniqueSameAsPrimaryKeyError,
-} from "../errors";
+} from '../errors';
 import type {
   Column,
   Constraint,
@@ -15,42 +15,42 @@ import type {
   Database,
   Schema,
   Table,
-} from "@/types/erd.types";
-import * as helper from "../helper";
+} from '@/types/erd.types';
+import * as helper from '../helper';
 
 export interface ConstraintHandlers {
   createConstraint: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    constraint: Omit<Constraint, "tableId">,
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraint: Omit<Constraint, 'tableId'>,
   ) => Database;
   deleteConstraint: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    constraintId: Constraint["id"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
   ) => Database;
   changeConstraintName: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    constraintId: Constraint["id"],
-    newName: Constraint["name"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    newName: Constraint['name'],
   ) => Database;
   addColumnToConstraint: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    constraintId: Constraint["id"],
-    constraintColumn: Omit<ConstraintColumn, "constraintId">,
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    constraintColumn: Omit<ConstraintColumn, 'constraintId'>,
   ) => Database;
   removeColumnFromConstraint: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    constraintId: Constraint["id"],
-    constraintColumnId: ConstraintColumn["id"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    constraintId: Constraint['id'],
+    constraintColumnId: ConstraintColumn['id'],
   ) => Database;
 }
 
@@ -143,9 +143,9 @@ export const constraintHandlers: ConstraintHandlers = {
       schemas: changeSchemas,
     };
 
-    if (constraint.kind === "UNIQUE") {
+    if (constraint.kind === 'UNIQUE') {
       const pkConstraint = table.constraints.find(
-        (c) => c.kind === "PRIMARY_KEY",
+        (c) => c.kind === 'PRIMARY_KEY',
       );
       if (pkConstraint) {
         const pkColumnIds = pkConstraint.columns
@@ -164,7 +164,7 @@ export const constraintHandlers: ConstraintHandlers = {
       }
     }
 
-    if (constraint.kind !== "PRIMARY_KEY") return updatedDatabase;
+    if (constraint.kind !== 'PRIMARY_KEY') return updatedDatabase;
 
     const columns = constraint.columns.map(
       (column) => table.columns.find((c) => c.id === column.columnId)!,
@@ -222,7 +222,7 @@ export const constraintHandlers: ConstraintHandlers = {
       schemas: changeSchemas,
     };
 
-    if (constraint.kind !== "PRIMARY_KEY") return updatedDatabase;
+    if (constraint.kind !== 'PRIMARY_KEY') return updatedDatabase;
 
     const columns: Column[] = constraint.columns.map(
       (column) => table.columns.find((c) => c.id === column.columnId)!,
@@ -324,7 +324,7 @@ export const constraintHandlers: ConstraintHandlers = {
       s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
     );
 
-    if (constraint.kind === "PRIMARY_KEY") {
+    if (constraint.kind === 'PRIMARY_KEY') {
       const column = table.columns.find(
         (c) => c.id === constraintColumn.columnId,
       )!;
@@ -386,7 +386,7 @@ export const constraintHandlers: ConstraintHandlers = {
       s.id === schemaId ? { ...s, isAffected: true, tables: changeTables } : s,
     );
 
-    if (constraint.kind === "PRIMARY_KEY") {
+    if (constraint.kind === 'PRIMARY_KEY') {
       let schema = changeSchemas.find((s) => s.id === schemaId)!;
       schema = helper.deleteCascadingForeignKeys(
         structuredClone(schema),

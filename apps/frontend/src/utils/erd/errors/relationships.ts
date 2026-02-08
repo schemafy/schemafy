@@ -1,8 +1,8 @@
-import { ERROR_CODES } from "./codes";
-import { createErrorClass } from "./base";
+import { ERROR_CODES } from './codes';
+import { createErrorClass } from './base';
 
 export const RelationshipNotExistError = createErrorClass(
-  "RelationshipNotExist",
+  'RelationshipNotExist',
   {
     code: ERROR_CODES.RELATIONSHIP_NOT_EXIST,
     messageTemplate: "Relationship with ID '{0}' does not exist",
@@ -10,14 +10,14 @@ export const RelationshipNotExistError = createErrorClass(
   },
 );
 
-export const RelationshipEmptyError = createErrorClass("RelationshipEmpty", {
+export const RelationshipEmptyError = createErrorClass('RelationshipEmpty', {
   code: ERROR_CODES.RELATIONSHIP_EMPTY_ERROR,
   messageTemplate: "Relationship '{0}' must have at least one column mapping",
   createDetails: (relationshipName: string) => ({ relationshipName }),
 });
 
 export const RelationshipNameNotUniqueError = createErrorClass(
-  "RelationshipNameNotUnique",
+  'RelationshipNameNotUnique',
   {
     code: ERROR_CODES.RELATIONSHIP_NAME_NOT_UNIQUE,
     messageTemplate:
@@ -30,7 +30,7 @@ export const RelationshipNameNotUniqueError = createErrorClass(
 );
 
 export const RelationshipColumnNotExistError = createErrorClass(
-  "RelationshipColumnNotExist",
+  'RelationshipColumnNotExist',
   {
     code: ERROR_CODES.RELATIONSHIP_COLUNN_NOT_EXIST,
     messageTemplate:
@@ -43,17 +43,17 @@ export const RelationshipColumnNotExistError = createErrorClass(
 );
 
 export const RelationshipCyclicReferenceError = createErrorClass(
-  "RelationshipCyclicReference",
+  'RelationshipCyclicReference',
   {
     code: ERROR_CODES.RELATIONSHIP_CYCLIC_REFERENCE,
     messageTemplate:
-      "Direct cyclic reference detected between tables: {0} <-> {1}",
+      'Direct cyclic reference detected between tables: {0} <-> {1}',
     createDetails: (table1: string, table2: string) => ({ table1, table2 }),
   },
 );
 
 export const RelationshipTargetTableNotExistError = createErrorClass(
-  "RelationshipTargetTableNotExist",
+  'RelationshipTargetTableNotExist',
   {
     code: ERROR_CODES.RELATIONSHIP_TARGET_TABLE_NOT_EXIST,
     messageTemplate: "Target table '{1}' does not exist for relationship '{0}'",

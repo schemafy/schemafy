@@ -649,7 +649,8 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK 컬럼 charset/collation 변경
       StepVerifier.create(changeColumnMetaUseCase.changeColumnMeta(
-          new ChangeColumnMetaCommand(varcharPkColumnId, PatchField.absent(), PatchField.of("utf8mb4"), PatchField.of("utf8mb4_unicode_ci"), PatchField.absent())))
+          new ChangeColumnMetaCommand(varcharPkColumnId, PatchField.absent(), PatchField.of("utf8mb4"), PatchField.of(
+              "utf8mb4_unicode_ci"), PatchField.absent())))
           .expectNextCount(1)
           .verifyComplete();
 

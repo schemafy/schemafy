@@ -15,8 +15,6 @@ import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintE
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
-import com.schemafy.domain.erd.constraint.domain.Constraint;
-import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
@@ -68,7 +66,7 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.just(columns));
       given(changeConstraintExpressionPort.changeConstraintExpressions(
           constraint.id(), "column1 > 10", null))
-              .willReturn(Mono.empty());
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintCheckExpr(command))
           .expectNextCount(1)
@@ -162,7 +160,7 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.just(columns));
       given(changeConstraintExpressionPort.changeConstraintExpressions(
           constraint.id(), null, null))
-              .willReturn(Mono.empty());
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintCheckExpr(command))
           .expectNextCount(1)
@@ -193,7 +191,7 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.just(columns));
       given(changeConstraintExpressionPort.changeConstraintExpressions(
           constraint.id(), null, "1"))
-              .willReturn(Mono.empty());
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintDefaultExpr(command))
           .expectNextCount(1)
@@ -234,7 +232,7 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.just(columns));
       given(changeConstraintExpressionPort.changeConstraintExpressions(
           constraint.id(), null, null))
-              .willReturn(Mono.empty());
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintDefaultExpr(command))
           .expectNextCount(1)

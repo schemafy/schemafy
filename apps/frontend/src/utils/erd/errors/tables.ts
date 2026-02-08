@@ -1,8 +1,8 @@
-import { ERROR_CODES } from "./codes";
-import { createErrorClass } from "./base";
+import { ERROR_CODES } from './codes';
+import { createErrorClass } from './base';
 
 export const TableNameNotInvalidError = createErrorClass(
-  "TableNameNotInvalid",
+  'TableNameNotInvalid',
   {
     code: ERROR_CODES.TABLE_NAME_NOT_INVALID,
     messageTemplate:
@@ -16,14 +16,14 @@ export const TableNameNotInvalidError = createErrorClass(
   },
 );
 
-export const TableNameNotUniqueError = createErrorClass("TableNameNotUnique", {
+export const TableNameNotUniqueError = createErrorClass('TableNameNotUnique', {
   code: ERROR_CODES.TABLE_NAME_NOT_UNIQUE,
   messageTemplate:
     "Table name '{0}' already exists in the schema. Table names must be unique within a schema",
   createDetails: (name: string, schemaId: string) => ({ name, schemaId }),
 });
 
-export const TableNotExistError = createErrorClass("TableNotExist", {
+export const TableNotExistError = createErrorClass('TableNotExist', {
   code: ERROR_CODES.TABLE_NOT_EXIST,
   messageTemplate: "Table '{0}' does not exist in schema '{1}'",
   createDetails: (tableId: string, schemaId: string) => ({ tableId, schemaId }),

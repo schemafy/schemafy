@@ -1,4 +1,4 @@
-import { ulid } from "ulid";
+import { ulid } from 'ulid';
 import type {
   Column,
   Constraint,
@@ -7,13 +7,13 @@ import type {
   RelationshipColumn,
   Schema,
   Table,
-} from "@/types/erd.types";
+} from '@/types/erd.types';
 
 export const detectIdentifyingCycleInSchema = (
   schema: Schema,
   pendingRelationshipChange?: { relationshipId: string; newKind: string },
   newRelationship?: { fkTableId: string; pkTableId: string; kind: string },
-): [Table["id"], Table["id"]] | null => {
+): [Table['id'], Table['id']] | null => {
   const graph = new Map<string, string[]>();
 
   for (const table of schema.tables) {
@@ -26,7 +26,7 @@ export const detectIdentifyingCycleInSchema = (
         effectiveKind = pendingRelationshipChange.newKind as typeof rel.kind;
       }
 
-      if (effectiveKind !== "IDENTIFYING") continue;
+      if (effectiveKind !== 'IDENTIFYING') continue;
 
       if (!graph.has(rel.fkTableId)) {
         graph.set(rel.fkTableId, []);
@@ -35,7 +35,7 @@ export const detectIdentifyingCycleInSchema = (
     }
   }
 
-  if (newRelationship && newRelationship.kind === "IDENTIFYING") {
+  if (newRelationship && newRelationship.kind === 'IDENTIFYING') {
     if (!graph.has(newRelationship.fkTableId)) {
       graph.set(newRelationship.fkTableId, []);
     }
@@ -94,57 +94,57 @@ export const isValidColumnName = (str: string): boolean => {
   return true;
 };
 
-export const precisionRequired = ["DECIMAL", "NUMERIC"];
-export const lengthScaleRequired = ["VARCHAR", "CHAR"];
+export const precisionRequired = ['DECIMAL', 'NUMERIC'];
+export const lengthScaleRequired = ['VARCHAR', 'CHAR'];
 
 export const categorizedMysqlDataTypes = [
-  "TINYINT",
-  "SMALLINT",
-  "MEDIUMINT",
-  "INT",
-  "INTEGER",
-  "BIGINT",
-  "FLOAT",
-  "DOUBLE",
-  "REAL",
-  "DECIMAL",
-  "NUMERIC",
-  "BIT",
-  "BOOL",
-  "BOOLEAN",
-  "CHAR",
-  "VARCHAR",
-  "TINYTEXT",
-  "TEXT",
-  "MEDIUMTEXT",
-  "LONGTEXT",
-  "BINARY",
-  "VARBINARY",
-  "BLOB",
-  "TINYBLOB",
-  "MEDIUMBLOB",
-  "LONGBLOB",
-  "ENUM",
-  "SET",
-  "DATE",
-  "TIME",
-  "DATETIME",
-  "TIMESTAMP",
-  "YEAR",
-  "GEOMETRY",
-  "POINT",
-  "LINESTRING",
-  "POLYGON",
-  "MULTIPOINT",
-  "MULTILINESTRING",
-  "MULTIPOLYGON",
-  "GEOMETRYCOLLECTION",
-  "JSON",
+  'TINYINT',
+  'SMALLINT',
+  'MEDIUMINT',
+  'INT',
+  'INTEGER',
+  'BIGINT',
+  'FLOAT',
+  'DOUBLE',
+  'REAL',
+  'DECIMAL',
+  'NUMERIC',
+  'BIT',
+  'BOOL',
+  'BOOLEAN',
+  'CHAR',
+  'VARCHAR',
+  'TINYTEXT',
+  'TEXT',
+  'MEDIUMTEXT',
+  'LONGTEXT',
+  'BINARY',
+  'VARBINARY',
+  'BLOB',
+  'TINYBLOB',
+  'MEDIUMBLOB',
+  'LONGBLOB',
+  'ENUM',
+  'SET',
+  'DATE',
+  'TIME',
+  'DATETIME',
+  'TIMESTAMP',
+  'YEAR',
+  'GEOMETRY',
+  'POINT',
+  'LINESTRING',
+  'POLYGON',
+  'MULTIPOINT',
+  'MULTILINESTRING',
+  'MULTIPOLYGON',
+  'GEOMETRYCOLLECTION',
+  'JSON',
 ];
 
 export const propagateNewPrimaryKey = (
   currentSchema: Schema,
-  parentTableId: Table["id"],
+  parentTableId: Table['id'],
   newPkColumn: Column,
   visited: Set<string> = new Set(),
 ): Schema => {
@@ -170,7 +170,7 @@ export const propagateNewPrimaryKey = (
         (rc) => rc.pkColumnId === newPkColumn.id,
       );
 
-      if (relColumn && relColumn.fkColumnId && relColumn.fkColumnId !== "") {
+      if (relColumn && relColumn.fkColumnId && relColumn.fkColumnId !== '') {
         const existingColumn = childTable.columns.find(
           (c) => c.id === relColumn.fkColumnId,
         );
@@ -178,7 +178,7 @@ export const propagateNewPrimaryKey = (
       }
 
       const newFkColumnId =
-        relColumn?.fkColumnId && relColumn.fkColumnId !== ""
+        relColumn?.fkColumnId && relColumn.fkColumnId !== ''
           ? relColumn.fkColumnId
           : `${ulid()}`;
       const columnName = `${parentTable.name}_${newPkColumn.name}`;
@@ -206,10 +206,10 @@ export const propagateNewPrimaryKey = (
         ),
       };
 
-      if (rel.kind === "IDENTIFYING") {
+      if (rel.kind === 'IDENTIFYING') {
         const childPkConstraint = updatedSchema.tables
           .find((t) => t.id === childTable.id)
-          ?.constraints.find((c) => c.kind === "PRIMARY_KEY");
+          ?.constraints.find((c) => c.kind === 'PRIMARY_KEY');
 
         if (childPkConstraint) {
           const newConstraintColumn = {
@@ -257,7 +257,7 @@ export const propagateNewPrimaryKey = (
               },
             ],
             tableId: childTable.id,
-            kind: "PRIMARY_KEY",
+            kind: 'PRIMARY_KEY',
             isAffected: true,
           };
 
@@ -315,7 +315,7 @@ export const propagateNewPrimaryKey = (
         };
       }
 
-      if (rel.kind === "IDENTIFYING") {
+      if (rel.kind === 'IDENTIFYING') {
         updatedSchema = propagateNewPrimaryKey(
           structuredClone(updatedSchema),
           rel.fkTableId,
@@ -331,8 +331,8 @@ export const propagateNewPrimaryKey = (
 
 export const deleteCascadingForeignKeys = (
   currentSchema: Schema,
-  parentTableId: Table["id"],
-  deletedPkColumnId: Column["id"],
+  parentTableId: Table['id'],
+  deletedPkColumnId: Column['id'],
   visited: Set<string> = new Set(),
 ): Schema => {
   if (visited.has(parentTableId)) return currentSchema;
@@ -375,7 +375,7 @@ export const deleteCascadingForeignKeys = (
           );
 
           const finalColumns =
-            constraint.kind === "PRIMARY_KEY"
+            constraint.kind === 'PRIMARY_KEY'
               ? remainingColumns.map((cc, index) => ({
                   ...cc,
                   seqNo: index,
@@ -430,7 +430,7 @@ export const deleteCascadingForeignKeys = (
         tables: updateTables,
       };
 
-      if (rel.kind === "IDENTIFYING") {
+      if (rel.kind === 'IDENTIFYING') {
         for (const fkColumnId of fkColumnsToDelete) {
           updatedSchema = deleteCascadingForeignKeys(
             structuredClone(updatedSchema),
@@ -448,8 +448,8 @@ export const deleteCascadingForeignKeys = (
 
 export const propagateKeysToChildren = (
   currentSchema: Schema,
-  parentTableId: Table["id"],
-  visited: Set<Table["id"]> = new Set(),
+  parentTableId: Table['id'],
+  visited: Set<Table['id']> = new Set(),
 ): Schema => {
   if (visited.has(parentTableId)) return currentSchema;
   visited.add(parentTableId);
@@ -458,7 +458,7 @@ export const propagateKeysToChildren = (
   if (!parentTable) return currentSchema;
 
   const pkConstraint = parentTable.constraints.find(
-    (c) => c.kind === "PRIMARY_KEY",
+    (c) => c.kind === 'PRIMARY_KEY',
   );
   if (!pkConstraint) return currentSchema;
 
@@ -486,7 +486,7 @@ export const propagateKeysToChildren = (
           (rc) => rc.pkColumnId === pkColumn.id,
         );
 
-        if (relColumn && relColumn.fkColumnId && relColumn.fkColumnId !== "") {
+        if (relColumn && relColumn.fkColumnId && relColumn.fkColumnId !== '') {
           const existingColumn = childTable.columns.find(
             (c) => c.id === relColumn.fkColumnId,
           );
@@ -494,7 +494,7 @@ export const propagateKeysToChildren = (
         }
 
         const newColumnId =
-          relColumn?.fkColumnId && relColumn.fkColumnId !== ""
+          relColumn?.fkColumnId && relColumn.fkColumnId !== ''
             ? relColumn.fkColumnId
             : `${ulid()}`;
         const columnName = `${parentTable.name}_${pkColumn.name}`;
@@ -558,12 +558,12 @@ export const propagateKeysToChildren = (
         ),
       };
 
-      if (rel.kind === "NON_IDENTIFYING") continue;
+      if (rel.kind === 'NON_IDENTIFYING') continue;
 
       if (newlyCreatedFkColumns.length <= 0) continue;
 
       const childPkConstraint = updatedChildTable.constraints.find(
-        (c) => c.kind === "PRIMARY_KEY",
+        (c) => c.kind === 'PRIMARY_KEY',
       );
 
       if (childPkConstraint) {
@@ -619,7 +619,7 @@ export const propagateKeysToChildren = (
           name: `pk_${childTable.name}`,
           columns: newPkColumns,
           tableId: childTable.id,
-          kind: "PRIMARY_KEY",
+          kind: 'PRIMARY_KEY',
           isAffected: true,
         };
 
@@ -701,7 +701,7 @@ export const deleteRelatedColumns = (
               );
 
               const finalColumns =
-                constraint.kind === "PRIMARY_KEY"
+                constraint.kind === 'PRIMARY_KEY'
                   ? remainingColumns.map((cc, index) => ({
                       ...cc,
                       seqNo: index,
@@ -721,7 +721,7 @@ export const deleteRelatedColumns = (
     }),
   };
 
-  if (relationshipToDelete.kind === "IDENTIFYING") {
+  if (relationshipToDelete.kind === 'IDENTIFYING') {
     for (const table of updatedSchema.tables) {
       const relationshipsToDelete = table.relationships.filter((rel) => {
         return rel.columns.some((relCol) =>

@@ -21,7 +21,6 @@ import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelations
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
-import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;

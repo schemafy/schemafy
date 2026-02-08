@@ -90,13 +90,9 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
         parameterWithName("constraintId").description("조회할 제약조건 ID (ULID)"));
   }
 
-  public static Snippet getConstraintRequestHeaders() {
-    return createRequestHeadersSnippet(commonRequestHeaders());
-  }
+  public static Snippet getConstraintRequestHeaders() { return createRequestHeadersSnippet(commonRequestHeaders()); }
 
-  public static Snippet getConstraintResponseHeaders() {
-    return createResponseHeadersSnippet(commonResponseHeaders());
-  }
+  public static Snippet getConstraintResponseHeaders() { return createResponseHeadersSnippet(commonResponseHeaders()); }
 
   public static Snippet getConstraintResponse() {
     return createResponseFieldsSnippet(

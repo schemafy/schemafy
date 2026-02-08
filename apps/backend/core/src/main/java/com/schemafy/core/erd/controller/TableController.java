@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import static com.schemafy.core.common.util.PatchFieldConverter.toPatchField;
-
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
@@ -67,6 +65,8 @@ import com.schemafy.domain.erd.table.application.port.in.GetTablesBySchemaIdUseC
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import static com.schemafy.core.common.util.PatchFieldConverter.toPatchField;
 
 @RestController
 @RequestMapping(ApiPath.API)

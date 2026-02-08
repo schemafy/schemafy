@@ -1,4 +1,4 @@
-import type { ErrorCode } from "./codes";
+import type { ErrorCode } from './codes';
 
 export class ERDValidationError extends Error {
   public readonly code: ErrorCode;
@@ -10,7 +10,7 @@ export class ERDValidationError extends Error {
     details?: Record<string, unknown>,
   ) {
     super(message);
-    this.name = "ERDValidationError";
+    this.name = 'ERDValidationError';
     this.code = code;
     this.details = details;
   }

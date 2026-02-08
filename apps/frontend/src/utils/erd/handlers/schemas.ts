@@ -3,9 +3,9 @@ import {
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,
   DatabaseEmptySchemaError,
-} from "../errors";
-import { SCHEMA_NAME_CONSTRAINTS } from "@/types/erd.types";
-import type { Database, Schema } from "@/types/erd.types";
+} from '../errors';
+import { SCHEMA_NAME_CONSTRAINTS } from '@/types/erd.types';
+import type { Database, Schema } from '@/types/erd.types';
 
 const isValidSchemaName = (name: string) => {
   return (
@@ -17,11 +17,11 @@ const isValidSchemaName = (name: string) => {
 export interface SchemaHandlers {
   changeSchemaName: (
     database: Database,
-    schemaId: Schema["id"],
-    newName: Schema["name"],
+    schemaId: Schema['id'],
+    newName: Schema['name'],
   ) => Database;
   createSchema: (database: Database, schema: Schema) => Database;
-  deleteSchema: (database: Database, schemaId: Schema["id"]) => Database;
+  deleteSchema: (database: Database, schemaId: Schema['id']) => Database;
 }
 
 export const schemaHandlers: SchemaHandlers = {

@@ -8,9 +8,9 @@ import org.openapitools.jackson.nullable.JsonNullableModule;
 @Configuration
 class JacksonConfig {
 
-	@Bean
-	JsonNullableModule jsonNullableModule() {
-		return new JsonNullableModule();
-	}
+  @Bean
+  JsonNullableModule jsonNullableModule() {
+    return new JsonNullableModule();
+  }
 
 }

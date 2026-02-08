@@ -87,9 +87,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
         parameterWithName("relationshipId").description("조회할 관계 ID (ULID)"));
   }
 
-  public static Snippet getRelationshipRequestHeaders() {
-    return createRequestHeadersSnippet(commonRequestHeaders());
-  }
+  public static Snippet getRelationshipRequestHeaders() { return createRequestHeadersSnippet(commonRequestHeaders()); }
 
   public static Snippet getRelationshipResponseHeaders() {
     return createResponseHeadersSnippet(commonResponseHeaders());

@@ -8,19 +8,19 @@ public record ChangeColumnMetaRequest(
     JsonNullable<String> collation,
     JsonNullable<String> comment) {
 
-	public ChangeColumnMetaRequest {
-		if (autoIncrement == null) {
-			autoIncrement = JsonNullable.undefined();
-		}
-		if (charset == null) {
-			charset = JsonNullable.undefined();
-		}
-		if (collation == null) {
-			collation = JsonNullable.undefined();
-		}
-		if (comment == null) {
-			comment = JsonNullable.undefined();
-		}
-	}
+  public ChangeColumnMetaRequest {
+    if (autoIncrement == null) {
+      autoIncrement = JsonNullable.undefined();
+    }
+    if (charset == null) {
+      charset = JsonNullable.undefined();
+    }
+    if (collation == null) {
+      collation = JsonNullable.undefined();
+    }
+    if (comment == null) {
+      comment = JsonNullable.undefined();
+    }
+  }
 
 }

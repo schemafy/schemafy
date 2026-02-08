@@ -9,44 +9,50 @@ import {
   IndexTypeInvalidError,
   SchemaNotExistError,
   TableNotExistError,
-} from "../errors";
-import type { Database, Index, IndexColumn, Schema, Table } from "@/types/erd.types";
+} from '../errors';
+import type {
+  Database,
+  Index,
+  IndexColumn,
+  Schema,
+  Table,
+} from '@/types/erd.types';
 
-const isValidIndexName = (name: string) => typeof name === "string";
+const isValidIndexName = (name: string) => typeof name === 'string';
 
 export interface IndexHandlers {
   createIndex: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    index: Omit<Index, "tableId">,
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    index: Omit<Index, 'tableId'>,
   ) => Database;
   deleteIndex: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    indexId: Index["id"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
   ) => Database;
   changeIndexName: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    indexId: Index["id"],
-    newName: Index["name"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    newName: Index['name'],
   ) => Database;
   addColumnToIndex: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    indexId: Index["id"],
-    indexColumn: Omit<IndexColumn, "indexId">,
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    indexColumn: Omit<IndexColumn, 'indexId'>,
   ) => Database;
   removeColumnFromIndex: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    indexId: Index["id"],
-    indexColumnId: IndexColumn["id"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    indexId: Index['id'],
+    indexColumnId: IndexColumn['id'],
   ) => Database;
 }
 
@@ -62,18 +68,18 @@ export const indexHandlers: IndexHandlers = {
     if (indexNotUnique) throw new IndexNameNotUniqueError(index.name, tableId);
 
     if (!isValidIndexName(index.name)) {
-      throw new IndexParseInvalidError("Index name must be a string");
+      throw new IndexParseInvalidError('Index name must be a string');
     }
 
     const existingIndex = table.indexes.find((i) => {
       const existingIndexDef = i.columns
         .map((ic) => `${ic.columnId}:${ic.sortDir}`)
         .sort()
-        .join(",");
+        .join(',');
       const newIndexDef = index.columns
         .map((ic) => `${ic.columnId}:${ic.sortDir}`)
         .sort()
-        .join(",");
+        .join(',');
       return existingIndexDef === newIndexDef && i.type === index.type;
     });
 
@@ -84,12 +90,12 @@ export const indexHandlers: IndexHandlers = {
     if (indexColumnNotUnique.length !== new Set(indexColumnNotUnique).size)
       throw new IndexColumnNotUniqueError(index.name);
 
-    const validIndexTypes = ["BTREE", "HASH", "FULLTEXT", "SPATIAL", "OTHER"];
+    const validIndexTypes = ['BTREE', 'HASH', 'FULLTEXT', 'SPATIAL', 'OTHER'];
     if (!validIndexTypes.includes(index.type))
       throw new IndexTypeInvalidError(index.type, schema.dbVendorId);
 
     for (const indexColumn of index.columns) {
-      const validSortDirs = ["ASC", "DESC"];
+      const validSortDirs = ['ASC', 'DESC'];
       if (!validSortDirs.includes(indexColumn.sortDir)) {
         throw new IndexColumnSortDirInvalidError(
           indexColumn.sortDir,

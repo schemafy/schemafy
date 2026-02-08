@@ -20,8 +20,8 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
-import com.schemafy.core.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintDefaultExprRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateConstraintColumnRequest;
@@ -31,10 +31,10 @@ import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnResult;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnUseCase;
-import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
-import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameCommand;
@@ -254,8 +254,7 @@ class ConstraintControllerTest {
     String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ChangeConstraintCheckExprRequest request =
-        new ChangeConstraintCheckExprRequest(JsonNullable.of("value > 0"));
+    ChangeConstraintCheckExprRequest request = new ChangeConstraintCheckExprRequest(JsonNullable.of("value > 0"));
 
     given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
@@ -352,8 +351,7 @@ class ConstraintControllerTest {
     String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ChangeConstraintDefaultExprRequest request =
-        new ChangeConstraintDefaultExprRequest(JsonNullable.of("0"));
+    ChangeConstraintDefaultExprRequest request = new ChangeConstraintDefaultExprRequest(JsonNullable.of("0"));
 
     given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));

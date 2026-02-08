@@ -3,28 +3,29 @@ import {
   TableNameNotUniqueError,
   TableNotExistError,
   TableNameNotInvalidError,
-} from "../errors";
-import type { Database, Schema, Table } from "@/types/erd.types";
-import { relationshipHandlers } from "./relationships";
+} from '../errors';
+import type { Database, Schema, Table } from '@/types/erd.types';
+import { relationshipHandlers } from './relationships';
 
-const isValidTableName = (name: string) => name.length >= 1 && name.length <= 20;
+const isValidTableName = (name: string) =>
+  name.length >= 1 && name.length <= 20;
 
 export interface TableHandlers {
   createTable: (
     database: Database,
-    schemaId: Schema["id"],
-    table: Omit<Table, "schemaId">,
+    schemaId: Schema['id'],
+    table: Omit<Table, 'schemaId'>,
   ) => Database;
   deleteTable: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
   ) => Database;
   changeTableName: (
     database: Database,
-    schemaId: Schema["id"],
-    tableId: Table["id"],
-    newName: Table["name"],
+    schemaId: Schema['id'],
+    tableId: Table['id'],
+    newName: Table['name'],
   ) => Database;
 }
 

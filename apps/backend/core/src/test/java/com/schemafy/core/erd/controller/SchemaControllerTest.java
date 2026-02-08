@@ -18,6 +18,7 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateSchemaRequest;
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.domain.erd.schema.application.port.in.ChangeSchemaNameUseCase;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
@@ -28,7 +29,6 @@ import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaUseCase;
 import com.schemafy.domain.erd.schema.domain.Schema;
-import com.schemafy.domain.common.MutationResult;
 
 import reactor.core.publisher.Mono;
 

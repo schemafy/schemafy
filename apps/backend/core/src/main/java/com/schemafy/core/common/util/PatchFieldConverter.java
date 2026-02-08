@@ -6,13 +6,13 @@ import com.schemafy.domain.common.PatchField;
 
 public final class PatchFieldConverter {
 
-	private PatchFieldConverter() {}
+  private PatchFieldConverter() {}
 
-	public static <T> PatchField<T> toPatchField(JsonNullable<T> nullable) {
-		if (nullable == null || !nullable.isPresent()) {
-			return PatchField.absent();
-		}
-		return PatchField.of(nullable.get());
-	}
+  public static <T> PatchField<T> toPatchField(JsonNullable<T> nullable) {
+    if (nullable == null || !nullable.isPresent()) {
+      return PatchField.absent();
+    }
+    return PatchField.of(nullable.get());
+  }
 
 }

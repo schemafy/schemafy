@@ -5,7 +5,7 @@ import {
   indexHandlers,
   constraintHandlers,
   relationshipHandlers,
-} from "./handlers";
+} from './handlers';
 import type {
   SchemaHandlers,
   TableHandlers,
@@ -13,8 +13,8 @@ import type {
   IndexHandlers,
   ConstraintHandlers,
   RelationshipHandlers,
-} from "./handlers";
-import type { Database } from "@/types/erd.types";
+} from './handlers';
+import type { Database } from '@/types/erd.types';
 import {
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,
@@ -36,7 +36,7 @@ import {
   RelationshipEmptyError,
   RelationshipTargetTableNotExistError,
   RelationshipCyclicReferenceError,
-} from "./errors";
+} from './errors';
 
 interface ERDValidator
   extends SchemaHandlers,
@@ -60,7 +60,7 @@ export const ERD_VALIDATOR: ERDValidator = {
         const existingSchemaId =
           database.schemas.find(
             (s) => s.name === schema.name && s.id !== schema.id,
-          )?.id || "";
+          )?.id || '';
         throw new SchemaNameNotUniqueError(schema.name, existingSchemaId);
       }
       schemaNames.add(schema.name);
@@ -89,7 +89,7 @@ export const ERD_VALIDATOR: ERDValidator = {
           }
           columnNames.add(column.name);
 
-          if (!column.dataType || column.dataType.trim() === "") {
+          if (!column.dataType || column.dataType.trim() === '') {
             throw new ColumnDataTypeRequiredError(column.name, table.id);
           }
 
@@ -101,16 +101,16 @@ export const ERD_VALIDATOR: ERDValidator = {
           }
 
           const reservedKeywords = [
-            "SELECT",
-            "INSERT",
-            "UPDATE",
-            "DELETE",
-            "FROM",
-            "WHERE",
-            "JOIN",
-            "ORDER",
-            "GROUP",
-            "HAVING",
+            'SELECT',
+            'INSERT',
+            'UPDATE',
+            'DELETE',
+            'FROM',
+            'WHERE',
+            'JOIN',
+            'ORDER',
+            'GROUP',
+            'HAVING',
           ];
           if (reservedKeywords.includes(column.name.toUpperCase())) {
             throw new ColumnNameIsReservedKeywordError(
@@ -161,7 +161,7 @@ export const ERD_VALIDATOR: ERDValidator = {
             });
             throw new DuplicateKeyDefinitionError(
               constraint.name,
-              existingConstraint?.name || "unknown",
+              existingConstraint?.name || 'unknown',
             );
           }
           constraintDefinitions.add(constraintDef);
@@ -177,11 +177,11 @@ export const ERD_VALIDATOR: ERDValidator = {
           indexNames.add(index.name);
 
           const validIndexTypes = [
-            "BTREE",
-            "HASH",
-            "FULLTEXT",
-            "SPATIAL",
-            "OTHER",
+            'BTREE',
+            'HASH',
+            'FULLTEXT',
+            'SPATIAL',
+            'OTHER',
           ];
           if (!validIndexTypes.includes(index.type)) {
             throw new IndexTypeInvalidError(index.type, schema.dbVendorId);
@@ -202,18 +202,18 @@ export const ERD_VALIDATOR: ERDValidator = {
           const indexDef = index.columns
             .map((ic) => `${ic.columnId}:${ic.sortDir}`)
             .sort()
-            .join(",");
+            .join(',');
           if (indexDefinitions.has(indexDef)) {
             const existingIndex = table.indexes.find(
               (i) =>
                 i.columns
                   .map((ic) => `${ic.columnId}:${ic.sortDir}`)
                   .sort()
-                  .join(",") === indexDef && i.id !== index.id,
+                  .join(',') === indexDef && i.id !== index.id,
             );
             throw new DuplicateIndexDefinitionError(
               index.name,
-              existingIndex?.name || "unknown",
+              existingIndex?.name || 'unknown',
             );
           }
           indexDefinitions.add(indexDef);

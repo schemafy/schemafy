@@ -1,4 +1,4 @@
-import { ulid } from "ulid";
+import { ulid } from 'ulid';
 import {
   SchemaNotExistError,
   RelationshipNotExistError,
@@ -7,7 +7,7 @@ import {
   RelationshipNameNotUniqueError,
   RelationshipEmptyError,
   RelationshipCyclicReferenceError,
-} from "../errors";
+} from '../errors';
 import type {
   Database,
   Schema,
@@ -15,49 +15,49 @@ import type {
   RelationshipColumn,
   Constraint,
   Table,
-} from "@/types/erd.types";
-import * as helper from "../helper";
+} from '@/types/erd.types';
+import * as helper from '../helper';
 
 export interface RelationshipHandlers {
   createRelationship: (
     database: Database,
-    schemaId: Schema["id"],
+    schemaId: Schema['id'],
     relationship: Relationship,
   ) => Database;
   deleteRelationship: (
     database: Database,
-    schemaId: Schema["id"],
-    relationshipId: Relationship["id"],
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
   ) => Database;
   changeRelationshipName: (
     database: Database,
-    schemaId: Schema["id"],
-    relationshipId: Relationship["id"],
-    newName: Relationship["name"],
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    newName: Relationship['name'],
   ) => Database;
   changeRelationshipCardinality: (
     database: Database,
-    schemaId: Schema["id"],
-    relationshipId: Relationship["id"],
-    cardinality: Relationship["cardinality"],
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    cardinality: Relationship['cardinality'],
   ) => Database;
   changeRelationshipKind: (
     database: Database,
-    schemaId: Schema["id"],
-    relationshipId: Relationship["id"],
-    kind: Relationship["kind"],
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    kind: Relationship['kind'],
   ) => Database;
   addColumnToRelationship: (
     database: Database,
-    schemaId: Schema["id"],
-    relationshipId: Relationship["id"],
-    relationshipColumn: Omit<RelationshipColumn, "relationshipId">,
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    relationshipColumn: Omit<RelationshipColumn, 'relationshipId'>,
   ) => Database;
   removeColumnFromRelationship: (
     database: Database,
-    schemaId: Schema["id"],
-    relationshipId: Relationship["id"],
-    relationshipColumnId: RelationshipColumn["id"],
+    schemaId: Schema['id'],
+    relationshipId: Relationship['id'],
+    relationshipColumnId: RelationshipColumn['id'],
   ) => Database;
 }
 
@@ -84,7 +84,7 @@ export const relationshipHandlers: RelationshipHandlers = {
         relationship.pkTableId,
       );
 
-    if (relationship.kind === "IDENTIFYING") {
+    if (relationship.kind === 'IDENTIFYING') {
       const cycle = helper.detectIdentifyingCycleInSchema(schema, undefined, {
         fkTableId: relationship.fkTableId,
         pkTableId: relationship.pkTableId,
@@ -275,7 +275,7 @@ export const relationshipHandlers: RelationshipHandlers = {
 
     if (!relationship) throw new RelationshipNotExistError(relationshipId);
 
-    if (kind === "IDENTIFYING") {
+    if (kind === 'IDENTIFYING') {
       const cycle = helper.detectIdentifyingCycleInSchema(schema, {
         relationshipId,
         newKind: kind,
@@ -303,9 +303,9 @@ export const relationshipHandlers: RelationshipHandlers = {
 
       let updatedConstraints = t.constraints;
 
-      if (kind === "IDENTIFYING") {
+      if (kind === 'IDENTIFYING') {
         const pkConstraint = t.constraints.find(
-          (c) => c.kind === "PRIMARY_KEY",
+          (c) => c.kind === 'PRIMARY_KEY',
         );
         const existingPkColumnIds = new Set(
           pkConstraint?.columns.map((cc) => cc.columnId) ?? [],
@@ -348,7 +348,7 @@ export const relationshipHandlers: RelationshipHandlers = {
               name: `pk_${t.name}`,
               columns: newPkColumns,
               tableId: t.id,
-              kind: "PRIMARY_KEY",
+              kind: 'PRIMARY_KEY',
               isAffected: true,
             };
 
@@ -357,7 +357,7 @@ export const relationshipHandlers: RelationshipHandlers = {
         }
       } else {
         const pkConstraint = t.constraints.find(
-          (c) => c.kind === "PRIMARY_KEY",
+          (c) => c.kind === 'PRIMARY_KEY',
         );
         if (pkConstraint) {
           const remainingColumns = pkConstraint.columns.filter(
@@ -406,7 +406,7 @@ export const relationshipHandlers: RelationshipHandlers = {
       tables: changeTables,
     };
 
-    if (kind === "IDENTIFYING" && addedPkColumnIds.length > 0) {
+    if (kind === 'IDENTIFYING' && addedPkColumnIds.length > 0) {
       for (const columnId of addedPkColumnIds) {
         const tableWithNewPk = updatedSchema.tables.find(
           (t) => t.id === relationship.fkTableId,

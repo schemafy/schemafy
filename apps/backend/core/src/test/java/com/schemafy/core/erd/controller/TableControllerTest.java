@@ -468,7 +468,8 @@ class TableControllerTest {
         .jsonPath("$.result.affectedTableIds").isArray();
 
     then(changeTableExtraUseCase).should()
-        .changeTableExtra(new ChangeTableExtraCommand(tableId, "{\"position\":{\"x\":24,\"y\":48},\"color\":\"#22c55e\"}"));
+        .changeTableExtra(new ChangeTableExtraCommand(tableId,
+            "{\"position\":{\"x\":24,\"y\":48},\"color\":\"#22c55e\"}"));
   }
 
   @Test

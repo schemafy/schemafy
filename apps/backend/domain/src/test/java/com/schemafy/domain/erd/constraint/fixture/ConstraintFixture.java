@@ -4,8 +4,8 @@ import java.util.List;
 
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnResult;
-import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;

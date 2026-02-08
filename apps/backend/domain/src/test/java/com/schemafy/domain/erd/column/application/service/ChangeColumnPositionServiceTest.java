@@ -13,10 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnPositionPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
+import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
 import com.schemafy.domain.erd.column.domain.exception.ColumnPositionInvalidException;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
-import com.schemafy.domain.erd.column.domain.Column;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
