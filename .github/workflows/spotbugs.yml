@@ -34,14 +34,12 @@ jobs:
           cache: "gradle"
 
       - name: Make gradlew executable
-        run: chmod +x apps/backend/core/gradlew
+        run: chmod +x gradlew
 
       - name: Run SpotBugs analysis
         id: run_spotbugs
         continue-on-error: true
-        run: |
-          cd apps/backend/core
-          ./gradlew spotbugsMain --no-daemon --console=plain
+        run: ./gradlew :core:spotbugsMain --no-daemon --console=plain
 
       - name: Upload SARIF to GitHub
         uses: github/codeql-action/upload-sarif@v3
