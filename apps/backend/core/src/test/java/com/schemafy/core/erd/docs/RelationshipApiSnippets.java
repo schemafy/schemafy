@@ -31,7 +31,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "kind").type(JsonFieldType.STRING)
           .description("관계 종류 (IDENTIFYING, NON_IDENTIFYING)"),
       fieldWithPath(prefix + "cardinality").type(JsonFieldType.STRING)
-          .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY, MANY_TO_MANY)"),
+          .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY)"),
       fieldWithPath(prefix + "extra").type(JsonFieldType.STRING)
           .description("프론트엔드 메타데이터(JSON 문자열, 예: position, color)").optional()
     };
@@ -68,7 +68,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
         fieldWithPath("kind").type(JsonFieldType.STRING)
             .description("관계 종류 (IDENTIFYING, NON_IDENTIFYING)"),
         fieldWithPath("cardinality").type(JsonFieldType.STRING)
-            .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY, MANY_TO_MANY)"));
+            .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY)"));
   }
 
   public static Snippet createRelationshipResponseHeaders() {
@@ -194,7 +194,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
   public static Snippet changeRelationshipCardinalityRequest() {
     return requestFields(
         fieldWithPath("cardinality").type(JsonFieldType.STRING)
-            .description("변경할 카디널리티 (ONE_TO_ONE, ONE_TO_MANY, MANY_TO_MANY)"));
+            .description("변경할 카디널리티 (ONE_TO_ONE, ONE_TO_MANY)"));
   }
 
   public static Snippet changeRelationshipCardinalityResponseHeaders() {
@@ -361,7 +361,8 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
 
   public static Snippet changeRelationshipColumnPositionRequest() {
     return requestFields(
-        fieldWithPath("seqNo").type(JsonFieldType.NUMBER).description("변경할 순서 번호"));
+        fieldWithPath("seqNo").type(JsonFieldType.NUMBER)
+            .description("변경할 순서 번호 (미입력 시 0)").optional());
   }
 
   public static Snippet changeRelationshipColumnPositionResponseHeaders() {

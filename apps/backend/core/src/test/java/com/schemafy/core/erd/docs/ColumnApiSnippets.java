@@ -73,7 +73,7 @@ public class ColumnApiSnippets extends RestDocsSnippets {
         fieldWithPath("scale").type(JsonFieldType.NUMBER)
             .description("스케일 (DECIMAL 등에 사용)").optional(),
         fieldWithPath("autoIncrement").type(JsonFieldType.BOOLEAN)
-            .description("자동 증가 여부"),
+            .description("자동 증가 여부 (미입력 시 false)").optional(),
         fieldWithPath("charset").type(JsonFieldType.STRING)
             .description("문자셋").optional(),
         fieldWithPath("collation").type(JsonFieldType.STRING)
@@ -277,7 +277,7 @@ public class ColumnApiSnippets extends RestDocsSnippets {
   public static Snippet changeColumnPositionRequest() {
     return requestFields(
         fieldWithPath("seqNo").type(JsonFieldType.NUMBER)
-            .description("변경할 순서 번호"));
+            .description("변경할 순서 번호 (미입력 시 0)").optional());
   }
 
   /** 컬럼 위치 변경 응답 헤더 */

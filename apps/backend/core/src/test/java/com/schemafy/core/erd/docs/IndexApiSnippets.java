@@ -63,11 +63,11 @@ public class IndexApiSnippets extends RestDocsSnippets {
         fieldWithPath("columns").type(JsonFieldType.ARRAY)
             .description("인덱스 컬럼 목록").optional(),
         fieldWithPath("columns[].columnId").type(JsonFieldType.STRING)
-            .description("컬럼 ID (ULID)").optional(),
+            .description("컬럼 ID (ULID, columns 항목 제공 시 필수)").optional(),
         fieldWithPath("columns[].seqNo").type(JsonFieldType.NUMBER)
             .description("순서 번호 (미입력 시 0부터 자동 배정)").optional(),
         fieldWithPath("columns[].sortDirection").type(JsonFieldType.STRING)
-            .description("정렬 방향 (ASC, DESC)").optional());
+            .description("정렬 방향 (ASC, DESC, columns 항목 제공 시 필수)").optional());
   }
 
   public static Snippet createIndexResponseHeaders() {
@@ -309,7 +309,8 @@ public class IndexApiSnippets extends RestDocsSnippets {
 
   public static Snippet changeIndexColumnPositionRequest() {
     return requestFields(
-        fieldWithPath("seqNo").type(JsonFieldType.NUMBER).description("변경할 순서 번호"));
+        fieldWithPath("seqNo").type(JsonFieldType.NUMBER)
+            .description("변경할 순서 번호 (미입력 시 0)").optional());
   }
 
   public static Snippet changeIndexColumnPositionResponseHeaders() {

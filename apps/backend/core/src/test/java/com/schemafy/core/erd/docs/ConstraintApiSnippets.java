@@ -26,7 +26,7 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "name").type(JsonFieldType.STRING)
           .description("제약조건 이름"),
       fieldWithPath(prefix + "kind").type(JsonFieldType.STRING)
-          .description("제약조건 종류 (PRIMARY_KEY, UNIQUE, FOREIGN_KEY, CHECK, DEFAULT)"),
+          .description("제약조건 종류 (PRIMARY_KEY, UNIQUE, CHECK, DEFAULT, NOT_NULL)"),
       fieldWithPath(prefix + "checkExpr").type(JsonFieldType.STRING)
           .description("CHECK 표현식").optional(),
       fieldWithPath(prefix + "defaultExpr").type(JsonFieldType.STRING)
@@ -61,7 +61,7 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("제약조건 이름"),
         fieldWithPath("kind").type(JsonFieldType.STRING)
-            .description("제약조건 종류 (PRIMARY_KEY, UNIQUE, FOREIGN_KEY, CHECK, DEFAULT)"),
+            .description("제약조건 종류 (PRIMARY_KEY, UNIQUE, CHECK, DEFAULT, NOT_NULL)"),
         fieldWithPath("checkExpr").type(JsonFieldType.STRING)
             .description("CHECK 표현식").optional(),
         fieldWithPath("defaultExpr").type(JsonFieldType.STRING)
@@ -69,7 +69,7 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
         fieldWithPath("columns").type(JsonFieldType.ARRAY)
             .description("제약조건 컬럼 목록").optional(),
         fieldWithPath("columns[].columnId").type(JsonFieldType.STRING)
-            .description("컬럼 ID (ULID)").optional(),
+            .description("컬럼 ID (ULID, columns 항목 제공 시 필수)").optional(),
         fieldWithPath("columns[].seqNo").type(JsonFieldType.NUMBER)
             .description("순서 번호 (미입력 시 0부터 자동 배정)").optional());
   }
@@ -297,7 +297,8 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
 
   public static Snippet changeConstraintColumnPositionRequest() {
     return requestFields(
-        fieldWithPath("seqNo").type(JsonFieldType.NUMBER).description("변경할 순서 번호"));
+        fieldWithPath("seqNo").type(JsonFieldType.NUMBER)
+            .description("변경할 순서 번호 (미입력 시 0)").optional());
   }
 
   public static Snippet changeConstraintColumnPositionResponseHeaders() {
