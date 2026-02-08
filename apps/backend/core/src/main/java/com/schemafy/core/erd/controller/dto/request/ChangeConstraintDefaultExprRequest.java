@@ -1,7 +1,14 @@
 package com.schemafy.core.erd.controller.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 public record ChangeConstraintDefaultExprRequest(
-    @NotBlank(message = "defaultExpr는 필수입니다.") String defaultExpr) {
+    JsonNullable<String> defaultExpr) {
+
+  public ChangeConstraintDefaultExprRequest {
+    if (defaultExpr == null) {
+      defaultExpr = JsonNullable.undefined();
+    }
+  }
+
 }

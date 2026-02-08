@@ -31,7 +31,6 @@ import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCount
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintExpressionRequiredException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
 import com.schemafy.domain.erd.constraint.domain.exception.UniqueSameAsPrimaryKeyException;
@@ -609,8 +608,8 @@ class CreateConstraintServiceTest {
     }
 
     @Test
-    @DisplayName("CHECK 제약조건에 checkExpr이 없으면 예외가 발생한다")
-    void throwsWhenCheckExprMissing() {
+    @DisplayName("CHECK 제약조건은 checkExpr 없이 생성할 수 있다")
+    void createsCheckConstraintWithoutExpression() {
       var command = ConstraintFixture.createCheckCommand(null);
       var table = createTable("table1", "schema1");
       var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
@@ -622,17 +621,24 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(tableColumns));
       given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
           .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "new-column-id");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintExpressionRequiredException.class)
-          .verify();
-
-      then(createConstraintPort).shouldHaveNoInteractions();
+          .assertNext(
+              result -> {
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.CHECK);
+                assertThat(result.result().checkExpr()).isNull();
+              })
+          .verifyComplete();
     }
 
     @Test
-    @DisplayName("DEFAULT 제약조건에 defaultExpr이 없으면 예외가 발생한다")
-    void throwsWhenDefaultExprMissing() {
+    @DisplayName("DEFAULT 제약조건은 defaultExpr 없이 생성할 수 있다")
+    void createsDefaultConstraintWithoutExpression() {
       var command = ConstraintFixture.createDefaultCommand(null);
       var table = createTable("table1", "schema1");
       var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
@@ -644,12 +650,19 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(tableColumns));
       given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
           .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "new-column-id");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintExpressionRequiredException.class)
-          .verify();
-
-      then(createConstraintPort).shouldHaveNoInteractions();
+          .assertNext(
+              result -> {
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.DEFAULT);
+                assertThat(result.result().defaultExpr()).isNull();
+              })
+          .verifyComplete();
     }
 
   }

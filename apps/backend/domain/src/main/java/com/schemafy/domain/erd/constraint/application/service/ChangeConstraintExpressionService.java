@@ -83,7 +83,6 @@ public class ChangeConstraintExpressionService implements
                   columnIds,
                   constraint.name(),
                   constraint.id());
-              ConstraintValidator.validateExpressionRequired(constraint.kind(), checkExpr, defaultExpr);
               return changeConstraintExpressionPort
                   .changeConstraintExpressions(constraint.id(), checkExpr, defaultExpr)
                   .thenReturn(MutationResult.<Void>of(null, constraint.tableId()));

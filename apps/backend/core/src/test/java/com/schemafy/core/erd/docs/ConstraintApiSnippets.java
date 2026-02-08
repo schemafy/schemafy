@@ -171,7 +171,8 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
 
   public static Snippet changeConstraintCheckExprRequest() {
     return requestFields(
-        fieldWithPath("checkExpr").type(JsonFieldType.STRING).description("변경할 CHECK 표현식"));
+        fieldWithPath("checkExpr").type(JsonFieldType.VARIES)
+            .description("변경할 CHECK 표현식 (null 또는 공백 문자열 전달 시 제거)"));
   }
 
   public static Snippet changeConstraintCheckExprResponseHeaders() {
@@ -195,7 +196,8 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
 
   public static Snippet changeConstraintDefaultExprRequest() {
     return requestFields(
-        fieldWithPath("defaultExpr").type(JsonFieldType.STRING).description("변경할 DEFAULT 표현식"));
+        fieldWithPath("defaultExpr").type(JsonFieldType.VARIES)
+            .description("변경할 DEFAULT 표현식 (null 또는 공백 문자열 전달 시 제거)"));
   }
 
   public static Snippet changeConstraintDefaultExprResponseHeaders() {

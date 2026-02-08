@@ -27,6 +27,7 @@ import com.schemafy.core.erd.controller.dto.request.CreateConstraintRequest;
 import com.schemafy.core.erd.controller.dto.response.AddConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
@@ -119,9 +120,12 @@ public class ConstraintController {
   public Mono<BaseResponse<MutationResponse<Void>>> changeConstraintCheckExpr(
       @PathVariable String constraintId,
       @Valid @RequestBody ChangeConstraintCheckExprRequest request) {
+    if (!request.checkExpr().isPresent()) {
+      throw new InvalidValueException("checkExpr must be provided");
+    }
     ChangeConstraintCheckExprCommand command = new ChangeConstraintCheckExprCommand(
         constraintId,
-        request.checkExpr());
+        request.checkExpr().orElse(null));
     return changeConstraintCheckExprUseCase.changeConstraintCheckExpr(command)
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
@@ -132,9 +136,12 @@ public class ConstraintController {
   public Mono<BaseResponse<MutationResponse<Void>>> changeConstraintDefaultExpr(
       @PathVariable String constraintId,
       @Valid @RequestBody ChangeConstraintDefaultExprRequest request) {
+    if (!request.defaultExpr().isPresent()) {
+      throw new InvalidValueException("defaultExpr must be provided");
+    }
     ChangeConstraintDefaultExprCommand command = new ChangeConstraintDefaultExprCommand(
         constraintId,
-        request.defaultExpr());
+        request.defaultExpr().orElse(null));
     return changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(command)
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);

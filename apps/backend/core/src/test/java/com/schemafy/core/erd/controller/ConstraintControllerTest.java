@@ -13,6 +13,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
@@ -253,7 +254,8 @@ class ConstraintControllerTest {
     String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ChangeConstraintCheckExprRequest request = new ChangeConstraintCheckExprRequest("value > 0");
+    ChangeConstraintCheckExprRequest request =
+        new ChangeConstraintCheckExprRequest(JsonNullable.of("value > 0"));
 
     given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
@@ -277,9 +279,13 @@ class ConstraintControllerTest {
   }
 
   @Test
-  @DisplayName("제약조건 CHECK 표현식 변경 시 빈 값이면 400 에러를 반환한다")
-  void changeConstraintCheckExprWithBlankValueReturnsBadRequest() {
+  @DisplayName("제약조건 CHECK 표현식 변경 시 빈 값이면 표현식을 제거한다")
+  void changeConstraintCheckExprWithBlankValueReturnsOk() {
     String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
@@ -289,6 +295,46 @@ class ConstraintControllerTest {
               "checkExpr": ""
             }
             """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("제약조건 CHECK 표현식 변경 시 null 값이면 표현식을 제거한다")
+  void changeConstraintCheckExprWithNullValueReturnsOk() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "checkExpr": null
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("제약조건 CHECK 표현식 변경 시 필드가 없으면 400 에러를 반환한다")
+  void changeConstraintCheckExprWithMissingFieldReturnsBadRequest() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isBadRequest()
@@ -306,7 +352,8 @@ class ConstraintControllerTest {
     String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ChangeConstraintDefaultExprRequest request = new ChangeConstraintDefaultExprRequest("0");
+    ChangeConstraintDefaultExprRequest request =
+        new ChangeConstraintDefaultExprRequest(JsonNullable.of("0"));
 
     given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
@@ -330,9 +377,13 @@ class ConstraintControllerTest {
   }
 
   @Test
-  @DisplayName("제약조건 DEFAULT 표현식 변경 시 빈 값이면 400 에러를 반환한다")
-  void changeConstraintDefaultExprWithBlankValueReturnsBadRequest() {
+  @DisplayName("제약조건 DEFAULT 표현식 변경 시 빈 값이면 표현식을 제거한다")
+  void changeConstraintDefaultExprWithBlankValueReturnsOk() {
     String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
@@ -342,6 +393,46 @@ class ConstraintControllerTest {
               "defaultExpr": ""
             }
             """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("제약조건 DEFAULT 표현식 변경 시 null 값이면 표현식을 제거한다")
+  void changeConstraintDefaultExprWithNullValueReturnsOk() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "defaultExpr": null
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("제약조건 DEFAULT 표현식 변경 시 필드가 없으면 400 에러를 반환한다")
+  void changeConstraintDefaultExprWithMissingFieldReturnsBadRequest() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isBadRequest()

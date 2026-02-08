@@ -18,7 +18,6 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByT
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintExpressionRequiredException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
@@ -149,8 +148,8 @@ class ChangeConstraintExpressionServiceTest {
     }
 
     @Test
-    @DisplayName("표현식이 공백이면 예외가 발생한다")
-    void throwsWhenCheckExprIsBlank() {
+    @DisplayName("표현식이 공백이면 CHECK 표현식을 제거한다")
+    void clearsCheckExprWhenBlank() {
       var constraint = ConstraintFixture.checkConstraintWithExpr("column1 > 0");
       var command = ConstraintFixture.changeCheckExprCommand(constraint.id(), "   ");
       var columns = List.of(ConstraintFixture.constraintColumn("cc1", constraint.id(), "col1", 0));
@@ -161,12 +160,16 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.just(List.of(constraint)));
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(constraint.id()))
           .willReturn(Mono.just(columns));
+      given(changeConstraintExpressionPort.changeConstraintExpressions(
+          constraint.id(), null, null))
+              .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintCheckExpr(command))
-          .expectError(ConstraintExpressionRequiredException.class)
-          .verify();
+          .expectNextCount(1)
+          .verifyComplete();
 
-      then(changeConstraintExpressionPort).shouldHaveNoInteractions();
+      then(changeConstraintExpressionPort).should()
+          .changeConstraintExpressions(eq(constraint.id()), eq((String) null), eq((String) null));
     }
 
   }
@@ -214,6 +217,31 @@ class ChangeConstraintExpressionServiceTest {
           .verify();
 
       then(changeConstraintExpressionPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("표현식이 null이면 DEFAULT 표현식을 제거한다")
+    void clearsDefaultExprWhenNull() {
+      var constraint = ConstraintFixture.defaultConstraintWithExpr("0");
+      var command = ConstraintFixture.changeDefaultExprCommand(constraint.id(), null);
+      var columns = List.of(ConstraintFixture.constraintColumn("cc1", constraint.id(), "col1", 0));
+
+      given(getConstraintByIdPort.findConstraintById(constraint.id()))
+          .willReturn(Mono.just(constraint));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(constraint.tableId()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(constraint.id()))
+          .willReturn(Mono.just(columns));
+      given(changeConstraintExpressionPort.changeConstraintExpressions(
+          constraint.id(), null, null))
+              .willReturn(Mono.empty());
+
+      StepVerifier.create(sut.changeConstraintDefaultExpr(command))
+          .expectNextCount(1)
+          .verifyComplete();
+
+      then(changeConstraintExpressionPort).should()
+          .changeConstraintExpressions(eq(constraint.id()), eq((String) null), eq((String) null));
     }
 
   }

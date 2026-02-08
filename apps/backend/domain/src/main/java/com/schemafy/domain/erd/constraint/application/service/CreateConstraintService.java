@@ -143,7 +143,6 @@ public class CreateConstraintService implements CreateConstraintUseCase {
         columnIds,
         name,
         null);
-    ConstraintValidator.validateExpressionRequired(kind, checkExpr, defaultExpr);
 
     return Mono.fromCallable(ulidGeneratorPort::generate)
         .flatMap(id -> {
