@@ -116,17 +116,17 @@ class IndexCreateIntegrationTest {
     tableId = tableResult.tableId();
 
     var createColumn1Command = new CreateColumnCommand(
-        tableId, "id", "INT", null, null, null, 0, true, null, null, "PK");
+        tableId, "id", "INT", null, null, null, true, null, null, "PK");
     var column1Result = createColumnUseCase.createColumn(createColumn1Command).block().result();
     columnId1 = column1Result.columnId();
 
     var createColumn2Command = new CreateColumnCommand(
-        tableId, "name", "VARCHAR", 100, null, null, 1, false, null, null, "Name");
+        tableId, "name", "VARCHAR", 100, null, null, false, null, null, "Name");
     var column2Result = createColumnUseCase.createColumn(createColumn2Command).block().result();
     columnId2 = column2Result.columnId();
 
     var createColumn3Command = new CreateColumnCommand(
-        tableId, "email", "VARCHAR", 255, null, null, 2, false, null, null, "Email");
+        tableId, "email", "VARCHAR", 255, null, null, false, null, null, "Email");
     var column3Result = createColumnUseCase.createColumn(createColumn3Command).block().result();
     columnId3 = column3Result.columnId();
   }

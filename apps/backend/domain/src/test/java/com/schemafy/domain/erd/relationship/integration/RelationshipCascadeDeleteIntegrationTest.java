@@ -115,12 +115,12 @@ class RelationshipCascadeDeleteIntegrationTest {
     fkTableId = fkTableResult.tableId();
 
     var createPkColumnCommand = new CreateColumnCommand(
-        pkTableId, "id", "INT", null, null, null, 0, true, null, null, "PK");
+        pkTableId, "id", "INT", null, null, null, true, null, null, "PK");
     var pkColumnResult = createColumnUseCase.createColumn(createPkColumnCommand).block().result();
     pkColumnId = pkColumnResult.columnId();
 
     var createPkColumn2Command = new CreateColumnCommand(
-        pkTableId, "code", "VARCHAR", 50, null, null, 1, false, null, null, "PK2");
+        pkTableId, "code", "VARCHAR", 50, null, null, false, null, null, "PK2");
     var pkColumn2Result = createColumnUseCase.createColumn(createPkColumn2Command).block().result();
     pkColumn2Id = pkColumn2Result.columnId();
 

@@ -93,19 +93,19 @@ class RelationshipCyclicReferenceIntegrationTest {
     tableCId = tableCResult.tableId();
 
     var createColumnACommand = new CreateColumnCommand(
-        tableAId, "id", "INT", null, null, null, 0, true, null, null, "PK");
+        tableAId, "id", "INT", null, null, null, true, null, null, "PK");
     var columnAResult = createColumnUseCase.createColumn(createColumnACommand).block().result();
     columnAId = columnAResult.columnId();
     createPrimaryKey(tableAId, "pk_table_a", columnAId);
 
     var createColumnBCommand = new CreateColumnCommand(
-        tableBId, "id", "INT", null, null, null, 0, true, null, null, "PK");
+        tableBId, "id", "INT", null, null, null, true, null, null, "PK");
     var columnBResult = createColumnUseCase.createColumn(createColumnBCommand).block().result();
     columnBId = columnBResult.columnId();
     createPrimaryKey(tableBId, "pk_table_b", columnBId);
 
     var createColumnCCommand = new CreateColumnCommand(
-        tableCId, "id", "INT", null, null, null, 0, true, null, null, "PK");
+        tableCId, "id", "INT", null, null, null, true, null, null, "PK");
     var columnCResult = createColumnUseCase.createColumn(createColumnCCommand).block().result();
     columnCId = columnCResult.columnId();
     createPrimaryKey(tableCId, "pk_table_c", columnCId);

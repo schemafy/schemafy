@@ -123,7 +123,7 @@ class DeleteColumnCascadeIntegrationTest {
         fkTableId = fkTableResult.tableId();
 
         var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block().result();
+            pkTableId, "id", "INT", null, null, null, true, null, null, null)).block().result();
         pkColumnId = pkColumnResult.columnId();
 
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
@@ -207,7 +207,7 @@ class DeleteColumnCascadeIntegrationTest {
         fkTableId2 = fkTableResult2.tableId();
 
         var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block().result();
+            pkTableId, "id", "INT", null, null, null, true, null, null, null)).block().result();
         pkColumnId = pkColumnResult.columnId();
 
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
@@ -281,7 +281,7 @@ class DeleteColumnCascadeIntegrationTest {
         tableCId = tableCResult.tableId();
 
         var colAResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-            tableAId, "id", "INT", null, null, null, 0, true, null, null, null)).block().result();
+            tableAId, "id", "INT", null, null, null, true, null, null, null)).block().result();
         colAId = colAResult.columnId();
 
         createConstraintUseCase.createConstraint(new CreateConstraintCommand(
@@ -360,7 +360,7 @@ class DeleteColumnCascadeIntegrationTest {
       fkTableId = fkTableResult.tableId();
 
       var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
-          pkTableId, "id", "INT", null, null, null, 0, true, null, null, null)).block().result();
+          pkTableId, "id", "INT", null, null, null, true, null, null, null)).block().result();
       pkColumnId = pkColumnResult.columnId();
 
       createConstraintUseCase.createConstraint(new CreateConstraintCommand(

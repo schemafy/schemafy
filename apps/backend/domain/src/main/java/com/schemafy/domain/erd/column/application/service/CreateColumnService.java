@@ -81,7 +81,7 @@ public class CreateColumnService implements CreateColumnUseCase {
         existingColumns,
         null);
     ColumnValidator.validateCharsetAndCollation(normalizedDataType, charset, collation);
-    int resolvedSeqNo = resolveSeqNo(command.seqNo(), existingColumns);
+    int resolvedSeqNo = resolveSeqNo(existingColumns);
     ColumnValidator.validatePosition(resolvedSeqNo);
 
     return Mono.fromCallable(ulidGeneratorPort::generate)
@@ -123,10 +123,7 @@ public class CreateColumnService implements CreateColumnUseCase {
     return value.trim();
   }
 
-  private static int resolveSeqNo(Integer requestedSeqNo, List<Column> existingColumns) {
-    if (requestedSeqNo != null) {
-      return requestedSeqNo;
-    }
+  private static int resolveSeqNo(List<Column> existingColumns) {
     return existingColumns.stream()
         .mapToInt(Column::seqNo)
         .max()

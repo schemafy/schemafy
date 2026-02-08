@@ -70,7 +70,6 @@ public class ColumnController {
         request.length(),
         request.precision(),
         request.scale(),
-        request.seqNo(),
         request.autoIncrement(),
         request.charset(),
         request.collation(),

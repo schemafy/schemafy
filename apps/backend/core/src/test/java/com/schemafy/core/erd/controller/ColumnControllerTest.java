@@ -103,7 +103,6 @@ class ColumnControllerTest {
         20,
         null,
         null,
-        1,
         true,
         null,
         null,

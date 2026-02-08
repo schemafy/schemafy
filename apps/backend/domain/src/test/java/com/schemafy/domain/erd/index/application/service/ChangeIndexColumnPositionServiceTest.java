@@ -132,20 +132,35 @@ class ChangeIndexColumnPositionServiceTest {
     }
 
     @Test
-    @DisplayName("음수 위치면 예외가 발생한다")
-    void throwsWhenNegativePosition() {
+    @DisplayName("음수 위치면 첫 번째 위치로 clamp된다")
+    void clampsWhenNegativePosition() {
       var command = IndexFixture.changeColumnPositionCommand("ic1", -1);
+      var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
+      var columns = List.of(
+          indexColumn,
+          IndexFixture.indexColumn("ic2", "index1", "col2", 1, SortDirection.ASC),
+          IndexFixture.indexColumn("ic3", "index1", "col3", 2, SortDirection.DESC));
+
+      given(getIndexColumnByIdPort.findIndexColumnById(any()))
+          .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
+      given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
+          .willReturn(Mono.just(columns));
+      given(changeIndexColumnPositionPort.changeIndexColumnPositions(any(), anyList()))
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
-          .expectError(IndexPositionInvalidException.class)
-          .verify();
+          .expectNextCount(1)
+          .verifyComplete();
 
-      then(changeIndexColumnPositionPort).shouldHaveNoInteractions();
+      then(changeIndexColumnPositionPort).should()
+          .changeIndexColumnPositions(eq("index1"), anyList());
     }
 
     @Test
-    @DisplayName("범위를 벗어난 위치면 예외가 발생한다")
-    void throwsWhenPositionOutOfRange() {
+    @DisplayName("범위를 벗어난 위치면 마지막 위치로 clamp된다")
+    void clampsWhenPositionOutOfRange() {
       var command = IndexFixture.changeColumnPositionCommand("ic1", 5);
       var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
       var columns = List.of(
@@ -158,12 +173,15 @@ class ChangeIndexColumnPositionServiceTest {
           .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(columns));
+      given(changeIndexColumnPositionPort.changeIndexColumnPositions(any(), anyList()))
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
-          .expectError(IndexPositionInvalidException.class)
-          .verify();
+          .expectNextCount(1)
+          .verifyComplete();
 
-      then(changeIndexColumnPositionPort).shouldHaveNoInteractions();
+      then(changeIndexColumnPositionPort).should()
+          .changeIndexColumnPositions(eq("index1"), anyList());
     }
 
     @Test

@@ -1,6 +1,8 @@
 package com.schemafy.domain.erd.column.adapter.out.persistence;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.lang.NonNull;
@@ -109,13 +111,24 @@ class ColumnPersistenceAdapter implements
   }
 
   @Override
-  public Mono<Void> changeColumnPosition(String columnId, int seqNo) {
-    return findColumnOrError(columnId)
-        .flatMap((@NonNull ColumnEntity columnEntity) -> {
-          columnEntity.setSeqNo(seqNo);
-          return columnRepository.save(columnEntity);
+  public Mono<Void> changeColumnPositions(String tableId, List<Column> columns) {
+    if (columns == null || columns.isEmpty()) {
+      return Mono.empty();
+    }
+    Map<String, Integer> positions = new HashMap<>(columns.size());
+    for (Column column : columns) {
+      positions.put(column.id(), column.seqNo());
+    }
+    return columnRepository.findByTableIdOrderBySeqNo(tableId)
+        .map(entity -> {
+          Integer seqNo = positions.get(entity.getId());
+          if (seqNo != null) {
+            entity.setSeqNo(seqNo);
+          }
+          return entity;
         })
-        .then();
+        .collectList()
+        .flatMap(entities -> columnRepository.saveAll(entities).then());
   }
 
   @Override

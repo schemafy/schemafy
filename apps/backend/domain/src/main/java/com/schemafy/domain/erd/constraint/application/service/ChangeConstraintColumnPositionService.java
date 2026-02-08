@@ -15,8 +15,6 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColu
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
-import com.schemafy.domain.erd.constraint.domain.validator.ConstraintValidator;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -34,7 +32,6 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
   public Mono<MutationResult<Void>> changeConstraintColumnPosition(
       ChangeConstraintColumnPositionCommand command) {
     return Mono.defer(() -> {
-      ConstraintValidator.validatePosition(command.seqNo());
       return getConstraintColumnByIdPort.findConstraintColumnById(command.constraintColumnId())
           .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException("Constraint column not found")))
           .flatMap(constraintColumn -> getConstraintByIdPort
@@ -58,10 +55,6 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
     if (columns.isEmpty()) {
       return Mono.error(new ConstraintColumnNotExistException("Constraint column not found"));
     }
-    if (nextPosition < 0 || nextPosition >= columns.size()) {
-      return Mono.error(new ConstraintPositionInvalidException(
-          "Constraint column position must be between 0 and %d".formatted(columns.size() - 1)));
-    }
 
     List<ConstraintColumn> reordered = new ArrayList<>(columns);
     int currentIndex = findIndex(reordered, constraintColumn.id());
@@ -69,7 +62,8 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
       return Mono.error(new ConstraintColumnNotExistException("Constraint column not found"));
     }
     ConstraintColumn movingColumn = reordered.remove(currentIndex);
-    reordered.add(nextPosition, movingColumn);
+    int normalizedPosition = Math.clamp(nextPosition, 0, columns.size() - 1);
+    reordered.add(normalizedPosition, movingColumn);
 
     List<ConstraintColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {

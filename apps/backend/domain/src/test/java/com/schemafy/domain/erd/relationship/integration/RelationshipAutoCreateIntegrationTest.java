@@ -194,7 +194,7 @@ class RelationshipAutoCreateIntegrationTest {
 
   private String createColumn(String tableId, String name, String dataType, int seqNo) {
     var createColumnCommand = new CreateColumnCommand(
-        tableId, name, dataType, null, null, null, seqNo, false, null, null, null);
+        tableId, name, dataType, null, null, null, false, null, null, null);
     var columnResult = createColumnUseCase.createColumn(createColumnCommand).block().result();
     return columnResult.columnId();
   }

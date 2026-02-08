@@ -35,10 +35,6 @@ public class ChangeRelationshipColumnPositionService
   @Override
   public Mono<MutationResult<Void>> changeRelationshipColumnPosition(
       ChangeRelationshipColumnPositionCommand command) {
-    if (command.seqNo() < 0) {
-      return Mono.error(new RelationshipPositionInvalidException(
-          "Relationship column position must be zero or positive"));
-    }
     return getRelationshipColumnByIdPort.findRelationshipColumnById(command.relationshipColumnId())
         .switchIfEmpty(Mono.error(new RelationshipPositionInvalidException(
             "Relationship column not found")))
@@ -70,10 +66,6 @@ public class ChangeRelationshipColumnPositionService
       return Mono.error(new RelationshipPositionInvalidException(
           "Relationship column not found"));
     }
-    if (nextPosition < 0 || nextPosition >= columns.size()) {
-      return Mono.error(new RelationshipPositionInvalidException(
-          "Relationship column position must be between 0 and %d".formatted(columns.size() - 1)));
-    }
 
     List<RelationshipColumn> reordered = new ArrayList<>(columns);
     int currentIndex = findIndex(reordered, relationshipColumn.id());
@@ -82,7 +74,8 @@ public class ChangeRelationshipColumnPositionService
           "Relationship column not found"));
     }
     RelationshipColumn movingColumn = reordered.remove(currentIndex);
-    reordered.add(nextPosition, movingColumn);
+    int normalizedPosition = Math.clamp(nextPosition, 0, columns.size() - 1);
+    reordered.add(normalizedPosition, movingColumn);
 
     List<RelationshipColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {

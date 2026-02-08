@@ -31,10 +31,6 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
   @Override
   public Mono<MutationResult<Void>> changeIndexColumnPosition(
       ChangeIndexColumnPositionCommand command) {
-    if (command.seqNo() < 0) {
-      return Mono.error(new IndexPositionInvalidException(
-          "Index column position must be zero or positive"));
-    }
     return getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
         .switchIfEmpty(Mono.error(new IndexPositionInvalidException("Index column not found")))
         .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
@@ -53,10 +49,6 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
     if (columns.isEmpty()) {
       return Mono.error(new IndexPositionInvalidException("Index column not found"));
     }
-    if (nextPosition < 0 || nextPosition >= columns.size()) {
-      return Mono.error(new IndexPositionInvalidException(
-          "Index column position must be between 0 and %d".formatted(columns.size() - 1)));
-    }
 
     List<IndexColumn> reordered = new ArrayList<>(columns);
     int currentIndex = findIndex(reordered, indexColumn.id());
@@ -64,7 +56,8 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
       return Mono.error(new IndexPositionInvalidException("Index column not found"));
     }
     IndexColumn movingColumn = reordered.remove(currentIndex);
-    reordered.add(nextPosition, movingColumn);
+    int normalizedPosition = Math.clamp(nextPosition, 0, columns.size() - 1);
+    reordered.add(normalizedPosition, movingColumn);
 
     List<IndexColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {

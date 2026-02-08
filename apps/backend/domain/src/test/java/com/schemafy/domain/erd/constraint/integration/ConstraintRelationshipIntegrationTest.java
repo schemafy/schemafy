@@ -130,12 +130,12 @@ class ConstraintRelationshipIntegrationTest {
 
     // PK Table 컬럼 생성
     var createPkColumn1Command = new CreateColumnCommand(
-        pkTableId, "pk_col1", "INT", null, null, null, 0, false, null, null, "PK Column 1");
+        pkTableId, "pk_col1", "INT", null, null, null, false, null, null, "PK Column 1");
     var pkColumn1Result = createColumnUseCase.createColumn(createPkColumn1Command).block().result();
     pkColumnId1 = pkColumn1Result.columnId();
 
     var createPkColumn2Command = new CreateColumnCommand(
-        pkTableId, "pk_col2", "INT", null, null, null, 1, false, null, null, "PK Column 2");
+        pkTableId, "pk_col2", "INT", null, null, null, false, null, null, "PK Column 2");
     var pkColumn2Result = createColumnUseCase.createColumn(createPkColumn2Command).block().result();
     pkColumnId2 = pkColumn2Result.columnId();
 
@@ -403,7 +403,7 @@ class ConstraintRelationshipIntegrationTest {
 
       // Given: PK 테이블에 새 컬럼 추가
       var createNewPkColumnCommand = new CreateColumnCommand(
-          pkTableId, "pk_col3", "INT", null, null, null, 2, false, null, null, "PK Column 3");
+          pkTableId, "pk_col3", "INT", null, null, null, false, null, null, "PK Column 3");
       var newPkColumnResult = createColumnUseCase.createColumn(createNewPkColumnCommand).block().result();
       String newPkColumnId = newPkColumnResult.columnId();
 
@@ -460,7 +460,7 @@ class ConstraintRelationshipIntegrationTest {
 
       // Given: PK 테이블에 새 컬럼 추가
       var createNewPkColumnCommand = new CreateColumnCommand(
-          pkTableId, "pk_col3", "VARCHAR", 100, null, null, 2, false, "utf8mb4", "utf8mb4_general_ci", "PK Column 3");
+          pkTableId, "pk_col3", "VARCHAR", 100, null, null, false, "utf8mb4", "utf8mb4_general_ci", "PK Column 3");
       var newPkColumnResult = createColumnUseCase.createColumn(createNewPkColumnCommand).block().result();
       String newPkColumnId = newPkColumnResult.columnId();
 
@@ -631,7 +631,7 @@ class ConstraintRelationshipIntegrationTest {
     void propagatesCharsetCollationToFkColumns() {
       // Given: VARCHAR PK 컬럼과 FK 컬럼 생성
       var createVarcharPkColumnCommand = new CreateColumnCommand(
-          pkTableId, "pk_varchar", "VARCHAR", 100, null, null, 2, false, null, null, null);
+          pkTableId, "pk_varchar", "VARCHAR", 100, null, null, false, null, null, null);
       var varcharPkResult = createColumnUseCase.createColumn(createVarcharPkColumnCommand).block().result();
       String varcharPkColumnId = varcharPkResult.columnId();
 

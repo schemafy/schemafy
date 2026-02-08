@@ -9,7 +9,6 @@ public record CreateColumnRequest(
     Integer length,
     Integer precision,
     Integer scale,
-    Integer seqNo,
     boolean autoIncrement,
     String charset,
     String collation,
