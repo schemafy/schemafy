@@ -158,6 +158,54 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
     return createResponseFieldsSnippet(mutationResponseFieldsWithNullData());
   }
 
+  // ========== PATCH /api/constraints/{constraintId}/check-expr ==========
+
+  public static Snippet changeConstraintCheckExprPathParameters() {
+    return pathParameters(
+        parameterWithName("constraintId").description("변경할 제약조건 ID (ULID)"));
+  }
+
+  public static Snippet changeConstraintCheckExprRequestHeaders() {
+    return createRequestHeadersSnippet(commonRequestHeaders());
+  }
+
+  public static Snippet changeConstraintCheckExprRequest() {
+    return requestFields(
+        fieldWithPath("checkExpr").type(JsonFieldType.STRING).description("변경할 CHECK 표현식"));
+  }
+
+  public static Snippet changeConstraintCheckExprResponseHeaders() {
+    return createResponseHeadersSnippet(commonResponseHeaders());
+  }
+
+  public static Snippet changeConstraintCheckExprResponse() {
+    return createResponseFieldsSnippet(mutationResponseFieldsWithNullData());
+  }
+
+  // ========== PATCH /api/constraints/{constraintId}/default-expr ==========
+
+  public static Snippet changeConstraintDefaultExprPathParameters() {
+    return pathParameters(
+        parameterWithName("constraintId").description("변경할 제약조건 ID (ULID)"));
+  }
+
+  public static Snippet changeConstraintDefaultExprRequestHeaders() {
+    return createRequestHeadersSnippet(commonRequestHeaders());
+  }
+
+  public static Snippet changeConstraintDefaultExprRequest() {
+    return requestFields(
+        fieldWithPath("defaultExpr").type(JsonFieldType.STRING).description("변경할 DEFAULT 표현식"));
+  }
+
+  public static Snippet changeConstraintDefaultExprResponseHeaders() {
+    return createResponseHeadersSnippet(commonResponseHeaders());
+  }
+
+  public static Snippet changeConstraintDefaultExprResponse() {
+    return createResponseFieldsSnippet(mutationResponseFieldsWithNullData());
+  }
+
   // ========== DELETE /api/constraints/{constraintId} ==========
 
   public static Snippet deleteConstraintPathParameters() {

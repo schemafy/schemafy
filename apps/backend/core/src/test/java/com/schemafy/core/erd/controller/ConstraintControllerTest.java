@@ -20,6 +20,8 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintDefaultExprRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateConstraintRequest;
@@ -30,6 +32,10 @@ import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColum
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
@@ -83,6 +89,12 @@ class ConstraintControllerTest {
 
   @MockitoBean
   private GetConstraintsByTableIdUseCase getConstraintsByTableIdUseCase;
+
+  @MockitoBean
+  private ChangeConstraintCheckExprUseCase changeConstraintCheckExprUseCase;
+
+  @MockitoBean
+  private ChangeConstraintDefaultExprUseCase changeConstraintDefaultExprUseCase;
 
   @MockitoBean
   private ChangeConstraintNameUseCase changeConstraintNameUseCase;
@@ -233,6 +245,112 @@ class ConstraintControllerTest {
             ConstraintApiSnippets.getConstraintsByTableIdRequestHeaders(),
             ConstraintApiSnippets.getConstraintsByTableIdResponseHeaders(),
             ConstraintApiSnippets.getConstraintsByTableIdResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 CHECK 표현식 변경 API 문서화")
+  void changeConstraintCheckExpr() throws Exception {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    ChangeConstraintCheckExprRequest request = new ChangeConstraintCheckExprRequest("value > 0");
+
+    given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(objectMapper.writeValueAsString(request))
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("constraint-change-check-expr",
+            ConstraintApiSnippets.changeConstraintCheckExprPathParameters(),
+            ConstraintApiSnippets.changeConstraintCheckExprRequestHeaders(),
+            ConstraintApiSnippets.changeConstraintCheckExprRequest(),
+            ConstraintApiSnippets.changeConstraintCheckExprResponseHeaders(),
+            ConstraintApiSnippets.changeConstraintCheckExprResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 CHECK 표현식 변경 시 빈 값이면 400 에러를 반환한다")
+  void changeConstraintCheckExprWithBlankValueReturnsBadRequest() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "checkExpr": ""
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(false)
+        .jsonPath("$.error.code")
+        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+
+    then(changeConstraintCheckExprUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("제약조건 DEFAULT 표현식 변경 API 문서화")
+  void changeConstraintDefaultExpr() throws Exception {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    ChangeConstraintDefaultExprRequest request = new ChangeConstraintDefaultExprRequest("0");
+
+    given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(objectMapper.writeValueAsString(request))
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("constraint-change-default-expr",
+            ConstraintApiSnippets.changeConstraintDefaultExprPathParameters(),
+            ConstraintApiSnippets.changeConstraintDefaultExprRequestHeaders(),
+            ConstraintApiSnippets.changeConstraintDefaultExprRequest(),
+            ConstraintApiSnippets.changeConstraintDefaultExprResponseHeaders(),
+            ConstraintApiSnippets.changeConstraintDefaultExprResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 DEFAULT 표현식 변경 시 빈 값이면 400 에러를 반환한다")
+  void changeConstraintDefaultExprWithBlankValueReturnsBadRequest() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "defaultExpr": ""
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(false)
+        .jsonPath("$.error.code")
+        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+
+    then(changeConstraintDefaultExprUseCase).shouldHaveNoInteractions();
   }
 
   @Test

@@ -19,6 +19,8 @@ import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintDefaultExprRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateConstraintRequest;
@@ -29,6 +31,10 @@ import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColum
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
@@ -58,6 +64,8 @@ public class ConstraintController {
   private final CreateConstraintUseCase createConstraintUseCase;
   private final GetConstraintUseCase getConstraintUseCase;
   private final GetConstraintsByTableIdUseCase getConstraintsByTableIdUseCase;
+  private final ChangeConstraintCheckExprUseCase changeConstraintCheckExprUseCase;
+  private final ChangeConstraintDefaultExprUseCase changeConstraintDefaultExprUseCase;
   private final ChangeConstraintNameUseCase changeConstraintNameUseCase;
   private final DeleteConstraintUseCase deleteConstraintUseCase;
   private final GetConstraintColumnsByConstraintIdUseCase getConstraintColumnsByConstraintIdUseCase;
@@ -103,6 +111,32 @@ public class ConstraintController {
         .map(constraints -> constraints.stream()
             .map(ConstraintResponse::from)
             .toList())
+        .map(BaseResponse::success);
+  }
+
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PatchMapping("/constraints/{constraintId}/check-expr")
+  public Mono<BaseResponse<MutationResponse<Void>>> changeConstraintCheckExpr(
+      @PathVariable String constraintId,
+      @Valid @RequestBody ChangeConstraintCheckExprRequest request) {
+    ChangeConstraintCheckExprCommand command = new ChangeConstraintCheckExprCommand(
+        constraintId,
+        request.checkExpr());
+    return changeConstraintCheckExprUseCase.changeConstraintCheckExpr(command)
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+        .map(BaseResponse::success);
+  }
+
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
+  @PatchMapping("/constraints/{constraintId}/default-expr")
+  public Mono<BaseResponse<MutationResponse<Void>>> changeConstraintDefaultExpr(
+      @PathVariable String constraintId,
+      @Valid @RequestBody ChangeConstraintDefaultExprRequest request) {
+    ChangeConstraintDefaultExprCommand command = new ChangeConstraintDefaultExprCommand(
+        constraintId,
+        request.defaultExpr());
+    return changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(command)
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
 

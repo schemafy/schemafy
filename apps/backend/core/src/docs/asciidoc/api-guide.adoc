@@ -1783,6 +1783,70 @@ include::{snippets}/constraint-change-name/response-fields.adoc[]
 
 ---
 
+==== Constraint CHECK 표현식 변경
+
+제약조건 CHECK 표현식을 변경합니다.
+
+[source]
+----
+PATCH /api/v1.0/constraints/{constraintId}/check-expr
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-change-check-expr/http-request.adoc[]
+include::{snippets}/constraint-change-check-expr/request-headers.adoc[]
+include::{snippets}/constraint-change-check-expr/path-parameters.adoc[]
+include::{snippets}/constraint-change-check-expr/request-fields.adoc[]
+include::{snippets}/constraint-change-check-expr/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-change-check-expr/response-headers.adoc[]
+include::{snippets}/constraint-change-check-expr/response-body.adoc[]
+include::{snippets}/constraint-change-check-expr/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-change-check-expr/response-fields.adoc[]
+
+---
+
+==== Constraint DEFAULT 표현식 변경
+
+제약조건 DEFAULT 표현식을 변경합니다.
+
+[source]
+----
+PATCH /api/v1.0/constraints/{constraintId}/default-expr
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/constraint-change-default-expr/http-request.adoc[]
+include::{snippets}/constraint-change-default-expr/request-headers.adoc[]
+include::{snippets}/constraint-change-default-expr/path-parameters.adoc[]
+include::{snippets}/constraint-change-default-expr/request-fields.adoc[]
+include::{snippets}/constraint-change-default-expr/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/constraint-change-default-expr/response-headers.adoc[]
+include::{snippets}/constraint-change-default-expr/response-body.adoc[]
+include::{snippets}/constraint-change-default-expr/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/constraint-change-default-expr/response-fields.adoc[]
+
+---
+
 ==== Constraint 삭제
 
 제약조건을 삭제합니다.
