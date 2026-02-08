@@ -1,10 +1,13 @@
 package com.schemafy.domain.erd.relationship.application.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.relationship.application.port.in.AddRelationshipColumnCommand;
@@ -37,11 +40,22 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Override
-  public Mono<AddRelationshipColumnResult> addRelationshipColumn(AddRelationshipColumnCommand command) {
+  public Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumn(
+      AddRelationshipColumnCommand command) {
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
         .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
-        .flatMap(relationship -> loadTables(relationship)
-            .flatMap(tables -> addColumn(relationship, tables.fkTable(), tables.pkTable(), command)));
+        .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
+          return loadTables(relationship)
+              .flatMap(tables -> addColumn(
+                  relationship,
+                  tables.fkTable(),
+                  tables.pkTable(),
+                  command))
+              .map(result -> MutationResult.of(result, affectedTableIds));
+        });
   }
 
   private Mono<TablePair> loadTables(Relationship relationship) {
@@ -69,6 +83,7 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
           List<RelationshipColumn> existingColumns = tuple.getT1();
           List<Column> fkColumns = tuple.getT2();
           List<Column> pkColumns = tuple.getT3();
+          int resolvedSeqNo = resolveSeqNo(command.seqNo(), existingColumns);
 
           List<RelationshipColumn> updatedColumns = new ArrayList<>(existingColumns.size() + 1);
           updatedColumns.addAll(existingColumns);
@@ -77,7 +92,7 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
               relationship.id(),
               command.pkColumnId(),
               command.fkColumnId(),
-              command.seqNo()));
+              resolvedSeqNo));
 
           List<Integer> seqNos = updatedColumns.stream()
               .map(RelationshipColumn::seqNo)
@@ -90,25 +105,37 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
               updatedColumns,
               relationship.name());
           RelationshipValidator.validateColumnUniqueness(updatedColumns, relationship.name());
+          return Mono.fromCallable(ulidGeneratorPort::generate)
+              .flatMap(relationshipColumnId -> {
+                RelationshipColumn relationshipColumn = new RelationshipColumn(
+                    relationshipColumnId,
+                    relationship.id(),
+                    command.pkColumnId(),
+                    command.fkColumnId(),
+                    resolvedSeqNo);
 
-          RelationshipColumn relationshipColumn = new RelationshipColumn(
-              ulidGeneratorPort.generate(),
-              relationship.id(),
-              command.pkColumnId(),
-              command.fkColumnId(),
-              command.seqNo());
-
-          return createRelationshipColumnPort.createRelationshipColumn(relationshipColumn)
-              .map(savedColumn -> new AddRelationshipColumnResult(
-                  savedColumn.id(),
-                  savedColumn.relationshipId(),
-                  savedColumn.pkColumnId(),
-                  savedColumn.fkColumnId(),
-                  savedColumn.seqNo()));
+                return createRelationshipColumnPort.createRelationshipColumn(relationshipColumn)
+                    .map(savedColumn -> new AddRelationshipColumnResult(
+                        savedColumn.id(),
+                        savedColumn.relationshipId(),
+                        savedColumn.pkColumnId(),
+                        savedColumn.fkColumnId(),
+                        savedColumn.seqNo()));
+              });
         });
   }
 
   private record TablePair(Table fkTable, Table pkTable) {
+  }
+
+  private static int resolveSeqNo(Integer requestedSeqNo, List<RelationshipColumn> existingColumns) {
+    if (requestedSeqNo != null) {
+      return requestedSeqNo;
+    }
+    return existingColumns.stream()
+        .mapToInt(RelationshipColumn::seqNo)
+        .max()
+        .orElse(-1) + 1;
   }
 
 }

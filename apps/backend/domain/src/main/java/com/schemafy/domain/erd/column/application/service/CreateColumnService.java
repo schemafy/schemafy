@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnResult;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
@@ -35,7 +36,7 @@ public class CreateColumnService implements CreateColumnUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Override
-  public Mono<CreateColumnResult> createColumn(CreateColumnCommand command) {
+  public Mono<MutationResult<CreateColumnResult>> createColumn(CreateColumnCommand command) {
     ColumnLengthScale lengthScale = ColumnLengthScale.from(
         command.length(),
         command.precision(),
@@ -44,7 +45,8 @@ public class CreateColumnService implements CreateColumnUseCase {
     return getTableByIdPort.findTableById(command.tableId())
         .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
         .flatMap(table -> fetchSchemaAndColumns(table)
-            .flatMap(tuple -> createColumn(table, tuple, command, lengthScale)));
+            .flatMap(tuple -> createColumn(table, tuple, command, lengthScale))
+            .map(result -> MutationResult.of(result, table.id())));
   }
 
   private Mono<Tuple2<Schema, List<Column>>> fetchSchemaAndColumns(Table table) {
@@ -79,31 +81,35 @@ public class CreateColumnService implements CreateColumnUseCase {
         existingColumns,
         null);
     ColumnValidator.validateCharsetAndCollation(normalizedDataType, charset, collation);
-    ColumnValidator.validatePosition(command.seqNo());
+    int resolvedSeqNo = resolveSeqNo(existingColumns);
+    ColumnValidator.validatePosition(resolvedSeqNo);
 
-    Column column = new Column(
-        ulidGeneratorPort.generate(),
-        table.id(),
-        normalizedName,
-        normalizedDataType,
-        lengthScale,
-        command.seqNo(),
-        command.autoIncrement(),
-        charset,
-        collation,
-        comment);
+    return Mono.fromCallable(ulidGeneratorPort::generate)
+        .flatMap(id -> {
+          Column column = new Column(
+              id,
+              table.id(),
+              normalizedName,
+              normalizedDataType,
+              lengthScale,
+              resolvedSeqNo,
+              command.autoIncrement(),
+              charset,
+              collation,
+              comment);
 
-    return createColumnPort.createColumn(column)
-        .map(savedColumn -> new CreateColumnResult(
-            savedColumn.id(),
-            savedColumn.name(),
-            savedColumn.dataType(),
-            savedColumn.lengthScale(),
-            savedColumn.seqNo(),
-            savedColumn.autoIncrement(),
-            savedColumn.charset(),
-            savedColumn.collation(),
-            savedColumn.comment()));
+          return createColumnPort.createColumn(column)
+              .map(savedColumn -> new CreateColumnResult(
+                  savedColumn.id(),
+                  savedColumn.name(),
+                  savedColumn.dataType(),
+                  savedColumn.lengthScale(),
+                  savedColumn.seqNo(),
+                  savedColumn.autoIncrement(),
+                  savedColumn.charset(),
+                  savedColumn.collation(),
+                  savedColumn.comment()));
+        });
   }
 
   private static String normalizeName(String name) {
@@ -115,6 +121,13 @@ public class CreateColumnService implements CreateColumnUseCase {
       return null;
     }
     return value.trim();
+  }
+
+  private static int resolveSeqNo(List<Column> existingColumns) {
+    return existingColumns.stream()
+        .mapToInt(Column::seqNo)
+        .max()
+        .orElse(-1) + 1;
   }
 
 }

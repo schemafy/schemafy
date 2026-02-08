@@ -107,27 +107,27 @@ class IndexCreateIntegrationTest {
     var createSchemaCommand = new CreateSchemaCommand(
         PROJECT_ID, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
-    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();
 
     var createTableCommand = new CreateTableCommand(
         schemaId, "test_table", "utf8mb4", "utf8mb4_general_ci");
-    var tableResult = createTableUseCase.createTable(createTableCommand).block();
+    var tableResult = createTableUseCase.createTable(createTableCommand).block().result();
     tableId = tableResult.tableId();
 
     var createColumn1Command = new CreateColumnCommand(
-        tableId, "id", "INT", null, null, null, 0, true, null, null, "PK");
-    var column1Result = createColumnUseCase.createColumn(createColumn1Command).block();
+        tableId, "id", "INT", null, null, null, true, null, null, "PK");
+    var column1Result = createColumnUseCase.createColumn(createColumn1Command).block().result();
     columnId1 = column1Result.columnId();
 
     var createColumn2Command = new CreateColumnCommand(
-        tableId, "name", "VARCHAR", 100, null, null, 1, false, null, null, "Name");
-    var column2Result = createColumnUseCase.createColumn(createColumn2Command).block();
+        tableId, "name", "VARCHAR", 100, null, null, false, null, null, "Name");
+    var column2Result = createColumnUseCase.createColumn(createColumn2Command).block().result();
     columnId2 = column2Result.columnId();
 
     var createColumn3Command = new CreateColumnCommand(
-        tableId, "email", "VARCHAR", 255, null, null, 2, false, null, null, "Email");
-    var column3Result = createColumnUseCase.createColumn(createColumn3Command).block();
+        tableId, "email", "VARCHAR", 255, null, null, false, null, null, "Email");
+    var column3Result = createColumnUseCase.createColumn(createColumn3Command).block().result();
     columnId3 = column3Result.columnId();
   }
 
@@ -144,9 +144,10 @@ class IndexCreateIntegrationTest {
 
       StepVerifier.create(createIndexUseCase.createIndex(createCommand))
           .assertNext(result -> {
-            assertThat(result.indexId()).isNotNull();
-            assertThat(result.name()).isEqualTo("idx_btree");
-            assertThat(result.type()).isEqualTo(IndexType.BTREE);
+            var payload = result.result();
+            assertThat(payload.indexId()).isNotNull();
+            assertThat(payload.name()).isEqualTo("idx_btree");
+            assertThat(payload.type()).isEqualTo(IndexType.BTREE);
           })
           .verifyComplete();
     }
@@ -160,8 +161,9 @@ class IndexCreateIntegrationTest {
 
       StepVerifier.create(createIndexUseCase.createIndex(createCommand))
           .assertNext(result -> {
-            assertThat(result.indexId()).isNotNull();
-            assertThat(result.type()).isEqualTo(IndexType.HASH);
+            var payload = result.result();
+            assertThat(payload.indexId()).isNotNull();
+            assertThat(payload.type()).isEqualTo(IndexType.HASH);
           })
           .verifyComplete();
     }
@@ -175,8 +177,9 @@ class IndexCreateIntegrationTest {
 
       StepVerifier.create(createIndexUseCase.createIndex(createCommand))
           .assertNext(result -> {
-            assertThat(result.indexId()).isNotNull();
-            assertThat(result.type()).isEqualTo(IndexType.FULLTEXT);
+            var payload = result.result();
+            assertThat(payload.indexId()).isNotNull();
+            assertThat(payload.type()).isEqualTo(IndexType.FULLTEXT);
           })
           .verifyComplete();
     }
@@ -190,7 +193,7 @@ class IndexCreateIntegrationTest {
               new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC),
               new CreateIndexColumnCommand(columnId2, 1, SortDirection.DESC)));
 
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       StepVerifier.create(getIndexColumnsByIndexIdUseCase
           .getIndexColumnsByIndexId(
@@ -219,10 +222,11 @@ class IndexCreateIntegrationTest {
       var createCommand = new CreateIndexCommand(
           tableId, "idx_old", IndexType.BTREE,
           List.of(new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       StepVerifier.create(changeIndexNameUseCase.changeIndexName(
           new ChangeIndexNameCommand(result.indexId(), "idx_new")))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getIndexUseCase.getIndex(
@@ -243,10 +247,11 @@ class IndexCreateIntegrationTest {
       var createCommand = new CreateIndexCommand(
           tableId, "idx_test", IndexType.BTREE,
           List.of(new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       StepVerifier.create(changeIndexTypeUseCase.changeIndexType(
           new ChangeIndexTypeCommand(result.indexId(), IndexType.HASH)))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getIndexUseCase.getIndex(
@@ -267,15 +272,16 @@ class IndexCreateIntegrationTest {
       var createCommand = new CreateIndexCommand(
           tableId, "idx_test", IndexType.BTREE,
           List.of(new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       StepVerifier.create(addIndexColumnUseCase.addIndexColumn(
           new AddIndexColumnCommand(result.indexId(), columnId2, 1, SortDirection.DESC)))
           .assertNext(addResult -> {
-            assertThat(addResult.indexColumnId()).isNotNull();
-            assertThat(addResult.columnId()).isEqualTo(columnId2);
-            assertThat(addResult.seqNo()).isEqualTo(1);
-            assertThat(addResult.sortDirection()).isEqualTo(SortDirection.DESC);
+            var payload = addResult.result();
+            assertThat(payload.indexColumnId()).isNotNull();
+            assertThat(payload.columnId()).isEqualTo(columnId2);
+            assertThat(payload.seqNo()).isEqualTo(1);
+            assertThat(payload.sortDirection()).isEqualTo(SortDirection.DESC);
           })
           .verifyComplete();
 
@@ -301,7 +307,7 @@ class IndexCreateIntegrationTest {
               new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC),
               new CreateIndexColumnCommand(columnId2, 1, SortDirection.ASC),
               new CreateIndexColumnCommand(columnId3, 2, SortDirection.ASC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       // 현재 컬럼 조회
       var columns = getIndexColumnsByIndexIdUseCase
@@ -315,6 +321,7 @@ class IndexCreateIntegrationTest {
 
       StepVerifier.create(changeIndexColumnPositionUseCase.changeIndexColumnPosition(
           new ChangeIndexColumnPositionCommand(lastColumnId, 0)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 위치 확인
@@ -341,7 +348,7 @@ class IndexCreateIntegrationTest {
       var createCommand = new CreateIndexCommand(
           tableId, "idx_test", IndexType.BTREE,
           List.of(new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       var columns = getIndexColumnsByIndexIdUseCase
           .getIndexColumnsByIndexId(
@@ -351,6 +358,7 @@ class IndexCreateIntegrationTest {
 
       StepVerifier.create(changeIndexColumnSortDirectionUseCase.changeIndexColumnSortDirection(
           new ChangeIndexColumnSortDirectionCommand(indexColumnId, SortDirection.DESC)))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getIndexColumnsByIndexIdUseCase
@@ -376,10 +384,11 @@ class IndexCreateIntegrationTest {
           List.of(
               new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC),
               new CreateIndexColumnCommand(columnId2, 1, SortDirection.DESC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       StepVerifier.create(deleteIndexUseCase.deleteIndex(
           new DeleteIndexCommand(result.indexId())))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getIndexUseCase.getIndex(

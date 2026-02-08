@@ -1,9 +1,11 @@
 package com.schemafy.domain.erd.constraint.application.port.in;
 
+import com.schemafy.domain.common.MutationResult;
+
 import reactor.core.publisher.Mono;
 
 public interface CreateConstraintUseCase {
 
-  Mono<CreateConstraintResult> createConstraint(CreateConstraintCommand command);
+  Mono<MutationResult<CreateConstraintResult>> createConstraint(CreateConstraintCommand command);
 
 }

@@ -2,10 +2,12 @@ package com.schemafy.domain.erd.relationship.application.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.common.exception.InvalidValueException;
 import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
@@ -35,22 +37,30 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
   private final PkCascadeHelper pkCascadeHelper;
 
   @Override
-  public Mono<Void> changeRelationshipKind(ChangeRelationshipKindCommand command) {
+  public Mono<MutationResult<Void>> changeRelationshipKind(ChangeRelationshipKindCommand command) {
     if (command.kind() == null) {
       return Mono.error(new InvalidValueException("Relationship kind is required"));
     }
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
         .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
         .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
           RelationshipKind oldKind = relationship.kind();
           RelationshipKind newKind = command.kind();
 
           if (oldKind == newKind) {
-            return Mono.empty();
+            return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
           }
 
           if (newKind != RelationshipKind.IDENTIFYING) {
-            return syncPkAndChangeKind(relationship, oldKind, newKind);
+            return syncPkAndChangeKind(
+                relationship,
+                oldKind,
+                newKind,
+                affectedTableIds)
+                .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
           }
           return getTableByIdPort.findTableById(relationship.fkTableId())
               .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
@@ -62,7 +72,9 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
                       relationship,
                       relationships,
                       oldKind,
-                      newKind)));
+                      newKind,
+                      affectedTableIds))
+                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds)));
         })
         .as(transactionalOperator::transactional);
   }
@@ -71,21 +83,28 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
       Relationship relationship,
       List<Relationship> relationships,
       RelationshipKind oldKind,
-      RelationshipKind newKind) {
+      RelationshipKind newKind,
+      Set<String> affectedTableIds) {
     RelationshipValidator.validateIdentifyingCycle(
         relationships,
         new RelationshipValidator.RelationshipKindChange(
             relationship.id(),
             newKind),
         null);
-    return syncPkAndChangeKind(relationship, oldKind, newKind);
+    return syncPkAndChangeKind(relationship, oldKind, newKind, affectedTableIds);
   }
 
   private Mono<Void> syncPkAndChangeKind(
       Relationship relationship,
       RelationshipKind oldKind,
-      RelationshipKind newKind) {
-    return pkCascadeHelper.syncPkForKindChange(relationship, oldKind, newKind, new HashSet<>())
+      RelationshipKind newKind,
+      Set<String> affectedTableIds) {
+    return pkCascadeHelper.syncPkForKindChange(
+        relationship,
+        oldKind,
+        newKind,
+        new HashSet<>(),
+        affectedTableIds)
         .then(changeRelationshipKindPort.changeRelationshipKind(relationship.id(), newKind));
   }
 

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.index.application.port.in.AddIndexColumnCommand;
@@ -37,10 +38,11 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Override
-  public Mono<AddIndexColumnResult> addIndexColumn(AddIndexColumnCommand command) {
+  public Mono<MutationResult<AddIndexColumnResult>> addIndexColumn(AddIndexColumnCommand command) {
     return getIndexByIdPort.findIndexById(command.indexId())
         .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
-        .flatMap(index -> validateAndAdd(index, command));
+        .flatMap(index -> validateAndAdd(index, command)
+            .map(result -> MutationResult.of(result, index.tableId())));
   }
 
   private Mono<AddIndexColumnResult> validateAndAdd(Index index, AddIndexColumnCommand command) {
@@ -56,6 +58,7 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
               List<IndexColumn> existingColumns = tuple.getT1();
               List<Column> tableColumns = tuple.getT2();
               List<Index> indexes = tuple.getT3();
+              int resolvedSeqNo = resolveSeqNo(command.seqNo(), existingColumns);
 
               List<IndexColumn> updatedColumns = new ArrayList<>(existingColumns.size() + 1);
               updatedColumns.addAll(existingColumns);
@@ -63,7 +66,7 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
                   null,
                   index.id(),
                   command.columnId(),
-                  command.seqNo(),
+                  resolvedSeqNo,
                   command.sortDirection()));
 
               List<Integer> seqNos = updatedColumns.stream()
@@ -82,20 +85,23 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
                   index.name(),
                   index.id());
 
-              IndexColumn indexColumn = new IndexColumn(
-                  ulidGeneratorPort.generate(),
-                  index.id(),
-                  command.columnId(),
-                  command.seqNo(),
-                  command.sortDirection());
+              return Mono.fromCallable(ulidGeneratorPort::generate)
+                  .flatMap(id -> {
+                    IndexColumn indexColumn = new IndexColumn(
+                        id,
+                        index.id(),
+                        command.columnId(),
+                        resolvedSeqNo,
+                        command.sortDirection());
 
-              return createIndexColumnPort.createIndexColumn(indexColumn)
-                  .map(savedColumn -> new AddIndexColumnResult(
-                      savedColumn.id(),
-                      savedColumn.indexId(),
-                      savedColumn.columnId(),
-                      savedColumn.seqNo(),
-                      savedColumn.sortDirection()));
+                    return createIndexColumnPort.createIndexColumn(indexColumn)
+                        .map(savedColumn -> new AddIndexColumnResult(
+                            savedColumn.id(),
+                            savedColumn.indexId(),
+                            savedColumn.columnId(),
+                            savedColumn.seqNo(),
+                            savedColumn.sortDirection()));
+                  });
             }));
   }
 
@@ -109,6 +115,16 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
             .defaultIfEmpty(List.of())
             .map(columns -> Map.entry(indexItem.id(), columns)))
         .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+  }
+
+  private static int resolveSeqNo(Integer requestedSeqNo, List<IndexColumn> existingColumns) {
+    if (requestedSeqNo != null) {
+      return requestedSeqNo;
+    }
+    return existingColumns.stream()
+        .mapToInt(IndexColumn::seqNo)
+        .max()
+        .orElse(-1) + 1;
   }
 
 }

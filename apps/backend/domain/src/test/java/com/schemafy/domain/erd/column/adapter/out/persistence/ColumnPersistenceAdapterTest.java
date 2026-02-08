@@ -1,5 +1,7 @@
 package com.schemafy.domain.erd.column.adapter.out.persistence;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
@@ -329,30 +331,147 @@ class ColumnPersistenceAdapterTest {
   }
 
   @Nested
-  @DisplayName("changeColumnPosition 메서드는")
+  @DisplayName("changeColumnPositions 메서드는")
   class ChangeColumnPosition {
 
     @Test
-    @DisplayName("컬럼 위치를 변경한다")
-    void changesColumnPosition() {
-      var column = ColumnFixture.defaultColumn();
-      sut.createColumn(column).block();
-      var newSeqNo = 5;
+    @DisplayName("테이블의 컬럼 위치를 일괄 변경한다")
+    void changesColumnPositions() {
+      var column1 = new Column(
+          COLUMN_ID_1,
+          ColumnFixture.DEFAULT_TABLE_ID,
+          "column_a",
+          "VARCHAR",
+          new ColumnLengthScale(255, null, null),
+          0,
+          false,
+          null,
+          null,
+          null);
+      var column2 = new Column(
+          COLUMN_ID_2,
+          ColumnFixture.DEFAULT_TABLE_ID,
+          "column_b",
+          "VARCHAR",
+          new ColumnLengthScale(255, null, null),
+          1,
+          false,
+          null,
+          null,
+          null);
+      var column3 = new Column(
+          COLUMN_ID_3,
+          ColumnFixture.DEFAULT_TABLE_ID,
+          "column_c",
+          "VARCHAR",
+          new ColumnLengthScale(255, null, null),
+          2,
+          false,
+          null,
+          null,
+          null);
+      sut.createColumn(column1).block();
+      sut.createColumn(column2).block();
+      sut.createColumn(column3).block();
 
-      StepVerifier.create(sut.changeColumnPosition(column.id(), newSeqNo))
+      var reordered = List.of(
+          new Column(
+              column3.id(),
+              column3.tableId(),
+              column3.name(),
+              column3.dataType(),
+              column3.lengthScale(),
+              0,
+              column3.autoIncrement(),
+              column3.charset(),
+              column3.collation(),
+              column3.comment()),
+          new Column(
+              column1.id(),
+              column1.tableId(),
+              column1.name(),
+              column1.dataType(),
+              column1.lengthScale(),
+              1,
+              column1.autoIncrement(),
+              column1.charset(),
+              column1.collation(),
+              column1.comment()),
+          new Column(
+              column2.id(),
+              column2.tableId(),
+              column2.name(),
+              column2.dataType(),
+              column2.lengthScale(),
+              2,
+              column2.autoIncrement(),
+              column2.charset(),
+              column2.collation(),
+              column2.comment()));
+
+      StepVerifier.create(sut.changeColumnPositions(ColumnFixture.DEFAULT_TABLE_ID, reordered))
           .verifyComplete();
 
-      StepVerifier.create(sut.findColumnById(column.id()))
-          .assertNext(found -> assertThat(found.seqNo()).isEqualTo(newSeqNo))
+      StepVerifier.create(sut.findColumnsByTableId(ColumnFixture.DEFAULT_TABLE_ID))
+          .assertNext(columns -> {
+            assertThat(columns).hasSize(3);
+            assertThat(columns.get(0).id()).isEqualTo(COLUMN_ID_3);
+            assertThat(columns.get(0).seqNo()).isEqualTo(0);
+            assertThat(columns.get(1).id()).isEqualTo(COLUMN_ID_1);
+            assertThat(columns.get(1).seqNo()).isEqualTo(1);
+            assertThat(columns.get(2).id()).isEqualTo(COLUMN_ID_2);
+            assertThat(columns.get(2).seqNo()).isEqualTo(2);
+          })
           .verifyComplete();
     }
 
     @Test
-    @DisplayName("존재하지 않는 컬럼이면 예외가 발생한다")
-    void throwsWhenColumnNotExists() {
-      StepVerifier.create(sut.changeColumnPosition("non-existent-id", 5))
-          .expectError(ColumnNotExistException.class)
-          .verify();
+    @DisplayName("다른 테이블 컬럼에는 영향을 주지 않는다")
+    void doesNotAffectOtherTable() {
+      var targetColumn = ColumnFixture.defaultColumn();
+      var otherColumn = new Column(
+          OTHER_COLUMN_ID,
+          OTHER_TABLE_ID,
+          "other_column",
+          "INT",
+          null,
+          0,
+          false,
+          null,
+          null,
+          null);
+      sut.createColumn(targetColumn).block();
+      sut.createColumn(otherColumn).block();
+
+      var reordered = List.of(
+          new Column(
+              targetColumn.id(),
+              targetColumn.tableId(),
+              targetColumn.name(),
+              targetColumn.dataType(),
+              targetColumn.lengthScale(),
+              0,
+              targetColumn.autoIncrement(),
+              targetColumn.charset(),
+              targetColumn.collation(),
+              targetColumn.comment()));
+
+      StepVerifier.create(sut.changeColumnPositions(targetColumn.tableId(), reordered))
+          .verifyComplete();
+
+      StepVerifier.create(sut.findColumnById(OTHER_COLUMN_ID))
+          .assertNext(found -> {
+            assertThat(found.tableId()).isEqualTo(OTHER_TABLE_ID);
+            assertThat(found.seqNo()).isEqualTo(0);
+          })
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("빈 목록이면 아무 작업도 하지 않는다")
+    void returnsWhenColumnsEmpty() {
+      StepVerifier.create(sut.changeColumnPositions(ColumnFixture.DEFAULT_TABLE_ID, List.of()))
+          .verifyComplete();
     }
 
   }

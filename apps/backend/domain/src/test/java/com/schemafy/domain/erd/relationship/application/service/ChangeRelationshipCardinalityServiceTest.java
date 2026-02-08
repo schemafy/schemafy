@@ -53,6 +53,7 @@ class ChangeRelationshipCardinalityServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipCardinality(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeRelationshipCardinalityPort).should()
@@ -71,6 +72,7 @@ class ChangeRelationshipCardinalityServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipCardinality(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeRelationshipCardinalityPort).should()

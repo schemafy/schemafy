@@ -51,6 +51,7 @@ class ChangeRelationshipExtraServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipExtra(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeRelationshipExtraPort).should()
@@ -69,6 +70,7 @@ class ChangeRelationshipExtraServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipExtra(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeRelationshipExtraPort).should()
@@ -87,6 +89,7 @@ class ChangeRelationshipExtraServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipExtra(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeRelationshipExtraPort).should()

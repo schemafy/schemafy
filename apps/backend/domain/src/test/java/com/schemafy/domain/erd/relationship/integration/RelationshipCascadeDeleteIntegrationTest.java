@@ -101,27 +101,27 @@ class RelationshipCascadeDeleteIntegrationTest {
     var createSchemaCommand = new CreateSchemaCommand(
         PROJECT_ID, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
-    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();
 
     var createPkTableCommand = new CreateTableCommand(
         schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci");
-    var pkTableResult = createTableUseCase.createTable(createPkTableCommand).block();
+    var pkTableResult = createTableUseCase.createTable(createPkTableCommand).block().result();
     pkTableId = pkTableResult.tableId();
 
     var createFkTableCommand = new CreateTableCommand(
         schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci");
-    var fkTableResult = createTableUseCase.createTable(createFkTableCommand).block();
+    var fkTableResult = createTableUseCase.createTable(createFkTableCommand).block().result();
     fkTableId = fkTableResult.tableId();
 
     var createPkColumnCommand = new CreateColumnCommand(
-        pkTableId, "id", "INT", null, null, null, 0, true, null, null, "PK");
-    var pkColumnResult = createColumnUseCase.createColumn(createPkColumnCommand).block();
+        pkTableId, "id", "INT", null, null, null, true, null, null, "PK");
+    var pkColumnResult = createColumnUseCase.createColumn(createPkColumnCommand).block().result();
     pkColumnId = pkColumnResult.columnId();
 
     var createPkColumn2Command = new CreateColumnCommand(
-        pkTableId, "code", "VARCHAR", 50, null, null, 1, false, null, null, "PK2");
-    var pkColumn2Result = createColumnUseCase.createColumn(createPkColumn2Command).block();
+        pkTableId, "code", "VARCHAR", 50, null, null, false, null, null, "PK2");
+    var pkColumn2Result = createColumnUseCase.createColumn(createPkColumn2Command).block().result();
     pkColumn2Id = pkColumn2Result.columnId();
 
     var createPkConstraintCommand = new CreateConstraintCommand(
@@ -146,6 +146,7 @@ class RelationshipCascadeDeleteIntegrationTest {
       var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
 
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(fkTableId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getRelationshipUseCase.getRelationship(
@@ -160,6 +161,7 @@ class RelationshipCascadeDeleteIntegrationTest {
       var relationship = createAutoRelationship(RelationshipKind.NON_IDENTIFYING);
 
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(pkTableId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getRelationshipUseCase.getRelationship(
@@ -176,6 +178,7 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       // FK 테이블 삭제
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(fkTableId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // FK 테이블 관련 관계는 없어야 함
@@ -220,6 +223,7 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       // PK 컬럼 삭제
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(pkColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 관계는 남아있지만 컬럼은 하나만 남아야 함
@@ -255,12 +259,14 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       // 관계 컬럼 제거 (첫 번째)
       StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
-          new RemoveRelationshipColumnCommand(relationship.relationshipId(), firstColumnId)))
+          new RemoveRelationshipColumnCommand(firstColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 마지막 컬럼 제거
       StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
-          new RemoveRelationshipColumnCommand(relationship.relationshipId(), secondColumnId)))
+          new RemoveRelationshipColumnCommand(secondColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 관계도 삭제되어야 함
@@ -287,7 +293,8 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       // 첫 번째 컬럼 제거
       StepVerifier.create(removeRelationshipColumnUseCase.removeRelationshipColumn(
-          new RemoveRelationshipColumnCommand(relationship.relationshipId(), firstColumnId)))
+          new RemoveRelationshipColumnCommand(firstColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 관계는 유지되고 남은 컬럼의 위치가 0으로 재정렬됨
@@ -309,7 +316,7 @@ class RelationshipCascadeDeleteIntegrationTest {
         pkTableId,
         kind,
         Cardinality.ONE_TO_MANY);
-    var result = createRelationshipUseCase.createRelationship(createCommand).block();
+    var result = createRelationshipUseCase.createRelationship(createCommand).block().result();
     var columns = getRelationshipColumnsByRelationshipIdUseCase
         .getRelationshipColumnsByRelationshipId(
             new GetRelationshipColumnsByRelationshipIdQuery(result.relationshipId()))

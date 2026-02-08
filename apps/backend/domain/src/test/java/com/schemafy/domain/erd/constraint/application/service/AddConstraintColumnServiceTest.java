@@ -22,8 +22,10 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintById
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper.CascadeCreatedInfo;
+import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
@@ -107,17 +109,18 @@ class AddConstraintColumnServiceTest {
           .willReturn(
               Mono.just(
                   new Column("col2", "table1", "col2", "INT", null, 1, false, null, null, null)));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.constraintColumnId()).isEqualTo("new-column-id");
-                assertThat(result.constraintId()).isEqualTo("constraint1");
-                assertThat(result.columnId()).isEqualTo("col2");
-                assertThat(result.seqNo()).isEqualTo(1);
-                assertThat(result.cascadeCreatedColumns()).isEmpty();
+                var payload = result.result();
+                assertThat(payload.constraintColumnId()).isEqualTo("new-column-id");
+                assertThat(payload.constraintId()).isEqualTo("constraint1");
+                assertThat(payload.columnId()).isEqualTo("col2");
+                assertThat(payload.seqNo()).isEqualTo(1);
+                assertThat(payload.cascadeCreatedColumns()).isEmpty();
               })
           .verifyComplete();
 
@@ -127,13 +130,49 @@ class AddConstraintColumnServiceTest {
     @Test
     @DisplayName("음수 seqNo면 예외가 발생한다")
     void throwsWhenNegativeSeqNo() {
-      var command = ConstraintFixture.addColumnCommand("constraint1", "col1", -1);
+      AddConstraintColumnCommand command = new AddConstraintColumnCommand("constraint1", "col1", -1);
+      var constraint = createConstraint("constraint1", "table1", ConstraintKind.UNIQUE);
+
+      given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.just(constraint));
+      given(getColumnsByTableIdPort.findColumnsByTableId("table1"))
+          .willReturn(Mono.just(List.of(ColumnFixture.columnWithId("col1"))));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .expectError(ConstraintPositionInvalidException.class)
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("seqNo가 없으면 마지막 위치로 자동 추가한다")
+    void addsColumnWithAutoSeqNoWhenMissing() {
+      AddConstraintColumnCommand command = new AddConstraintColumnCommand(
+          "constraint1",
+          "col2",
+          null);
+      var constraint = createConstraint("constraint1", "table1", ConstraintKind.UNIQUE);
+      var existingColumns = List.of(ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0));
+      var tableColumns = List.of(ColumnFixture.columnWithId("col1"), ColumnFixture.columnWithId("col2"));
+
+      given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.just(constraint));
+      given(getColumnsByTableIdPort.findColumnsByTableId("table1"))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(existingColumns));
+      given(ulidGeneratorPort.generate()).willReturn("new-column-id");
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+      StepVerifier.create(sut.addConstraintColumn(command))
+          .assertNext(result -> assertThat(result.result().seqNo()).isEqualTo(1))
+          .verifyComplete();
     }
 
     @Test
@@ -196,6 +235,55 @@ class AddConstraintColumnServiceTest {
     }
 
     @Test
+    @DisplayName("DEFAULT 제약조건에 두 번째 컬럼 추가 시 예외가 발생한다")
+    void throwsWhenAddingSecondColumnToDefaultConstraint() {
+      var command = ConstraintFixture.addColumnCommand("constraint1", "col2", 1);
+      var constraint = createConstraint("constraint1", "table1", ConstraintKind.DEFAULT);
+      var existingColumns = List.of(ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0));
+      var tableColumns = List.of(ColumnFixture.columnWithId("col1"), ColumnFixture.columnWithId("col2"));
+
+      given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.just(constraint));
+      given(getColumnsByTableIdPort.findColumnsByTableId("table1"))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(existingColumns));
+
+      StepVerifier.create(sut.addConstraintColumn(command))
+          .expectError(ConstraintColumnCountInvalidException.class)
+          .verify();
+
+      then(createConstraintColumnPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("DEFAULT 제약조건에 첫 번째 컬럼 추가는 허용된다")
+    void allowsAddingFirstColumnToDefaultConstraint() {
+      var command = ConstraintFixture.addColumnCommand("constraint1", "col1", 0);
+      var constraint = createConstraint("constraint1", "table1", ConstraintKind.DEFAULT);
+      var tableColumns = List.of(ColumnFixture.columnWithId("col1"));
+
+      given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.just(constraint));
+      given(getColumnsByTableIdPort.findColumnsByTableId("table1"))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-column-id");
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+      StepVerifier.create(sut.addConstraintColumn(command))
+          .assertNext(result -> {
+            assertThat(result.result().constraintId()).isEqualTo("constraint1");
+            assertThat(result.result().columnId()).isEqualTo("col1");
+          })
+          .verifyComplete();
+    }
+
+    @Test
     @DisplayName("연속되지 않은 seqNo면 예외가 발생한다")
     void throwsWhenNonContiguousSeqNo() {
       var command = ConstraintFixture.addColumnCommand("constraint1", "col2", 5);
@@ -241,14 +329,15 @@ class AddConstraintColumnServiceTest {
       given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(getColumnByIdPort.findColumnById("col2")).willReturn(Mono.just(pkColumn));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of(cascadeInfo)));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.cascadeCreatedColumns()).hasSize(1);
-                var cascade = result.cascadeCreatedColumns().get(0);
+                var payload = result.result();
+                assertThat(payload.cascadeCreatedColumns()).hasSize(1);
+                var cascade = payload.cascadeCreatedColumns().get(0);
                 assertThat(cascade.fkColumnId()).isEqualTo("new-fk-col-id");
                 assertThat(cascade.fkColumnName()).isEqualTo("pk_col2");
                 assertThat(cascade.fkTableId()).isEqualTo("fk-table1");
@@ -283,13 +372,13 @@ class AddConstraintColumnServiceTest {
       given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(getColumnByIdPort.findColumnById("col2")).willReturn(Mono.just(pkColumn));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of(cascadeInfo1, cascadeInfo2)));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.cascadeCreatedColumns()).hasSize(2);
+                assertThat(result.result().cascadeCreatedColumns()).hasSize(2);
               })
           .verifyComplete();
     }
@@ -315,11 +404,11 @@ class AddConstraintColumnServiceTest {
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.cascadeCreatedColumns()).isEmpty();
+                assertThat(result.result().cascadeCreatedColumns()).isEmpty();
               })
           .verifyComplete();
 
-      then(pkCascadeHelper).should(never()).cascadeAddPkColumn(any(), any(), any());
+      then(pkCascadeHelper).should(never()).cascadeAddPkColumn(any(), any(), any(), any());
     }
 
     @Test
@@ -346,14 +435,15 @@ class AddConstraintColumnServiceTest {
       given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(getColumnByIdPort.findColumnById("col2")).willReturn(Mono.just(pkColumn));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of(cascadeInfo)));
 
       StepVerifier.create(sut.addConstraintColumn(command))
           .assertNext(
               result -> {
-                assertThat(result.cascadeCreatedColumns()).hasSize(1);
-                assertThat(result.cascadeCreatedColumns().get(0).fkColumnName())
+                var payload = result.result();
+                assertThat(payload.cascadeCreatedColumns()).hasSize(1);
+                assertThat(payload.cascadeCreatedColumns().get(0).fkColumnName())
                     .isEqualTo("pk_col_1");
               })
           .verifyComplete();

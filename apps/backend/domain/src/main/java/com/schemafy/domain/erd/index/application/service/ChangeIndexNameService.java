@@ -2,6 +2,7 @@ package com.schemafy.domain.erd.index.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexNameCommand;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexNameUseCase;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexNamePort;
@@ -23,7 +24,7 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
   private final GetIndexByIdPort getIndexByIdPort;
 
   @Override
-  public Mono<Void> changeIndexName(ChangeIndexNameCommand command) {
+  public Mono<MutationResult<Void>> changeIndexName(ChangeIndexNameCommand command) {
     return Mono.defer(() -> {
       String normalizedName = normalizeName(command.newName());
       IndexValidator.validateName(normalizedName);
@@ -38,7 +39,9 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
                   return Mono.error(new IndexNameDuplicateException(
                       "Index name '%s' already exists in table".formatted(normalizedName)));
                 }
-                return changeIndexNamePort.changeIndexName(index.id(), normalizedName);
+                return changeIndexNamePort
+                    .changeIndexName(index.id(), normalizedName)
+                    .thenReturn(MutationResult.<Void>of(null, index.tableId()));
               }));
     });
   }

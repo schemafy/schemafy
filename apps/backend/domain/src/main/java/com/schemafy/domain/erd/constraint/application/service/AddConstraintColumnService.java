@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -45,22 +47,33 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
   private final PkCascadeHelper pkCascadeHelper;
 
   @Override
-  public Mono<AddConstraintColumnResult> addConstraintColumn(AddConstraintColumnCommand command) {
+  public Mono<MutationResult<AddConstraintColumnResult>> addConstraintColumn(
+      AddConstraintColumnCommand command) {
     return Mono.defer(() -> {
-      ConstraintValidator.validatePosition(command.seqNo());
       return getConstraintByIdPort.findConstraintById(command.constraintId())
           .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
-          .flatMap(constraint -> fetchTableContext(constraint.tableId())
-              .flatMap(context -> addColumn(constraint, context, command)));
+          .flatMap(constraint -> {
+            Set<String> affectedTableIds = new HashSet<>();
+            affectedTableIds.add(constraint.tableId());
+            return fetchTableContext(constraint.tableId())
+                .flatMap(context -> addColumn(
+                    constraint,
+                    context,
+                    command,
+                    affectedTableIds));
+          });
     }).as(transactionalOperator::transactional);
   }
 
-  private Mono<AddConstraintColumnResult> addColumn(
+  private Mono<MutationResult<AddConstraintColumnResult>> addColumn(
       Constraint constraint,
       TableContext context,
-      AddConstraintColumnCommand command) {
+      AddConstraintColumnCommand command,
+      Set<String> affectedTableIds) {
     List<ConstraintColumn> existingColumns = context.constraintColumns()
         .getOrDefault(constraint.id(), List.of());
+    int resolvedSeqNo = resolveSeqNo(command.seqNo(), existingColumns);
+    ConstraintValidator.validatePosition(resolvedSeqNo);
     List<String> columnIds = new ArrayList<>(existingColumns.size() + 1);
     List<Integer> seqNos = new ArrayList<>(existingColumns.size() + 1);
     for (ConstraintColumn column : existingColumns) {
@@ -68,11 +81,12 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
       seqNos.add(column.seqNo());
     }
     columnIds.add(command.columnId());
-    seqNos.add(command.seqNo());
+    seqNos.add(resolvedSeqNo);
 
     ConstraintValidator.validateSeqNoIntegrity(seqNos);
     ConstraintValidator.validateColumnExistence(context.columns(), columnIds, constraint.name());
     ConstraintValidator.validateColumnUniqueness(columnIds, constraint.name());
+    ConstraintValidator.validateDefaultColumnCardinality(constraint.kind(), columnIds);
     ConstraintValidator.validatePrimaryKeySingle(
         context.constraints(),
         constraint.kind(),
@@ -94,37 +108,50 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
         constraint.name(),
         constraint.id());
 
-    ConstraintColumn constraintColumn = new ConstraintColumn(
-        ulidGeneratorPort.generate(),
-        constraint.id(),
-        command.columnId(),
-        command.seqNo());
+    return Mono.fromCallable(ulidGeneratorPort::generate)
+        .flatMap(id -> {
+          ConstraintColumn constraintColumn = new ConstraintColumn(
+              id,
+              constraint.id(),
+              command.columnId(),
+              resolvedSeqNo);
 
-    return createConstraintColumnPort.createConstraintColumn(constraintColumn)
-        .flatMap(savedColumn -> {
-          if (constraint.kind() != ConstraintKind.PRIMARY_KEY) {
-            return Mono.just(new AddConstraintColumnResult(
-                savedColumn.id(),
-                savedColumn.constraintId(),
-                savedColumn.columnId(),
-                savedColumn.seqNo(),
-                List.of()));
-          }
-          return cascadeCreateFkColumns(constraint.tableId(), command.columnId())
-              .map(cascadeResults -> new AddConstraintColumnResult(
-                  savedColumn.id(),
-                  savedColumn.constraintId(),
-                  savedColumn.columnId(),
-                  savedColumn.seqNo(),
-                  cascadeResults));
+          return createConstraintColumnPort.createConstraintColumn(constraintColumn)
+              .flatMap(savedColumn -> {
+                if (constraint.kind() != ConstraintKind.PRIMARY_KEY) {
+                  AddConstraintColumnResult result = new AddConstraintColumnResult(
+                      savedColumn.id(),
+                      savedColumn.constraintId(),
+                      savedColumn.columnId(),
+                      savedColumn.seqNo(),
+                      List.of());
+                  return Mono.just(MutationResult.of(result, affectedTableIds));
+                }
+                return cascadeCreateFkColumns(constraint.tableId(), command.columnId(), affectedTableIds)
+                    .map(cascadeResults -> {
+                      cascadeResults.forEach(info -> affectedTableIds.add(info.fkTableId()));
+                      AddConstraintColumnResult result = new AddConstraintColumnResult(
+                          savedColumn.id(),
+                          savedColumn.constraintId(),
+                          savedColumn.columnId(),
+                          savedColumn.seqNo(),
+                          cascadeResults);
+                      return MutationResult.of(result, affectedTableIds);
+                    });
+              });
         });
   }
 
   private Mono<List<CascadeCreatedColumn>> cascadeCreateFkColumns(
-      String pkTableId, String pkColumnId) {
+      String pkTableId,
+      String pkColumnId,
+      Set<String> affectedTableIds) {
     return getColumnByIdPort.findColumnById(pkColumnId)
         .flatMap(pkColumn -> pkCascadeHelper.cascadeAddPkColumn(
-            pkTableId, pkColumn, new HashSet<>())
+            pkTableId,
+            pkColumn,
+            new HashSet<>(),
+            affectedTableIds)
             .map(cascadeInfoList -> cascadeInfoList.stream()
                 .map(info -> new CascadeCreatedColumn(
                     info.fkColumnId(),
@@ -168,6 +195,16 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
       List<Column> columns,
       List<Constraint> constraints,
       Map<String, List<ConstraintColumn>> constraintColumns) {
+  }
+
+  private static int resolveSeqNo(Integer requestedSeqNo, List<ConstraintColumn> existingColumns) {
+    if (requestedSeqNo != null) {
+      return requestedSeqNo;
+    }
+    return existingColumns.stream()
+        .mapToInt(ConstraintColumn::seqNo)
+        .max()
+        .orElse(-1) + 1;
   }
 
 }

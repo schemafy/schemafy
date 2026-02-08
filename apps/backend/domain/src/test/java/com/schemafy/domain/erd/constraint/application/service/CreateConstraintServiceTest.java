@@ -23,14 +23,15 @@ import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintC
 import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintExpressionRequiredException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
 import com.schemafy.domain.erd.constraint.domain.exception.UniqueSameAsPrimaryKeyException;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
@@ -121,15 +122,15 @@ class CreateConstraintServiceTest {
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
       given(getColumnByIdPort.findColumnById("col1"))
           .willReturn(Mono.just(ColumnFixture.columnWithId("col1")));
-      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any()))
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
           .assertNext(
               result -> {
-                assertThat(result.constraintId()).isEqualTo("new-constraint-id");
-                assertThat(result.name()).isEqualTo("pk_test");
-                assertThat(result.kind()).isEqualTo(ConstraintKind.PRIMARY_KEY);
+                assertThat(result.result().constraintId()).isEqualTo("new-constraint-id");
+                assertThat(result.result().name()).isEqualTo("pk_test");
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.PRIMARY_KEY);
               })
           .verifyComplete();
 
@@ -163,35 +164,148 @@ class CreateConstraintServiceTest {
       StepVerifier.create(sut.createConstraint(command))
           .assertNext(
               result -> {
-                assertThat(result.constraintId()).isEqualTo("new-constraint-id");
-                assertThat(result.name()).isEqualTo("uq_test");
-                assertThat(result.kind()).isEqualTo(ConstraintKind.UNIQUE);
+                assertThat(result.result().constraintId()).isEqualTo("new-constraint-id");
+                assertThat(result.result().name()).isEqualTo("uq_test");
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.UNIQUE);
               })
           .verifyComplete();
     }
 
     @Test
-    @DisplayName("이름이 null이면 예외가 발생한다")
-    void throwsWhenNameIsNull() {
-      var command = ConstraintFixture.createCommandWithName(null);
+    @DisplayName("컬럼 seqNo가 없으면 0부터 자동 배정한다")
+    void createsConstraintWithAutoSeqNosWhenMissing() {
+      CreateConstraintCommand command = new CreateConstraintCommand(
+          "table1",
+          "uq_auto",
+          ConstraintKind.UNIQUE,
+          null,
+          null,
+          List.of(
+              new CreateConstraintColumnCommand("col1", null),
+              new CreateConstraintColumnCommand("col2", null)));
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId("col1"), ColumnFixture.columnWithId("col2"));
+      List<ConstraintColumn> capturedColumns = new java.util.ArrayList<>();
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "uq_auto"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "cc1", "cc2");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> {
+            ConstraintColumn column = invocation.getArgument(0);
+            capturedColumns.add(column);
+            return Mono.just(column);
+          });
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintNameInvalidException.class)
-          .verify();
+          .assertNext(result -> assertThat(result.result().constraintId()).isEqualTo("new-constraint-id"))
+          .verifyComplete();
 
-      then(createConstraintPort).shouldHaveNoInteractions();
+      assertThat(capturedColumns).extracting(ConstraintColumn::seqNo).containsExactly(0, 1);
     }
 
     @Test
-    @DisplayName("이름이 빈 문자열이면 예외가 발생한다")
-    void throwsWhenNameIsEmpty() {
-      var command = ConstraintFixture.createCommandWithName("  ");
+    @DisplayName("이름이 null이면 자동 생성한다")
+    void autoGeneratesNameWhenNull() {
+      var command = ConstraintFixture.createCommandWithName(null);
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "pk_test_table"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "new-column-id");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(getColumnByIdPort.findColumnById(ConstraintFixture.DEFAULT_COLUMN_ID))
+          .willReturn(Mono.just(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID)));
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
+          .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintNameInvalidException.class)
-          .verify();
+          .assertNext(result -> {
+            assertThat(result.result().name()).isEqualTo("pk_test_table");
+            assertThat(result.result().kind()).isEqualTo(ConstraintKind.PRIMARY_KEY);
+          })
+          .verifyComplete();
+    }
 
-      then(createConstraintPort).shouldHaveNoInteractions();
+    @Test
+    @DisplayName("이름이 빈 문자열이면 자동 생성한다")
+    void autoGeneratesNameWhenEmpty() {
+      var command = ConstraintFixture.createCommandWithName("  ");
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "pk_test_table"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "new-column-id");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(getColumnByIdPort.findColumnById(ConstraintFixture.DEFAULT_COLUMN_ID))
+          .willReturn(Mono.just(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID)));
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
+          .willReturn(Mono.just(List.of()));
+
+      StepVerifier.create(sut.createConstraint(command))
+          .assertNext(result -> {
+            assertThat(result.result().name()).isEqualTo("pk_test_table");
+            assertThat(result.result().kind()).isEqualTo(ConstraintKind.PRIMARY_KEY);
+          })
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("자동 생성 이름이 중복이면 suffix를 증가시킨다")
+    void autoGeneratesNameWithSuffixWhenDuplicate() {
+      var command = ConstraintFixture.createCommandWithName(null);
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "pk_test_table"))
+          .willReturn(Mono.just(true));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "pk_test_table_1"))
+          .willReturn(Mono.just(true));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "pk_test_table_2"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "new-column-id");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(getColumnByIdPort.findColumnById(ConstraintFixture.DEFAULT_COLUMN_ID))
+          .willReturn(Mono.just(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID)));
+      given(pkCascadeHelper.cascadeAddPkColumn(any(), any(), any(), any()))
+          .willReturn(Mono.just(List.of()));
+
+      StepVerifier.create(sut.createConstraint(command))
+          .assertNext(result -> assertThat(result.result().name()).isEqualTo("pk_test_table_2"))
+          .verifyComplete();
     }
 
     @Test
@@ -397,7 +511,7 @@ class CreateConstraintServiceTest {
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createConstraint(command))
-          .assertNext(result -> assertThat(result.constraintId()).isEqualTo("new-constraint-id"))
+          .assertNext(result -> assertThat(result.result().constraintId()).isEqualTo("new-constraint-id"))
           .verifyComplete();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
@@ -426,8 +540,8 @@ class CreateConstraintServiceTest {
       StepVerifier.create(sut.createConstraint(command))
           .assertNext(
               result -> {
-                assertThat(result.kind()).isEqualTo(ConstraintKind.CHECK);
-                assertThat(result.checkExpr()).isEqualTo("value > 0");
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.CHECK);
+                assertThat(result.result().checkExpr()).isEqualTo("value > 0");
               })
           .verifyComplete();
     }
@@ -455,15 +569,47 @@ class CreateConstraintServiceTest {
       StepVerifier.create(sut.createConstraint(command))
           .assertNext(
               result -> {
-                assertThat(result.kind()).isEqualTo(ConstraintKind.DEFAULT);
-                assertThat(result.defaultExpr()).isEqualTo("0");
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.DEFAULT);
+                assertThat(result.result().defaultExpr()).isEqualTo("0");
               })
           .verifyComplete();
     }
 
     @Test
-    @DisplayName("CHECK 제약조건에 checkExpr이 없으면 예외가 발생한다")
-    void throwsWhenCheckExprMissing() {
+    @DisplayName("DEFAULT 제약조건의 컬럼이 2개 이상이면 예외가 발생한다")
+    void throwsWhenDefaultHasMultipleColumns() {
+      var command = new CreateConstraintCommand(
+          ConstraintFixture.DEFAULT_TABLE_ID,
+          "df_test",
+          ConstraintKind.DEFAULT,
+          null,
+          "0",
+          List.of(
+              new CreateConstraintColumnCommand("col1", 0),
+              new CreateConstraintColumnCommand("col2", 1)));
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(
+          ColumnFixture.columnWithId("col1"),
+          ColumnFixture.columnWithId("col2"));
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "df_test"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+
+      StepVerifier.create(sut.createConstraint(command))
+          .expectError(ConstraintColumnCountInvalidException.class)
+          .verify();
+
+      then(createConstraintPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("CHECK 제약조건은 checkExpr 없이 생성할 수 있다")
+    void createsCheckConstraintWithoutExpression() {
       var command = ConstraintFixture.createCheckCommand(null);
       var table = createTable("table1", "schema1");
       var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
@@ -475,17 +621,24 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(tableColumns));
       given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
           .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "new-column-id");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintExpressionRequiredException.class)
-          .verify();
-
-      then(createConstraintPort).shouldHaveNoInteractions();
+          .assertNext(
+              result -> {
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.CHECK);
+                assertThat(result.result().checkExpr()).isNull();
+              })
+          .verifyComplete();
     }
 
     @Test
-    @DisplayName("DEFAULT 제약조건에 defaultExpr이 없으면 예외가 발생한다")
-    void throwsWhenDefaultExprMissing() {
+    @DisplayName("DEFAULT 제약조건은 defaultExpr 없이 생성할 수 있다")
+    void createsDefaultConstraintWithoutExpression() {
       var command = ConstraintFixture.createDefaultCommand(null);
       var table = createTable("table1", "schema1");
       var tableColumns = List.of(ColumnFixture.columnWithId(ConstraintFixture.DEFAULT_COLUMN_ID));
@@ -497,12 +650,19 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(tableColumns));
       given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
           .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-constraint-id", "new-column-id");
+      given(createConstraintPort.createConstraint(any(Constraint.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintExpressionRequiredException.class)
-          .verify();
-
-      then(createConstraintPort).shouldHaveNoInteractions();
+          .assertNext(
+              result -> {
+                assertThat(result.result().kind()).isEqualTo(ConstraintKind.DEFAULT);
+                assertThat(result.result().defaultExpr()).isNull();
+              })
+          .verifyComplete();
     }
 
   }

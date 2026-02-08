@@ -2,10 +2,12 @@ package com.schemafy.domain.erd.constraint.application.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.constraint.application.port.in.DeleteConstraintCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.DeleteConstraintUseCase;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByConstraintIdPort;
@@ -32,23 +34,33 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
   private final PkCascadeHelper pkCascadeHelper;
 
   @Override
-  public Mono<Void> deleteConstraint(DeleteConstraintCommand command) {
+  public Mono<MutationResult<Void>> deleteConstraint(DeleteConstraintCommand command) {
     String constraintId = command.constraintId();
     return getConstraintByIdPort.findConstraintById(constraintId)
         .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
         .flatMap(constraint -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(constraint.tableId());
           if (constraint.kind() == ConstraintKind.PRIMARY_KEY) {
-            return cascadeDeleteFkColumns(constraint.tableId(), constraintId)
+            return cascadeDeleteFkColumns(
+                constraint.tableId(),
+                constraintId,
+                affectedTableIds)
                 .then(deleteConstraintColumnsPort.deleteByConstraintId(constraintId))
-                .then(deleteConstraintPort.deleteConstraint(constraintId));
+                .then(deleteConstraintPort.deleteConstraint(constraintId))
+                .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
           }
           return deleteConstraintColumnsPort.deleteByConstraintId(constraintId)
-              .then(deleteConstraintPort.deleteConstraint(constraintId));
+              .then(deleteConstraintPort.deleteConstraint(constraintId))
+              .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
         })
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<Void> cascadeDeleteFkColumns(String pkTableId, String constraintId) {
+  private Mono<Void> cascadeDeleteFkColumns(
+      String pkTableId,
+      String constraintId,
+      Set<String> affectedTableIds) {
     return getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(constraintId)
         .defaultIfEmpty(List.of())
         .flatMap(constraintColumns -> {
@@ -62,7 +74,10 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
 
           return Flux.fromIterable(pkColumnIds)
               .concatMap(pkColumnId -> pkCascadeHelper.cascadeRemovePkColumn(
-                  pkTableId, pkColumnId, new HashSet<>()))
+                  pkTableId,
+                  pkColumnId,
+                  new HashSet<>(),
+                  affectedTableIds))
               .then();
         });
   }

@@ -74,16 +74,16 @@ class RemoveIndexColumnServiceTest {
     @Test
     @DisplayName("유효한 요청 시 컬럼을 삭제하고 남은 컬럼들을 재정렬한다")
     void removesColumnAndReordersRemaining() {
-      var command = IndexFixture.removeColumnCommand("index1", "ic1");
+      var command = IndexFixture.removeColumnCommand("ic1");
       var index = IndexFixture.indexWithId("index1");
       var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
       var remainingColumns = List.of(
           IndexFixture.indexColumn("ic2", "index1", "col2", 1, SortDirection.ASC));
 
-      given(getIndexByIdPort.findIndexById("index1"))
-          .willReturn(Mono.just(index));
       given(getIndexColumnByIdPort.findIndexColumnById("ic1"))
           .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
       given(deleteIndexColumnPort.deleteIndexColumn("ic1"))
           .willReturn(Mono.empty());
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId("index1"))
@@ -92,6 +92,7 @@ class RemoveIndexColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeIndexColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteIndexColumnPort).should().deleteIndexColumn("ic1");
@@ -102,14 +103,14 @@ class RemoveIndexColumnServiceTest {
     @Test
     @DisplayName("마지막 컬럼 삭제 시 인덱스도 함께 삭제한다")
     void deletesIndexWhenLastColumnRemoved() {
-      var command = IndexFixture.removeColumnCommand("index1", "ic1");
+      var command = IndexFixture.removeColumnCommand("ic1");
       var index = IndexFixture.indexWithId("index1");
       var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
 
-      given(getIndexByIdPort.findIndexById("index1"))
-          .willReturn(Mono.just(index));
       given(getIndexColumnByIdPort.findIndexColumnById("ic1"))
           .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
       given(deleteIndexColumnPort.deleteIndexColumn("ic1"))
           .willReturn(Mono.empty());
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId("index1"))
@@ -118,6 +119,7 @@ class RemoveIndexColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeIndexColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteIndexColumnPort).should().deleteIndexColumn("ic1");
@@ -128,8 +130,11 @@ class RemoveIndexColumnServiceTest {
     @Test
     @DisplayName("인덱스가 존재하지 않으면 예외가 발생한다")
     void throwsWhenIndexNotExists() {
-      var command = IndexFixture.removeColumnCommand("nonexistent", "ic1");
+      var command = IndexFixture.removeColumnCommand("ic1");
+      var indexColumn = IndexFixture.indexColumn("ic1", "nonexistent", "col1", 0, SortDirection.ASC);
 
+      given(getIndexColumnByIdPort.findIndexColumnById("ic1"))
+          .willReturn(Mono.just(indexColumn));
       given(getIndexByIdPort.findIndexById("nonexistent"))
           .willReturn(Mono.empty());
 
@@ -143,32 +148,9 @@ class RemoveIndexColumnServiceTest {
     @Test
     @DisplayName("인덱스 컬럼이 존재하지 않으면 예외가 발생한다")
     void throwsWhenIndexColumnNotExists() {
-      var command = IndexFixture.removeColumnCommand("index1", "nonexistent");
-      var index = IndexFixture.indexWithId("index1");
-
-      given(getIndexByIdPort.findIndexById("index1"))
-          .willReturn(Mono.just(index));
+      var command = IndexFixture.removeColumnCommand("nonexistent");
       given(getIndexColumnByIdPort.findIndexColumnById("nonexistent"))
           .willReturn(Mono.empty());
-
-      StepVerifier.create(sut.removeIndexColumn(command))
-          .expectError(IndexColumnNotExistException.class)
-          .verify();
-
-      then(deleteIndexColumnPort).shouldHaveNoInteractions();
-    }
-
-    @Test
-    @DisplayName("컬럼이 해당 인덱스에 속하지 않으면 예외가 발생한다")
-    void throwsWhenColumnNotBelongToIndex() {
-      var command = IndexFixture.removeColumnCommand("index1", "ic1");
-      var index = IndexFixture.indexWithId("index1");
-      var indexColumn = IndexFixture.indexColumn("ic1", "other-index", "col1", 0, SortDirection.ASC);
-
-      given(getIndexByIdPort.findIndexById("index1"))
-          .willReturn(Mono.just(index));
-      given(getIndexColumnByIdPort.findIndexColumnById("ic1"))
-          .willReturn(Mono.just(indexColumn));
 
       StepVerifier.create(sut.removeIndexColumn(command))
           .expectError(IndexColumnNotExistException.class)

@@ -9,8 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.schema.application.port.out.ChangeSchemaNamePort;
+import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import reactor.core.publisher.Mono;
@@ -30,6 +32,9 @@ class ChangeSchemaNameServiceTest {
   @Mock
   SchemaExistsPort schemaExistsPort;
 
+  @Mock
+  GetSchemaByIdPort getSchemaByIdPort;
+
   @InjectMocks
   ChangeSchemaNameService sut;
 
@@ -47,16 +52,19 @@ class ChangeSchemaNameServiceTest {
         var newName = "new_schema_name";
         var command = SchemaFixture.changeNameCommand(newName);
 
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
         given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
             .willReturn(Mono.just(false));
         given(changeSchemaNamePort.changeSchemaName(any(), any()))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeSchemaName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(schemaExistsPort).should()
-            .existsActiveByProjectIdAndName(command.projectId(), command.newName());
+            .existsActiveByProjectIdAndName(SchemaFixture.DEFAULT_PROJECT_ID, command.newName());
         then(changeSchemaNamePort).should()
             .changeSchemaName(command.schemaId(), command.newName());
       }
@@ -73,6 +81,8 @@ class ChangeSchemaNameServiceTest {
         var newName = "duplicate_name";
         var command = SchemaFixture.changeNameCommand(newName);
 
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
         given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
             .willReturn(Mono.just(true));
 

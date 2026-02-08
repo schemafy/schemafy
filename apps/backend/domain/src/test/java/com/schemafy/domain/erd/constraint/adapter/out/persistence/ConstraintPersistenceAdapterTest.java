@@ -220,6 +220,37 @@ class ConstraintPersistenceAdapterTest {
   }
 
   @Nested
+  @DisplayName("changeConstraintExpressions 메서드는")
+  class ChangeConstraintExpressions {
+
+    @Test
+    @DisplayName("제약조건 CHECK/DEFAULT 표현식을 변경한다")
+    void changesConstraintExpressions() {
+      var constraint = ConstraintFixture.checkConstraintWithExpr("value > 0");
+      sut.createConstraint(constraint).block();
+
+      StepVerifier.create(sut.changeConstraintExpressions(constraint.id(), "value > 10", "fallback"))
+          .verifyComplete();
+
+      StepVerifier.create(sut.findConstraintById(constraint.id()))
+          .assertNext(found -> {
+            assertThat(found.checkExpr()).isEqualTo("value > 10");
+            assertThat(found.defaultExpr()).isEqualTo("fallback");
+          })
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 제약조건이면 예외가 발생한다")
+    void throwsWhenConstraintNotExists() {
+      StepVerifier.create(sut.changeConstraintExpressions("non-existent-id", "value > 0", "0"))
+          .expectError(ConstraintNotExistException.class)
+          .verify();
+    }
+
+  }
+
+  @Nested
   @DisplayName("deleteConstraint 메서드는")
   class DeleteConstraint {
 

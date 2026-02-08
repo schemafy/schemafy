@@ -93,27 +93,27 @@ class IndexCascadeDeleteIntegrationTest {
     var createSchemaCommand = new CreateSchemaCommand(
         PROJECT_ID, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
-    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();
 
     var createTableCommand = new CreateTableCommand(
         schemaId, "test_table", "utf8mb4", "utf8mb4_general_ci");
-    var tableResult = createTableUseCase.createTable(createTableCommand).block();
+    var tableResult = createTableUseCase.createTable(createTableCommand).block().result();
     tableId = tableResult.tableId();
 
     var createColumn1Command = new CreateColumnCommand(
-        tableId, "id", "INT", null, null, null, 0, true, null, null, "PK");
-    var column1Result = createColumnUseCase.createColumn(createColumn1Command).block();
+        tableId, "id", "INT", null, null, null, true, null, null, "PK");
+    var column1Result = createColumnUseCase.createColumn(createColumn1Command).block().result();
     columnId1 = column1Result.columnId();
 
     var createColumn2Command = new CreateColumnCommand(
-        tableId, "name", "VARCHAR", 100, null, null, 1, false, null, null, "Name");
-    var column2Result = createColumnUseCase.createColumn(createColumn2Command).block();
+        tableId, "name", "VARCHAR", 100, null, null, false, null, null, "Name");
+    var column2Result = createColumnUseCase.createColumn(createColumn2Command).block().result();
     columnId2 = column2Result.columnId();
 
     var createColumn3Command = new CreateColumnCommand(
-        tableId, "email", "VARCHAR", 255, null, null, 2, false, null, null, "Email");
-    var column3Result = createColumnUseCase.createColumn(createColumn3Command).block();
+        tableId, "email", "VARCHAR", 255, null, null, false, null, null, "Email");
+    var column3Result = createColumnUseCase.createColumn(createColumn3Command).block().result();
     columnId3 = column3Result.columnId();
   }
 
@@ -127,9 +127,10 @@ class IndexCascadeDeleteIntegrationTest {
       var createCommand = new CreateIndexCommand(
           tableId, "idx_test", IndexType.BTREE,
           List.of(new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(tableId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getIndexUseCase.getIndex(
@@ -155,6 +156,7 @@ class IndexCascadeDeleteIntegrationTest {
 
       // 테이블 삭제
       StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(tableId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 모든 인덱스가 삭제되어야 함
@@ -178,10 +180,11 @@ class IndexCascadeDeleteIntegrationTest {
           List.of(
               new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC),
               new CreateIndexColumnCommand(columnId2, 1, SortDirection.DESC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       // 컬럼 삭제
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(columnId1)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 인덱스는 남아있지만 컬럼은 하나만 남아야 함
@@ -202,7 +205,7 @@ class IndexCascadeDeleteIntegrationTest {
       var createCommand1 = new CreateIndexCommand(
           tableId, "idx_id", IndexType.BTREE,
           List.of(new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC)));
-      var result1 = createIndexUseCase.createIndex(createCommand1).block();
+      var result1 = createIndexUseCase.createIndex(createCommand1).block().result();
 
       // 두 번째 인덱스 (columnId1, columnId2 사용)
       var createCommand2 = new CreateIndexCommand(
@@ -210,10 +213,11 @@ class IndexCascadeDeleteIntegrationTest {
           List.of(
               new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC),
               new CreateIndexColumnCommand(columnId2, 1, SortDirection.DESC)));
-      var result2 = createIndexUseCase.createIndex(createCommand2).block();
+      var result2 = createIndexUseCase.createIndex(createCommand2).block().result();
 
       // columnId1 삭제
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(columnId1)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 첫 번째 인덱스의 컬럼은 모두 삭제됨
@@ -246,7 +250,7 @@ class IndexCascadeDeleteIntegrationTest {
       var createCommand = new CreateIndexCommand(
           tableId, "idx_test", IndexType.BTREE,
           List.of(new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       // 인덱스 컬럼 ID 조회
       var columns = getIndexColumnsByIndexIdUseCase
@@ -258,7 +262,8 @@ class IndexCascadeDeleteIntegrationTest {
 
       // 마지막 컬럼 제거
       StepVerifier.create(removeIndexColumnUseCase.removeIndexColumn(
-          new RemoveIndexColumnCommand(result.indexId(), indexColumnId)))
+          new RemoveIndexColumnCommand(indexColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 인덱스도 삭제되어야 함
@@ -277,7 +282,7 @@ class IndexCascadeDeleteIntegrationTest {
               new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC),
               new CreateIndexColumnCommand(columnId2, 1, SortDirection.DESC),
               new CreateIndexColumnCommand(columnId3, 2, SortDirection.ASC)));
-      var result = createIndexUseCase.createIndex(createCommand).block();
+      var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       // 첫 번째 인덱스 컬럼 ID 조회
       var columns = getIndexColumnsByIndexIdUseCase
@@ -289,7 +294,8 @@ class IndexCascadeDeleteIntegrationTest {
 
       // 첫 번째 컬럼 제거
       StepVerifier.create(removeIndexColumnUseCase.removeIndexColumn(
-          new RemoveIndexColumnCommand(result.indexId(), firstColumnId)))
+          new RemoveIndexColumnCommand(firstColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 인덱스는 유지되고 남은 컬럼의 위치가 재정렬됨

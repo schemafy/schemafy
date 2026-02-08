@@ -21,16 +21,20 @@ import com.schemafy.domain.erd.relationship.application.port.in.DeleteRelationsh
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 import com.schemafy.domain.erd.table.application.port.out.DeleteTablePort;
+import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DeleteTableService")
@@ -41,6 +45,9 @@ class DeleteTableServiceTest {
 
   @Mock
   DeleteTablePort deleteTablePort;
+
+  @Mock
+  GetTableByIdPort getTableByIdPort;
 
   @Mock
   GetRelationshipsByTableIdPort getRelationshipsByTableIdPort;
@@ -72,6 +79,8 @@ class DeleteTableServiceTest {
         var relationship = RelationshipFixture.defaultRelationship();
         var column = ColumnFixture.defaultColumn();
 
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(TableFixture.tableWithId(command.tableId())));
         given(getRelationshipsByTableIdPort.findRelationshipsByTableId(any()))
             .willReturn(Mono.just(List.of(relationship)));
         given(deleteRelationshipUseCase.deleteRelationship(any(DeleteRelationshipCommand.class)))
@@ -86,6 +95,7 @@ class DeleteTableServiceTest {
             .willAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(sut.deleteTable(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         var inOrderVerifier = inOrder(
@@ -111,6 +121,8 @@ class DeleteTableServiceTest {
       void deletesOnlyTableWhenNoRelationsAndColumns() {
         var command = TableFixture.deleteCommand();
 
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(TableFixture.tableWithId(command.tableId())));
         given(getRelationshipsByTableIdPort.findRelationshipsByTableId(any()))
             .willReturn(Mono.just(List.of()));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
@@ -121,6 +133,7 @@ class DeleteTableServiceTest {
             .willAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(sut.deleteTable(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(deleteRelationshipUseCase).shouldHaveNoInteractions();
@@ -137,6 +150,8 @@ class DeleteTableServiceTest {
         var column1 = ColumnFixture.columnWithId("col-1");
         var column2 = ColumnFixture.columnWithId("col-2");
 
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(TableFixture.tableWithId(command.tableId())));
         given(getRelationshipsByTableIdPort.findRelationshipsByTableId(any()))
             .willReturn(Mono.just(List.of(relationship1, relationship2)));
         given(deleteRelationshipUseCase.deleteRelationship(any(DeleteRelationshipCommand.class)))
@@ -151,6 +166,7 @@ class DeleteTableServiceTest {
             .willAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(sut.deleteTable(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         var inOrderVerifier = inOrder(
@@ -173,6 +189,27 @@ class DeleteTableServiceTest {
             .deleteColumn(eq(new DeleteColumnCommand(column2.id())));
         inOrderVerifier.verify(deleteTablePort)
             .deleteTable(command.tableId());
+      }
+
+      @Test
+      @DisplayName("존재하지 않는 테이블이면 TableNotExistException이 발생한다")
+      void rejectsDeletionWhenTableDoesNotExist() {
+        var command = TableFixture.deleteCommand("missing-table");
+
+        given(getTableByIdPort.findTableById(anyString()))
+            .willReturn(Mono.empty());
+        lenient().when(getRelationshipsByTableIdPort.findRelationshipsByTableId(anyString()))
+            .thenReturn(Mono.just(List.of()));
+        lenient().when(getColumnsByTableIdPort.findColumnsByTableId(anyString()))
+            .thenReturn(Mono.just(List.of()));
+        given(transactionalOperator.transactional(any(Mono.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+
+        StepVerifier.create(sut.deleteTable(command))
+            .expectError(TableNotExistException.class)
+            .verify();
+
+        then(deleteTablePort).shouldHaveNoInteractions();
       }
 
     }

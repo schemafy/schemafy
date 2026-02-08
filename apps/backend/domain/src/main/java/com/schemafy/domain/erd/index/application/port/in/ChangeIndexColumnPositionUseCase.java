@@ -1,9 +1,12 @@
 package com.schemafy.domain.erd.index.application.port.in;
 
+import com.schemafy.domain.common.MutationResult;
+
 import reactor.core.publisher.Mono;
 
 public interface ChangeIndexColumnPositionUseCase {
 
-  Mono<Void> changeIndexColumnPosition(ChangeIndexColumnPositionCommand command);
+  Mono<MutationResult<Void>> changeIndexColumnPosition(
+      ChangeIndexColumnPositionCommand command);
 
 }

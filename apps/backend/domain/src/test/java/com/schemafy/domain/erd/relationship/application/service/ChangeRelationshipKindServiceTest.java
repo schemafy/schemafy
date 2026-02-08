@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeRelationshipKindService")
@@ -65,8 +66,8 @@ class ChangeRelationshipKindServiceTest {
 
   @BeforeEach
   void setUpTransaction() {
-    given(transactionalOperator.transactional(any(Mono.class)))
-        .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(transactionalOperator.transactional(any(Mono.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
   @Nested
@@ -91,16 +92,25 @@ class ChangeRelationshipKindServiceTest {
         given(getRelationshipsBySchemaIdPort.findRelationshipsBySchemaId(SCHEMA_ID))
             .willReturn(Mono.just(List.of(relationship)));
         given(pkCascadeHelper.syncPkForKindChange(
-            eq(relationship), eq(RelationshipKind.NON_IDENTIFYING), eq(RelationshipKind.IDENTIFYING), anySet()))
+            eq(relationship),
+            eq(RelationshipKind.NON_IDENTIFYING),
+            eq(RelationshipKind.IDENTIFYING),
+            anySet(),
+            anySet()))
             .willReturn(Mono.empty());
         given(changeRelationshipKindPort.changeRelationshipKind(any(), any()))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeRelationshipKind(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(pkCascadeHelper).should().syncPkForKindChange(
-            eq(relationship), eq(RelationshipKind.NON_IDENTIFYING), eq(RelationshipKind.IDENTIFYING), anySet());
+            eq(relationship),
+            eq(RelationshipKind.NON_IDENTIFYING),
+            eq(RelationshipKind.IDENTIFYING),
+            anySet(),
+            anySet());
         then(changeRelationshipKindPort).should()
             .changeRelationshipKind(eq(relationship.id()), eq(RelationshipKind.IDENTIFYING));
       }
@@ -114,16 +124,25 @@ class ChangeRelationshipKindServiceTest {
         given(getRelationshipByIdPort.findRelationshipById(any()))
             .willReturn(Mono.just(relationship));
         given(pkCascadeHelper.syncPkForKindChange(
-            eq(relationship), eq(RelationshipKind.IDENTIFYING), eq(RelationshipKind.NON_IDENTIFYING), anySet()))
+            eq(relationship),
+            eq(RelationshipKind.IDENTIFYING),
+            eq(RelationshipKind.NON_IDENTIFYING),
+            anySet(),
+            anySet()))
             .willReturn(Mono.empty());
         given(changeRelationshipKindPort.changeRelationshipKind(any(), any()))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeRelationshipKind(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(pkCascadeHelper).should().syncPkForKindChange(
-            eq(relationship), eq(RelationshipKind.IDENTIFYING), eq(RelationshipKind.NON_IDENTIFYING), anySet());
+            eq(relationship),
+            eq(RelationshipKind.IDENTIFYING),
+            eq(RelationshipKind.NON_IDENTIFYING),
+            anySet(),
+            anySet());
         then(changeRelationshipKindPort).should()
             .changeRelationshipKind(eq(relationship.id()), eq(RelationshipKind.NON_IDENTIFYING));
       }
@@ -256,12 +275,17 @@ class ChangeRelationshipKindServiceTest {
         given(getRelationshipByIdPort.findRelationshipById(any()))
             .willReturn(Mono.just(relationship));
         given(pkCascadeHelper.syncPkForKindChange(
-            eq(relationship), eq(RelationshipKind.IDENTIFYING), eq(RelationshipKind.NON_IDENTIFYING), anySet()))
+            eq(relationship),
+            eq(RelationshipKind.IDENTIFYING),
+            eq(RelationshipKind.NON_IDENTIFYING),
+            anySet(),
+            anySet()))
             .willReturn(Mono.empty());
         given(changeRelationshipKindPort.changeRelationshipKind(any(), any()))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeRelationshipKind(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeRelationshipKindPort).should()

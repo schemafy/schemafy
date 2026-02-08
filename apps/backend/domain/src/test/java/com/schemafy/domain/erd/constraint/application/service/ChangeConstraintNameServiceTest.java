@@ -68,6 +68,7 @@ class ChangeConstraintNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintName(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeConstraintNamePort).should()

@@ -76,6 +76,7 @@ class ChangeIndexColumnSortDirectionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexColumnSortDirectionPort).should()
@@ -102,6 +103,7 @@ class ChangeIndexColumnSortDirectionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexColumnSortDirectionPort).should()
@@ -128,6 +130,7 @@ class ChangeIndexColumnSortDirectionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexColumnSortDirectionPort).should()
@@ -229,6 +232,7 @@ class ChangeIndexColumnSortDirectionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexColumnSortDirectionPort).should()

@@ -90,10 +90,11 @@ class CreateColumnServiceTest {
 
         StepVerifier.create(sut.createColumn(command))
             .assertNext(result -> {
-              assertThat(result.columnId()).isEqualTo(ColumnFixture.DEFAULT_ID);
-              assertThat(result.name()).isEqualTo(command.name());
-              assertThat(result.dataType()).isEqualTo("VARCHAR");
-              assertThat(result.lengthScale().length()).isEqualTo(command.length());
+              var payload = result.result();
+              assertThat(payload.columnId()).isEqualTo(ColumnFixture.DEFAULT_ID);
+              assertThat(payload.name()).isEqualTo(command.name());
+              assertThat(payload.dataType()).isEqualTo("VARCHAR");
+              assertThat(payload.lengthScale().length()).isEqualTo(command.length());
             })
             .verifyComplete();
 
@@ -120,8 +121,9 @@ class CreateColumnServiceTest {
 
         StepVerifier.create(sut.createColumn(command))
             .assertNext(result -> {
-              assertThat(result.dataType()).isEqualTo("INT");
-              assertThat(result.lengthScale()).isNull();
+              var payload = result.result();
+              assertThat(payload.dataType()).isEqualTo("INT");
+              assertThat(payload.lengthScale()).isNull();
             })
             .verifyComplete();
       }
@@ -146,10 +148,47 @@ class CreateColumnServiceTest {
 
         StepVerifier.create(sut.createColumn(command))
             .assertNext(result -> {
-              assertThat(result.dataType()).isEqualTo("DECIMAL");
-              assertThat(result.lengthScale().precision()).isEqualTo(10);
-              assertThat(result.lengthScale().scale()).isEqualTo(2);
+              var payload = result.result();
+              assertThat(payload.dataType()).isEqualTo("DECIMAL");
+              assertThat(payload.lengthScale().precision()).isEqualTo(10);
+              assertThat(payload.lengthScale().scale()).isEqualTo(2);
             })
+            .verifyComplete();
+      }
+
+      @Test
+      @DisplayName("seqNo가 없으면 마지막 위치로 자동 추가한다")
+      void createsColumnWithAutoSeqNoWhenMissing() {
+        var command = new com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand(
+            ColumnFixture.DEFAULT_TABLE_ID,
+            "new_col",
+            "VARCHAR",
+            255,
+            null,
+            null,
+            false,
+            null,
+            null,
+            null);
+        var table = createTable();
+        var schema = createSchema();
+        var existingColumns = List.of(
+            new Column("col1", ColumnFixture.DEFAULT_TABLE_ID, "col1", "INT", null, 0, false, null, null, null),
+            new Column("col2", ColumnFixture.DEFAULT_TABLE_ID, "col2", "INT", null, 1, false, null, null, null));
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(existingColumns));
+        given(ulidGeneratorPort.generate())
+            .willReturn(ColumnFixture.DEFAULT_ID);
+        given(createColumnPort.createColumn(any(Column.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createColumn(command))
+            .assertNext(result -> assertThat(result.result().seqNo()).isEqualTo(2))
             .verifyComplete();
       }
 
@@ -326,7 +365,6 @@ class CreateColumnServiceTest {
             null,
             null,
             null,
-            command.seqNo(),
             true,
             null,
             null,
@@ -394,7 +432,6 @@ class CreateColumnServiceTest {
             null,
             null,
             null,
-            command.seqNo(),
             false,
             "utf8mb4",
             "utf8mb4_general_ci",

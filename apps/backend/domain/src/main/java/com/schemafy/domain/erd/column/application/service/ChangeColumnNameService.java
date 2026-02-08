@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameUseCase;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnNamePort;
@@ -34,11 +35,12 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
   private final GetSchemaByIdPort getSchemaByIdPort;
 
   @Override
-  public Mono<Void> changeColumnName(ChangeColumnNameCommand command) {
+  public Mono<MutationResult<Void>> changeColumnName(ChangeColumnNameCommand command) {
     return getColumnByIdPort.findColumnById(command.columnId())
         .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
         .flatMap(column -> fetchTableSchemaAndColumns(column)
-            .flatMap(tuple -> applyChange(column, tuple, command.newName())));
+            .flatMap(tuple -> applyChange(column, tuple, command.newName()))
+            .thenReturn(MutationResult.<Void>of(null, column.tableId())));
   }
 
   private Mono<Tuple3<Table, Schema, List<Column>>> fetchTableSchemaAndColumns(Column column) {

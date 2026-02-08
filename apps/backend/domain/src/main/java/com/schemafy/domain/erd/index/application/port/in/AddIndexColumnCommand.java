@@ -5,6 +5,6 @@ import com.schemafy.domain.erd.index.domain.type.SortDirection;
 public record AddIndexColumnCommand(
     String indexId,
     String columnId,
-    int seqNo,
+    Integer seqNo,
     SortDirection sortDirection) {
 }

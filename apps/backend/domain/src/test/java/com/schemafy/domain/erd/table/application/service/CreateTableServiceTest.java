@@ -8,6 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 import com.schemafy.domain.erd.table.application.port.out.CreateTablePort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.domain.erd.table.domain.Table;
@@ -36,6 +39,9 @@ class CreateTableServiceTest {
   @Mock
   TableExistsPort tableExistsPort;
 
+  @Mock
+  GetSchemaByIdPort getSchemaByIdPort;
+
   @InjectMocks
   CreateTableService sut;
 
@@ -52,9 +58,12 @@ class CreateTableServiceTest {
       void returnsCreatedTable() {
         var command = TableFixture.createCommand();
         var table = TableFixture.defaultTable();
+        var schema = SchemaFixture.defaultSchema();
 
         given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
             .willReturn(Mono.just(false));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
         given(ulidGeneratorPort.generate())
             .willReturn(TableFixture.DEFAULT_ID);
         given(createTablePort.createTable(any(Table.class)))
@@ -62,16 +71,120 @@ class CreateTableServiceTest {
 
         StepVerifier.create(sut.createTable(command))
             .assertNext(result -> {
-              assertThat(result.tableId()).isEqualTo(TableFixture.DEFAULT_ID);
-              assertThat(result.name()).isEqualTo(command.name());
-              assertThat(result.charset()).isEqualTo(command.charset());
-              assertThat(result.collation()).isEqualTo(command.collation());
+              var payload = result.result();
+              assertThat(payload.tableId()).isEqualTo(TableFixture.DEFAULT_ID);
+              assertThat(payload.name()).isEqualTo(command.name());
+              assertThat(payload.charset()).isEqualTo(command.charset());
+              assertThat(payload.collation()).isEqualTo(command.collation());
             })
             .verifyComplete();
 
         then(tableExistsPort).should()
             .existsBySchemaIdAndName(command.schemaId(), command.name());
+        then(getSchemaByIdPort).should().findSchemaById(command.schemaId());
         then(createTablePort).should().createTable(any(Table.class));
+      }
+
+    }
+
+    @Nested
+    @DisplayName("charset/collation이 비어 있으면")
+    class WithEmptyMeta {
+
+      @Test
+      @DisplayName("스키마 메타를 기본값으로 상속한다")
+      void inheritsSchemaMetaWhenBothMissing() {
+        var command = TableFixture.createCommandWithoutMeta();
+        var schema = SchemaFixture.defaultSchema();
+
+        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(ulidGeneratorPort.generate())
+            .willReturn(TableFixture.DEFAULT_ID);
+        given(createTablePort.createTable(any(Table.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createTable(command))
+            .assertNext(result -> {
+              var payload = result.result();
+              assertThat(payload.charset()).isEqualTo(schema.charset());
+              assertThat(payload.collation()).isEqualTo(schema.collation());
+            })
+            .verifyComplete();
+      }
+
+      @Test
+      @DisplayName("charset만 주어지면 collation은 스키마 값으로 상속한다")
+      void inheritsSchemaCollationWhenOnlyCharsetGiven() {
+        var command = TableFixture.createCommandWithMeta(" utf8mb4 ", " ");
+        var schema = SchemaFixture.defaultSchema();
+
+        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(ulidGeneratorPort.generate())
+            .willReturn(TableFixture.DEFAULT_ID);
+        given(createTablePort.createTable(any(Table.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createTable(command))
+            .assertNext(result -> {
+              var payload = result.result();
+              assertThat(payload.charset()).isEqualTo("utf8mb4");
+              assertThat(payload.collation()).isEqualTo(schema.collation());
+            })
+            .verifyComplete();
+      }
+
+      @Test
+      @DisplayName("collation만 주어지면 charset은 스키마 값으로 상속한다")
+      void inheritsSchemaCharsetWhenOnlyCollationGiven() {
+        var command = TableFixture.createCommandWithMeta(" ", " utf8mb4_unicode_ci ");
+        var schema = SchemaFixture.defaultSchema();
+
+        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(ulidGeneratorPort.generate())
+            .willReturn(TableFixture.DEFAULT_ID);
+        given(createTablePort.createTable(any(Table.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createTable(command))
+            .assertNext(result -> {
+              var payload = result.result();
+              assertThat(payload.charset()).isEqualTo(schema.charset());
+              assertThat(payload.collation()).isEqualTo("utf8mb4_unicode_ci");
+            })
+            .verifyComplete();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("스키마를 찾을 수 없으면")
+    class WithMissingSchema {
+
+      @Test
+      @DisplayName("SchemaNotExistException을 발생시키고 생성을 중단한다")
+      void throwsSchemaNotExistException() {
+        var command = TableFixture.createCommandWithoutMeta();
+
+        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.empty());
+
+        StepVerifier.create(sut.createTable(command))
+            .expectError(SchemaNotExistException.class)
+            .verify();
+
+        then(ulidGeneratorPort).shouldHaveNoInteractions();
+        then(createTablePort).shouldHaveNoInteractions();
       }
 
     }
@@ -94,6 +207,7 @@ class CreateTableServiceTest {
 
         then(createTablePort).shouldHaveNoInteractions();
         then(ulidGeneratorPort).shouldHaveNoInteractions();
+        then(getSchemaByIdPort).shouldHaveNoInteractions();
       }
 
     }

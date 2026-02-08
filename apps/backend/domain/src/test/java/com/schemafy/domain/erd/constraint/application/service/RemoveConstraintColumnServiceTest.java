@@ -79,16 +79,16 @@ class RemoveConstraintColumnServiceTest {
     @Test
     @DisplayName("유효한 요청 시 컬럼을 삭제하고 남은 컬럼들을 재정렬한다")
     void removesColumnAndReordersRemaining() {
-      var command = ConstraintFixture.removeColumnCommand("constraint1", "cc1");
+      var command = ConstraintFixture.removeColumnCommand("cc1");
       var constraint = createConstraint("constraint1", "table1", ConstraintKind.UNIQUE);
       var constraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0);
       var remainingColumns = List.of(
           ConstraintFixture.constraintColumn("cc2", "constraint1", "col2", 1));
 
-      given(getConstraintByIdPort.findConstraintById("constraint1"))
-          .willReturn(Mono.just(constraint));
       given(getConstraintColumnByIdPort.findConstraintColumnById("cc1"))
           .willReturn(Mono.just(constraintColumn));
+      given(getConstraintByIdPort.findConstraintById("constraint1"))
+          .willReturn(Mono.just(constraint));
       given(deleteConstraintColumnPort.deleteConstraintColumn("cc1"))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("constraint1"))
@@ -97,6 +97,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteConstraintColumnPort).should().deleteConstraintColumn("cc1");
@@ -108,14 +109,14 @@ class RemoveConstraintColumnServiceTest {
     @Test
     @DisplayName("마지막 컬럼 삭제 시 제약조건도 함께 삭제한다")
     void deletesConstraintWhenLastColumnRemoved() {
-      var command = ConstraintFixture.removeColumnCommand("constraint1", "cc1");
+      var command = ConstraintFixture.removeColumnCommand("cc1");
       var constraint = createConstraint("constraint1", "table1", ConstraintKind.UNIQUE);
       var constraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0);
 
-      given(getConstraintByIdPort.findConstraintById("constraint1"))
-          .willReturn(Mono.just(constraint));
       given(getConstraintColumnByIdPort.findConstraintColumnById("cc1"))
           .willReturn(Mono.just(constraintColumn));
+      given(getConstraintByIdPort.findConstraintById("constraint1"))
+          .willReturn(Mono.just(constraint));
       given(deleteConstraintColumnPort.deleteConstraintColumn("cc1"))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("constraint1"))
@@ -124,6 +125,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteConstraintColumnPort).should().deleteConstraintColumn("cc1");
@@ -134,8 +136,11 @@ class RemoveConstraintColumnServiceTest {
     @Test
     @DisplayName("제약조건이 존재하지 않으면 예외가 발생한다")
     void throwsWhenConstraintNotExists() {
-      var command = ConstraintFixture.removeColumnCommand("nonexistent", "cc1");
+      var command = ConstraintFixture.removeColumnCommand("cc1");
+      var constraintColumn = ConstraintFixture.constraintColumn("cc1", "nonexistent", "col1", 0);
 
+      given(getConstraintColumnByIdPort.findConstraintColumnById("cc1"))
+          .willReturn(Mono.just(constraintColumn));
       given(getConstraintByIdPort.findConstraintById("nonexistent"))
           .willReturn(Mono.empty());
 
@@ -149,32 +154,9 @@ class RemoveConstraintColumnServiceTest {
     @Test
     @DisplayName("제약조건 컬럼이 존재하지 않으면 예외가 발생한다")
     void throwsWhenConstraintColumnNotExists() {
-      var command = ConstraintFixture.removeColumnCommand("constraint1", "nonexistent");
-      var constraint = createConstraint("constraint1", "table1", ConstraintKind.UNIQUE);
-
-      given(getConstraintByIdPort.findConstraintById("constraint1"))
-          .willReturn(Mono.just(constraint));
+      var command = ConstraintFixture.removeColumnCommand("nonexistent");
       given(getConstraintColumnByIdPort.findConstraintColumnById("nonexistent"))
           .willReturn(Mono.empty());
-
-      StepVerifier.create(sut.removeConstraintColumn(command))
-          .expectError(ConstraintColumnNotExistException.class)
-          .verify();
-
-      then(deleteConstraintColumnPort).shouldHaveNoInteractions();
-    }
-
-    @Test
-    @DisplayName("컬럼이 해당 제약조건에 속하지 않으면 예외가 발생한다")
-    void throwsWhenColumnNotBelongToConstraint() {
-      var command = ConstraintFixture.removeColumnCommand("constraint1", "cc1");
-      var constraint = createConstraint("constraint1", "table1", ConstraintKind.UNIQUE);
-      var constraintColumn = ConstraintFixture.constraintColumn("cc1", "other-constraint", "col1", 0);
-
-      given(getConstraintByIdPort.findConstraintById("constraint1"))
-          .willReturn(Mono.just(constraint));
-      given(getConstraintColumnByIdPort.findConstraintColumnById("cc1"))
-          .willReturn(Mono.just(constraintColumn));
 
       StepVerifier.create(sut.removeConstraintColumn(command))
           .expectError(ConstraintColumnNotExistException.class)
@@ -192,20 +174,21 @@ class RemoveConstraintColumnServiceTest {
     @Test
     @DisplayName("PkCascadeHelper를 통해 cascade 삭제를 수행한다")
     void cascadesRemovalViaPkCascadeHelper() {
-      var command = ConstraintFixture.removeColumnCommand("pk-constraint", "pk-cc1");
+      var command = ConstraintFixture.removeColumnCommand("pk-cc1");
       var pkConstraint = createConstraint("pk-constraint", "pk-table", ConstraintKind.PRIMARY_KEY);
       var pkConstraintColumn = ConstraintFixture.constraintColumn(
           "pk-cc1", "pk-constraint", "pk-col1", 0);
       var remainingPkColumns = List.of(
           ConstraintFixture.constraintColumn("pk-cc2", "pk-constraint", "pk-col2", 1));
 
-      given(getConstraintByIdPort.findConstraintById("pk-constraint"))
-          .willReturn(Mono.just(pkConstraint));
       given(getConstraintColumnByIdPort.findConstraintColumnById("pk-cc1"))
           .willReturn(Mono.just(pkConstraintColumn));
+      given(getConstraintByIdPort.findConstraintById("pk-constraint"))
+          .willReturn(Mono.just(pkConstraint));
       given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
           .willReturn(Mono.empty());
-      given(pkCascadeHelper.cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet()))
+      given(pkCascadeHelper.cascadeRemovePkColumn(
+          eq("pk-table"), eq("pk-col1"), anySet(), anySet()))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
           .willReturn(Mono.just(remainingPkColumns));
@@ -213,26 +196,29 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
-      then(pkCascadeHelper).should().cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet());
+      then(pkCascadeHelper).should().cascadeRemovePkColumn(
+          eq("pk-table"), eq("pk-col1"), anySet(), anySet());
     }
 
     @Test
     @DisplayName("마지막 PK 컬럼 삭제 시 제약조건도 함께 삭제한다")
     void deletesConstraintWhenLastPkColumnRemoved() {
-      var command = ConstraintFixture.removeColumnCommand("pk-constraint", "pk-cc1");
+      var command = ConstraintFixture.removeColumnCommand("pk-cc1");
       var pkConstraint = createConstraint("pk-constraint", "pk-table", ConstraintKind.PRIMARY_KEY);
       var pkConstraintColumn = ConstraintFixture.constraintColumn(
           "pk-cc1", "pk-constraint", "pk-col1", 0);
 
-      given(getConstraintByIdPort.findConstraintById("pk-constraint"))
-          .willReturn(Mono.just(pkConstraint));
       given(getConstraintColumnByIdPort.findConstraintColumnById("pk-cc1"))
           .willReturn(Mono.just(pkConstraintColumn));
+      given(getConstraintByIdPort.findConstraintById("pk-constraint"))
+          .willReturn(Mono.just(pkConstraint));
       given(deleteConstraintColumnPort.deleteConstraintColumn("pk-cc1"))
           .willReturn(Mono.empty());
-      given(pkCascadeHelper.cascadeRemovePkColumn(eq("pk-table"), eq("pk-col1"), anySet()))
+      given(pkCascadeHelper.cascadeRemovePkColumn(
+          eq("pk-table"), eq("pk-col1"), anySet(), anySet()))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
           .willReturn(Mono.just(List.of()));
@@ -240,6 +226,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(deleteConstraintPort).should().deleteConstraint("pk-constraint");
@@ -254,17 +241,17 @@ class RemoveConstraintColumnServiceTest {
     @Test
     @DisplayName("PkCascadeHelper가 호출되지 않는다")
     void noRelationshipCascadeForUniqueConstraint() {
-      var command = ConstraintFixture.removeColumnCommand("uq-constraint", "uq-cc1");
+      var command = ConstraintFixture.removeColumnCommand("uq-cc1");
       var constraint = createConstraint("uq-constraint", "table1", ConstraintKind.UNIQUE);
       var constraintColumn = ConstraintFixture.constraintColumn(
           "uq-cc1", "uq-constraint", "col1", 0);
       var remainingColumns = List.of(
           ConstraintFixture.constraintColumn("uq-cc2", "uq-constraint", "col2", 1));
 
-      given(getConstraintByIdPort.findConstraintById("uq-constraint"))
-          .willReturn(Mono.just(constraint));
       given(getConstraintColumnByIdPort.findConstraintColumnById("uq-cc1"))
           .willReturn(Mono.just(constraintColumn));
+      given(getConstraintByIdPort.findConstraintById("uq-constraint"))
+          .willReturn(Mono.just(constraint));
       given(deleteConstraintColumnPort.deleteConstraintColumn("uq-cc1"))
           .willReturn(Mono.empty());
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("uq-constraint"))
@@ -273,6 +260,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(pkCascadeHelper).shouldHaveNoInteractions();

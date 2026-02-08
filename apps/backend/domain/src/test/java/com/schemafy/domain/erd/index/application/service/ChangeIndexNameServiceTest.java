@@ -56,6 +56,7 @@ class ChangeIndexNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexName(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexNamePort).should().changeIndexName("index1", "new_index_name");
@@ -132,6 +133,7 @@ class ChangeIndexNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexName(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeIndexNamePort).should().changeIndexName("index1", "trimmed_name");

@@ -95,7 +95,6 @@ public class SchemaFixture {
 
   public static ChangeSchemaNameCommand changeNameCommand(String newName) {
     return new ChangeSchemaNameCommand(
-        DEFAULT_PROJECT_ID,
         DEFAULT_ID,
         newName);
   }

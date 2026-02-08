@@ -11,6 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
+import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableUseCase;
@@ -22,6 +24,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.inOrder;
@@ -37,6 +40,9 @@ class DeleteSchemaServiceTest {
 
   @Mock
   DeleteSchemaPort deleteSchemaPort;
+
+  @Mock
+  GetSchemaByIdPort getSchemaByIdPort;
 
   @Mock
   GetTablesBySchemaIdPort getTablesBySchemaIdPort;
@@ -62,6 +68,8 @@ class DeleteSchemaServiceTest {
         var table = new Table(TABLE_ID, SchemaFixture.DEFAULT_ID, "test_table", "utf8mb4",
             "utf8mb4_general_ci");
 
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.schemaWithId(command.schemaId())));
         given(getTablesBySchemaIdPort.findTablesBySchemaId(any()))
             .willReturn(Flux.just(table));
         given(deleteTableUseCase.deleteTable(any(DeleteTableCommand.class)))
@@ -72,6 +80,7 @@ class DeleteSchemaServiceTest {
             .willAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(sut.deleteSchema(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         var inOrderVerifier = inOrder(getTablesBySchemaIdPort, deleteTableUseCase, deleteSchemaPort);
@@ -92,6 +101,8 @@ class DeleteSchemaServiceTest {
         var table2 = new Table("table-2", SchemaFixture.DEFAULT_ID, "table_two", "utf8mb4",
             "utf8mb4_general_ci");
 
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.schemaWithId(command.schemaId())));
         given(getTablesBySchemaIdPort.findTablesBySchemaId(any()))
             .willReturn(Flux.just(table1, table2));
         given(deleteTableUseCase.deleteTable(any(DeleteTableCommand.class)))
@@ -102,6 +113,7 @@ class DeleteSchemaServiceTest {
             .willAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(sut.deleteSchema(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         var inOrderVerifier = inOrder(getTablesBySchemaIdPort, deleteTableUseCase, deleteSchemaPort);
@@ -126,6 +138,8 @@ class DeleteSchemaServiceTest {
       void deletesOnlySchema() {
         var command = SchemaFixture.deleteCommand();
 
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.schemaWithId(command.schemaId())));
         given(getTablesBySchemaIdPort.findTablesBySchemaId(any()))
             .willReturn(Flux.empty());
         given(deleteSchemaPort.deleteSchema(any()))
@@ -134,6 +148,7 @@ class DeleteSchemaServiceTest {
             .willAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(sut.deleteSchema(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(deleteTableUseCase).shouldHaveNoInteractions();
@@ -141,6 +156,25 @@ class DeleteSchemaServiceTest {
             .deleteSchema(command.schemaId());
       }
 
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 스키마이면 SchemaNotExistException이 발생한다")
+    void rejectsDeletionWhenSchemaDoesNotExist() {
+      var command = SchemaFixture.deleteCommand("missing-schema");
+
+      given(getSchemaByIdPort.findSchemaById(anyString()))
+          .willReturn(Mono.empty());
+      given(getTablesBySchemaIdPort.findTablesBySchemaId(anyString()))
+          .willReturn(Flux.empty());
+      given(transactionalOperator.transactional(any(Mono.class)))
+          .willAnswer(invocation -> invocation.getArgument(0));
+
+      StepVerifier.create(sut.deleteSchema(command))
+          .expectError(SchemaNotExistException.class)
+          .verify();
+
+      then(deleteSchemaPort).shouldHaveNoInteractions();
     }
 
   }

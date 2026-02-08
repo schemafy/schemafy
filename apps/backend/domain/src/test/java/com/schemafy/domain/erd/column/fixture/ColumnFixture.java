@@ -1,5 +1,6 @@
 package com.schemafy.domain.erd.column.fixture;
 
+import com.schemafy.domain.common.PatchField;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionCommand;
@@ -183,7 +184,6 @@ public class ColumnFixture {
         DEFAULT_LENGTH,
         null,
         null,
-        DEFAULT_SEQ_NO,
         false,
         null,
         null,
@@ -198,7 +198,6 @@ public class ColumnFixture {
         null,
         null,
         null,
-        DEFAULT_SEQ_NO,
         false,
         null,
         null,
@@ -213,7 +212,6 @@ public class ColumnFixture {
         null,
         10,
         2,
-        DEFAULT_SEQ_NO,
         false,
         null,
         null,
@@ -228,7 +226,6 @@ public class ColumnFixture {
         DEFAULT_LENGTH,
         null,
         null,
-        DEFAULT_SEQ_NO,
         false,
         null,
         null,
@@ -244,7 +241,6 @@ public class ColumnFixture {
         length,
         precision,
         scale,
-        DEFAULT_SEQ_NO,
         false,
         null,
         null,
@@ -259,7 +255,6 @@ public class ColumnFixture {
         null,
         null,
         null,
-        DEFAULT_SEQ_NO,
         true,
         null,
         null,
@@ -274,7 +269,6 @@ public class ColumnFixture {
         DEFAULT_LENGTH,
         null,
         null,
-        DEFAULT_SEQ_NO,
         false,
         charset,
         collation,
@@ -291,7 +285,10 @@ public class ColumnFixture {
   }
 
   public static ChangeColumnMetaCommand changeMetaCommand(
-      Boolean autoIncrement, String charset, String collation, String comment) {
+      PatchField<Boolean> autoIncrement,
+      PatchField<String> charset,
+      PatchField<String> collation,
+      PatchField<String> comment) {
     return new ChangeColumnMetaCommand(DEFAULT_ID, autoIncrement, charset, collation, comment);
   }
 

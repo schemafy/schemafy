@@ -2,6 +2,7 @@ package com.schemafy.domain.erd.schema.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaResult;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
@@ -23,7 +24,7 @@ class CreateSchemaService implements CreateSchemaUseCase {
   private final SchemaExistsPort schemaExistsPort;
 
   @Override
-  public Mono<CreateSchemaResult> createSchema(CreateSchemaCommand command) {
+  public Mono<MutationResult<CreateSchemaResult>> createSchema(CreateSchemaCommand command) {
     return schemaExistsPort
         .existsActiveByProjectIdAndName(command.projectId(), command.name())
         .flatMap(exists -> {
@@ -32,24 +33,26 @@ class CreateSchemaService implements CreateSchemaUseCase {
                 "Schema name '%s' already exists in project".formatted(command.name())));
           }
 
-          String id = ulidGeneratorPort.generate();
+          return Mono.fromCallable(ulidGeneratorPort::generate)
+              .flatMap(id -> {
+                Schema schema = new Schema(
+                    id,
+                    command.projectId(),
+                    command.dbVendorName(),
+                    command.name(),
+                    command.charset(),
+                    command.collation());
 
-          Schema schema = new Schema(
-              id,
-              command.projectId(),
-              command.dbVendorName(),
-              command.name(),
-              command.charset(),
-              command.collation());
-
-          return createSchemaPort.createSchema(schema)
-              .map(savedSchema -> new CreateSchemaResult(
-                  savedSchema.id(),
-                  savedSchema.projectId(),
-                  savedSchema.dbVendorName(),
-                  savedSchema.name(),
-                  savedSchema.charset(),
-                  savedSchema.collation()));
+                return createSchemaPort.createSchema(schema)
+                    .map(savedSchema -> new CreateSchemaResult(
+                        savedSchema.id(),
+                        savedSchema.projectId(),
+                        savedSchema.dbVendorName(),
+                        savedSchema.name(),
+                        savedSchema.charset(),
+                        savedSchema.collation()))
+                    .map(MutationResult::empty);
+              });
         });
   }
 

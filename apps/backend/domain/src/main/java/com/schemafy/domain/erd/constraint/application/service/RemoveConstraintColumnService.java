@@ -3,10 +3,12 @@ package com.schemafy.domain.erd.constraint.application.service;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
@@ -38,33 +40,39 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
   private final PkCascadeHelper pkCascadeHelper;
 
   @Override
-  public Mono<Void> removeConstraintColumn(RemoveConstraintColumnCommand command) {
-    return getConstraintByIdPort.findConstraintById(command.constraintId())
-        .switchIfEmpty(Mono.error(new ConstraintNotExistException(
-            "Constraint not found: " + command.constraintId())))
-        .flatMap(constraint -> getConstraintColumnByIdPort
-            .findConstraintColumnById(command.constraintColumnId())
-            .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException(
-                "Constraint column not found: " + command.constraintColumnId())))
-            .flatMap(constraintColumn -> {
-              if (!constraintColumn.constraintId().equalsIgnoreCase(constraint.id())) {
-                return Mono.error(new ConstraintColumnNotExistException(
-                    "Constraint column does not belong to the constraint"));
-              }
+  public Mono<MutationResult<Void>> removeConstraintColumn(RemoveConstraintColumnCommand command) {
+    return getConstraintColumnByIdPort
+        .findConstraintColumnById(command.constraintColumnId())
+        .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException(
+            "Constraint column not found: " + command.constraintColumnId())))
+        .flatMap(constraintColumn -> getConstraintByIdPort
+            .findConstraintById(constraintColumn.constraintId())
+            .switchIfEmpty(Mono.error(new ConstraintNotExistException(
+                "Constraint not found: " + constraintColumn.constraintId())))
+            .flatMap(constraint -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(constraint.tableId());
               return deleteConstraintColumnPort.deleteConstraintColumn(constraintColumn.id())
-                  .then(handlePkConstraintColumnRemoval(constraint, constraintColumn.columnId()))
-                  .then(reorderOrDeleteConstraint(constraint.id()));
+                  .then(handlePkConstraintColumnRemoval(
+                      constraint,
+                      constraintColumn.columnId(),
+                      affectedTableIds))
+                  .then(reorderOrDeleteConstraint(constraint.id()))
+                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
             }))
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<Void> handlePkConstraintColumnRemoval(Constraint constraint, String columnId) {
+  private Mono<Void> handlePkConstraintColumnRemoval(
+      Constraint constraint,
+      String columnId,
+      Set<String> affectedTableIds) {
     if (constraint.kind() != ConstraintKind.PRIMARY_KEY) {
       return Mono.empty();
     }
 
     return pkCascadeHelper.cascadeRemovePkColumn(
-        constraint.tableId(), columnId, new HashSet<>());
+        constraint.tableId(), columnId, new HashSet<>(), affectedTableIds);
   }
 
   private Mono<Void> reorderOrDeleteConstraint(String constraintId) {

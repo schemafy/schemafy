@@ -7,6 +7,7 @@ import java.util.OptionalInt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
@@ -47,23 +48,24 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   private final RelationshipExistsPort relationshipExistsPort;
 
   @Override
-  public Mono<Void> changeTableName(ChangeTableNameCommand command) {
-    return tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.newName())
-        .flatMap(exists -> {
-          if (exists) {
-            return Mono.error(new TableNameDuplicateException(
-                "A table with the name '" + command.newName() + "' already exists in the schema."));
-          }
+  public Mono<MutationResult<Void>> changeTableName(ChangeTableNameCommand command) {
+    return getTableByIdPort.findTableById(command.tableId())
+        .switchIfEmpty(Mono.error(
+            new TableNotExistException("Table not found: " + command.tableId())))
+        .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
+            .flatMap(exists -> {
+              if (exists) {
+                return Mono.error(new TableNameDuplicateException(
+                    "A table with the name '" + command.newName() + "' already exists in the schema."));
+              }
 
-          return getTableByIdPort.findTableById(command.tableId())
-              .switchIfEmpty(Mono.error(
-                  new TableNotExistException("Table not found: " + command.tableId())))
-              .flatMap(table -> changeTableNamePort.changeTableName(
+              return changeTableNamePort.changeTableName(
                   command.tableId(),
                   command.newName())
-                  .then(renamePkConstraint(command.schemaId(), command.tableId(), command.newName()))
-                  .then(renameAutoRelationshipNames(table, command.newName())));
-        })
+                  .then(renamePkConstraint(table.schemaId(), command.tableId(), command.newName()))
+                  .then(renameAutoRelationshipNames(table, command.newName()))
+                  .thenReturn(MutationResult.<Void>of(null, table.id()));
+            }))
         .as(transactionalOperator::transactional);
   }
 

@@ -3,10 +3,12 @@ package com.schemafy.domain.erd.column.application.service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnMetaPort;
@@ -45,18 +47,28 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
 
   @Override
-  public Mono<Void> changeColumnType(ChangeColumnTypeCommand command) {
+  public Mono<MutationResult<Void>> changeColumnType(ChangeColumnTypeCommand command) {
     ColumnLengthScale lengthScale = ColumnLengthScale.from(
         command.length(),
         command.precision(),
         command.scale());
+    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
 
     return rejectIfForeignKeyColumn(command.columnId())
         .then(getColumnByIdPort.findColumnById(command.columnId()))
         .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
-        .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-            .defaultIfEmpty(List.of())
-            .flatMap(columns -> applyChange(column, columns, command.dataType(), lengthScale)))
+        .flatMap(column -> {
+          affectedTableIds.add(column.tableId());
+          return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+              .defaultIfEmpty(List.of())
+              .flatMap(columns -> applyChange(
+                  column,
+                  columns,
+                  command.dataType(),
+                  lengthScale,
+                  affectedTableIds));
+        })
+        .thenReturn(MutationResult.<Void>of(null, affectedTableIds))
         .as(transactionalOperator::transactional);
   }
 
@@ -77,7 +89,8 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
       Column column,
       List<Column> columns,
       String dataType,
-      ColumnLengthScale lengthScale) {
+      ColumnLengthScale lengthScale,
+      Set<String> affectedTableIds) {
     String normalizedDataType = ColumnValidator.normalizeDataType(dataType);
     ColumnValidator.validateDataType(normalizedDataType);
     ColumnValidator.validateLengthScale(normalizedDataType, lengthScale);
@@ -92,11 +105,20 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         column.collation());
 
     return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, lengthScale)
-        .then(cascadeTypeToFkColumns(column, normalizedDataType, lengthScale, new HashSet<>()));
+        .then(cascadeTypeToFkColumns(
+            column,
+            normalizedDataType,
+            lengthScale,
+            new HashSet<>(),
+            affectedTableIds));
   }
 
   private Mono<Void> cascadeTypeToFkColumns(
-      Column pkColumn, String dataType, ColumnLengthScale lengthScale, Set<String> visited) {
+      Column pkColumn,
+      String dataType,
+      ColumnLengthScale lengthScale,
+      Set<String> visited,
+      Set<String> affectedTableIds) {
     if (!visited.add(pkColumn.id())) {
       return Mono.empty();
     }
@@ -106,37 +128,53 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
             .flatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
             .filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
             .next()
-            .flatMap(pk -> propagateTypeToFkColumns(pkColumn, dataType, lengthScale, visited)));
+            .flatMap(pk -> propagateTypeToFkColumns(
+                pkColumn,
+                dataType,
+                lengthScale,
+                visited,
+                affectedTableIds)));
   }
 
   private Mono<Void> propagateTypeToFkColumns(
-      Column pkColumn, String dataType, ColumnLengthScale lengthScale, Set<String> visited) {
+      Column pkColumn,
+      String dataType,
+      ColumnLengthScale lengthScale,
+      Set<String> visited,
+      Set<String> affectedTableIds) {
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId())
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
-        .flatMap(relationship -> getRelationshipColumnsByRelationshipIdPort
-            .findRelationshipColumnsByRelationshipId(relationship.id())
-            .defaultIfEmpty(List.of())
-            .flatMapMany(Flux::fromIterable)
-            .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
-            .flatMap(rc -> {
-              Mono<Void> changeType = changeColumnTypePort.changeColumnType(
-                  rc.fkColumnId(), dataType, lengthScale);
-              Mono<Void> clearCharsetCollation = ColumnValidator.isTextType(dataType)
-                  ? Mono.empty()
-                  : changeColumnMetaPort.changeColumnMeta(
-                      rc.fkColumnId(),
-                      null,
-                      "",
-                      "",
-                      null);
+        .flatMap(relationship -> {
+          affectedTableIds.add(relationship.fkTableId());
+          return getRelationshipColumnsByRelationshipIdPort
+              .findRelationshipColumnsByRelationshipId(relationship.id())
+              .defaultIfEmpty(List.of())
+              .flatMapMany(Flux::fromIterable)
+              .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
+              .flatMap(rc -> {
+                Mono<Void> changeType = changeColumnTypePort.changeColumnType(
+                    rc.fkColumnId(), dataType, lengthScale);
+                Mono<Void> clearCharsetCollation = ColumnValidator.isTextType(dataType)
+                    ? Mono.empty()
+                    : changeColumnMetaPort.changeColumnMeta(
+                        rc.fkColumnId(),
+                        null,
+                        "",
+                        "",
+                        null);
 
-              return changeType
-                  .then(clearCharsetCollation)
-                  .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
-                      .flatMap(fkCol -> cascadeTypeToFkColumns(
-                          fkCol, dataType, lengthScale, visited)));
-            }))
+                return changeType
+                    .then(clearCharsetCollation)
+                    .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
+                        .flatMap(fkCol -> cascadeTypeToFkColumns(
+                            fkCol,
+                            dataType,
+                            lengthScale,
+                            visited,
+                            affectedTableIds)));
+              });
+        })
         .then();
   }
 

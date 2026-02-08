@@ -1,9 +1,11 @@
 package com.schemafy.domain.erd.schema.application.port.in;
 
+import com.schemafy.domain.common.MutationResult;
+
 import reactor.core.publisher.Mono;
 
 public interface ChangeSchemaNameUseCase {
 
-  Mono<Void> changeSchemaName(ChangeSchemaNameCommand command);
+  Mono<MutationResult<Void>> changeSchemaName(ChangeSchemaNameCommand command);
 
 }

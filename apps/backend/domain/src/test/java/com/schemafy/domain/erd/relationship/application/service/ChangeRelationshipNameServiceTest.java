@@ -58,6 +58,7 @@ class ChangeRelationshipNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipName(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeRelationshipNamePort).should()
@@ -124,6 +125,7 @@ class ChangeRelationshipNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipName(command))
+          .expectNextCount(1)
           .verifyComplete();
     }
 

@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
+import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
@@ -32,6 +33,9 @@ class ChangeRelationshipColumnPositionServiceTest {
 
   @Mock
   ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort;
+
+  @Mock
+  GetRelationshipByIdPort getRelationshipByIdPort;
 
   @Mock
   GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;
@@ -58,12 +62,15 @@ class ChangeRelationshipColumnPositionServiceTest {
 
       given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
           .willReturn(Mono.just(column1));
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
           .willReturn(Mono.just(List.of(column1, column2)));
       given(changeRelationshipColumnPositionPort.changeRelationshipColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeRelationshipColumnPositionPort).should()
@@ -81,12 +88,15 @@ class ChangeRelationshipColumnPositionServiceTest {
 
       given(getRelationshipColumnByIdPort.findRelationshipColumnById("col2"))
           .willReturn(Mono.just(column2));
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
           .willReturn(Mono.just(List.of(column1, column2)));
       given(changeRelationshipColumnPositionPort.changeRelationshipColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
     }
 
@@ -106,35 +116,54 @@ class ChangeRelationshipColumnPositionServiceTest {
     }
 
     @Test
-    @DisplayName("음수 위치면 예외가 발생한다")
-    void throwsWhenNegativePosition() {
+    @DisplayName("음수 위치면 첫 번째 위치로 clamp된다")
+    void clampsWhenNegativePosition() {
       var command = new ChangeRelationshipColumnPositionCommand(
           RelationshipFixture.DEFAULT_COLUMN_ID, -1);
+      var column1 = RelationshipFixture.relationshipColumn(
+          RelationshipFixture.DEFAULT_COLUMN_ID, RelationshipFixture.DEFAULT_ID, "pk1", "fk1", 0);
+      var column2 = RelationshipFixture.relationshipColumn(
+          "col2", RelationshipFixture.DEFAULT_ID, "pk2", "fk2", 1);
+
+      given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
+          .willReturn(Mono.just(column1));
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
+      given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
+          .willReturn(Mono.just(List.of(column1, column2)));
+      given(changeRelationshipColumnPositionPort.changeRelationshipColumnPositions(any(), anyList()))
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
-          .expectError(RelationshipPositionInvalidException.class)
-          .verify();
+          .expectNextCount(1)
+          .verifyComplete();
 
-      then(changeRelationshipColumnPositionPort).shouldHaveNoInteractions();
+      then(changeRelationshipColumnPositionPort).should()
+          .changeRelationshipColumnPositions(eq(RelationshipFixture.DEFAULT_ID), anyList());
     }
 
     @Test
-    @DisplayName("범위를 초과하는 위치면 예외가 발생한다")
-    void throwsWhenPositionOutOfRange() {
+    @DisplayName("범위를 초과하는 위치면 마지막 위치로 clamp된다")
+    void clampsWhenPositionOutOfRange() {
       var command = new ChangeRelationshipColumnPositionCommand(
           RelationshipFixture.DEFAULT_COLUMN_ID, 5);
       var column = RelationshipFixture.defaultRelationshipColumn();
 
       given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
           .willReturn(Mono.just(column));
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
           .willReturn(Mono.just(List.of(column)));
+      given(changeRelationshipColumnPositionPort.changeRelationshipColumnPositions(any(), anyList()))
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
-          .expectError(RelationshipPositionInvalidException.class)
-          .verify();
+          .expectNextCount(1)
+          .verifyComplete();
 
-      then(changeRelationshipColumnPositionPort).shouldHaveNoInteractions();
+      then(changeRelationshipColumnPositionPort).should()
+          .changeRelationshipColumnPositions(eq(RelationshipFixture.DEFAULT_ID), anyList());
     }
 
   }

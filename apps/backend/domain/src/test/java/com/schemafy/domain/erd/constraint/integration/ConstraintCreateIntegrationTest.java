@@ -97,27 +97,27 @@ class ConstraintCreateIntegrationTest {
     var createSchemaCommand = new CreateSchemaCommand(
         PROJECT_ID, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
-    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();
 
     var createTableCommand = new CreateTableCommand(
         schemaId, "test_table", "utf8mb4", "utf8mb4_general_ci");
-    var tableResult = createTableUseCase.createTable(createTableCommand).block();
+    var tableResult = createTableUseCase.createTable(createTableCommand).block().result();
     tableId = tableResult.tableId();
 
     var createColumn1Command = new CreateColumnCommand(
-        tableId, "id", "INT", null, null, null, 0, true, null, null, "PK");
-    var column1Result = createColumnUseCase.createColumn(createColumn1Command).block();
+        tableId, "id", "INT", null, null, null, true, null, null, "PK");
+    var column1Result = createColumnUseCase.createColumn(createColumn1Command).block().result();
     columnId1 = column1Result.columnId();
 
     var createColumn2Command = new CreateColumnCommand(
-        tableId, "name", "VARCHAR", 100, null, null, 1, false, null, null, "Name");
-    var column2Result = createColumnUseCase.createColumn(createColumn2Command).block();
+        tableId, "name", "VARCHAR", 100, null, null, false, null, null, "Name");
+    var column2Result = createColumnUseCase.createColumn(createColumn2Command).block().result();
     columnId2 = column2Result.columnId();
 
     var createColumn3Command = new CreateColumnCommand(
-        tableId, "email", "VARCHAR", 255, null, null, 2, false, null, null, "Email");
-    var column3Result = createColumnUseCase.createColumn(createColumn3Command).block();
+        tableId, "email", "VARCHAR", 255, null, null, false, null, null, "Email");
+    var column3Result = createColumnUseCase.createColumn(createColumn3Command).block().result();
     columnId3 = column3Result.columnId();
   }
 
@@ -134,9 +134,10 @@ class ConstraintCreateIntegrationTest {
 
       StepVerifier.create(createConstraintUseCase.createConstraint(createCommand))
           .assertNext(result -> {
-            assertThat(result.constraintId()).isNotNull();
-            assertThat(result.name()).isEqualTo("pk_test");
-            assertThat(result.kind()).isEqualTo(ConstraintKind.PRIMARY_KEY);
+            var payload = result.result();
+            assertThat(payload.constraintId()).isNotNull();
+            assertThat(payload.name()).isEqualTo("pk_test");
+            assertThat(payload.kind()).isEqualTo(ConstraintKind.PRIMARY_KEY);
           })
           .verifyComplete();
     }
@@ -150,8 +151,9 @@ class ConstraintCreateIntegrationTest {
 
       StepVerifier.create(createConstraintUseCase.createConstraint(createCommand))
           .assertNext(result -> {
-            assertThat(result.constraintId()).isNotNull();
-            assertThat(result.kind()).isEqualTo(ConstraintKind.UNIQUE);
+            var payload = result.result();
+            assertThat(payload.constraintId()).isNotNull();
+            assertThat(payload.kind()).isEqualTo(ConstraintKind.UNIQUE);
           })
           .verifyComplete();
     }
@@ -165,8 +167,9 @@ class ConstraintCreateIntegrationTest {
 
       StepVerifier.create(createConstraintUseCase.createConstraint(createCommand))
           .assertNext(result -> {
-            assertThat(result.constraintId()).isNotNull();
-            assertThat(result.kind()).isEqualTo(ConstraintKind.CHECK);
+            var payload = result.result();
+            assertThat(payload.constraintId()).isNotNull();
+            assertThat(payload.kind()).isEqualTo(ConstraintKind.CHECK);
           })
           .verifyComplete();
 
@@ -189,7 +192,7 @@ class ConstraintCreateIntegrationTest {
               new CreateConstraintColumnCommand(columnId2, 0),
               new CreateConstraintColumnCommand(columnId3, 1)));
 
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       StepVerifier.create(getConstraintColumnsByConstraintIdUseCase
           .getConstraintColumnsByConstraintId(
@@ -216,10 +219,11 @@ class ConstraintCreateIntegrationTest {
       var createCommand = new CreateConstraintCommand(
           tableId, "pk_old", ConstraintKind.PRIMARY_KEY, null, null,
           List.of(new CreateConstraintColumnCommand(columnId1, 0)));
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       StepVerifier.create(changeConstraintNameUseCase.changeConstraintName(
           new ChangeConstraintNameCommand(result.constraintId(), "pk_new")))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getConstraintUseCase.getConstraint(
@@ -240,14 +244,15 @@ class ConstraintCreateIntegrationTest {
       var createCommand = new CreateConstraintCommand(
           tableId, "uq_test", ConstraintKind.UNIQUE, null, null,
           List.of(new CreateConstraintColumnCommand(columnId1, 0)));
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       StepVerifier.create(addConstraintColumnUseCase.addConstraintColumn(
           new AddConstraintColumnCommand(result.constraintId(), columnId2, 1)))
           .assertNext(addResult -> {
-            assertThat(addResult.constraintColumnId()).isNotNull();
-            assertThat(addResult.columnId()).isEqualTo(columnId2);
-            assertThat(addResult.seqNo()).isEqualTo(1);
+            var payload = addResult.result();
+            assertThat(payload.constraintColumnId()).isNotNull();
+            assertThat(payload.columnId()).isEqualTo(columnId2);
+            assertThat(payload.seqNo()).isEqualTo(1);
           })
           .verifyComplete();
 
@@ -273,7 +278,7 @@ class ConstraintCreateIntegrationTest {
               new CreateConstraintColumnCommand(columnId1, 0),
               new CreateConstraintColumnCommand(columnId2, 1),
               new CreateConstraintColumnCommand(columnId3, 2)));
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       // 현재 컬럼 조회
       var columns = getConstraintColumnsByConstraintIdUseCase
@@ -287,6 +292,7 @@ class ConstraintCreateIntegrationTest {
 
       StepVerifier.create(changeConstraintColumnPositionUseCase.changeConstraintColumnPosition(
           new ChangeConstraintColumnPositionCommand(lastColumnId, 0)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // 위치 확인
@@ -315,10 +321,11 @@ class ConstraintCreateIntegrationTest {
           List.of(
               new CreateConstraintColumnCommand(columnId1, 0),
               new CreateConstraintColumnCommand(columnId2, 1)));
-      var result = createConstraintUseCase.createConstraint(createCommand).block();
+      var result = createConstraintUseCase.createConstraint(createCommand).block().result();
 
       StepVerifier.create(deleteConstraintUseCase.deleteConstraint(
           new DeleteConstraintCommand(result.constraintId())))
+          .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getConstraintUseCase.getConstraint(

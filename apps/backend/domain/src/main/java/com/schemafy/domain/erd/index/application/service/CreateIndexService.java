@@ -1,11 +1,15 @@
 package com.schemafy.domain.erd.index.application.service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.index.application.port.in.CreateIndexColumnCommand;
@@ -45,24 +49,38 @@ public class CreateIndexService implements CreateIndexUseCase {
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
 
   @Override
-  public Mono<CreateIndexResult> createIndex(CreateIndexCommand command) {
+  public Mono<MutationResult<CreateIndexResult>> createIndex(CreateIndexCommand command) {
     return Mono.defer(() -> {
       String normalizedName = normalizeName(command.name());
-      List<CreateIndexColumnCommand> columnCommands = normalizeColumns(command.columns());
+      List<CreateIndexColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
 
-      IndexValidator.validateName(normalizedName);
+      boolean autoName = normalizedName == null || normalizedName.isBlank();
+      if (!autoName) {
+        IndexValidator.validateName(normalizedName);
+      }
       IndexValidator.validateType(command.type());
 
       return getTableByIdPort.findTableById(command.tableId())
           .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
-          .flatMap(table -> indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
-              .flatMap(exists -> {
-                if (exists) {
-                  return Mono.error(new IndexNameDuplicateException(
-                      "Index name '%s' already exists in table".formatted(normalizedName)));
-                }
-                return validateAndCreate(table, command, normalizedName, columnCommands);
-              }));
+          .flatMap(table -> {
+            Mono<String> nameMono;
+            if (autoName) {
+              nameMono = resolveAutoIndexName(table);
+            } else {
+              nameMono = indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
+                  .flatMap(exists -> {
+                    if (exists) {
+                      return Mono.error(new IndexNameDuplicateException(
+                          "Index name '%s' already exists in table".formatted(normalizedName)));
+                    }
+                    return Mono.just(normalizedName);
+                  });
+            }
+
+            return nameMono.flatMap(resolvedName ->
+                validateAndCreate(table, command, resolvedName, columnCommands)
+                    .map(result -> MutationResult.of(result, table.id())));
+          });
     }).as(transactionalOperator::transactional);
   }
 
@@ -105,14 +123,16 @@ public class CreateIndexService implements CreateIndexUseCase {
       CreateIndexCommand command,
       String normalizedName,
       List<CreateIndexColumnCommand> columnCommands) {
-    String indexId = ulidGeneratorPort.generate();
-    Index index = new Index(indexId, table.id(), normalizedName, command.type());
-    return createIndexPort.createIndex(index)
-        .flatMap(savedIndex -> createIndexColumns(indexId, columnCommands)
-            .thenReturn(new CreateIndexResult(
-                savedIndex.id(),
-                savedIndex.name(),
-                savedIndex.type())));
+    return Mono.fromCallable(ulidGeneratorPort::generate)
+        .flatMap(indexId -> {
+          Index index = new Index(indexId, table.id(), normalizedName, command.type());
+          return createIndexPort.createIndex(index)
+              .flatMap(savedIndex -> createIndexColumns(indexId, columnCommands)
+                  .thenReturn(new CreateIndexResult(
+                      savedIndex.id(),
+                      savedIndex.name(),
+                      savedIndex.type())));
+        });
   }
 
   private Mono<Map<String, List<IndexColumn>>> fetchIndexColumns(List<Index> indexes) {
@@ -133,13 +153,14 @@ public class CreateIndexService implements CreateIndexUseCase {
       return Mono.empty();
     }
     return Flux.fromIterable(columnCommands)
-        .concatMap(command -> createIndexColumnPort.createIndexColumn(
-            new IndexColumn(
-                ulidGeneratorPort.generate(),
-                indexId,
-                command.columnId(),
-                command.seqNo(),
-                command.sortDirection())))
+        .concatMap(command -> Mono.fromCallable(ulidGeneratorPort::generate)
+            .flatMap(id -> createIndexColumnPort.createIndexColumn(
+                new IndexColumn(
+                    id,
+                    indexId,
+                    command.columnId(),
+                    command.seqNo(),
+                    command.sortDirection()))))
         .then();
   }
 
@@ -149,6 +170,38 @@ public class CreateIndexService implements CreateIndexUseCase {
       return List.of();
     }
     return List.copyOf(columns);
+  }
+
+  private static List<CreateIndexColumnCommand> resolveColumnSeqNos(
+      List<CreateIndexColumnCommand> columns) {
+    if (columns == null || columns.isEmpty()) {
+      return List.of();
+    }
+    Set<Integer> usedSeqNos = new HashSet<>();
+    for (CreateIndexColumnCommand column : columns) {
+      if (column.seqNo() != null) {
+        usedSeqNos.add(column.seqNo());
+      }
+    }
+
+    int nextSeqNo = 0;
+    List<CreateIndexColumnCommand> resolved = new ArrayList<>(columns.size());
+    for (CreateIndexColumnCommand column : columns) {
+      Integer seqNo = column.seqNo();
+      if (seqNo == null) {
+        while (usedSeqNos.contains(nextSeqNo)) {
+          nextSeqNo++;
+        }
+        seqNo = nextSeqNo;
+        usedSeqNos.add(seqNo);
+        nextSeqNo++;
+      }
+      resolved.add(new CreateIndexColumnCommand(
+          column.columnId(),
+          seqNo,
+          column.sortDirection()));
+    }
+    return List.copyOf(resolved);
   }
 
   private static List<IndexColumn> toColumns(List<CreateIndexColumnCommand> commands) {
@@ -163,6 +216,22 @@ public class CreateIndexService implements CreateIndexUseCase {
             command.seqNo(),
             command.sortDirection()))
         .toList();
+  }
+
+  private Mono<String> resolveAutoIndexName(Table table) {
+    String baseName = "idx_" + table.name();
+    return resolveUniqueIndexName(table.id(), baseName, 0);
+  }
+
+  private Mono<String> resolveUniqueIndexName(String tableId, String baseName, int suffix) {
+    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+    return indexExistsPort.existsByTableIdAndName(tableId, candidate)
+        .flatMap(exists -> {
+          if (exists) {
+            return resolveUniqueIndexName(tableId, baseName, suffix + 1);
+          }
+          return Mono.just(candidate);
+        });
   }
 
   private static String normalizeName(String name) {

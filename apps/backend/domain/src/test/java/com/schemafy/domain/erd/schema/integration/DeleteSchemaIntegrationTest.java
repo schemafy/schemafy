@@ -63,7 +63,7 @@ class DeleteSchemaIntegrationTest {
             PROJECT_ID, "MySQL", "integration_test_schema",
             "utf8mb4", "utf8mb4_general_ci");
 
-        var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+        var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
         schemaId = schemaResult.id();
 
         var createTableCommand = new CreateTableCommand(
@@ -76,6 +76,7 @@ class DeleteSchemaIntegrationTest {
       void deletesSchemaAndRelatedTables() {
         StepVerifier.create(deleteSchemaUseCase.deleteSchema(
             new DeleteSchemaCommand(schemaId)))
+            .expectNextCount(1)
             .verifyComplete();
 
         StepVerifier.create(getSchemaUseCase.getSchema(

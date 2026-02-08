@@ -2,6 +2,7 @@ package com.schemafy.domain.erd.constraint.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
@@ -26,7 +27,7 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
   private final GetTableByIdPort getTableByIdPort;
 
   @Override
-  public Mono<Void> changeConstraintName(ChangeConstraintNameCommand command) {
+  public Mono<MutationResult<Void>> changeConstraintName(ChangeConstraintNameCommand command) {
     return Mono.defer(() -> {
       String normalizedName = normalizeName(command.newName());
       ConstraintValidator.validateName(normalizedName);
@@ -44,7 +45,8 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
                           "Constraint name '%s' already exists in schema".formatted(normalizedName)));
                     }
                     return changeConstraintNamePort
-                        .changeConstraintName(constraint.id(), normalizedName);
+                        .changeConstraintName(constraint.id(), normalizedName)
+                        .thenReturn(MutationResult.<Void>of(null, constraint.tableId()));
                   })));
     });
   }

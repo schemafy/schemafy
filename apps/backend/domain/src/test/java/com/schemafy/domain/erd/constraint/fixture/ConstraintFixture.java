@@ -5,6 +5,8 @@ import java.util.List;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnResult;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
@@ -385,6 +387,24 @@ public class ConstraintFixture {
     return new ChangeConstraintNameCommand(constraintId, newName);
   }
 
+  public static ChangeConstraintCheckExprCommand changeCheckExprCommand(String checkExpr) {
+    return new ChangeConstraintCheckExprCommand(DEFAULT_ID, checkExpr);
+  }
+
+  public static ChangeConstraintCheckExprCommand changeCheckExprCommand(
+      String constraintId, String checkExpr) {
+    return new ChangeConstraintCheckExprCommand(constraintId, checkExpr);
+  }
+
+  public static ChangeConstraintDefaultExprCommand changeDefaultExprCommand(String defaultExpr) {
+    return new ChangeConstraintDefaultExprCommand(DEFAULT_ID, defaultExpr);
+  }
+
+  public static ChangeConstraintDefaultExprCommand changeDefaultExprCommand(
+      String constraintId, String defaultExpr) {
+    return new ChangeConstraintDefaultExprCommand(constraintId, defaultExpr);
+  }
+
   public static AddConstraintColumnCommand addColumnCommand() {
     return new AddConstraintColumnCommand(DEFAULT_ID, DEFAULT_COLUMN_ID, DEFAULT_SEQ_NO);
   }
@@ -395,12 +415,12 @@ public class ConstraintFixture {
   }
 
   public static RemoveConstraintColumnCommand removeColumnCommand() {
-    return new RemoveConstraintColumnCommand(DEFAULT_ID, DEFAULT_CONSTRAINT_COLUMN_ID);
+    return new RemoveConstraintColumnCommand(DEFAULT_CONSTRAINT_COLUMN_ID);
   }
 
   public static RemoveConstraintColumnCommand removeColumnCommand(
-      String constraintId, String constraintColumnId) {
-    return new RemoveConstraintColumnCommand(constraintId, constraintColumnId);
+      String constraintColumnId) {
+    return new RemoveConstraintColumnCommand(constraintColumnId);
   }
 
   public static ChangeConstraintColumnPositionCommand changeColumnPositionCommand(int seqNo) {

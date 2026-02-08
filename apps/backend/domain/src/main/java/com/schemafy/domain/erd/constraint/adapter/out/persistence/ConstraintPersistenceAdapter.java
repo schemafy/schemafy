@@ -7,6 +7,7 @@ import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
+import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintExpressionPort;
 import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.domain.erd.constraint.application.port.out.CreateConstraintPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
@@ -25,6 +26,7 @@ class ConstraintPersistenceAdapter implements
     GetConstraintByIdPort,
     GetConstraintsByTableIdPort,
     ChangeConstraintNamePort,
+    ChangeConstraintExpressionPort,
     DeleteConstraintPort,
     ConstraintExistsPort {
 
@@ -57,6 +59,17 @@ class ConstraintPersistenceAdapter implements
     return findConstraintOrError(constraintId)
         .flatMap((@NonNull ConstraintEntity constraintEntity) -> {
           constraintEntity.setName(newName);
+          return constraintRepository.save(constraintEntity);
+        })
+        .then();
+  }
+
+  @Override
+  public Mono<Void> changeConstraintExpressions(String constraintId, String checkExpr, String defaultExpr) {
+    return findConstraintOrError(constraintId)
+        .flatMap((@NonNull ConstraintEntity constraintEntity) -> {
+          constraintEntity.setCheckExpr(checkExpr);
+          constraintEntity.setDefaultExpr(defaultExpr);
           return constraintRepository.save(constraintEntity);
         })
         .then();

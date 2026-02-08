@@ -2,11 +2,14 @@ package com.schemafy.domain.erd.column.application.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaUseCase;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnMetaPort;
@@ -31,114 +34,144 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
 
-  private final ChangeColumnMetaPort changeColumnMetaPort;
-  private final TransactionalOperator transactionalOperator;
-  private final GetColumnByIdPort getColumnByIdPort;
-  private final GetColumnsByTableIdPort getColumnsByTableIdPort;
-  private final GetConstraintColumnsByColumnIdPort getConstraintColumnsByColumnIdPort;
-  private final GetConstraintByIdPort getConstraintByIdPort;
-  private final GetRelationshipColumnsByColumnIdPort getRelationshipColumnsByColumnIdPort;
-  private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
-  private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
+	private final ChangeColumnMetaPort changeColumnMetaPort;
+	private final TransactionalOperator transactionalOperator;
+	private final GetColumnByIdPort getColumnByIdPort;
+	private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+	private final GetConstraintColumnsByColumnIdPort getConstraintColumnsByColumnIdPort;
+	private final GetConstraintByIdPort getConstraintByIdPort;
+	private final GetRelationshipColumnsByColumnIdPort getRelationshipColumnsByColumnIdPort;
+	private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
+	private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
 
-  @Override
-  public Mono<Void> changeColumnMeta(ChangeColumnMetaCommand command) {
-    return rejectIfForeignKeyColumn(command.columnId())
-        .then(getColumnByIdPort.findColumnById(command.columnId()))
-        .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
-        .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-            .defaultIfEmpty(List.of())
-            .flatMap(columns -> applyChange(column, columns, command)))
-        .as(transactionalOperator::transactional);
-  }
+	@Override
+	public Mono<MutationResult<Void>> changeColumnMeta(ChangeColumnMetaCommand command) {
+		Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+		return rejectIfForeignKeyColumn(command.columnId())
+				.then(getColumnByIdPort.findColumnById(command.columnId()))
+				.switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
+				.flatMap(column -> {
+					affectedTableIds.add(column.tableId());
+					return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+							.defaultIfEmpty(List.of())
+							.flatMap(columns -> applyChange(column, columns, command, affectedTableIds));
+				})
+				.thenReturn(MutationResult.<Void>of(null, affectedTableIds))
+				.as(transactionalOperator::transactional);
+	}
 
-  private Mono<Void> rejectIfForeignKeyColumn(String columnId) {
-    return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
-        .flatMap(relationshipColumns -> {
-          boolean isFk = relationshipColumns.stream()
-              .anyMatch(rc -> rc.fkColumnId().equals(columnId));
-          if (isFk) {
-            return Mono.error(new ForeignKeyColumnProtectedException(
-                "Foreign key column metadata cannot be changed directly"));
-          }
-          return Mono.empty();
-        });
-  }
+	private Mono<Void> rejectIfForeignKeyColumn(String columnId) {
+		return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
+				.flatMap(relationshipColumns -> {
+					boolean isFk = relationshipColumns.stream()
+							.anyMatch(rc -> rc.fkColumnId().equals(columnId));
+					if (isFk) {
+						return Mono.error(new ForeignKeyColumnProtectedException(
+								"Foreign key column metadata cannot be changed directly"));
+					}
+					return Mono.empty();
+				});
+	}
 
-  private Mono<Void> applyChange(
-      Column column,
-      List<Column> columns,
-      ChangeColumnMetaCommand command) {
-    boolean nextAutoIncrement = command.autoIncrement() != null
-        ? command.autoIncrement()
-        : column.autoIncrement();
-    String nextCharset = hasText(command.charset()) ? command.charset() : column.charset();
-    String nextCollation = hasText(command.collation()) ? command.collation() : column.collation();
-    String nextComment = hasText(command.comment()) ? command.comment() : column.comment();
+	private Mono<Void> applyChange(
+			Column column,
+			List<Column> columns,
+			ChangeColumnMetaCommand command,
+			Set<String> affectedTableIds) {
 
-    String normalizedDataType = ColumnValidator.normalizeDataType(column.dataType());
-    ColumnValidator.validateAutoIncrement(
-        normalizedDataType,
-        nextAutoIncrement,
-        columns,
-        column.id());
-    ColumnValidator.validateCharsetAndCollation(normalizedDataType, nextCharset, nextCollation);
+		boolean effectiveAutoIncrement = command.autoIncrement().orElse(column.autoIncrement());
+		String effectiveCharset = command.charset().isPresent()
+				? normalizeOptional(command.charset().get())
+				: column.charset();
+		String effectiveCollation = command.collation().isPresent()
+				? normalizeOptional(command.collation().get())
+				: column.collation();
+		String effectiveComment = command.comment().isPresent()
+				? normalizeOptional(command.comment().get())
+				: column.comment();
 
-    String normalizedCharset = normalizeOptional(nextCharset);
-    String normalizedCollation = normalizeOptional(nextCollation);
+		String normalizedDataType = ColumnValidator.normalizeDataType(column.dataType());
+		ColumnValidator.validateAutoIncrement(
+				normalizedDataType,
+				effectiveAutoIncrement,
+				columns,
+				column.id());
+		ColumnValidator.validateCharsetAndCollation(normalizedDataType, effectiveCharset, effectiveCollation);
 
-    return changeColumnMetaPort.changeColumnMeta(
-        column.id(),
-        nextAutoIncrement,
-        normalizedCharset,
-        normalizedCollation,
-        normalizeOptional(nextComment))
-        .then(cascadeCharsetCollationToFkColumns(
-            column, normalizedCharset, normalizedCollation, new HashSet<>()));
-  }
+		Boolean portAutoIncrement = command.autoIncrement().isPresent() ? effectiveAutoIncrement : null;
+		String portCharset = command.charset().isPresent()
+				? Objects.toString(effectiveCharset, "")
+				: null;
+		String portCollation = command.collation().isPresent()
+				? Objects.toString(effectiveCollation, "")
+				: null;
+		String portComment = command.comment().isPresent()
+				? Objects.toString(effectiveComment, "")
+				: null;
 
-  private Mono<Void> cascadeCharsetCollationToFkColumns(
-      Column column, String charset, String collation, Set<String> visited) {
-    if (!visited.add(column.id())) {
-      return Mono.empty();
-    }
-    return getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(column.id())
-        .defaultIfEmpty(List.of())
-        .flatMap(constraintColumns -> Flux.fromIterable(constraintColumns)
-            .flatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
-            .filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
-            .next()
-            .flatMap(pk -> propagateCharsetCollationToFkColumns(
-                column, charset, collation, visited)));
-  }
+		return changeColumnMetaPort.changeColumnMeta(
+				column.id(),
+				portAutoIncrement,
+				portCharset,
+				portCollation,
+				portComment)
+				.then(cascadeCharsetCollationToFkColumns(
+						column,
+						portCharset,
+						portCollation,
+						new HashSet<>(),
+						affectedTableIds));
+	}
 
-  private Mono<Void> propagateCharsetCollationToFkColumns(
-      Column pkColumn, String charset, String collation, Set<String> visited) {
-    return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId())
-        .defaultIfEmpty(List.of())
-        .flatMapMany(Flux::fromIterable)
-        .flatMap(relationship -> getRelationshipColumnsByRelationshipIdPort
-            .findRelationshipColumnsByRelationshipId(relationship.id())
-            .defaultIfEmpty(List.of())
-            .flatMapMany(Flux::fromIterable)
-            .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
-            .flatMap(rc -> changeColumnMetaPort.changeColumnMeta(
-                rc.fkColumnId(), null, charset, collation, null)
-                .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
-                    .flatMap(fkCol -> cascadeCharsetCollationToFkColumns(
-                        fkCol, charset, collation, visited)))))
-        .then();
-  }
+	private Mono<Void> cascadeCharsetCollationToFkColumns(
+			Column column,
+			String charset,
+			String collation,
+			Set<String> visited,
+			Set<String> affectedTableIds) {
+		if (!visited.add(column.id())) {
+			return Mono.empty();
+		}
+		return getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(column.id())
+				.defaultIfEmpty(List.of())
+				.flatMap(constraintColumns -> Flux.fromIterable(constraintColumns)
+						.flatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
+						.filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
+						.next()
+						.flatMap(pk -> propagateCharsetCollationToFkColumns(
+								column, charset, collation, visited, affectedTableIds)));
+	}
 
-  private static boolean hasText(String value) {
-    return value != null && !value.isBlank();
-  }
+	private Mono<Void> propagateCharsetCollationToFkColumns(
+			Column pkColumn,
+			String charset,
+			String collation,
+			Set<String> visited,
+			Set<String> affectedTableIds) {
+		return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId())
+				.defaultIfEmpty(List.of())
+				.flatMapMany(Flux::fromIterable)
+				.flatMap(relationship -> {
+					affectedTableIds.add(relationship.fkTableId());
+					return getRelationshipColumnsByRelationshipIdPort
+							.findRelationshipColumnsByRelationshipId(relationship.id())
+							.defaultIfEmpty(List.of())
+							.flatMapMany(Flux::fromIterable)
+							.filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
+							.flatMap(rc -> changeColumnMetaPort.changeColumnMeta(
+									rc.fkColumnId(), null, charset, collation, null)
+									.then(getColumnByIdPort.findColumnById(rc.fkColumnId())
+											.flatMap(fkCol -> cascadeCharsetCollationToFkColumns(
+													fkCol, charset, collation, visited, affectedTableIds))));
+				})
+				.then();
+	}
 
-  private static String normalizeOptional(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.trim();
-  }
+	private static String normalizeOptional(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		return value.trim();
+	}
 
 }

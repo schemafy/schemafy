@@ -81,6 +81,7 @@ class ChangeColumnNameServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeColumnNamePort).should()

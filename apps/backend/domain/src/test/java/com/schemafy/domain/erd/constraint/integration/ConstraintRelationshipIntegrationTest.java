@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.PatchField;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaUseCase;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
@@ -118,24 +119,24 @@ class ConstraintRelationshipIntegrationTest {
     var createSchemaCommand = new CreateSchemaCommand(
         PROJECT_ID, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
-    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();
 
     // PK Table 생성 (복합키를 가질 테이블)
     var createPkTableCommand = new CreateTableCommand(
         schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci");
-    var pkTableResult = createTableUseCase.createTable(createPkTableCommand).block();
+    var pkTableResult = createTableUseCase.createTable(createPkTableCommand).block().result();
     pkTableId = pkTableResult.tableId();
 
     // PK Table 컬럼 생성
     var createPkColumn1Command = new CreateColumnCommand(
-        pkTableId, "pk_col1", "INT", null, null, null, 0, false, null, null, "PK Column 1");
-    var pkColumn1Result = createColumnUseCase.createColumn(createPkColumn1Command).block();
+        pkTableId, "pk_col1", "INT", null, null, null, false, null, null, "PK Column 1");
+    var pkColumn1Result = createColumnUseCase.createColumn(createPkColumn1Command).block().result();
     pkColumnId1 = pkColumn1Result.columnId();
 
     var createPkColumn2Command = new CreateColumnCommand(
-        pkTableId, "pk_col2", "INT", null, null, null, 1, false, null, null, "PK Column 2");
-    var pkColumn2Result = createColumnUseCase.createColumn(createPkColumn2Command).block();
+        pkTableId, "pk_col2", "INT", null, null, null, false, null, null, "PK Column 2");
+    var pkColumn2Result = createColumnUseCase.createColumn(createPkColumn2Command).block().result();
     pkColumnId2 = pkColumn2Result.columnId();
 
     // PK Constraint 생성 (복합키: pk_col1, pk_col2)
@@ -144,19 +145,19 @@ class ConstraintRelationshipIntegrationTest {
         List.of(
             new CreateConstraintColumnCommand(pkColumnId1, 0),
             new CreateConstraintColumnCommand(pkColumnId2, 1)));
-    var pkConstraintResult = createConstraintUseCase.createConstraint(createPkConstraintCommand).block();
+    var pkConstraintResult = createConstraintUseCase.createConstraint(createPkConstraintCommand).block().result();
     pkConstraintId = pkConstraintResult.constraintId();
 
     // FK Table 1 생성
     var createFkTable1Command = new CreateTableCommand(
         schemaId, "fk_table_1", "utf8mb4", "utf8mb4_general_ci");
-    var fkTable1Result = createTableUseCase.createTable(createFkTable1Command).block();
+    var fkTable1Result = createTableUseCase.createTable(createFkTable1Command).block().result();
     fkTableId1 = fkTable1Result.tableId();
 
     // FK Table 2 생성 (다중 Relationship 테스트용)
     var createFkTable2Command = new CreateTableCommand(
         schemaId, "fk_table_2", "utf8mb4", "utf8mb4_general_ci");
-    var fkTable2Result = createTableUseCase.createTable(createFkTable2Command).block();
+    var fkTable2Result = createTableUseCase.createTable(createFkTable2Command).block().result();
     fkTableId2 = fkTable2Result.tableId();
   }
 
@@ -172,7 +173,7 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
       // PK Constraint에서 pk_col1에 해당하는 ConstraintColumn ID 조회
@@ -188,7 +189,8 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol1)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: pk_col1을 참조하던 RelationshipColumn 삭제, pk_col2 참조는 유지
@@ -210,7 +212,7 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
       // PK Constraint에서 pk_col1에 해당하는 ConstraintColumn ID 조회
@@ -231,12 +233,14 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol1)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // When: 마지막 PK 컬럼 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol2)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol2)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: Relationship 자체가 삭제됨
@@ -254,7 +258,7 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
       // PK Constraint에서 pk_col1에 해당하는 ConstraintColumn ID 조회
@@ -270,7 +274,8 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol1)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: pk_col1을 참조하던 RelationshipColumn 삭제
@@ -292,7 +297,7 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
       // PK Constraint에서 pk_col2에 해당하는 ConstraintColumn ID 조회
@@ -308,7 +313,8 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col2 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol2)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol2)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: pk_col2를 참조하던 RelationshipColumn 삭제
@@ -330,14 +336,14 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block();
+      var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block().result();
       String relationshipId1 = relResult1.relationshipId();
 
       var createRelCommand2 = new CreateRelationshipCommand(fkTableId2,
           pkTableId,
           RelationshipKind.IDENTIFYING,
           Cardinality.ONE_TO_ONE);
-      var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block();
+      var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block().result();
       String relationshipId2 = relResult2.relationshipId();
 
       // PK Constraint에서 pk_col1에 해당하는 ConstraintColumn ID 조회
@@ -353,7 +359,8 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK Constraint에서 pk_col1 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(pkConstraintId, constraintColumnIdForPkCol1)))
+          new RemoveConstraintColumnCommand(constraintColumnIdForPkCol1)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: 첫 번째 Relationship의 pk_col1 참조 RelationshipColumn 삭제
@@ -391,22 +398,23 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
       // Given: PK 테이블에 새 컬럼 추가
       var createNewPkColumnCommand = new CreateColumnCommand(
-          pkTableId, "pk_col3", "INT", null, null, null, 2, false, null, null, "PK Column 3");
-      var newPkColumnResult = createColumnUseCase.createColumn(createNewPkColumnCommand).block();
+          pkTableId, "pk_col3", "INT", null, null, null, false, null, null, "PK Column 3");
+      var newPkColumnResult = createColumnUseCase.createColumn(createNewPkColumnCommand).block().result();
       String newPkColumnId = newPkColumnResult.columnId();
 
       // When: PK Constraint에 새 컬럼 추가
       StepVerifier.create(addConstraintColumnUseCase.addConstraintColumn(
           new AddConstraintColumnCommand(pkConstraintId, newPkColumnId, 2)))
           .assertNext(result -> {
-            assertThat(result.columnId()).isEqualTo(newPkColumnId);
-            assertThat(result.cascadeCreatedColumns()).hasSize(1);
-            var cascade = result.cascadeCreatedColumns().get(0);
+            var payload = result.result();
+            assertThat(payload.columnId()).isEqualTo(newPkColumnId);
+            assertThat(payload.cascadeCreatedColumns()).hasSize(1);
+            var cascade = payload.cascadeCreatedColumns().get(0);
             assertThat(cascade.fkTableId()).isEqualTo(fkTableId1);
             assertThat(cascade.fkColumnName()).isEqualTo("pk_col3");
             assertThat(cascade.relationshipId()).isEqualTo(relationshipId);
@@ -452,15 +460,15 @@ class ConstraintRelationshipIntegrationTest {
 
       // Given: PK 테이블에 새 컬럼 추가
       var createNewPkColumnCommand = new CreateColumnCommand(
-          pkTableId, "pk_col3", "VARCHAR", 100, null, null, 2, false, "utf8mb4", "utf8mb4_general_ci", "PK Column 3");
-      var newPkColumnResult = createColumnUseCase.createColumn(createNewPkColumnCommand).block();
+          pkTableId, "pk_col3", "VARCHAR", 100, null, null, false, "utf8mb4", "utf8mb4_general_ci", "PK Column 3");
+      var newPkColumnResult = createColumnUseCase.createColumn(createNewPkColumnCommand).block().result();
       String newPkColumnId = newPkColumnResult.columnId();
 
       // When: PK Constraint에 새 컬럼 추가
       StepVerifier.create(addConstraintColumnUseCase.addConstraintColumn(
           new AddConstraintColumnCommand(pkConstraintId, newPkColumnId, 2)))
           .assertNext(result -> {
-            assertThat(result.cascadeCreatedColumns()).hasSize(2);
+            assertThat(result.result().cascadeCreatedColumns()).hasSize(2);
           })
           .verifyComplete();
 
@@ -492,7 +500,7 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId, "uq_col1", ConstraintKind.UNIQUE, null, null,
           List.of(new CreateConstraintColumnCommand(pkColumnId1, 0)));
       var uniqueConstraintResult = createConstraintUseCase.createConstraint(
-          createUniqueConstraintCommand).block();
+          createUniqueConstraintCommand).block().result();
       String uniqueConstraintId = uniqueConstraintResult.constraintId();
 
       // Given: Relationship 생성 (PK 컬럼 전체 참조)
@@ -500,7 +508,7 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
       // UNIQUE Constraint의 ConstraintColumn ID 조회
@@ -512,7 +520,8 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: UNIQUE Constraint에서 컬럼 제거
       StepVerifier.create(removeConstraintColumnUseCase.removeConstraintColumn(
-          new RemoveConstraintColumnCommand(uniqueConstraintId, uniqueConstraintColumnId)))
+          new RemoveConstraintColumnCommand(uniqueConstraintColumnId)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: Relationship은 그대로 유지됨 (UNIQUE 제약조건 제거는 Relationship에 영향 없음)
@@ -541,12 +550,13 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String fkColumnId = getFkColumnId(relResult.relationshipId(), pkColumnId1);
 
       // When: PK 컬럼 타입을 INT → BIGINT로 변경
       StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
           new ChangeColumnTypeCommand(pkColumnId1, "BIGINT", null, null, null)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: FK 컬럼도 BIGINT로 변경됨
@@ -570,19 +580,20 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block();
+      var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block().result();
       String fkColumnId1 = getFkColumnId(relResult1.relationshipId(), pkColumnId1);
 
       var createRelCommand2 = new CreateRelationshipCommand(fkTableId2,
           pkTableId,
           RelationshipKind.IDENTIFYING,
           Cardinality.ONE_TO_ONE);
-      var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block();
+      var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block().result();
       String fkColumnId2 = getFkColumnId(relResult2.relationshipId(), pkColumnId1);
 
       // When: PK 컬럼 타입을 INT → BIGINT로 변경
       StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
           new ChangeColumnTypeCommand(pkColumnId1, "BIGINT", null, null, null)))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: 두 FK 테이블의 컬럼 모두 BIGINT로 변경됨
@@ -620,8 +631,8 @@ class ConstraintRelationshipIntegrationTest {
     void propagatesCharsetCollationToFkColumns() {
       // Given: VARCHAR PK 컬럼과 FK 컬럼 생성
       var createVarcharPkColumnCommand = new CreateColumnCommand(
-          pkTableId, "pk_varchar", "VARCHAR", 100, null, null, 2, false, null, null, null);
-      var varcharPkResult = createColumnUseCase.createColumn(createVarcharPkColumnCommand).block();
+          pkTableId, "pk_varchar", "VARCHAR", 100, null, null, false, null, null, null);
+      var varcharPkResult = createColumnUseCase.createColumn(createVarcharPkColumnCommand).block().result();
       String varcharPkColumnId = varcharPkResult.columnId();
 
       // PK Constraint에 VARCHAR 컬럼 추가
@@ -633,12 +644,13 @@ class ConstraintRelationshipIntegrationTest {
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
           Cardinality.ONE_TO_MANY);
-      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block();
+      var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String varcharFkColumnId = getFkColumnId(relResult.relationshipId(), varcharPkColumnId);
 
       // When: PK 컬럼 charset/collation 변경
       StepVerifier.create(changeColumnMetaUseCase.changeColumnMeta(
-          new ChangeColumnMetaCommand(varcharPkColumnId, null, "utf8mb4", "utf8mb4_unicode_ci", null)))
+          new ChangeColumnMetaCommand(varcharPkColumnId, PatchField.absent(), PatchField.of("utf8mb4"), PatchField.of("utf8mb4_unicode_ci"), PatchField.absent())))
+          .expectNextCount(1)
           .verifyComplete();
 
       // Then: FK 컬럼도 charset/collation이 변경됨

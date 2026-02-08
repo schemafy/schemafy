@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexTypeCommand;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexTypeUseCase;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexTypePort;
@@ -30,7 +31,7 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
 
   @Override
-  public Mono<Void> changeIndexType(ChangeIndexTypeCommand command) {
+  public Mono<MutationResult<Void>> changeIndexType(ChangeIndexTypeCommand command) {
     return Mono.defer(() -> {
       IndexValidator.validateType(command.type());
       return getIndexByIdPort.findIndexById(command.indexId())
@@ -50,7 +51,8 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
                             index.name(),
                             index.id());
                         return changeIndexTypePort
-                            .changeIndexType(index.id(), command.type());
+                            .changeIndexType(index.id(), command.type())
+                            .thenReturn(MutationResult.<Void>of(null, index.tableId()));
                       }))));
     });
   }

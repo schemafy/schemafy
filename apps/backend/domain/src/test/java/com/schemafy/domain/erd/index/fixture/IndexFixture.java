@@ -348,12 +348,12 @@ public class IndexFixture {
   }
 
   public static RemoveIndexColumnCommand removeColumnCommand() {
-    return new RemoveIndexColumnCommand(DEFAULT_ID, DEFAULT_INDEX_COLUMN_ID);
+    return new RemoveIndexColumnCommand(DEFAULT_INDEX_COLUMN_ID);
   }
 
   public static RemoveIndexColumnCommand removeColumnCommand(
-      String indexId, String indexColumnId) {
-    return new RemoveIndexColumnCommand(indexId, indexColumnId);
+      String indexColumnId) {
+    return new RemoveIndexColumnCommand(indexColumnId);
   }
 
   public static ChangeIndexColumnPositionCommand changeColumnPositionCommand(int seqNo) {

@@ -11,10 +11,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
+import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
+import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 
 import reactor.core.publisher.Mono;
@@ -32,6 +33,9 @@ class ChangeConstraintColumnPositionServiceTest {
 
   @Mock
   ChangeConstraintColumnPositionPort changeConstraintColumnPositionPort;
+
+  @Mock
+  GetConstraintByIdPort getConstraintByIdPort;
 
   @Mock
   GetConstraintColumnByIdPort getConstraintColumnByIdPort;
@@ -58,12 +62,22 @@ class ChangeConstraintColumnPositionServiceTest {
 
       given(getConstraintColumnByIdPort.findConstraintColumnById(any()))
           .willReturn(Mono.just(constraintColumn));
+      given(getConstraintByIdPort.findConstraintById("constraint1"))
+          .willReturn(Mono.just(
+              ConstraintFixture.constraint(
+                  "constraint1",
+                  "table1",
+                  "pk_test",
+                  ConstraintKind.PRIMARY_KEY,
+                  null,
+                  null)));
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
           .willReturn(Mono.just(columns));
       given(changeConstraintColumnPositionPort.changeConstraintColumnPositions(any(), anyList()))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
+          .expectNextCount(1)
           .verifyComplete();
 
       then(changeConstraintColumnPositionPort).should()
@@ -71,20 +85,42 @@ class ChangeConstraintColumnPositionServiceTest {
     }
 
     @Test
-    @DisplayName("음수 위치면 예외가 발생한다")
-    void throwsWhenNegativePosition() {
+    @DisplayName("음수 위치면 첫 번째 위치로 clamp된다")
+    void clampsWhenNegativePosition() {
       var command = ConstraintFixture.changeColumnPositionCommand("cc1", -1);
+      var constraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0);
+      var columns = List.of(
+          constraintColumn,
+          ConstraintFixture.constraintColumn("cc2", "constraint1", "col2", 1),
+          ConstraintFixture.constraintColumn("cc3", "constraint1", "col3", 2));
+
+      given(getConstraintColumnByIdPort.findConstraintColumnById(any()))
+          .willReturn(Mono.just(constraintColumn));
+      given(getConstraintByIdPort.findConstraintById("constraint1"))
+          .willReturn(Mono.just(
+              ConstraintFixture.constraint(
+                  "constraint1",
+                  "table1",
+                  "pk_test",
+                  ConstraintKind.PRIMARY_KEY,
+                  null,
+                  null)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(columns));
+      given(changeConstraintColumnPositionPort.changeConstraintColumnPositions(any(), anyList()))
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
-          .expectError(ConstraintPositionInvalidException.class)
-          .verify();
+          .expectNextCount(1)
+          .verifyComplete();
 
-      then(changeConstraintColumnPositionPort).shouldHaveNoInteractions();
+      then(changeConstraintColumnPositionPort).should()
+          .changeConstraintColumnPositions(eq("constraint1"), anyList());
     }
 
     @Test
-    @DisplayName("범위를 벗어난 위치면 예외가 발생한다")
-    void throwsWhenPositionOutOfRange() {
+    @DisplayName("범위를 벗어난 위치면 마지막 위치로 clamp된다")
+    void clampsWhenPositionOutOfRange() {
       var command = ConstraintFixture.changeColumnPositionCommand("cc1", 5);
       var constraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0);
       var columns = List.of(
@@ -93,14 +129,26 @@ class ChangeConstraintColumnPositionServiceTest {
 
       given(getConstraintColumnByIdPort.findConstraintColumnById(any()))
           .willReturn(Mono.just(constraintColumn));
+      given(getConstraintByIdPort.findConstraintById("constraint1"))
+          .willReturn(Mono.just(
+              ConstraintFixture.constraint(
+                  "constraint1",
+                  "table1",
+                  "pk_test",
+                  ConstraintKind.PRIMARY_KEY,
+                  null,
+                  null)));
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
           .willReturn(Mono.just(columns));
+      given(changeConstraintColumnPositionPort.changeConstraintColumnPositions(any(), anyList()))
+          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
-          .expectError(ConstraintPositionInvalidException.class)
-          .verify();
+          .expectNextCount(1)
+          .verifyComplete();
 
-      then(changeConstraintColumnPositionPort).shouldHaveNoInteractions();
+      then(changeConstraintColumnPositionPort).should()
+          .changeConstraintColumnPositions(eq("constraint1"), anyList());
     }
 
     @Test

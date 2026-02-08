@@ -104,10 +104,11 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(tableExistsPort).should()
-            .existsBySchemaIdAndName(command.schemaId(), command.newName());
+            .existsBySchemaIdAndName(TableFixture.DEFAULT_SCHEMA_ID, command.newName());
         then(changeTableNamePort).should()
             .changeTableName(command.tableId(), command.newName());
       }
@@ -142,7 +143,6 @@ class ChangeTableNameServiceTest {
             Cardinality.ONE_TO_MANY,
             null);
         var command = new com.schemafy.domain.erd.table.application.port.in.ChangeTableNameCommand(
-            oldTable.schemaId(),
             oldTable.id(),
             "orders_v2");
 
@@ -167,6 +167,7 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeRelationshipNamePort).should()
@@ -203,7 +204,6 @@ class ChangeTableNameServiceTest {
             Cardinality.ONE_TO_MANY,
             null);
         var command = new com.schemafy.domain.erd.table.application.port.in.ChangeTableNameCommand(
-            oldTable.schemaId(),
             oldTable.id(),
             "orders_v2");
 
@@ -221,6 +221,7 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.just(List.of(relationship)));
 
         StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeRelationshipNamePort).shouldHaveNoInteractions();
@@ -236,7 +237,10 @@ class ChangeTableNameServiceTest {
       @DisplayName("TableNameDuplicateException을 발생시킨다")
       void throwsTableNameDuplicateException() {
         var command = TableFixture.changeNameCommand("existing_table_name");
+        var table = TableFixture.defaultTable();
 
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(table));
         given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
             .willReturn(Mono.just(true));
 

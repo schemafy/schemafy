@@ -78,6 +78,42 @@ public abstract class RestDocsSnippets {
     };
   }
 
+  /** MutationResponse 응답 필드 생성 (data 필드 포함)
+   *
+   * @param dataFields result.data 객체 내부 필드들 */
+  protected static FieldDescriptor[] mutationResponseFields(
+      FieldDescriptor... dataFields) {
+    FieldDescriptor[] baseFields = new FieldDescriptor[] {
+      fieldWithPath("success").type(JsonFieldType.BOOLEAN)
+          .description("요청 성공 여부"),
+      fieldWithPath("result").type(JsonFieldType.OBJECT)
+          .description("뮤테이션 결과"),
+      fieldWithPath("result.data").type(JsonFieldType.OBJECT)
+          .description("생성/수정된 데이터").optional(),
+      fieldWithPath("result.affectedTableIds").type(JsonFieldType.ARRAY)
+          .description("영향받은 테이블 ID 목록"),
+      fieldWithPath("error").type(JsonFieldType.NULL)
+          .description("에러 정보 (성공 시 null)").optional()
+    };
+    return concat(baseFields, dataFields);
+  }
+
+  /** MutationResponse 응답 필드 생성 (data가 null인 경우) */
+  protected static FieldDescriptor[] mutationResponseFieldsWithNullData() {
+    return new FieldDescriptor[] {
+      fieldWithPath("success").type(JsonFieldType.BOOLEAN)
+          .description("요청 성공 여부"),
+      fieldWithPath("result").type(JsonFieldType.OBJECT)
+          .description("뮤테이션 결과"),
+      fieldWithPath("result.data").type(JsonFieldType.NULL)
+          .description("응답 데이터 (없음)").optional(),
+      fieldWithPath("result.affectedTableIds").type(JsonFieldType.ARRAY)
+          .description("영향받은 테이블 ID 목록"),
+      fieldWithPath("error").type(JsonFieldType.NULL)
+          .description("에러 정보 (성공 시 null)").optional()
+    };
+  }
+
   /** 에러 응답 필드 생성 */
   protected static FieldDescriptor[] errorResponseFields() {
     return new FieldDescriptor[] {

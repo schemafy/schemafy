@@ -110,22 +110,22 @@ class DeleteTableIntegrationTest {
         var createSchemaCommand = new CreateSchemaCommand(
             PROJECT_ID, "MySQL", "table_cascade_delete_test_schema",
             "utf8mb4", "utf8mb4_general_ci");
-        var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block();
+        var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
         schemaId = schemaResult.id();
 
         var createPkTableCommand = new CreateTableCommand(
             schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci");
-        var pkTableResult = createTableUseCase.createTable(createPkTableCommand).block();
+        var pkTableResult = createTableUseCase.createTable(createPkTableCommand).block().result();
         pkTableId = pkTableResult.tableId();
 
         var createFkTableCommand = new CreateTableCommand(
             schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci");
-        var fkTableResult = createTableUseCase.createTable(createFkTableCommand).block();
+        var fkTableResult = createTableUseCase.createTable(createFkTableCommand).block().result();
         fkTableId = fkTableResult.tableId();
 
         var createPkColumnCommand = new CreateColumnCommand(
-            pkTableId, "id", "INT", null, null, null, 0, true, null, null, "PK column");
-        var pkColumnResult = createColumnUseCase.createColumn(createPkColumnCommand).block();
+            pkTableId, "id", "INT", null, null, null, true, null, null, "PK column");
+        var pkColumnResult = createColumnUseCase.createColumn(createPkColumnCommand).block().result();
         pkColumnId = pkColumnResult.columnId();
 
         var createPkConstraintCommand = new CreateConstraintCommand(
@@ -134,8 +134,8 @@ class DeleteTableIntegrationTest {
         createConstraintUseCase.createConstraint(createPkConstraintCommand).block();
 
         var createFkColumnCommand = new CreateColumnCommand(
-            fkTableId, "pk_id", "INT", null, null, null, 0, false, null, null, "FK column");
-        var fkColumnResult = createColumnUseCase.createColumn(createFkColumnCommand).block();
+            fkTableId, "pk_id", "INT", null, null, null, false, null, null, "FK column");
+        var fkColumnResult = createColumnUseCase.createColumn(createFkColumnCommand).block().result();
         fkColumnId = fkColumnResult.columnId();
 
         var createConstraintCommand = new CreateConstraintCommand(
@@ -160,6 +160,7 @@ class DeleteTableIntegrationTest {
       void deletesTableAndAllRelatedEntities() {
         StepVerifier.create(deleteTableUseCase.deleteTable(
             new DeleteTableCommand(fkTableId)))
+            .expectNextCount(1)
             .verifyComplete();
 
         StepVerifier.create(getTableUseCase.getTable(
