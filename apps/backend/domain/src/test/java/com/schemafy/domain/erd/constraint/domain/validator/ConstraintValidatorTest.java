@@ -14,6 +14,7 @@ import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
@@ -257,6 +258,48 @@ class ConstraintValidatorTest {
     @DisplayName("null이면 통과한다")
     void passesWithNull() {
       assertThatCode(() -> ConstraintValidator.validateColumnUniqueness(null, "test"))
+          .doesNotThrowAnyException();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("validateDefaultColumnCardinality 메서드는")
+  class ValidateDefaultColumnCardinality {
+
+    @Test
+    @DisplayName("DEFAULT + 빈 컬럼 목록은 통과한다")
+    void passesWhenDefaultHasNoColumns() {
+      assertThatCode(() -> ConstraintValidator.validateDefaultColumnCardinality(
+          ConstraintKind.DEFAULT,
+          List.of()))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("DEFAULT + 1개 컬럼은 통과한다")
+    void passesWhenDefaultHasOneColumn() {
+      assertThatCode(() -> ConstraintValidator.validateDefaultColumnCardinality(
+          ConstraintKind.DEFAULT,
+          List.of("col1")))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("DEFAULT + 2개 이상 컬럼이면 예외가 발생한다")
+    void throwsWhenDefaultHasMultipleColumns() {
+      assertThatThrownBy(() -> ConstraintValidator.validateDefaultColumnCardinality(
+          ConstraintKind.DEFAULT,
+          List.of("col1", "col2")))
+          .isInstanceOf(ConstraintColumnCountInvalidException.class);
+    }
+
+    @Test
+    @DisplayName("DEFAULT가 아닌 경우 다중 컬럼도 통과한다")
+    void passesWhenNotDefault() {
+      assertThatCode(() -> ConstraintValidator.validateDefaultColumnCardinality(
+          ConstraintKind.CHECK,
+          List.of("col1", "col2")))
           .doesNotThrowAnyException();
     }
 

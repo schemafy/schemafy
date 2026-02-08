@@ -86,6 +86,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
     ConstraintValidator.validateSeqNoIntegrity(seqNos);
     ConstraintValidator.validateColumnExistence(context.columns(), columnIds, constraint.name());
     ConstraintValidator.validateColumnUniqueness(columnIds, constraint.name());
+    ConstraintValidator.validateDefaultColumnCardinality(constraint.kind(), columnIds);
     ConstraintValidator.validatePrimaryKeySingle(
         context.constraints(),
         constraint.kind(),

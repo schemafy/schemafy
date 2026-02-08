@@ -125,6 +125,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
     ConstraintValidator.validateSeqNoIntegrity(seqNos);
     ConstraintValidator.validateColumnExistence(context.columns(), columnIds, name);
     ConstraintValidator.validateColumnUniqueness(columnIds, name);
+    ConstraintValidator.validateDefaultColumnCardinality(kind, columnIds);
     ConstraintValidator.validatePrimaryKeySingle(context.constraints(), kind, null);
     ConstraintValidator.validateDefinitionUniqueness(
         context.constraints(),

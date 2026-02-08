@@ -25,6 +25,7 @@ import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper.Ca
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
@@ -231,6 +232,55 @@ class AddConstraintColumnServiceTest {
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("DEFAULT 제약조건에 두 번째 컬럼 추가 시 예외가 발생한다")
+    void throwsWhenAddingSecondColumnToDefaultConstraint() {
+      var command = ConstraintFixture.addColumnCommand("constraint1", "col2", 1);
+      var constraint = createConstraint("constraint1", "table1", ConstraintKind.DEFAULT);
+      var existingColumns = List.of(ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0));
+      var tableColumns = List.of(ColumnFixture.columnWithId("col1"), ColumnFixture.columnWithId("col2"));
+
+      given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.just(constraint));
+      given(getColumnsByTableIdPort.findColumnsByTableId("table1"))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(existingColumns));
+
+      StepVerifier.create(sut.addConstraintColumn(command))
+          .expectError(ConstraintColumnCountInvalidException.class)
+          .verify();
+
+      then(createConstraintColumnPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("DEFAULT 제약조건에 첫 번째 컬럼 추가는 허용된다")
+    void allowsAddingFirstColumnToDefaultConstraint() {
+      var command = ConstraintFixture.addColumnCommand("constraint1", "col1", 0);
+      var constraint = createConstraint("constraint1", "table1", ConstraintKind.DEFAULT);
+      var tableColumns = List.of(ColumnFixture.columnWithId("col1"));
+
+      given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.just(constraint));
+      given(getColumnsByTableIdPort.findColumnsByTableId("table1"))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+          .willReturn(Mono.just(List.of(constraint)));
+      given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate()).willReturn("new-column-id");
+      given(createConstraintColumnPort.createConstraintColumn(any(ConstraintColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+      StepVerifier.create(sut.addConstraintColumn(command))
+          .assertNext(result -> {
+            assertThat(result.result().constraintId()).isEqualTo("constraint1");
+            assertThat(result.result().columnId()).isEqualTo("col1");
+          })
+          .verifyComplete();
     }
 
     @Test

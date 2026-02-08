@@ -27,6 +27,7 @@ import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCo
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
@@ -573,6 +574,38 @@ class CreateConstraintServiceTest {
                 assertThat(result.result().defaultExpr()).isEqualTo("0");
               })
           .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("DEFAULT 제약조건의 컬럼이 2개 이상이면 예외가 발생한다")
+    void throwsWhenDefaultHasMultipleColumns() {
+      var command = new CreateConstraintCommand(
+          ConstraintFixture.DEFAULT_TABLE_ID,
+          "df_test",
+          ConstraintKind.DEFAULT,
+          null,
+          "0",
+          List.of(
+              new CreateConstraintColumnCommand("col1", 0),
+              new CreateConstraintColumnCommand("col2", 1)));
+      var table = createTable("table1", "schema1");
+      var tableColumns = List.of(
+          ColumnFixture.columnWithId("col1"),
+          ColumnFixture.columnWithId("col2"));
+
+      given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
+      given(constraintExistsPort.existsBySchemaIdAndName("schema1", "df_test"))
+          .willReturn(Mono.just(false));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getConstraintsByTableIdPort.findConstraintsByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+
+      StepVerifier.create(sut.createConstraint(command))
+          .expectError(ConstraintColumnCountInvalidException.class)
+          .verify();
+
+      then(createConstraintPort).shouldHaveNoInteractions();
     }
 
     @Test

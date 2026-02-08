@@ -11,6 +11,7 @@ import java.util.Set;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
@@ -105,6 +106,18 @@ public final class ConstraintValidator {
                 columnId,
                 constraintName));
       }
+    }
+  }
+
+  public static void validateDefaultColumnCardinality(
+      ConstraintKind kind,
+      List<String> columnIds) {
+    if (kind != ConstraintKind.DEFAULT || columnIds == null) {
+      return;
+    }
+    if (columnIds.size() > 1) {
+      throw new ConstraintColumnCountInvalidException(
+          "DEFAULT constraint allows at most one column");
     }
   }
 
