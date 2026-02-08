@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.schemafy.core.common.util.PatchFieldConverter.toPatchField;
+
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
@@ -138,10 +140,10 @@ public class ColumnController {
       @RequestBody ChangeColumnMetaRequest request) {
     ChangeColumnMetaCommand command = new ChangeColumnMetaCommand(
         columnId,
-        request.autoIncrement(),
-        request.charset(),
-        request.collation(),
-        request.comment());
+        toPatchField(request.autoIncrement()),
+        toPatchField(request.charset()),
+        toPatchField(request.collation()),
+        toPatchField(request.comment()));
     return changeColumnMetaUseCase.changeColumnMeta(command)
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);

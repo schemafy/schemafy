@@ -87,11 +87,11 @@ class TablePersistenceAdapter implements
   public Mono<Void> changeTableMeta(String tableId, String charset, String collation) {
     return findTableOrError(tableId)
         .flatMap((@NonNull TableEntity tableEntity) -> {
-          if (hasText(charset)) {
-            tableEntity.setCharset(charset);
+          if (charset != null) {
+            tableEntity.setCharset(hasText(charset) ? charset : null);
           }
-          if (hasText(collation)) {
-            tableEntity.setCollation(collation);
+          if (collation != null) {
+            tableEntity.setCollation(hasText(collation) ? collation : null);
           }
           return tableRepository.save(tableEntity);
         })

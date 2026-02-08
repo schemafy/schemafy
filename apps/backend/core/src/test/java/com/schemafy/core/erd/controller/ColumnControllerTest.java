@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
-import com.schemafy.core.erd.controller.dto.request.ChangeColumnMetaRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnNameRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnPositionRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnTypeRequest;
@@ -272,16 +271,15 @@ class ColumnControllerTest {
     String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ChangeColumnMetaRequest request = new ChangeColumnMetaRequest(
-        false, "utf8mb4", "utf8mb4_general_ci", "변경된 코멘트");
-
     given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(objectMapper.writeValueAsString(request))
+        .bodyValue("""
+            {"autoIncrement":false,"charset":"utf8mb4","collation":"utf8mb4_general_ci","comment":"변경된 코멘트"}
+            """)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
@@ -294,6 +292,50 @@ class ColumnControllerTest {
             ColumnApiSnippets.changeColumnMetaRequest(),
             ColumnApiSnippets.changeColumnMetaResponseHeaders(),
             ColumnApiSnippets.changeColumnMetaResponse()));
+  }
+
+  @Test
+  @DisplayName("컬럼 메타 변경 시 null을 전송하면 클리어된다")
+  void changeColumnMetaWithExplicitNull() {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"charset":null}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("컬럼 메타 변경 시 필드를 생략하면 기존 값이 유지된다")
+  void changeColumnMetaWithAbsentFields() {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"charset":"utf8mb4"}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
   }
 
   @Test

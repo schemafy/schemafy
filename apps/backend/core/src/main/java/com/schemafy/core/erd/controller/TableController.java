@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.schemafy.core.common.util.PatchFieldConverter.toPatchField;
+
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
@@ -215,8 +217,8 @@ public class TableController {
       @RequestBody ChangeTableMetaRequest request) {
     ChangeTableMetaCommand command = new ChangeTableMetaCommand(
         tableId,
-        request.charset(),
-        request.collation());
+        toPatchField(request.charset()),
+        toPatchField(request.collation()));
     return changeTableMetaUseCase.changeTableMeta(command)
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);

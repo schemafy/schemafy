@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
-import com.schemafy.core.erd.controller.dto.request.ChangeTableMetaRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequest;
 import com.schemafy.core.erd.docs.TableApiSnippets;
@@ -354,15 +353,15 @@ class TableControllerTest {
   void changeTableMeta() throws Exception {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ChangeTableMetaRequest request = new ChangeTableMetaRequest("utf8", "utf8_unicode_ci");
-
     given(changeTableMetaUseCase.changeTableMeta(any(ChangeTableMetaCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/tables/{tableId}/meta", tableId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(objectMapper.writeValueAsString(request))
+        .bodyValue("""
+            {"charset":"utf8","collation":"utf8_unicode_ci"}
+            """)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
@@ -375,6 +374,48 @@ class TableControllerTest {
             TableApiSnippets.changeTableMetaRequest(),
             TableApiSnippets.changeTableMetaResponseHeaders(),
             TableApiSnippets.changeTableMetaResponse()));
+  }
+
+  @Test
+  @DisplayName("테이블 메타 변경 시 null을 전송하면 클리어된다")
+  void changeTableMetaWithExplicitNull() {
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeTableMetaUseCase.changeTableMeta(any(ChangeTableMetaCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/tables/{tableId}/meta", tableId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"charset":null}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("테이블 메타 변경 시 필드를 생략하면 기존 값이 유지된다")
+  void changeTableMetaWithAbsentFields() {
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeTableMetaUseCase.changeTableMeta(any(ChangeTableMetaCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/tables/{tableId}/meta", tableId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"charset":"utf8mb4"}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
   }
 
   @Test

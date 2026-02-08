@@ -1,5 +1,6 @@
 package com.schemafy.domain.erd.column.fixture;
 
+import com.schemafy.domain.common.PatchField;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionCommand;
@@ -291,7 +292,10 @@ public class ColumnFixture {
   }
 
   public static ChangeColumnMetaCommand changeMetaCommand(
-      Boolean autoIncrement, String charset, String collation, String comment) {
+      PatchField<Boolean> autoIncrement,
+      PatchField<String> charset,
+      PatchField<String> collation,
+      PatchField<String> comment) {
     return new ChangeColumnMetaCommand(DEFAULT_ID, autoIncrement, charset, collation, comment);
   }
 

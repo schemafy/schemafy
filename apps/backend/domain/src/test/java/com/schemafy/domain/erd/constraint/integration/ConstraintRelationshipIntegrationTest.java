@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.PatchField;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaUseCase;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
@@ -648,7 +649,7 @@ class ConstraintRelationshipIntegrationTest {
 
       // When: PK 컬럼 charset/collation 변경
       StepVerifier.create(changeColumnMetaUseCase.changeColumnMeta(
-          new ChangeColumnMetaCommand(varcharPkColumnId, null, "utf8mb4", "utf8mb4_unicode_ci", null)))
+          new ChangeColumnMetaCommand(varcharPkColumnId, PatchField.absent(), PatchField.of("utf8mb4"), PatchField.of("utf8mb4_unicode_ci"), PatchField.absent())))
           .expectNextCount(1)
           .verifyComplete();
 

@@ -1,7 +1,9 @@
 package com.schemafy.domain.erd.table.application.port.in;
 
+import com.schemafy.domain.common.PatchField;
+
 public record ChangeTableMetaCommand(
     String tableId,
-    String charset,
-    String collation) {
+    PatchField<String> charset,
+    PatchField<String> collation) {
 }

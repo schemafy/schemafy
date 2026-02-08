@@ -1,5 +1,6 @@
 package com.schemafy.domain.erd.table.fixture;
 
+import com.schemafy.domain.common.PatchField;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableMetaCommand;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableNameCommand;
@@ -104,7 +105,8 @@ public class TableFixture {
         newName);
   }
 
-  public static ChangeTableMetaCommand changeMetaCommand(String charset, String collation) {
+  public static ChangeTableMetaCommand changeMetaCommand(
+      PatchField<String> charset, PatchField<String> collation) {
     return new ChangeTableMetaCommand(
         DEFAULT_ID,
         charset,
