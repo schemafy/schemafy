@@ -118,8 +118,9 @@ public class GlobalExceptionHandler {
   public ResponseEntity<BaseResponse<Object>> handleServerWebInputException(
       ServerWebInputException e) {
     ErrorCode errorCode = ErrorCode.COMMON_INVALID_PARAMETER;
-    String message = (e.getReason() != null && !e.getReason().isBlank())
-        ? e.getReason()
+    String reason = e.getReason();
+    String message = (reason != null && !reason.isBlank())
+        ? reason
         : errorCode.getMessage();
     log.warn("[ServerWebInputException] Request input decoding failed: {}",
         e.getMessage());
