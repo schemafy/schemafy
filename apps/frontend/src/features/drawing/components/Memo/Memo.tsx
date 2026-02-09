@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Avatar } from '@/components';
 import { cn } from '@/lib';
 import type { MemoData } from '../../hooks/memo.helper';
-import { observer } from 'mobx-react-lite';
 import { MemoHoverPreview } from './MemoHoverPreview';
 import { MemoThread } from './MemoThread';
 
@@ -11,7 +10,7 @@ interface MemoProps {
   data: MemoData;
 }
 
-export const Memo = observer(({ id, data }: MemoProps) => {
+export const Memo = ({ id, data }: MemoProps) => {
   const [showThread, setShowThread] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -52,4 +51,4 @@ export const Memo = observer(({ id, data }: MemoProps) => {
       )}
     </div>
   );
-});
+};

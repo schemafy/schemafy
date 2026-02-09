@@ -1,5 +1,5 @@
 import type { MemoComment } from '@/lib/api';
-import { useMemoContext } from '../../context';
+import { useMemoContext } from '../../hooks';
 import { MoveUp, Trash, X } from 'lucide-react';
 import { ReplyItem } from './ReplyItem';
 import { Avatar } from '@/components';
