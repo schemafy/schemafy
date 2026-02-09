@@ -2,26 +2,29 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { AuthStore } from '../../store/auth.store';
 import { refreshToken } from './auth/api';
 
-const BASE_URL: string =
-  import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL: string =
+  import.meta.env.VITE_BASE_URL || 'http://localhost:8080/api/v1.0';
 
-export const apiClient = axios.create({
-  baseURL: BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // 쿠키 전송을 위해 필요 (refresh token)
-});
+const PUBLIC_BASE_URL: string =
+  import.meta.env.VITE_PUBLIC_BASE_URL ||
+  'http://localhost:8080/public/api/v1.0';
 
-// 인증이 필요 없는 요청은 별도의 publicClient를 사용하도록 유도한다.
-export const publicClient = axios.create({
-  baseURL: BASE_URL,
+const commonConfig = {
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+};
+
+export const apiClient = axios.create({
+  ...commonConfig,
+  baseURL: API_BASE_URL,
+});
+
+export const publicClient = axios.create({
+  ...commonConfig,
+  baseURL: PUBLIC_BASE_URL,
 });
 
 type RequestConfigWithMeta = InternalAxiosRequestConfig & {

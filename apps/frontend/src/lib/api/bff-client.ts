@@ -2,10 +2,11 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { AuthStore } from '../../store/auth.store';
 import { refreshToken } from './auth';
 
-const BFF_URL: string = import.meta.env.VITE_BFF_URL || 'http://localhost:4000';
+const BFF_API_BASE_URL: string =
+  import.meta.env.VITE_BFF_URL || 'http://localhost:4000/api/v1.0';
 
 export const bffClient = axios.create({
-  baseURL: BFF_URL,
+  baseURL: BFF_API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
