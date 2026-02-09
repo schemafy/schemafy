@@ -1,10 +1,9 @@
 import type { AxiosResponse } from 'axios';
 import { apiClient, publicClient } from '../client';
-import { setAccessToken } from '../token';
 import type { ApiResponse } from '../types';
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
 
-import { AuthStore } from '@/store';
+import { authStore } from '@/store/auth.store';
 
 let refreshPromise: Promise<string> | null = null;
 
@@ -14,7 +13,7 @@ const handleTokenResponse = (
   const accessToken = response.headers['authorization'];
   if (accessToken && accessToken.startsWith('Bearer ')) {
     const token = accessToken.replace('Bearer ', '');
-    setAccessToken(token);
+    authStore.setAccessToken(token);
     return token;
   } else {
     throw new Error('Failed to get token');
@@ -55,7 +54,7 @@ export const refreshToken = async (): Promise<string> => {
           await publicClient.post<ApiResponse<null>>('/users/refresh');
         return handleTokenResponse(response);
       } catch (error) {
-        AuthStore.getInstance().clearAuth();
+        authStore.clearAuth();
         throw error;
       } finally {
         refreshPromise = null;

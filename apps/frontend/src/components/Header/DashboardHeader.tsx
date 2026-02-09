@@ -1,16 +1,14 @@
-import { AuthStore } from '@/store';
+import { authStore } from '@/store/auth.store';
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 import { logout } from '@/lib/api/auth/api';
 
 export const DashboardHeader = () => {
-  const user = AuthStore.getInstance().user;
-
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     const response = await logout();
     if (response.success) {
-      AuthStore.getInstance().clearAuth();
+      authStore.clearAuth();
     } else {
       console.error(response.error?.message || 'Failed to sign out');
     }
@@ -32,12 +30,12 @@ export const DashboardHeader = () => {
           <Button round to="/projects">
             New Project
           </Button>
-          <Button variant={'secondary'} round onClick={handleSignOut}>
+          <Button variant={'secondary'} round onClick={handleLogout}>
             Sign Out
           </Button>
         </div>
         <span className="flex items-center font-body-sm text-schemafy-dark-gray">
-          {user?.name}
+          {authStore.user?.name}
         </span>
         <Avatar src="https://picsum.photos/200/300?random=1" />
       </div>

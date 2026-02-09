@@ -10,7 +10,7 @@ import type {
   WebSocketMessage,
 } from '@/lib/api/collaboration/types';
 import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
-import { AuthStore } from './auth.store';
+import { authStore } from './auth.store';
 
 const SHARED_WORKER_ENABLE = typeof SharedWorker !== 'undefined';
 
@@ -23,21 +23,14 @@ export class CollaborationStore {
   projectId: string | null = null;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
 
-  private constructor() {
+  constructor() {
     makeAutoObservable(this);
   }
 
   private reconnectTimeoutId: number | null = null;
 
-  static getInstance(): CollaborationStore {
-    if (!CollaborationStore.instance) {
-      CollaborationStore.instance = new CollaborationStore();
-    }
-    return CollaborationStore.instance;
-  }
-
   get currentUser() {
-    return AuthStore.getInstance().user;
+    return authStore.user;
   }
 
   private heartbeatIntervalId: number | null = null;
@@ -325,3 +318,5 @@ export class CollaborationStore {
     });
   }
 }
+
+export const collaborationStore = new CollaborationStore();

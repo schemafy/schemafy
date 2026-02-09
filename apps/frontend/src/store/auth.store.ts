@@ -1,23 +1,14 @@
 import { makeAutoObservable } from 'mobx';
 import type { AuthResponse } from '../lib/api/auth/types';
 
-export class AuthStore {
-  private static instance: AuthStore;
-
+class AuthStore {
   accessToken: string | null = null;
   user: AuthResponse | null = null;
   isAuthLoading: boolean = false;
   isInitialized: boolean = false;
 
-  private constructor() {
+  constructor() {
     makeAutoObservable(this);
-  }
-
-  static getInstance(): AuthStore {
-    if (!AuthStore.instance) {
-      AuthStore.instance = new AuthStore();
-    }
-    return AuthStore.instance;
   }
 
   setAccessToken(token: string | null) {
@@ -49,3 +40,5 @@ export class AuthStore {
     this.user = null;
   }
 }
+
+export const authStore = new AuthStore();
