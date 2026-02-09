@@ -1,7 +1,7 @@
 name: Cursor PR Review
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [ main ]
     types: [ opened, reopened, synchronize, ready_for_review ]
     paths:
@@ -40,13 +40,25 @@ jobs:
   cursor-pr-review:
     name: Cursor PR Review
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request_target' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository) }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout trusted base repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: trusted-base
+          persist-credentials: false
+
+      - name: Checkout PR head repository (isolated)
+        if: ${{ github.event_name == 'pull_request_target' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr-head
+          persist-credentials: false
 
       - name: Install Cursor CLI
         continue-on-error: true
@@ -160,7 +172,7 @@ jobs:
             echo "Related Issues Context:"
             cat cursor-related-issues.md
             echo
-            cat .github/prompts/cursor-pr-review.md
+            cat trusted-base/.github/prompts/cursor-pr-review.md
           } > cursor-runtime-prompt.md
 
           cursor-agent \
@@ -168,7 +180,7 @@ jobs:
             --print \
             --output-format text \
             --model "${SELECTED_MODEL}" \
-            --workspace "$GITHUB_WORKSPACE" \
+            --workspace "$GITHUB_WORKSPACE/trusted-base" \
             "$(cat cursor-runtime-prompt.md)" \
             2>&1 | tee cursor-review-output.txt
 
@@ -195,6 +207,7 @@ jobs:
             echo "- Workflow result: always pass by design"
             echo "- Model: \`${CURSOR_MODEL:-auto}\`"
             echo "- Related issues detected: \`${RELATED_ISSUE_COUNT:-0}\`"
+            echo "- Trigger mode: \`pull_request_target\` (trusted base + isolated PR checkout)"
             echo "- Review comment marker: \`<!-- cursor-pr-review:v1 -->\`"
             echo
 
