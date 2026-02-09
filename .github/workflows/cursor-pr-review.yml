@@ -49,21 +49,15 @@ jobs:
           fetch-depth: 0
 
       - name: Install Cursor CLI
-        uses: cursor-ai/cli@latest
-        continue-on-error: true
-
-      - name: Fallback install Cursor CLI
-        if: always()
         continue-on-error: true
         run: |
-          if command -v cursor-agent >/dev/null 2>&1; then
-            cursor-agent --version
-            exit 0
-          fi
-
           curl https://cursor.com/install -fsS | bash
           echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
-          "$HOME/.cursor/bin/cursor-agent" --version
+          if command -v cursor-agent >/dev/null 2>&1; then
+            cursor-agent --version
+          else
+            "$HOME/.cursor/bin/cursor-agent" --version
+          fi
 
       - name: Confirm GitHub CLI
         continue-on-error: true
