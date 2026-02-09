@@ -1,0 +1,232 @@
+name: Cursor PR Review
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, reopened, synchronize, ready_for_review ]
+    paths:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "**/*.java"
+      - "**/*.gradle"
+      - "**/*.sql"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "!package-lock.json"
+      - "!**/*.md"
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to review (required for manual runs)"
+        required: true
+        type: string
+      model:
+        description: "Cursor model id (optional, defaults to auto)"
+        required: false
+        default: "auto"
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: cursor-pr-review-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  cursor-pr-review:
+    name: Cursor PR Review
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Cursor CLI
+        uses: cursor-ai/cli@latest
+        continue-on-error: true
+
+      - name: Fallback install Cursor CLI
+        if: always()
+        continue-on-error: true
+        run: |
+          if command -v cursor-agent >/dev/null 2>&1; then
+            cursor-agent --version
+            exit 0
+          fi
+
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+          "$HOME/.cursor/bin/cursor-agent" --version
+
+      - name: Confirm GitHub CLI
+        continue-on-error: true
+        run: gh --version
+
+      - name: Run Cursor PR review (non-blocking)
+        id: cursor_review
+        continue-on-error: true
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          CURSOR_MODEL: ${{ inputs.model || vars.CURSOR_REVIEW_MODEL }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set +e
+
+          SELECTED_MODEL="${CURSOR_MODEL:-auto}"
+          echo "selected_model=${SELECTED_MODEL}" >> "$GITHUB_OUTPUT"
+
+          if [ -z "${CURSOR_API_KEY:-}" ]; then
+            echo "ERROR: CURSOR_API_KEY secret is missing." | tee cursor-review-output.txt
+            echo "cursor_exit_code=97" >> "$GITHUB_OUTPUT"
+            exit 97
+          fi
+
+          if [ -z "${PR_NUMBER:-}" ]; then
+            echo "ERROR: PR_NUMBER is missing. For workflow_dispatch, provide inputs.pr_number." | tee cursor-review-output.txt
+            echo "cursor_exit_code=98" >> "$GITHUB_OUTPUT"
+            exit 98
+          fi
+
+          pr_meta_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
+          PR_URL="$(echo "$pr_meta_json" | jq -r '.html_url')"
+          PR_HEAD_SHA="$(echo "$pr_meta_json" | jq -r '.head.sha')"
+          PR_BASE_REF="$(echo "$pr_meta_json" | jq -r '.base.ref')"
+          PR_HEAD_REF="$(echo "$pr_meta_json" | jq -r '.head.ref')"
+          PR_TITLE="$(echo "$pr_meta_json" | jq -r '.title // ""')"
+          PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
+
+          commit_messages="$(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits?per_page=100" --paginate \
+              | jq -r '.[].commit.message // empty' 2>/dev/null
+          )"
+
+          issue_numbers="$(
+            {
+              printf '%s\n' "${PR_HEAD_REF:-}"
+              printf '%s\n' "${PR_TITLE:-}"
+              printf '%s\n' "${PR_BODY:-}"
+              printf '%s\n' "${commit_messages:-}"
+            } \
+              | grep -oE '#[0-9]+' \
+              | tr -d '#' \
+              | sort -n \
+              | uniq \
+              | head -n 20
+          )"
+
+          : > cursor-related-issues.md
+          if [ -z "${issue_numbers:-}" ]; then
+            echo "- (none detected from branch/commits/pr text)" >> cursor-related-issues.md
+            echo "related_issue_count=0" >> "$GITHUB_OUTPUT"
+          else
+            issue_count=0
+            while IFS= read -r issue_no; do
+              [ -z "$issue_no" ] && continue
+              issue_count=$((issue_count + 1))
+              issue_json="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${issue_no}" 2>/dev/null || true)"
+              if [ -n "${issue_json}" ]; then
+                issue_title="$(echo "$issue_json" | jq -r '.title // ""')"
+                issue_state="$(echo "$issue_json" | jq -r '.state // "unknown"')"
+                issue_url="$(echo "$issue_json" | jq -r '.html_url // ""')"
+                issue_labels="$(echo "$issue_json" | jq -r '[.labels[].name] | join(", ")')"
+                if [ -n "${issue_labels}" ]; then
+                  echo "- #${issue_no} [${issue_state}] ${issue_title} (${issue_url}) | labels: ${issue_labels}" >> cursor-related-issues.md
+                else
+                  echo "- #${issue_no} [${issue_state}] ${issue_title} (${issue_url})" >> cursor-related-issues.md
+                fi
+              else
+                echo "- #${issue_no} (unable to fetch issue details)" >> cursor-related-issues.md
+              fi
+            done <<< "${issue_numbers}"
+            echo "related_issue_count=${issue_count}" >> "$GITHUB_OUTPUT"
+          fi
+
+          {
+            echo "Repository: ${GITHUB_REPOSITORY}"
+            echo "Model: ${SELECTED_MODEL}"
+            echo "PR Number: ${PR_NUMBER:-N/A}"
+            echo "PR URL: ${PR_URL:-N/A}"
+            echo "PR Head SHA: ${PR_HEAD_SHA:-N/A}"
+            echo "PR Base Ref: ${PR_BASE_REF:-N/A}"
+            echo "PR Head Ref: ${PR_HEAD_REF:-N/A}"
+            echo
+            echo "Related Issues Context:"
+            cat cursor-related-issues.md
+            echo
+            cat .github/prompts/cursor-pr-review.md
+          } > cursor-runtime-prompt.md
+
+          cursor-agent \
+            --force \
+            --print \
+            --output-format text \
+            --model "${SELECTED_MODEL}" \
+            --workspace "$GITHUB_WORKSPACE" \
+            "$(cat cursor-runtime-prompt.md)" \
+            2>&1 | tee cursor-review-output.txt
+
+          cursor_exit_code=${PIPESTATUS[0]}
+          echo "cursor_exit_code=${cursor_exit_code}" >> "$GITHUB_OUTPUT"
+          exit "${cursor_exit_code}"
+
+      - name: Write review summary
+        if: always()
+        env:
+          CURSOR_OUTCOME: ${{ steps.cursor_review.outcome }}
+          CURSOR_EXIT_CODE: ${{ steps.cursor_review.outputs.cursor_exit_code }}
+          CURSOR_MODEL: ${{ steps.cursor_review.outputs.selected_model }}
+          RELATED_ISSUE_COUNT: ${{ steps.cursor_review.outputs.related_issue_count }}
+        run: |
+          {
+            echo "## Cursor PR Review"
+            echo
+            if [ "${CURSOR_OUTCOME}" = "success" ] && [ "${CURSOR_EXIT_CODE}" = "0" ]; then
+              echo "- Status: ✅ Cursor review completed (non-blocking mode)"
+            else
+              echo "- Status: ⚠️ Cursor review failed or was incomplete (non-blocking mode)"
+            fi
+            echo "- Workflow result: always pass by design"
+            echo "- Model: \`${CURSOR_MODEL:-auto}\`"
+            echo "- Related issues detected: \`${RELATED_ISSUE_COUNT:-0}\`"
+            echo "- Review comment marker: \`<!-- cursor-pr-review:v1 -->\`"
+            echo
+
+            if [ "${CURSOR_OUTCOME}" != "success" ] || [ "${CURSOR_EXIT_CODE}" != "0" ]; then
+              echo "### Failure reason and retry guide"
+              if [ "${CURSOR_EXIT_CODE}" = "97" ]; then
+                echo "- Reason: \`CURSOR_API_KEY\` secret is missing."
+              elif [ "${CURSOR_EXIT_CODE}" = "98" ]; then
+                echo "- Reason: PR number is missing in manual dispatch."
+              else
+                echo "- Reason: Cursor agent returned non-zero exit code (\`${CURSOR_EXIT_CODE:-unknown}\`)."
+              fi
+              echo "- Retry guide:"
+              echo "  1. Verify repository secret \`CURSOR_API_KEY\` is set and valid."
+              echo "  2. For manual runs, provide \`pr_number\` input."
+              echo "  3. Re-run this workflow from the Actions tab."
+              echo "  4. If issue persists, inspect raw logs from the Cursor step."
+              echo
+            fi
+
+            if [ -f cursor-review-output.txt ]; then
+              echo "### Cursor output (tail)"
+              echo '```text'
+              sed -e 's/\x1b\[[0-9;]*m//g' cursor-review-output.txt | tail -n 120
+              echo '```'
+            else
+              echo "No Cursor output file was generated."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
