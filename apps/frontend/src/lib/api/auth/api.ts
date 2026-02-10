@@ -24,7 +24,7 @@ export const signUp = async (
   data: SignUpRequest,
 ): Promise<ApiResponse<AuthResponse>> => {
   const response = await publicClient.post<ApiResponse<AuthResponse>>(
-    '/public/api/v1.0/users/signup',
+    '/users/signup',
     data,
   );
 
@@ -37,7 +37,7 @@ export const signIn = async (
   data: SignInRequest,
 ): Promise<ApiResponse<AuthResponse>> => {
   const response = await publicClient.post<ApiResponse<AuthResponse>>(
-    '/public/api/v1.0/users/login',
+    '/users/login',
     data,
   );
 
@@ -50,9 +50,8 @@ export const refreshToken = async (): Promise<string> => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const response = await publicClient.post<ApiResponse<null>>(
-          '/public/api/v1.0/users/refresh',
-        );
+        const response =
+          await publicClient.post<ApiResponse<null>>('/users/refresh');
         return handleTokenResponse(response);
       } catch (error) {
         authStore.clearAuth();
@@ -66,12 +65,17 @@ export const refreshToken = async (): Promise<string> => {
 };
 
 export const getMyInfo = async (): Promise<ApiResponse<AuthResponse>> => {
-  const response =
-    await apiClient.get<ApiResponse<AuthResponse>>(`/api/v1.0/users`);
+  const response = await apiClient.get<ApiResponse<AuthResponse>>(`/users`);
 
   if (!response.data.success) {
     throw new Error('Failed to get my info');
   }
+
+  return response.data;
+};
+
+export const logout = async (): Promise<ApiResponse<null>> => {
+  const response = await apiClient.post<ApiResponse<null>>('/users/logout');
 
   return response.data;
 };

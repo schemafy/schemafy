@@ -2,8 +2,18 @@ import { authStore } from '@/store/auth.store';
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
+import { logout } from '@/lib/api/auth/api';
 
 export const DashboardHeader = () => {
+  const handleLogout = async () => {
+    const response = await logout();
+    if (response.success) {
+      authStore.clearAuth();
+    } else {
+      console.error(response.error?.message || 'Failed to sign out');
+    }
+  };
+
   return (
     <div className="flex items-center justify-end gap-5 w-full">
       <div className="flex items-center gap-9 ml-8">
@@ -20,7 +30,7 @@ export const DashboardHeader = () => {
           <Button round to="/projects">
             New Project
           </Button>
-          <Button variant={'secondary'} round>
+          <Button variant={'secondary'} round onClick={handleLogout}>
             Sign Out
           </Button>
         </div>
