@@ -238,3 +238,79 @@ jobs:
               echo "No Cursor output file was generated."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish PR summary comment
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          CURSOR_OUTCOME: ${{ steps.cursor_review.outcome }}
+          CURSOR_EXIT_CODE: ${{ steps.cursor_review.outputs.cursor_exit_code }}
+          CURSOR_MODEL: ${{ steps.cursor_review.outputs.selected_model }}
+          RELATED_ISSUE_COUNT: ${{ steps.cursor_review.outputs.related_issue_count }}
+        run: |
+          set +e
+
+          if [ -z "${PR_NUMBER:-}" ]; then
+            echo "Skip PR summary comment: PR_NUMBER is empty."
+            exit 0
+          fi
+
+          SUMMARY_MARKER="<!-- cursor-pr-review-summary:v1 -->"
+
+          sanitized_output=""
+          if [ -f cursor-review-output.txt ]; then
+            sanitized_output="$(sed -e 's/\x1b\[[0-9;]*m//g' cursor-review-output.txt)"
+          fi
+
+          summary_line="$(printf '%s\n' "${sanitized_output}" | grep -E '^요약:[[:space:]]*High=[0-9]+,[[:space:]]*Medium=[0-9]+,[[:space:]]*Comments=[0-9]+' | tail -n 1)"
+
+          high_count="N/A"
+          medium_count="N/A"
+          comment_count="N/A"
+          if [[ "${summary_line}" =~ High=([0-9]+),[[:space:]]*Medium=([0-9]+),[[:space:]]*Comments=([0-9]+) ]]; then
+            high_count="${BASH_REMATCH[1]}"
+            medium_count="${BASH_REMATCH[2]}"
+            comment_count="${BASH_REMATCH[3]}"
+          fi
+
+          old_comment_ids="$(
+            gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" --paginate \
+              | jq -r ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"${SUMMARY_MARKER}\"))) | .id"
+          )"
+
+          if [ -n "${old_comment_ids:-}" ]; then
+            while IFS= read -r comment_id; do
+              [ -z "${comment_id}" ] && continue
+              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" >/dev/null
+            done <<< "${old_comment_ids}"
+          fi
+
+          if [ "${CURSOR_OUTCOME}" = "success" ] && [ "${CURSOR_EXIT_CODE}" = "0" ]; then
+            status_line="✅ completed (non-blocking)"
+          else
+            status_line="⚠️ failed or incomplete (non-blocking)"
+          fi
+
+          jq -n \
+            --arg status "${status_line}" \
+            --arg model "${CURSOR_MODEL:-auto}" \
+            --arg issues "${RELATED_ISSUE_COUNT:-0}" \
+            --arg high "${high_count}" \
+            --arg medium "${medium_count}" \
+            --arg comments "${comment_count}" \
+            --arg repo "${GITHUB_REPOSITORY}" \
+            --arg run_id "${GITHUB_RUN_ID}" \
+            --arg marker "${SUMMARY_MARKER}" \
+            '{ body: ("## PR Review Summary\n\n"
+              + "- Status: " + $status + "\n"
+              + "- Model: `" + $model + "`\n"
+              + "- Related issues detected: `" + $issues + "`\n"
+              + "- High: `" + $high + "`\n"
+              + "- Medium: `" + $medium + "`\n"
+              + "- Line comments posted: `" + $comments + "`\n"
+              + "라인별 상세 내용은 PR의 파일/라인 코멘트를 확인해주세요.\n\n"
+              + $marker) }' > pr-summary-comment.json
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --method POST --input pr-summary-comment.json >/dev/null
