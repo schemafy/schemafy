@@ -3,7 +3,7 @@ name: Cursor PR Review
 on:
   pull_request_target:
     branches: [ main ]
-    types: [ opened, reopened, synchronize, ready_for_review ]
+    types: [ opened, reopened, synchronize, ready_for_review, labeled ]
     paths:
       - "**/*.ts"
       - "**/*.tsx"
@@ -40,7 +40,7 @@ jobs:
   cursor-pr-review:
     name: Cursor PR Review
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request_target' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request_target' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'ai-review')) }}
 
     steps:
       - name: Checkout trusted base repository
@@ -207,7 +207,8 @@ jobs:
             echo "- Workflow result: always pass by design"
             echo "- Model: \`${CURSOR_MODEL:-auto}\`"
             echo "- Related issues detected: \`${RELATED_ISSUE_COUNT:-0}\`"
-            echo "- Trigger mode: \`pull_request_target\` (trusted base + isolated PR checkout)"
+            echo "- Trigger mode: \`pull_request_target\` + label gate (\`ai-review\`)"
+            echo "- Execution context: trusted base + isolated PR checkout"
             echo "- Review comment marker: \`<!-- cursor-pr-review:v1 -->\`"
             echo
 
