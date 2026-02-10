@@ -63,6 +63,15 @@ Suggested command flow:
 
 Required output format to stdout (final lines):
 
+- `PR_OVERALL_COMMENT_BEGIN`
+- (한국어 마크다운으로 PR 전반 코멘트)
+  - 기본 포함:
+    - `### 요약`
+    - `### 주요 변경점`
+  - 선택 포함(개선 사항이 있을 때만):
+    - `### 개선 사항`
+  - High/Medium 이슈가 없으면 `LGTM` 문구를 반드시 포함
+- `PR_OVERALL_COMMENT_END`
 - `요약: High=<number>, Medium=<number>, Comments=<number>`
 - `완료: cursor-pr-review:v1`
 

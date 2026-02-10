@@ -266,6 +266,7 @@ jobs:
           fi
 
           summary_line="$(printf '%s\n' "${sanitized_output}" | grep -E '^요약:[[:space:]]*High=[0-9]+,[[:space:]]*Medium=[0-9]+,[[:space:]]*Comments=[0-9]+' | tail -n 1)"
+          overall_comment="$(printf '%s\n' "${sanitized_output}" | sed -n '/^PR_OVERALL_COMMENT_BEGIN$/,/^PR_OVERALL_COMMENT_END$/p' | sed '1d;$d')"
 
           high_count="N/A"
           medium_count="N/A"
@@ -274,6 +275,16 @@ jobs:
             high_count="${BASH_REMATCH[1]}"
             medium_count="${BASH_REMATCH[2]}"
             comment_count="${BASH_REMATCH[3]}"
+          fi
+
+          if [ -z "${overall_comment:-}" ]; then
+            overall_comment=$'### 요약\nPR 전반 코멘트를 생성하지 못했습니다.\n\n### 주요 변경점\n- (파싱 실패)\n\n### 개선 사항\n- Cursor 출력에서 전체 코멘트 블록을 찾지 못했습니다.\n- 재실행 후 전체 코멘트 생성 여부를 확인해주세요.'
+          fi
+
+          if [ "${high_count}" = "0" ] && [ "${medium_count}" = "0" ]; then
+            if ! printf '%s\n' "${overall_comment}" | grep -qi "LGTM"; then
+              overall_comment="${overall_comment}"$'\n\nLGTM ✅ 큰 문제를 찾지 못했습니다.'
+            fi
           fi
 
           old_comment_ids="$(
@@ -301,16 +312,19 @@ jobs:
             --arg high "${high_count}" \
             --arg medium "${medium_count}" \
             --arg comments "${comment_count}" \
+            --arg overall "${overall_comment}" \
             --arg repo "${GITHUB_REPOSITORY}" \
             --arg run_id "${GITHUB_RUN_ID}" \
             --arg marker "${SUMMARY_MARKER}" \
-            '{ body: ("## PR Review Summary\n\n"
+            '{ body: ("## PR Overall Review\n\n"
+              + $overall + "\n\n---\n"
               + "- Status: " + $status + "\n"
               + "- Model: `" + $model + "`\n"
               + "- Related issues detected: `" + $issues + "`\n"
               + "- High: `" + $high + "`\n"
               + "- Medium: `" + $medium + "`\n"
               + "- Line comments posted: `" + $comments + "`\n"
+              + "- Workflow run: https://github.com/" + $repo + "/actions/runs/" + $run_id + "\n"
               + "라인별 상세 내용은 PR의 파일/라인 코멘트를 확인해주세요.\n\n"
               + $marker) }' > pr-summary-comment.json
           gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --method POST --input pr-summary-comment.json >/dev/null
