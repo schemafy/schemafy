@@ -128,11 +128,11 @@ public class WorkspaceInvitationService {
                         .flatMap(this::buildMemberResponse);
                   }));
             }))
+        .as(transactionalOperator::transactional)
         .retryWhen(Retry.max(3)
             .filter(OptimisticLockingFailureException.class::isInstance)
             .doBeforeRetry(signal -> log.warn(
                 "Retrying due to concurrent modification: invitationId={}", invitationId)))
-        .as(transactionalOperator::transactional)
         .onErrorMap(OptimisticLockingFailureException.class, e -> new BusinessException(
             ErrorCode.INVITATION_CONCURRENT_MODIFICATION));
   }
@@ -153,11 +153,11 @@ public class WorkspaceInvitationService {
               invitation.reject();
               return invitationRepository.save(invitation);
             }))
+        .as(transactionalOperator::transactional)
         .retryWhen(Retry.max(3)
             .filter(OptimisticLockingFailureException.class::isInstance)
             .doBeforeRetry(signal -> log.warn(
                 "Retrying due to concurrent modification: invitationId={}", invitationId)))
-        .as(transactionalOperator::transactional)
         .onErrorMap(OptimisticLockingFailureException.class, e -> new BusinessException(
             ErrorCode.INVITATION_CONCURRENT_MODIFICATION)).then();
   }

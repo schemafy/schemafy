@@ -3,7 +3,6 @@ package com.schemafy.core.project.service;
 import java.util.function.Consumer;
 
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -31,7 +30,6 @@ import com.schemafy.core.user.repository.entity.User;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 @Service
 @RequiredArgsConstructor
@@ -325,9 +323,7 @@ public class WorkspaceService {
           }
           action.accept(member);
           return workspaceMemberRepository.save(member);
-        })
-        .retryWhen(Retry.max(3)
-            .filter(OptimisticLockingFailureException.class::isInstance));
+        });
   }
 
   private Mono<WorkspaceMember> findWorkspaceMemberByUserIdAndWorkspaceId(

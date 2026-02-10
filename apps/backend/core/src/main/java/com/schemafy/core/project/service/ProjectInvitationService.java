@@ -138,13 +138,14 @@ public class ProjectInvitationService {
                         .then(projectMemberRepository.save(member))
                         .flatMap(this::buildMemberResponse);
                   }));
-            }).retryWhen(Retry.max(3)
-                .filter(OptimisticLockingFailureException.class::isInstance)
-                .doBeforeRetry(signal -> log.warn(
-                    "Retrying due to concurrent modification: invitationId={}", invitationId)))
-            .as(transactionalOperator::transactional)
-            .onErrorMap(OptimisticLockingFailureException.class, e -> new BusinessException(
-                ErrorCode.INVITATION_CONCURRENT_MODIFICATION)));
+            }))
+        .as(transactionalOperator::transactional)
+        .retryWhen(Retry.max(3)
+            .filter(OptimisticLockingFailureException.class::isInstance)
+            .doBeforeRetry(signal -> log.warn(
+                "Retrying due to concurrent modification: invitationId={}", invitationId)))
+        .onErrorMap(OptimisticLockingFailureException.class, e -> new BusinessException(
+            ErrorCode.INVITATION_CONCURRENT_MODIFICATION));
   }
 
   public Mono<Void> rejectInvitation(
@@ -166,11 +167,11 @@ public class ProjectInvitationService {
               return invitationRepository.save(invitation);
             }))
         .then()
+        .as(transactionalOperator::transactional)
         .retryWhen(Retry.max(3)
             .filter(OptimisticLockingFailureException.class::isInstance)
             .doBeforeRetry(signal -> log.warn(
                 "Retrying due to concurrent modification: invitationId={}", invitationId)))
-        .as(transactionalOperator::transactional)
         .onErrorMap(OptimisticLockingFailureException.class, error -> new BusinessException(
             ErrorCode.INVITATION_CONCURRENT_MODIFICATION));
   }
