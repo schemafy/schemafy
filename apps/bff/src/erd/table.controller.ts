@@ -9,59 +9,24 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ErdService } from './erd.service';
+import { TableService } from './table.service';
 import type {
-  ChangeSchemaNameRequest,
   ChangeTableExtraRequest,
   ChangeTableMetaRequest,
   ChangeTableNameRequest,
-  CreateSchemaRequest,
   CreateTableRequest,
 } from './erd.types';
 
 @Controller('api/v1.0')
-export class ErdController {
-  constructor(private readonly erdService: ErdService) {}
-
-  @Post('schemas')
-  async createSchema(
-    @Body() data: CreateSchemaRequest,
-    @Headers('authorization') authHeader: string,
-  ) {
-    return this.erdService.createSchema(data, authHeader);
-  }
-
-  @Get('schemas/:schemaId')
-  async getSchema(
-    @Param('schemaId') schemaId: string,
-    @Headers('authorization') authHeader: string,
-  ) {
-    return this.erdService.getSchema(schemaId, authHeader);
-  }
-
-  @Patch('schemas/:schemaId/name')
-  async changeSchemaName(
-    @Param('schemaId') schemaId: string,
-    @Body() data: ChangeSchemaNameRequest,
-    @Headers('authorization') authHeader: string,
-  ) {
-    return this.erdService.changeSchemaName(schemaId, data, authHeader);
-  }
-
-  @Delete('schemas/:schemaId')
-  async deleteSchema(
-    @Param('schemaId') schemaId: string,
-    @Headers('authorization') authHeader: string,
-  ) {
-    return this.erdService.deleteSchema(schemaId, authHeader);
-  }
+export class TableController {
+  constructor(private readonly tableService: TableService) {}
 
   @Post('tables')
   async createTable(
     @Body() data: CreateTableRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.createTable(data, authHeader);
+    return this.tableService.createTable(data, authHeader);
   }
 
   @Get('tables/:tableId')
@@ -69,7 +34,7 @@ export class ErdController {
     @Param('tableId') tableId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.getTable(tableId, authHeader);
+    return this.tableService.getTable(tableId, authHeader);
   }
 
   @Get('schemas/:schemaId/tables')
@@ -77,7 +42,7 @@ export class ErdController {
     @Param('schemaId') schemaId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.getTablesBySchemaId(schemaId, authHeader);
+    return this.tableService.getTablesBySchemaId(schemaId, authHeader);
   }
 
   @Get('tables/:tableId/snapshot')
@@ -85,7 +50,7 @@ export class ErdController {
     @Param('tableId') tableId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.getTableSnapshot(tableId, authHeader);
+    return this.tableService.getTableSnapshot(tableId, authHeader);
   }
 
   @Get('tables/snapshots')
@@ -93,7 +58,7 @@ export class ErdController {
     @Query('tableIds') tableIds: string[],
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.getTableSnapshots(tableIds, authHeader);
+    return this.tableService.getTableSnapshots(tableIds, authHeader);
   }
 
   @Patch('tables/:tableId/name')
@@ -102,7 +67,7 @@ export class ErdController {
     @Body() data: ChangeTableNameRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.changeTableName(tableId, data, authHeader);
+    return this.tableService.changeTableName(tableId, data, authHeader);
   }
 
   @Patch('tables/:tableId/meta')
@@ -111,7 +76,7 @@ export class ErdController {
     @Body() data: ChangeTableMetaRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.changeTableMeta(tableId, data, authHeader);
+    return this.tableService.changeTableMeta(tableId, data, authHeader);
   }
 
   @Patch('tables/:tableId/extra')
@@ -120,7 +85,7 @@ export class ErdController {
     @Body() data: ChangeTableExtraRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.changeTableExtra(tableId, data, authHeader);
+    return this.tableService.changeTableExtra(tableId, data, authHeader);
   }
 
   @Delete('tables/:tableId')
@@ -128,7 +93,7 @@ export class ErdController {
     @Param('tableId') tableId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.deleteTable(tableId, authHeader);
+    return this.tableService.deleteTable(tableId, authHeader);
   }
 
   @Get('schemas/:schemaId/snapshots')
@@ -136,6 +101,6 @@ export class ErdController {
     @Param('schemaId') schemaId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.erdService.getSchemaWithSnapshots(schemaId, authHeader);
+    return this.tableService.getSchemaWithSnapshots(schemaId, authHeader);
   }
 }
