@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { NodeChange } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import type { TableData } from '../types';
@@ -17,7 +17,7 @@ export const useCanvasNodes = ({
   onTablesChange,
   onMemosChange,
 }: UseCanvasNodesParams) => {
-  const nodes = [...tables, ...memos];
+  const nodes = useMemo(() => [...tables, ...memos], [tables, memos]);
 
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
