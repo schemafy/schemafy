@@ -177,12 +177,10 @@ const CanvasContent = observer(() => {
   );
 });
 
-const CanvasPageComponent = () => {
+export const CanvasPage = () => {
   return (
     <MemoProvider>
       <CanvasContent />
     </MemoProvider>
   );
 };
-
-export const CanvasPage = observer(CanvasPageComponent);
