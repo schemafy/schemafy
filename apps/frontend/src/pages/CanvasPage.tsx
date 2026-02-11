@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ulid } from 'ulid';
 import {
   ReactFlow,
   MiniMap,
@@ -8,13 +7,15 @@ import {
   BackgroundVariant,
   ConnectionMode,
   useReactFlow,
-  type NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
   useRelationships,
   useTables,
   useViewport,
+  useCanvasInitialization,
+  useCanvasKeyboard,
+  useCanvasNodes,
   TableNode,
   RelationshipMarker,
   Toolbar,
@@ -34,7 +35,6 @@ import {
   useMemoContext,
 } from '@/features/drawing';
 import { ChatOverlay, ChatInput } from '@/components/Collaboration';
-import { ErdStore } from '@/store/erd.store';
 import { collaborationStore } from '@/store/collaboration.store';
 
 const NODE_TYPES = {
@@ -49,7 +49,6 @@ const EDGE_TYPES = {
 const CURSOR_THROTTLE_MS = 100;
 
 const CanvasContent = () => {
-  const erdStore = ErdStore.getInstance();
   const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
 
@@ -68,60 +67,17 @@ const CanvasContent = () => {
     null,
   );
 
+  useCanvasInitialization();
+
+  useCanvasKeyboard({
+    chatInputPosition,
+    mousePosition,
+    activeTool,
+    setChatInputPosition,
+  });
+
   const { handleMoveEnd } = useViewport();
-
-  useEffect(() => {
-    if (erdStore.erdState.state === 'idle') {
-      const dbId = ulid();
-      const schemaId = ulid();
-      erdStore.load({
-        id: dbId,
-        isAffected: false,
-        schemas: [
-          {
-            id: schemaId,
-            projectId: ulid(),
-            dbVendorId: 'MYSQL',
-            name: 'schema1',
-            charset: 'utf8mb4',
-            collation: 'utf8mb4_general_ci',
-            vendorOption: '',
-            tables: [],
-            isAffected: false,
-          },
-        ],
-      });
-    }
-  }, [erdStore]);
-
-  useEffect(() => {
-    collaborationStore.connect('06DS8JSJ7Y112MC87X0AB2CE8M');
-
-    return () => {
-      collaborationStore.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === '/' && !chatInputPosition && activeTool === 'pointer') {
-        e.preventDefault();
-
-        if (!mousePosition) return;
-
-        setChatInputPosition({
-          x: mousePosition.x,
-          y: mousePosition.y,
-        });
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [chatInputPosition, mousePosition, activeTool]);
-
   const { tables, addTable, onTablesChange } = useTables();
-
   const { memos, onMemosChange, createMemo } = useMemoContext();
 
   const {
@@ -139,33 +95,12 @@ const CanvasContent = () => {
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
-  const nodes = [...tables, ...memos];
-
-  const handleNodesChange = (changes: NodeChange[]) => {
-    const tableChanges: NodeChange[] = [];
-    const memoChanges: NodeChange[] = [];
-
-    changes.forEach((change) => {
-      if (!('id' in change)) return;
-
-      const isTable = tables.some((t) => t.id === change.id);
-      const isMemo = memos.some((m) => m.id === change.id);
-
-      if (isTable) {
-        tableChanges.push(change);
-      } else if (isMemo) {
-        memoChanges.push(change);
-      }
-    });
-
-    if (tableChanges.length > 0) {
-      onTablesChange(tableChanges);
-    }
-
-    if (memoChanges.length > 0) {
-      onMemosChange(memoChanges);
-    }
-  };
+  const { nodes, handleNodesChange } = useCanvasNodes({
+    tables,
+    memos,
+    onTablesChange,
+    onMemosChange,
+  });
 
   const handleMemoCancel = () => {
     setTempMemoPosition(null);
@@ -193,9 +128,7 @@ const CanvasContent = () => {
       return;
     }
 
-    if (activeTool !== 'table' && activeTool !== 'memo') {
-      return;
-    }
+    if (activeTool !== 'table' && activeTool !== 'memo') return;
 
     const flowPosition = screenToFlowPosition({
       x: e.clientX,

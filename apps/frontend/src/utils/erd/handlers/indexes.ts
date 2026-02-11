@@ -10,13 +10,7 @@ import {
   SchemaNotExistError,
   TableNotExistError,
 } from '../errors';
-import type {
-  Database,
-  Index,
-  IndexColumn,
-  Schema,
-  Table,
-} from '@/types/erd.types';
+import type { Database, Index, IndexColumn, Schema, Table } from '@/types';
 
 const isValidIndexName = (name: string) => typeof name === 'string';
 
