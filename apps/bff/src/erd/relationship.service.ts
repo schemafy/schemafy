@@ -25,7 +25,11 @@ export class RelationshipService {
   ): Promise<ApiResponse<MutationResponse<RelationshipResponse>>> {
     const response = await this.backendClient.client.post<
       ApiResponse<MutationResponse<RelationshipResponse>>
-    >('/api/v1.0/relationships', data, this.backendClient.getAuthConfig(authHeader));
+    >(
+      '/api/v1.0/relationships',
+      data,
+      this.backendClient.getAuthConfig(authHeader),
+    );
     return response.data;
   }
 

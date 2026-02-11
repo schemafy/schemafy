@@ -111,7 +111,11 @@ export class IndexController {
     @Body() data: ChangeIndexColumnPositionRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.indexService.changeIndexColumnPosition(indexColumnId, data, authHeader);
+    return this.indexService.changeIndexColumnPosition(
+      indexColumnId,
+      data,
+      authHeader,
+    );
   }
 
   @Patch('index-columns/:indexColumnId/sort-direction')
@@ -120,6 +124,10 @@ export class IndexController {
     @Body() data: ChangeIndexColumnSortDirectionRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.indexService.changeIndexColumnSortDirection(indexColumnId, data, authHeader);
+    return this.indexService.changeIndexColumnSortDirection(
+      indexColumnId,
+      data,
+      authHeader,
+    );
   }
 }

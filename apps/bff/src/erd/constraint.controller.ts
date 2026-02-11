@@ -52,7 +52,11 @@ export class ConstraintController {
     @Body() data: ChangeConstraintNameRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.constraintService.changeConstraintName(constraintId, data, authHeader);
+    return this.constraintService.changeConstraintName(
+      constraintId,
+      data,
+      authHeader,
+    );
   }
 
   @Patch('constraints/:constraintId/check-expr')
@@ -61,7 +65,11 @@ export class ConstraintController {
     @Body() data: ChangeConstraintCheckExprRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.constraintService.changeConstraintCheckExpr(constraintId, data, authHeader);
+    return this.constraintService.changeConstraintCheckExpr(
+      constraintId,
+      data,
+      authHeader,
+    );
   }
 
   @Patch('constraints/:constraintId/default-expr')
@@ -70,7 +78,11 @@ export class ConstraintController {
     @Body() data: ChangeConstraintDefaultExprRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.constraintService.changeConstraintDefaultExpr(constraintId, data, authHeader);
+    return this.constraintService.changeConstraintDefaultExpr(
+      constraintId,
+      data,
+      authHeader,
+    );
   }
 
   @Delete('constraints/:constraintId')
@@ -86,7 +98,10 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.constraintService.getConstraintColumns(constraintId, authHeader);
+    return this.constraintService.getConstraintColumns(
+      constraintId,
+      authHeader,
+    );
   }
 
   @Post('constraints/:constraintId/columns')
@@ -95,7 +110,11 @@ export class ConstraintController {
     @Body() data: AddConstraintColumnRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.constraintService.addConstraintColumn(constraintId, data, authHeader);
+    return this.constraintService.addConstraintColumn(
+      constraintId,
+      data,
+      authHeader,
+    );
   }
 
   @Delete('constraint-columns/:constraintColumnId')
@@ -103,7 +122,10 @@ export class ConstraintController {
     @Param('constraintColumnId') constraintColumnId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.constraintService.removeConstraintColumn(constraintColumnId, authHeader);
+    return this.constraintService.removeConstraintColumn(
+      constraintColumnId,
+      authHeader,
+    );
   }
 
   @Get('constraint-columns/:constraintColumnId')
@@ -111,7 +133,10 @@ export class ConstraintController {
     @Param('constraintColumnId') constraintColumnId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.constraintService.getConstraintColumn(constraintColumnId, authHeader);
+    return this.constraintService.getConstraintColumn(
+      constraintColumnId,
+      authHeader,
+    );
   }
 
   @Patch('constraint-columns/:constraintColumnId/position')
@@ -120,6 +145,10 @@ export class ConstraintController {
     @Body() data: ChangeConstraintColumnPositionRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.constraintService.changeConstraintColumnPosition(constraintColumnId, data, authHeader);
+    return this.constraintService.changeConstraintColumnPosition(
+      constraintColumnId,
+      data,
+      authHeader,
+    );
   }
 }

@@ -44,7 +44,10 @@ export class RelationshipController {
     @Param('tableId') tableId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.getRelationshipsByTableId(tableId, authHeader);
+    return this.relationshipService.getRelationshipsByTableId(
+      tableId,
+      authHeader,
+    );
   }
 
   @Patch('relationships/:relationshipId/name')
@@ -53,7 +56,11 @@ export class RelationshipController {
     @Body() data: ChangeRelationshipNameRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.changeRelationshipName(relationshipId, data, authHeader);
+    return this.relationshipService.changeRelationshipName(
+      relationshipId,
+      data,
+      authHeader,
+    );
   }
 
   @Patch('relationships/:relationshipId/kind')
@@ -62,7 +69,11 @@ export class RelationshipController {
     @Body() data: ChangeRelationshipKindRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.changeRelationshipKind(relationshipId, data, authHeader);
+    return this.relationshipService.changeRelationshipKind(
+      relationshipId,
+      data,
+      authHeader,
+    );
   }
 
   @Patch('relationships/:relationshipId/cardinality')
@@ -71,7 +82,11 @@ export class RelationshipController {
     @Body() data: ChangeRelationshipCardinalityRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.changeRelationshipCardinality(relationshipId, data, authHeader);
+    return this.relationshipService.changeRelationshipCardinality(
+      relationshipId,
+      data,
+      authHeader,
+    );
   }
 
   @Patch('relationships/:relationshipId/extra')
@@ -80,7 +95,11 @@ export class RelationshipController {
     @Body() data: ChangeRelationshipExtraRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.changeRelationshipExtra(relationshipId, data, authHeader);
+    return this.relationshipService.changeRelationshipExtra(
+      relationshipId,
+      data,
+      authHeader,
+    );
   }
 
   @Delete('relationships/:relationshipId')
@@ -88,7 +107,10 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.deleteRelationship(relationshipId, authHeader);
+    return this.relationshipService.deleteRelationship(
+      relationshipId,
+      authHeader,
+    );
   }
 
   @Get('relationships/:relationshipId/columns')
@@ -96,7 +118,10 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.getRelationshipColumns(relationshipId, authHeader);
+    return this.relationshipService.getRelationshipColumns(
+      relationshipId,
+      authHeader,
+    );
   }
 
   @Post('relationships/:relationshipId/columns')
@@ -105,7 +130,11 @@ export class RelationshipController {
     @Body() data: AddRelationshipColumnRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.addRelationshipColumn(relationshipId, data, authHeader);
+    return this.relationshipService.addRelationshipColumn(
+      relationshipId,
+      data,
+      authHeader,
+    );
   }
 
   @Delete('relationship-columns/:relationshipColumnId')
@@ -113,7 +142,10 @@ export class RelationshipController {
     @Param('relationshipColumnId') relationshipColumnId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.removeRelationshipColumn(relationshipColumnId, authHeader);
+    return this.relationshipService.removeRelationshipColumn(
+      relationshipColumnId,
+      authHeader,
+    );
   }
 
   @Get('relationship-columns/:relationshipColumnId')
@@ -121,7 +153,10 @@ export class RelationshipController {
     @Param('relationshipColumnId') relationshipColumnId: string,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.getRelationshipColumn(relationshipColumnId, authHeader);
+    return this.relationshipService.getRelationshipColumn(
+      relationshipColumnId,
+      authHeader,
+    );
   }
 
   @Patch('relationship-columns/:relationshipColumnId/position')
@@ -130,6 +165,10 @@ export class RelationshipController {
     @Body() data: ChangeRelationshipColumnPositionRequest,
     @Headers('authorization') authHeader: string,
   ) {
-    return this.relationshipService.changeRelationshipColumnPosition(relationshipColumnId, data, authHeader);
+    return this.relationshipService.changeRelationshipColumnPosition(
+      relationshipColumnId,
+      data,
+      authHeader,
+    );
   }
 }

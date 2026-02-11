@@ -24,7 +24,11 @@ export class ConstraintService {
   ): Promise<ApiResponse<MutationResponse<ConstraintResponse>>> {
     const response = await this.backendClient.client.post<
       ApiResponse<MutationResponse<ConstraintResponse>>
-    >('/api/v1.0/constraints', data, this.backendClient.getAuthConfig(authHeader));
+    >(
+      '/api/v1.0/constraints',
+      data,
+      this.backendClient.getAuthConfig(authHeader),
+    );
     return response.data;
   }
 
