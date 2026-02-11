@@ -14,7 +14,7 @@ import type {
   ConstraintHandlers,
   RelationshipHandlers,
 } from './handlers';
-import type { Database } from '@/types/erd.types';
+import type { Database } from '@/types';
 import {
   SchemaNameInvalidError,
   SchemaNameNotUniqueError,

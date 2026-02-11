@@ -1,6 +1,6 @@
 import type { ColumnType } from './column';
 import type { IndexDataType } from './indexTypes';
-import type { Constraint } from '@/types/erd.types';
+import type { Constraint } from '@/types';
 
 export type TableData = {
   tableName: string;
