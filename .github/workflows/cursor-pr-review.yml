@@ -92,6 +92,7 @@ jobs:
           persist-credentials: false
 
       - name: Guard draft PRs for issue_comment trigger
+        id: draft_guard
         if: ${{ github.event_name == 'issue_comment' }}
         env:
           GH_TOKEN: ${{ github.token }}
@@ -100,10 +101,11 @@ jobs:
           is_draft="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.draft')"
           if [ "${is_draft}" = "true" ]; then
             echo "::notice::Skipping review: PR #${PR_NUMBER} is a draft."
-            exit 1
+            echo "skip_review=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install Cursor CLI
+        if: ${{ steps.draft_guard.outputs.skip_review != 'true' }}
         continue-on-error: true
         run: |
           curl https://cursor.com/install -fsS | bash
@@ -115,11 +117,13 @@ jobs:
           fi
 
       - name: Confirm GitHub CLI
+        if: ${{ steps.draft_guard.outputs.skip_review != 'true' }}
         continue-on-error: true
         run: gh --version
 
       - name: Run Cursor PR review (non-blocking)
         id: cursor_review
+        if: ${{ steps.draft_guard.outputs.skip_review != 'true' }}
         continue-on-error: true
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -232,7 +236,7 @@ jobs:
           exit "${cursor_exit_code}"
 
       - name: Write review summary
-        if: always()
+        if: ${{ always() && steps.draft_guard.outputs.skip_review != 'true' }}
         env:
           CURSOR_OUTCOME: ${{ steps.cursor_review.outcome }}
           CURSOR_EXIT_CODE: ${{ steps.cursor_review.outputs.cursor_exit_code }}
@@ -283,7 +287,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish PR summary comment
-        if: always()
+        if: ${{ always() && steps.draft_guard.outputs.skip_review != 'true' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -330,15 +334,23 @@ jobs:
             fi
           fi
 
-          existing_comment_id="$(
+          existing_comment="$(
             gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" --paginate \
-              | jq -r ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"${SUMMARY_MARKER}\"))) | .id" \
-              | head -n 1
+              | jq -r ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"${SUMMARY_MARKER}\"))) | {id, body}" \
+              | jq -s 'first // empty'
           )"
 
-          if [ -n "${existing_comment_id:-}" ]; then
-            echo "Summary comment already exists (id=${existing_comment_id}). Skipping."
-            exit 0
+          if [ -n "${existing_comment:-}" ]; then
+            existing_comment_id="$(echo "${existing_comment}" | jq -r '.id')"
+            existing_body="$(echo "${existing_comment}" | jq -r '.body')"
+
+            if echo "${existing_body}" | grep -q "⚠️"; then
+              echo "Previous summary was a failure (id=${existing_comment_id}). Deleting for re-post."
+              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" >/dev/null
+            else
+              echo "Summary comment already exists (id=${existing_comment_id}). Skipping."
+              exit 0
+            fi
           fi
 
           if [ "${CURSOR_OUTCOME}" = "success" ] && [ "${CURSOR_EXIT_CODE}" = "0" ]; then
