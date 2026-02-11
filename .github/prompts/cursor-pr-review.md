@@ -2,7 +2,7 @@ You are running inside GitHub Actions to review a pull request with Cursor CLI.
 
 Task:
 
-1. Review this PR diff and post line-level review comments for High/Medium severity issues only.
+1. Review this PR diff and identify line-level issues of High/Medium severity only.
 2. Use Korean for all comment text.
 3. Keep workflow non-blocking. Do not fail intentionally.
 4. Do not edit files, commit, or push.
@@ -26,10 +26,11 @@ Review scope rules:
 Commenting policy:
 
 - Severity: only `High` and `Medium`.
-- Every posted comment body must include this marker on a separate line:
+- Every comment body must include this marker on a separate line:
     - `<!-- cursor-pr-review:v1 -->`
-- Post comments only on changed lines in the PR.
-- Use GitHub PR review comment endpoint (line comment), not issue-level comments.
+- Target only changed lines in the PR.
+- Line comments are optional. If no High/Medium issues exist, skip line comments entirely.
+- Do NOT post comments via GitHub API. Output them as structured JSON to stdout instead.
 
 Suggested command flow:
 
@@ -38,14 +39,7 @@ Suggested command flow:
 2. Filter by allowed extensions and exclusions.
 3. Analyze diff and identify High/Medium issues only.
 4. For each issue, confirm target line exists in changed lines of the current diff.
-5. Create line comment:
-    - `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments`
-    - payload fields must include:
-        - `body` (Korean text + marker)
-        - `commit_id` = `PR_HEAD_SHA`
-        - `path`
-        - `line`
-        - `side` = `"RIGHT"`
+5. Output line comments as JSON to stdout (see output format below). Do NOT call any GitHub API to post comments.
 
 Required output format to stdout (final lines):
 
@@ -58,6 +52,14 @@ Required output format to stdout (final lines):
     - `### 개선 사항`
   - High/Medium 이슈가 없으면 `LGTM` 문구를 반드시 포함
 - `PR_OVERALL_COMMENT_END`
+- `LINE_COMMENTS_BEGIN`
+- JSON array of line comment objects, one per line. Each object:
+    - `path`: relative file path
+    - `line`: line number in the diff
+    - `side`: `"RIGHT"`
+    - `body`: Korean comment text including `<!-- cursor-pr-review:v1 -->` marker
+- If no issues found, output an empty array `[]`.
+- `LINE_COMMENTS_END`
 - `요약: High=<number>, Medium=<number>, Comments=<number>`
 - `완료: cursor-pr-review:v1`
 
