@@ -3,7 +3,7 @@ name: Cursor PR Review
 on:
   pull_request_target:
     branches: [ main ]
-    types: [ opened, reopened, synchronize, ready_for_review, labeled ]
+    types: [ opened, reopened, ready_for_review, labeled ]
     paths:
       - "**/*.ts"
       - "**/*.tsx"
@@ -16,6 +16,8 @@ on:
       - "**/*.yaml"
       - "!package-lock.json"
       - "!**/*.md"
+  issue_comment:
+    types: [ created ]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -31,18 +33,47 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 concurrency:
-  group: cursor-pr-review-${{ github.event.pull_request.number || github.run_id }}
+  group: cursor-pr-review-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   cursor-pr-review:
     name: Cursor PR Review
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request_target' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'ai-review')) }}
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch'
+        || (
+          github.event_name == 'pull_request_target'
+          && !github.event.pull_request.draft
+          && github.event.pull_request.head.repo.full_name == github.repository
+          && contains(github.event.pull_request.labels.*.name, 'ai-review')
+        )
+        || (
+          github.event_name == 'issue_comment'
+          && github.event.issue.pull_request
+          && github.event.comment.body == '/review'
+          && contains(github.event.issue.labels.*.name, 'ai-review')
+          && (
+            github.event.comment.author_association == 'OWNER'
+            || github.event.comment.author_association == 'MEMBER'
+            || github.event.comment.author_association == 'COLLABORATOR'
+          )
+        )
+      }}
 
     steps:
+      - name: React to /review comment
+        if: ${{ github.event_name == 'issue_comment' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            --method POST -f content='eyes' >/dev/null
+
       - name: Checkout trusted base repository
         uses: actions/checkout@v4
         with:
@@ -60,7 +91,21 @@ jobs:
           path: pr-head
           persist-credentials: false
 
+      - name: Guard draft PRs for issue_comment trigger
+        id: draft_guard
+        if: ${{ github.event_name == 'issue_comment' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          is_draft="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.draft')"
+          if [ "${is_draft}" = "true" ]; then
+            echo "::notice::Skipping review: PR #${PR_NUMBER} is a draft."
+            echo "skip_review=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install Cursor CLI
+        if: ${{ steps.draft_guard.outputs.skip_review != 'true' }}
         continue-on-error: true
         run: |
           curl https://cursor.com/install -fsS | bash
@@ -72,18 +117,20 @@ jobs:
           fi
 
       - name: Confirm GitHub CLI
+        if: ${{ steps.draft_guard.outputs.skip_review != 'true' }}
         continue-on-error: true
         run: gh --version
 
       - name: Run Cursor PR review (non-blocking)
         id: cursor_review
+        if: ${{ steps.draft_guard.outputs.skip_review != 'true' }}
         continue-on-error: true
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           CURSOR_MODEL: ${{ inputs.model || vars.CURSOR_REVIEW_MODEL }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
@@ -93,6 +140,24 @@ jobs:
 
           SELECTED_MODEL="${CURSOR_MODEL:-auto}"
           echo "selected_model=${SELECTED_MODEL}" >> "$GITHUB_OUTPUT"
+
+          # Resolve PR metadata early so downstream steps can still publish
+          # failure summaries even when this step exits early.
+          if [ -n "${PR_NUMBER:-}" ]; then
+            pr_meta_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" 2>/dev/null || true)"
+            if [ -n "${pr_meta_json:-}" ]; then
+              PR_URL="$(echo "$pr_meta_json" | jq -r '.html_url')"
+              PR_HEAD_SHA="$(echo "$pr_meta_json" | jq -r '.head.sha')"
+              PR_BASE_REF="$(echo "$pr_meta_json" | jq -r '.base.ref')"
+              PR_HEAD_REF="$(echo "$pr_meta_json" | jq -r '.head.ref')"
+              PR_TITLE="$(echo "$pr_meta_json" | jq -r '.title // ""')"
+              PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
+            fi
+          fi
+
+          if [ -n "${PR_HEAD_SHA:-}" ]; then
+            echo "pr_head_sha=${PR_HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          fi
 
           if [ -z "${CURSOR_API_KEY:-}" ]; then
             echo "ERROR: CURSOR_API_KEY secret is missing." | tee cursor-review-output.txt
@@ -186,10 +251,11 @@ jobs:
 
           cursor_exit_code=${PIPESTATUS[0]}
           echo "cursor_exit_code=${cursor_exit_code}" >> "$GITHUB_OUTPUT"
+          echo "pr_head_sha=${PR_HEAD_SHA}" >> "$GITHUB_OUTPUT"
           exit "${cursor_exit_code}"
 
       - name: Write review summary
-        if: always()
+        if: ${{ always() && steps.draft_guard.outputs.skip_review != 'true' }}
         env:
           CURSOR_OUTCOME: ${{ steps.cursor_review.outcome }}
           CURSOR_EXIT_CODE: ${{ steps.cursor_review.outputs.cursor_exit_code }}
@@ -239,13 +305,14 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Publish PR summary comment
-        if: always()
+      - name: Publish PR review
+        if: ${{ always() && steps.draft_guard.outputs.skip_review != 'true' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+          PR_HEAD_SHA: ${{ steps.cursor_review.outputs.pr_head_sha }}
           CURSOR_OUTCOME: ${{ steps.cursor_review.outcome }}
           CURSOR_EXIT_CODE: ${{ steps.cursor_review.outputs.cursor_exit_code }}
           CURSOR_MODEL: ${{ steps.cursor_review.outputs.selected_model }}
@@ -254,19 +321,42 @@ jobs:
           set +e
 
           if [ -z "${PR_NUMBER:-}" ]; then
-            echo "Skip PR summary comment: PR_NUMBER is empty."
+            echo "Skip PR review: PR_NUMBER is empty."
             exit 0
           fi
 
           SUMMARY_MARKER="<!-- cursor-pr-review-summary:v1 -->"
 
-          sanitized_output=""
-          if [ -f cursor-review-output.txt ]; then
-            sanitized_output="$(sed -e 's/\x1b\[[0-9;]*m//g' cursor-review-output.txt)"
+          if [ -z "${PR_HEAD_SHA:-}" ]; then
+            PR_HEAD_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.head.sha' 2>/dev/null || true)"
+            if [ -n "${PR_HEAD_SHA:-}" ]; then
+              echo "Resolved PR_HEAD_SHA via API fallback: ${PR_HEAD_SHA}"
+            else
+              echo "Warning: PR_HEAD_SHA is empty. Posting review without commit_id."
+            fi
           fi
 
-          summary_line="$(printf '%s\n' "${sanitized_output}" | grep -E '^요약:[[:space:]]*High=[0-9]+,[[:space:]]*Medium=[0-9]+,[[:space:]]*Comments=[0-9]+' | tail -n 1)"
-          overall_comment="$(printf '%s\n' "${sanitized_output}" | sed -n '/^PR_OVERALL_COMMENT_BEGIN$/,/^PR_OVERALL_COMMENT_END$/p' | sed '1d;$d')"
+          sanitized_output=""
+          if [ -f cursor-review-output.txt ]; then
+            sanitized_output="$(sed -e 's/\x1b\[[0-9;]*m//g' cursor-review-output.txt | tr -d '\r')"
+          fi
+
+          summary_line="$(printf '%s\n' "${sanitized_output}" | grep -E '요약:[[:space:]]*High=[0-9]+,[[:space:]]*Medium=[0-9]+,[[:space:]]*Comments=[0-9]+' | tail -n 1)"
+          overall_comment="$(printf '%s\n' "${sanitized_output}" | sed -n '/^[[:space:]]*PR_OVERALL_COMMENT_BEGIN[[:space:]]*$/,/^[[:space:]]*PR_OVERALL_COMMENT_END[[:space:]]*$/p' | sed '1d;$d')"
+
+          # Parse line comments JSON (B3)
+          line_comments_json="$(printf '%s\n' "${sanitized_output}" \
+            | sed -n '/^[[:space:]]*LINE_COMMENTS_BEGIN[[:space:]]*$/,/^[[:space:]]*LINE_COMMENTS_END[[:space:]]*$/p' | sed '1d;$d')"
+
+          if [ -z "$(printf '%s' "${line_comments_json:-}" | tr -d '[:space:]')" ]; then
+            line_comments_json="[]"
+          fi
+
+          # Validate JSON array, fallback to empty array
+          if ! echo "${line_comments_json:-[]}" | jq -e 'type == "array"' >/dev/null 2>&1; then
+            echo "Warning: LINE_COMMENTS JSON is invalid, falling back to empty array."
+            line_comments_json="[]"
+          fi
 
           high_count="N/A"
           medium_count="N/A"
@@ -287,16 +377,30 @@ jobs:
             fi
           fi
 
-          old_comment_ids="$(
-            gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" --paginate \
-              | jq -r ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"${SUMMARY_MARKER}\"))) | .id"
+          # Check for existing PR review (B4)
+          existing_review="$(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews?per_page=100" --paginate \
+              | jq -r ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"${SUMMARY_MARKER}\"))) | {id, body, commit_id}" \
+              | jq -s 'last // empty'
           )"
 
-          if [ -n "${old_comment_ids:-}" ]; then
-            while IFS= read -r comment_id; do
-              [ -z "${comment_id}" ] && continue
-              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" >/dev/null
-            done <<< "${old_comment_ids}"
+          if [ -n "${existing_review:-}" ]; then
+            existing_body="$(echo "${existing_review}" | jq -r '.body')"
+            existing_id="$(echo "${existing_review}" | jq -r '.id')"
+            existing_commit_id="$(echo "${existing_review}" | jq -r '.commit_id // ""')"
+
+            if echo "${existing_body}" | grep -q "Status: ⚠️"; then
+              echo "Previous review was a failure (id=${existing_id}). Posting new review."
+            elif [ "${GITHUB_EVENT_NAME}" = "issue_comment" ]; then
+              echo "Manual /review trigger detected. Posting a fresh review."
+            elif [ -z "${existing_commit_id:-}" ] || [ -z "${PR_HEAD_SHA:-}" ]; then
+              echo "Unable to compare review commits reliably. Posting a fresh review."
+            elif [ "${existing_commit_id}" != "${PR_HEAD_SHA}" ]; then
+              echo "Existing successful review is for an older commit (${existing_commit_id}). Posting new review for ${PR_HEAD_SHA}."
+            else
+              echo "Successful review already exists for current commit (id=${existing_id}). Skipping."
+              exit 0
+            fi
           fi
 
           if [ "${CURSOR_OUTCOME}" = "success" ] && [ "${CURSOR_EXIT_CODE}" = "0" ]; then
@@ -305,26 +409,64 @@ jobs:
             status_line="⚠️ failed or incomplete (non-blocking)"
           fi
 
-          jq -n \
-            --arg status "${status_line}" \
-            --arg model "${CURSOR_MODEL:-auto}" \
-            --arg issues "${RELATED_ISSUE_COUNT:-0}" \
-            --arg high "${high_count}" \
-            --arg medium "${medium_count}" \
-            --arg comments "${comment_count}" \
-            --arg overall "${overall_comment}" \
-            --arg repo "${GITHUB_REPOSITORY}" \
-            --arg run_id "${GITHUB_RUN_ID}" \
-            --arg marker "${SUMMARY_MARKER}" \
-            '{ body: ("## PR Overall Review\n\n"
-              + $overall + "\n\n---\n"
-              + "- Status: " + $status + "\n"
-              + "- Model: `" + $model + "`\n"
-              + "- Related issues detected: `" + $issues + "`\n"
-              + "- High: `" + $high + "`\n"
-              + "- Medium: `" + $medium + "`\n"
-              + "- Line comments posted: `" + $comments + "`\n"
-              + "- Workflow run: https://github.com/" + $repo + "/actions/runs/" + $run_id + "\n"
-              + "라인별 상세 내용은 PR의 파일/라인 코멘트를 확인해주세요.\n\n"
-              + $marker) }' > pr-summary-comment.json
-          gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --method POST --input pr-summary-comment.json >/dev/null
+          # Build review body (B5)
+          review_body="$(printf '%s\n' \
+            "## PR Overall Review" \
+            "" \
+            "${overall_comment}" \
+            "" \
+            "---" \
+            "- Status: ${status_line}" \
+            "- Model: \`${CURSOR_MODEL:-auto}\`" \
+            "- Related issues detected: \`${RELATED_ISSUE_COUNT:-0}\`" \
+            "- High: \`${high_count}\`" \
+            "- Medium: \`${medium_count}\`" \
+            "- Line comments posted: \`${comment_count}\`" \
+            "- Workflow run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            "" \
+            "${SUMMARY_MARKER}")"
+
+          # Submit as single PR review with line comments (B5)
+          if [ -n "${PR_HEAD_SHA:-}" ]; then
+            jq -n \
+              --arg commit_id "${PR_HEAD_SHA}" \
+              --arg body "${review_body}" \
+              --arg event "COMMENT" \
+              --argjson comments "${line_comments_json:-[]}" \
+              '{commit_id: $commit_id, body: $body, event: $event, comments: $comments}' \
+              > pr-review-payload.json
+          else
+            jq -n \
+              --arg body "${review_body}" \
+              --arg event "COMMENT" \
+              --argjson comments "${line_comments_json:-[]}" \
+              '{body: $body, event: $event, comments: $comments}' \
+              > pr-review-payload.json
+          fi
+
+          if ! gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
+            --method POST --input pr-review-payload.json >/dev/null; then
+
+            # Fallback: retry without line comments if they caused the failure (B6)
+            line_count="$(echo "${line_comments_json:-[]}" | jq 'length')"
+            if [ "${line_count}" -gt 0 ]; then
+              echo "Warning: PR review with line comments failed. Retrying summary-only."
+              if [ -n "${PR_HEAD_SHA:-}" ]; then
+                jq -n \
+                  --arg commit_id "${PR_HEAD_SHA}" \
+                  --arg body "${review_body}" \
+                  --arg event "COMMENT" \
+                  '{commit_id: $commit_id, body: $body, event: $event, comments: []}' \
+                  > pr-review-payload.json
+              else
+                jq -n \
+                  --arg body "${review_body}" \
+                  --arg event "COMMENT" \
+                  '{body: $body, event: $event, comments: []}' \
+                  > pr-review-payload.json
+              fi
+
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
+                --method POST --input pr-review-payload.json >/dev/null
+            fi
+          fi

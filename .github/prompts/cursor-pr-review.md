@@ -2,7 +2,7 @@ You are running inside GitHub Actions to review a pull request with Cursor CLI.
 
 Task:
 
-1. Review this PR diff and post line-level review comments for High/Medium severity issues only.
+1. Review this PR diff and identify line-level issues of High/Medium severity only.
 2. Use Korean for all comment text.
 3. Keep workflow non-blocking. Do not fail intentionally.
 4. Do not edit files, commit, or push.
@@ -26,40 +26,20 @@ Review scope rules:
 Commenting policy:
 
 - Severity: only `High` and `Medium`.
-- Every posted comment body must include this marker on a separate line:
+- Every comment body must include this marker on a separate line:
     - `<!-- cursor-pr-review:v1 -->`
-- Post comments only on changed lines in the PR.
-- Use GitHub PR review comment endpoint (line comment), not issue-level comments.
-
-Required replacement behavior:
-
-1. Before creating new comments, delete previous bot review comments containing marker
-   `<!-- cursor-pr-review:v1 -->`.
-2. Delete target:
-    - author login = `github-actions[bot]`
-    - body contains marker
-3. Use PR review comments API endpoint for deletion:
-    - `DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}`
+- Target only changed lines in the PR.
+- Line comments are optional. If no High/Medium issues exist, skip line comments entirely.
+- Do NOT post comments via GitHub API. Output them as structured JSON to stdout instead.
 
 Suggested command flow:
 
 1. Read files changed:
     - `gh pr diff "$PR_NUMBER" --name-only`
 2. Filter by allowed extensions and exclusions.
-3. Delete previous marker comments:
-    - list comments via `gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/comments?per_page=100" --paginate`
-    - filter with `jq`
-    - delete each matching comment via `gh api --method DELETE "repos/$GITHUB_REPOSITORY/pulls/comments/$id"`
-4. Analyze diff and identify High/Medium issues only.
-5. For each issue, confirm target line exists in changed lines of the current diff.
-6. Create line comment:
-    - `POST /repos/{owner}/{repo}/pulls/{pull_number}/comments`
-    - payload fields must include:
-        - `body` (Korean text + marker)
-        - `commit_id` = `PR_HEAD_SHA`
-        - `path`
-        - `line`
-        - `side` = `"RIGHT"`
+3. Analyze diff and identify High/Medium issues only.
+4. For each issue, confirm target line exists in changed lines of the current diff.
+5. Output line comments as JSON to stdout (see output format below). Do NOT call any GitHub API to post comments.
 
 Required output format to stdout (final lines):
 
@@ -72,8 +52,24 @@ Required output format to stdout (final lines):
     - `### 개선 사항`
   - High/Medium 이슈가 없으면 `LGTM` 문구를 반드시 포함
 - `PR_OVERALL_COMMENT_END`
+- `LINE_COMMENTS_BEGIN`
+- JSON array of line comment objects, one per line. Each object:
+    - `path`: relative file path
+    - `line`: line number in the diff
+    - `side`: `"RIGHT"`
+    - `body`: Korean comment text including `<!-- cursor-pr-review:v1 -->` marker
+- If no issues found, output an empty array `[]`.
+- `LINE_COMMENTS_END`
 - `요약: High=<number>, Medium=<number>, Comments=<number>`
 - `완료: cursor-pr-review:v1`
+
+Formatting requirements (strict):
+
+- Emit marker lines exactly as plain text (no indentation, no extra characters):
+  - `PR_OVERALL_COMMENT_BEGIN`, `PR_OVERALL_COMMENT_END`
+  - `LINE_COMMENTS_BEGIN`, `LINE_COMMENTS_END`
+- Do not wrap the final output section in markdown code fences.
+- For `LINE_COMMENTS` section, output a valid JSON array only (for no issues, exactly `[]`).
 
 Quality bar:
 
