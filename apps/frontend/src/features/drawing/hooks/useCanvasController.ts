@@ -6,7 +6,7 @@ import { useViewport } from './useViewport';
 import { useCanvasInitialization } from './useCanvasInitialization';
 import { useCanvasKeyboard } from './useCanvasKeyboard';
 import { useCanvasNodes } from './useCanvasNodes';
-import { useMemoContext } from './useMemoStore';
+import { useMemoContext } from '../../memo/hooks/useMemoStore';
 import type { RelationshipConfig, Point } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 

@@ -1,5 +1,5 @@
-import { bffClient } from '../bff-client';
-import type { ApiResponse } from '../types';
+import { bffClient } from '@/lib/api/bff-client';
+import type { ApiResponse } from '@/lib/api';
 import type {
   Memo,
   MemoComment,

@@ -1,5 +1,5 @@
 import { useStore } from '@xyflow/react';
-import type { Point } from '../../types';
+import type { Point } from '@/features/drawing/types';
 
 interface MemoPreviewProps {
   mousePosition: Point | null;

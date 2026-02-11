@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import type { NodeChange } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import type { TableData } from '../types';
-import type { MemoData } from './memo.helper';
+import type { MemoData } from '@/features/memo/hooks/memo.helper';
 
 interface UseCanvasNodesParams {
   tables: Node<TableData>[];

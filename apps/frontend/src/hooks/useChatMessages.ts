@@ -1,5 +1,5 @@
 import { collaborationStore } from '@/store';
-import type { ChatMessage } from '@/lib/api/collaboration';
+import type { ChatMessage } from '@/features/collaboration/api';
 import { useEffect, useState } from 'react';
 
 export const useChatMessages = () => {

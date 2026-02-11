@@ -1,5 +1,5 @@
 import { makeAutoObservable } from 'mobx';
-import type { AuthResponse } from '../lib/api/auth/types';
+import type { AuthResponse } from '@/features/auth/api';
 
 class AuthStore {
   accessToken: string | null = null;

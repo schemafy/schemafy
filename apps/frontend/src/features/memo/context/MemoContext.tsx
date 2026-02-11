@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMemoStore, MemoContext } from '../hooks/useMemoStore';
+import { useMemoStore, MemoContext } from '../../memo/hooks/useMemoStore';
 
 export const MemoProvider = ({ children }: { children: React.ReactNode }) => {
   const value = useMemoStore();

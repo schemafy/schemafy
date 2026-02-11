@@ -6,8 +6,8 @@ import {
   useContext,
 } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
-import * as memoApi from '@/lib/api/memo';
-import type { Memo, MemoComment } from '@/lib/api/memo/types';
+import * as memoApi from '../api/api';
+import type { Memo, MemoComment } from '../api/types';
 import {
   stringifyPosition,
   transformApiMemoToNode,

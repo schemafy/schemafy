@@ -18,12 +18,11 @@ import {
   CustomConnectionLine,
   FloatingButtons,
   SchemaSelector,
-  MemoPreview,
-  Memo,
   TempMemoPreview,
-  MemoProvider,
   useCanvasController,
 } from '@/features/drawing';
+import { Memo, MemoPreview } from '@/features/memo/components';
+import { MemoProvider } from '@/features/memo/context';
 import { ChatOverlay, ChatInput } from '@/components/Collaboration';
 
 const NODE_TYPES = {

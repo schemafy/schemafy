@@ -2,7 +2,7 @@ import { authStore } from '@/store/auth.store';
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
-import { logout } from '@/lib/api/auth/api';
+import { logout } from '@/features/auth/api';
 
 export const DashboardHeader = () => {
   const handleLogout = async () => {

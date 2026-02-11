@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { authStore } from '@/store/auth.store';
-import { getMyInfo, refreshToken } from '@/lib/api';
+import { getMyInfo, refreshToken } from '@/features/auth/api';
 
 export const useAuthBootstrap = () => {
   useEffect(() => {

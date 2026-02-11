@@ -1,6 +1,6 @@
 import { Avatar } from '@/components';
 import { formatDate } from '@/lib';
-import type { MemoComment } from '@/lib/api';
+import type { MemoComment } from '@/features/memo/api/types';
 
 interface MemoHoverPreviewProps {
   firstComment: MemoComment;

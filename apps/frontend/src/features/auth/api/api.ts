@@ -1,6 +1,6 @@
 import type { AxiosResponse } from 'axios';
-import { apiClient, publicClient } from '../client';
-import type { ApiResponse } from '../types';
+import { apiClient, publicClient } from '@/lib/api/client';
+import type { ApiResponse } from '@/lib/api';
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
 
 import { authStore } from '@/store/auth.store';

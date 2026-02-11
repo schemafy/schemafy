@@ -8,7 +8,7 @@ import type {
   ReceiveCursor,
   ReceiveLeave,
   WebSocketMessage,
-} from '@/lib/api/collaboration/types';
+} from '@/features/collaboration/api';
 import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { authStore } from './auth.store';
 
