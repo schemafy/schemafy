@@ -16,21 +16,21 @@ export type PostChat = {
   content: string;
 };
 
-export type RecieveJoin = {
+export type ReceiveJoin = {
   type: 'JOIN';
   userId: string;
   userName: string;
   timestamp: string;
 };
 
-export type RecieveLeave = {
+export type ReceiveLeave = {
   type: 'LEAVE';
   userId: string;
   userName: string;
   timestamp: string;
 };
 
-export type RecieveCursor = {
+export type ReceiveCursor = {
   type: 'CURSOR';
   sessionId: string;
   userInfo: {
@@ -44,7 +44,7 @@ export type RecieveCursor = {
   timestamp: string;
 };
 
-export type RecieveSchemaFocus = {
+export type ReceiveSchemaFocus = {
   type: 'SCHEMA_FOCUS';
   userId: string;
   userName: string;
@@ -52,7 +52,7 @@ export type RecieveSchemaFocus = {
   timestamp: string;
 };
 
-export type RecieveChat = {
+export type ReceiveChat = {
   type: 'CHAT';
   messageId: string;
   userId: string;
@@ -63,11 +63,11 @@ export type RecieveChat = {
 };
 
 export type WebSocketMessage =
-  | RecieveJoin
-  | RecieveLeave
-  | RecieveCursor
-  | RecieveSchemaFocus
-  | RecieveChat;
+  | ReceiveJoin
+  | ReceiveLeave
+  | ReceiveCursor
+  | ReceiveSchemaFocus
+  | ReceiveChat;
 
 export type ChatMessage = {
   messageId: string;
