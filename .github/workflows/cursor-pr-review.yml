@@ -350,7 +350,7 @@ jobs:
           existing_review="$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews?per_page=100" --paginate \
               | jq -r ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"${SUMMARY_MARKER}\"))) | {id, body}" \
-              | jq -s 'first // empty'
+              | jq -s 'last // empty'
           )"
 
           if [ -n "${existing_review:-}" ]; then
@@ -372,20 +372,21 @@ jobs:
           fi
 
           # Build review body (B5)
-          review_body="$(printf '%s' "## PR Overall Review
-
-${overall_comment}
-
----
-- Status: ${status_line}
-- Model: \`${CURSOR_MODEL:-auto}\`
-- Related issues detected: \`${RELATED_ISSUE_COUNT:-0}\`
-- High: \`${high_count}\`
-- Medium: \`${medium_count}\`
-- Line comments posted: \`${comment_count}\`
-- Workflow run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
-
-${SUMMARY_MARKER}")"
+          review_body="$(printf '%s\n' \
+            "## PR Overall Review" \
+            "" \
+            "${overall_comment}" \
+            "" \
+            "---" \
+            "- Status: ${status_line}" \
+            "- Model: \`${CURSOR_MODEL:-auto}\`" \
+            "- Related issues detected: \`${RELATED_ISSUE_COUNT:-0}\`" \
+            "- High: \`${high_count}\`" \
+            "- Medium: \`${medium_count}\`" \
+            "- Line comments posted: \`${comment_count}\`" \
+            "- Workflow run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            "" \
+            "${SUMMARY_MARKER}")"
 
           # Submit as single PR review with line comments (B5)
           jq -n \
