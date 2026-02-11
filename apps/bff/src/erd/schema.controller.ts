@@ -9,7 +9,10 @@ import {
   Post,
 } from '@nestjs/common';
 import { SchemaService } from './schema.service';
-import type { ChangeSchemaNameRequest, CreateSchemaRequest } from './erd.types';
+import type {
+  ChangeSchemaNameRequest,
+  CreateSchemaRequest,
+} from './erd.types';
 
 @Controller('api/v1.0')
 export class SchemaController {
