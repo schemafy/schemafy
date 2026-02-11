@@ -1,6 +1,5 @@
-import { ThemeProvider } from '@/lib';
+import { ThemeProvider, queryClient } from '@/lib';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from '@/lib/config/query-client';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';

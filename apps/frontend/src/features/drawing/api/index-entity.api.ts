@@ -1,5 +1,4 @@
-import { bffClient } from '@/lib/api/bff-client';
-import type { ApiResponse } from '@/lib/api/types';
+import { type ApiResponse, bffClient } from '@/lib/api';
 import type {
   MutationResponse,
   IndexResponse,
