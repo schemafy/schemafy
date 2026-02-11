@@ -63,6 +63,14 @@ Required output format to stdout (final lines):
 - `요약: High=<number>, Medium=<number>, Comments=<number>`
 - `완료: cursor-pr-review:v1`
 
+Formatting requirements (strict):
+
+- Emit marker lines exactly as plain text (no indentation, no extra characters):
+  - `PR_OVERALL_COMMENT_BEGIN`, `PR_OVERALL_COMMENT_END`
+  - `LINE_COMMENTS_BEGIN`, `LINE_COMMENTS_END`
+- Do not wrap the final output section in markdown code fences.
+- For `LINE_COMMENTS` section, output a valid JSON array only (for no issues, exactly `[]`).
+
 Quality bar:
 
 - Focus on concrete defects and meaningful risks:
