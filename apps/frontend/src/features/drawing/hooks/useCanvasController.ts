@@ -1,16 +1,13 @@
 import { useState, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
-import {
-  useRelationships,
-  useTables,
-  useViewport,
-  useCanvasInitialization,
-  useCanvasKeyboard,
-  useCanvasNodes,
-  useMemoContext,
-  type RelationshipConfig,
-  type Point,
-} from '@/features/drawing';
+import { useRelationships } from './useRelationships';
+import { useTables } from './useTables';
+import { useViewport } from './useViewport';
+import { useCanvasInitialization } from './useCanvasInitialization';
+import { useCanvasKeyboard } from './useCanvasKeyboard';
+import { useCanvasNodes } from './useCanvasNodes';
+import { useMemoContext } from './useMemoStore';
+import type { RelationshipConfig, Point } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 
 const CURSOR_THROTTLE_MS = 100;
