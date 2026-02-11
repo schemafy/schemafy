@@ -52,7 +52,9 @@ export class MemoService {
     schemaId: string,
     authHeader: string,
   ): Promise<ApiResponse<Memo[]>> {
-    const memosResponse = await this.backendClient.client.get<ApiResponse<Memo[]>>(
+    const memosResponse = await this.backendClient.client.get<
+      ApiResponse<Memo[]>
+    >(
       `/api/v1.0/schemas/${schemaId}/memos`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -119,7 +121,9 @@ export class MemoService {
     data: CreateMemoCommentRequest,
     authHeader: string,
   ): Promise<ApiResponse<MemoComment>> {
-    const response = await this.backendClient.client.post<ApiResponse<MemoComment>>(
+    const response = await this.backendClient.client.post<
+      ApiResponse<MemoComment>
+    >(
       `/api/v1.0/memos/${memoId}/comments`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -131,7 +135,9 @@ export class MemoService {
     memoId: string,
     authHeader: string,
   ): Promise<ApiResponse<MemoComment[]>> {
-    const response = await this.backendClient.client.get<ApiResponse<MemoComment[]>>(
+    const response = await this.backendClient.client.get<
+      ApiResponse<MemoComment[]>
+    >(
       `/api/v1.0/memos/${memoId}/comments`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -144,7 +150,9 @@ export class MemoService {
     data: UpdateMemoCommentRequest,
     authHeader: string,
   ): Promise<ApiResponse<MemoComment>> {
-    const response = await this.backendClient.client.put<ApiResponse<MemoComment>>(
+    const response = await this.backendClient.client.put<
+      ApiResponse<MemoComment>
+    >(
       `/api/v1.0/memos/${memoId}/comments/${commentId}`,
       data,
       this.backendClient.getAuthConfig(authHeader),
