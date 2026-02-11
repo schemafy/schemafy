@@ -12,3 +12,4 @@ export * from './useMemoStore';
 export * from './useCanvasInitialization';
 export * from './useCanvasKeyboard';
 export * from './useCanvasNodes';
+export * from './useCanvasController';
