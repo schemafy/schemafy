@@ -1,7 +1,5 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.Set;
-
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -96,13 +94,17 @@ public class SchemaController {
   public Mono<BaseResponse<MutationResponse<Void>>> deleteSchema(
       @PathVariable String schemaId) {
     DeleteSchemaCommand command = new DeleteSchemaCommand(schemaId);
-    return resolveContextFromSchema(schemaId)
-        .onErrorResume(e -> Mono.empty())
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return deleteSchemaUseCase.deleteSchema(command)
+          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+          .map(BaseResponse::success);
+    }
+    return broadcaster.resolveFromSchemaId(schemaId)
         .flatMap(ctx -> deleteSchemaUseCase.deleteSchema(command)
-            .flatMap(result -> broadcastWithContext(ctx,
-                result.affectedTableIds())
+            .flatMap(result -> broadcaster
+                .broadcastWithContext(ctx, result.affectedTableIds())
                 .thenReturn(result)))
-        .switchIfEmpty(deleteSchemaUseCase.deleteSchema(command))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -113,25 +115,6 @@ public class SchemaController {
       return Mono.empty();
     }
     return broadcaster.broadcastSchemaChange(schemaId);
-  }
-
-  private Mono<ErdMutationBroadcaster.ResolvedContext> resolveContextFromSchema(
-      String schemaId) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
-      return Mono.empty();
-    }
-    return broadcaster.resolveFromSchemaId(schemaId);
-  }
-
-  private Mono<Void> broadcastWithContext(
-      ErdMutationBroadcaster.ResolvedContext ctx,
-      Set<String> affectedTableIds) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
-      return Mono.empty();
-    }
-    return broadcaster.broadcastWithContext(ctx, affectedTableIds);
   }
 
 }

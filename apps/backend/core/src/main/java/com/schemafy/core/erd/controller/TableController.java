@@ -255,13 +255,17 @@ public class TableController {
   public Mono<BaseResponse<MutationResponse<Void>>> deleteTable(
       @PathVariable String tableId) {
     DeleteTableCommand command = new DeleteTableCommand(tableId);
-    return resolveContextFromTable(tableId)
-        .onErrorResume(e -> Mono.empty())
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return deleteTableUseCase.deleteTable(command)
+          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+          .map(BaseResponse::success);
+    }
+    return broadcaster.resolveFromTableId(tableId)
         .flatMap(ctx -> deleteTableUseCase.deleteTable(command)
-            .flatMap(result -> broadcastWithContext(ctx,
-                result.affectedTableIds())
+            .flatMap(result -> broadcaster
+                .broadcastWithContext(ctx, result.affectedTableIds())
                 .thenReturn(result)))
-        .switchIfEmpty(deleteTableUseCase.deleteTable(command))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -272,25 +276,6 @@ public class TableController {
       return Mono.empty();
     }
     return broadcaster.broadcast(affectedTableIds);
-  }
-
-  private Mono<ErdMutationBroadcaster.ResolvedContext> resolveContextFromTable(
-      String tableId) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
-      return Mono.empty();
-    }
-    return broadcaster.resolveFromTableId(tableId);
-  }
-
-  private Mono<Void> broadcastWithContext(
-      ErdMutationBroadcaster.ResolvedContext ctx,
-      Set<String> affectedTableIds) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
-      return Mono.empty();
-    }
-    return broadcaster.broadcastWithContext(ctx, affectedTableIds);
   }
 
 }
