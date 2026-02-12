@@ -74,7 +74,6 @@ public interface InvitationRepository
       """)
   Mono<Long> countPendingProjectInvitation(String projectId, String email);
 
-
   @Query("""
       SELECT * FROM invitations
       WHERE target_type = :targetType

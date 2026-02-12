@@ -151,8 +151,8 @@ class ProjectControllerTest {
         .jsonPath("$.result.name").isEqualTo("My Project")
         .jsonPath("$.result.workspaceId").isEqualTo(testWorkspaceId);
 
-    projectMemberRepository.findByUserIdAndNotDeleted(testUserId)
-        .collectList().block().forEach(member -> assertThat(member.getRole()).isEqualTo(ProjectRole.ADMIN.getValue()));
+    projectMemberRepository.findRolesByWorkspaceIdAndUserIdWithPaging(testWorkspaceId, testUserId, 100, 0)
+        .collectList().block().forEach(role -> assertThat(role).isEqualTo(ProjectRole.ADMIN.getValue()));
   }
 
   @Test
@@ -170,8 +170,8 @@ class ProjectControllerTest {
   @DisplayName("워크스페이스 멤버가 아닌 사용자는 프로젝트를 생성할 수 없다")
   void createProjectFailWhenNotWorkspaceMember() {
     // Remove user2 from workspace
-    workspaceMemberRepository.findByUserIdAndNotDeleted(testUser2Id)
-        .flatMap(workspaceMemberRepository::delete).blockLast();
+    workspaceMemberRepository.findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .flatMap(workspaceMemberRepository::delete).block();
 
     CreateProjectRequest request = new CreateProjectRequest("My Project",
         "Description", null);

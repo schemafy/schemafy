@@ -208,7 +208,7 @@ class ProjectServiceTest {
           .verifyComplete();
 
       ProjectMember updated = projectMemberRepository
-          .findByIdAndNotDeleted(viewerMember.getId())
+          .findByProjectIdAndUserIdAndNotDeleted(testProject.getId(), viewerUser.getId())
           .block();
       assertThat(updated.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
     }
