@@ -52,7 +52,11 @@ public class ErdMutationBroadcaster {
 
   public Mono<Void> broadcastWithContext(ResolvedContext ctx,
       Set<String> affectedTableIds) {
-    return publish(ctx, affectedTableIds);
+    return publish(ctx, affectedTableIds)
+        .doOnError(e -> log.warn(
+            "[ErdMutationBroadcaster] broadcastWithContext failed: {}",
+            e.getMessage()))
+        .onErrorResume(e -> Mono.empty());
   }
 
   public Mono<ResolvedContext> resolveFromSchemaId(String schemaId) {

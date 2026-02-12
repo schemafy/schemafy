@@ -107,14 +107,6 @@ public class SchemaController {
         .map(BaseResponse::success);
   }
 
-  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
-      return Mono.empty();
-    }
-    return broadcaster.broadcast(affectedTableIds);
-  }
-
   private Mono<Void> broadcastSchemaChange(String schemaId) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
