@@ -74,12 +74,6 @@ public interface InvitationRepository
       """)
   Mono<Long> countPendingProjectInvitation(String projectId, String email);
 
-  @Query("""
-      UPDATE invitations
-      SET deleted_at = CURRENT_TIMESTAMP
-      WHERE target_type = 'PROJECT' AND target_id = :projectId
-      """)
-  Mono<Void> softDeleteByProjectId(String projectId);
 
   @Query("""
       SELECT * FROM invitations

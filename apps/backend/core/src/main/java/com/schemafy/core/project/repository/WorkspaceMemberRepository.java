@@ -22,14 +22,6 @@ public interface WorkspaceMemberRepository
 
   @Query("""
       SELECT * FROM workspace_members
-      WHERE user_id = :userId
-        AND deleted_at IS NULL
-      ORDER BY created_at DESC
-      """)
-  Flux<WorkspaceMember> findByUserIdAndNotDeleted(String userId);
-
-  @Query("""
-      SELECT * FROM workspace_members
       WHERE workspace_id = :workspaceId
         AND deleted_at IS NULL
       ORDER BY created_at ASC

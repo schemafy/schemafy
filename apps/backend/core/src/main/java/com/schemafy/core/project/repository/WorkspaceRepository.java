@@ -18,13 +18,6 @@ public interface WorkspaceRepository
   Mono<Workspace> findByIdAndNotDeleted(String id);
 
   @Query("""
-      UPDATE workspaces
-      SET deleted_at = CURRENT_TIMESTAMP
-      WHERE id = :id
-      """)
-  Mono<Void> softDelete(String id);
-
-  @Query("""
       SELECT w.* FROM workspaces w
       INNER JOIN workspace_members wm ON w.id = wm.workspace_id
       WHERE wm.user_id = :userId
