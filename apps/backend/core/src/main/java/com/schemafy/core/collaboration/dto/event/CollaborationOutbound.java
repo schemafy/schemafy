@@ -12,11 +12,13 @@ import com.schemafy.core.collaboration.dto.CollaborationEventType;
   @JsonSubTypes.Type(value = LeaveEvent.Outbound.class, name = "LEAVE"),
   @JsonSubTypes.Type(value = CursorEvent.Outbound.class, name = "CURSOR"),
   @JsonSubTypes.Type(value = SchemaFocusEvent.Outbound.class, name = "SCHEMA_FOCUS"),
-  @JsonSubTypes.Type(value = ChatEvent.Outbound.class, name = "CHAT")
+  @JsonSubTypes.Type(value = ChatEvent.Outbound.class, name = "CHAT"),
+  @JsonSubTypes.Type(value = ErdMutatedEvent.Outbound.class, name = "ERD_MUTATED")
 })
 public sealed interface CollaborationOutbound
     permits JoinEvent.Outbound, LeaveEvent.Outbound, CursorEvent.Outbound,
-    SchemaFocusEvent.Outbound, ChatEvent.Outbound {
+    SchemaFocusEvent.Outbound, ChatEvent.Outbound,
+    ErdMutatedEvent.Outbound {
 
   CollaborationEventType type();
 

@@ -3,10 +3,12 @@ package com.schemafy.core.erd.controller;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import jakarta.validation.Valid;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableExtraRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableMetaRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableNameRequest;
@@ -86,6 +89,8 @@ public class TableController {
   private final ChangeTableExtraUseCase changeTableExtraUseCase;
   private final DeleteTableUseCase deleteTableUseCase;
 
+  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/tables")
   public Mono<BaseResponse<MutationResponse<TableResponse>>> createTable(
@@ -96,6 +101,8 @@ public class TableController {
         request.charset(),
         request.collation());
     return createTableUseCase.createTable(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             TableResponse.from(result.result(), request.schemaId()),
             result.affectedTableIds()))
@@ -206,6 +213,8 @@ public class TableController {
         tableId,
         request.newName());
     return changeTableNameUseCase.changeTableName(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -220,6 +229,8 @@ public class TableController {
         toPatchField(request.charset()),
         toPatchField(request.collation()));
     return changeTableMetaUseCase.changeTableMeta(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -233,6 +244,8 @@ public class TableController {
         tableId,
         request.extra());
     return changeTableExtraUseCase.changeTableExtra(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -242,9 +255,42 @@ public class TableController {
   public Mono<BaseResponse<MutationResponse<Void>>> deleteTable(
       @PathVariable String tableId) {
     DeleteTableCommand command = new DeleteTableCommand(tableId);
-    return deleteTableUseCase.deleteTable(command)
+    return resolveContextFromTable(tableId)
+        .onErrorResume(e -> Mono.empty())
+        .flatMap(ctx -> deleteTableUseCase.deleteTable(command)
+            .flatMap(result -> broadcastWithContext(ctx,
+                result.affectedTableIds())
+                .thenReturn(result)))
+        .switchIfEmpty(deleteTableUseCase.deleteTable(command))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
+  }
+
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return Mono.empty();
+    }
+    return broadcaster.broadcast(affectedTableIds);
+  }
+
+  private Mono<ErdMutationBroadcaster.ResolvedContext> resolveContextFromTable(
+      String tableId) {
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return Mono.empty();
+    }
+    return broadcaster.resolveFromTableId(tableId);
+  }
+
+  private Mono<Void> broadcastWithContext(
+      ErdMutationBroadcaster.ResolvedContext ctx,
+      Set<String> affectedTableIds) {
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return Mono.empty();
+    }
+    return broadcaster.broadcastWithContext(ctx, affectedTableIds);
   }
 
 }
