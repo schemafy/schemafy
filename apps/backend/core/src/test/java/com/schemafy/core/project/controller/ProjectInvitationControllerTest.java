@@ -490,7 +490,7 @@ class ProjectInvitationControllerTest {
           adminUserId);
       invitation = invitationRepository.save(invitation).block();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
@@ -528,7 +528,7 @@ class ProjectInvitationControllerTest {
           adminUserId);
       invitation = invitationRepository.save(invitation).block();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
               invitation.getId())
           .header("Authorization", "Bearer " + adminToken)
@@ -539,7 +539,7 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("존재하지 않는 초대를 수락하면 404 Not Found를 반환한다")
     void acceptInvitation_NotFound() {
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
               "nonexistent-id")
           .header("Authorization", "Bearer " + workspaceMemberToken)
@@ -559,14 +559,14 @@ class ProjectInvitationControllerTest {
           adminUserId);
       invitation = invitationRepository.save(invitation).block();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
           .exchange()
           .expectStatus().isOk();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
@@ -591,7 +591,7 @@ class ProjectInvitationControllerTest {
           adminUserId);
       invitation = invitationRepository.save(invitation).block();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
@@ -617,7 +617,7 @@ class ProjectInvitationControllerTest {
           adminUserId);
       invitation = invitationRepository.save(invitation).block();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
@@ -644,7 +644,7 @@ class ProjectInvitationControllerTest {
           adminUserId);
       invitation = invitationRepository.save(invitation).block();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
               invitation.getId())
           .header("Authorization", "Bearer " + adminToken)
@@ -655,7 +655,7 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("존재하지 않는 초대를 거절하면 404 Not Found를 반환한다")
     void rejectInvitation_NotFound() {
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
               "nonexistent-id")
           .header("Authorization", "Bearer " + workspaceMemberToken)
@@ -675,14 +675,14 @@ class ProjectInvitationControllerTest {
           adminUserId);
       invitation = invitationRepository.save(invitation).block();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
           .exchange()
           .expectStatus().isNoContent();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
@@ -702,14 +702,14 @@ class ProjectInvitationControllerTest {
           adminUserId);
       invitation = invitationRepository.save(invitation).block();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
           .exchange()
           .expectStatus().isOk();
 
-      webTestClient.put()
+      webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
               invitation.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)

@@ -65,7 +65,7 @@ public class ProjectInvitationController {
         .map(BaseResponse::success);
   }
 
-  @PutMapping("/projects/invitations/{invitationId}/accept")
+  @PatchMapping("/projects/invitations/{invitationId}/accept")
   public Mono<BaseResponse<ProjectMemberResponse>> acceptInvitation(
       @PathVariable String invitationId,
       Authentication auth) {
@@ -74,7 +74,7 @@ public class ProjectInvitationController {
         .map(BaseResponse::success);
   }
 
-  @PutMapping("/projects/invitations/{invitationId}/reject")
+  @PatchMapping("/projects/invitations/{invitationId}/reject")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> rejectInvitation(
       @PathVariable String invitationId,

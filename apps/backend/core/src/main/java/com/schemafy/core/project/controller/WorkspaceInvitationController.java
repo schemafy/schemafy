@@ -63,7 +63,7 @@ public class WorkspaceInvitationController {
         .map(BaseResponse::success);
   }
 
-  @PutMapping("/workspaces/invitations/{invitationId}/accept")
+  @PatchMapping("/workspaces/invitations/{invitationId}/accept")
   public Mono<BaseResponse<WorkspaceMemberResponse>> acceptInvitation(
       @PathVariable String invitationId,
       Authentication auth) {
@@ -72,7 +72,7 @@ public class WorkspaceInvitationController {
         .map(BaseResponse::success);
   }
 
-  @PutMapping("/workspaces/invitations/{invitationId}/reject")
+  @PatchMapping("/workspaces/invitations/{invitationId}/reject")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> rejectInvitation(
       @PathVariable String invitationId,
