@@ -1,6 +1,7 @@
 package com.schemafy.core.project.repository.entity;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Table;
@@ -39,7 +40,7 @@ public class Invitation extends BaseEntity {
   @Version
   private Integer version;
 
-  private static final long EXPIRATION_DAYS = 7 * 24 * 60 * 60; // 7 days
+  private static final long EXPIRATION_DAYS = 7;
 
   public static Invitation createWorkspaceInvitation(
       String workspaceId,
@@ -54,7 +55,7 @@ public class Invitation extends BaseEntity {
         role.getValue(),
         invitedBy,
         InvitationStatus.PENDING.getValue(),
-        Instant.now().plusSeconds(EXPIRATION_DAYS),
+        Instant.now().plus(EXPIRATION_DAYS, ChronoUnit.DAYS),
         null,
         0);
     invitation.setId(UlidGenerator.generate());
@@ -75,7 +76,7 @@ public class Invitation extends BaseEntity {
         role.getValue(),
         invitedBy,
         InvitationStatus.PENDING.getValue(),
-        Instant.now().plusSeconds(EXPIRATION_DAYS),
+        Instant.now().plus(EXPIRATION_DAYS, ChronoUnit.DAYS),
         null,
         0);
     invitation.setId(UlidGenerator.generate());
