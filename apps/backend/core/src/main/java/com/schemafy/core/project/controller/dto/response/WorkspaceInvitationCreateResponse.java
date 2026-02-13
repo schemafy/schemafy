@@ -5,7 +5,7 @@ import java.time.Instant;
 import com.schemafy.core.project.repository.entity.Invitation;
 
 public record WorkspaceInvitationCreateResponse(
-    String invitationId,
+    String id,
     String workspaceId,
     String invitedEmail,
     String invitedRole,

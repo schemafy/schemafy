@@ -20,7 +20,7 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
   /** Invitation 생성 응답 필드 (WorkspaceInvitationCreateResponse) */
   private static FieldDescriptor[] invitationCreateResponseFields(String prefix) {
     return new FieldDescriptor[] {
-      fieldWithPath(prefix + "invitationId").type(JsonFieldType.STRING)
+      fieldWithPath(prefix + "id").type(JsonFieldType.STRING)
           .description("초대 고유 ID"),
       fieldWithPath(prefix + "workspaceId").type(JsonFieldType.STRING)
           .description("워크스페이스 ID"),
@@ -186,7 +186,7 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
     return createResponseHeadersSnippet(commonResponseHeaders());
   }
 
-  // ========== PUT /api/workspaces/invitations/{invitationId}/accept - 초대 수락 ==========
+  // ========== PATCH /api/workspaces/invitations/{invitationId}/accept - 초대 수락 ==========
 
   /** 초대 수락 요청 헤더 */
   public static Snippet acceptInvitationRequestHeaders() {
@@ -217,7 +217,7 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
     return createResponseHeadersSnippet(commonResponseHeaders());
   }
 
-  // ========== PUT /api/workspaces/invitations/{invitationId}/reject - 초대 거절 ==========
+  // ========== PATCH /api/workspaces/invitations/{invitationId}/reject - 초대 거절 ==========
 
   /** 초대 거절 요청 헤더 */
   public static Snippet rejectInvitationRequestHeaders() {
