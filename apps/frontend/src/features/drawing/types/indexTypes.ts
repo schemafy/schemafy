@@ -31,12 +31,8 @@ export interface IndexSectionProps {
   onChangeIndexName: (indexId: string, newName: string) => void;
   onChangeIndexType: (indexId: string, newType: IndexType) => void;
   onAddColumnToIndex: (indexId: string, columnId: string) => void;
-  onRemoveColumnFromIndex: (indexId: string, indexColumnId: string) => void;
-  onChangeSortDir: (
-    indexId: string,
-    indexColumnId: string,
-    sortDir: IndexSortDir,
-  ) => void;
+  onRemoveColumnFromIndex: (indexColumnId: string) => void;
+  onChangeSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
 }
 
 export interface IndexRowProps {
@@ -47,12 +43,8 @@ export interface IndexRowProps {
   onChangeIndexName: (indexId: string, newName: string) => void;
   onChangeIndexType: (indexId: string, newType: IndexType) => void;
   onAddColumnToIndex: (indexId: string, columnId: string) => void;
-  onRemoveColumnFromIndex: (indexId: string, indexColumnId: string) => void;
-  onChangeSortDir: (
-    indexId: string,
-    indexColumnId: string,
-    sortDir: IndexSortDir,
-  ) => void;
+  onRemoveColumnFromIndex: (indexColumnId: string) => void;
+  onChangeSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
 }
 
 export interface ViewModeIndexProps {
@@ -67,12 +59,8 @@ export interface EditModeIndexProps {
   onChangeIndexName: (indexId: string, newName: string) => void;
   onChangeIndexType: (indexId: string, newType: IndexType) => void;
   onAddColumnToIndex: (indexId: string, columnId: string) => void;
-  onRemoveColumnFromIndex: (indexId: string, indexColumnId: string) => void;
-  onChangeSortDir: (
-    indexId: string,
-    indexColumnId: string,
-    sortDir: IndexSortDir,
-  ) => void;
+  onRemoveColumnFromIndex: (indexColumnId: string) => void;
+  onChangeSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
 }
 
 export const INDEX_TYPES: IndexType[] = [

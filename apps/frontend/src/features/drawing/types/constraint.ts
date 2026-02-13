@@ -11,10 +11,7 @@ export interface ConstraintSectionProps {
   onDeleteConstraint: (constraintId: string) => void;
   onChangeConstraintName: (constraintId: string, newName: string) => void;
   onAddColumnToConstraint: (constraintId: string, columnId: string) => void;
-  onRemoveColumnFromConstraint: (
-    constraintId: string,
-    constraintColumnId: string,
-  ) => void;
+  onRemoveColumnFromConstraint: (constraintColumnId: string) => void;
 }
 
 export interface ConstraintRowProps {
@@ -24,10 +21,7 @@ export interface ConstraintRowProps {
   onDeleteConstraint: (constraintId: string) => void;
   onChangeConstraintName: (constraintId: string, newName: string) => void;
   onAddColumnToConstraint: (constraintId: string, columnId: string) => void;
-  onRemoveColumnFromConstraint: (
-    constraintId: string,
-    constraintColumnId: string,
-  ) => void;
+  onRemoveColumnFromConstraint: (constraintColumnId: string) => void;
 }
 
 export interface ViewModeConstraintProps {
@@ -41,8 +35,5 @@ export interface EditModeConstraintProps {
   onDeleteConstraint: (constraintId: string) => void;
   onChangeConstraintName: (constraintId: string, newName: string) => void;
   onAddColumnToConstraint: (constraintId: string, columnId: string) => void;
-  onRemoveColumnFromConstraint: (
-    constraintId: string,
-    constraintColumnId: string,
-  ) => void;
+  onRemoveColumnFromConstraint: (constraintColumnId: string) => void;
 }

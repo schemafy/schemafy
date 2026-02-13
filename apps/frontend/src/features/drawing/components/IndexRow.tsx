@@ -145,15 +145,11 @@ export const EditModeIndex = ({
             <ColumnItem
               key={indexColumn.id}
               columnName={getColumnName(tableColumns, indexColumn.columnId)}
-              onRemove={() => onRemoveColumnFromIndex(index.id, indexColumn.id)}
+              onRemove={() => onRemoveColumnFromIndex(indexColumn.id)}
               additionalControls={
                 <Select
                   onValueChange={(value) =>
-                    onChangeSortDir(
-                      index.id,
-                      indexColumn.id,
-                      value as IndexSortDir,
-                    )
+                    onChangeSortDir(indexColumn.id, value as IndexSortDir)
                   }
                   value={indexColumn.sortDir}
                 >

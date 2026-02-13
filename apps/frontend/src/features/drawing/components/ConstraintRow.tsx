@@ -117,7 +117,7 @@ export const EditModeConstraint = ({
                 constraintColumn.columnId,
               )}
               onRemove={() =>
-                onRemoveColumnFromConstraint(constraint.id, constraintColumn.id)
+                onRemoveColumnFromConstraint(constraintColumn.id)
               }
             />
           ))}

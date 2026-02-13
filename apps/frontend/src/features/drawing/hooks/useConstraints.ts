@@ -1,12 +1,17 @@
-import { ulid } from 'ulid';
-import type { ErdStore } from '@/store/erd.store';
-import type { Constraint } from '@/types';
+import type { Constraint } from '@/types/erd.types';
 import { generateUniqueName } from '../utils/nameGenerator';
+import {
+  useCreateConstraint,
+  useDeleteConstraint,
+  useChangeConstraintName,
+  useAddConstraintColumn,
+  useRemoveConstraintColumn,
+} from './useConstraintMutations';
+import { useDebouncedMutation } from './useDebouncedMutation';
 
 export type CompositeConstraintKind = 'PRIMARY_KEY' | 'UNIQUE';
 
 interface UseConstraintsProps {
-  erdStore: ErdStore;
   schemaId: string;
   tableId: string;
   tableName: string;
@@ -14,12 +19,21 @@ interface UseConstraintsProps {
 }
 
 export const useConstraints = ({
-  erdStore,
   schemaId,
   tableId,
   tableName,
   constraints,
 }: UseConstraintsProps) => {
+  const createConstraintMutation = useCreateConstraint(schemaId);
+  const deleteConstraintMutation = useDeleteConstraint(schemaId);
+  const changeConstraintNameMutation = useChangeConstraintName(schemaId);
+  const addColumnMutation = useAddConstraintColumn(schemaId);
+  const removeColumnMutation = useRemoveConstraintColumn(schemaId);
+
+  const debouncedChangeConstraintName = useDebouncedMutation(
+    changeConstraintNameMutation,
+  );
+
   const createConstraint = (kind: CompositeConstraintKind = 'UNIQUE') => {
     const existingConstraintNames = constraints.map((c) => c.name);
     const prefixMap: Record<CompositeConstraintKind, string> = {
@@ -28,48 +42,42 @@ export const useConstraints = ({
     };
     const prefix = prefixMap[kind];
 
-    erdStore.createConstraint(schemaId, tableId, {
-      id: ulid(),
+    createConstraintMutation.mutate({
+      tableId,
       name: generateUniqueName(
         existingConstraintNames,
         `${prefix}_${tableName}_`,
       ),
       kind,
-      columns: [],
-      isAffected: false,
     });
   };
 
   const deleteConstraint = (constraintId: string) => {
-    erdStore.deleteConstraint(schemaId, tableId, constraintId);
+    deleteConstraintMutation.mutate(constraintId);
   };
 
   const changeConstraintName = (constraintId: string, newName: string) => {
-    erdStore.changeConstraintName(schemaId, tableId, constraintId, newName);
+    debouncedChangeConstraintName.mutate({
+      constraintId,
+      data: { newName },
+    });
   };
 
   const addColumnToConstraint = (constraintId: string, columnId: string) => {
     const constraint = constraints.find((c) => c.id === constraintId);
     if (constraint) {
-      erdStore.addColumnToConstraint(schemaId, tableId, constraintId, {
-        id: ulid(),
-        columnId,
-        seqNo: constraint.columns.length,
-        isAffected: false,
+      addColumnMutation.mutate({
+        constraintId,
+        data: {
+          columnId,
+          seqNo: constraint.columns.length,
+        },
       });
     }
   };
 
-  const removeColumnFromConstraint = (
-    constraintId: string,
-    constraintColumnId: string,
-  ) => {
-    erdStore.removeColumnFromConstraint(
-      schemaId,
-      tableId,
-      constraintId,
-      constraintColumnId,
-    );
+  const removeColumnFromConstraint = (constraintColumnId: string) => {
+    removeColumnMutation.mutate(constraintColumnId);
   };
 
   return {
