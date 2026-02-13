@@ -1,10 +1,13 @@
 package com.schemafy.core.common.security.hmac;
 
+import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
 
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilterChain;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HmacVerificationFilterTest {
@@ -297,6 +301,66 @@ class HmacVerificationFilterTest {
     String body = "{\"name\":\"test-table\"}";
     MockServerWebExchange exchange = createExchangeWithHmac("POST",
         "/api/v1.0/tables", body, "nonce-post-1");
+
+    StepVerifier.create(filter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("OPTIONS 요청은 HMAC 검증을 스킵한다")
+  void optionsRequestSkipsHmac() {
+    given(filterChain.filter(any())).willReturn(Mono.empty());
+
+    MockServerHttpRequest request = MockServerHttpRequest
+        .options("/api/v1.0/tables").build();
+    MockServerWebExchange exchange = MockServerWebExchange
+        .from(request);
+
+    StepVerifier.create(filter.filter(exchange, filterChain))
+        .verifyComplete();
+
+    verify(filterChain).filter(any());
+  }
+
+  @Test
+  @DisplayName("LOG_ONLY 모드에서 서명 검증 실패 시 POST body가 보존된다")
+  void logOnlyModePreservesBodyOnSignatureFailure() {
+    hmacProperties.setEnforcementMode(EnforcementMode.LOG_ONLY);
+    filter = new HmacVerificationFilter(hmacProperties, nonceCache,
+        errorWriter);
+
+    given(nonceCache.isDuplicate(anyString()))
+        .willReturn(Mono.just(false));
+
+    String body = "{\"name\":\"test-table\"}";
+
+    // filterChain에서 전달받은 exchange의 body를 검증
+    given(filterChain.filter(any())).willAnswer(invocation -> {
+      ServerWebExchange passedExchange = invocation.getArgument(0);
+      return DataBufferUtils
+          .join(passedExchange.getRequest().getBody())
+          .map(dataBuffer -> {
+            byte[] bytes = new byte[dataBuffer.readableByteCount()];
+            dataBuffer.read(bytes);
+            DataBufferUtils.release(dataBuffer);
+            String readBody = new String(bytes,
+                StandardCharsets.UTF_8);
+            assertThat(readBody).isEqualTo(body);
+            return readBody;
+          }).then();
+    });
+
+    String timestamp = currentTimestamp();
+    MockServerHttpRequest request = MockServerHttpRequest
+        .post("/api/v1.0/tables")
+        .header(HmacVerificationFilter.HEADER_SIGNATURE,
+            "invalid-signature")
+        .header(HmacVerificationFilter.HEADER_TIMESTAMP, timestamp)
+        .header(HmacVerificationFilter.HEADER_NONCE,
+            "nonce-logonly-body-1")
+        .body(body);
+    MockServerWebExchange exchange = MockServerWebExchange
+        .from(request);
 
     StepVerifier.create(filter.filter(exchange, filterChain))
         .verifyComplete();

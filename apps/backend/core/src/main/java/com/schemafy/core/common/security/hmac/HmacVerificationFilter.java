@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.stereotype.Component;
@@ -57,13 +58,17 @@ public class HmacVerificationFilter implements WebFilter {
       return chain.filter(exchange);
     }
 
-    String path = exchange.getRequest().getPath()
-        .pathWithinApplication().value();
+    ServerHttpRequest request = exchange.getRequest();
+
+    if (request.getMethod() == HttpMethod.OPTIONS) {
+      return chain.filter(exchange);
+    }
+
+    String path = request.getPath().pathWithinApplication().value();
     if (path.startsWith("/public/api/") || path.startsWith("/ws/")) {
       return chain.filter(exchange);
     }
 
-    ServerHttpRequest request = exchange.getRequest();
     String signature = request.getHeaders().getFirst(HEADER_SIGNATURE);
     String timestamp = request.getHeaders().getFirst(HEADER_TIMESTAMP);
     String nonce = request.getHeaders().getFirst(HEADER_NONCE);
@@ -111,13 +116,7 @@ public class HmacVerificationFilter implements WebFilter {
                   canonical);
               valid = HmacUtil.verifySignature(signature, fallback);
             }
-
-            if (!valid) {
-              return handleFailure(exchange, chain,
-                  ErrorCode.HMAC_SIGNATURE_INVALID);
-            }
-
-            // Body를 재읽기 가능하도록 래핑
+            
             ServerHttpRequest cachedRequest = new ServerHttpRequestDecorator(
                 request) {
 
@@ -135,6 +134,12 @@ public class HmacVerificationFilter implements WebFilter {
 
             ServerWebExchange mutated = exchange.mutate()
                 .request(cachedRequest).build();
+
+            if (!valid) {
+              return handleFailure(mutated, chain,
+                  ErrorCode.HMAC_SIGNATURE_INVALID);
+            }
+
             return chain.filter(mutated);
           });
     });
