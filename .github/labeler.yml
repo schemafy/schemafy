@@ -2,15 +2,16 @@ back-end:
   - changed-files:
       - any-glob-to-any-file:
           - "apps/backend/**"
-          - "apps/validation-server/**"
 
 front-end:
   - changed-files:
-      - any-glob-to-any-file: "apps/frontend/**"
+      - any-glob-to-any-file:
+          - "apps/frontend/**"
+          - "apps/bff/**"
 
 shared:
   - changed-files:
       - all-globs-to-any-file:
           - "!apps/backend/**"
-          - "!apps/validation-server/**"
           - "!apps/frontend/**"
+          - "!apps/bff/**"
