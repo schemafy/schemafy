@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: core
+  config:
+    activate:
+      on-profile: local
+
+  r2dbc:
+    url: 'r2dbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:schemafy}'
+    username: '${DB_USER:schemafy}'
+    password: '${DB_PASSWORD:schemafy}'
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+
+  sql:
+    init:
+      schema-locations: classpath:ddl/mariadb/**/*.sql
+      mode: always
+
+cache:
+  caffeine:
+    enabled: true
+    maximum-size: 10000
+    expire-after-write-minutes: 30
+    expire-after-access-minutes: 10
+  redis:
+    enabled: true
+    default-ttl-minutes: 30
+    key-prefix: 'cache::'
+
+jwt:
+  secret: my-super-secret-key-for-jwt-token-generation-min-256-bits-required
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+  issuer: schemafy-test
+  audience: schemafy-test-audience
+  cookie:
+    secure: false
+
+cors:
+  allowed-origins: http://localhost:3001
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      probes:
+        enabled: true
