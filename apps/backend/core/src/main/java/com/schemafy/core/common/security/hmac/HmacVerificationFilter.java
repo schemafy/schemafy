@@ -116,7 +116,7 @@ public class HmacVerificationFilter implements WebFilter {
                   canonical);
               valid = HmacUtil.verifySignature(signature, fallback);
             }
-            
+
             ServerHttpRequest cachedRequest = new ServerHttpRequestDecorator(
                 request) {
 
