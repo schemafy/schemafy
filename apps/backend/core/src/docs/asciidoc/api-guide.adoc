@@ -484,7 +484,7 @@ include::{snippets}/workspace-invitation-list-my/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/v1.0/workspaces/invitations/{invitationId}/accept
+PATCH /api/v1.0/workspaces/invitations/{invitationId}/accept
 ----
 
 [discrete]
@@ -515,7 +515,7 @@ include::{snippets}/workspace-invitation-accept/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/v1.0/workspaces/invitations/{invitationId}/reject
+PATCH /api/v1.0/workspaces/invitations/{invitationId}/reject
 ----
 
 [discrete]
@@ -899,7 +899,7 @@ include::{snippets}/project-invitation-list-my/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/v1.0/projects/invitations/{invitationId}/accept
+PATCH /api/v1.0/projects/invitations/{invitationId}/accept
 ----
 
 [discrete]
@@ -930,7 +930,7 @@ include::{snippets}/project-invitation-accept/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/v1.0/projects/invitations/{invitationId}/reject
+PATCH /api/v1.0/projects/invitations/{invitationId}/reject
 ----
 
 [discrete]

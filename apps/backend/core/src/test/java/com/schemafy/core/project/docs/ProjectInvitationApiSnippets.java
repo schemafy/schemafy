@@ -192,7 +192,7 @@ public class ProjectInvitationApiSnippets extends RestDocsSnippets {
     return createResponseHeadersSnippet(commonResponseHeaders());
   }
 
-  // ========== PUT /api/projects/invitations/{invitationId}/accept - 초대 수락 ==========
+  // ========== PATCH /api/projects/invitations/{invitationId}/accept - 초대 수락 ==========
 
   /** 초대 수락 요청 헤더 */
   public static Snippet acceptInvitationRequestHeaders() {
@@ -223,7 +223,7 @@ public class ProjectInvitationApiSnippets extends RestDocsSnippets {
     return createResponseHeadersSnippet(commonResponseHeaders());
   }
 
-  // ========== PUT /api/projects/invitations/{invitationId}/reject - 초대 거절 ==========
+  // ========== PATCH /api/projects/invitations/{invitationId}/reject - 초대 거절 ==========
 
   /** 초대 거절 요청 헤더 */
   public static Snippet rejectInvitationRequestHeaders() {
