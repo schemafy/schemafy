@@ -41,6 +41,7 @@ import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateExcept
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
 import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.vendor.domain.exception.DbVendorNotExistException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -60,7 +61,8 @@ public class GlobalExceptionHandler {
       Map.entry(RelationshipColumnNotExistException.class, ErrorCode.ERD_RELATIONSHIP_COLUMN_NOT_FOUND),
       Map.entry(RelationshipTargetTableNotExistException.class, ErrorCode.ERD_TABLE_NOT_FOUND),
       Map.entry(IndexNotExistException.class, ErrorCode.ERD_INDEX_NOT_FOUND),
-      Map.entry(IndexColumnNotExistException.class, ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND));
+      Map.entry(IndexColumnNotExistException.class, ErrorCode.ERD_INDEX_COLUMN_NOT_FOUND),
+      Map.entry(DbVendorNotExistException.class, ErrorCode.ERD_VENDOR_NOT_FOUND));
 
   private static final Set<Class<? extends DomainException>> INVALID_PARAMETER_EXCEPTIONS = Set.of(
       ColumnNameDuplicateException.class,

@@ -991,6 +991,69 @@ include::{snippets}/memo-comment-delete/response-fields.adoc[]
 
 ERD 관련 API입니다.
 
+=== Vendor API
+
+==== Vendor 목록 조회
+
+사용 가능한 DB 벤더 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/vendors
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/vendor-list/http-request.adoc[]
+include::{snippets}/vendor-list/request-headers.adoc[]
+include::{snippets}/vendor-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/vendor-list/response-headers.adoc[]
+include::{snippets}/vendor-list/response-body.adoc[]
+include::{snippets}/vendor-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/vendor-list/response-fields.adoc[]
+
+---
+
+==== Vendor 상세 조회
+
+DB 벤더의 상세 정보(데이터타입 매핑 포함)를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/vendors/{displayName}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/vendor-get/http-request.adoc[]
+include::{snippets}/vendor-get/request-headers.adoc[]
+include::{snippets}/vendor-get/path-parameters.adoc[]
+include::{snippets}/vendor-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/vendor-get/response-headers.adoc[]
+include::{snippets}/vendor-get/response-body.adoc[]
+include::{snippets}/vendor-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/vendor-get/response-fields.adoc[]
+
+---
+
 === Schema API
 
 ==== Schema 생성
