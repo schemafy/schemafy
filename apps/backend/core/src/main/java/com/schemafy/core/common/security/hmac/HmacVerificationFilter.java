@@ -59,7 +59,7 @@ public class HmacVerificationFilter implements WebFilter {
 
     String path = exchange.getRequest().getPath()
         .pathWithinApplication().value();
-    if (path.startsWith("/public/api/")) {
+    if (path.startsWith("/public/api/") || path.startsWith("/ws/")) {
       return chain.filter(exchange);
     }
 

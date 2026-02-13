@@ -201,6 +201,20 @@ class HmacVerificationFilterTest {
   }
 
   @Test
+  @DisplayName("WebSocket 핸드셰이크 경로는 HMAC 검증을 스킵한다")
+  void webSocketPathSkipsHmac() {
+    given(filterChain.filter(any())).willReturn(Mono.empty());
+
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/ws/collaboration?projectId=test-project-id").build();
+    MockServerWebExchange exchange = MockServerWebExchange
+        .from(request);
+
+    StepVerifier.create(filter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("enabled가 false이면 HMAC 검증을 전체 스킵한다")
   void disabledSkipsAll() {
     hmacProperties.setEnabled(false);
