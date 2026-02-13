@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { useChangeTableName, useDeleteTable } from './useTableMutations';
 
 interface UseTableProps {
@@ -24,9 +23,6 @@ export const useTable = ({ schemaId, tableId, tableName }: UseTableProps) => {
       {
         onSuccess: () => {
           setIsEditingTableName(false);
-        },
-        onError: () => {
-          toast.error('Failed to save table name');
         },
       },
     );
