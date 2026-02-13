@@ -28,8 +28,11 @@ import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaUseCase;
+import com.schemafy.domain.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
+import com.schemafy.domain.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 import com.schemafy.domain.erd.schema.domain.Schema;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -66,6 +69,9 @@ class SchemaControllerTest {
 
   @MockitoBean
   private GetSchemaUseCase getSchemaUseCase;
+
+  @MockitoBean
+  private GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
 
   @MockitoBean
   private ChangeSchemaNameUseCase changeSchemaNameUseCase;
@@ -176,6 +182,61 @@ class SchemaControllerTest {
                 fieldWithPath("result.name").description("스키마 이름"),
                 fieldWithPath("result.charset").description("문자셋"),
                 fieldWithPath("result.collation").description("콜레이션"))));
+  }
+
+  @Test
+  @DisplayName("프로젝트별 스키마 목록 조회 API 문서화")
+  void getSchemasByProjectId() throws Exception {
+    String projectId = "06D6VZBWHSDJBBG0H7D156YZ98";
+
+    Schema schema1 = new Schema(
+        "06D6W1GAHD51T5NJPK29Q6BCR8",
+        projectId,
+        "mariadb",
+        "test_schema_1",
+        "utf8mb4",
+        "utf8mb4_general_ci");
+
+    Schema schema2 = new Schema(
+        "06D6W1GAHD51T5NJPK29Q6BCR9",
+        projectId,
+        "mariadb",
+        "test_schema_2",
+        "utf8mb4",
+        "utf8mb4_general_ci");
+
+    given(getSchemasByProjectIdUseCase.getSchemasByProjectId(any(GetSchemasByProjectIdQuery.class)))
+        .willReturn(Flux.just(schema1, schema2));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/projects/{projectId}/schemas", projectId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .consumeWith(document("schema-list-by-project",
+            pathParameters(
+                parameterWithName("projectId")
+                    .description("프로젝트 ID")),
+            requestHeaders(
+                headerWithName("Accept")
+                    .description("응답 포맷 (application/json)")),
+            responseHeaders(
+                headerWithName("Content-Type")
+                    .description("응답 컨텐츠 타입")),
+            responseFields(
+                fieldWithPath("success").description("요청 성공 여부"),
+                fieldWithPath("result[]").description("스키마 목록"),
+                fieldWithPath("result[].id").description("스키마 ID"),
+                fieldWithPath("result[].projectId").description("프로젝트 ID"),
+                fieldWithPath("result[].dbVendorName").description("DB 벤더 이름"),
+                fieldWithPath("result[].name").description("스키마 이름"),
+                fieldWithPath("result[].charset").description("문자셋"),
+                fieldWithPath("result[].collation").description("콜레이션"),
+                fieldWithPath("error")
+                    .type(JsonFieldType.NULL)
+                    .description("에러 정보 (성공 시 null)").optional())));
   }
 
   @Test

@@ -1,5 +1,7 @@
 package com.schemafy.core.erd.controller;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +28,8 @@ import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaUseCase;
+import com.schemafy.domain.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
+import com.schemafy.domain.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -37,6 +41,7 @@ public class SchemaController {
 
   private final CreateSchemaUseCase createSchemaUseCase;
   private final GetSchemaUseCase getSchemaUseCase;
+  private final GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
   private final ChangeSchemaNameUseCase changeSchemaNameUseCase;
   private final DeleteSchemaUseCase deleteSchemaUseCase;
 
@@ -64,6 +69,17 @@ public class SchemaController {
     GetSchemaQuery query = new GetSchemaQuery(schemaId);
     return getSchemaUseCase.getSchema(query)
         .map(SchemaResponse::from)
+        .map(BaseResponse::success);
+  }
+
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/projects/{projectId}/schemas")
+  public Mono<BaseResponse<List<SchemaResponse>>> getSchemasByProjectId(
+      @PathVariable String projectId) {
+    GetSchemasByProjectIdQuery query = new GetSchemasByProjectIdQuery(projectId);
+    return getSchemasByProjectIdUseCase.getSchemasByProjectId(query)
+        .map(SchemaResponse::from)
+        .collectList()
         .map(BaseResponse::success);
   }
 

@@ -1118,6 +1118,37 @@ include::{snippets}/schema-delete/response-fields.adoc[]
 
 ---
 
+==== 프로젝트별 Schema 목록 조회
+
+프로젝트에 속한 스키마 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/projects/{projectId}/schemas
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-list-by-project/http-request.adoc[]
+include::{snippets}/schema-list-by-project/request-headers.adoc[]
+include::{snippets}/schema-list-by-project/path-parameters.adoc[]
+include::{snippets}/schema-list-by-project/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-list-by-project/response-headers.adoc[]
+include::{snippets}/schema-list-by-project/response-body.adoc[]
+include::{snippets}/schema-list-by-project/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-list-by-project/response-fields.adoc[]
+
+---
+
 === Table API
 
 ==== Table 생성
