@@ -7,7 +7,7 @@ import type {
   RelationshipColumn,
   Schema,
   Table,
-} from '@/types/erd.types';
+} from '@/types';
 
 export const detectIdentifyingCycleInSchema = (
   schema: Schema,

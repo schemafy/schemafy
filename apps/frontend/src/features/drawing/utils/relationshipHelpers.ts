@@ -1,7 +1,7 @@
 import type { Connection, Edge } from '@xyflow/react';
 import { ulid } from 'ulid';
 import { toast } from 'sonner';
-import type { Relationship, Schema } from '@/types/erd.types';
+import type { Relationship, Schema } from '@/types';
 import {
   RELATIONSHIP_TYPES,
   RELATIONSHIP_STYLE_TYPES,

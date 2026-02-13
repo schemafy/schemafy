@@ -4,8 +4,8 @@ import {
   SchemaNameNotUniqueError,
   DatabaseEmptySchemaError,
 } from '../errors';
-import { SCHEMA_NAME_CONSTRAINTS } from '@/types/erd.types';
-import type { Database, Schema } from '@/types/erd.types';
+import { SCHEMA_NAME_CONSTRAINTS } from '@/types';
+import type { Database, Schema } from '@/types';
 
 const isValidSchemaName = (name: string) => {
   return (

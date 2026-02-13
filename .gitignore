@@ -54,3 +54,6 @@ out/
 
 ### Cursor ###
 .cursor/
+
+### Antigravity ###
+.agent/

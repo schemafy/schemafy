@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Avatar } from '@/components';
 import { cn } from '@/lib';
-import type { MemoData } from '../../hooks/memo.helper';
+import type { MemoData } from '../hooks/memo.helper';
 import { MemoHoverPreview } from './MemoHoverPreview';
 import { MemoThread } from './MemoThread';
 

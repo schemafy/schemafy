@@ -4,7 +4,7 @@ import {
   TableNotExistError,
   TableNameNotInvalidError,
 } from '../errors';
-import type { Database, Schema, Table } from '@/types/erd.types';
+import type { Database, Schema, Table } from '@/types';
 import { relationshipHandlers } from './relationships';
 
 const isValidTableName = (name: string) =>

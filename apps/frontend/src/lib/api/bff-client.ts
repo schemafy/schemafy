@@ -1,6 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { authStore } from '../../store/auth.store';
-import { refreshToken } from './auth';
+import { refreshToken } from '@/features/auth/api';
 
 const BFF_API_BASE_URL: string =
   import.meta.env.VITE_BFF_URL || 'http://localhost:4000/api/v1.0';

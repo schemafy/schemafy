@@ -4,18 +4,17 @@ import type {
   CursorPosition,
   PostChat,
   PostCursor,
-  RecieveChat,
-  RecieveCursor,
-  RecieveLeave,
+  ReceiveChat,
+  ReceiveCursor,
+  ReceiveLeave,
   WebSocketMessage,
-} from '@/lib/api/collaboration/types';
+} from '@/features/collaboration/api';
 import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { authStore } from './auth.store';
 
 const SHARED_WORKER_ENABLE = typeof SharedWorker !== 'undefined';
 
 export class CollaborationStore {
-  private static instance: CollaborationStore;
   private worker: SharedWorker | Worker | null = null;
   private port: MessagePort | Worker | null = null;
 
@@ -286,7 +285,7 @@ export class CollaborationStore {
     }
   }
 
-  private handleChatMessage(message: RecieveChat) {
+  private handleChatMessage(message: ReceiveChat) {
     const chatMessage: ChatMessage = {
       messageId: message.messageId,
       userId: message.userId,
@@ -299,7 +298,7 @@ export class CollaborationStore {
     this.chatMessageListeners.forEach((listener) => listener(chatMessage));
   }
 
-  private handleCursorMessage(message: RecieveCursor) {
+  private handleCursorMessage(message: ReceiveCursor) {
     const cursorPosition: CursorPosition = {
       userId: message.userInfo.userId,
       userName: message.userInfo.userName,
@@ -312,7 +311,7 @@ export class CollaborationStore {
     });
   }
 
-  private handleLeaveMessage(message: RecieveLeave) {
+  private handleLeaveMessage(message: ReceiveLeave) {
     runInAction(() => {
       this.cursors.delete(message.userId);
     });

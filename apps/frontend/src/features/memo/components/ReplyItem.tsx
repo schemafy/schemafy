@@ -1,6 +1,6 @@
-import type { MemoComment } from '@/lib/api';
+import type { MemoComment } from '@/features/memo/api/types';
 import { Avatar } from '@/components';
-import { useMemoContext } from '../../hooks';
+import { useMemoContext } from '../hooks/useMemoStore';
 import { formatDate } from '@/lib';
 import { Pencil, Trash } from 'lucide-react';
 import { useState } from 'react';

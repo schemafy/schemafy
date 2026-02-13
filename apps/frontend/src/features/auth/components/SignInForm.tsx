@@ -3,7 +3,7 @@ import type { SignInFormValues, ValidationRules } from '../types';
 import { useFormState } from '../hooks';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signIn } from '@/lib/api';
+import { signIn } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
 
 const formFields = [

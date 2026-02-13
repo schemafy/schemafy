@@ -1,4 +1,4 @@
-import type { Point } from './index';
+import type { Point } from '@/features/drawing/types';
 
 // TODO: validator에 추가되면 erdStore로 마이그레이션
 export interface Memo {

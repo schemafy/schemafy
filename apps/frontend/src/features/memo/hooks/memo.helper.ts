@@ -1,5 +1,5 @@
 import { type Node } from '@xyflow/react';
-import type { Memo as ApiMemo } from '@/lib/api/memo';
+import type { Memo as ApiMemo } from '@/features/memo/api/types';
 import { z } from 'zod';
 
 export interface MemoData extends Record<string, unknown> {
