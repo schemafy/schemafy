@@ -48,6 +48,9 @@ jwt:
   cookie:
     secure: false
 
+hmac:
+  enabled: false
+
 cors:
   allowed-origins: http://localhost:3000
 
