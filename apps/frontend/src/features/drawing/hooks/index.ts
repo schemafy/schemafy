@@ -15,6 +15,7 @@ export * from './useCanvasController';
 export * from './useLocalStorage';
 export * from './useDebouncedMutation';
 export * from './query-keys';
+export * from './useSchemas';
 export * from './useSchemaSnapshots';
 export * from './useSchemaMutations';
 export * from './useTableMutations';

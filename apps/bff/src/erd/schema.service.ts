@@ -22,6 +22,19 @@ export class SchemaService {
     return response.data;
   }
 
+  async getSchemasByProjectId(
+    projectId: string,
+    authHeader: string,
+  ): Promise<ApiResponse<SchemaResponse[]>> {
+    const response = await this.backendClient.client.get<
+      ApiResponse<SchemaResponse[]>
+    >(
+      `/api/v1.0/projects/${projectId}/schemas`,
+      this.backendClient.getAuthConfig(authHeader),
+    );
+    return response.data;
+  }
+
   async getSchema(
     schemaId: string,
     authHeader: string,

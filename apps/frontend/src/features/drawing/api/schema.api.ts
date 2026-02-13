@@ -18,6 +18,18 @@ export const createSchema = async (
   return res.result;
 };
 
+export const getSchemasByProjectId = async (
+  projectId: string,
+): Promise<SchemaResponse[]> => {
+  const { data } = await bffClient.get<ApiResponse<SchemaResponse[]>>(
+    `/projects/${projectId}/schemas`,
+  );
+  if (!data.success || !data.result) {
+    throw data.error;
+  }
+  return data.result;
+};
+
 export const getSchema = async (schemaId: string): Promise<SchemaResponse> => {
   const { data } = await bffClient.get<ApiResponse<SchemaResponse>>(
     `/schemas/${schemaId}`,
