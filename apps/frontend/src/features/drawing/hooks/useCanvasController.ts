@@ -1,9 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useRelationships } from './useRelationships';
 import { useTables } from './useTables';
 import { useViewport } from './useViewport';
-import { useCanvasInitialization } from './useCanvasInitialization';
 import { useCanvasKeyboard } from './useCanvasKeyboard';
 import { useCanvasNodes } from './useCanvasNodes';
 import { useMemoContext } from '../../memo/hooks/useMemoStore';
@@ -31,7 +30,12 @@ export const useCanvasController = () => {
     null,
   );
 
-  useCanvasInitialization();
+  useEffect(() => {
+    collaborationStore.connect('06DS8JSJ7Y112MC87X0AB2CE8M');
+    return () => {
+      collaborationStore.disconnect();
+    };
+  }, []);
 
   useCanvasKeyboard({
     chatInputPosition,

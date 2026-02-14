@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { observer } from 'mobx-react-lite';
 import type { TableProps } from '../../types';
 import { ColumnRow } from '../Column';
 import { TableHeader } from '../TableHeader';
@@ -12,6 +11,7 @@ import {
   useColumns,
   useIndexes,
   useConstraints,
+  useChangeColumnPosition,
 } from '../../hooks';
 import { ErdStore } from '@/store/erd.store';
 import { ConnectionHandles } from './ConnectionHandles';
@@ -30,22 +30,21 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
     id,
   );
 
+  const changeColumnPositionMutation = useChangeColumnPosition(data.schemaId);
+
   const tableActions = useTable({
-    erdStore,
     schemaId: data.schemaId,
     tableId: id,
     tableName: data.tableName,
   });
 
   const columnActions = useColumns({
-    erdStore,
     schemaId: data.schemaId,
     tableId: id,
     columns,
   });
 
   const indexActions = useIndexes({
-    erdStore,
     schemaId: data.schemaId,
     tableId: id,
     tableName: data.tableName,
@@ -53,7 +52,6 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   });
 
   const constraintActions = useConstraints({
-    erdStore,
     schemaId: data.schemaId,
     tableId: id,
     tableName: data.tableName,
@@ -63,12 +61,10 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const dragAndDrop = useDragAndDrop({
     items: columns,
     onReorder: (_newColumns, draggedColumnId, newIndex) => {
-      erdStore.changeColumnPosition(
-        data.schemaId,
-        id,
-        draggedColumnId,
-        newIndex,
-      );
+      changeColumnPositionMutation.mutate({
+        columnId: draggedColumnId,
+        data: { seqNo: newIndex },
+      });
     },
   });
 
@@ -155,4 +151,4 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   );
 };
 
-export const TableNode = observer(TableNodeComponent);
+export const TableNode = TableNodeComponent;

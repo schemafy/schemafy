@@ -1,17 +1,26 @@
-import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
-import { ulid } from 'ulid';
 import { toast } from 'sonner';
-import { ErdStore } from '@/store/erd.store';
 import { Button } from '@/components';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { SchemaInput } from './SchemaInput';
 import { SchemaListItem } from './SchemaListItem';
-import { useSchemaEditor } from '../hooks';
+import {
+  useSchemaEditor,
+  useSchemas,
+  useCreateSchema,
+  useChangeSchemaName,
+  useDeleteSchema,
+} from '../hooks';
+import { useSelectedSchema } from '../contexts';
 import { validateSchemaName } from '../utils/validateSchemaName';
 
-export const SchemaSelector = observer(() => {
-  const erdStore = ErdStore.getInstance();
+export const SchemaSelector = () => {
+  const { selectedSchemaId, setSelectedSchemaId } = useSelectedSchema();
+  const { data: schemas, isLoading } = useSchemas('06DS8JSJ7Y112MC87X0AB2CE8M');
+  const createSchemaMutation = useCreateSchema(selectedSchemaId || undefined);
+  const changeSchemaNameMutation = useChangeSchemaName(selectedSchemaId || undefined);
+  const deleteSchemaMutation = useDeleteSchema(selectedSchemaId || undefined);
+
   const [isAdding, setIsAdding] = useState(false);
   const [newSchemaName, setNewSchemaName] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -23,51 +32,51 @@ export const SchemaSelector = observer(() => {
     cancelEdit,
   } = useSchemaEditor();
 
-  if (erdStore.erdState.state !== 'loaded') {
+  if (isLoading || !schemas) {
     return null;
   }
 
-  const { database } = erdStore.erdState;
-  const selectedSchemaId = erdStore.selectedSchemaId;
   const selectedSchemaName =
-    database.schemas.find((schema) => schema.id === selectedSchemaId)?.name ||
-    '';
+    schemas.find((schema) => schema.id === selectedSchemaId)?.name || '';
 
   const handleSchemaChange = (value: string) => {
-    erdStore.selectSchema(value);
+    setSelectedSchemaId(value);
   };
 
   const handleAddSchema = () => {
     const trimmedName = newSchemaName.trim();
-    const schemaId = ulid();
-    const firstSchema = database.schemas[0];
-    const defaultValues = {
-      projectId: firstSchema.projectId,
-      dbVendorId: firstSchema.dbVendorId,
-      charset: firstSchema.charset,
-      collation: firstSchema.collation,
-      vendorOption: firstSchema.vendorOption,
-    };
+    if (!validateSchemaName(trimmedName)) {
+      return;
+    }
 
-    const newSchema = {
-      id: schemaId,
-      name: trimmedName,
-      tables: [],
-      isAffected: false,
-      ...defaultValues,
-    };
-
-    erdStore.createSchema(newSchema);
-    erdStore.selectSchema(schemaId);
-
-    setNewSchemaName('');
-    setIsAdding(false);
+    const firstSchema = schemas[0];
+    createSchemaMutation.mutate(
+      {
+        projectId: firstSchema?.projectId || '06DS8JSJ7Y112MC87X0AB2CE8M',
+        dbVendorName: firstSchema?.dbVendorName || 'mysql',
+        name: trimmedName,
+        charset: firstSchema?.charset || 'utf8mb4',
+        collation: firstSchema?.collation || 'utf8mb4_general_ci',
+      },
+      {
+        onSuccess: (response) => {
+          if (response.data) {
+            setSelectedSchemaId(response.data.id);
+          }
+          setNewSchemaName('');
+          setIsAdding(false);
+        },
+      },
+    );
   };
 
   const handleSaveEdit = (schemaId: string) => {
     const trimmedName = editingSchemaName.trim();
     if (validateSchemaName(trimmedName)) {
-      erdStore.changeSchemaName(schemaId, trimmedName);
+      changeSchemaNameMutation.mutate({
+        schemaId,
+        data: { newName: trimmedName },
+      });
       cancelEdit();
     }
   };
@@ -78,18 +87,18 @@ export const SchemaSelector = observer(() => {
   };
 
   const handleDelete = (schemaId: string) => {
-    if (database.schemas.length <= 1) {
+    if (schemas.length <= 1) {
       toast.error('Cannot delete the last schema');
       return;
     }
 
     if (selectedSchemaId === schemaId) {
-      const otherSchema = database.schemas.find((s) => s.id !== schemaId);
+      const otherSchema = schemas.find((s) => s.id !== schemaId);
       if (otherSchema) {
-        erdStore.selectSchema(otherSchema.id);
+        setSelectedSchemaId(otherSchema.id);
       }
     }
-    erdStore.deleteSchema(schemaId);
+    deleteSchemaMutation.mutate(schemaId);
   };
 
   return (
@@ -121,7 +130,7 @@ export const SchemaSelector = observer(() => {
             : 'h-0 opacity-0 overflow-hidden'
         }`}
       >
-        {database.schemas.map((schema) => (
+        {schemas.map((schema) => (
           <SchemaListItem
             key={schema.id}
             schema={schema}
@@ -157,4 +166,4 @@ export const SchemaSelector = observer(() => {
       </div>
     </div>
   );
-});
+};
