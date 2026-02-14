@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS db_relationships (
     extra       JSON         NULL,
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version     BIGINT       NOT NULL DEFAULT 0,
     deleted_at  TIMESTAMP    NULL,
     CONSTRAINT pk_db_relationships PRIMARY KEY (id)
 );

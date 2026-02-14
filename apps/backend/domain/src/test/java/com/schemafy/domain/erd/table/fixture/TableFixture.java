@@ -37,6 +37,15 @@ public class TableFixture {
         DEFAULT_COLLATION);
   }
 
+  public static Table tableWithIdAndName(String id, String name) {
+    return new Table(
+        id,
+        DEFAULT_SCHEMA_ID,
+        name,
+        DEFAULT_CHARSET,
+        DEFAULT_COLLATION);
+  }
+
   public static Table tableWithName(String name) {
     return new Table(
         DEFAULT_ID,

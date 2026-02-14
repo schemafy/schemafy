@@ -2,6 +2,9 @@ package com.schemafy.domain.erd.column.application.service;
 
 import java.util.List;
 
+import org.springframework.transaction.reactive.TransactionalOperator;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -59,8 +62,17 @@ class CreateColumnServiceTest {
   @Mock
   GetColumnsByTableIdPort getColumnsByTableIdPort;
 
+  @Mock
+  TransactionalOperator transactionalOperator;
+
   @InjectMocks
   CreateColumnService sut;
+
+  @BeforeEach
+  void setUpTransaction() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("createColumn 메서드는")

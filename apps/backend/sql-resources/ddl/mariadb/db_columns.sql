@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS db_columns (
     comment        TEXT         NULL,
     created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    version        BIGINT       NOT NULL DEFAULT 0,
     deleted_at     TIMESTAMP    NULL,
-    CONSTRAINT pk_db_columns PRIMARY KEY (id)
+    CONSTRAINT pk_db_columns PRIMARY KEY (id),
+    CONSTRAINT uq_db_columns_table_name UNIQUE (table_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

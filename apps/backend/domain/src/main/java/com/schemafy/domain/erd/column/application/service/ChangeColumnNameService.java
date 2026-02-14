@@ -3,6 +3,7 @@ package com.schemafy.domain.erd.column.application.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameCommand;
@@ -33,6 +34,7 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<Void>> changeColumnName(ChangeColumnNameCommand command) {
@@ -40,7 +42,8 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
         .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
         .flatMap(column -> fetchTableSchemaAndColumns(column)
             .flatMap(tuple -> applyChange(column, tuple, command.newName()))
-            .thenReturn(MutationResult.<Void>of(null, column.tableId())));
+            .thenReturn(MutationResult.<Void>of(null, column.tableId())))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Tuple3<Table, Schema, List<Column>>> fetchTableSchemaAndColumns(Column column) {

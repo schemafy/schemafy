@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS db_schemas (
     collation       VARCHAR(64)  NULL,
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version         BIGINT       NOT NULL DEFAULT 0,
     deleted_at      TIMESTAMP    NULL,
     CONSTRAINT pk_db_schemas PRIMARY KEY (id)
 );

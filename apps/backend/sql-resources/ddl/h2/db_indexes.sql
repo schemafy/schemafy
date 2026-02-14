@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS db_indexes (
     type       VARCHAR(32)  NOT NULL,
     created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version    BIGINT       NOT NULL DEFAULT 0,
     deleted_at TIMESTAMP    NULL,
     CONSTRAINT pk_db_indexes PRIMARY KEY (id)
 );

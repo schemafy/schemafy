@@ -72,6 +72,10 @@ public enum ErrorCode {
       "메모 댓글을 찾을 수 없습니다."),
   ERD_SCHEMA_NAME_DUPLICATE(HttpStatus.CONFLICT, "E013", "스키마 이름이 중복됩니다."),
   ERD_TABLE_NAME_DUPLICATE(HttpStatus.CONFLICT, "E014", "테이블 이름이 중복됩니다."),
+  ERD_CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "E015",
+      "다른 사용자가 먼저 수정했습니다. 최신 상태를 확인해주세요."),
+  ERD_DATA_INTEGRITY_VIOLATION(HttpStatus.CONFLICT, "E016",
+      "데이터 무결성 제약조건 위반입니다."),
 
   // WORKSPACE
   WORKSPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "W001", "워크스페이스를 찾을 수 없습니다."),
