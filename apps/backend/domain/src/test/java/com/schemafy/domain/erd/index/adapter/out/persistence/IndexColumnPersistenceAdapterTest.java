@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.r2dbc.core.DatabaseClient;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -439,6 +441,54 @@ class IndexColumnPersistenceAdapterTest {
     void doesNotThrowWhenColumnIdNotExists() {
       StepVerifier.create(sut.deleteByColumnId("non-existent-column-id"))
           .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("동시성 및 무결성 제약")
+  class ConcurrencyAndIntegrity {
+
+    @BeforeEach
+    void setUpIndex() {
+      var index = IndexFixture.defaultIndex();
+      indexAdapter.createIndex(index).block();
+    }
+
+    @Test
+    @DisplayName("낙관적 락 충돌 시 예외가 발생한다")
+    void throwsWhenOptimisticLockConflict() {
+      var column = IndexFixture.indexColumn(
+          COLUMN_ID_1, INDEX_ID_1, TABLE_COLUMN_ID_1, 0, SortDirection.ASC);
+      sut.createIndexColumn(column).block();
+
+      var stale = indexColumnRepository.findById(COLUMN_ID_1).block();
+      var latest = indexColumnRepository.findById(COLUMN_ID_1).block();
+      assertThat(stale).isNotNull();
+      assertThat(latest).isNotNull();
+
+      latest.setSortDirection(SortDirection.DESC.name());
+      indexColumnRepository.save(latest).block();
+
+      stale.setSortDirection(SortDirection.ASC.name());
+      StepVerifier.create(indexColumnRepository.save(stale))
+          .expectError(OptimisticLockingFailureException.class)
+          .verify();
+    }
+
+    @Test
+    @DisplayName("중복 매핑 저장 시 유니크 제약 예외가 발생한다")
+    void throwsWhenDuplicateMapping() {
+      var column1 = IndexFixture.indexColumn(
+          COLUMN_ID_1, INDEX_ID_1, TABLE_COLUMN_ID_1, 0, SortDirection.ASC);
+      var duplicate = IndexFixture.indexColumn(
+          COLUMN_ID_2, INDEX_ID_1, TABLE_COLUMN_ID_1, 1, SortDirection.DESC);
+
+      sut.createIndexColumn(column1).block();
+
+      StepVerifier.create(sut.createIndexColumn(duplicate))
+          .expectError(DataIntegrityViolationException.class)
+          .verify();
     }
 
   }
