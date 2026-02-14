@@ -137,7 +137,17 @@ public enum ErrorCode {
       "토큰 해시가 유효하지 않습니다."),
   SHARE_LINK_INVALID_ROLE(HttpStatus.BAD_REQUEST, "S007", "권한이 유효하지 않습니다."),
   SHARE_LINK_INVALID_EXPIRATION(HttpStatus.BAD_REQUEST, "S008",
-      "만료 시간은 미래 시간이어야 합니다.");
+      "만료 시간은 미래 시간이어야 합니다."),
+
+  // HMAC
+  HMAC_SIGNATURE_MISSING(HttpStatus.UNAUTHORIZED, "H001",
+      "HMAC 서명이 누락되었습니다."),
+  HMAC_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "H002",
+      "HMAC 서명이 유효하지 않습니다."),
+  HMAC_TIMESTAMP_EXPIRED(HttpStatus.UNAUTHORIZED, "H003",
+      "HMAC 타임스탬프가 만료되었습니다."),
+  HMAC_NONCE_DUPLICATE(HttpStatus.UNAUTHORIZED, "H004",
+      "중복된 HMAC 논스입니다.");
 
   private final HttpStatus status;
   private final String code;

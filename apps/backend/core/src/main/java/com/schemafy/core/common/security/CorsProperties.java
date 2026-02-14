@@ -18,7 +18,8 @@ public class CorsProperties {
       "PATCH", "DELETE", "OPTIONS");
 
   private final List<String> allowedHeaders = List.of("Authorization",
-      "Content-Type", "X-Requested-With", "Accept");
+      "Content-Type", "X-Requested-With", "Accept",
+      "X-Hmac-Signature", "X-Hmac-Timestamp", "X-Hmac-Nonce");
 
   private final List<String> exposedHeaders = List.of("Authorization",
       "Content-Type");
