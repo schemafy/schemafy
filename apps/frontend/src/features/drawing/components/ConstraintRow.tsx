@@ -10,7 +10,7 @@ import {
   ColumnItem,
   AddColumnSelector,
 } from './EditableRowBase';
-import { getColumnName } from '../utils/columnHelpers';
+import { getColumnName } from '../utils/columnUtils';
 
 export const ConstraintRow = ({
   constraint,

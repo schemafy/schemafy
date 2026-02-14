@@ -13,22 +13,17 @@ import {
   useConstraints,
   useChangeColumnPosition,
 } from '../../hooks';
-import { ErdStore } from '@/store/erd.store';
 import { ConnectionHandles } from './ConnectionHandles';
 
 const TableNodeComponent = ({ data, id }: TableProps) => {
-  const erdStore = ErdStore.getInstance();
   const [isColumnEditMode, setIsColumnEditMode] = useState(false);
 
   const columns = data.columns || [];
   const indexes = data.indexes || [];
   const constraints = data.constraints || [];
 
-  const { updateColumn, saveAllPendingChanges } = useColumn(
-    erdStore,
-    data.schemaId,
-    id,
-  );
+  const { updateColumn, saveAllPendingChanges: saveColumnAllPendingChanges } =
+    useColumn(data.schemaId, id, data.tableName, constraints);
 
   const changeColumnPositionMutation = useChangeColumnPosition(data.schemaId);
 
@@ -74,7 +69,9 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   };
 
   const handleSaveAllPendingChanges = () => {
-    saveAllPendingChanges();
+    saveColumnAllPendingChanges();
+    indexActions.saveAllPendingChanges();
+    constraintActions.saveAllPendingChanges();
     setIsColumnEditMode(false);
   };
 

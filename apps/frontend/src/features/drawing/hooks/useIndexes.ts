@@ -90,6 +90,10 @@ export const useIndexes = ({
     });
   };
 
+  const saveAllPendingChanges = () => {
+    debouncedChangeIndexName.flush();
+  };
+
   return {
     createIndex,
     deleteIndex,
@@ -98,5 +102,6 @@ export const useIndexes = ({
     addColumnToIndex,
     removeColumnFromIndex,
     changeSortDir,
+    saveAllPendingChanges,
   };
 };

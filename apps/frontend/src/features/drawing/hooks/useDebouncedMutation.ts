@@ -23,8 +23,13 @@ export const useDebouncedMutation = <TData, TError, TVariables, TContext>(
     };
   }, []);
 
+  const flush = () => {
+    debouncedMutateRef.current.flush();
+  };
+
   return {
     ...mutation,
     mutate: debouncedMutateRef.current,
+    flush,
   };
 };

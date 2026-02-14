@@ -12,7 +12,7 @@ import {
 } from '../types';
 
 export const getRelationshipType = (cardinality: string): RelationshipType => {
-  return cardinality === '1:N' ? 'one-to-many' : 'one-to-one';
+  return cardinality === 'ONE_TO_MANY' ? 'one-to-many' : 'one-to-one';
 };
 
 export const getRelationshipStyle = (isNonIdentifying: boolean) => {

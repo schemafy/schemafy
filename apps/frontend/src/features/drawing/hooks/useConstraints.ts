@@ -80,11 +80,16 @@ export const useConstraints = ({
     removeColumnMutation.mutate(constraintColumnId);
   };
 
+  const saveAllPendingChanges = () => {
+    debouncedChangeConstraintName.flush();
+  };
+
   return {
     createConstraint,
     deleteConstraint,
     changeConstraintName,
     addColumnToConstraint,
     removeColumnFromConstraint,
+    saveAllPendingChanges,
   };
 };

@@ -37,3 +37,9 @@ export interface EditModeConstraintProps {
   onAddColumnToConstraint: (constraintId: string, columnId: string) => void;
   onRemoveColumnFromConstraint: (constraintColumnId: string) => void;
 }
+
+export const CONSTRAINT_PREFIX_MAP: Record<string, string> = {
+  PRIMARY_KEY: 'pk',
+  NOT_NULL: 'nn',
+  UNIQUE: 'uq',
+};

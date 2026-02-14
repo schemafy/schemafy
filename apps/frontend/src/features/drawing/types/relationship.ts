@@ -4,14 +4,14 @@ import type { Relationship } from '@/types';
 export const RELATIONSHIP_TYPES = {
   'one-to-one': {
     label: '1:1',
-    cardinality: '1:1',
+    cardinality: 'ONE_TO_ONE',
     style: { stroke: 'var(--color-schemafy-dark-gray)', strokeWidth: 2 },
     markerStart: 'erd-one-start',
     markerEnd: 'erd-one-end',
   },
   'one-to-many': {
     label: '1:N',
-    cardinality: '1:N',
+    cardinality: 'ONE_TO_MANY',
     style: { stroke: 'var(--color-schemafy-dark-gray)', strokeWidth: 2 },
     markerStart: 'erd-many-start',
     markerEnd: 'erd-one-end',

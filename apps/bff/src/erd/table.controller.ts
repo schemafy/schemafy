@@ -29,6 +29,14 @@ export class TableController {
     return this.tableService.createTable(data, authHeader);
   }
 
+  @Get('tables/snapshots')
+  async getTableSnapshots(
+    @Query('tableIds') tableIds: string[],
+    @Headers('authorization') authHeader: string,
+  ) {
+    return this.tableService.getTableSnapshots(tableIds, authHeader);
+  }
+
   @Get('tables/:tableId')
   async getTable(
     @Param('tableId') tableId: string,
@@ -51,14 +59,6 @@ export class TableController {
     @Headers('authorization') authHeader: string,
   ) {
     return this.tableService.getTableSnapshot(tableId, authHeader);
-  }
-
-  @Get('tables/snapshots')
-  async getTableSnapshots(
-    @Query('tableIds') tableIds: string[],
-    @Headers('authorization') authHeader: string,
-  ) {
-    return this.tableService.getTableSnapshots(tableIds, authHeader);
   }
 
   @Patch('tables/:tableId/name')

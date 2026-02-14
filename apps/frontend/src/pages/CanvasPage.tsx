@@ -182,7 +182,7 @@ const CanvasContent = observer(() => {
 });
 
 export const CanvasPage = () => {
-  const projectId = 'default-project';
+  const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
 
   return (
     <SelectedSchemaProvider projectId={projectId}>
