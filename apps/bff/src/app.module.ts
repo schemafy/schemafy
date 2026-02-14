@@ -6,6 +6,7 @@ import { CollaborationModule } from './collaboration/collaboration.module';
 import { ErdModule } from './erd/erd.module';
 import { HealthController } from './health/health.controller.js';
 import { MemoModule } from './memo/memo.module.js';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { MemoModule } from './memo/memo.module.js';
     CollaborationModule,
     ErdModule,
     MemoModule,
+    AuthModule,
   ],
   controllers: [HealthController],
 })
