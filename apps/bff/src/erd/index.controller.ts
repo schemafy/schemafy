@@ -3,12 +3,12 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   Patch,
   Post,
 } from '@nestjs/common';
 import { IndexService } from './index.service';
+import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
   AddIndexColumnRequest,
   ChangeIndexColumnPositionRequest,
@@ -25,7 +25,7 @@ export class IndexController {
   @Post('indexes')
   async createIndex(
     @Body() data: CreateIndexRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.createIndex(data, authHeader);
   }
@@ -33,7 +33,7 @@ export class IndexController {
   @Get('indexes/:indexId')
   async getIndex(
     @Param('indexId') indexId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.getIndex(indexId, authHeader);
   }
@@ -41,7 +41,7 @@ export class IndexController {
   @Get('tables/:tableId/indexes')
   async getIndexesByTableId(
     @Param('tableId') tableId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.getIndexesByTableId(tableId, authHeader);
   }
@@ -50,7 +50,7 @@ export class IndexController {
   async changeIndexName(
     @Param('indexId') indexId: string,
     @Body() data: ChangeIndexNameRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.changeIndexName(indexId, data, authHeader);
   }
@@ -59,7 +59,7 @@ export class IndexController {
   async changeIndexType(
     @Param('indexId') indexId: string,
     @Body() data: ChangeIndexTypeRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.changeIndexType(indexId, data, authHeader);
   }
@@ -67,7 +67,7 @@ export class IndexController {
   @Delete('indexes/:indexId')
   async deleteIndex(
     @Param('indexId') indexId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.deleteIndex(indexId, authHeader);
   }
@@ -75,7 +75,7 @@ export class IndexController {
   @Get('indexes/:indexId/columns')
   async getIndexColumns(
     @Param('indexId') indexId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.getIndexColumns(indexId, authHeader);
   }
@@ -84,7 +84,7 @@ export class IndexController {
   async addIndexColumn(
     @Param('indexId') indexId: string,
     @Body() data: AddIndexColumnRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.addIndexColumn(indexId, data, authHeader);
   }
@@ -92,7 +92,7 @@ export class IndexController {
   @Delete('index-columns/:indexColumnId')
   async removeIndexColumn(
     @Param('indexColumnId') indexColumnId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.removeIndexColumn(indexColumnId, authHeader);
   }
@@ -100,7 +100,7 @@ export class IndexController {
   @Get('index-columns/:indexColumnId')
   async getIndexColumn(
     @Param('indexColumnId') indexColumnId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.getIndexColumn(indexColumnId, authHeader);
   }
@@ -109,7 +109,7 @@ export class IndexController {
   async changeIndexColumnPosition(
     @Param('indexColumnId') indexColumnId: string,
     @Body() data: ChangeIndexColumnPositionRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.changeIndexColumnPosition(
       indexColumnId,
@@ -122,7 +122,7 @@ export class IndexController {
   async changeIndexColumnSortDirection(
     @Param('indexColumnId') indexColumnId: string,
     @Body() data: ChangeIndexColumnSortDirectionRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.indexService.changeIndexColumnSortDirection(
       indexColumnId,
