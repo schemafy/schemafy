@@ -10,17 +10,22 @@ export class AuthService {
   async getMyInfo(authHeader: string): Promise<ApiResponse<AuthResponse>> {
     const response = await this.backendClient.client.get<
       ApiResponse<AuthResponse>
-    >('/users', this.backendClient.getAuthConfig(authHeader));
+    >('/api/v1.0/users', this.backendClient.getAuthConfig(authHeader));
 
     return response.data;
   }
 
-  async logout(authHeader: string): Promise<ApiResponse<null>> {
+  async logout(
+    authHeader: string,
+  ): Promise<{ data: ApiResponse<null>; setCookies: string[] }> {
     const response = await this.backendClient.client.post<ApiResponse<null>>(
-      '/users/logout',
+      '/api/v1.0/users/logout',
+      {},
       this.backendClient.getAuthConfig(authHeader),
     );
 
-    return response.data;
+    const setCookies = response.headers['set-cookie'] ?? [];
+
+    return { data: response.data, setCookies };
   }
 }
