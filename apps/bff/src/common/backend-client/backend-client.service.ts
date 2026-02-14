@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 
-import { createHmacHeaders } from '../hmac/hmac.util.js';
+import { createHmacHeaders } from '../hmac/hmac.util';
 
 @Injectable()
 export class BackendClientService {
