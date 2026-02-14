@@ -15,3 +15,6 @@ CREATE TABLE IF NOT EXISTS db_tables (
 
 ALTER TABLE db_tables
     ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_db_tables_schema_name
+    ON db_tables (schema_id, name);
