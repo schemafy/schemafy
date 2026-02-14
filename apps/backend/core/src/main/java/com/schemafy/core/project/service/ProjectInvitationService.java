@@ -34,7 +34,6 @@ import reactor.util.retry.Retry;
 public class ProjectInvitationService {
 
   private static final Logger log = LoggerFactory.getLogger(ProjectInvitationService.class);
-  private static final int PROJECT_MAX_MEMBERS_COUNT = 30;
 
   private final TransactionalOperator transactionalOperator;
   private final InvitationRepository invitationRepository;
@@ -123,7 +122,6 @@ public class ProjectInvitationService {
 
               invitation.validateInvitedEmailMatches(user.getEmail());
               return checkNotAlreadyProjectMember(invitation.getProjectId(), currentUserId)
-                  .then(checkMemberLimit(invitation.getProjectId()))
                   .then(Mono.defer(() -> {
                     log.info("Accepting invitation: id={}, status={}", invitation.getId(), invitation.getStatus());
                     invitation.accept();
@@ -229,18 +227,6 @@ public class ProjectInvitationService {
           if (exists) {
             return Mono.error(new BusinessException(
                 ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
-          }
-          return Mono.empty();
-        });
-  }
-
-  private Mono<Void> checkMemberLimit(String projectId) {
-    return projectMemberRepository.countByProjectIdAndNotDeleted(projectId)
-        .flatMap(count -> {
-          if (count >= PROJECT_MAX_MEMBERS_COUNT) {
-            log.warn("Project member limit exceeded: projectId={}", projectId);
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED));
           }
           return Mono.empty();
         });

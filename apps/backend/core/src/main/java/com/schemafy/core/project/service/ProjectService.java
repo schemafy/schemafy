@@ -24,6 +24,7 @@ import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -395,6 +396,29 @@ public class ProjectService {
             .onErrorResume(DataIntegrityViolationException.class, e -> {
               log.warn("Duplicate key on auto-add user {} to project {}: {}",
                   wsMember.getUserId(), projectId, e.getMessage());
+              return Mono.empty();
+            }))
+        .then();
+  }
+
+  public Mono<Void> propagateToExistingProjects(
+      String workspaceId, String userId, WorkspaceRole workspaceRole) {
+    ProjectRole projectRole = workspaceRole.toProjectRole();
+
+    return projectRepository.findByWorkspaceIdAndNotDeleted(workspaceId)
+        .flatMap(project -> projectMemberRepository
+            .existsByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
+            .flatMap(exists -> {
+              if (exists) {
+                return Mono.empty();
+              }
+              ProjectMember newMember = ProjectMember.create(
+                  project.getId(), userId, projectRole);
+              return projectMemberRepository.save(newMember).then();
+            })
+            .onErrorResume(DataIntegrityViolationException.class, e -> {
+              log.warn("Duplicate key on auto-add user {} to project {}: {}",
+                  userId, project.getId(), e.getMessage());
               return Mono.empty();
             }))
         .then();

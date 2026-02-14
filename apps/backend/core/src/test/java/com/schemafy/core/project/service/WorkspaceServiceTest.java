@@ -1,7 +1,5 @@
 package com.schemafy.core.project.service;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -259,47 +257,6 @@ class WorkspaceServiceTest {
     }
 
     @Test
-    @DisplayName("멤버 30명 초과 시 추가 실패")
-    void addMember_LimitExceeded_Rejected() {
-      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
-      // 28명 추가 (현재 2명 + 28명 = 30명)
-      Flux.range(0, 28)
-          .flatMap(i -> User.signUp(
-              new UserInfo("extra" + i + "@test.com",
-                  "Extra " + i, "password"),
-              encoder)
-              .flatMap(userRepository::save)
-              .flatMap(user -> workspaceMemberRepository.save(
-                  WorkspaceMember.create(
-                      testWorkspace.getId(),
-                      user.getId(),
-                      WorkspaceRole.MEMBER))),
-              10)
-          .then()
-          .block();
-
-      Long count = workspaceMemberRepository
-          .countByWorkspaceIdAndNotDeleted(testWorkspace.getId())
-          .block();
-      assertThat(count).isEqualTo(30L);
-
-      User newUser = User.signUp(
-          new UserInfo("new@test.com", "New User", "password"),
-          encoder).flatMap(userRepository::save).block();
-
-      AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-          newUser.getEmail(), WorkspaceRole.MEMBER);
-
-      StepVerifier.create(workspaceService.addMember(
-          testWorkspace.getId(), request, adminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEED)
-          .verify();
-    }
-
-    @Test
     @DisplayName("일반 멤버 제거 성공")
     void removeMember_NormalMember_Success() {
       Mono<Void> result = workspaceService.removeMember(
@@ -383,66 +340,6 @@ class WorkspaceServiceTest {
           .findByUserIdAndNotDeleted(newUser.getId()).count()
           .block();
       assertThat(dbCount).isEqualTo(1L);
-    }
-
-    @Test
-    @DisplayName("멤버 수 한계 상황에서 동시 추가 시 제한 초과 방지 (Race Condition)")
-    void addMember_ConcurrentAtLimit_EnforcesLimit() {
-      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
-      // 27명 추가 (현재 2명 + 27명 = 29명)
-      Flux.range(0, 27)
-          .flatMap(i -> User.signUp(
-              new UserInfo("limit" + i + "@test.com",
-                  "Limit " + i, "password"),
-              encoder)
-              .flatMap(userRepository::save)
-              .flatMap(user -> workspaceMemberRepository.save(
-                  WorkspaceMember.create(
-                      testWorkspace.getId(),
-                      user.getId(),
-                      WorkspaceRole.MEMBER))),
-              10)
-          .then()
-          .block();
-
-      Long count = workspaceMemberRepository
-          .countByWorkspaceIdAndNotDeleted(testWorkspace.getId())
-          .block();
-      assertThat(count).isEqualTo(29L);
-
-      // 30명의 신규 유저를 동시에 추가 시도 (하나만 성공해야 함)
-      Flux<User> newUsers = Flux.range(0, 30)
-          .flatMap(i -> User.signUp(
-              new UserInfo("race" + i + "@test.com",
-                  "Race " + i, "password"),
-              encoder)
-              .flatMap(userRepository::save),
-              30);
-
-      List<User> userList = newUsers.collectList().block();
-
-      Flux<WorkspaceMemberResponse> concurrentAdds = Flux
-          .fromIterable(userList)
-          .flatMap(user -> {
-            AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-                user.getEmail(), WorkspaceRole.MEMBER);
-            return workspaceService.addMember(
-                testWorkspace.getId(), request,
-                adminUser.getId())
-                .onErrorResume(error -> Mono.empty());
-          }, 50);
-
-      Long successCount = concurrentAdds.count().block();
-
-      // 1개만 성공해야 함 (30명 제한)
-      assertThat(successCount).isEqualTo(1L);
-
-      // 최종 멤버 수가 30명을 초과하지 않아야 함
-      Long finalCount = workspaceMemberRepository
-          .countByWorkspaceIdAndNotDeleted(testWorkspace.getId())
-          .block();
-      assertThat(finalCount).isEqualTo(30L);
     }
 
     @Test

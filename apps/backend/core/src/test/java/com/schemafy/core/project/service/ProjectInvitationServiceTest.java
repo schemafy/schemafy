@@ -685,37 +685,6 @@ class ProjectInvitationServiceTest {
     }
 
     @Test
-    @DisplayName("프로젝트 멤버 수 제한(30명)에 도달하면 초대 수락에 실패한다")
-    void acceptInvitation_MemberLimitExceeded_Fails() {
-      for (int i = 0; i < 29; i++) {
-        User user = User.signUp(
-            new UserInfo("user" + i + "@test.com", "User " + i, "password"),
-            new BCryptPasswordEncoder()).flatMap(userRepository::save).block();
-        ProjectMember member = ProjectMember.create(
-            testProject.getId(), user.getId(), ProjectRole.VIEWER);
-        projectMemberRepository.save(member).block();
-      }
-
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUser.getId());
-      invitation = invitationRepository.save(invitation).block();
-
-      StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), workspaceMember.getId()))
-          .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode())
-                .isEqualTo(ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED);
-          })
-          .verify();
-    }
-
-    @Test
     @DisplayName("사용자가 존재하지 않으면 초대 수락에 실패한다")
     void acceptInvitation_UserNotFound_Fails() {
       Invitation invitation = Invitation.createProjectInvitation(

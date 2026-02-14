@@ -625,36 +625,6 @@ class WorkspaceInvitationServiceTest {
     }
 
     @Test
-    @DisplayName("멤버 수 제한(30명)에 도달하면 초대 수락에 실패한다")
-    void acceptInvitation_MemberLimitExceeded_Fails() {
-      for (int i = 0; i < 29; i++) {
-        User user = User.signUp(
-            new UserInfo("user" + i + "@test.com", "User " + i, "password"),
-            new BCryptPasswordEncoder()).flatMap(userRepository::save).block();
-        WorkspaceMember member = WorkspaceMember.create(
-            testWorkspace.getId(), user.getId(), WorkspaceRole.MEMBER);
-        memberRepository.save(member).block();
-      }
-
-      Invitation invitation = Invitation.createWorkspaceInvitation(
-          testWorkspace.getId(),
-          invitedUser.getEmail(),
-          WorkspaceRole.MEMBER,
-          adminUser.getId());
-      invitation = invitationRepository.save(invitation).block();
-
-      StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()))
-          .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode())
-                .isEqualTo(ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEED);
-          })
-          .verify();
-    }
-
-    @Test
     @DisplayName("사용자가 존재하지 않으면 초대 수락에 실패한다")
     void acceptInvitation_UserNotFound_Fails() {
       Invitation invitation = Invitation.createWorkspaceInvitation(

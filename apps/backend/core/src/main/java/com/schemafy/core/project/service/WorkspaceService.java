@@ -19,14 +19,11 @@ import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceSummaryResponse;
-import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
-import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -40,13 +37,12 @@ public class WorkspaceService {
 
   private static final Logger log = LoggerFactory
       .getLogger(WorkspaceService.class);
-  private static final int WORKSPACE_MAX_MEMBERS_COUNT = 30;
 
   private final TransactionalOperator transactionalOperator;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final ProjectRepository projectRepository;
-  private final ProjectMemberRepository projectMemberRepository;
+  private final ProjectService projectService;
   private final UserRepository userRepository;
 
   public Mono<WorkspaceResponse> createWorkspace(
@@ -167,28 +163,15 @@ public class WorkspaceService {
                         .findById(existing.getId());
                   });
             })
-            .switchIfEmpty(Mono.defer(() ->
-            // 신규 멤버 생성
-            workspaceMemberRepository
-                .countByWorkspaceIdAndNotDeleted(workspaceId)
-                .flatMap(memberCount -> {
-                  if (memberCount >= WORKSPACE_MAX_MEMBERS_COUNT) {
-                    log.warn(
-                        "Workspace member limit exceeded: workspaceId={}",
-                        workspaceId);
-                    return Mono.error(new BusinessException(
-                        ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEED));
-                  }
-
-                  WorkspaceMember newMember = WorkspaceMember
-                      .create(
-                          workspaceId,
-                          targetUser.getId(),
-                          request.role());
-                  return workspaceMemberRepository
-                      .save(newMember);
-                }))))
-        .flatMap(savedMember -> propagateToExistingProjects(
+            .switchIfEmpty(Mono.defer(() -> {
+              // 신규 멤버 생성
+              WorkspaceMember newMember = WorkspaceMember.create(
+                  workspaceId,
+                  targetUser.getId(),
+                  request.role());
+              return workspaceMemberRepository.save(newMember);
+            })))
+        .flatMap(savedMember -> projectService.propagateToExistingProjects(
             workspaceId,
             savedMember.getUserId(),
             savedMember.getRoleAsEnum())
@@ -348,29 +331,6 @@ public class WorkspaceService {
         .switchIfEmpty(Mono.error(
             new BusinessException(
                 ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)));
-  }
-
-  private Mono<Void> propagateToExistingProjects(
-      String workspaceId, String userId, WorkspaceRole workspaceRole) {
-    ProjectRole projectRole = workspaceRole.toProjectRole();
-
-    return projectRepository.findByWorkspaceIdAndNotDeleted(workspaceId)
-        .flatMap(project -> projectMemberRepository
-            .existsByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
-            .flatMap(exists -> {
-              if (exists) {
-                return Mono.empty();
-              }
-              ProjectMember newMember = ProjectMember.create(
-                  project.getId(), userId, projectRole);
-              return projectMemberRepository.save(newMember).then();
-            })
-            .onErrorResume(DataIntegrityViolationException.class, e -> {
-              log.warn("Duplicate key on auto-add user {} to project {}: {}",
-                  userId, project.getId(), e.getMessage());
-              return Mono.empty();
-            }))
-        .then();
   }
 
 }
