@@ -41,7 +41,8 @@ export const useCanvasController = () => {
   });
 
   const { handleMoveEnd } = useViewport();
-  const { tables, addTable, onTablesChange } = useTables();
+  const { tables, addTable, onTablesChange, onNodeDragStop, onNodesDelete } =
+    useTables();
   const { memos, onMemosChange, createMemo } = useMemoContext();
 
   const {
@@ -59,12 +60,15 @@ export const useCanvasController = () => {
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
-  const { nodes, handleNodesChange } = useCanvasNodes({
-    tables,
-    memos,
-    onTablesChange,
-    onMemosChange,
-  });
+  const { nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete } =
+    useCanvasNodes({
+      tables,
+      memos,
+      onTablesChange,
+      onMemosChange,
+      onTableDragStop: onNodeDragStop,
+      onTablesDelete: onNodesDelete,
+    });
 
   const handleMemoCancel = () => {
     setTempMemoPosition(null);
@@ -155,6 +159,8 @@ export const useCanvasController = () => {
     },
     handlers: {
       handleNodesChange,
+      handleNodeDragStop,
+      handleNodesDelete,
       onRelationshipsChange,
       handleMoveEnd,
       onConnect,

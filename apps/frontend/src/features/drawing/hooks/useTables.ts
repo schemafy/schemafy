@@ -1,98 +1,101 @@
 import { useState, useEffect } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
 import { toast } from 'sonner';
-import { ErdStore } from '@/store';
 import type { TableData, Point } from '../types';
-import { ulid } from 'ulid';
-import { transformTableToNode } from '../utils/tableHelpers';
+import { transformSnapshotToNode } from '../utils/tableHelpers';
 import { generateUniqueName } from '../utils/nameGenerator';
+import { useSelectedSchema } from '../contexts';
+import { useSchemaSnapshots } from './useSchemaSnapshots';
+import {
+  useCreateTable,
+  useChangeTableExtra,
+  useDeleteTable,
+} from './useTableMutations';
 
 export const useTables = () => {
-  const erdStore = ErdStore.getInstance();
+  const { selectedSchemaId } = useSelectedSchema();
+  const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId || '');
 
-  const getTablesFromStore = (): Node<TableData>[] => {
-    const selectedSchema = erdStore.selectedSchema;
+  const createTableMutation = useCreateTable(selectedSchemaId || '');
+  const changeTableExtraMutation = useChangeTableExtra(selectedSchemaId || '');
+  const deleteTableMutation = useDeleteTable(selectedSchemaId || '');
 
-    if (!selectedSchema) return [];
-
-    return selectedSchema.tables.map((table) =>
-      transformTableToNode(table, selectedSchema.id),
-    );
-  };
-
-  const [tables, setTables] = useState<Node<TableData>[]>(getTablesFromStore());
+  const [tables, setTables] = useState<Node<TableData>[]>([]);
 
   useEffect(() => {
-    setTables(getTablesFromStore());
-  }, [erdStore.erdState, erdStore.selectedSchemaId]);
+    if (!selectedSchemaId || !snapshotsData) {
+      setTables([]);
+      return;
+    }
+
+    const newTables = Object.values(snapshotsData).map((snapshot) =>
+      transformSnapshotToNode(snapshot, selectedSchemaId),
+    );
+    setTables(newTables);
+  }, [selectedSchemaId, snapshotsData]);
 
   const addTable = (position: Point) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
-
-    if (!selectedSchemaId || !selectedSchema) {
+    if (!selectedSchemaId || !snapshotsData) {
       toast.error('No schema selected');
       return;
     }
 
-    const existingTableNames = selectedSchema.tables.map((table) => table.name);
+    const existingTableNames = Object.values(snapshotsData).map(
+      (snapshot) => snapshot.table.name,
+    );
 
-    erdStore.createTable(selectedSchemaId, {
-      id: ulid(),
-      name: generateUniqueName(existingTableNames, 'Table'),
-      columns: [],
-      indexes: [],
-      constraints: [],
-      relationships: [],
-      tableOptions: '',
-      extra: { position },
-      isAffected: false,
+    const newTableName = generateUniqueName(existingTableNames, 'Table');
+
+    createTableMutation.mutate(
+      {
+        schemaId: selectedSchemaId,
+        name: newTableName,
+        charset: '',
+        collation: '',
+      },
+      {
+        onSuccess: (result) => {
+          if (result.data) {
+            changeTableExtraMutation.mutate({
+              tableId: result.data.id,
+              data: {
+                extra: JSON.stringify({ position }),
+              },
+            });
+          }
+        },
+      },
+    );
+  };
+
+  const onNodeDragStop = (_event: React.MouseEvent, node: Node<TableData>) => {
+    if (!snapshotsData) return;
+
+    const snapshot = snapshotsData[node.id];
+    if (!snapshot) return;
+
+    const currentExtra = snapshot.table.extra
+      ? JSON.parse(snapshot.table.extra)
+      : {};
+
+    changeTableExtraMutation.mutate({
+      tableId: node.id,
+      data: {
+        extra: JSON.stringify({
+          ...currentExtra,
+          position: node.position,
+        }),
+      },
     });
   };
 
-  const handlePositionChanges = (
-    changes: NodeChange[],
-    nodes: Node<TableData>[],
-  ) => {
-    changes
-      .filter(
-        (change) =>
-          change.type === 'position' &&
-          change.dragging === false &&
-          change.position,
-      )
-      .forEach((change) => {
-        if (change.type !== 'position' || !change.position) return;
-
-        const table = nodes.find((t) => t.id === change.id);
-        if (!table) return;
-
-        erdStore.updateTableExtra(table.data.schemaId, change.id, {
-          position: change.position,
-        });
-      });
-  };
-
-  const handleRemoveChanges = (
-    changes: NodeChange[],
-    nodes: Node<TableData>[],
-  ) => {
-    changes
-      .filter((change) => change.type === 'remove')
-      .forEach((change) => {
-        const table = nodes.find((t) => t.id === change.id);
-        if (table?.data.schemaId) {
-          erdStore.deleteTable(table.data.schemaId, change.id);
-        }
-      });
-  };
-
   const onTablesChange = (changes: NodeChange[]) => {
-    setTables((nds) => {
-      const updatedTables = applyNodeChanges(changes, nds) as Node<TableData>[];
-      handlePositionChanges(changes, nds);
-      handleRemoveChanges(changes, nds);
-      return updatedTables;
+    setTables((nds) => applyNodeChanges(changes, nds) as Node<TableData>[]);
+  };
+
+  const onNodesDelete = (deletedNodes: Node<TableData>[]) => {
+    deletedNodes.forEach((node) => {
+      deleteTableMutation.mutate(node.id);
     });
   };
 
@@ -100,5 +103,7 @@ export const useTables = () => {
     tables,
     addTable,
     onTablesChange,
+    onNodeDragStop,
+    onNodesDelete,
   };
 };

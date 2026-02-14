@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import type { NodeChange } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import type { TableData } from '../types';
@@ -9,6 +9,10 @@ interface UseCanvasNodesParams {
   memos: Node<MemoData>[];
   onTablesChange: (changes: NodeChange[]) => void;
   onMemosChange: (changes: NodeChange[]) => void;
+  onTableDragStop?: (event: React.MouseEvent, node: Node<TableData>) => void;
+  onMemoDragStop?: (event: React.MouseEvent, node: Node<MemoData>) => void;
+  onTablesDelete?: (nodes: Node<TableData>[]) => void;
+  onMemosDelete?: (nodes: Node<MemoData>[]) => void;
 }
 
 export const useCanvasNodes = ({
@@ -16,6 +20,10 @@ export const useCanvasNodes = ({
   memos,
   onTablesChange,
   onMemosChange,
+  onTableDragStop,
+  onMemoDragStop,
+  onTablesDelete,
+  onMemosDelete,
 }: UseCanvasNodesParams) => {
   const nodes = useMemo(() => [...tables, ...memos], [tables, memos]);
 
@@ -48,5 +56,40 @@ export const useCanvasNodes = ({
     [tables, memos, onTablesChange, onMemosChange],
   );
 
-  return { nodes, handleNodesChange };
+  const handleNodeDragStop = (event: React.MouseEvent, node: Node) => {
+    const isTable = tables.some((t) => t.id === node.id);
+    const isMemo = memos.some((m) => m.id === node.id);
+
+    if (isTable && onTableDragStop) {
+      onTableDragStop(event, node as Node<TableData>);
+    } else if (isMemo && onMemoDragStop) {
+      onMemoDragStop(event, node as Node<MemoData>);
+    }
+  };
+
+  const handleNodesDelete = (deletedNodes: Node[]) => {
+    const tableNodes: Node<TableData>[] = [];
+    const memoNodes: Node<MemoData>[] = [];
+
+    deletedNodes.forEach((node) => {
+      const isTable = tables.some((t) => t.id === node.id);
+      const isMemo = memos.some((m) => m.id === node.id);
+
+      if (isTable) {
+        tableNodes.push(node as Node<TableData>);
+      } else if (isMemo) {
+        memoNodes.push(node as Node<MemoData>);
+      }
+    });
+
+    if (tableNodes.length > 0 && onTablesDelete) {
+      onTablesDelete(tableNodes);
+    }
+
+    if (memoNodes.length > 0 && onMemosDelete) {
+      onMemosDelete(memoNodes);
+    }
+  };
+
+  return { nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete };
 };

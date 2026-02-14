@@ -20,6 +20,7 @@ import {
   SchemaSelector,
   TempMemoPreview,
   useCanvasController,
+  SelectedSchemaProvider,
 } from '@/features/drawing';
 import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
@@ -48,6 +49,8 @@ const CanvasContent = observer(() => {
     data: { nodes, relationships },
     handlers: {
       handleNodesChange,
+      handleNodeDragStop,
+      handleNodesDelete,
       onRelationshipsChange,
       handleMoveEnd,
       onConnect,
@@ -93,6 +96,8 @@ const CanvasContent = observer(() => {
               nodes={nodes}
               edges={relationships}
               onNodesChange={handleNodesChange}
+              onNodeDragStop={handleNodeDragStop}
+              onNodesDelete={handleNodesDelete}
               onEdgesChange={onRelationshipsChange}
               onPaneClick={handlePaneClick}
               onPaneMouseMove={handleMouseMove}
@@ -177,9 +182,13 @@ const CanvasContent = observer(() => {
 });
 
 export const CanvasPage = () => {
+  const projectId = 'default-project';
+
   return (
-    <MemoProvider>
-      <CanvasContent />
-    </MemoProvider>
+    <SelectedSchemaProvider projectId={projectId}>
+      <MemoProvider>
+        <CanvasContent />
+      </MemoProvider>
+    </SelectedSchemaProvider>
   );
 };

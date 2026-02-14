@@ -30,6 +30,7 @@ export type TableResponse = {
   name: string;
   charset: string;
   collation: string;
+  extra: string | null;
 };
 
 export type CreateTableRequest = {

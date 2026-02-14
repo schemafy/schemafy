@@ -1,62 +1,103 @@
 import type { Node } from '@xyflow/react';
-import type { Table, Column, Constraint } from '@/types';
+import type { Constraint } from '@/types';
 import type { TableData, ColumnType, ConstraintKind, Point } from '../types';
+import type { TableSnapshotResponse } from '../api';
 
 type TableExtra = {
   position?: Point;
 };
 
-export const hasConstraint = (
-  constraints: Constraint[],
-  columnId: string,
-  kind: ConstraintKind,
-): boolean => {
-  const checkSingleColumn = kind !== 'PRIMARY_KEY';
-
-  return constraints.some((c) => {
-    if (c.kind !== kind) return false;
-    if (checkSingleColumn && c.columns.length !== 1) return false;
-    return c.columns.some((cc) => cc.columnId === columnId);
-  });
+type ConstraintMap = {
+  primaryKeys: Set<string>;
+  notNulls: Set<string>;
+  uniques: Set<string>;
 };
 
-export const transformColumn = (
-  col: Column,
-  constraints: Constraint[],
+const buildConstraintMap = (constraints: Constraint[]): ConstraintMap => {
+  const map: ConstraintMap = {
+    primaryKeys: new Set(),
+    notNulls: new Set(),
+    uniques: new Set(),
+  };
+
+  constraints.forEach((constraint) => {
+    const columnIds = constraint.columns.map((c) => c.columnId);
+
+    switch (constraint.kind) {
+      case 'PRIMARY_KEY':
+        columnIds.forEach((id) => map.primaryKeys.add(id));
+        break;
+      case 'NOT_NULL':
+        if (columnIds.length === 1) {
+          map.notNulls.add(columnIds[0]);
+        }
+        break;
+      case 'UNIQUE':
+        if (columnIds.length === 1) {
+          map.uniques.add(columnIds[0]);
+        }
+        break;
+    }
+  });
+
+  return map;
+};
+
+const transformColumnWithMap = (
+  columnId: string,
+  columnName: string,
+  dataType: string,
+  constraintMap: ConstraintMap,
 ): ColumnType => {
-  const isPrimaryKey = hasConstraint(constraints, col.id, 'PRIMARY_KEY');
-  const isNotNull = hasConstraint(constraints, col.id, 'NOT_NULL');
-  const isUnique = isPrimaryKey || hasConstraint(constraints, col.id, 'UNIQUE');
+  const isPrimaryKey = constraintMap.primaryKeys.has(columnId);
+  const isNotNull = constraintMap.notNulls.has(columnId);
+  const isUnique = isPrimaryKey || constraintMap.uniques.has(columnId);
 
   return {
-    id: col.id,
-    name: col.name,
-    type: col.dataType || 'VARCHAR',
+    id: columnId,
+    name: columnName,
+    type: dataType || 'VARCHAR',
     isPrimaryKey,
     isNotNull,
     isUnique,
   };
 };
 
-export const transformTableToNode = (
-  table: Table,
+export const transformSnapshotToNode = (
+  snapshot: TableSnapshotResponse,
   schemaId: string,
 ): Node<TableData> => {
-  const extra = (table.extra || {}) as TableExtra;
+  let extra: TableExtra = {};
+  if (snapshot.table.extra) {
+    try {
+      extra = JSON.parse(snapshot.table.extra) as TableExtra;
+    } catch {
+      extra = {};
+    }
+  }
   const position = extra.position || { x: 0, y: 0 };
-  const columns = table.columns.map((col) =>
-    transformColumn(col, table.constraints),
+
+  const constraints: Constraint[] = snapshot.constraints.map((c) => ({
+    ...c.constraint,
+    kind: c.constraint.kind as ConstraintKind,
+    columns: c.columns.map((col) => ({ ...col, isAffected: false })),
+    isAffected: false,
+  }));
+
+  const constraintMap = buildConstraintMap(constraints);
+  const columns = snapshot.columns.map((col) =>
+    transformColumnWithMap(col.id, col.name, col.dataType, constraintMap),
   );
 
   return {
-    id: table.id,
+    id: snapshot.table.id,
     type: 'table',
     position,
     data: {
-      tableName: table.name,
+      tableName: snapshot.table.name,
       columns,
-      indexes: table.indexes || [],
-      constraints: table.constraints || [],
+      indexes: [],
+      constraints,
       schemaId,
     },
   };
