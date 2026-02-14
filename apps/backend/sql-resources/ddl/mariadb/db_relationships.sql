@@ -12,3 +12,6 @@ CREATE TABLE IF NOT EXISTS db_relationships (
     deleted_at  TIMESTAMP    NULL,
     CONSTRAINT pk_db_relationships PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE db_relationships
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;

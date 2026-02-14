@@ -16,3 +16,6 @@ CREATE TABLE IF NOT EXISTS db_columns (
     CONSTRAINT pk_db_columns PRIMARY KEY (id),
     CONSTRAINT uq_db_columns_table_name UNIQUE (table_id, name)
 );
+
+ALTER TABLE db_columns
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;

@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS db_constraints (
     CONSTRAINT pk_db_constraints PRIMARY KEY (id)
 );
 
+ALTER TABLE db_constraints
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;

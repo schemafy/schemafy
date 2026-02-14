@@ -13,3 +13,5 @@ CREATE TABLE IF NOT EXISTS db_tables (
     CONSTRAINT uq_db_tables_schema_name UNIQUE (schema_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE db_tables
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;

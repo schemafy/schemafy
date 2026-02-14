@@ -13,3 +13,5 @@ CREATE TABLE IF NOT EXISTS db_tables (
     CONSTRAINT uq_db_tables_schema_name UNIQUE (schema_id, name)
 );
 
+ALTER TABLE db_tables
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;

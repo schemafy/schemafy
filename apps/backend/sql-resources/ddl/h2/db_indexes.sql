@@ -9,3 +9,6 @@ CREATE TABLE IF NOT EXISTS db_indexes (
     deleted_at TIMESTAMP    NULL,
     CONSTRAINT pk_db_indexes PRIMARY KEY (id)
 );
+
+ALTER TABLE db_indexes
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;

@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS db_schemas (
     CONSTRAINT pk_db_schemas PRIMARY KEY (id)
 );
 
+ALTER TABLE db_schemas
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
