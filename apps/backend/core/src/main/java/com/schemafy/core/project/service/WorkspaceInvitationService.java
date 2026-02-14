@@ -1,5 +1,6 @@
 package com.schemafy.core.project.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -14,12 +15,17 @@ import com.schemafy.core.project.controller.dto.request.CreateWorkspaceInvitatio
 import com.schemafy.core.project.controller.dto.response.WorkspaceInvitationResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.repository.InvitationRepository;
+import com.schemafy.core.project.repository.ProjectMemberRepository;
+import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Invitation;
+import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationType;
+import com.schemafy.core.project.repository.vo.ProjectRole;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -39,6 +45,8 @@ public class WorkspaceInvitationService {
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository memberRepository;
   private final UserRepository userRepository;
+  private final ProjectRepository projectRepository;
+  private final ProjectMemberRepository projectMemberRepository;
 
   public Mono<Invitation> createInvitation(
       String workspaceId,
@@ -125,6 +133,11 @@ public class WorkspaceInvitationService {
 
                     return invitationRepository.save(invitation)
                         .then(memberRepository.save(member))
+                        .flatMap(savedMember -> propagateToExistingProjects(
+                            invitation.getWorkspaceId(),
+                            currentUserId,
+                            invitation.getWorkspaceRole())
+                            .then(Mono.just(savedMember)))
                         .flatMap(this::buildMemberResponse);
                   }));
             }))
@@ -248,6 +261,29 @@ public class WorkspaceInvitationService {
       WorkspaceMember member) {
     return userRepository.findById(member.getUserId())
         .map(user -> WorkspaceMemberResponse.of(member, user));
+  }
+
+  private Mono<Void> propagateToExistingProjects(
+      String workspaceId, String userId, WorkspaceRole workspaceRole) {
+    ProjectRole projectRole = workspaceRole.toProjectRole();
+
+    return projectRepository.findByWorkspaceIdAndNotDeleted(workspaceId)
+        .flatMap(project -> projectMemberRepository
+            .existsByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
+            .flatMap(exists -> {
+              if (exists) {
+                return Mono.empty();
+              }
+              ProjectMember newMember = ProjectMember.create(
+                  project.getId(), userId, projectRole);
+              return projectMemberRepository.save(newMember).then();
+            })
+            .onErrorResume(DataIntegrityViolationException.class, e -> {
+              log.warn("Duplicate key on auto-add user {} to project {}: {}",
+                  userId, project.getId(), e.getMessage());
+              return Mono.empty();
+            }))
+        .then();
   }
 
 }

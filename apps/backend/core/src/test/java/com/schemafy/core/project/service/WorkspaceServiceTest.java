@@ -20,10 +20,16 @@ import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
+import com.schemafy.core.project.repository.ProjectMemberRepository;
+import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Project;
+import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.ProjectRole;
+import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -53,6 +59,12 @@ class WorkspaceServiceTest {
   @Autowired
   private UserRepository userRepository;
 
+  @Autowired
+  private ProjectRepository projectRepository;
+
+  @Autowired
+  private ProjectMemberRepository projectMemberRepository;
+
   private User adminUser;
   private User memberUser;
   private User outsiderUser;
@@ -63,6 +75,8 @@ class WorkspaceServiceTest {
   @BeforeEach
   void setUp() {
     Mono.when(
+        projectMemberRepository.deleteAll(),
+        projectRepository.deleteAll(),
         workspaceMemberRepository.deleteAll(),
         workspaceRepository.deleteAll(),
         userRepository.deleteAll()).block();
@@ -482,6 +496,53 @@ class WorkspaceServiceTest {
               testWorkspace.getId(), newUser.getId())
           .block();
       assertThat(existsAfterReadd).isTrue();
+    }
+
+    @Test
+    @DisplayName("멤버 직접 추가 시 기존 프로젝트에 VIEWER로 자동 추가된다")
+    void addMember_PropagatesAsViewerToExistingProjects() {
+      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc", ProjectSettings
+          .defaultSettings());
+      project = projectRepository.save(project).block();
+
+      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+      User newUser = User.signUp(
+          new UserInfo("newmember@test.com", "New Member", "password"),
+          encoder).flatMap(userRepository::save).block();
+
+      AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
+          newUser.getEmail(), WorkspaceRole.MEMBER);
+
+      workspaceService.addMember(testWorkspace.getId(), request, adminUser.getId()).block();
+
+      // 프로젝트에 VIEWER로 추가되었는지 확인
+      ProjectMember pm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), newUser.getId()).block();
+      assertThat(pm).isNotNull();
+      assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+    }
+
+    @Test
+    @DisplayName("ADMIN으로 직접 추가 시 기존 프로젝트에 ADMIN으로 자동 추가된다")
+    void addMember_Admin_PropagatesAsAdminToExistingProjects() {
+      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc", ProjectSettings
+          .defaultSettings());
+      project = projectRepository.save(project).block();
+
+      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+      User newUser = User.signUp(
+          new UserInfo("newadmin@test.com", "New Admin", "password"),
+          encoder).flatMap(userRepository::save).block();
+
+      AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
+          newUser.getEmail(), WorkspaceRole.ADMIN);
+
+      workspaceService.addMember(testWorkspace.getId(), request, adminUser.getId()).block();
+
+      ProjectMember pm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), newUser.getId()).block();
+      assertThat(pm).isNotNull();
+      assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
     }
 
   }

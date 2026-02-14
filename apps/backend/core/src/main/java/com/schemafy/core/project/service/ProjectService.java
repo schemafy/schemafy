@@ -1,7 +1,11 @@
 package com.schemafy.core.project.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
@@ -30,6 +34,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ProjectService {
 
+  private static final Logger log = LoggerFactory.getLogger(ProjectService.class);
+
   private final TransactionalOperator transactionalOperator;
   private final ProjectRepository projectRepository;
   private final ProjectMemberRepository projectMemberRepository;
@@ -52,6 +58,9 @@ public class ProjectService {
           return projectRepository.save(project)
               .flatMap(savedProject -> projectMemberRepository
                   .save(adminMember)
+                  .thenReturn(savedProject))
+              .flatMap(savedProject -> propagateWorkspaceMembersToProject(
+                  savedProject.getId(), workspaceId, userId)
                   .thenReturn(savedProject))
               .flatMap(savedProject -> buildProjectResponse(
                   savedProject, userId));
@@ -185,8 +194,16 @@ public class ProjectService {
           validateRoleChangePermission(requester, target,
               request.role());
 
-          target.updateRole(request.role());
-          return projectMemberRepository.save(target);
+          // 마지막 ADMIN 강등 방지
+          Mono<Void> adminGuard = Mono.empty();
+          if (target.isAdmin() && request.role() != ProjectRole.ADMIN) {
+            adminGuard = validateAdminProtection(projectId);
+          }
+
+          return adminGuard.then(Mono.defer(() -> {
+            target.updateRole(request.role());
+            return projectMemberRepository.save(target);
+          }));
         })
         .flatMap(updatedMember -> userRepository
             .findById(updatedMember.getUserId())
@@ -358,6 +375,29 @@ public class ProjectService {
     if (json.length() > 65536) {
       throw new BusinessException(ErrorCode.PROJECT_SETTINGS_TOO_LARGE);
     }
+  }
+
+  private Mono<Void> propagateWorkspaceMembersToProject(
+      String projectId, String workspaceId, String creatorUserId) {
+    return workspaceMemberRepository.findAllByWorkspaceIdAndNotDeleted(workspaceId)
+        .filter(wsMember -> !wsMember.getUserId().equals(creatorUserId))
+        .flatMap(wsMember -> projectMemberRepository
+            .existsByProjectIdAndUserIdAndNotDeleted(projectId, wsMember.getUserId())
+            .flatMap(exists -> {
+              if (exists) {
+                return Mono.empty();
+              }
+              ProjectRole projectRole = wsMember.getRoleAsEnum().toProjectRole();
+              ProjectMember newMember = ProjectMember.create(
+                  projectId, wsMember.getUserId(), projectRole);
+              return projectMemberRepository.save(newMember).then();
+            })
+            .onErrorResume(DataIntegrityViolationException.class, e -> {
+              log.warn("Duplicate key on auto-add user {} to project {}: {}",
+                  wsMember.getUserId(), projectId, e.getMessage());
+              return Mono.empty();
+            }))
+        .then();
   }
 
 }

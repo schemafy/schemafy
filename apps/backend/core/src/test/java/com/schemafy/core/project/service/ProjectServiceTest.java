@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.core.project.repository.*;
@@ -232,6 +233,42 @@ class ProjectServiceTest {
           .verify();
     }
 
+    @Test
+    @DisplayName("마지막 ADMIN을 다른 역할로 강등 시도 시 방지된다")
+    void demoteLastAdmin_prevented() {
+      // adminMember와 viewerMember 제거하여 ownerUser만 ADMIN으로 남김
+      projectMemberRepository.deleteById(adminMember.getId()).block();
+      projectMemberRepository.deleteById(viewerMember.getId()).block();
+
+      // 새 ADMIN 추가 (요청자 역할)
+      User secondAdmin = User.signUp(
+          new UserInfo("second@test.com", "Second Admin", "password"),
+          new BCryptPasswordEncoder()).flatMap(userRepository::save).block();
+      workspaceMemberRepository.save(
+          WorkspaceMember.create(testWorkspace.getId(), secondAdmin.getId(), WorkspaceRole.ADMIN)).block();
+      ProjectMember secondAdminMember = ProjectMember.create(
+          testProject.getId(), secondAdmin.getId(), ProjectRole.ADMIN);
+      projectMemberRepository.save(secondAdminMember).block();
+
+      // 현재: ownerUser(ADMIN) + secondAdmin(ADMIN) = 2명
+      // secondAdmin이 ownerUser를 VIEWER로 강등 → 성공 (ADMIN 1명 남음)
+      UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(ProjectRole.VIEWER);
+      StepVerifier.create(
+          projectService.updateMemberRole(
+              testProject.getId(), ownerUser.getId(), request, secondAdmin.getId()))
+          .assertNext(response -> assertThat(response.role()).isEqualTo(ProjectRole.VIEWER.getValue()))
+          .verifyComplete();
+
+      // 현재: ownerUser(VIEWER) + secondAdmin(ADMIN) = ADMIN 1명
+      // ownerUser는 이제 VIEWER이므로 secondAdmin을 강등할 수 없음 (PROJECT_ADMIN_REQUIRED)
+      StepVerifier.create(
+          projectService.updateMemberRole(
+              testProject.getId(), secondAdmin.getId(), request, ownerUser.getId()))
+          .expectErrorMatches(e -> e instanceof BusinessException &&
+              ((BusinessException) e).getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
+          .verify();
+    }
+
   }
 
   @Nested
@@ -364,6 +401,99 @@ class ProjectServiceTest {
       Long afterCount = projectMemberRepository
           .countByProjectIdAndNotDeleted(testProject.getId()).block();
       assertThat(afterCount).isEqualTo(beforeCount - 1);
+    }
+
+  }
+
+  @Nested
+  @DisplayName("프로젝트 생성 시 워크스페이스 멤버 자동 추가")
+  class CreateProjectMemberPropagation {
+
+    @Test
+    @DisplayName("프로젝트 생성 시 워크스페이스 MEMBER는 프로젝트 VIEWER로 추가된다")
+    void createProject_WorkspaceMember_AddedAsProjectViewer() {
+      // ownerUser는 workspace ADMIN, adminUser와 viewerUser는 workspace MEMBER
+      // createProject는 workspace ADMIN만 호출 가능
+      CreateProjectRequest request = new CreateProjectRequest(
+          "New Project", "Description", null);
+
+      projectService.createProject(testWorkspace.getId(), request, ownerUser.getId()).block();
+
+      // 새로 생성된 프로젝트 찾기
+      var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
+          .filter(p -> p.getName().equals("New Project"))
+          .collectList().block();
+      assertThat(projects).hasSize(1);
+      String newProjectId = projects.get(0).getId();
+
+      // ownerUser는 ADMIN으로 추가 (생성자)
+      ProjectMember ownerPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, ownerUser.getId()).block();
+      assertThat(ownerPm).isNotNull();
+      assertThat(ownerPm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+
+      // adminUser는 workspace MEMBER이므로 VIEWER로 추가
+      ProjectMember adminPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, adminUser.getId()).block();
+      assertThat(adminPm).isNotNull();
+      assertThat(adminPm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+
+      // viewerUser는 workspace MEMBER이므로 VIEWER로 추가
+      ProjectMember viewerPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, viewerUser.getId()).block();
+      assertThat(viewerPm).isNotNull();
+      assertThat(viewerPm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+    }
+
+    @Test
+    @DisplayName("삭제된 워크스페이스 멤버는 프로젝트에 추가되지 않는다")
+    void createProject_DeletedWorkspaceMember_Skipped() {
+      // viewerUser의 워크스페이스 멤버십을 soft-delete
+      WorkspaceMember viewerWsMember = workspaceMemberRepository
+          .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspace.getId(), viewerUser.getId()).block();
+      viewerWsMember.delete();
+      workspaceMemberRepository.save(viewerWsMember).block();
+
+      CreateProjectRequest request = new CreateProjectRequest(
+          "New Project", "Description", null);
+
+      projectService.createProject(testWorkspace.getId(), request, ownerUser.getId()).block();
+
+      var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
+          .filter(p -> p.getName().equals("New Project"))
+          .collectList().block();
+      String newProjectId = projects.get(0).getId();
+
+      // viewerUser는 soft-deleted이므로 프로젝트에 추가되지 않아야 함
+      ProjectMember viewerPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, viewerUser.getId()).block();
+      assertThat(viewerPm).isNull();
+
+      // adminUser는 활성 멤버이므로 추가되어야 함
+      ProjectMember adminPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, adminUser.getId()).block();
+      assertThat(adminPm).isNotNull();
+      assertThat(adminPm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+    }
+
+    @Test
+    @DisplayName("프로젝트 생성자는 중복 추가되지 않는다")
+    void createProject_CreatorNotDuplicated() {
+      CreateProjectRequest request = new CreateProjectRequest(
+          "New Project", "Description", null);
+
+      projectService.createProject(testWorkspace.getId(), request, ownerUser.getId()).block();
+
+      var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
+          .filter(p -> p.getName().equals("New Project"))
+          .collectList().block();
+      String newProjectId = projects.get(0).getId();
+
+      // 생성자(ownerUser)의 프로젝트 멤버 수가 정확히 1이어야 함
+      Long ownerCount = projectMemberRepository
+          .countByProjectIdAndNotDeleted(newProjectId).block();
+      // 3명: ownerUser(ADMIN) + adminUser(VIEWER) + viewerUser(VIEWER)
+      assertThat(ownerCount).isEqualTo(3L);
     }
 
   }

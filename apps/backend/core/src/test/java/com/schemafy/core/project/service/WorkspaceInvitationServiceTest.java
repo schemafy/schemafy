@@ -16,12 +16,18 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceInvitationRequest;
 import com.schemafy.core.project.repository.InvitationRepository;
+import com.schemafy.core.project.repository.ProjectMemberRepository;
+import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Invitation;
+import com.schemafy.core.project.repository.entity.Project;
+import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
+import com.schemafy.core.project.repository.vo.ProjectRole;
+import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -53,6 +59,12 @@ class WorkspaceInvitationServiceTest {
   @Autowired
   private UserRepository userRepository;
 
+  @Autowired
+  private ProjectRepository projectRepository;
+
+  @Autowired
+  private ProjectMemberRepository projectMemberRepository;
+
   private User adminUser;
   private User memberUser;
   private User invitedUser;
@@ -63,6 +75,8 @@ class WorkspaceInvitationServiceTest {
   void setUp() {
     Mono.when(
         invitationRepository.deleteAll(),
+        projectMemberRepository.deleteAll(),
+        projectRepository.deleteAll(),
         memberRepository.deleteAll(),
         workspaceRepository.deleteAll(),
         userRepository.deleteAll()).block();
@@ -836,6 +850,132 @@ class WorkspaceInvitationServiceTest {
             assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_TYPE_MISMATCH);
           })
           .verify();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("초대 수락 시 프로젝트 역할 전파")
+  class AcceptInvitationRolePropagationTests {
+
+    @Test
+    @DisplayName("MEMBER로 초대 수락 시 모든 기존 프로젝트에 VIEWER로 추가된다")
+    void acceptInvitation_Member_PropagatesAsViewer() {
+      Project project1 = Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings());
+      project1 = projectRepository.save(project1).block();
+      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Desc", ProjectSettings.defaultSettings());
+      project2 = projectRepository.save(project2).block();
+
+      // MEMBER로 초대 생성
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      // 초대 수락
+      invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()).block();
+
+      // 프로젝트 1에 VIEWER로 추가되었는지 확인
+      ProjectMember pm1 = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project1.getId(), invitedUser.getId()).block();
+      assertThat(pm1).isNotNull();
+      assertThat(pm1.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+
+      // 프로젝트 2에 VIEWER로 추가되었는지 확인
+      ProjectMember pm2 = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project2.getId(), invitedUser.getId()).block();
+      assertThat(pm2).isNotNull();
+      assertThat(pm2.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+    }
+
+    @Test
+    @DisplayName("ADMIN으로 초대 수락 시 모든 기존 프로젝트에 ADMIN으로 추가된다")
+    void acceptInvitation_Admin_PropagatesAsAdmin() {
+      Project project = Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings());
+      project = projectRepository.save(project).block();
+
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.ADMIN, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()).block();
+
+      ProjectMember pm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), invitedUser.getId()).block();
+      assertThat(pm).isNotNull();
+      assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    }
+
+    @Test
+    @DisplayName("이미 프로젝트 멤버인 경우 기존 역할이 유지된다")
+    void acceptInvitation_AlreadyProjectMember_KeepsExistingRole() {
+      Project project = Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings());
+      project = projectRepository.save(project).block();
+
+      // 미리 EDITOR로 프로젝트 멤버 추가
+      ProjectMember existing = ProjectMember.create(project.getId(), invitedUser.getId(), ProjectRole.EDITOR);
+      projectMemberRepository.save(existing).block();
+
+      // ADMIN으로 워크스페이스 초대 수락
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.ADMIN, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()).block();
+
+      // 기존 EDITOR 역할이 유지되어야 함
+      ProjectMember pm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), invitedUser.getId()).block();
+      assertThat(pm).isNotNull();
+      assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
+    }
+
+    @Test
+    @DisplayName("삭제된 프로젝트에는 전파되지 않는다")
+    void acceptInvitation_DeletedProject_Skipped() {
+      // 프로젝트 생성 후 삭제
+      Project project = Project.create(testWorkspace.getId(), "Deleted Project", "Desc", ProjectSettings
+          .defaultSettings());
+      project = projectRepository.save(project).block();
+      project.delete();
+      projectRepository.save(project).block();
+
+      // 활성 프로젝트 하나 생성
+      Project activeProject = Project.create(testWorkspace.getId(), "Active Project", "Desc", ProjectSettings
+          .defaultSettings());
+      activeProject = projectRepository.save(activeProject).block();
+
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()).block();
+
+      // 삭제된 프로젝트에는 추가되지 않아야 함
+      ProjectMember deletedPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), invitedUser.getId()).block();
+      assertThat(deletedPm).isNull();
+
+      // 활성 프로젝트에는 추가되어야 함
+      ProjectMember activePm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(activeProject.getId(), invitedUser.getId()).block();
+      assertThat(activePm).isNotNull();
+      assertThat(activePm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+    }
+
+    @Test
+    @DisplayName("프로젝트가 없는 워크스페이스에서는 전파 없이 성공한다")
+    void acceptInvitation_NoProjects_SucceedsWithoutPropagation() {
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      StepVerifier.create(
+          invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()))
+          .assertNext(member -> {
+            assertThat(member.userId()).isEqualTo(invitedUser.getId());
+            assertThat(member.role()).isEqualTo(WorkspaceRole.MEMBER.getValue());
+          })
+          .verifyComplete();
     }
 
   }
