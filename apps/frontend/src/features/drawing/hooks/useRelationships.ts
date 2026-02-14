@@ -1,69 +1,80 @@
+import { useState, useRef, useMemo, useCallback } from 'react';
 import type { Connection, Edge, EdgeChange } from '@xyflow/react';
-import { useState, useRef, useEffect } from 'react';
-import { applyEdgeChanges } from '@xyflow/react';
-import { autorun } from 'mobx';
 import { toast } from 'sonner';
-import { ErdStore } from '@/store';
-import type { RelationshipConfig } from '../types';
+import { useSelectedSchema } from '../contexts';
+import { useSchemaSnapshots } from './useSchemaSnapshots';
 import {
-  RELATIONSHIP_TYPES,
-  type RelationshipExtra,
-  type Point,
-} from '../types';
+  useCreateRelationship,
+  useChangeRelationshipName,
+  useChangeRelationshipExtra,
+  useDeleteRelationship,
+} from './useRelationshipMutations';
 import {
-  convertRelationshipsToEdges,
-  createRelationshipFromConnection,
-  findRelationshipInSchema,
+  convertSnapshotsToEdges,
+  validateConnection,
   shouldRecreateRelationship,
+  findRelationshipById,
+  parseRelationshipExtra,
 } from '../utils/relationshipHelpers';
+import type { RelationshipConfig, RelationshipExtra, Point } from '../types';
+import { RELATIONSHIP_TYPES } from '../types';
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
-  const erdStore = ErdStore.getInstance();
+  const { selectedSchemaId } = useSelectedSchema();
+  const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId || '');
+
+  const createRelationshipMutation = useCreateRelationship(
+    selectedSchemaId || '',
+  );
+  const changeRelationshipNameMutation = useChangeRelationshipName(
+    selectedSchemaId || '',
+  );
+  const changeRelationshipExtraMutation = useChangeRelationshipExtra(
+    selectedSchemaId || '',
+  );
+  const deleteRelationshipMutation = useDeleteRelationship(
+    selectedSchemaId || '',
+  );
+
   const [selectedRelationship, setSelectedRelationship] = useState<
     string | null
   >(null);
   const relationshipReconnectSuccessful = useRef(true);
 
-  const updateRelationshipControlPoint = (
-    relationshipId: string,
-    controlPoint1: Point,
-    controlPoint2?: Point,
-  ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+  const updateRelationshipControlPoint = useCallback(
+    (relationshipId: string, controlPoint1: Point, controlPoint2?: Point) => {
+      if (!snapshotsData) return;
 
-    if (!selectedSchemaId || !selectedSchema) return;
+      const relationshipSnapshot = findRelationshipById(
+        snapshotsData,
+        relationshipId,
+      );
+      if (!relationshipSnapshot) return;
 
-    const currentRelationship = findRelationshipInSchema(
-      selectedSchema,
-      relationshipId,
-    );
-    if (!currentRelationship) return;
+      const currentExtra = parseRelationshipExtra(
+        relationshipSnapshot.relationship.extra,
+      );
 
-    const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
+      const updatedExtra: RelationshipExtra = {
+        ...currentExtra,
+        controlPoint1,
+        ...(controlPoint2 && { controlPoint2 }),
+      };
 
-    const updatedExtra: RelationshipExtra = {
-      ...currentExtra,
-      controlPoint1,
-    };
+      changeRelationshipExtraMutation.mutate({
+        relationshipId,
+        data: { extra: JSON.stringify(updatedExtra) },
+      });
+    },
+    [snapshotsData, changeRelationshipExtraMutation],
+  );
 
-    if (controlPoint2) {
-      updatedExtra.controlPoint2 = controlPoint2;
+  const relationships = useMemo(() => {
+    if (!selectedSchemaId || !snapshotsData) {
+      return [];
     }
 
-    erdStore.updateRelationshipExtra(
-      selectedSchemaId,
-      relationshipId,
-      updatedExtra,
-    );
-  };
-
-  const getRelationships = (): Edge[] => {
-    const selectedSchema = erdStore.selectedSchema;
-    if (!selectedSchema) return [];
-
-    const edges = convertRelationshipsToEdges(selectedSchema);
-
+    const edges = convertSnapshotsToEdges(snapshotsData);
     return edges.map((edge) => ({
       ...edge,
       data: {
@@ -71,58 +82,50 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         onControlPointDragEnd: updateRelationshipControlPoint,
       },
     }));
+  }, [selectedSchemaId, snapshotsData, updateRelationshipControlPoint]);
+
+  const createRelationshipFromValidation = (
+    validation: ReturnType<typeof validateConnection>,
+  ) => {
+    const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
+    const kind = relationshipConfig.isNonIdentifying
+      ? 'NON_IDENTIFYING'
+      : 'IDENTIFYING';
+
+    createRelationshipMutation.mutate({
+      fkTableId: validation.fkTableId!,
+      pkTableId: validation.pkTableId!,
+      kind,
+      cardinality: typeConfig.cardinality,
+    });
   };
 
-  const [relationships, setRelationships] = useState<Edge[]>(() =>
-    getRelationships(),
-  );
+  const onConnect = (params: Connection) => {
+    if (!selectedSchemaId || !snapshotsData) return;
 
-  useEffect(() => {
-    const dispose = autorun(() => {
-      const state = erdStore.erdState;
-      if (state.state === 'loaded') {
-        setRelationships(getRelationships());
-      }
+    const validation = validateConnection({
+      snapshots: snapshotsData,
+      connection: params,
     });
 
-    return () => dispose();
-  }, []);
-
-  const onConnect = (params: Connection) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
-
-    if (
-      !selectedSchemaId ||
-      !selectedSchema ||
-      !params.source ||
-      !params.target
-    ) {
+    if (!validation.isValid) {
+      if (validation.error) {
+        toast.error(validation.error);
+      }
       return;
     }
 
-    const newRelationship = createRelationshipFromConnection({
-      schema: selectedSchema,
-      connection: params,
-      relationshipConfig,
-    });
-
-    if (newRelationship) {
-      erdStore.createRelationship(selectedSchemaId, newRelationship);
-    }
+    createRelationshipFromValidation(validation);
   };
 
   const onRelationshipsChange = (changes: EdgeChange[]) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
     if (!selectedSchemaId) return;
 
     changes
       .filter((change) => change.type === 'remove')
       .forEach((change) => {
-        erdStore.deleteRelationship(selectedSchemaId, change.id);
+        deleteRelationshipMutation.mutate(change.id);
       });
-
-    setRelationships((edges) => applyEdgeChanges(changes, edges) as Edge[]);
   };
 
   const onRelationshipClick = (event: React.MouseEvent, relationship: Edge) => {
@@ -135,32 +138,30 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const onReconnect = (oldRelationship: Edge, newConnection: Connection) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
+    if (!selectedSchemaId || !snapshotsData) return;
 
-    if (!selectedSchemaId || !selectedSchema) return;
-
-    relationshipReconnectSuccessful.current = true;
-    erdStore.deleteRelationship(selectedSchemaId, oldRelationship.id);
-
-    const newRelationship = createRelationshipFromConnection({
-      schema: selectedSchema,
+    const validation = validateConnection({
+      snapshots: snapshotsData,
       connection: newConnection,
-      relationshipConfig,
     });
 
-    if (newRelationship) {
-      erdStore.createRelationship(selectedSchemaId, newRelationship);
+    if (!validation.isValid) {
+      if (validation.error) {
+        toast.error(validation.error);
+      }
+      return;
     }
+
+    relationshipReconnectSuccessful.current = true;
+    deleteRelationshipMutation.mutate(oldRelationship.id);
+    createRelationshipFromValidation(validation);
   };
 
   const onReconnectEnd = (_: MouseEvent | TouchEvent, relationship: Edge) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
     if (!selectedSchemaId) return;
 
     if (!relationshipReconnectSuccessful.current) {
-      erdStore.deleteRelationship(selectedSchemaId, relationship.id);
+      deleteRelationshipMutation.mutate(relationship.id);
     }
     relationshipReconnectSuccessful.current = true;
   };
@@ -169,65 +170,63 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipId: string,
     config: RelationshipConfig,
   ) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-    const selectedSchema = erdStore.selectedSchema;
-
-    if (!selectedSchemaId || !selectedSchema) {
+    if (!selectedSchemaId || !snapshotsData) {
       toast.error('No schema selected');
       return;
     }
 
-    const currentRelationship = findRelationshipInSchema(
-      selectedSchema,
+    const relationshipSnapshot = findRelationshipById(
+      snapshotsData,
       relationshipId,
     );
-    if (!currentRelationship) {
+
+    if (!relationshipSnapshot) {
       toast.error('Relationship not found');
       return;
     }
 
+    const { relationship } = relationshipSnapshot;
     const typeConfig = RELATIONSHIP_TYPES[config.type];
     const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
-    const currentExtra = (currentRelationship.extra || {}) as RelationshipExtra;
 
     if (
       shouldRecreateRelationship(
-        currentRelationship,
+        relationship.kind,
+        relationship.cardinality,
         newKind,
         typeConfig.cardinality,
       )
     ) {
-      erdStore.deleteRelationship(selectedSchemaId, relationshipId);
-      erdStore.createRelationship(selectedSchemaId, {
-        ...currentRelationship,
+      deleteRelationshipMutation.mutate(relationshipId);
+      createRelationshipMutation.mutate({
+        fkTableId: relationship.fkTableId,
+        pkTableId: relationship.pkTableId,
         kind: newKind,
         cardinality: typeConfig.cardinality,
-        extra: currentExtra,
       });
     }
   };
 
   const deleteRelationship = (relationshipId: string) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
     if (!selectedSchemaId) {
       toast.error('No schema selected');
       return;
     }
 
-    erdStore.deleteRelationship(selectedSchemaId, relationshipId);
+    deleteRelationshipMutation.mutate(relationshipId);
     setSelectedRelationship(null);
   };
 
   const changeRelationshipName = (relationshipId: string, newName: string) => {
-    const selectedSchemaId = erdStore.selectedSchemaId;
-
     if (!selectedSchemaId) {
       toast.error('No schema selected');
       return;
     }
 
-    erdStore.changeRelationshipName(selectedSchemaId, relationshipId, newName);
+    changeRelationshipNameMutation.mutate({
+      relationshipId,
+      data: { newName },
+    });
   };
 
   return {
