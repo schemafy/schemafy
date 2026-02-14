@@ -52,8 +52,12 @@ export function createHmacHeaders(
   secret: string,
   config: InternalAxiosRequestConfig,
 ): Record<string, string> | null {
-  const method = config.method ?? 'GET';
-  const url = new URL(config.url ?? '/', config.baseURL ?? 'http://localhost');
+  if (!config.method || !config.url || !config.baseURL) {
+    return null;
+  }
+
+  const method = config.method;
+  const url = new URL(config.url, config.baseURL);
   const path = url.pathname;
 
   if (!shouldSign(method, path)) {
