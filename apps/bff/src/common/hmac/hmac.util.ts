@@ -56,7 +56,7 @@ export function createHmacHeaders(
     return null;
   }
 
-  const method = config.method;
+  const method = config.method.toUpperCase();
   const url = new URL(config.url, config.baseURL);
   const path = url.pathname;
 
@@ -65,7 +65,7 @@ export function createHmacHeaders(
   }
 
   const query = url.search.slice(1);
-  const fullPath = `${path}?${query}`;
+  const fullPath = query ? `${path}?${query}` : path;
 
   const timestamp = Date.now().toString();
   const nonce = randomUUID();

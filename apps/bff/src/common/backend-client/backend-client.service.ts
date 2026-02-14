@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
+import { ConfigService } from '@nestjs/config';
 
 import { createHmacHeaders } from '../hmac/hmac.util';
 
@@ -7,7 +8,7 @@ import { createHmacHeaders } from '../hmac/hmac.util';
 export class BackendClientService {
   readonly client: AxiosInstance;
 
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     this.client = axios.create({
       baseURL: process.env.BACKEND_URL || 'http://localhost:8080',
       timeout: 10000,
@@ -18,9 +19,11 @@ export class BackendClientService {
     });
 
     this.client.interceptors.request.use((config) => {
-      const hmacSecret =
-        process.env.HMAC_SECRET ||
-        'default-hmac-secret-change-me-in-production';
+      const hmacSecret = this.configService.get<string>('HMAC_SECRET');
+
+      if (!hmacSecret) {
+        throw new Error('HMAC_SECRET is not defined');
+      }
 
       const hmacHeaders = createHmacHeaders(hmacSecret, config);
 
