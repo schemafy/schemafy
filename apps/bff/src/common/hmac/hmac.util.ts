@@ -3,20 +3,27 @@ import type { InternalAxiosRequestConfig } from 'axios';
 
 const HMAC_EXCLUDED_PREFIXES = ['/public/api/', '/ws/'];
 
-function computeBodyHash(body: unknown): string {
-  const hash = createHash('sha256');
+type RequestBody = string | Buffer | Record<string, unknown> | null | undefined;
 
+function computeBodyHash(body: RequestBody): string {
+  const content = normalizeBody(body);
+  return createHash('sha256').update(content).digest('hex');
+}
+
+function normalizeBody(body: RequestBody): string | Buffer {
   if (body === undefined || body === null) {
-    hash.update('');
-  } else if (typeof body === 'string') {
-    hash.update(body, 'utf8');
-  } else if (Buffer.isBuffer(body)) {
-    hash.update(body);
-  } else {
-    hash.update(JSON.stringify(body), 'utf8');
+    return '';
   }
 
-  return hash.digest('hex');
+  if (typeof body === 'string') {
+    return body;
+  }
+
+  if (Buffer.isBuffer(body)) {
+    return body;
+  }
+
+  return JSON.stringify(body);
 }
 
 function buildCanonicalString(
@@ -45,7 +52,7 @@ export function createHmacHeaders(
   secret: string,
   config: InternalAxiosRequestConfig,
 ): Record<string, string> | null {
-  const method = (config.method ?? 'GET').toUpperCase();
+  const method = config.method ?? 'GET';
   const url = new URL(config.url ?? '/', config.baseURL ?? 'http://localhost');
   const path = url.pathname;
 
@@ -53,8 +60,8 @@ export function createHmacHeaders(
     return null;
   }
 
-  const query = url.search ? url.search.slice(1) : '';
-  const fullPath = query ? `${path}?${query}` : path;
+  const query = url.search.slice(1);
+  const fullPath = `${path}?${query}`;
 
   const timestamp = Date.now().toString();
   const nonce = randomUUID();
