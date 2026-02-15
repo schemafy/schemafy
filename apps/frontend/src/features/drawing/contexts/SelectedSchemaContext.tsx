@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useCallback,
+  Suspense,
   type ReactNode,
 } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -11,6 +12,15 @@ import { useSchemas } from '../hooks/useSchemas';
 import { useCreateSchema } from '../hooks/useSchemaMutations';
 
 const getStorageKey = (projectId: string) => `selectedSchemaId_${projectId}`;
+
+const SchemaLoading = () => (
+  <div className="flex flex-1 w-full items-center justify-center bg-schemafy-bg">
+    <div className="flex flex-col items-center gap-3">
+      <Loader2 className="h-8 w-8 animate-spin text-schemafy-text" />
+      <span className="text-sm text-schemafy-text">Loading schema...</span>
+    </div>
+  </div>
+);
 
 interface SelectedSchemaProviderProps {
   children: ReactNode;
@@ -106,21 +116,14 @@ export const SelectedSchemaProvider = ({
   }, [storageKey]);
 
   if (!selectedSchemaId) {
-    return (
-      <div className="flex flex-1 w-full items-center justify-center bg-schemafy-bg">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-schemafy-text" />
-          <span className="text-sm text-schemafy-text">Loading schema...</span>
-        </div>
-      </div>
-    );
+    return <SchemaLoading />;
   }
 
   return (
     <SelectedSchemaContext.Provider
       value={{ projectId, selectedSchemaId, setSelectedSchemaId }}
     >
-      {children}
+      <Suspense fallback={<SchemaLoading />}>{children}</Suspense>
     </SelectedSchemaContext.Provider>
   );
 };

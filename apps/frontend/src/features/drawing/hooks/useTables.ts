@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
-import { toast } from 'sonner';
 import type { TableData, Point } from '../types';
 import {
   transformSnapshotToNode,
@@ -26,11 +25,6 @@ export const useTables = () => {
   const [tables, setTables] = useState<Node<TableData>[]>([]);
 
   useEffect(() => {
-    if (!snapshotsData) {
-      setTables([]);
-      return;
-    }
-
     const newTables = Object.values(snapshotsData).map((snapshot) =>
       transformSnapshotToNode(snapshot, selectedSchemaId),
     );
@@ -38,11 +32,6 @@ export const useTables = () => {
   }, [selectedSchemaId, snapshotsData]);
 
   const addTable = (position: Point) => {
-    if (!snapshotsData) {
-      toast.error('No schema selected');
-      return;
-    }
-
     const existingTableNames = Object.values(snapshotsData).map(
       (snapshot) => snapshot.table.name,
     );
@@ -72,8 +61,6 @@ export const useTables = () => {
   };
 
   const onNodeDragStop = (_event: React.MouseEvent, node: Node<TableData>) => {
-    if (!snapshotsData) return;
-
     const snapshot = snapshotsData[node.id];
     if (!snapshot) return;
 

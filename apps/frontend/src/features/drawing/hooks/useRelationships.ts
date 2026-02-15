@@ -44,7 +44,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipId: string,
     updater: (extra: RelationshipExtra) => RelationshipExtra,
   ) => {
-    if (!snapshotsData) return;
     const snapshot = findRelationshipById(snapshotsData, relationshipId);
     if (!snapshot) return;
 
@@ -73,10 +72,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   controlPointCallbackRef.current = updateRelationshipControlPoint;
 
   const relationships = useMemo(() => {
-    if (!snapshotsData) {
-      return [];
-    }
-
     const edges = convertSnapshotsToEdges(snapshotsData);
     return edges.map((edge) => ({
       ...edge,
@@ -106,8 +101,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const onConnect = (params: Connection) => {
-    if (!snapshotsData) return;
-
     const validation = validateConnection({
       snapshots: snapshotsData,
       connection: params,
@@ -144,8 +137,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     oldRelationship: Edge,
     newConnection: Connection,
   ) => {
-    if (!snapshotsData) return;
-
     const validation = validateConnection({
       snapshots: snapshotsData,
       connection: newConnection,
@@ -196,11 +187,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipId: string,
     config: RelationshipConfig,
   ) => {
-    if (!snapshotsData) {
-      toast.error('Failed to load schema data');
-      return;
-    }
-
     const relationshipSnapshot = findRelationshipById(
       snapshotsData,
       relationshipId,
