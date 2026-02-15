@@ -64,8 +64,12 @@ export function createHmacHeaders(
     return null;
   }
 
-  const query = url.search.slice(1);
-  const fullPath = query ? `${path}?${query}` : path;
+  if (config.params) {
+    const params = new URLSearchParams(config.params);
+    params.forEach((value, key) => url.searchParams.append(key, value));
+  }
+
+  const fullPath = url.pathname + url.search;
 
   const timestamp = Date.now().toString();
   const nonce = randomUUID();
