@@ -30,7 +30,9 @@ public class TableApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "charset").type(JsonFieldType.STRING)
           .description("문자셋").optional(),
       fieldWithPath(prefix + "collation").type(JsonFieldType.STRING)
-          .description("콜레이션").optional()
+          .description("콜레이션").optional(),
+      fieldWithPath(prefix + "extra").type(JsonFieldType.STRING)
+          .description("프론트엔드 메타데이터(JSON 문자열)").optional()
     };
   }
 
@@ -136,6 +138,36 @@ public class TableApiSnippets extends RestDocsSnippets {
     };
   }
 
+  /** IndexResponse 필드 */
+  private static FieldDescriptor[] indexResponseFields(String prefix) {
+    return new FieldDescriptor[] {
+      fieldWithPath(prefix + "id").type(JsonFieldType.STRING)
+          .description("인덱스 ID (ULID)"),
+      fieldWithPath(prefix + "tableId").type(JsonFieldType.STRING)
+          .description("테이블 ID (ULID)"),
+      fieldWithPath(prefix + "name").type(JsonFieldType.STRING)
+          .description("인덱스 이름"),
+      fieldWithPath(prefix + "type").type(JsonFieldType.STRING)
+          .description("인덱스 타입 (BTREE, HASH, FULLTEXT, SPATIAL, OTHER)")
+    };
+  }
+
+  /** IndexColumnResponse 필드 */
+  private static FieldDescriptor[] indexColumnResponseFields(String prefix) {
+    return new FieldDescriptor[] {
+      fieldWithPath(prefix + "id").type(JsonFieldType.STRING)
+          .description("인덱스 컬럼 ID (ULID)"),
+      fieldWithPath(prefix + "indexId").type(JsonFieldType.STRING)
+          .description("인덱스 ID (ULID)"),
+      fieldWithPath(prefix + "columnId").type(JsonFieldType.STRING)
+          .description("컬럼 ID (ULID)"),
+      fieldWithPath(prefix + "seqNo").type(JsonFieldType.NUMBER)
+          .description("순서 번호"),
+      fieldWithPath(prefix + "sortDirection").type(JsonFieldType.STRING)
+          .description("정렬 방향 (ASC, DESC)")
+    };
+  }
+
   // ========== POST /api/tables - 테이블 생성 ==========
 
   /** 테이블 생성 요청 헤더 */
@@ -222,7 +254,9 @@ public class TableApiSnippets extends RestDocsSnippets {
             fieldWithPath("result.constraints").type(JsonFieldType.ARRAY)
                 .description("제약조건 목록"),
             fieldWithPath("result.relationships").type(JsonFieldType.ARRAY)
-                .description("관계 목록")),
+                .description("관계 목록"),
+            fieldWithPath("result.indexes").type(JsonFieldType.ARRAY)
+                .description("인덱스 목록")),
         concat(
             tableResponseFields("result.table."),
             concat(
@@ -247,11 +281,21 @@ public class TableApiSnippets extends RestDocsSnippets {
                                       .description("관계 정보"),
                                   fieldWithPath("result.relationships[].columns")
                                       .type(JsonFieldType.ARRAY)
-                                      .description("관계 컬럼 목록")
+                                      .description("관계 컬럼 목록"),
+                                  fieldWithPath("result.indexes[].index")
+                                      .type(JsonFieldType.OBJECT)
+                                      .description("인덱스 정보"),
+                                  fieldWithPath("result.indexes[].columns")
+                                      .type(JsonFieldType.ARRAY)
+                                      .description("인덱스 컬럼 목록")
                                 },
                                 concat(
                                     relationshipResponseFields("result.relationships[].relationship."),
-                                    relationshipColumnResponseFields("result.relationships[].columns[]."))))))))));
+                                    concat(
+                                        relationshipColumnResponseFields("result.relationships[].columns[]."),
+                                        concat(
+                                            indexResponseFields("result.indexes[].index."),
+                                            indexColumnResponseFields("result.indexes[].columns[]."))))))))))));
   }
 
   // ========== GET /api/tables/snapshots - 배치 테이블 스냅샷 조회 ==========
@@ -275,15 +319,26 @@ public class TableApiSnippets extends RestDocsSnippets {
 
   /** 배치 테이블 스냅샷 조회 응답 (Map 구조) */
   public static Snippet getTableSnapshotsResponse() {
-    return createResponseFieldsSnippet(
-        fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-            .description("요청 성공 여부"),
-        fieldWithPath("result").type(JsonFieldType.OBJECT)
-            .description("테이블 ID를 키로 하는 스냅샷 맵"),
-        subsectionWithPath("result.*")
-            .description("테이블 스냅샷 (table-snapshot 응답 구조와 동일)"),
-        fieldWithPath("error").type(JsonFieldType.NULL)
-            .description("에러 정보 (성공 시 null)").optional());
+    return createResponseFieldsSnippet(concat(
+        new FieldDescriptor[] {
+          fieldWithPath("success").type(JsonFieldType.BOOLEAN)
+              .description("요청 성공 여부"),
+          fieldWithPath("result").type(JsonFieldType.OBJECT)
+              .description("테이블 ID를 키로 하는 스냅샷 맵"),
+          fieldWithPath("result.*.table").type(JsonFieldType.OBJECT)
+              .description("테이블 정보"),
+          fieldWithPath("result.*.columns").type(JsonFieldType.ARRAY)
+              .description("컬럼 목록"),
+          fieldWithPath("result.*.constraints").type(JsonFieldType.ARRAY)
+              .description("제약조건 목록"),
+          fieldWithPath("result.*.relationships").type(JsonFieldType.ARRAY)
+              .description("관계 목록"),
+          fieldWithPath("result.*.indexes").type(JsonFieldType.ARRAY)
+              .description("인덱스 목록"),
+          fieldWithPath("error").type(JsonFieldType.NULL)
+              .description("에러 정보 (성공 시 null)").optional()
+        },
+        tableResponseFields("result.*.table.")));
   }
 
   // ========== GET /api/schemas/{schemaId}/tables - 스키마별 테이블 목록 조회 ==========
@@ -323,6 +378,8 @@ public class TableApiSnippets extends RestDocsSnippets {
               .description("문자셋").optional(),
           fieldWithPath("result[].collation").type(JsonFieldType.STRING)
               .description("콜레이션").optional(),
+          fieldWithPath("result[].extra").type(JsonFieldType.STRING)
+              .description("프론트엔드 메타데이터(JSON 문자열)").optional(),
           fieldWithPath("error").type(JsonFieldType.NULL)
               .description("에러 정보 (성공 시 null)").optional()
         });

@@ -8,7 +8,8 @@ public record TableResponse(
     String schemaId,
     String name,
     String charset,
-    String collation) {
+    String collation,
+    String extra) {
 
   public static TableResponse from(CreateTableResult result, String schemaId) {
     return new TableResponse(
@@ -16,7 +17,8 @@ public record TableResponse(
         schemaId,
         result.name(),
         result.charset(),
-        result.collation());
+        result.collation(),
+        null);
   }
 
   public static TableResponse from(Table table) {
@@ -25,7 +27,8 @@ public record TableResponse(
         table.schemaId(),
         table.name(),
         table.charset(),
-        table.collation());
+        table.collation(),
+        table.extra());
   }
 
 }
