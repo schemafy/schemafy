@@ -3,6 +3,8 @@ package com.schemafy.core.common.exception;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -165,6 +167,32 @@ public class GlobalExceptionHandler {
       }
     }
     return false;
+  }
+
+  @ExceptionHandler(OptimisticLockingFailureException.class)
+  public ResponseEntity<BaseResponse<Object>> handleOptimisticLockingFailureException(
+      OptimisticLockingFailureException e) {
+    ErrorCode errorCode = ErrorCode.ERD_CONCURRENT_MODIFICATION;
+    log.warn(
+        "[OptimisticLockingFailureException] Concurrent modification detected: {}",
+        e.getMessage());
+    return ResponseEntity
+        .status(errorCode.getStatus())
+        .body(BaseResponse.error(errorCode.getCode(),
+            errorCode.getMessage()));
+  }
+
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<BaseResponse<Object>> handleDataIntegrityViolationException(
+      DataIntegrityViolationException e) {
+    ErrorCode errorCode = ErrorCode.ERD_DATA_INTEGRITY_VIOLATION;
+    log.warn(
+        "[DataIntegrityViolationException] Data integrity violation: {}",
+        e.getMessage());
+    return ResponseEntity
+        .status(errorCode.getStatus())
+        .body(BaseResponse.error(errorCode.getCode(),
+            errorCode.getMessage()));
   }
 
   @ExceptionHandler(Exception.class)

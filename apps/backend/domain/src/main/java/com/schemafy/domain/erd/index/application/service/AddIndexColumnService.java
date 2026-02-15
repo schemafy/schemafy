@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -36,13 +37,15 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<AddIndexColumnResult>> addIndexColumn(AddIndexColumnCommand command) {
     return getIndexByIdPort.findIndexById(command.indexId())
         .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
         .flatMap(index -> validateAndAdd(index, command)
-            .map(result -> MutationResult.of(result, index.tableId())));
+            .map(result -> MutationResult.of(result, index.tableId())))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<AddIndexColumnResult> validateAndAdd(Index index, AddIndexColumnCommand command) {
