@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from 'react';
 import { SelectedSchemaContext } from './useSelectedSchema';
 import { useSchemas } from '../hooks/useSchemas';
 import { useCreateSchema } from '../hooks/useSchemaMutations';
@@ -29,7 +35,7 @@ export const SelectedSchemaProvider = ({
   );
 
   const { data: schemas, isLoading: isSchemasLoading } = useSchemas(projectId);
-  const createSchemaMutation = useCreateSchema();
+  const createSchemaMutation = useCreateSchema(projectId);
 
   const setSelectedSchemaId = useCallback(
     (schemaId: string | null) => {
@@ -97,9 +103,14 @@ export const SelectedSchemaProvider = ({
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [storageKey]);
 
+  // TODO: 로딩 스피너
+  if (!selectedSchemaId) {
+    return null;
+  }
+
   return (
     <SelectedSchemaContext.Provider
-      value={{ selectedSchemaId, setSelectedSchemaId }}
+      value={{ projectId, selectedSchemaId, setSelectedSchemaId }}
     >
       {children}
     </SelectedSchemaContext.Provider>

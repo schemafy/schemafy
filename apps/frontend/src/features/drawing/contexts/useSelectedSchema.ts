@@ -1,8 +1,9 @@
 import { createContext, useContext } from 'react';
 
 interface SelectedSchemaContextType {
-  selectedSchemaId: string | null;
-  setSelectedSchemaId: (schemaId: string | null) => void;
+  projectId: string;
+  selectedSchemaId: string;
+  setSelectedSchemaId: (schemaId: string) => void;
 }
 
 export const SelectedSchemaContext = createContext<

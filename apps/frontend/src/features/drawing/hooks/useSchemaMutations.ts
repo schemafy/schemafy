@@ -2,28 +2,22 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSchema, changeSchemaName, deleteSchema } from '../api';
 import type { CreateSchemaRequest, ChangeSchemaNameRequest } from '../api';
 import { erdKeys } from './query-keys';
-import { useErdCache } from './useErdCache';
 
-export const useCreateSchema = (schemaId?: string) => {
+export const useCreateSchema = (projectId: string) => {
   const queryClient = useQueryClient();
-  const erdCache = schemaId ? useErdCache(schemaId) : null;
 
   return useMutation({
     mutationFn: (data: CreateSchemaRequest) => createSchema(data),
-    onSuccess: async (response) => {
-      if (erdCache && response.affectedTableIds.length > 0) {
-        await erdCache.updateAffectedTables(response.affectedTableIds);
-      }
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: erdKeys.all,
+        queryKey: erdKeys.schemas(projectId),
       });
     },
   });
 };
 
-export const useChangeSchemaName = (schemaId?: string) => {
+export const useChangeSchemaName = (projectId: string) => {
   const queryClient = useQueryClient();
-  const erdCache = schemaId ? useErdCache(schemaId) : null;
 
   return useMutation({
     mutationFn: ({
@@ -33,32 +27,25 @@ export const useChangeSchemaName = (schemaId?: string) => {
       schemaId: string;
       data: ChangeSchemaNameRequest;
     }) => changeSchemaName(schemaId, data),
-    onSuccess: async (response) => {
-      if (erdCache && response.affectedTableIds.length > 0) {
-        await erdCache.updateAffectedTables(response.affectedTableIds);
-      }
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: erdKeys.all,
+        queryKey: erdKeys.schemas(projectId),
       });
     },
   });
 };
 
-export const useDeleteSchema = (schemaId?: string) => {
+export const useDeleteSchema = (projectId: string) => {
   const queryClient = useQueryClient();
-  const erdCache = schemaId ? useErdCache(schemaId) : null;
 
   return useMutation({
     mutationFn: (schemaId: string) => deleteSchema(schemaId),
-    onSuccess: async (response, deletedSchemaId) => {
+    onSuccess: (_, deletedSchemaId) => {
       queryClient.removeQueries({
         queryKey: erdKeys.schemaSnapshots(deletedSchemaId),
       });
-      if (erdCache && response.affectedTableIds.length > 0) {
-        await erdCache.updateAffectedTables(response.affectedTableIds);
-      }
       queryClient.invalidateQueries({
-        queryKey: erdKeys.all,
+        queryKey: erdKeys.schemas(projectId),
       });
     },
   });

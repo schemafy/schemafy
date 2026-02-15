@@ -15,11 +15,12 @@ import { useSelectedSchema } from '../contexts';
 import { validateSchemaName } from '../utils/validateSchemaName';
 
 export const SchemaSelector = () => {
-  const { selectedSchemaId, setSelectedSchemaId } = useSelectedSchema();
-  const { data: schemas, isLoading } = useSchemas('06DS8JSJ7Y112MC87X0AB2CE8M');
-  const createSchemaMutation = useCreateSchema(selectedSchemaId || undefined);
-  const changeSchemaNameMutation = useChangeSchemaName(selectedSchemaId || undefined);
-  const deleteSchemaMutation = useDeleteSchema(selectedSchemaId || undefined);
+  const { projectId, selectedSchemaId, setSelectedSchemaId } =
+    useSelectedSchema();
+  const { data: schemas, isLoading } = useSchemas(projectId);
+  const createSchemaMutation = useCreateSchema(projectId);
+  const changeSchemaNameMutation = useChangeSchemaName(projectId);
+  const deleteSchemaMutation = useDeleteSchema(projectId);
 
   const [isAdding, setIsAdding] = useState(false);
   const [newSchemaName, setNewSchemaName] = useState('');
@@ -52,7 +53,7 @@ export const SchemaSelector = () => {
     const firstSchema = schemas[0];
     createSchemaMutation.mutate(
       {
-        projectId: firstSchema?.projectId || '06DS8JSJ7Y112MC87X0AB2CE8M',
+        projectId,
         dbVendorName: firstSchema?.dbVendorName || 'mysql',
         name: trimmedName,
         charset: firstSchema?.charset || 'utf8mb4',

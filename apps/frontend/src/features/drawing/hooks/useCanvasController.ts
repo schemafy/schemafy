@@ -6,12 +6,14 @@ import { useViewport } from './useViewport';
 import { useCanvasKeyboard } from './useCanvasKeyboard';
 import { useCanvasNodes } from './useCanvasNodes';
 import { useMemoContext } from '../../memo/hooks/useMemoStore';
+import { useSelectedSchema } from '../contexts';
 import type { RelationshipConfig, Point } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 
 const CURSOR_THROTTLE_MS = 100;
 
 export const useCanvasController = () => {
+  const { projectId } = useSelectedSchema();
   const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
 
@@ -31,11 +33,11 @@ export const useCanvasController = () => {
   );
 
   useEffect(() => {
-    collaborationStore.connect('06DS8JSJ7Y112MC87X0AB2CE8M');
+    collaborationStore.connect(projectId);
     return () => {
       collaborationStore.disconnect();
     };
-  }, []);
+  }, [projectId]);
 
   useCanvasKeyboard({
     chatInputPosition,
