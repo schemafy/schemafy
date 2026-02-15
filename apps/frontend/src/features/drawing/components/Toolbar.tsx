@@ -1,17 +1,8 @@
 import { type ComponentType, useState } from 'react';
 import { RelationshipSelector } from './RelationshipSelector';
+import { SearchEntitiesDialog } from './SearchEntitiesDialog';
 import type { RelationshipConfig } from '../types';
-import {
-  Button,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  ListItem,
-} from '@/components';
+import { Button, Tooltip, TooltipTrigger, TooltipContent } from '@/components';
 import {
   Search,
   Table,
@@ -118,50 +109,10 @@ export const Toolbar = ({
           )}
       </div>
 
-      <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <div className="flex gap-2.5 items-center">
-              <Table size={16} color="var(--color-schemafy-dark-gray)" />
-              <DialogTitle>Entities</DialogTitle>
-            </div>
-          </DialogHeader>
-          <div className="py-2 px-3 flex justify-between items-center bg-schemafy-secondary rounded-[10px]">
-            <input
-              type="text"
-              placeholder="Search for entities..."
-              className="w-full focus:border-none outline-none focus:outline-none placeholder:text-schemafy-dark-gray border-none text-schemafy-text font-body-xs"
-            />
-            <Search size={16} color="var(--color-schemafy-dark-gray)" />
-          </div>
-          <ul className="flex flex-col w-full max-h-[12.5rem] gap-2.5 overflow-y-scroll overflow-x-hidden pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-schemafy-light-gray [&::-webkit-scrollbar-track]:bg-transparent">
-            <ListItem
-              count={6}
-              name="User"
-              description={'사용자 정보'}
-              date={new Date()}
-            />
-            <ListItem
-              count={6}
-              name="User"
-              description={'사용자 정보'}
-              date={new Date()}
-            />
-            <ListItem
-              count={6}
-              name="User"
-              description={'사용자 정보'}
-              date={new Date()}
-            />
-            <ListItem
-              count={6}
-              name="User"
-              description={'사용자 정보'}
-              date={new Date()}
-            />
-          </ul>
-        </DialogContent>
-      </Dialog>
+      <SearchEntitiesDialog
+        open={isSearchDialogOpen}
+        onOpenChange={setIsSearchDialogOpen}
+      />
     </>
   );
 };
@@ -189,7 +140,7 @@ const Tool = ({
           variant={'none'}
           size={'none'}
           className={`
-        p-2 rounded-md transition-colors duration-200 
+        p-2 rounded-md transition-colors duration-200
         hover:bg-schemafy-secondary
       `}
         >

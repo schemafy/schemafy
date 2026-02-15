@@ -68,6 +68,19 @@ export const SelectedSchemaProvider = ({
 
   useEffect(() => {
     if (
+      selectedSchemaId &&
+      !isSchemasLoading &&
+      schemas
+    ) {
+      const isValid = schemas.some((s) => s.id === selectedSchemaId);
+      if (!isValid) {
+        setSelectedSchemaId(schemas[0]?.id ?? null);
+      }
+    }
+  }, [selectedSchemaId, schemas, isSchemasLoading, setSelectedSchemaId]);
+
+  useEffect(() => {
+    if (
       !selectedSchemaId &&
       !isSchemasLoading &&
       schemas &&
