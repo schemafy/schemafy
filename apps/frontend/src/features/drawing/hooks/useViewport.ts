@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useReactFlow, type Viewport } from '@xyflow/react';
 import { useSelectedSchema } from '../contexts';
 import { useLocalStorage } from './useLocalStorage';
@@ -12,14 +12,17 @@ export const useViewport = () => {
     Record<string, Viewport>
   >(VIEWPORT_STORAGE_KEY, {});
 
+  const viewportDataRef = useRef(viewportData);
+  viewportDataRef.current = viewportData;
+
   useEffect(() => {
     if (!selectedSchemaId) return;
 
-    const viewport = viewportData[selectedSchemaId];
+    const viewport = viewportDataRef.current[selectedSchemaId];
     if (viewport) {
       setViewport(viewport, { duration: 0 });
     }
-  }, [selectedSchemaId, viewportData, setViewport]);
+  }, [selectedSchemaId, setViewport]);
 
   const handleMoveEnd = useCallback(() => {
     if (!selectedSchemaId) return;

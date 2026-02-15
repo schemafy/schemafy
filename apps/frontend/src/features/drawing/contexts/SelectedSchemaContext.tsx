@@ -36,6 +36,8 @@ export const SelectedSchemaProvider = ({
 
   const { data: schemas, isLoading: isSchemasLoading } = useSchemas(projectId);
   const createSchemaMutation = useCreateSchema(projectId);
+  const createMutationRef = useRef(createSchemaMutation);
+  createMutationRef.current = createSchemaMutation;
 
   const setSelectedSchemaId = useCallback(
     (schemaId: string | null) => {
@@ -63,7 +65,7 @@ export const SelectedSchemaProvider = ({
       initializationAttempted.current = true;
 
       if (schemas.length === 0) {
-        createSchemaMutation.mutate(
+        createMutationRef.current.mutate(
           {
             projectId,
             dbVendorName: 'mysql',
@@ -88,7 +90,6 @@ export const SelectedSchemaProvider = ({
     schemas,
     isSchemasLoading,
     projectId,
-    createSchemaMutation,
     setSelectedSchemaId,
   ]);
 
