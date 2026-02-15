@@ -32,6 +32,14 @@ import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTa
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdQuery;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdUseCase;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuery;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
+import com.schemafy.domain.erd.index.domain.Index;
+import com.schemafy.domain.erd.index.domain.IndexColumn;
+import com.schemafy.domain.erd.index.domain.type.IndexType;
+import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
@@ -107,6 +115,12 @@ class TableControllerTest {
   private GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
 
   @MockitoBean
+  private GetIndexesByTableIdUseCase getIndexesByTableIdUseCase;
+
+  @MockitoBean
+  private GetIndexColumnsByIndexIdUseCase getIndexColumnsByIndexIdUseCase;
+
+  @MockitoBean
   private ChangeTableNameUseCase changeTableNameUseCase;
 
   @MockitoBean
@@ -167,7 +181,8 @@ class TableControllerTest {
         schemaId,
         "users",
         "utf8mb4",
-        "utf8mb4_general_ci");
+        "utf8mb4_general_ci",
+        "{\"position\":{\"x\":10,\"y\":20}}");
 
     given(getTableUseCase.getTable(any(GetTableQuery.class)))
         .willReturn(Mono.just(table));
@@ -180,6 +195,7 @@ class TableControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
         .jsonPath("$.result.id").isEqualTo(tableId)
+        .jsonPath("$.result.extra").isEqualTo("{\"position\":{\"x\":10,\"y\":20}}")
         .consumeWith(document("table-get",
             TableApiSnippets.getTablePathParameters(),
             TableApiSnippets.getTableRequestHeaders(),
@@ -199,8 +215,16 @@ class TableControllerTest {
     String relationshipColumnId = "06D6W7GAHD51T5NJPK29Q6BCRE";
     String pkTableId = "06D6W8HAHD51T5NJPK29Q6BCRF";
     String pkColumnId = "06D6W9IAHD51T5NJPK29Q6BCRG";
+    String indexId = "06D6W9JAHD51T5NJPK29Q6BCRH";
+    String indexColumnId = "06D6W9KAHD51T5NJPK29Q6BCRI";
 
-    Table table = new Table(tableId, schemaId, "users", "utf8mb4", "utf8mb4_general_ci");
+    Table table = new Table(
+        tableId,
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        "{\"position\":{\"x\":30,\"y\":40}}");
     Column column = new Column(columnId, tableId, "id", "BIGINT",
         new ColumnLengthScale(20, null, null), 1, true, null, null, "Primary key");
     Constraint constraint = new Constraint(constraintId, tableId, "pk_users",
@@ -211,6 +235,8 @@ class TableControllerTest {
         "fk_users_orders", RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
     RelationshipColumn relationshipColumn = new RelationshipColumn(
         relationshipColumnId, relationshipId, pkColumnId, columnId, 1);
+    Index index = new Index(indexId, tableId, "idx_users_id", IndexType.BTREE);
+    IndexColumn indexColumn = new IndexColumn(indexColumnId, indexId, columnId, 0, SortDirection.ASC);
 
     given(getTableUseCase.getTable(any(GetTableQuery.class)))
         .willReturn(Mono.just(table));
@@ -228,6 +254,11 @@ class TableControllerTest {
     given(getRelationshipColumnsByRelationshipIdUseCase.getRelationshipColumnsByRelationshipId(
         any(GetRelationshipColumnsByRelationshipIdQuery.class)))
         .willReturn(Mono.just(List.of(relationshipColumn)));
+    given(getIndexesByTableIdUseCase.getIndexesByTableId(any(GetIndexesByTableIdQuery.class)))
+        .willReturn(Mono.just(List.of(index)));
+    given(getIndexColumnsByIndexIdUseCase.getIndexColumnsByIndexId(
+        any(GetIndexColumnsByIndexIdQuery.class)))
+        .willReturn(Mono.just(List.of(indexColumn)));
 
     webTestClient.get()
         .uri(API_BASE_PATH + "/tables/{tableId}/snapshot", tableId)
@@ -237,9 +268,12 @@ class TableControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
         .jsonPath("$.result.table.id").isEqualTo(tableId)
+        .jsonPath("$.result.table.extra").isEqualTo("{\"position\":{\"x\":30,\"y\":40}}")
         .jsonPath("$.result.columns[0].id").isEqualTo(columnId)
         .jsonPath("$.result.constraints[0].constraint.id").isEqualTo(constraintId)
         .jsonPath("$.result.relationships[0].relationship.id").isEqualTo(relationshipId)
+        .jsonPath("$.result.indexes[0].index.id").isEqualTo(indexId)
+        .jsonPath("$.result.indexes[0].columns[0].seqNo").isEqualTo(0)
         .consumeWith(document("table-snapshot",
             TableApiSnippets.getTableSnapshotPathParameters(),
             TableApiSnippets.getTableSnapshotRequestHeaders(),
@@ -273,6 +307,8 @@ class TableControllerTest {
         .willReturn(Mono.just(List.of()));
     given(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
         any(GetRelationshipsByTableIdQuery.class)))
+        .willReturn(Mono.just(List.of()));
+    given(getIndexesByTableIdUseCase.getIndexesByTableId(any(GetIndexesByTableIdQuery.class)))
         .willReturn(Mono.just(List.of()));
 
     webTestClient.get()
