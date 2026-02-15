@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
 import { toast } from 'sonner';
 import type { TableData, Point } from '../types';
-import { transformSnapshotToNode } from '../utils/tableHelpers';
+import {
+  transformSnapshotToNode,
+  parseTableExtra,
+} from '../utils/tableHelpers';
 import { generateUniqueName } from '../utils/nameGenerator';
 import { useSelectedSchema } from '../contexts';
 import { useSchemaSnapshots } from './useSchemaSnapshots';
@@ -14,16 +17,16 @@ import {
 
 export const useTables = () => {
   const { selectedSchemaId } = useSelectedSchema();
-  const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId || '');
+  const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
 
-  const createTableMutation = useCreateTable(selectedSchemaId || '');
-  const changeTableExtraMutation = useChangeTableExtra(selectedSchemaId || '');
-  const deleteTableMutation = useDeleteTable(selectedSchemaId || '');
+  const createTableMutation = useCreateTable(selectedSchemaId);
+  const changeTableExtraMutation = useChangeTableExtra(selectedSchemaId);
+  const deleteTableMutation = useDeleteTable(selectedSchemaId);
 
   const [tables, setTables] = useState<Node<TableData>[]>([]);
 
   useEffect(() => {
-    if (!selectedSchemaId || !snapshotsData) {
+    if (!snapshotsData) {
       setTables([]);
       return;
     }
@@ -35,7 +38,7 @@ export const useTables = () => {
   }, [selectedSchemaId, snapshotsData]);
 
   const addTable = (position: Point) => {
-    if (!selectedSchemaId || !snapshotsData) {
+    if (!snapshotsData) {
       toast.error('No schema selected');
       return;
     }
@@ -74,9 +77,7 @@ export const useTables = () => {
     const snapshot = snapshotsData[node.id];
     if (!snapshot) return;
 
-    const currentExtra = snapshot.table.extra
-      ? JSON.parse(snapshot.table.extra)
-      : {};
+    const currentExtra = parseTableExtra(snapshot.table.extra);
 
     changeTableExtraMutation.mutate({
       tableId: node.id,

@@ -89,6 +89,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         onEditingNameChange={tableActions.setEditingTableName}
         onToggleColumnEditMode={() => setIsColumnEditMode(!isColumnEditMode)}
         onSaveAllPendingChanges={handleSaveAllPendingChanges}
+        isAddingColumn={columnActions.isAddingColumn}
         onAddColumn={handleAddColumn}
         onDeleteTable={tableActions.deleteTable}
       />

@@ -16,8 +16,6 @@ export const useViewport = () => {
   viewportDataRef.current = viewportData;
 
   useEffect(() => {
-    if (!selectedSchemaId) return;
-
     const viewport = viewportDataRef.current[selectedSchemaId];
     if (viewport) {
       setViewport(viewport, { duration: 0 });
@@ -25,8 +23,6 @@ export const useViewport = () => {
   }, [selectedSchemaId, setViewport]);
 
   const handleMoveEnd = useCallback(() => {
-    if (!selectedSchemaId) return;
-
     const viewport = getViewport();
     setViewportData((prev) => ({
       ...prev,

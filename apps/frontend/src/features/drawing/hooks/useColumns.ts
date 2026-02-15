@@ -33,5 +33,6 @@ export const useColumns = ({ schemaId, tableId, columns }: UseColumnsProps) => {
   return {
     addColumn,
     removeColumn,
+    isAddingColumn: createColumnMutation.isPending,
   };
 };

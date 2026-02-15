@@ -3,8 +3,18 @@ import type { Constraint } from '@/types';
 import type { TableData, ColumnType, ConstraintKind, Point } from '../types';
 import type { TableSnapshotResponse } from '../api';
 
-type TableExtra = {
+export type TableExtra = {
   position?: Point;
+};
+
+export const parseTableExtra = (extraString: string | null): TableExtra => {
+  if (!extraString) return {};
+
+  try {
+    return JSON.parse(extraString) as TableExtra;
+  } catch {
+    return {};
+  }
 };
 
 type ConstraintMap = {
@@ -70,14 +80,7 @@ export const transformSnapshotToNode = (
   snapshot: TableSnapshotResponse,
   schemaId: string,
 ): Node<TableData> => {
-  let extra: TableExtra = {};
-  if (snapshot.table.extra) {
-    try {
-      extra = JSON.parse(snapshot.table.extra) as TableExtra;
-    } catch {
-      extra = {};
-    }
-  }
+  const extra = parseTableExtra(snapshot.table.extra);
   const position = extra.position || { x: 0, y: 0 };
 
   const constraints: Constraint[] = snapshot.constraints.map((c) => ({
