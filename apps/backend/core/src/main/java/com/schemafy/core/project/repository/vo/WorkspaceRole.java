@@ -25,4 +25,8 @@ public enum WorkspaceRole {
 
   public boolean isAdmin() { return this == ADMIN; }
 
+  public ProjectRole toProjectRole() {
+    return this == ADMIN ? ProjectRole.ADMIN : ProjectRole.VIEWER;
+  }
+
 }
