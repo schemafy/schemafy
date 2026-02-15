@@ -197,7 +197,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     config: RelationshipConfig,
   ) => {
     if (!snapshotsData) {
-      toast.error('No snapshots data');
+      toast.error('Failed to load schema data');
       return;
     }
 
@@ -235,7 +235,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     setSelectedRelationship(null);
   };
 
-  const changeRelationshipName = (relationshipId: string, newName: string) => {
+  const updateRelationshipName = (relationshipId: string, newName: string) => {
     changeRelationshipNameMutation.mutate({
       relationshipId,
       data: { newName },
@@ -253,7 +253,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     onReconnectEnd,
     updateRelationshipConfig,
     deleteRelationship,
-    changeRelationshipName,
+    updateRelationshipName,
     setSelectedRelationship,
   };
 };

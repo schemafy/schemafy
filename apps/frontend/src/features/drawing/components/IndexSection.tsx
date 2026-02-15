@@ -8,11 +8,11 @@ export const IndexSection = ({
   isEditMode,
   onCreateIndex,
   onDeleteIndex,
-  onChangeIndexName,
-  onChangeIndexType,
+  onUpdateIndexName,
+  onUpdateIndexType,
   onAddColumnToIndex,
   onRemoveColumnFromIndex,
-  onChangeSortDir,
+  onUpdateSortDir,
 }: IndexSectionProps) => {
   if (indexes.length === 0 && !isEditMode) {
     return null;
@@ -46,11 +46,11 @@ export const IndexSection = ({
               tableColumns={tableColumns}
               isEditMode={isEditMode}
               onDeleteIndex={onDeleteIndex}
-              onChangeIndexName={onChangeIndexName}
-              onChangeIndexType={onChangeIndexType}
+              onUpdateIndexName={onUpdateIndexName}
+              onUpdateIndexType={onUpdateIndexType}
               onAddColumnToIndex={onAddColumnToIndex}
               onRemoveColumnFromIndex={onRemoveColumnFromIndex}
-              onChangeSortDir={onChangeSortDir}
+              onUpdateSortDir={onUpdateSortDir}
             />
           ))
         )}

@@ -56,7 +56,7 @@ export const useConstraints = ({
     deleteConstraintMutation.mutate(constraintId);
   };
 
-  const changeConstraintName = (constraintId: string, newName: string) => {
+  const updateConstraintName = (constraintId: string, newName: string) => {
     debouncedChangeConstraintName.mutate({
       constraintId,
       data: { newName },
@@ -87,7 +87,7 @@ export const useConstraints = ({
   return {
     createConstraint,
     deleteConstraint,
-    changeConstraintName,
+    updateConstraintName,
     addColumnToConstraint,
     removeColumnFromConstraint,
     saveAllPendingChanges,

@@ -100,14 +100,19 @@ export const useColumn = (
     key: keyof ColumnType,
     value: string | boolean,
   ) => {
-    if (key === 'type') {
-      saveColumnType(columnId, value as string);
-    } else if (key === 'isPrimaryKey') {
-      saveColumnConstraint(columnId, 'PRIMARY_KEY', value as boolean);
-    } else if (key === 'isNotNull') {
-      saveColumnConstraint(columnId, 'NOT_NULL', value as boolean);
-    } else if (key === 'name') {
-      saveColumnName(columnId, value as string);
+    switch (key) {
+      case 'name':
+        saveColumnName(columnId, value as string);
+        break;
+      case 'type':
+        saveColumnType(columnId, value as string);
+        break;
+      case 'isPrimaryKey':
+        saveColumnConstraint(columnId, 'PRIMARY_KEY', value as boolean);
+        break;
+      case 'isNotNull':
+        saveColumnConstraint(columnId, 'NOT_NULL', value as boolean);
+        break;
     }
   };
 

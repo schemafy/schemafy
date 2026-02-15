@@ -17,7 +17,7 @@ export const ConstraintRow = ({
   tableColumns,
   isEditMode,
   onDeleteConstraint,
-  onChangeConstraintName,
+  onUpdateConstraintName,
   onAddColumnToConstraint,
   onRemoveColumnFromConstraint,
 }: ConstraintRowProps) => {
@@ -34,7 +34,7 @@ export const ConstraintRow = ({
           constraint={item}
           tableColumns={cols}
           onDeleteConstraint={onDeleteConstraint}
-          onChangeConstraintName={onChangeConstraintName}
+          onUpdateConstraintName={onUpdateConstraintName}
           onAddColumnToConstraint={onAddColumnToConstraint}
           onRemoveColumnFromConstraint={onRemoveColumnFromConstraint}
         />
@@ -76,7 +76,7 @@ export const EditModeConstraint = ({
   constraint,
   tableColumns,
   onDeleteConstraint,
-  onChangeConstraintName,
+  onUpdateConstraintName,
   onAddColumnToConstraint,
   onRemoveColumnFromConstraint,
 }: EditModeConstraintProps) => {
@@ -93,7 +93,7 @@ export const EditModeConstraint = ({
           name={constraint.name}
           placeholder="Constraint name"
           onNameChange={(newName) =>
-            onChangeConstraintName(constraint.id, newName)
+            onUpdateConstraintName(constraint.id, newName)
           }
         />
         <span className="text-xs font-mono text-schemafy-dark-gray">

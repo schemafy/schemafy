@@ -18,9 +18,7 @@ import { ConnectionHandles } from './ConnectionHandles';
 const TableNodeComponent = ({ data, id }: TableProps) => {
   const [isColumnEditMode, setIsColumnEditMode] = useState(false);
 
-  const columns = data.columns || [];
-  const indexes = data.indexes || [];
-  const constraints = data.constraints || [];
+  const { columns, indexes, constraints } = data;
 
   const { updateColumn, saveAllPendingChanges: saveColumnAllPendingChanges } =
     useColumn(data.schemaId, id, data.tableName, constraints);
@@ -125,11 +123,11 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         isEditMode={isColumnEditMode}
         onCreateIndex={indexActions.createIndex}
         onDeleteIndex={indexActions.deleteIndex}
-        onChangeIndexName={indexActions.changeIndexName}
-        onChangeIndexType={indexActions.changeIndexType}
+        onUpdateIndexName={indexActions.updateIndexName}
+        onUpdateIndexType={indexActions.updateIndexType}
         onAddColumnToIndex={indexActions.addColumnToIndex}
         onRemoveColumnFromIndex={indexActions.removeColumnFromIndex}
-        onChangeSortDir={indexActions.changeSortDir}
+        onUpdateSortDir={indexActions.updateSortDir}
       />
       <ConstraintSection
         schemaId={data.schemaId}
@@ -139,7 +137,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
         isEditMode={isColumnEditMode}
         onCreateConstraint={constraintActions.createConstraint}
         onDeleteConstraint={constraintActions.deleteConstraint}
-        onChangeConstraintName={constraintActions.changeConstraintName}
+        onUpdateConstraintName={constraintActions.updateConstraintName}
         onAddColumnToConstraint={constraintActions.addColumnToConstraint}
         onRemoveColumnFromConstraint={
           constraintActions.removeColumnFromConstraint

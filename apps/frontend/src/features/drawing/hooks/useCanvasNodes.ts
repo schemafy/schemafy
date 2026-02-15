@@ -27,6 +27,9 @@ export const useCanvasNodes = ({
 }: UseCanvasNodesParams) => {
   const nodes = useMemo(() => [...tables, ...memos], [tables, memos]);
 
+  const tableIds = useMemo(() => new Set(tables.map((t) => t.id)), [tables]);
+  const memoIds = useMemo(() => new Set(memos.map((m) => m.id)), [memos]);
+
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
       const tableChanges: NodeChange[] = [];
@@ -35,12 +38,9 @@ export const useCanvasNodes = ({
       changes.forEach((change) => {
         if (!('id' in change)) return;
 
-        const isTable = tables.some((t) => t.id === change.id);
-        const isMemo = memos.some((m) => m.id === change.id);
-
-        if (isTable) {
+        if (tableIds.has(change.id)) {
           tableChanges.push(change);
-        } else if (isMemo) {
+        } else if (memoIds.has(change.id)) {
           memoChanges.push(change);
         }
       });
@@ -53,16 +53,13 @@ export const useCanvasNodes = ({
         onMemosChange(memoChanges);
       }
     },
-    [tables, memos, onTablesChange, onMemosChange],
+    [tableIds, memoIds, onTablesChange, onMemosChange],
   );
 
   const handleNodeDragStop = (event: React.MouseEvent, node: Node) => {
-    const isTable = tables.some((t) => t.id === node.id);
-    const isMemo = memos.some((m) => m.id === node.id);
-
-    if (isTable && onTableDragStop) {
+    if (tableIds.has(node.id) && onTableDragStop) {
       onTableDragStop(event, node as Node<TableData>);
-    } else if (isMemo && onMemoDragStop) {
+    } else if (memoIds.has(node.id) && onMemoDragStop) {
       onMemoDragStop(event, node as Node<MemoData>);
     }
   };
@@ -72,12 +69,9 @@ export const useCanvasNodes = ({
     const memoNodes: Node<MemoData>[] = [];
 
     deletedNodes.forEach((node) => {
-      const isTable = tables.some((t) => t.id === node.id);
-      const isMemo = memos.some((m) => m.id === node.id);
-
-      if (isTable) {
+      if (tableIds.has(node.id)) {
         tableNodes.push(node as Node<TableData>);
-      } else if (isMemo) {
+      } else if (memoIds.has(node.id)) {
         memoNodes.push(node as Node<MemoData>);
       }
     });

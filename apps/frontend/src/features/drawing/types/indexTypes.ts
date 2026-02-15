@@ -28,11 +28,11 @@ export interface IndexSectionProps {
   isEditMode: boolean;
   onCreateIndex: () => void;
   onDeleteIndex: (indexId: string) => void;
-  onChangeIndexName: (indexId: string, newName: string) => void;
-  onChangeIndexType: (indexId: string, newType: IndexType) => void;
+  onUpdateIndexName: (indexId: string, newName: string) => void;
+  onUpdateIndexType: (indexId: string, newType: IndexType) => void;
   onAddColumnToIndex: (indexId: string, columnId: string) => void;
   onRemoveColumnFromIndex: (indexColumnId: string) => void;
-  onChangeSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
+  onUpdateSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
 }
 
 export interface IndexRowProps {
@@ -40,11 +40,11 @@ export interface IndexRowProps {
   tableColumns: Array<{ id: string; name: string }>;
   isEditMode: boolean;
   onDeleteIndex: (indexId: string) => void;
-  onChangeIndexName: (indexId: string, newName: string) => void;
-  onChangeIndexType: (indexId: string, newType: IndexType) => void;
+  onUpdateIndexName: (indexId: string, newName: string) => void;
+  onUpdateIndexType: (indexId: string, newType: IndexType) => void;
   onAddColumnToIndex: (indexId: string, columnId: string) => void;
   onRemoveColumnFromIndex: (indexColumnId: string) => void;
-  onChangeSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
+  onUpdateSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
 }
 
 export interface ViewModeIndexProps {
@@ -56,11 +56,11 @@ export interface EditModeIndexProps {
   index: IndexDataType;
   tableColumns: Array<{ id: string; name: string }>;
   onDeleteIndex: (indexId: string) => void;
-  onChangeIndexName: (indexId: string, newName: string) => void;
-  onChangeIndexType: (indexId: string, newType: IndexType) => void;
+  onUpdateIndexName: (indexId: string, newName: string) => void;
+  onUpdateIndexType: (indexId: string, newType: IndexType) => void;
   onAddColumnToIndex: (indexId: string, columnId: string) => void;
   onRemoveColumnFromIndex: (indexColumnId: string) => void;
-  onChangeSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
+  onUpdateSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
 }
 
 export const INDEX_TYPES: IndexType[] = [

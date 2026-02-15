@@ -62,7 +62,7 @@ export const useCanvasController = () => {
     onReconnectEnd,
     updateRelationshipConfig,
     deleteRelationship,
-    changeRelationshipName,
+    updateRelationshipName,
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
@@ -175,7 +175,7 @@ export const useCanvasController = () => {
       onReconnectStart,
       onReconnectEnd,
       updateRelationshipConfig,
-      changeRelationshipName,
+      updateRelationshipName,
       deleteRelationship,
       handleMemoCancel,
       handleMemoCreate,

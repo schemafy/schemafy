@@ -9,7 +9,7 @@ export interface ConstraintSectionProps {
   isEditMode: boolean;
   onCreateConstraint: (kind: CompositeConstraintKind) => void;
   onDeleteConstraint: (constraintId: string) => void;
-  onChangeConstraintName: (constraintId: string, newName: string) => void;
+  onUpdateConstraintName: (constraintId: string, newName: string) => void;
   onAddColumnToConstraint: (constraintId: string, columnId: string) => void;
   onRemoveColumnFromConstraint: (constraintColumnId: string) => void;
 }
@@ -19,7 +19,7 @@ export interface ConstraintRowProps {
   tableColumns: Array<{ id: string; name: string }>;
   isEditMode: boolean;
   onDeleteConstraint: (constraintId: string) => void;
-  onChangeConstraintName: (constraintId: string, newName: string) => void;
+  onUpdateConstraintName: (constraintId: string, newName: string) => void;
   onAddColumnToConstraint: (constraintId: string, columnId: string) => void;
   onRemoveColumnFromConstraint: (constraintColumnId: string) => void;
 }
@@ -33,7 +33,7 @@ export interface EditModeConstraintProps {
   constraint: Constraint;
   tableColumns: Array<{ id: string; name: string }>;
   onDeleteConstraint: (constraintId: string) => void;
-  onChangeConstraintName: (constraintId: string, newName: string) => void;
+  onUpdateConstraintName: (constraintId: string, newName: string) => void;
   onAddColumnToConstraint: (constraintId: string, columnId: string) => void;
   onRemoveColumnFromConstraint: (constraintColumnId: string) => void;
 }

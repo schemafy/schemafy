@@ -43,7 +43,7 @@ export const useIndexes = ({
     createIndexMutation.mutate({
       tableId,
       name: generateUniqueName(existingIndexNames, `idx_${tableName}_`),
-      type: 'BTREE' as IndexType,
+      type: 'BTREE',
     });
   };
 
@@ -51,14 +51,14 @@ export const useIndexes = ({
     deleteIndexMutation.mutate(indexId);
   };
 
-  const changeIndexName = (indexId: string, newName: string) => {
+  const updateIndexName = (indexId: string, newName: string) => {
     debouncedChangeIndexName.mutate({
       indexId,
       data: { newName },
     });
   };
 
-  const changeIndexType = (indexId: string, newType: IndexType) => {
+  const updateIndexType = (indexId: string, newType: IndexType) => {
     changeIndexTypeMutation.mutate({
       indexId,
       data: { type: newType },
@@ -73,7 +73,7 @@ export const useIndexes = ({
         data: {
           columnId,
           seqNo: index.columns.length,
-          sortDirection: 'ASC' as IndexSortDir,
+          sortDirection: 'ASC',
         },
       });
     }
@@ -83,7 +83,7 @@ export const useIndexes = ({
     removeColumnMutation.mutate(indexColumnId);
   };
 
-  const changeSortDir = (indexColumnId: string, sortDir: IndexSortDir) => {
+  const updateSortDir = (indexColumnId: string, sortDir: IndexSortDir) => {
     changeSortDirMutation.mutate({
       indexColumnId,
       data: { sortDirection: sortDir },
@@ -97,11 +97,11 @@ export const useIndexes = ({
   return {
     createIndex,
     deleteIndex,
-    changeIndexName,
-    changeIndexType,
+    updateIndexName,
+    updateIndexType,
     addColumnToIndex,
     removeColumnFromIndex,
-    changeSortDir,
+    updateSortDir,
     saveAllPendingChanges,
   };
 };

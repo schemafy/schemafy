@@ -59,7 +59,7 @@ const CanvasContent = observer(() => {
       onReconnectStart,
       onReconnectEnd,
       updateRelationshipConfig,
-      changeRelationshipName,
+      updateRelationshipName,
       deleteRelationship,
       handleMemoCancel,
       handleMemoCreate,
@@ -152,7 +152,7 @@ const CanvasContent = observer(() => {
               selectedRelationship={selectedRelationship}
               relationships={relationships}
               onRelationshipChange={updateRelationshipConfig}
-              onRelationshipNameChange={changeRelationshipName}
+              onRelationshipNameChange={updateRelationshipName}
               onRelationshipDelete={deleteRelationship}
               onClose={() => setSelectedRelationship(null)}
             />
