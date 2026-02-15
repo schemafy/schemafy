@@ -40,6 +40,13 @@ cache:
     default-ttl-minutes: 30
     key-prefix: "cache::"
 
+hmac:
+  secret: ${HMAC_SECRET:default-hmac-secret-change-me-in-production}
+  previous-secret: ${HMAC_PREVIOUS_SECRET:}
+  timestamp-tolerance-seconds: 30
+  enabled: false # TODO: 추후에 BFF에서 HMAC 적용 시 true로 변경
+  enforcement-mode: ENFORCE
+
 sharelink:
   pepper: ${SHARELINK_PEPPER:default-pepper-change-me}
 
