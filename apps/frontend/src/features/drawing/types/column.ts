@@ -54,6 +54,7 @@ export interface DragHandleProps {
 
 export interface TypeSelectorProps {
   value: string;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }
 
