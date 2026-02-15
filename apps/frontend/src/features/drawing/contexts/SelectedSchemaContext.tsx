@@ -5,6 +5,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { Loader2 } from 'lucide-react';
 import { SelectedSchemaContext } from './useSelectedSchema';
 import { useSchemas } from '../hooks/useSchemas';
 import { useCreateSchema } from '../hooks/useSchemaMutations';
@@ -104,9 +105,15 @@ export const SelectedSchemaProvider = ({
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [storageKey]);
 
-  // TODO: 로딩 스피너
   if (!selectedSchemaId) {
-    return null;
+    return (
+      <div className="flex flex-1 w-full items-center justify-center bg-schemafy-bg">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-schemafy-text" />
+          <span className="text-sm text-schemafy-text">Loading schema...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
