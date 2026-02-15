@@ -9,13 +9,14 @@ import {
   RELATIONSHIP_STYLE_TYPES,
   type RelationshipType,
   type RelationshipExtra,
+  type ConnectionValidationResult,
 } from '../types';
 
-export const getRelationshipType = (cardinality: string): RelationshipType => {
+const getRelationshipType = (cardinality: string): RelationshipType => {
   return cardinality === 'ONE_TO_MANY' ? 'one-to-many' : 'one-to-one';
 };
 
-export const getRelationshipStyle = (isNonIdentifying: boolean) => {
+const getRelationshipStyle = (isNonIdentifying: boolean) => {
   return isNonIdentifying
     ? RELATIONSHIP_STYLE_TYPES.dashed
     : RELATIONSHIP_STYLE_TYPES.solid;
@@ -25,26 +26,18 @@ export const convertRelationshipSnapshotToEdge = (
   snapshot: RelationshipSnapshotResponse,
 ): Edge => {
   const { relationship } = snapshot;
+  const extra = parseRelationshipExtra(relationship.extra);
   const relationshipType = getRelationshipType(relationship.cardinality);
-  const baseConfig = RELATIONSHIP_TYPES[relationshipType];
   const isNonIdentifying = relationship.kind === 'NON_IDENTIFYING';
   const style = getRelationshipStyle(isNonIdentifying);
-
-  let extra: RelationshipExtra = {};
-  if (relationship.extra) {
-    try {
-      extra = JSON.parse(relationship.extra) as RelationshipExtra;
-    } catch {
-      extra = {};
-    }
-  }
+  const baseConfig = RELATIONSHIP_TYPES[relationshipType];
 
   return {
     id: relationship.id,
     source: relationship.fkTableId,
     target: relationship.pkTableId,
-    sourceHandle: extra.sourceHandle,
-    targetHandle: extra.targetHandle,
+    sourceHandle: extra.fkHandle,
+    targetHandle: extra.pkHandle,
     type: 'customSmoothStep',
     style,
     markerStart: baseConfig.markerStart,
@@ -60,7 +53,6 @@ export const convertRelationshipSnapshotToEdge = (
       isNonIdentifying,
       controlPoint1: extra.controlPoint1,
       controlPoint2: extra.controlPoint2,
-      relationshipSnapshot: snapshot,
     },
   } as Edge;
 };
@@ -81,15 +73,6 @@ export const convertSnapshotsToEdges = (
       })
       .map((relSnapshot) => convertRelationshipSnapshotToEdge(relSnapshot)),
   );
-};
-
-export const shouldRecreateRelationship = (
-  currentKind: string,
-  currentCardinality: string,
-  newKind: string,
-  newCardinality: string,
-): boolean => {
-  return currentKind !== newKind || currentCardinality !== newCardinality;
 };
 
 export const findRelationshipById = (
@@ -127,13 +110,7 @@ const hasValidPrimaryKey = (pk: ConstraintSnapshotResponse | undefined) =>
 export const validateConnection = ({
   snapshots,
   connection,
-}: ValidateConnectionParams): {
-  isValid: boolean;
-  error?: string;
-  fkTableId?: string;
-  pkTableId?: string;
-  pkColumnIds?: string[];
-} => {
+}: ValidateConnectionParams): ConnectionValidationResult => {
   if (!connection.source || !connection.target) {
     return { isValid: false, error: 'Invalid connection' };
   }

@@ -23,3 +23,4 @@ export * from './useColumnMutations';
 export * from './useIndexMutations';
 export * from './useConstraintMutations';
 export * from './useRelationshipMutations';
+export * from './useControlPointDrag';

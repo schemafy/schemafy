@@ -1,5 +1,4 @@
 import type { Point } from './index';
-import type { Relationship } from '@/types';
 
 export const RELATIONSHIP_TYPES = {
   'one-to-one': {
@@ -56,8 +55,8 @@ export type SameDirectionControlPoints = {
 };
 
 export type RelationshipExtra = {
-  sourceHandle?: string;
-  targetHandle?: string;
+  fkHandle?: string;
+  pkHandle?: string;
 } & Partial<CrossDirectionControlPoints>;
 
 export interface EdgeData extends Record<string, unknown> {
@@ -65,10 +64,23 @@ export interface EdgeData extends Record<string, unknown> {
   isNonIdentifying: boolean;
   controlPoint1?: Point;
   controlPoint2?: Point;
-  dbRelationship?: Relationship;
   onControlPointDragEnd?: (
     id: string,
     controlPoint1: Point,
     controlPoint2?: Point,
   ) => void;
 }
+
+export type ValidationSuccess = {
+  isValid: true;
+  fkTableId: string;
+  pkTableId: string;
+  pkColumnIds: string[];
+};
+
+export type ValidationFailure = {
+  isValid: false;
+  error?: string;
+};
+
+export type ConnectionValidationResult = ValidationSuccess | ValidationFailure;
