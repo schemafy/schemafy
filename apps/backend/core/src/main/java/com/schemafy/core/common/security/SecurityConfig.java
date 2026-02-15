@@ -20,10 +20,13 @@ import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.hmac.HmacProperties;
 import com.schemafy.core.common.security.hmac.HmacVerificationFilter;
+import com.schemafy.core.common.security.hmac.NonceCache;
 import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
+import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,7 +48,9 @@ public class SecurityConfig {
   public SecurityWebFilterChain springSecurityFilterChain(
       ServerHttpSecurity http,
       JwtAuthenticationFilter jwtAuthenticationFilter,
-      Optional<HmacVerificationFilter> hmacVerificationFilter,
+      HmacProperties hmacProperties,
+      Optional<NonceCache> nonceCache,
+      WebExchangeErrorWriter errorWriter,
       JwtAuthenticationEntryPoint authenticationEntryPoint,
       JwtAccessDeniedHandler accessDeniedHandler) {
     http
@@ -72,8 +77,12 @@ public class SecurityConfig {
         .addFilterAt(jwtAuthenticationFilter,
             SecurityWebFiltersOrder.AUTHENTICATION);
 
-    hmacVerificationFilter.ifPresent(filter -> http.addFilterAfter(
-        filter, SecurityWebFiltersOrder.AUTHENTICATION));
+    nonceCache.ifPresent(cache -> {
+      HmacVerificationFilter hmacFilter = new HmacVerificationFilter(
+          hmacProperties, cache, errorWriter);
+      http.addFilterAfter(hmacFilter,
+          SecurityWebFiltersOrder.AUTHENTICATION);
+    });
 
     return http
         .authorizeExchange(exchanges -> exchanges
