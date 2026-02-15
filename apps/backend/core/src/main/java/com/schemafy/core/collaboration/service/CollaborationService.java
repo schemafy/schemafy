@@ -16,6 +16,7 @@ import com.schemafy.core.collaboration.dto.CursorPosition;
 import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
+import com.schemafy.core.collaboration.dto.event.CursorEvent;
 import com.schemafy.core.collaboration.service.handler.InboundMessageHandler;
 import com.schemafy.core.collaboration.service.handler.MessageContext;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
@@ -62,8 +63,19 @@ public class CollaborationService {
     }
     cursorDedupeCache.put(sessionId, cursor);
 
+    SessionEntry entry = sessionRegistry.getSessionEntry(projectId, sessionId)
+        .orElse(null);
+
+    if (entry == null) {
+      return Mono.empty();
+    }
+
+    String userId = entry.authInfo().getUserId();
+    String userName = entry.authInfo().getUserName();
+    CursorEvent.UserInfo userInfo = new CursorEvent.UserInfo(userId, userName);
+
     return eventPublisher.publish(projectId,
-        CollaborationOutboundFactory.cursor(sessionId, cursor));
+        CollaborationOutboundFactory.cursor(sessionId, userInfo, cursor));
   }
 
   public Mono<Void> removeSession(String projectId, String sessionId) {

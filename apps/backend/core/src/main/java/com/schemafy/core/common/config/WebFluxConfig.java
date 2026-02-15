@@ -1,14 +1,10 @@
 package com.schemafy.core.common.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.codec.ServerCodecConfigurer;
-import org.springframework.http.codec.protobuf.ProtobufDecoder;
-import org.springframework.http.codec.protobuf.ProtobufEncoder;
 import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.reactive.result.method.annotation.ArgumentResolverConfigurer;
 
-import com.schemafy.core.common.config.codec.ProtobufJsonDecoder;
 import com.schemafy.core.common.resolver.ApiVersionArgumentResolver;
 
 @Configuration
@@ -18,14 +14,6 @@ public class WebFluxConfig implements WebFluxConfigurer {
   public void configureArgumentResolvers(
       @NonNull ArgumentResolverConfigurer configurer) {
     configurer.addCustomResolver(new ApiVersionArgumentResolver());
-  }
-
-  @Override
-  public void configureHttpMessageCodecs(
-      @NonNull ServerCodecConfigurer configurer) {
-    configurer.customCodecs().register(new ProtobufDecoder());
-    configurer.customCodecs().register(new ProtobufEncoder());
-    configurer.customCodecs().register(new ProtobufJsonDecoder());
   }
 
 }

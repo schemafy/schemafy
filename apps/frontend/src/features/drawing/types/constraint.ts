@@ -1,4 +1,4 @@
-import type { Constraint } from '@schemafy/validator';
+import type { Constraint } from '@/types';
 import type { CompositeConstraintKind } from '../hooks/useConstraints';
 
 export interface ConstraintSectionProps {

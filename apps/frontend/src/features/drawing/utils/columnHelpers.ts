@@ -1,7 +1,7 @@
 import { ulid } from 'ulid';
 import type { ErdStore } from '@/store/erd.store';
 import type { ColumnType, ConstraintKind } from '../types';
-import type { Constraint, ConstraintColumn } from '@schemafy/validator';
+import type { Constraint, ConstraintColumn } from '@/types';
 
 export const getColumnName = (
   columns: Array<{ id: string; name: string }>,

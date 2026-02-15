@@ -1,27 +1,30 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { AuthStore } from '../../store/auth.store';
+import { authStore } from '../../store/auth.store';
+import { refreshToken } from '@/features/auth/api';
 
-const BASE_URL: string =
-  (import.meta as unknown as { env?: { VITE_BASE_URL?: string } })?.env
-    ?.VITE_BASE_URL ?? 'http://localhost:8080';
+const API_BASE_URL: string =
+  import.meta.env.VITE_BASE_URL || 'http://localhost:8080/api/v1.0';
 
-export const apiClient = axios.create({
-  baseURL: BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // 쿠키 전송을 위해 필요 (refresh token)
-});
+const PUBLIC_BASE_URL: string =
+  import.meta.env.VITE_PUBLIC_BASE_URL ||
+  'http://localhost:8080/public/api/v1.0';
 
-// 인증이 필요 없는 요청은 별도의 publicClient를 사용하도록 유도한다.
-export const publicClient = axios.create({
-  baseURL: BASE_URL,
+const commonConfig = {
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+};
+
+export const apiClient = axios.create({
+  ...commonConfig,
+  baseURL: API_BASE_URL,
+});
+
+export const publicClient = axios.create({
+  ...commonConfig,
+  baseURL: PUBLIC_BASE_URL,
 });
 
 type RequestConfigWithMeta = InternalAxiosRequestConfig & {
@@ -29,45 +32,8 @@ type RequestConfigWithMeta = InternalAxiosRequestConfig & {
   _skipAuth?: boolean;
 };
 
-const refreshClient = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-let refreshPromise: Promise<string | null> | null = null;
-
-const refreshAccessToken = async (): Promise<string | null> => {
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
-      try {
-        const response = await refreshClient.post(
-          '/public/api/v1.0/users/refresh',
-        );
-        const authHeader: string | undefined =
-          response.headers['authorization'];
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          const token = authHeader.replace('Bearer ', '');
-          AuthStore.getInstance().setAccessToken(token);
-          return token;
-        }
-        AuthStore.getInstance().clearAuth();
-        throw new Error('REFRESH_NO_AUTH_HEADER');
-      } catch (e) {
-        AuthStore.getInstance().clearAuth();
-        throw e instanceof Error ? e : new Error('REFRESH_FAILED');
-      } finally {
-        refreshPromise = null;
-      }
-    })();
-  }
-  return refreshPromise;
-};
-
 apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
-  const currentToken = AuthStore.getInstance().accessToken;
+  const currentToken = authStore.accessToken;
   if (currentToken) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['Authorization'] =
@@ -75,7 +41,7 @@ apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
     return config;
   }
 
-  const newToken = await refreshAccessToken();
+  const newToken = await refreshToken();
   if (newToken) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['Authorization'] =
@@ -95,7 +61,7 @@ apiClient.interceptors.response.use(
 
     if (responseStatus === 401) {
       config._retry = true;
-      const newToken = await refreshAccessToken();
+      const newToken = await refreshToken();
       if (newToken) {
         config.headers = config.headers ?? {};
         (config.headers as Record<string, string>)['Authorization'] =

@@ -70,6 +70,8 @@ public enum ErrorCode {
   ERD_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "E011", "메모를 찾을 수 없습니다."),
   ERD_MEMO_COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E012",
       "메모 댓글을 찾을 수 없습니다."),
+  ERD_SCHEMA_NAME_DUPLICATE(HttpStatus.CONFLICT, "E013", "스키마 이름이 중복됩니다."),
+  ERD_TABLE_NAME_DUPLICATE(HttpStatus.CONFLICT, "E014", "테이블 이름이 중복됩니다."),
 
   // WORKSPACE
   WORKSPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "W001", "워크스페이스를 찾을 수 없습니다."),
@@ -146,7 +148,17 @@ public enum ErrorCode {
   INVITATION_ALREADY_EXISTS(HttpStatus.CONFLICT, "INV009",
       "이미 대기 중인 초대가 존재합니다."),
   INVITATION_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "INV010",
-      "초대 타입이 일치하지 않습니다.");
+      "초대 타입이 일치하지 않습니다."),
+
+  // HMAC
+  HMAC_SIGNATURE_MISSING(HttpStatus.UNAUTHORIZED, "H001",
+      "HMAC 서명이 누락되었습니다."),
+  HMAC_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "H002",
+      "HMAC 서명이 유효하지 않습니다."),
+  HMAC_TIMESTAMP_EXPIRED(HttpStatus.UNAUTHORIZED, "H003",
+      "HMAC 타임스탬프가 만료되었습니다."),
+  HMAC_NONCE_DUPLICATE(HttpStatus.UNAUTHORIZED, "H004",
+      "중복된 HMAC 논스입니다.");
 
   private final HttpStatus status;
   private final String code;

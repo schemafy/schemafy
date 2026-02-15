@@ -1,7 +1,7 @@
 import type { Connection, Edge } from '@xyflow/react';
 import { ulid } from 'ulid';
 import { toast } from 'sonner';
-import type { Relationship, Schema } from '@schemafy/validator';
+import type { Relationship, Schema } from '@/types';
 import {
   RELATIONSHIP_TYPES,
   RELATIONSHIP_STYLE_TYPES,
@@ -84,7 +84,7 @@ export const createRelationshipFromConnection = ({
       id: ulid(),
       relationshipId: relId,
       fkColumnId: ulid(),
-      refColumnId: pkColId,
+      pkColumnId: pkColId,
       seqNo: index + 1,
       isAffected: false,
     };
@@ -92,8 +92,8 @@ export const createRelationshipFromConnection = ({
 
   return {
     id: relId,
-    srcTableId: connection.source,
-    tgtTableId: connection.target,
+    fkTableId: connection.source,
+    pkTableId: connection.target,
     name: `${sourceTable.name}_${targetTable.name}`,
     kind,
     cardinality: typeConfig.cardinality,
@@ -133,8 +133,8 @@ export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
 
       const edge: Edge = {
         id: rel.id,
-        source: rel.srcTableId,
-        target: rel.tgtTableId,
+        source: rel.fkTableId,
+        target: rel.pkTableId,
         sourceHandle: extra.sourceHandle,
         targetHandle: extra.targetHandle,
         type: 'customSmoothStep',

@@ -1,26 +1,25 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib';
 import { logoImg } from '@/assets';
-import { LandingContents, CanvasContents } from './Contents';
-import { UserMenu } from './UserMenu';
-import { AuthStore } from '@/store/auth.store';
+import { authStore } from '@/store/auth.store';
 import { useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
+import { CanvasHeader } from './CanvasHeader';
+import { DashboardHeader } from './DashboardHeader';
+import { LandingHeader } from './LandingHeader';
 
 export const Header = observer(
   ({ isCanvasPage }: { isCanvasPage: boolean }) => {
-    const authStore = AuthStore.getInstance();
-
     const { isAuthLoading, accessToken, user, isInitialized } = authStore;
 
     const contents = useMemo(() => {
-      if (isCanvasPage) return <CanvasContents />;
+      if (isCanvasPage) return <CanvasHeader />;
       if (isAuthLoading || !isInitialized)
         return (
           <div className="h-5 w-5 border-2 border-schemafy-light-gray border-t-black rounded-full animate-spin" />
         );
-      if (accessToken && user) return <UserMenu />;
-      return <LandingContents />;
+      if (accessToken && user) return <DashboardHeader />;
+      return <LandingHeader />;
     }, [isCanvasPage, isAuthLoading, accessToken, user, isInitialized]);
 
     return (

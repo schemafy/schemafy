@@ -34,10 +34,9 @@ public class AuthController {
   public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> signUp(
       @Valid @RequestBody SignUpRequest request) {
     return userService.signUp(request.toCommand())
-        .map(user -> jwtTokenIssuer.issueTokens(
-            user.getId(),
-            user.getName(),
-            BaseResponse.success(UserInfoResponse.from(user))));
+        .map(user -> ResponseEntity.ok()
+            .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
+            .body(BaseResponse.success(UserInfoResponse.from(user))));
   }
 
   /** 사용자 인증 후 JWT 토큰을 발급합니다. */
@@ -45,10 +44,9 @@ public class AuthController {
   public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> login(
       @Valid @RequestBody LoginRequest request) {
     return userService.login(request.toCommand())
-        .map(user -> jwtTokenIssuer.issueTokens(
-            user.getId(),
-            user.getName(),
-            BaseResponse.success(UserInfoResponse.from(user))));
+        .map(user -> ResponseEntity.ok()
+            .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
+            .body(BaseResponse.success(UserInfoResponse.from(user))));
   }
 
   /** Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급합니다. */
@@ -57,10 +55,9 @@ public class AuthController {
       ServerHttpRequest request) {
     return Mono.fromCallable(() -> extractRefreshTokenFromCookie(request))
         .flatMap(userService::getUserFromRefreshToken)
-        .map(user -> jwtTokenIssuer.issueTokens(
-            user.getId(),
-            user.getName(),
-            BaseResponse.success(null)));
+        .map(user -> ResponseEntity.ok()
+            .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
+            .body(BaseResponse.success(null)));
   }
 
   /** HTTP 요청의 쿠키에서 Refresh Token을 추출합니다. */

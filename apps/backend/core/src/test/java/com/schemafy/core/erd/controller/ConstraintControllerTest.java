@@ -1,936 +1,653 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
-import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
-import com.schemafy.core.erd.service.ConstraintService;
+import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintDefaultExprRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeConstraintNameRequest;
+import com.schemafy.core.erd.controller.dto.request.CreateConstraintColumnRequest;
+import com.schemafy.core.erd.controller.dto.request.CreateConstraintRequest;
+import com.schemafy.core.erd.docs.ConstraintApiSnippets;
+import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnResult;
+import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintResult;
+import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.DeleteConstraintCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.DeleteConstraintUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnQuery;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdQuery;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintQuery;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
+import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
+import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
+import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
+import com.schemafy.domain.erd.constraint.domain.Constraint;
+import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 import reactor.core.publisher.Mono;
-import validation.Validation;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
+@ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
-@ActiveProfiles("test")
-@DisplayName("ConstraintController RestDocs 테스트")
+@DisplayName("ConstraintController 통합 테스트")
 @WithMockCustomUser(roles = "EDITOR")
 class ConstraintControllerTest {
 
-  private static final String API_BASE_PATH = ApiPath.API
-      .replace("{version}", "v1.0");
   private static final ObjectMapper objectMapper = new ObjectMapper()
       .findAndRegisterModules();
+
+  private static final String API_BASE_PATH = ApiPath.API
+      .replace("{version}", "v1.0");
 
   @Autowired
   private WebTestClient webTestClient;
 
   @MockitoBean
-  private ConstraintService constraintService;
+  private CreateConstraintUseCase createConstraintUseCase;
 
-  private String toJson(Message message) throws Exception {
-    return JsonFormat.printer()
-        .print(message);
-  }
+  @MockitoBean
+  private GetConstraintUseCase getConstraintUseCase;
+
+  @MockitoBean
+  private GetConstraintsByTableIdUseCase getConstraintsByTableIdUseCase;
+
+  @MockitoBean
+  private ChangeConstraintCheckExprUseCase changeConstraintCheckExprUseCase;
+
+  @MockitoBean
+  private ChangeConstraintDefaultExprUseCase changeConstraintDefaultExprUseCase;
+
+  @MockitoBean
+  private ChangeConstraintNameUseCase changeConstraintNameUseCase;
+
+  @MockitoBean
+  private DeleteConstraintUseCase deleteConstraintUseCase;
+
+  @MockitoBean
+  private GetConstraintColumnsByConstraintIdUseCase getConstraintColumnsByConstraintIdUseCase;
+
+  @MockitoBean
+  private AddConstraintColumnUseCase addConstraintColumnUseCase;
+
+  @MockitoBean
+  private RemoveConstraintColumnUseCase removeConstraintColumnUseCase;
+
+  @MockitoBean
+  private GetConstraintColumnUseCase getConstraintColumnUseCase;
+
+  @MockitoBean
+  private ChangeConstraintColumnPositionUseCase changeConstraintColumnPositionUseCase;
 
   @Test
   @DisplayName("제약조건 생성 API 문서화")
   void createConstraint() throws Exception {
-    Validation.CreateConstraintRequest.Builder builder = Validation.CreateConstraintRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "uid",
-                                            "seqNo": 1,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "autoIncrement": false
-                                        },
-                                        {
-                                            "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "visit_count",
-                                            "seqNo": 1,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "방문 횟수",
-                                            "autoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                 "constraint": {
-                     "id": "06D5XSF8RRRKMCHVNX68TDX1K4",
-                     "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                     "name": "PK",
-                     "kind": "PRIMARY_KEY",
-                     "columns": [
-                         {
-                             "id": "06D5XST4N38Z9QANKMEDMCXAYG",
-                             "constraintId": "06D5XSF8RRRKMCHVNX68TDX1K4",
-                            "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                            "seqNo": 1
-                        }
-                    ]
-                }
-            }
-            """,
-            builder);
-    Validation.CreateConstraintRequest request = builder.build();
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
 
-    AffectedMappingResponse mockResponse = new AffectedMappingResponse(
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        Map.of("06D6W8HDY79QFZX39RMX62KSX4",
-            Map.of("06D5XSF8RRRKMCHVNX68TDX1K4",
-                "06D6WWYRQCEXN1ACZ4ZJ12DFTG")),
-        Map.of("06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-            Map.of("06D5XST4N38Z9QANKMEDMCXAYG",
-                "06D5XST4N38Z9QANKMEDMCXAYG")),
-        Collections.emptyMap(),
-        Collections.emptyMap(),
-        AffectedMappingResponse.PropagatedEntities.empty());
+    CreateConstraintRequest request = new CreateConstraintRequest(
+        tableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnRequest(columnId, 1)));
 
-    when(constraintService.createConstraint(
-        any(Validation.CreateConstraintRequest.class)))
-        .thenReturn(Mono.just(mockResponse));
+    CreateConstraintResult result = new CreateConstraintResult(
+        constraintId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null);
+
+    given(createConstraintUseCase.createConstraint(any(CreateConstraintCommand.class)))
+        .willReturn(Mono.just(MutationResult.of(result, tableId)));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/constraints")
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+        .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath(
-            "$.result.constraints['06D6W8HDY79QFZX39RMX62KSX4']['06D5XSF8RRRKMCHVNX68TDX1K4']")
-        .isEqualTo("06D6WWYRQCEXN1ACZ4ZJ12DFTG")
-        .jsonPath(
-            "$.result.constraintColumns['06D6WWYRQCEXN1ACZ4ZJ12DFTG']['06D5XST4N38Z9QANKMEDMCXAYG']")
-        .isEqualTo("06D5XST4N38Z9QANKMEDMCXAYG")
+        .jsonPath("$.result.data.id").isEqualTo(constraintId)
         .consumeWith(document("constraint-create",
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description(
-                        "요청 본문 타입 (application/json)"),
-                headerWithName("Accept")
-                    .description(
-                        "응답 포맷 (application/json)")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("constraint.id")
-                    .description("제약조건 ID (FE ID)"),
-                fieldWithPath("constraint.tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("constraint.name")
-                    .description("제약조건 이름"),
-                fieldWithPath("constraint.kind")
-                    .type(JsonFieldType.STRING)
-                    .description("제약조건 타입"),
-                fieldWithPath("constraint.columns")
-                    .description("제약조건 컬럼 목록"),
-                fieldWithPath("constraint.columns[].columnId")
-                    .description("컬럼 ID"),
-                fieldWithPath("constraint.columns[].seqNo")
-                    .description("순서 번호")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            relaxedResponseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result").description("응답 데이터"),
-                subsectionWithPath("result.schemas")
-                    .description(
-                        "스키마 ID 매핑 (FE ID -> BE ID)"),
-                subsectionWithPath("result.tables")
-                    .description(
-                        "테이블 ID 매핑 (FE ID -> BE ID)"),
-                subsectionWithPath("result.columns")
-                    .description(
-                        "컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.indexes")
-                    .description(
-                        "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.indexColumns")
-                    .description(
-                        "인덱스 컬럼 ID 매핑 (Index BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.constraints")
-                    .description(
-                        "제약조건 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.constraintColumns")
-                    .description(
-                        "제약조건 컬럼 ID 매핑 (Constraint BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.relationships")
-                    .description(
-                        "관계 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.relationshipColumns")
-                    .description(
-                        "관계 컬럼 ID 매핑 (Relationship BE ID -> { FE ID -> BE ID })"),
-                fieldWithPath("result.propagated")
-                    .description("전파된 엔티티 정보"),
-                fieldWithPath("result.propagated.columns")
-                    .description("전파된 컬럼 목록"),
-                fieldWithPath(
-                    "result.propagated.relationshipColumns")
-                    .description("전파된 관계 컬럼 목록"),
-                fieldWithPath(
-                    "result.propagated.constraintColumns")
-                    .description("전파된 제약조건 컬럼 목록"),
-                fieldWithPath("result.propagated.indexColumns")
-                    .description("전파된 인덱스 컬럼 목록"))));
+            ConstraintApiSnippets.createConstraintRequestHeaders(),
+            ConstraintApiSnippets.createConstraintRequest(),
+            ConstraintApiSnippets.createConstraintResponseHeaders(),
+            ConstraintApiSnippets.createConstraintResponse()));
   }
 
   @Test
-  @DisplayName("제약조건 단건 조회 API 문서화")
-  void getConstraint() throws Exception {
-    String mockResponseJson = """
-        {
-            "id": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-            "name": "PK",
-            "kind": "CONSTRAINT_KIND_UNSPECIFIED",
-            "columns": [
-                {
-                    "id": "06D6WWYRTER122SPQBVSX4T3MR",
-                    "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                    "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                    "seqNo": 1
-                }
-            ]
-        }
-        """;
+  @DisplayName("제약조건 생성 시 잘못된 kind 값이면 400 에러를 반환한다")
+  void createConstraintWithInvalidKindReturnsBadRequest() {
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/constraints")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "tableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+              "name": "pk_users",
+              "kind": "WRONG_KIND",
+              "columns": [{"columnId":"06D6W3CAHD51T5NJPK29Q6BCRA","seqNo":0}]
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(false)
+        .jsonPath("$.error.code")
+        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
 
-    when(constraintService.getConstraint("06D6WWYRQCEXN1ACZ4ZJ12DFTG"))
-        .thenReturn(Mono.just(objectMapper.readValue(mockResponseJson,
-            ConstraintResponse.class)));
+    then(createConstraintUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("제약조건 조회 API 문서화")
+  void getConstraint() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    Constraint constraint = new Constraint(
+        constraintId,
+        tableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null);
+
+    given(getConstraintUseCase.getConstraint(any(GetConstraintQuery.class)))
+        .willReturn(Mono.just(constraint));
 
     webTestClient.get()
-        .uri(API_BASE_PATH + "/constraints/{constraintId}",
-            "06D6WWYRQCEXN1ACZ4ZJ12DFTG")
+        .uri(API_BASE_PATH + "/constraints/{constraintId}", constraintId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo("06D6WWYRQCEXN1ACZ4ZJ12DFTG")
-        .jsonPath("$.result.name").isEqualTo("PK")
+        .jsonPath("$.result.id").isEqualTo(constraintId)
         .consumeWith(document("constraint-get",
-            pathParameters(
-                parameterWithName("constraintId")
-                    .description("조회할 제약조건의 ID")),
-            requestHeaders(
-                headerWithName("Accept").description("응답 포맷")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result").description("제약조건 정보"),
-                fieldWithPath("result.id")
-                    .description("제약조건 ID"),
-                fieldWithPath("result.tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("result.name")
-                    .description("제약조건 이름"),
-                fieldWithPath("result.kind").description(
-                    "제약조건 종류 (PRIMARY_KEY, FOREIGN_KEY, UNIQUE, CHECK)"),
-                fieldWithPath("result.columns")
-                    .description("제약조건 컬럼 목록"),
-                fieldWithPath("result.columns[].id")
-                    .description("제약조건 컬럼 ID"),
-                fieldWithPath("result.columns[].constraintId")
-                    .description("제약조건 ID"),
-                fieldWithPath("result.columns[].columnId")
-                    .description("컬럼 ID"),
-                fieldWithPath("result.columns[].seqNo")
-                    .description("순서 번호"))));
+            ConstraintApiSnippets.getConstraintPathParameters(),
+            ConstraintApiSnippets.getConstraintRequestHeaders(),
+            ConstraintApiSnippets.getConstraintResponseHeaders(),
+            ConstraintApiSnippets.getConstraintResponse()));
+  }
+
+  @Test
+  @DisplayName("테이블별 제약조건 목록 조회 API 문서화")
+  void getConstraintsByTableId() {
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+    String constraintId1 = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String constraintId2 = "06D6W4DAHD51T5NJPK29Q6BCRD";
+
+    Constraint constraint1 = new Constraint(constraintId1, tableId, "pk_users",
+        ConstraintKind.PRIMARY_KEY, null, null);
+    Constraint constraint2 = new Constraint(constraintId2, tableId, "uq_users_email",
+        ConstraintKind.UNIQUE, null, null);
+
+    given(getConstraintsByTableIdUseCase.getConstraintsByTableId(any(GetConstraintsByTableIdQuery.class)))
+        .willReturn(Mono.just(List.of(constraint1, constraint2)));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/tables/{tableId}/constraints", tableId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result").isArray()
+        .jsonPath("$.result[0].id").isEqualTo(constraintId1)
+        .consumeWith(document("constraint-list-by-table",
+            ConstraintApiSnippets.getConstraintsByTableIdPathParameters(),
+            ConstraintApiSnippets.getConstraintsByTableIdRequestHeaders(),
+            ConstraintApiSnippets.getConstraintsByTableIdResponseHeaders(),
+            ConstraintApiSnippets.getConstraintsByTableIdResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 CHECK 표현식 변경 API 문서화")
+  void changeConstraintCheckExpr() throws Exception {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    ChangeConstraintCheckExprRequest request = new ChangeConstraintCheckExprRequest(JsonNullable.of("value > 0"));
+
+    given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(objectMapper.writeValueAsString(request))
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("constraint-change-check-expr",
+            ConstraintApiSnippets.changeConstraintCheckExprPathParameters(),
+            ConstraintApiSnippets.changeConstraintCheckExprRequestHeaders(),
+            ConstraintApiSnippets.changeConstraintCheckExprRequest(),
+            ConstraintApiSnippets.changeConstraintCheckExprResponseHeaders(),
+            ConstraintApiSnippets.changeConstraintCheckExprResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 CHECK 표현식 변경 시 빈 값이면 표현식을 제거한다")
+  void changeConstraintCheckExprWithBlankValueReturnsOk() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "checkExpr": ""
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("제약조건 CHECK 표현식 변경 시 null 값이면 표현식을 제거한다")
+  void changeConstraintCheckExprWithNullValueReturnsOk() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "checkExpr": null
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("제약조건 CHECK 표현식 변경 시 필드가 없으면 400 에러를 반환한다")
+  void changeConstraintCheckExprWithMissingFieldReturnsBadRequest() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(false)
+        .jsonPath("$.error.code")
+        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+
+    then(changeConstraintCheckExprUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("제약조건 DEFAULT 표현식 변경 API 문서화")
+  void changeConstraintDefaultExpr() throws Exception {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    ChangeConstraintDefaultExprRequest request = new ChangeConstraintDefaultExprRequest(JsonNullable.of("0"));
+
+    given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(objectMapper.writeValueAsString(request))
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("constraint-change-default-expr",
+            ConstraintApiSnippets.changeConstraintDefaultExprPathParameters(),
+            ConstraintApiSnippets.changeConstraintDefaultExprRequestHeaders(),
+            ConstraintApiSnippets.changeConstraintDefaultExprRequest(),
+            ConstraintApiSnippets.changeConstraintDefaultExprResponseHeaders(),
+            ConstraintApiSnippets.changeConstraintDefaultExprResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 DEFAULT 표현식 변경 시 빈 값이면 표현식을 제거한다")
+  void changeConstraintDefaultExprWithBlankValueReturnsOk() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "defaultExpr": ""
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("제약조건 DEFAULT 표현식 변경 시 null 값이면 표현식을 제거한다")
+  void changeConstraintDefaultExprWithNullValueReturnsOk() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "defaultExpr": null
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("제약조건 DEFAULT 표현식 변경 시 필드가 없으면 400 에러를 반환한다")
+  void changeConstraintDefaultExprWithMissingFieldReturnsBadRequest() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(false)
+        .jsonPath("$.error.code")
+        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+
+    then(changeConstraintDefaultExprUseCase).shouldHaveNoInteractions();
   }
 
   @Test
   @DisplayName("제약조건 이름 변경 API 문서화")
-  void updateConstraintName() throws Exception {
-    Validation.ChangeConstraintNameRequest.Builder builder = Validation.ChangeConstraintNameRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "uid",
-                                            "seqNo": 1,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "autoIncrement": false
-                                        },
-                                        {
-                                            "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "visit_count",
-                                            "seqNo": 1,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "방문 횟수",
-                                            "autoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [
-                                        {
-                                            "id": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "PK",
-                                            "kind": "CONSTRAINT_KIND_UNSPECIFIED",
-                                            "columns": [
-                                                {
-                                                    "id": "06D6WWYRTER122SPQBVSX4T3MR",
-                                                    "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                                    "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                    "seqNo": 1
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                "newName": "PK_users"
-            }
-            """,
-            builder);
-    Validation.ChangeConstraintNameRequest request = builder.build();
+  void changeConstraintName() throws Exception {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    String mockResponseJson = """
-        {
-            "id": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-            "name": "PK_users",
-            "kind": "CONSTRAINT_KIND_UNSPECIFIED",
-            "columns": []
-        }
-        """;
+    ChangeConstraintNameRequest request = new ChangeConstraintNameRequest("pk_users_new");
 
-    when(constraintService.updateConstraintName(
-        any(Validation.ChangeConstraintNameRequest.class)))
-        .thenReturn(Mono
-            .just(objectMapper.readValue(mockResponseJson,
-                ConstraintResponse.class)));
+    given(changeConstraintNameUseCase.changeConstraintName(any(ChangeConstraintNameCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
-    webTestClient.put()
-        .uri(API_BASE_PATH + "/constraints/{constraintId}/name",
-            "06D6WWYRQCEXN1ACZ4ZJ12DFTG")
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/name", constraintId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+        .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo("06D6WWYRQCEXN1ACZ4ZJ12DFTG")
-        .jsonPath("$.result.name").isEqualTo("PK_users")
-        .consumeWith(document("constraint-update-name",
-            pathParameters(
-                parameterWithName("constraintId")
-                    .description("제약조건 ID")),
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description("요청 본문 타입"),
-                headerWithName("Accept").description("응답 포맷")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("constraintId")
-                    .description("변경할 제약조건 ID"),
-                fieldWithPath("newName")
-                    .description("새 제약조건 이름")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("수정된 제약조건 정보"),
-                fieldWithPath("result.id")
-                    .description("제약조건 ID"),
-                fieldWithPath("result.tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("result.name")
-                    .description("변경된 제약조건 이름"),
-                fieldWithPath("result.kind")
-                    .description("제약조건 종류"),
-                fieldWithPath("result.columns")
-                    .description("제약조건 컬럼 목록"))));
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("constraint-change-name",
+            ConstraintApiSnippets.changeConstraintNamePathParameters(),
+            ConstraintApiSnippets.changeConstraintNameRequestHeaders(),
+            ConstraintApiSnippets.changeConstraintNameRequest(),
+            ConstraintApiSnippets.changeConstraintNameResponseHeaders(),
+            ConstraintApiSnippets.changeConstraintNameResponse()));
   }
 
   @Test
-  @DisplayName("제약조건에 컬럼 추가 API 문서화")
-  void addColumnToConstraint() throws Exception {
-    Validation.AddColumnToConstraintRequest.Builder builder = Validation.AddColumnToConstraintRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "uid",
-                                            "seqNo": 1,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "autoIncrement": false
-                                        },
-                                        {
-                                            "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "visit_count",
-                                            "seqNo": 2,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "방문 횟수",
-                                            "autoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [
-                                        {
-                                            "id": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "PK_users",
-                                            "kind": "CONSTRAINT_KIND_UNSPECIFIED",
-                                            "columns": [
-                                                {
-                                                    "id": "06D6WWYRTER122SPQBVSX4T3MR",
-                                                    "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                                    "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                    "seqNo": 1
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                "constraintColumn": {
-                    "id": "06D6X1234567890ABCDEFGHIJK",
-                    "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                    "columnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                    "seqNo": 2
-                }
-            }
-            """,
-            builder);
-    Validation.AddColumnToConstraintRequest request = builder.build();
+  @WithMockCustomUser(roles = "ADMIN")
+  @DisplayName("제약조건 삭제 API 문서화")
+  void deleteConstraint() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    when(constraintService.addColumnToConstraint(
-        any(Validation.AddColumnToConstraintRequest.class)))
-        .thenReturn(Mono.just(new AffectedMappingResponse(
-            Collections.emptyMap(),
-            Collections.emptyMap(),
-            Collections.emptyMap(),
-            Collections.emptyMap(),
-            Collections.emptyMap(),
-            Map.of("06D6W8HDY79QFZX39RMX62KSX4",
-                Map.of("06D5XSF8RRRKMCHVNX68TDX1K4",
-                    "06D6WWYRQCEXN1ACZ4ZJ12DFTG")),
-            Map.of("06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                Map.of("06D6X1234567890ABCDEFGHIJK",
-                    "06D6X2345678901BCDEFGHIJKL")),
-            Collections.emptyMap(),
-            Collections.emptyMap(),
-            AffectedMappingResponse.PropagatedEntities
-                .empty())));
+    given(deleteConstraintUseCase.deleteConstraint(any(DeleteConstraintCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.delete()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}", constraintId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("constraint-delete",
+            ConstraintApiSnippets.deleteConstraintPathParameters(),
+            ConstraintApiSnippets.deleteConstraintRequestHeaders(),
+            ConstraintApiSnippets.deleteConstraintResponseHeaders(),
+            ConstraintApiSnippets.deleteConstraintResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 컬럼 목록 조회 API 문서화")
+  void getConstraintColumns() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String constraintColumnId1 = "06D6W5CAHD51T5NJPK29Q6BCRE";
+    String constraintColumnId2 = "06D6W5DAHD51T5NJPK29Q6BCRF";
+    String columnId1 = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String columnId2 = "06D6W3DAHD51T5NJPK29Q6BCRB";
+
+    ConstraintColumn constraintColumn1 = new ConstraintColumn(
+        constraintColumnId1, constraintId, columnId1, 1);
+    ConstraintColumn constraintColumn2 = new ConstraintColumn(
+        constraintColumnId2, constraintId, columnId2, 2);
+
+    given(getConstraintColumnsByConstraintIdUseCase.getConstraintColumnsByConstraintId(
+        any(GetConstraintColumnsByConstraintIdQuery.class)))
+        .willReturn(Mono.just(List.of(constraintColumn1, constraintColumn2)));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/columns", constraintId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result").isArray()
+        .jsonPath("$.result[0].id").isEqualTo(constraintColumnId1)
+        .consumeWith(document("constraint-columns-list",
+            ConstraintApiSnippets.getConstraintColumnsPathParameters(),
+            ConstraintApiSnippets.getConstraintColumnsRequestHeaders(),
+            ConstraintApiSnippets.getConstraintColumnsResponseHeaders(),
+            ConstraintApiSnippets.getConstraintColumnsResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 컬럼 추가 API 문서화")
+  void addConstraintColumn() throws Exception {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String constraintColumnId = "06D6W5CAHD51T5NJPK29Q6BCRE";
+
+    AddConstraintColumnRequest request = new AddConstraintColumnRequest(columnId, 1);
+
+    AddConstraintColumnResult result = new AddConstraintColumnResult(
+        constraintColumnId,
+        constraintId,
+        columnId,
+        1,
+        List.of());
+
+    given(addConstraintColumnUseCase.addConstraintColumn(any(AddConstraintColumnCommand.class)))
+        .willReturn(Mono.just(MutationResult.of(result, tableId)));
 
     webTestClient.post()
-        .uri(API_BASE_PATH + "/constraints/{constraintId}/columns",
-            "06D6WWYRQCEXN1ACZ4ZJ12DFTG")
+        .uri(API_BASE_PATH + "/constraints/{constraintId}/columns", constraintId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+        .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath(
-            "$.result.constraints['06D6W8HDY79QFZX39RMX62KSX4']['06D5XSF8RRRKMCHVNX68TDX1K4']")
-        .isEqualTo("06D6WWYRQCEXN1ACZ4ZJ12DFTG")
-        .jsonPath(
-            "$.result.constraintColumns['06D6WWYRQCEXN1ACZ4ZJ12DFTG']['06D6X1234567890ABCDEFGHIJK']")
-        .isEqualTo("06D6X2345678901BCDEFGHIJKL")
-        .consumeWith(document("constraint-add-column",
-            pathParameters(
-                parameterWithName("constraintId")
-                    .description("제약조건 ID")),
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description("요청 본문 타입"),
-                headerWithName("Accept").description("응답 포맷")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("constraintId")
-                    .description("제약조건 ID"),
-                fieldWithPath("constraintColumn.id")
-                    .description("제약조건 컬럼 ID (FE ID)"),
-                fieldWithPath("constraintColumn.constraintId")
-                    .description("제약조건 ID"),
-                fieldWithPath("constraintColumn.columnId")
-                    .description("컬럼 ID"),
-                fieldWithPath("constraintColumn.seqNo")
-                    .description("순서 번호")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            relaxedResponseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("응답 데이터"),
-                subsectionWithPath("result.schemas")
-                    .description(
-                        "스키마 ID 매핑 (FE ID -> BE ID)"),
-                subsectionWithPath("result.tables")
-                    .description(
-                        "테이블 ID 매핑 (FE ID -> BE ID)"),
-                subsectionWithPath("result.columns")
-                    .description(
-                        "컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.indexes")
-                    .description(
-                        "인덱스 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.indexColumns")
-                    .description(
-                        "인덱스 컬럼 ID 매핑 (Index BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.constraints")
-                    .description(
-                        "제약조건 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.constraintColumns")
-                    .description(
-                        "제약조건 컬럼 ID 매핑 (Constraint BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.relationships")
-                    .description(
-                        "관계 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                subsectionWithPath("result.relationshipColumns")
-                    .description(
-                        "관계 컬럼 ID 매핑 (Relationship BE ID -> { FE ID -> BE ID })"),
-                fieldWithPath("result.propagated")
-                    .description("전파된 엔티티 정보"),
-                fieldWithPath("result.propagated.columns")
-                    .description("전파된 컬럼 목록"),
-                fieldWithPath(
-                    "result.propagated.relationshipColumns")
-                    .description("전파된 관계 컬럼 목록"),
-                fieldWithPath(
-                    "result.propagated.constraintColumns")
-                    .description("전파된 제약조건 컬럼 목록"),
-                fieldWithPath("result.propagated.indexColumns")
-                    .description("전파된 인덱스 컬럼 목록"))));
+        .jsonPath("$.result.data.id").isEqualTo(constraintColumnId)
+        .consumeWith(document("constraint-column-add",
+            ConstraintApiSnippets.addConstraintColumnPathParameters(),
+            ConstraintApiSnippets.addConstraintColumnRequestHeaders(),
+            ConstraintApiSnippets.addConstraintColumnRequest(),
+            ConstraintApiSnippets.addConstraintColumnResponseHeaders(),
+            ConstraintApiSnippets.addConstraintColumnResponse()));
   }
 
   @Test
-  @DisplayName("제약조건에서 컬럼 제거 API 문서화")
-  void removeColumnFromConstraint() throws Exception {
-    Validation.RemoveColumnFromConstraintRequest.Builder builder = Validation.RemoveColumnFromConstraintRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "uid",
-                                            "seqNo": 1,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "autoIncrement": false
-                                        },
-                                        {
-                                            "id": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "visit_count",
-                                            "seqNo": 2,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "방문 횟수",
-                                            "autoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [
-                                        {
-                                            "id": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "PK_users",
-                                            "kind": "CONSTRAINT_KIND_UNSPECIFIED",
-                                            "columns": [
-                                                {
-                                                    "id": "06D6WWYRTER122SPQBVSX4T3MR",
-                                                    "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                                    "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                    "seqNo": 1
-                                                },
-                                                {
-                                                    "id": "06D6X2345678901BCDEFGHIJKL",
-                                                    "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                                    "columnId": "06D6WG72ZPAK38RNWP3DRK7W8C",
-                                                    "seqNo": 2
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                "constraintColumnId": "06D6X2345678901BCDEFGHIJKL"
-            }
-            """,
-            builder);
-    Validation.RemoveColumnFromConstraintRequest request = builder.build();
+  @DisplayName("제약조건 컬럼 제거 API 문서화")
+  void removeConstraintColumn() {
+    String constraintColumnId = "06D6W5CAHD51T5NJPK29Q6BCRE";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    when(constraintService.removeColumnFromConstraint(
-        any(Validation.RemoveColumnFromConstraintRequest.class)))
-        .thenReturn(Mono.empty());
+    given(removeConstraintColumnUseCase.removeConstraintColumn(any(RemoveConstraintColumnCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
-    webTestClient.method(org.springframework.http.HttpMethod.DELETE)
-        .uri(API_BASE_PATH
-            + "/constraints/{constraintId}/columns/{columnId}",
-            "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-            "06D6X2345678901BCDEFGHIJKL")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+    webTestClient.delete()
+        .uri(API_BASE_PATH + "/constraint-columns/{constraintColumnId}", constraintColumnId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .consumeWith(document("constraint-remove-column",
-            pathParameters(
-                parameterWithName("constraintId")
-                    .description("제약조건 ID"),
-                parameterWithName("columnId")
-                    .description("제약조건 컬럼 ID")),
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description("요청 본문 타입"),
-                headerWithName("Accept").description("응답 포맷")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("constraintId")
-                    .description("제약조건 ID"),
-                fieldWithPath("constraintColumnId")
-                    .description("삭제할 제약조건 컬럼 ID")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .type(JsonFieldType.BOOLEAN)
-                    .description("요청 성공 여부"))));
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("constraint-column-remove",
+            ConstraintApiSnippets.removeConstraintColumnPathParameters(),
+            ConstraintApiSnippets.removeConstraintColumnRequestHeaders(),
+            ConstraintApiSnippets.removeConstraintColumnResponseHeaders(),
+            ConstraintApiSnippets.removeConstraintColumnResponse()));
   }
 
   @Test
-  @DisplayName("제약조건 삭제 API 문서화")
-  void deleteConstraint() throws Exception {
-    Validation.DeleteConstraintRequest.Builder builder = Validation.DeleteConstraintRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "uid",
-                                            "seqNo": 1,
-                                            "dataType": "INTEGER",
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "autoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [
-                                        {
-                                            "id": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "PK_users",
-                                            "kind": "CONSTRAINT_KIND_UNSPECIFIED",
-                                            "columns": [
-                                                {
-                                                    "id": "06D6WWYRTER122SPQBVSX4T3MR",
-                                                    "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG",
-                                                    "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                                    "seqNo": 1
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "constraintId": "06D6WWYRQCEXN1ACZ4ZJ12DFTG"
-            }
-            """,
-            builder);
-    Validation.DeleteConstraintRequest request = builder.build();
+  @DisplayName("제약조건 컬럼 조회 API 문서화")
+  void getConstraintColumn() {
+    String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";
+    String constraintColumnId = "06D6W5CAHD51T5NJPK29Q6BCRE";
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
 
-    when(constraintService.deleteConstraint(
-        any(Validation.DeleteConstraintRequest.class)))
-        .thenReturn(Mono.empty());
+    ConstraintColumn constraintColumn = new ConstraintColumn(
+        constraintColumnId, constraintId, columnId, 1);
 
-    webTestClient.method(org.springframework.http.HttpMethod.DELETE)
-        .uri(API_BASE_PATH + "/constraints/{constraintId}",
-            "06D6WWYRQCEXN1ACZ4ZJ12DFTG")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+    given(getConstraintColumnUseCase.getConstraintColumn(any(GetConstraintColumnQuery.class)))
+        .willReturn(Mono.just(constraintColumn));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/constraint-columns/{constraintColumnId}", constraintColumnId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .consumeWith(document("constraint-delete",
-            pathParameters(
-                parameterWithName("constraintId")
-                    .description("삭제할 제약조건의 ID")),
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description("요청 본문 타입"),
-                headerWithName("Accept").description("응답 포맷")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("constraintId")
-                    .description("삭제할 제약조건 ID")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .type(JsonFieldType.BOOLEAN)
-                    .description("요청 성공 여부"))));
+        .jsonPath("$.result.id").isEqualTo(constraintColumnId)
+        .consumeWith(document("constraint-column-get",
+            ConstraintApiSnippets.getConstraintColumnPathParameters(),
+            ConstraintApiSnippets.getConstraintColumnRequestHeaders(),
+            ConstraintApiSnippets.getConstraintColumnResponseHeaders(),
+            ConstraintApiSnippets.getConstraintColumnResponse()));
+  }
+
+  @Test
+  @DisplayName("제약조건 컬럼 위치 변경 API 문서화")
+  void changeConstraintColumnPosition() throws Exception {
+    String constraintColumnId = "06D6W5CAHD51T5NJPK29Q6BCRE";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    ChangeConstraintColumnPositionRequest request = new ChangeConstraintColumnPositionRequest(2);
+
+    given(changeConstraintColumnPositionUseCase.changeConstraintColumnPosition(
+        any(ChangeConstraintColumnPositionCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/constraint-columns/{constraintColumnId}/position", constraintColumnId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(objectMapper.writeValueAsString(request))
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("constraint-column-change-position",
+            ConstraintApiSnippets.changeConstraintColumnPositionPathParameters(),
+            ConstraintApiSnippets.changeConstraintColumnPositionRequestHeaders(),
+            ConstraintApiSnippets.changeConstraintColumnPositionRequest(),
+            ConstraintApiSnippets.changeConstraintColumnPositionResponseHeaders(),
+            ConstraintApiSnippets.changeConstraintColumnPositionResponse()));
   }
 
 }

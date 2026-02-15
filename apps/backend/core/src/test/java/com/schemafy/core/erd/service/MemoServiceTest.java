@@ -21,13 +21,16 @@ import com.schemafy.core.erd.controller.dto.request.UpdateMemoRequest;
 import com.schemafy.core.erd.controller.dto.response.MemoDetailResponse;
 import com.schemafy.core.erd.repository.MemoCommentRepository;
 import com.schemafy.core.erd.repository.MemoRepository;
-import com.schemafy.core.erd.repository.SchemaRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.erd.repository.entity.MemoComment;
-import com.schemafy.core.erd.repository.entity.Schema;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
+import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaResult;
+import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -49,7 +52,7 @@ class MemoServiceTest {
   MemoCommentRepository memoCommentRepository;
 
   @Autowired
-  SchemaRepository schemaRepository;
+  CreateSchemaUseCase createSchemaUseCase;
 
   @Autowired
   UserRepository userRepository;
@@ -58,18 +61,20 @@ class MemoServiceTest {
   void setUp() {
     memoCommentRepository.deleteAll().block();
     memoRepository.deleteAll().block();
-    schemaRepository.deleteAll().block();
     userRepository.deleteAll().block();
   }
 
   @Test
   @DisplayName("createMemo: 스키마가 존재하면 메모와 초기 댓글을 생성한다")
   void createMemo_success() {
-    Schema schema = schemaRepository.save(Schema.builder()
-        .projectId("06D4K6TTEWXW8VQR8EZXDPWP3C")
-        .dbVendorId("MYSQL")
-        .name("test-schema")
-        .build()).block();
+    MutationResult<CreateSchemaResult> mutation = createSchemaUseCase.createSchema(
+        new CreateSchemaCommand(
+            "06D4K6TTEWXW8VQR8EZXDPWP3C",
+            "mysql",
+            "test-schema",
+            null,
+            null)).block();
+    CreateSchemaResult schema = mutation.result();
 
     User author = TestFixture
         .createTestUser("author@example.com", "메모 작성자", "password")
@@ -77,7 +82,7 @@ class MemoServiceTest {
     userRepository.save(author).block();
 
     CreateMemoRequest request = new CreateMemoRequest(
-        schema.getId(),
+        schema.id(),
         "{\"x\":100,\"y\":100}",
         "초기 메모 내용");
     AuthenticatedUser user = AuthenticatedUser.of(author.getId());
@@ -88,7 +93,7 @@ class MemoServiceTest {
     StepVerifier.create(result)
         .assertNext(response -> {
           assertThat(response.getSchemaId())
-              .isEqualTo(schema.getId());
+              .isEqualTo(schema.id());
           assertThat(response.getAuthor().id())
               .isEqualTo(author.getId());
           assertThat(response.getAuthor().name()).isEqualTo("메모 작성자");
@@ -117,9 +122,7 @@ class MemoServiceTest {
 
     StepVerifier
         .create(memoService.createMemo(request, user))
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.ERD_SCHEMA_NOT_FOUND)
+        .expectError(SchemaNotExistException.class)
         .verify();
   }
 

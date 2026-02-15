@@ -1,7 +1,7 @@
 import { ulid } from 'ulid';
 import type { ErdStore } from '@/store/erd.store';
 import type { IndexType, IndexSortDir } from '../types';
-import type { Index } from '@schemafy/validator';
+import type { Index } from '@/types';
 import { generateUniqueName } from '../utils/nameGenerator';
 
 interface UseIndexesProps {

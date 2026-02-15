@@ -8,3 +8,7 @@ export * from './useIndexes';
 export * from './useConstraints';
 export * from './useViewport';
 export * from './useSchemaEditor';
+export * from './useCanvasInitialization';
+export * from './useCanvasKeyboard';
+export * from './useCanvasNodes';
+export * from './useCanvasController';

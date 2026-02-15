@@ -6,9 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -17,30 +15,38 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
-import com.schemafy.core.erd.controller.dto.response.AffectedColumnsResponse;
-import com.schemafy.core.erd.controller.dto.response.AffectedMappingResponse;
-import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
-import com.schemafy.core.erd.service.ColumnService;
+import com.schemafy.core.erd.controller.dto.request.ChangeColumnNameRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeColumnPositionRequest;
+import com.schemafy.core.erd.controller.dto.request.ChangeColumnTypeRequest;
+import com.schemafy.core.erd.controller.dto.request.CreateColumnRequest;
+import com.schemafy.core.erd.docs.ColumnApiSnippets;
+import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaUseCase;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameCommand;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameUseCase;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionCommand;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionUseCase;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
+import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeUseCase;
+import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
+import com.schemafy.domain.erd.column.application.port.in.CreateColumnResult;
+import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
+import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
+import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
+import com.schemafy.domain.erd.column.application.port.in.GetColumnQuery;
+import com.schemafy.domain.erd.column.application.port.in.GetColumnUseCase;
+import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
+import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdUseCase;
+import com.schemafy.domain.erd.column.domain.Column;
+import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
 
 import reactor.core.publisher.Mono;
-import validation.Validation;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedRequestFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
@@ -61,226 +67,98 @@ class ColumnControllerTest {
   private WebTestClient webTestClient;
 
   @MockitoBean
-  private ColumnService columnService;
+  private CreateColumnUseCase createColumnUseCase;
 
-  private String toJson(Message message) throws Exception {
-    return JsonFormat.printer()
-        .print(message);
-  }
+  @MockitoBean
+  private GetColumnUseCase getColumnUseCase;
+
+  @MockitoBean
+  private GetColumnsByTableIdUseCase getColumnsByTableIdUseCase;
+
+  @MockitoBean
+  private ChangeColumnNameUseCase changeColumnNameUseCase;
+
+  @MockitoBean
+  private ChangeColumnTypeUseCase changeColumnTypeUseCase;
+
+  @MockitoBean
+  private ChangeColumnMetaUseCase changeColumnMetaUseCase;
+
+  @MockitoBean
+  private ChangeColumnPositionUseCase changeColumnPositionUseCase;
+
+  @MockitoBean
+  private DeleteColumnUseCase deleteColumnUseCase;
 
   @Test
   @DisplayName("컬럼 생성 API 문서화")
   void createColumn() throws Exception {
-    Validation.CreateColumnRequest.Builder builder = Validation.CreateColumnRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [],
-                                    "indexes": [],
-                                    "constraints": [],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "column": {
-                    "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                    "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                    "name": "user_id",
-                    "dataType": "BIGINT",
-                    "seqNo": 1,
-                    "lengthScale": "20",
-                    "charset": "utf8mb4",
-                    "collation": "utf8mb4_unicode_ci",
-                    "comment": "사용자 ID",
-                    "isAutoIncrement": false
-                }
-            }
-            """,
-            builder);
-    Validation.CreateColumnRequest request = builder.build();
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
 
-    AffectedMappingResponse mockResponse = objectMapper.treeToValue(
-        objectMapper
-            .readTree(
-                """
-                    {
-                        "success": true,
-                        "result": {
-                            "schemas": {},
-                            "tables": {},
-                            "columns": {
-                                "06D6W8HDY79QFZX39RMX62KSX4": {
-                                    "01ARZ3NDEKTSV4RRFFQ69G5FAV": "06D6W90RSE1VPFRMM4XPKYGM9M"
-                                }
-                            },
-                            "indexes": {},
-                            "indexColumns": {},
-                            "constraints": {},
-                            "constraintColumns": {},
-                            "relationships": {},
-                            "relationshipColumns": {},
-                            "propagated": {
-                                "columns": [],
-                                "relationshipColumns": [],
-                                "constraintColumns": [],
-                                "indexColumns": []
-                            }
-                        }
-                    }
-                    """)
-            .get("result"),
-        AffectedMappingResponse.class);
+    CreateColumnRequest request = new CreateColumnRequest(
+        tableId,
+        "user_id",
+        "BIGINT",
+        20,
+        null,
+        null,
+        true,
+        null,
+        null,
+        "사용자 ID");
 
-    given(columnService
-        .createColumn(any(Validation.CreateColumnRequest.class)))
-        .willReturn(Mono.just(mockResponse));
+    CreateColumnResult result = new CreateColumnResult(
+        columnId,
+        "user_id",
+        "BIGINT",
+        new ColumnLengthScale(20, null, null),
+        1,
+        true,
+        null,
+        null,
+        "사용자 ID");
+
+    given(createColumnUseCase.createColumn(any(CreateColumnCommand.class)))
+        .willReturn(Mono.just(MutationResult.of(result, tableId)));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/columns")
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+        .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath(
-            "$.result.columns.06D6W8HDY79QFZX39RMX62KSX4.01ARZ3NDEKTSV4RRFFQ69G5FAV")
-        .isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
+        .jsonPath("$.result.data.id").isEqualTo(columnId)
         .consumeWith(document("column-create",
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description(
-                        "요청 본문 타입 (application/json)"),
-                headerWithName("Accept")
-                    .description(
-                        "응답 포맷 (application/json)")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("column.id")
-                    .description("컬럼 ID (FE ID)"),
-                fieldWithPath("column.tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("column.name")
-                    .description("컬럼 이름"),
-                fieldWithPath("column.dataType")
-                    .description("데이터 타입"),
-                fieldWithPath("column.seqNo")
-                    .description("컬럼 위치"),
-                fieldWithPath("column.lengthScale")
-                    .description("길이/스케일"),
-                fieldWithPath("column.charset")
-                    .description("문자 집합"),
-                fieldWithPath("column.collation")
-                    .description("정렬 규칙"),
-                fieldWithPath("column.comment")
-                    .description("컬럼 설명"),
-                fieldWithPath("column.isAutoIncrement")
-                    .type(JsonFieldType.BOOLEAN)
-                    .optional()
-                    .description("자동 증가 여부")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            relaxedResponseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result").description("응답 데이터"),
-                subsectionWithPath("result.schemas")
-                    .description(
-                        "스키마 ID 매핑 (FE ID -> BE ID)"),
-                subsectionWithPath("result.tables")
-                    .description(
-                        "테이블 ID 매핑 (FE ID -> BE ID)"),
-                subsectionWithPath("result.columns")
-                    .description(
-                        "컬럼 ID 매핑 (Table BE ID -> { FE ID -> BE ID })"),
-                fieldWithPath("result.indexes")
-                    .description("인덱스 ID 매핑"),
-                fieldWithPath("result.indexColumns")
-                    .description("인덱스 컬럼 ID 매핑"),
-                fieldWithPath("result.constraints")
-                    .description("제약조건 ID 매핑"),
-                fieldWithPath("result.constraintColumns")
-                    .description("제약조건 컬럼 ID 매핑"),
-                fieldWithPath("result.relationships")
-                    .description("관계 ID 매핑"),
-                fieldWithPath("result.relationshipColumns")
-                    .description("관계 컬럼 ID 매핑"),
-                fieldWithPath("result.propagated")
-                    .description("전파된 엔티티 정보"),
-                fieldWithPath("result.propagated.columns")
-                    .description("전파된 컬럼 목록"),
-                fieldWithPath(
-                    "result.propagated.relationshipColumns")
-                    .description("전파된 관계 컬럼 목록"),
-                fieldWithPath(
-                    "result.propagated.constraintColumns")
-                    .description("전파된 제약조건 컬럼 목록"),
-                fieldWithPath("result.propagated.indexColumns")
-                    .description("전파된 인덱스 컬럼 목록"))));
+            ColumnApiSnippets.createColumnRequestHeaders(),
+            ColumnApiSnippets.createColumnRequest(),
+            ColumnApiSnippets.createColumnResponseHeaders(),
+            ColumnApiSnippets.createColumnResponse()));
   }
 
   @Test
-  @DisplayName("컬럼 단건 조회 API 문서화")
-  void getColumn() throws Exception {
-    String columnId = "06D6W90RSE1VPFRMM4XPKYGM9M";
+  @DisplayName("컬럼 조회 API 문서화")
+  void getColumn() {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ColumnResponse columnResponse = objectMapper.treeToValue(
-        objectMapper
-            .readTree(
-                """
-                    {
-                        "success": true,
-                        "result": {
-                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                            "name": "user_id",
-                            "dataType": "BIGINT",
-                            "seqNo": 1,
-                            "lengthScale": "20",
-                            "isAutoIncrement": false,
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "comment": "사용자 ID"
-                        }
-                    }
-                    """)
-            .get("result"),
-        ColumnResponse.class);
+    Column column = new Column(
+        columnId,
+        tableId,
+        "user_id",
+        "BIGINT",
+        new ColumnLengthScale(20, null, null),
+        1,
+        true,
+        null,
+        null,
+        "사용자 ID");
 
-    given(columnService.getColumn(columnId))
-        .willReturn(Mono.just(columnResponse));
+    given(getColumnUseCase.getColumn(any(GetColumnQuery.class)))
+        .willReturn(Mono.just(column));
 
     webTestClient.get()
         .uri(API_BASE_PATH + "/columns/{columnId}", columnId)
@@ -289,611 +167,228 @@ class ColumnControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
-        .jsonPath("$.result.tableId")
-        .isEqualTo("06D6W8HDY79QFZX39RMX62KSX4")
-        .jsonPath("$.result.name").isEqualTo("user_id")
-        .jsonPath("$.result.dataType").isEqualTo("BIGINT")
-        .jsonPath("$.result.seqNo").isEqualTo(1)
+        .jsonPath("$.result.id").isEqualTo(columnId)
         .consumeWith(document("column-get",
-            pathParameters(
-                parameterWithName("columnId")
-                    .description("조회할 컬럼의 ID")),
-            requestHeaders(
-                headerWithName("Accept")
-                    .description(
-                        "응답 포맷 (application/json)")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result").description("컬럼 정보"),
-                fieldWithPath("result.id")
-                    .description("컬럼 ID"),
-                fieldWithPath("result.tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("result.name")
-                    .description("컬럼 이름"),
-                fieldWithPath("result.dataType")
-                    .description("데이터 타입"),
-                fieldWithPath("result.lengthScale")
-                    .description("길이/스케일"),
-                fieldWithPath("result.isAutoIncrement")
-                    .description("자동 증가 여부"),
-                fieldWithPath("result.charset")
-                    .description("문자 집합"),
-                fieldWithPath("result.collation")
-                    .description("정렬 규칙"),
-                fieldWithPath("result.comment")
-                    .description("컬럼 설명"),
-                fieldWithPath("result.seqNo")
-                    .description("컬럼 위치"))));
+            ColumnApiSnippets.getColumnPathParameters(),
+            ColumnApiSnippets.getColumnRequestHeaders(),
+            ColumnApiSnippets.getColumnResponseHeaders(),
+            ColumnApiSnippets.getColumnResponse()));
+  }
+
+  @Test
+  @DisplayName("테이블별 컬럼 목록 조회 API 문서화")
+  void getColumnsByTableId() {
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+    String columnId1 = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String columnId2 = "06D6W3DAHD51T5NJPK29Q6BCRB";
+
+    Column column1 = new Column(columnId1, tableId, "id", "BIGINT",
+        new ColumnLengthScale(20, null, null), 1, true, null, null, "PK");
+    Column column2 = new Column(columnId2, tableId, "name", "VARCHAR",
+        new ColumnLengthScale(255, null, null), 2, false, "utf8mb4", "utf8mb4_general_ci", "이름");
+
+    given(getColumnsByTableIdUseCase.getColumnsByTableId(any(GetColumnsByTableIdQuery.class)))
+        .willReturn(Mono.just(List.of(column1, column2)));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/tables/{tableId}/columns", tableId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result").isArray()
+        .jsonPath("$.result[0].id").isEqualTo(columnId1)
+        .consumeWith(document("column-list-by-table",
+            ColumnApiSnippets.getColumnsByTableIdPathParameters(),
+            ColumnApiSnippets.getColumnsByTableIdRequestHeaders(),
+            ColumnApiSnippets.getColumnsByTableIdResponseHeaders(),
+            ColumnApiSnippets.getColumnsByTableIdResponse()));
   }
 
   @Test
   @DisplayName("컬럼 이름 변경 API 문서화")
-  void updateColumnName() throws Exception {
-    Validation.ChangeColumnNameRequest.Builder builder = Validation.ChangeColumnNameRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "user_id",
-                                            "dataType": "BIGINT",
-                                            "seqNo": 1,
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "isAutoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                "newName": "uid"
-            }
-            """,
-            builder);
-    Validation.ChangeColumnNameRequest request = builder.build();
+  void changeColumnName() throws Exception {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ColumnResponse mockResponse = objectMapper.treeToValue(
-        objectMapper
-            .readTree(
-                """
-                    {
-                        "success": true,
-                        "result": {
-                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                            "name": "uid",
-                            "dataType": "BIGINT",
-                            "seqNo": 1,
-                            "lengthScale": "20",
-                            "isAutoIncrement": false,
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "comment": "사용자 ID"
-                        }
-                    }
-                    """)
-            .get("result"),
-        ColumnResponse.class);
+    ChangeColumnNameRequest request = new ChangeColumnNameRequest("new_user_id");
 
-    given(columnService.updateColumnName(request))
-        .willReturn(Mono.just(mockResponse));
+    given(changeColumnNameUseCase.changeColumnName(any(ChangeColumnNameCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
-    webTestClient.put()
-        .uri(API_BASE_PATH + "/columns/{columnId}/name",
-            "06D6W90RSE1VPFRMM4XPKYGM9M")
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/columns/{columnId}/name", columnId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+        .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
-        .jsonPath("$.result.tableId")
-        .isEqualTo("06D6W8HDY79QFZX39RMX62KSX4")
-        .jsonPath("$.result.name").isEqualTo("uid")
-        .jsonPath("$.result.dataType").isEqualTo("BIGINT")
-        .consumeWith(document("column-update-name",
-            pathParameters(
-                parameterWithName("columnId")
-                    .description("컬럼 ID")),
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description(
-                        "요청 본문 타입 (application/json)"),
-                headerWithName("Accept")
-                    .description(
-                        "응답 포맷 (application/json)")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("columnId")
-                    .description("변경할 컬럼 ID"),
-                fieldWithPath("newName")
-                    .description("새 컬럼 이름")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("수정된 컬럼 정보"),
-                fieldWithPath("result.id")
-                    .description("컬럼 ID"),
-                fieldWithPath("result.tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("result.name")
-                    .description("변경된 컬럼 이름"),
-                fieldWithPath("result.dataType")
-                    .description("데이터 타입"),
-                fieldWithPath("result.lengthScale")
-                    .description("길이/스케일"),
-                fieldWithPath("result.isAutoIncrement")
-                    .description("자동 증가 여부"),
-                fieldWithPath("result.charset")
-                    .description("문자 집합"),
-                fieldWithPath("result.collation")
-                    .description("정렬 규칙"),
-                fieldWithPath("result.comment")
-                    .description("컬럼 설명"),
-                fieldWithPath("result.seqNo")
-                    .description("컬럼 위치"))));
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("column-change-name",
+            ColumnApiSnippets.changeColumnNamePathParameters(),
+            ColumnApiSnippets.changeColumnNameRequestHeaders(),
+            ColumnApiSnippets.changeColumnNameRequest(),
+            ColumnApiSnippets.changeColumnNameResponseHeaders(),
+            ColumnApiSnippets.changeColumnNameResponse()));
   }
 
   @Test
   @DisplayName("컬럼 타입 변경 API 문서화")
-  void updateColumnType() throws Exception {
-    Validation.ChangeColumnTypeRequest.Builder builder = Validation.ChangeColumnTypeRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "uid",
-                                            "dataType": "BIGINT",
-                                            "seqNo": 1,
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "isAutoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                "dataType": "INTEGER"
-            }
-            """,
-            builder);
-    Validation.ChangeColumnTypeRequest request = builder.build();
+  void changeColumnType() throws Exception {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ColumnResponse columnResponse = objectMapper.treeToValue(
-        objectMapper
-            .readTree(
-                """
-                    {
-                        "success": true,
-                        "result": {
-                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                            "name": "uid",
-                            "dataType": "INTEGER",
-                            "seqNo": 1,
-                            "lengthScale": "20",
-                            "isAutoIncrement": false,
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "comment": "사용자 ID"
-                        }
-                    }
-                    """)
-            .get("result"),
-        ColumnResponse.class);
+    ChangeColumnTypeRequest request = new ChangeColumnTypeRequest("VARCHAR", 100, null, null);
 
-    AffectedColumnsResponse mockResponse = new AffectedColumnsResponse(
-        List.of(columnResponse));
+    given(changeColumnTypeUseCase.changeColumnType(any(ChangeColumnTypeCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
-    given(columnService.updateColumnType(request))
-        .willReturn(Mono.just(mockResponse));
-
-    webTestClient.put()
-        .uri(API_BASE_PATH + "/columns/{columnId}/type",
-            "06D6W90RSE1VPFRMM4XPKYGM9M")
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/columns/{columnId}/type", columnId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+        .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.columns[0].id")
-        .isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
-        .jsonPath("$.result.columns[0].name").isEqualTo("uid")
-        .jsonPath("$.result.columns[0].dataType")
-        .isEqualTo("INTEGER")
-        .consumeWith(document("column-update-type",
-            pathParameters(
-                parameterWithName("columnId")
-                    .description("컬럼 ID")),
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description(
-                        "요청 본문 타입 (application/json)"),
-                headerWithName("Accept")
-                    .description(
-                        "응답 포맷 (application/json)")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("columnId")
-                    .description("변경할 컬럼 ID"),
-                fieldWithPath("dataType")
-                    .description("변경할 데이터 타입")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("변경된 컬럼 목록"),
-                fieldWithPath("result.columns")
-                    .description("영향받은 컬럼 정보"),
-                fieldWithPath("result.columns[].id")
-                    .description("컬럼 ID"),
-                fieldWithPath("result.columns[].tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("result.columns[].name")
-                    .description("컬럼 이름"),
-                fieldWithPath("result.columns[].dataType")
-                    .description("변경된 데이터 타입"),
-                fieldWithPath("result.columns[].lengthScale")
-                    .description("길이/스케일"),
-                fieldWithPath(
-                    "result.columns[].isAutoIncrement")
-                    .description("자동 증가 여부"),
-                fieldWithPath("result.columns[].charset")
-                    .description("문자 집합"),
-                fieldWithPath("result.columns[].collation")
-                    .description("정렬 규칙"),
-                fieldWithPath("result.columns[].comment")
-                    .description("컬럼 설명"),
-                fieldWithPath(
-                    "result.columns[].seqNo")
-                    .description("컬럼 위치"))));
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("column-change-type",
+            ColumnApiSnippets.changeColumnTypePathParameters(),
+            ColumnApiSnippets.changeColumnTypeRequestHeaders(),
+            ColumnApiSnippets.changeColumnTypeRequest(),
+            ColumnApiSnippets.changeColumnTypeResponseHeaders(),
+            ColumnApiSnippets.changeColumnTypeResponse()));
+  }
+
+  @Test
+  @DisplayName("컬럼 메타 변경 API 문서화")
+  void changeColumnMeta() throws Exception {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"autoIncrement":false,"charset":"utf8mb4","collation":"utf8mb4_general_ci","comment":"변경된 코멘트"}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("column-change-meta",
+            ColumnApiSnippets.changeColumnMetaPathParameters(),
+            ColumnApiSnippets.changeColumnMetaRequestHeaders(),
+            ColumnApiSnippets.changeColumnMetaRequest(),
+            ColumnApiSnippets.changeColumnMetaResponseHeaders(),
+            ColumnApiSnippets.changeColumnMetaResponse()));
+  }
+
+  @Test
+  @DisplayName("컬럼 메타 변경 시 null을 전송하면 클리어된다")
+  void changeColumnMetaWithExplicitNull() {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"charset":null}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
+  }
+
+  @Test
+  @DisplayName("컬럼 메타 변경 시 필드를 생략하면 기존 값이 유지된다")
+  void changeColumnMetaWithAbsentFields() {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"charset":"utf8mb4"}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.success").isEqualTo(true);
   }
 
   @Test
   @DisplayName("컬럼 위치 변경 API 문서화")
-  void updateColumnPosition() throws Exception {
-    Validation.ChangeColumnPositionRequest.Builder builder = Validation.ChangeColumnPositionRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "uid",
-                                            "dataType": "INTEGER",
-                                            "seqNo": 1,
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "isAutoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                "newPosition": 1
-            }
-            """,
-            builder);
-    Validation.ChangeColumnPositionRequest request = builder.build();
+  void changeColumnPosition() throws Exception {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ColumnResponse mockResponse = objectMapper.treeToValue(
-        objectMapper
-            .readTree(
-                """
-                    {
-                        "success": true,
-                        "result": {
-                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                            "name": "uid",
-                            "dataType": "INTEGER",
-                            "seqNo": 1,
-                            "lengthScale": "20",
-                            "isAutoIncrement": false,
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "comment": "사용자 ID"
-                        }
-                    }
-                    """)
-            .get("result"),
-        ColumnResponse.class);
+    ChangeColumnPositionRequest request = new ChangeColumnPositionRequest(3);
 
-    given(columnService.updateColumnPosition(request))
-        .willReturn(Mono.just(mockResponse));
+    given(changeColumnPositionUseCase.changeColumnPosition(any(ChangeColumnPositionCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
-    webTestClient.put()
-        .uri(API_BASE_PATH + "/columns/{columnId}/position",
-            "06D6W90RSE1VPFRMM4XPKYGM9M")
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/columns/{columnId}/position", columnId)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+        .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo("06D6W90RSE1VPFRMM4XPKYGM9M")
-        .jsonPath("$.result.name").isEqualTo("uid")
-        .jsonPath("$.result.seqNo").isEqualTo(1)
-        .consumeWith(document("column-update-position",
-            pathParameters(
-                parameterWithName("columnId")
-                    .description("컬럼 ID")),
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description(
-                        "요청 본문 타입 (application/json)"),
-                headerWithName("Accept")
-                    .description(
-                        "응답 포맷 (application/json)")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("columnId")
-                    .description("변경할 컬럼 ID"),
-                fieldWithPath("newPosition")
-                    .description("변경할 컬럼 위치(1부터 시작)")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("수정된 컬럼 정보"),
-                fieldWithPath("result.id")
-                    .description("컬럼 ID"),
-                fieldWithPath("result.tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("result.name")
-                    .description("컬럼 이름"),
-                fieldWithPath("result.dataType")
-                    .description("데이터 타입"),
-                fieldWithPath("result.lengthScale")
-                    .description("길이/스케일"),
-                fieldWithPath("result.isAutoIncrement")
-                    .description("자동 증가 여부"),
-                fieldWithPath("result.charset")
-                    .description("문자 집합"),
-                fieldWithPath("result.collation")
-                    .description("정렬 규칙"),
-                fieldWithPath("result.comment")
-                    .description("컬럼 설명"),
-                fieldWithPath("result.seqNo")
-                    .description("변경된 컬럼 위치"))));
+        .jsonPath("$.result.affectedTableIds").isArray()
+        .consumeWith(document("column-change-position",
+            ColumnApiSnippets.changeColumnPositionPathParameters(),
+            ColumnApiSnippets.changeColumnPositionRequestHeaders(),
+            ColumnApiSnippets.changeColumnPositionRequest(),
+            ColumnApiSnippets.changeColumnPositionResponseHeaders(),
+            ColumnApiSnippets.changeColumnPositionResponse()));
   }
 
   @Test
+  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("컬럼 삭제 API 문서화")
-  void deleteColumn() throws Exception {
-    Validation.DeleteColumnRequest.Builder builder = Validation.DeleteColumnRequest
-        .newBuilder();
-    JsonFormat.parser()
-        .ignoringUnknownFields()
-        .merge("""
-            {
-                "database": {
-                    "id": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                    "schemas": [
-                        {
-                            "id": "06D6VZBWHSDJBBG0H7D156YZ98",
-                            "projectId": "06D4K6TTEWXW8VQR8EZXDPWP3C",
-                            "dbVendorId": "MYSQL",
-                            "name": "test",
-                            "charset": "utf8mb4",
-                            "collation": "utf8mb4_unicode_ci",
-                            "vendorOption": "",
-                            "canvasViewport": null,
-                            "tables": [
-                                {
-                                    "id": "06D6W8HDY79QFZX39RMX62KSX4",
-                                    "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                                    "name": "users",
-                                    "comment": "사용자 테이블",
-                                    "tableOptions": "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                                    "columns": [
-                                        {
-                                            "id": "06D6W90RSE1VPFRMM4XPKYGM9M",
-                                            "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                                            "name": "uid",
-                                            "dataType": "INTEGER",
-                                            "seqNo": 1,
-                                            "lengthScale": "20",
-                                            "charset": "utf8mb4",
-                                            "collation": "utf8mb4_unicode_ci",
-                                            "comment": "사용자 ID",
-                                            "isAutoIncrement": false
-                                        }
-                                    ],
-                                    "indexes": [],
-                                    "constraints": [],
-                                    "relationships": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
-                "tableId": "06D6W8HDY79QFZX39RMX62KSX4",
-                "columnId": "06D6W90RSE1VPFRMM4XPKYGM9M"
-            }
-            """,
-            builder);
-    Validation.DeleteColumnRequest request = builder.build();
+  void deleteColumn() {
+    String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    given(columnService.deleteColumn(request)).willReturn(Mono.empty());
+    given(deleteColumnUseCase.deleteColumn(any(DeleteColumnCommand.class)))
+        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
 
-    webTestClient.method(HttpMethod.DELETE)
-        .uri(API_BASE_PATH + "/columns/{columnId}",
-            "06D6W90RSE1VPFRMM4XPKYGM9M")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(toJson(request))
+    webTestClient.delete()
+        .uri(API_BASE_PATH + "/columns/{columnId}", columnId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
+        .jsonPath("$.result.affectedTableIds").isArray()
         .consumeWith(document("column-delete",
-            pathParameters(
-                parameterWithName("columnId")
-                    .description("삭제할 컬럼의 ID")),
-            requestHeaders(
-                headerWithName("Content-Type")
-                    .description(
-                        "요청 본문 타입 (application/json)"),
-                headerWithName("Accept")
-                    .description(
-                        "응답 포맷 (application/json)")),
-            relaxedRequestFields(
-                fieldWithPath("database.id")
-                    .description("데이터베이스 ID"),
-                fieldWithPath("schemaId")
-                    .description("스키마 ID"),
-                fieldWithPath("tableId")
-                    .description("테이블 ID"),
-                fieldWithPath("columnId")
-                    .description("삭제할 컬럼 ID")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .type(JsonFieldType.BOOLEAN)
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .type(JsonFieldType.NULL)
-                    .optional()
-                    .description("응답 데이터 (null)"))));
+            ColumnApiSnippets.deleteColumnPathParameters(),
+            ColumnApiSnippets.deleteColumnRequestHeaders(),
+            ColumnApiSnippets.deleteColumnResponseHeaders(),
+            ColumnApiSnippets.deleteColumnResponse()));
   }
 
 }

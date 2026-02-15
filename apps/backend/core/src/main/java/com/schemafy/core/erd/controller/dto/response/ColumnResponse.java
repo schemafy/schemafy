@@ -1,41 +1,47 @@
 package com.schemafy.core.erd.controller.dto.response;
 
-import com.schemafy.core.erd.repository.entity.Column;
+import com.schemafy.domain.erd.column.application.port.in.CreateColumnResult;
+import com.schemafy.domain.erd.column.domain.Column;
+import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+public record ColumnResponse(
+    String id,
+    String tableId,
+    String name,
+    String dataType,
+    ColumnLengthScale lengthScale,
+    int seqNo,
+    boolean autoIncrement,
+    String charset,
+    String collation,
+    String comment) {
 
-@Getter
-@Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ColumnResponse {
-
-  private String id;
-  private String tableId;
-  private String name;
-  private String dataType;
-  private Integer seqNo;
-  private String lengthScale;
-  private Boolean isAutoIncrement;
-  private String charset;
-  private String collation;
-  private String comment;
+  public static ColumnResponse from(CreateColumnResult result, String tableId) {
+    return new ColumnResponse(
+        result.columnId(),
+        tableId,
+        result.name(),
+        result.dataType(),
+        result.lengthScale(),
+        result.seqNo(),
+        result.autoIncrement(),
+        result.charset(),
+        result.collation(),
+        result.comment());
+  }
 
   public static ColumnResponse from(Column column) {
-    return ColumnResponse.builder()
-        .id(column.getId())
-        .tableId(column.getTableId())
-        .name(column.getName())
-        .dataType(column.getDataType())
-        .seqNo(column.getSeqNo())
-        .lengthScale(column.getLengthScale())
-        .isAutoIncrement(column.isAutoIncrement())
-        .charset(column.getCharset())
-        .collation(column.getCollation())
-        .comment(column.getComment())
-        .build();
+    return new ColumnResponse(
+        column.id(),
+        column.tableId(),
+        column.name(),
+        column.dataType(),
+        column.lengthScale(),
+        column.seqNo(),
+        column.autoIncrement(),
+        column.charset(),
+        column.collation(),
+        column.comment());
   }
 
 }
