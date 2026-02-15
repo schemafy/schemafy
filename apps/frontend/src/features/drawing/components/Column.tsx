@@ -126,15 +126,17 @@ export const EditModeColumn = ({
 };
 
 export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
+  const nameClassName = column.isPrimaryKey
+    ? 'font-bold text-schemafy-yellow'
+    : column.isForeignKey
+      ? 'font-bold text-schemafy-green'
+      : 'text-schemafy-text';
+
   return (
     <div className="p-2 text-schemafy-text">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <span
-            className={`text-sm ${column.isPrimaryKey ? 'font-bold text-schemafy-yellow' : 'text-schemafy-text'}`}
-          >
-            {column.name}
-          </span>
+          <span className={`text-sm ${nameClassName}`}>{column.name}</span>
           <span className="text-xs text-schemafy-dark-gray font-mono">
             ({column.type})
           </span>
@@ -218,20 +220,18 @@ export const ColumnConstraints = ({
 };
 
 export const ColumnBadges = ({ column }: ColumnBadgesProps) => {
-  if (column.isPrimaryKey) {
-    return (
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-schemafy-yellow font-medium">PK</span>
-      </div>
-    );
-  }
-
   return (
     <div className="flex items-center gap-1">
-      {column.isNotNull && (
+      {column.isPrimaryKey && (
+        <span className="text-xs text-schemafy-yellow font-medium">PK</span>
+      )}
+      {column.isForeignKey && (
+        <span className="text-xs text-schemafy-green font-medium">FK</span>
+      )}
+      {!column.isPrimaryKey && column.isNotNull && (
         <span className="text-xs text-schemafy-destructive font-medium">*</span>
       )}
-      {column.isUnique && (
+      {!column.isPrimaryKey && column.isUnique && (
         <span className="text-xs text-schemafy-blue font-medium">UQ</span>
       )}
     </div>

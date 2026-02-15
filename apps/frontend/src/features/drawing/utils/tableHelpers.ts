@@ -48,8 +48,10 @@ const transformColumnWithMap = (
   columnName: string,
   dataType: string,
   constraintMap: ConstraintMap,
+  foreignKeyColumnIds: Set<string>,
 ): ColumnType => {
   const isPrimaryKey = constraintMap.primaryKeys.has(columnId);
+  const isForeignKey = foreignKeyColumnIds.has(columnId);
   const isNotNull = constraintMap.notNulls.has(columnId);
   const isUnique = isPrimaryKey || constraintMap.uniques.has(columnId);
 
@@ -58,6 +60,7 @@ const transformColumnWithMap = (
     name: columnName,
     type: dataType || 'VARCHAR',
     isPrimaryKey,
+    isForeignKey,
     isNotNull,
     isUnique,
   };
@@ -85,8 +88,22 @@ export const transformSnapshotToNode = (
   }));
 
   const constraintMap = buildConstraintMap(constraints);
+
+  const foreignKeyColumnIds = new Set<string>();
+  snapshot.relationships.forEach((rel) => {
+    if (rel.relationship.fkTableId === snapshot.table.id) {
+      rel.columns.forEach((col) => foreignKeyColumnIds.add(col.fkColumnId));
+    }
+  });
+
   const columns = snapshot.columns.map((col) =>
-    transformColumnWithMap(col.id, col.name, col.dataType, constraintMap),
+    transformColumnWithMap(
+      col.id,
+      col.name,
+      col.dataType,
+      constraintMap,
+      foreignKeyColumnIds,
+    ),
   );
 
   return {

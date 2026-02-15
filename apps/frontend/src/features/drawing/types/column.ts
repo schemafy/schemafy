@@ -5,6 +5,7 @@ export type ColumnType = {
   name: string;
   type: string;
   isPrimaryKey: boolean;
+  isForeignKey: boolean;
   isNotNull: boolean;
   isUnique: boolean;
 };

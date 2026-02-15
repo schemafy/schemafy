@@ -178,7 +178,7 @@ export const CustomSmoothStepEdge = ({
             fontWeight: labelStyle?.fontWeight || 'bold',
             color: labelStyle?.color || 'var(--color-schemafy-dark-gray)',
             pointerEvents: 'none',
-            background: 'white',
+            background: 'var(--color-schemafy-bg)',
             padding: '2px 6px',
             borderRadius: '4px',
             marginTop: '-25px',
