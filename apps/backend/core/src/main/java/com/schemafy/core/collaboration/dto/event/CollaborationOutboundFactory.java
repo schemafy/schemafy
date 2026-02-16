@@ -1,5 +1,7 @@
 package com.schemafy.core.collaboration.dto.event;
 
+import java.util.Set;
+
 import com.schemafy.core.collaboration.dto.CursorPosition;
 
 public final class CollaborationOutboundFactory {
@@ -32,6 +34,12 @@ public final class CollaborationOutboundFactory {
       String userId, String userName, String content) {
     return ChatEvent.Outbound.of(sessionId, messageId, userId, userName,
         content);
+  }
+
+  public static ErdMutatedEvent.Outbound erdMutated(String sessionId,
+      String schemaId, Set<String> affectedTableIds) {
+    return ErdMutatedEvent.Outbound.of(sessionId, schemaId,
+        affectedTableIds);
   }
 
 }
