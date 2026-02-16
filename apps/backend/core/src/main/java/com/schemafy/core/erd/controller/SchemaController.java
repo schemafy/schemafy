@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateSchemaRequest;
 import com.schemafy.core.erd.controller.dto.response.SchemaResponse;
@@ -45,6 +47,8 @@ public class SchemaController {
   private final ChangeSchemaNameUseCase changeSchemaNameUseCase;
   private final DeleteSchemaUseCase deleteSchemaUseCase;
 
+  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/schemas")
   public Mono<BaseResponse<MutationResponse<SchemaResponse>>> createSchema(
@@ -56,6 +60,9 @@ public class SchemaController {
         request.charset(),
         request.collation());
     return createSchemaUseCase.createSchema(command)
+        .flatMap(result -> broadcastSchemaChange(
+            result.result().id())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             SchemaResponse.from(result.result()),
             result.affectedTableIds()))
@@ -92,6 +99,8 @@ public class SchemaController {
         schemaId,
         request.newName());
     return changeSchemaNameUseCase.changeSchemaName(command)
+        .flatMap(result -> broadcastSchemaChange(schemaId)
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -101,9 +110,27 @@ public class SchemaController {
   public Mono<BaseResponse<MutationResponse<Void>>> deleteSchema(
       @PathVariable String schemaId) {
     DeleteSchemaCommand command = new DeleteSchemaCommand(schemaId);
-    return deleteSchemaUseCase.deleteSchema(command)
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return deleteSchemaUseCase.deleteSchema(command)
+          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
+          .map(BaseResponse::success);
+    }
+    return broadcaster.resolveFromSchemaId(schemaId)
+        .flatMap(ctx -> deleteSchemaUseCase.deleteSchema(command)
+            .flatMap(result -> broadcaster
+                .broadcastWithContext(ctx, result.affectedTableIds())
+                .thenReturn(result)))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
+  }
+
+  private Mono<Void> broadcastSchemaChange(String schemaId) {
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return Mono.empty();
+    }
+    return broadcaster.broadcastSchemaChange(schemaId);
   }
 
 }

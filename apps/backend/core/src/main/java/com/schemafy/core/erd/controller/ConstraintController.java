@@ -1,9 +1,11 @@
 package com.schemafy.core.erd.controller;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.Valid;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
@@ -75,6 +78,8 @@ public class ConstraintController {
   private final GetConstraintColumnUseCase getConstraintColumnUseCase;
   private final ChangeConstraintColumnPositionUseCase changeConstraintColumnPositionUseCase;
 
+  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/constraints")
   public Mono<BaseResponse<MutationResponse<ConstraintResponse>>> createConstraint(
@@ -87,6 +92,8 @@ public class ConstraintController {
         request.defaultExpr(),
         mapConstraintColumns(request.columns()));
     return createConstraintUseCase.createConstraint(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             ConstraintResponse.from(result.result(), request.tableId()),
             result.affectedTableIds()))
@@ -127,6 +134,8 @@ public class ConstraintController {
         constraintId,
         request.checkExpr().orElse(null));
     return changeConstraintCheckExprUseCase.changeConstraintCheckExpr(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -143,6 +152,8 @@ public class ConstraintController {
         constraintId,
         request.defaultExpr().orElse(null));
     return changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -156,6 +167,8 @@ public class ConstraintController {
         constraintId,
         request.newName());
     return changeConstraintNameUseCase.changeConstraintName(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -166,6 +179,8 @@ public class ConstraintController {
       @PathVariable String constraintId) {
     DeleteConstraintCommand command = new DeleteConstraintCommand(constraintId);
     return deleteConstraintUseCase.deleteConstraint(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -192,6 +207,8 @@ public class ConstraintController {
         request.columnId(),
         request.seqNo());
     return addConstraintColumnUseCase.addConstraintColumn(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             AddConstraintColumnResponse.from(result.result()),
             result.affectedTableIds()))
@@ -205,6 +222,8 @@ public class ConstraintController {
     RemoveConstraintColumnCommand command = new RemoveConstraintColumnCommand(
         constraintColumnId);
     return removeConstraintColumnUseCase.removeConstraintColumn(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -228,8 +247,18 @@ public class ConstraintController {
         constraintColumnId,
         request.seqNo());
     return changeConstraintColumnPositionUseCase.changeConstraintColumnPosition(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
+  }
+
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return Mono.empty();
+    }
+    return broadcaster.broadcast(affectedTableIds);
   }
 
   private static List<CreateConstraintColumnCommand> mapConstraintColumns(

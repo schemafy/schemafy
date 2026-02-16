@@ -1,9 +1,11 @@
 package com.schemafy.core.erd.controller;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.Valid;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.AddRelationshipColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipCardinalityRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipColumnPositionRequest;
@@ -76,6 +79,8 @@ public class RelationshipController {
   private final GetRelationshipColumnUseCase getRelationshipColumnUseCase;
   private final ChangeRelationshipColumnPositionUseCase changeRelationshipColumnPositionUseCase;
 
+  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/relationships")
   public Mono<BaseResponse<MutationResponse<RelationshipResponse>>> createRelationship(
@@ -86,6 +91,8 @@ public class RelationshipController {
         request.kind(),
         request.cardinality());
     return createRelationshipUseCase.createRelationship(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             RelationshipResponse.from(result.result()),
             result.affectedTableIds()))
@@ -123,6 +130,8 @@ public class RelationshipController {
         relationshipId,
         request.newName());
     return changeRelationshipNameUseCase.changeRelationshipName(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -136,6 +145,8 @@ public class RelationshipController {
         relationshipId,
         request.kind());
     return changeRelationshipKindUseCase.changeRelationshipKind(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -149,6 +160,8 @@ public class RelationshipController {
         relationshipId,
         request.cardinality());
     return changeRelationshipCardinalityUseCase.changeRelationshipCardinality(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -162,6 +175,8 @@ public class RelationshipController {
         relationshipId,
         request.extra());
     return changeRelationshipExtraUseCase.changeRelationshipExtra(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -172,6 +187,8 @@ public class RelationshipController {
       @PathVariable String relationshipId) {
     DeleteRelationshipCommand command = new DeleteRelationshipCommand(relationshipId);
     return deleteRelationshipUseCase.deleteRelationship(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -200,6 +217,8 @@ public class RelationshipController {
         request.fkColumnId(),
         request.seqNo());
     return addRelationshipColumnUseCase.addRelationshipColumn(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             AddRelationshipColumnResponse.from(result.result()),
             result.affectedTableIds()))
@@ -213,6 +232,8 @@ public class RelationshipController {
     RemoveRelationshipColumnCommand command = new RemoveRelationshipColumnCommand(
         relationshipColumnId);
     return removeRelationshipColumnUseCase.removeRelationshipColumn(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -236,8 +257,18 @@ public class RelationshipController {
         relationshipColumnId,
         request.seqNo());
     return changeRelationshipColumnPositionUseCase.changeRelationshipColumnPosition(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
+  }
+
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return Mono.empty();
+    }
+    return broadcaster.broadcast(affectedTableIds);
   }
 
 }

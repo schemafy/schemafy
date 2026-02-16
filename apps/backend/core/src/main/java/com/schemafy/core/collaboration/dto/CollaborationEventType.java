@@ -9,7 +9,8 @@ public enum CollaborationEventType {
   LEAVE("LEAVE", false),
   CURSOR("CURSOR", false),
   SCHEMA_FOCUS("SCHEMA_FOCUS", false),
-  CHAT("CHAT", true);
+  CHAT("CHAT", true),
+  ERD_MUTATED("ERD_MUTATED", false);
 
   private final String value;
   private final boolean includeSender;

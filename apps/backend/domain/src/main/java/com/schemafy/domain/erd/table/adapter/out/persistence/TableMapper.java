@@ -14,6 +14,7 @@ class TableMapper {
         .name(table.name())
         .charset(table.charset())
         .collation(table.collation())
+        .extra(table.extra())
         .build();
   }
 
@@ -23,7 +24,8 @@ class TableMapper {
         entity.getSchemaId(),
         entity.getName(),
         entity.getCharset(),
-        entity.getCollation());
+        entity.getCollation(),
+        entity.getExtra());
   }
 
 }
