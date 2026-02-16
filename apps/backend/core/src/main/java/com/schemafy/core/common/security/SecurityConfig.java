@@ -1,5 +1,7 @@
 package com.schemafy.core.common.security;
 
+import java.util.Optional;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -18,6 +20,7 @@ import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import com.schemafy.core.common.constant.ApiPath;
+import com.schemafy.core.common.security.hmac.HmacVerificationFilter;
 import com.schemafy.core.common.security.jwt.JwtAccessDeniedHandler;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationEntryPoint;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
@@ -42,9 +45,10 @@ public class SecurityConfig {
   public SecurityWebFilterChain springSecurityFilterChain(
       ServerHttpSecurity http,
       JwtAuthenticationFilter jwtAuthenticationFilter,
+      Optional<HmacVerificationFilter> hmacVerificationFilter,
       JwtAuthenticationEntryPoint authenticationEntryPoint,
       JwtAccessDeniedHandler accessDeniedHandler) {
-    return http
+    http
         .csrf(ServerHttpSecurity.CsrfSpec::disable)
         .securityContextRepository(
             NoOpServerSecurityContextRepository.getInstance())
@@ -66,7 +70,12 @@ public class SecurityConfig {
             .accessDeniedHandler(accessDeniedHandler))
 
         .addFilterAt(jwtAuthenticationFilter,
-            SecurityWebFiltersOrder.AUTHENTICATION)
+            SecurityWebFiltersOrder.AUTHENTICATION);
+
+    hmacVerificationFilter.ifPresent(filter -> http.addFilterAfter(
+        filter, SecurityWebFiltersOrder.AUTHENTICATION));
+
+    return http
         .authorizeExchange(exchanges -> exchanges
             .pathMatchers(
                 ApiPath.PUBLIC_API.replace("{version}", "**"))

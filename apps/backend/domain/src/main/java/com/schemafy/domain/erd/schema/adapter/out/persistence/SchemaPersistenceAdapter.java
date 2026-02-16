@@ -9,11 +9,13 @@ import com.schemafy.domain.erd.schema.application.port.out.ChangeSchemaNamePort;
 import com.schemafy.domain.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.domain.erd.schema.application.port.out.GetSchemasByProjectIdPort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
@@ -21,6 +23,7 @@ import reactor.core.publisher.Mono;
 class SchemaPersistenceAdapter implements
     CreateSchemaPort,
     GetSchemaByIdPort,
+    GetSchemasByProjectIdPort,
     SchemaExistsPort,
     ChangeSchemaNamePort,
     DeleteSchemaPort {
@@ -38,6 +41,12 @@ class SchemaPersistenceAdapter implements
   @Override
   public Mono<Schema> findSchemaById(String schemaId) {
     return schemaRepository.findById(schemaId)
+        .map(schemaMapper::toDomain);
+  }
+
+  @Override
+  public Flux<Schema> findSchemasByProjectId(String projectId) {
+    return schemaRepository.findByProjectId(projectId)
         .map(schemaMapper::toDomain);
   }
 

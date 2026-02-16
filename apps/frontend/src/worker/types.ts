@@ -4,7 +4,7 @@ import type {
   PostCursor,
   PostSchemaFocus,
   WebSocketMessage,
-} from '../lib/api/collaboration/types';
+} from '../features/collaboration/api/types';
 
 export type OutgoingMessage = PostCursor | PostSchemaFocus | PostChat;
 

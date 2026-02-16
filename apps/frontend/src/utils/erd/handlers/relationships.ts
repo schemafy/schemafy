@@ -15,7 +15,7 @@ import type {
   RelationshipColumn,
   Constraint,
   Table,
-} from '@/types/erd.types';
+} from '@/types';
 import * as helper from '../helper';
 
 export interface RelationshipHandlers {

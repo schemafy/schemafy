@@ -20,7 +20,7 @@ import type {
   Relationship,
   Schema,
   Table,
-} from '@/types/erd.types';
+} from '@/types';
 
 const isValidColumnNameLength = (name: string) =>
   name.length >= 1 && name.length <= 40;

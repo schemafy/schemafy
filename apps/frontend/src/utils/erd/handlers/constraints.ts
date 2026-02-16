@@ -15,7 +15,7 @@ import type {
   Database,
   Schema,
   Table,
-} from '@/types/erd.types';
+} from '@/types';
 import * as helper from '../helper';
 
 export interface ConstraintHandlers {

@@ -11,7 +11,7 @@ import type {
   ConstraintColumn,
   Relationship,
   RelationshipColumn,
-} from '@/types/erd.types';
+} from '@/types';
 
 interface IDLE {
   state: 'idle';

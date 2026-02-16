@@ -2,7 +2,7 @@ import { Button, InputField } from '@/components';
 import { useFormState } from '../hooks';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signUp } from '@/lib/api';
+import { signUp } from '@/features/auth/api';
 import type { ValidationRules, SignUpFormValues } from '../types';
 
 const formFields = [

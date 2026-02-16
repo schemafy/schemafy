@@ -3,7 +3,7 @@
 import type {
   CursorPosition,
   WebSocketMessage,
-} from '../lib/api/collaboration/types';
+} from '../features/collaboration/api/types';
 import type { UserInfo, WorkerMessage, WorkerResponse } from './types';
 
 declare const self: SharedWorkerGlobalScope | DedicatedWorkerGlobalScope;

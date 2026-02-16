@@ -32,6 +32,9 @@ import com.schemafy.core.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintSnapshotResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexColumnResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexResponse;
+import com.schemafy.core.erd.controller.dto.response.IndexSnapshotResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.erd.controller.dto.response.RelationshipSnapshotResponse;
@@ -45,6 +48,11 @@ import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColum
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdQuery;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdUseCase;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuery;
+import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
+import com.schemafy.domain.erd.index.domain.IndexColumn;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
@@ -84,6 +92,8 @@ public class TableController {
   private final GetConstraintColumnsByConstraintIdUseCase getConstraintColumnsByConstraintIdUseCase;
   private final GetRelationshipsByTableIdUseCase getRelationshipsByTableIdUseCase;
   private final GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
+  private final GetIndexesByTableIdUseCase getIndexesByTableIdUseCase;
+  private final GetIndexColumnsByIndexIdUseCase getIndexColumnsByIndexIdUseCase;
   private final ChangeTableNameUseCase changeTableNameUseCase;
   private final ChangeTableMetaUseCase changeTableMetaUseCase;
   private final ChangeTableExtraUseCase changeTableExtraUseCase;
@@ -185,12 +195,29 @@ public class TableController {
                     columns)))
             .collectList());
 
-    return Mono.zip(tableMono, columnsMono, constraintsMono, relationshipsMono)
+    Mono<List<IndexSnapshotResponse>> indexesMono = getIndexesByTableIdUseCase
+        .getIndexesByTableId(new GetIndexesByTableIdQuery(tableId))
+        .defaultIfEmpty(List.of())
+        .flatMap(indexes -> Flux.fromIterable(indexes)
+            .flatMap(index -> getIndexColumnsByIndexIdUseCase
+                .getIndexColumnsByIndexId(new GetIndexColumnsByIndexIdQuery(index.id()))
+                .defaultIfEmpty(List.of())
+                .map(columns -> columns.stream()
+                    .sorted(Comparator.comparingInt(IndexColumn::seqNo))
+                    .map(IndexColumnResponse::from)
+                    .toList())
+                .map(columns -> new IndexSnapshotResponse(
+                    IndexResponse.from(index),
+                    columns)))
+            .collectList());
+
+    return Mono.zip(tableMono, columnsMono, constraintsMono, relationshipsMono, indexesMono)
         .map(tuple -> new TableSnapshotResponse(
             tuple.getT1(),
             tuple.getT2(),
             tuple.getT3(),
-            tuple.getT4()));
+            tuple.getT4(),
+            tuple.getT5()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")

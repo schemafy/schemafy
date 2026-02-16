@@ -54,6 +54,110 @@ Schemafy API
 |String
 |===
 
+== 인증
+
+=== JWT 인증
+
+인증이 필요한 API(`/api/...`)는 요청 시 `Authorization` 헤더에 JWT 토큰을 포함해야 합니다.
+
+[source]
+----
+Authorization: Bearer {accessToken}
+----
+
+공개 API(`/public/api/...`)는 인증 없이 접근 가능합니다.
+
+---
+
+=== HMAC 서명
+
+백엔드로 요청할 때 HMAC 서명을 통해 요청의 무결성을 검증합니다.
+
+==== 필수 헤더
+
+[cols="1,2"]
+|===
+|헤더 |설명
+
+|`X-Hmac-Signature`
+|HmacSHA256으로 계산된 서명 값 (hex-encoded)
+
+|`X-Hmac-Timestamp`
+|요청 시점의 Unix timestamp (밀리초)
+
+|`X-Hmac-Nonce`
+|요청별 고유 식별자 (replay attack 방지)
+|===
+
+==== 서명 생성 방법
+
+서명은 아래의 Canonical String을 HMAC-SHA256 알고리즘으로 해싱하여 생성합니다.
+
+[source]
+----
+{METHOD}\n{PATH}?{QUERY}\n{TIMESTAMP}\n{NONCE}\n{BODY_HASH}\n
+----
+
+[cols="1,3"]
+|===
+|항목 |설명
+
+|`METHOD`
+|HTTP 메서드 (GET, POST, PUT, PATCH, DELETE 등)
+
+|`PATH`
+|요청 경로 (예: `/api/v1.0/workspaces`)
+
+|`QUERY`
+|쿼리 스트링 (없으면 빈 문자열)
+
+|`TIMESTAMP`
+|`X-Hmac-Timestamp` 헤더 값
+
+|`NONCE`
+|`X-Hmac-Nonce` 헤더 값
+
+|`BODY_HASH`
+|요청 본문의 SHA-256 해시 (hex-encoded). 본문이 없으면 빈 문자열의 SHA-256 해시 사용
+|===
+
+==== 검증 제외 경로
+
+다음 경로는 HMAC 검증 대상에서 제외됩니다.
+
+- `/public/api/...` (공개 API)
+- `/ws/...` (WebSocket 연결)
+- `OPTIONS` 요청 (CORS preflight)
+
+==== 에러 코드
+
+[cols="1,1,2"]
+|===
+|코드 |HTTP 상태 |설명
+
+|`H001`
+|401
+|HMAC 서명이 누락되었습니다.
+
+|`H002`
+|401
+|HMAC 서명이 유효하지 않습니다.
+
+|`H003`
+|401
+|HMAC 타임스탬프가 만료되었습니다. (허용 범위: ±30초)
+
+|`H004`
+|401
+|중복된 HMAC 논스입니다.
+|===
+
+==== 키 로테이션
+
+서비스 운영 중 HMAC 비밀 키를 교체할 때, 이전 키(`previousSecret`)를 함께 설정하면 교체 기간 동안 두 키 모두 유효합니다. 새로운 키로 검증 실패 시 이전 키로 재검증을 시도합니다.
+
+---
+
 == API 목록
 
 === ULID 생성
@@ -1041,6 +1145,69 @@ NOTE: 조회(GET) API는 이벤트를 발생시키지 않습니다.
 
 ---
 
+=== Vendor API
+
+==== Vendor 목록 조회
+
+사용 가능한 DB 벤더 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/vendors
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/vendor-list/http-request.adoc[]
+include::{snippets}/vendor-list/request-headers.adoc[]
+include::{snippets}/vendor-list/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/vendor-list/response-headers.adoc[]
+include::{snippets}/vendor-list/response-body.adoc[]
+include::{snippets}/vendor-list/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/vendor-list/response-fields.adoc[]
+
+---
+
+==== Vendor 상세 조회
+
+DB 벤더의 상세 정보(데이터타입 매핑 포함)를 조회합니다.
+
+[source]
+----
+GET /api/v1.0/vendors/{displayName}
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/vendor-get/http-request.adoc[]
+include::{snippets}/vendor-get/request-headers.adoc[]
+include::{snippets}/vendor-get/path-parameters.adoc[]
+include::{snippets}/vendor-get/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/vendor-get/response-headers.adoc[]
+include::{snippets}/vendor-get/response-body.adoc[]
+include::{snippets}/vendor-get/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/vendor-get/response-fields.adoc[]
+
+---
+
 === Schema API
 
 ==== Schema 생성
@@ -1165,6 +1332,37 @@ include::{snippets}/schema-delete/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/schema-delete/response-fields.adoc[]
+
+---
+
+==== 프로젝트별 Schema 목록 조회
+
+프로젝트에 속한 스키마 목록을 조회합니다.
+
+[source]
+----
+GET /api/v1.0/projects/{projectId}/schemas
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-list-by-project/http-request.adoc[]
+include::{snippets}/schema-list-by-project/request-headers.adoc[]
+include::{snippets}/schema-list-by-project/path-parameters.adoc[]
+include::{snippets}/schema-list-by-project/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-list-by-project/response-headers.adoc[]
+include::{snippets}/schema-list-by-project/response-body.adoc[]
+include::{snippets}/schema-list-by-project/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-list-by-project/response-fields.adoc[]
 
 ---
 
@@ -3501,4 +3699,16 @@ API 호출이 실패한 경우 다음과 같은 형식으로 에러 응답을 �
 
 |`INTERNAL_ERROR`
 |서버 내부 오류
+
+|`HMAC_SIGNATURE_MISSING`
+|HMAC 서명이 누락됨 (401)
+
+|`HMAC_SIGNATURE_INVALID`
+|HMAC 서명이 유효하지 않음 (401)
+
+|`HMAC_TIMESTAMP_EXPIRED`
+|HMAC 타임스탬프 만료 (401)
+
+|`HMAC_NONCE_DUPLICATE`
+|중복된 HMAC 논스 (401)
 |===

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useReactFlow } from '@xyflow/react';
-import type { ChatMessage } from '@/lib/api/collaboration';
+import type { ChatMessage } from '@/features/collaboration/api';
 import { useChatMessages } from '@/hooks';
 
 const DISPLAY_DURATION = 3000;

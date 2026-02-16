@@ -47,12 +47,13 @@ public class TableEntity implements Persistable<String> {
 
   @Builder
   private TableEntity(String id, String schemaId, String name,
-      String charset, String collation) {
+      String charset, String collation, String extra) {
     this.id = id;
     this.schemaId = schemaId;
     this.name = name;
     this.charset = charset;
     this.collation = collation;
+    this.extra = extra;
   }
 
   @Override
