@@ -1,6 +1,14 @@
 import type { Node } from '@xyflow/react';
 import type { Constraint } from '@/types';
-import type { TableData, ColumnType, ConstraintKind, Point } from '../types';
+import type {
+  TableData,
+  ColumnType,
+  ConstraintKind,
+  Point,
+  IndexDataType,
+  IndexSortDir,
+  IndexType,
+} from '../types';
 import type { TableSnapshotResponse } from '../api';
 
 export type TableExtra = {
@@ -109,6 +117,22 @@ export const transformSnapshotToNode = (
     ),
   );
 
+  const indexes: IndexDataType[] = snapshot.indexes.map((indexSnapshot) => ({
+    id: indexSnapshot.index.id,
+    tableId: indexSnapshot.index.tableId,
+    name: indexSnapshot.index.name,
+    type: indexSnapshot.index.type as IndexType,
+    columns: indexSnapshot.columns.map((col) => ({
+      id: col.id,
+      indexId: col.indexId,
+      columnId: col.columnId,
+      seqNo: col.seqNo,
+      sortDir: col.sortDirection as IndexSortDir,
+      isAffected: false,
+    })),
+    isAffected: false,
+  }));
+
   return {
     id: snapshot.table.id,
     type: 'table',
@@ -116,7 +140,7 @@ export const transformSnapshotToNode = (
     data: {
       tableName: snapshot.table.name,
       columns,
-      indexes: [],
+      indexes,
       constraints,
       schemaId,
     },

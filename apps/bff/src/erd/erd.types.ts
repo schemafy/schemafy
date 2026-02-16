@@ -313,4 +313,5 @@ export type TableSnapshotResponse = {
   columns: ColumnResponse[];
   constraints: ConstraintSnapshotResponse[];
   relationships: RelationshipSnapshotResponse[];
+  indexes: IndexSnapshotResponse[];
 };

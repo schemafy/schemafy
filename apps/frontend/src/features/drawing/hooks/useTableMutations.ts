@@ -14,10 +14,22 @@ import type {
 } from '../api';
 import { useErdCache } from './useErdCache';
 
-export const useCreateTable = (schemaId: string) => {
+export const useCreateTableWithExtra = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (data: CreateTableRequest) => createTable(data),
+    mutationFn: async (data: {
+      request: CreateTableRequest;
+      extra: string;
+    }) => {
+      const createResult = await createTable(data.request);
+      if (createResult.data) {
+        const extraResult = await changeTableExtra(createResult.data.id, {
+          extra: data.extra,
+        });
+        return extraResult;
+      }
+      return createResult;
+    },
     onSuccess: (result) => {
       updateAffectedTables(result.affectedTableIds);
     },

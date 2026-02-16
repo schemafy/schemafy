@@ -21,10 +21,23 @@ import type {
 } from '../api';
 import { useErdCache } from './useErdCache';
 
-export const useCreateRelationship = (schemaId: string) => {
+export const useCreateRelationshipWithExtra = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (data: CreateRelationshipRequest) => createRelationship(data),
+    mutationFn: async (data: {
+      request: CreateRelationshipRequest;
+      extra: string;
+    }) => {
+      const createResult = await createRelationship(data.request);
+      if (createResult.data) {
+        const extraResult = await changeRelationshipExtra(
+          createResult.data.id,
+          { extra: data.extra },
+        );
+        return extraResult;
+      }
+      return createResult;
+    },
     onSuccess: (result) => {
       updateAffectedTables(result.affectedTableIds);
     },

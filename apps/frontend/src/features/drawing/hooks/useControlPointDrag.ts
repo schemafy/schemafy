@@ -77,8 +77,10 @@ export const useControlPointDrag = ({
     let finalControlPoints: CrossDirectionControlPoints = {
       ...controlPointsRef.current,
     };
+    let hasDragged = false;
 
     const handleMouseMove = (e: MouseEvent) => {
+      hasDragged = true;
       const flowPosition = screenToFlowPositionRef.current({
         x: e.clientX,
         y: e.clientY,
@@ -98,7 +100,12 @@ export const useControlPointDrag = ({
 
     const handleMouseUp = () => {
       setDraggingHandle(null);
-      setDragControlPoints(null);
+
+      if (!hasDragged) {
+        setDragControlPoints(null);
+        return;
+      }
+
       const data = dataRef.current;
       if (data && typeof data.onControlPointDragEnd === 'function') {
         data.onControlPointDragEnd(
@@ -119,6 +126,12 @@ export const useControlPointDrag = ({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [draggingHandle, id]);
+
+  useEffect(() => {
+    if (dragControlPoints && draggingHandle === null) {
+      setDragControlPoints(null);
+    }
+  }, [data?.controlPoint1, data?.controlPoint2]);
 
   const labelPosition: Point = isCrossDirection
     ? {

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useSelectedSchema } from '../contexts';
 import { useSchemaSnapshots } from './useSchemaSnapshots';
 import {
-  useCreateRelationship,
+  useCreateRelationshipWithExtra,
   useChangeRelationshipName,
   useChangeRelationshipKind,
   useChangeRelationshipCardinality,
@@ -24,7 +24,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const { selectedSchemaId } = useSelectedSchema();
   const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
 
-  const createRelationshipMutation = useCreateRelationship(selectedSchemaId);
+  const createRelationshipWithExtraMutation =
+    useCreateRelationshipWithExtra(selectedSchemaId);
   const changeRelationshipNameMutation =
     useChangeRelationshipName(selectedSchemaId);
   const changeRelationshipExtraMutation =
@@ -39,6 +40,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     string | null
   >(null);
   const relationshipReconnectSuccessful = useRef(true);
+  const justFinishedControlPointDrag = useRef(false);
 
   const updateExtra = (
     relationshipId: string,
@@ -47,9 +49,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const snapshot = findRelationshipById(snapshotsData, relationshipId);
     if (!snapshot) return;
 
-    const currentExtra = parseRelationshipExtra(
-      snapshot.relationship.extra,
-    );
+    const currentExtra = parseRelationshipExtra(snapshot.relationship.extra);
     changeRelationshipExtraMutation.mutate({
       relationshipId,
       data: { extra: JSON.stringify(updater(currentExtra)) },
@@ -61,6 +61,11 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     controlPoint1: Point,
     controlPoint2?: Point,
   ) => {
+    justFinishedControlPointDrag.current = true;
+    requestAnimationFrame(() => {
+      justFinishedControlPointDrag.current = false;
+    });
+
     updateExtra(relationshipId, (extra: RelationshipExtra) => ({
       ...extra,
       controlPoint1,
@@ -77,26 +82,43 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       ...edge,
       data: {
         ...edge.data,
-        onControlPointDragEnd: (...args: Parameters<typeof updateRelationshipControlPoint>) =>
-          controlPointCallbackRef.current(...args),
+        onControlPointDragEnd: (
+          ...args: Parameters<typeof updateRelationshipControlPoint>
+        ) => controlPointCallbackRef.current(...args),
       },
     }));
   }, [snapshotsData]);
 
-  const createRelationshipFromValidation = (validation: {
-    fkTableId: string;
-    pkTableId: string;
-  }) => {
+  const createRelationshipFromValidation = (
+    validation: {
+      fkTableId: string;
+      pkTableId: string;
+    },
+    connection: Connection,
+  ) => {
     const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
     const kind = relationshipConfig.isNonIdentifying
       ? 'NON_IDENTIFYING'
       : 'IDENTIFYING';
 
-    createRelationshipMutation.mutate({
-      fkTableId: validation.fkTableId,
-      pkTableId: validation.pkTableId,
-      kind,
-      cardinality: typeConfig.cardinality,
+    const isSameDirection = connection.source === validation.fkTableId;
+    const extra: RelationshipExtra = {
+      fkHandle:
+        (isSameDirection ? connection.sourceHandle : connection.targetHandle) ??
+        undefined,
+      pkHandle:
+        (isSameDirection ? connection.targetHandle : connection.sourceHandle) ??
+        undefined,
+    };
+
+    createRelationshipWithExtraMutation.mutate({
+      request: {
+        fkTableId: validation.fkTableId,
+        pkTableId: validation.pkTableId,
+        kind,
+        cardinality: typeConfig.cardinality,
+      },
+      extra: JSON.stringify(extra),
     });
   };
 
@@ -113,7 +135,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       return;
     }
 
-    createRelationshipFromValidation(validation);
+    createRelationshipFromValidation(validation, params);
   };
 
   const onRelationshipsChange = (changes: EdgeChange[]) => {
@@ -125,6 +147,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const onRelationshipClick = (event: React.MouseEvent, relationship: Edge) => {
+    if (justFinishedControlPointDrag.current) return;
     event.stopPropagation();
     setSelectedRelationship(relationship.id);
   };
@@ -156,8 +179,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       oldRelationship.target === validation.pkTableId;
 
     if (isSameTablePair) {
-      const isSameDirection =
-        newConnection.source === validation.fkTableId;
+      const isSameDirection = newConnection.source === validation.fkTableId;
 
       updateExtra(oldRelationship.id, (extra) => ({
         ...extra,
@@ -172,7 +194,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       }));
     } else {
       await deleteRelationshipMutation.mutateAsync(oldRelationship.id);
-      createRelationshipFromValidation(validation);
+      createRelationshipFromValidation(validation, newConnection);
     }
   };
 

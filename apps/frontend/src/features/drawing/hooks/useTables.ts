@@ -9,7 +9,7 @@ import { generateUniqueName } from '../utils/nameGenerator';
 import { useSelectedSchema } from '../contexts';
 import { useSchemaSnapshots } from './useSchemaSnapshots';
 import {
-  useCreateTable,
+  useCreateTableWithExtra,
   useChangeTableExtra,
   useDeleteTable,
 } from './useTableMutations';
@@ -18,7 +18,8 @@ export const useTables = () => {
   const { selectedSchemaId } = useSelectedSchema();
   const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
 
-  const createTableMutation = useCreateTable(selectedSchemaId);
+  const createTableWithExtraMutation =
+    useCreateTableWithExtra(selectedSchemaId);
   const changeTableExtraMutation = useChangeTableExtra(selectedSchemaId);
   const deleteTableMutation = useDeleteTable(selectedSchemaId);
 
@@ -38,26 +39,15 @@ export const useTables = () => {
 
     const newTableName = generateUniqueName(existingTableNames, 'Table');
 
-    createTableMutation.mutate(
-      {
+    createTableWithExtraMutation.mutate({
+      request: {
         schemaId: selectedSchemaId,
         name: newTableName,
         charset: '',
         collation: '',
       },
-      {
-        onSuccess: (result) => {
-          if (result.data) {
-            changeTableExtraMutation.mutate({
-              tableId: result.data.id,
-              data: {
-                extra: JSON.stringify({ position }),
-              },
-            });
-          }
-        },
-      },
-    );
+      extra: JSON.stringify({ position }),
+    });
   };
 
   const onNodeDragStop = (_event: React.MouseEvent, node: Node<TableData>) => {
