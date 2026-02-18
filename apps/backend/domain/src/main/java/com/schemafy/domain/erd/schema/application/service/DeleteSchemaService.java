@@ -48,7 +48,7 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
               .then();
         })
         .then(Mono.defer(() -> deleteSchemaPort.deleteSchema(schemaId)))
-        .thenReturn(MutationResult.<Void>of(null, affectedTableIds))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
         .as(transactionalOperator::transactional);
   }
 

@@ -60,7 +60,7 @@ public class DeleteRelationshipService implements DeleteRelationshipUseCase {
                         .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                         .then())
                     .then()
-                    .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
               });
         })
         .as(transactionalOperator::transactional);
