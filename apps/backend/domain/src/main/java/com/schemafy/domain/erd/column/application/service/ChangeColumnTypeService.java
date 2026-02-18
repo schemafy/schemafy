@@ -68,7 +68,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                   lengthScale,
                   affectedTableIds));
         })
-        .thenReturn(MutationResult.<Void>of(null, affectedTableIds))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
         .as(transactionalOperator::transactional);
   }
 
