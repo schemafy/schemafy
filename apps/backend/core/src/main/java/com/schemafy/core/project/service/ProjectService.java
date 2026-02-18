@@ -14,7 +14,6 @@ import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
 import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
-import com.schemafy.core.project.controller.dto.response.ProjectResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectSummaryResponse;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
@@ -25,6 +24,7 @@ import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.service.dto.ProjectDetail;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class ProjectService {
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final UserRepository userRepository;
 
-  public Mono<ProjectResponse> createProject(String workspaceId,
+  public Mono<ProjectDetail> createProject(String workspaceId,
       CreateProjectRequest request, String userId) {
     return validateWorkspaceAdmin(workspaceId, userId).then(
         Mono.defer(() -> {
@@ -63,7 +63,7 @@ public class ProjectService {
               .flatMap(savedProject -> propagateWorkspaceMembersToProject(
                   savedProject.getId(), workspaceId, userId)
                   .thenReturn(savedProject))
-              .flatMap(savedProject -> buildProjectResponse(
+              .flatMap(savedProject -> buildProjectDetail(
                   savedProject, userId));
         }))
         .as(transactionalOperator::transactional);
@@ -113,18 +113,18 @@ public class ProjectService {
     });
   }
 
-  public Mono<ProjectResponse> getProject(String workspaceId,
+  public Mono<ProjectDetail> getProject(String workspaceId,
       String projectId,
       String userId) {
     return validateMemberAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           project.belongsToWorkspace(workspaceId);
-          return buildProjectResponse(project, userId);
+          return buildProjectDetail(project, userId);
         });
   }
 
-  public Mono<ProjectResponse> updateProject(String workspaceId,
+  public Mono<ProjectDetail> updateProject(String workspaceId,
       String projectId, UpdateProjectRequest request, String userId) {
     return validateAdminAccess(projectId, userId)
         .then(findProjectById(projectId))
@@ -137,7 +137,7 @@ public class ProjectService {
               settings);
           return projectRepository.save(project);
         })
-        .flatMap(savedProject -> buildProjectResponse(savedProject, userId))
+        .flatMap(savedProject -> buildProjectDetail(savedProject, userId))
         .as(transactionalOperator::transactional);
   }
 
@@ -298,20 +298,20 @@ public class ProjectService {
             new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
   }
 
-  private Mono<ProjectResponse> buildProjectResponse(Project project,
+  private Mono<ProjectDetail> buildProjectDetail(Project project,
       String userId) {
     return Mono.zip(
         projectMemberRepository.countByProjectIdAndNotDeleted(
             project.getId()),
         projectMemberRepository
             .findByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
-            .map(ProjectMember::getRole)
-            .defaultIfEmpty(ProjectRole.VIEWER.getValue()))
-        .map(tuple -> ProjectResponse.of(
+            .switchIfEmpty(Mono.error(
+                new BusinessException(ErrorCode.PROJECT_MEMBER_NOT_FOUND)))
+            .map(ProjectMember::getRole))
+        .map(tuple -> new ProjectDetail(
             project,
-            tuple.getT1(), // memberCount
-            tuple.getT2()  // currentUserRole
-        ));
+            tuple.getT1(),
+            tuple.getT2()));
   }
 
   private Mono<ProjectMember> findProjectMemberByUserIdAndProjectId(

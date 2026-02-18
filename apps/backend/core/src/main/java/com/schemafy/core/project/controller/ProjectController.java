@@ -44,6 +44,7 @@ public class ProjectController {
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.createProject(workspaceId, request, userId)
+        .map(ProjectResponse::from)
         .map(BaseResponse::success);
   }
 
@@ -66,6 +67,7 @@ public class ProjectController {
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.getProject(workspaceId, id, userId)
+        .map(ProjectResponse::from)
         .map(BaseResponse::success);
   }
 
@@ -77,6 +79,7 @@ public class ProjectController {
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.updateProject(workspaceId, id, request, userId)
+        .map(ProjectResponse::from)
         .map(BaseResponse::success);
   }
 
