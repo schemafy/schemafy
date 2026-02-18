@@ -48,11 +48,11 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
                 affectedTableIds)
                 .then(deleteConstraintColumnsPort.deleteByConstraintId(constraintId))
                 .then(deleteConstraintPort.deleteConstraint(constraintId))
-                .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
           }
           return deleteConstraintColumnsPort.deleteByConstraintId(constraintId)
               .then(deleteConstraintPort.deleteConstraint(constraintId))
-              .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+              .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
         })
         .as(transactionalOperator::transactional);
   }

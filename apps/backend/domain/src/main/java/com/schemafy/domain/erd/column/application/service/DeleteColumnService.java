@@ -79,7 +79,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
             command.columnId(),
             ConcurrentHashMap.newKeySet(),
             affectedTableIds)))
-        .thenReturn(MutationResult.<Void>of(null, affectedTableIds))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
         .as(transactionalOperator::transactional);
   }
 
