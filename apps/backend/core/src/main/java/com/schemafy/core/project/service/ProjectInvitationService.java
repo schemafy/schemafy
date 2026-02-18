@@ -16,13 +16,10 @@ import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
-import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationType;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -39,7 +36,6 @@ public class ProjectInvitationService {
   private final InvitationRepository invitationRepository;
   private final ProjectRepository projectRepository;
   private final ProjectMemberRepository projectMemberRepository;
-  private final WorkspaceMemberRepository workspaceMemberRepository;
   private final UserRepository userRepository;
 
   public Mono<Invitation> createInvitation(
@@ -132,7 +128,6 @@ public class ProjectInvitationService {
                         invitation.getProjectRole());
 
                     return invitationRepository.save(invitation)
-                        .then(ensureWorkspaceMember(invitation.getWorkspaceId(), currentUserId))
                         .then(projectMemberRepository.save(member))
                         .flatMap(this::buildMemberResponse);
                   }));
@@ -252,17 +247,6 @@ public class ProjectInvitationService {
       ProjectMember member) {
     return userRepository.findById(member.getUserId())
         .map(user -> ProjectMemberResponse.of(member, user));
-  }
-
-  private Mono<Void> ensureWorkspaceMember(String workspaceId, String userId) {
-    return workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
-        .flatMap(exists -> {
-          if (!exists) {
-            WorkspaceMember newMember = WorkspaceMember.create(workspaceId, userId, WorkspaceRole.MEMBER);
-            return workspaceMemberRepository.save(newMember).then();
-          }
-          return Mono.empty();
-        });
   }
 
 }
