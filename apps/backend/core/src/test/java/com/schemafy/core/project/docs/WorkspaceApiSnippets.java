@@ -31,8 +31,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
           .description("생성 시각"),
       fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
           .description("수정 시각"),
-      fieldWithPath("result.memberCount").type(JsonFieldType.NUMBER)
-          .description("워크스페이스 멤버 수").optional(),
       fieldWithPath("result.projectCount").type(JsonFieldType.NUMBER)
           .description("워크스페이스 프로젝트 수").optional(),
       fieldWithPath("result.currentUserRole").type(JsonFieldType.STRING)
@@ -49,8 +47,6 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
           .description("워크스페이스 이름"),
       fieldWithPath(prefix + "description").type(JsonFieldType.STRING)
           .description("워크스페이스 설명").optional(),
-      fieldWithPath(prefix + "memberCount").type(JsonFieldType.NUMBER)
-          .description("전체 멤버 수"),
       fieldWithPath(prefix + "createdAt").type(JsonFieldType.STRING)
           .description("생성 시각"),
       fieldWithPath(prefix + "updatedAt").type(JsonFieldType.STRING)

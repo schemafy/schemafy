@@ -67,11 +67,7 @@ public class WorkspaceService {
     return workspaceRepository.countByUserId(userId)
         .flatMap(sizeOfWorkspace -> workspaceRepository
             .findByUserIdWithPaging(userId, size, page * size)
-            .flatMap(workspace -> workspaceMemberRepository
-                .countByWorkspaceIdAndNotDeleted(
-                    workspace.getId())
-                .map(memberCount -> WorkspaceSummaryResponse
-                    .of(workspace, memberCount)))
+            .map(WorkspaceSummaryResponse::of)
             .collectList()
             .map(content -> PageResponse.of(content, page, size,
                 sizeOfWorkspace)));
@@ -205,8 +201,6 @@ public class WorkspaceService {
   private Mono<WorkspaceDetail> buildWorkspaceDetail(
       Workspace workspace, String userId) {
     return Mono.zip(
-        workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
-            workspace.getId()),
         projectRepository.countByWorkspaceIdAndNotDeleted(
             workspace.getId()),
         workspaceMemberRepository
@@ -218,8 +212,7 @@ public class WorkspaceService {
         .map(tuple -> new WorkspaceDetail(
             workspace,
             tuple.getT1(),
-            tuple.getT2(),
-            tuple.getT3()));
+            tuple.getT2()));
   }
 
   private Mono<Workspace> findWorkspaceOrThrow(String workspaceId) {

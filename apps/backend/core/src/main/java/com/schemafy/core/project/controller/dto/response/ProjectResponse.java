@@ -9,7 +9,7 @@ import com.schemafy.core.project.service.dto.ProjectDetail;
 public record ProjectResponse(String id, String workspaceId,
     String name, String description, ProjectSettings settings,
     Instant createdAt, Instant updatedAt,
-    Long memberCount, String currentUserRole) {
+    String currentUserRole) {
 
   public static ProjectResponse from(ProjectDetail detail) {
     Project project = detail.project();
@@ -17,7 +17,7 @@ public record ProjectResponse(String id, String workspaceId,
         project.getName(), project.getDescription(),
         project.getSettingsAsVo(),
         project.getCreatedAt(), project.getUpdatedAt(),
-        detail.memberCount(), detail.currentUserRole());
+        detail.currentUserRole());
   }
 
 }

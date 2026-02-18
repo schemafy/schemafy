@@ -47,8 +47,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
               .description("생성 시각"),
           fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
               .description("수정 시각"),
-          fieldWithPath("result.memberCount").type(JsonFieldType.NUMBER)
-              .description("프로젝트 멤버 수"),
           fieldWithPath("result.currentUserRole").type(JsonFieldType.STRING)
               .description("현재 사용자의 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)")
         },
@@ -69,8 +67,6 @@ public class ProjectApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "myRole").type(JsonFieldType.STRING)
           .description(
               "현재 사용자의 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)"),
-      fieldWithPath(prefix + "memberCount").type(JsonFieldType.NUMBER)
-          .description("전체 멤버 수"),
       fieldWithPath(prefix + "createdAt").type(JsonFieldType.STRING)
           .description("생성 시각"),
       fieldWithPath(prefix + "updatedAt").type(JsonFieldType.STRING)

@@ -90,20 +90,10 @@ public class ProjectService {
                 var projects = tuple.getT1();
                 var roles = tuple.getT2();
                 return Flux.range(0, projects.size())
-                    .flatMap(i -> {
-                      var project = projects
-                          .get(i);
-                      var role = ProjectRole
-                          .fromString(
-                              roles.get(
-                                  i));
-                      return projectMemberRepository
-                          .countByProjectIdAndNotDeleted(
-                              project.getId())
-                          .map(count -> ProjectSummaryResponse
-                              .of(project,
-                                  role,
-                                  count));
+                    .map(i -> {
+                      var project = projects.get(i);
+                      var role = ProjectRole.fromString(roles.get(i));
+                      return ProjectSummaryResponse.of(project, role);
                     })
                     .collectList()
                     .map(content -> PageResponse.of(
@@ -300,18 +290,11 @@ public class ProjectService {
 
   private Mono<ProjectDetail> buildProjectDetail(Project project,
       String userId) {
-    return Mono.zip(
-        projectMemberRepository.countByProjectIdAndNotDeleted(
-            project.getId()),
-        projectMemberRepository
-            .findByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
-            .switchIfEmpty(Mono.error(
-                new BusinessException(ErrorCode.PROJECT_MEMBER_NOT_FOUND)))
-            .map(ProjectMember::getRole))
-        .map(tuple -> new ProjectDetail(
-            project,
-            tuple.getT1(),
-            tuple.getT2()));
+    return projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
+        .switchIfEmpty(Mono.error(
+            new BusinessException(ErrorCode.PROJECT_MEMBER_NOT_FOUND)))
+        .map(member -> new ProjectDetail(project, member.getRole()));
   }
 
   private Mono<ProjectMember> findProjectMemberByUserIdAndProjectId(
