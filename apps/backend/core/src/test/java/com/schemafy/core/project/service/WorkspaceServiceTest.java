@@ -17,7 +17,6 @@ import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberReques
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
-import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
@@ -29,6 +28,7 @@ import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.service.dto.WorkspaceDetail;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
@@ -119,13 +119,14 @@ class WorkspaceServiceTest {
           "New Workspace",
           "New Description");
 
-      Mono<WorkspaceResponse> result = workspaceService.createWorkspace(
+      Mono<WorkspaceDetail> result = workspaceService.createWorkspace(
           request, outsiderUser.getId());
 
       StepVerifier.create(result)
-          .assertNext(response -> {
-            assertThat(response.name()).isEqualTo("New Workspace");
-            assertThat(response.description())
+          .assertNext(detail -> {
+            assertThat(detail.workspace().getName())
+                .isEqualTo("New Workspace");
+            assertThat(detail.workspace().getDescription())
                 .isEqualTo("New Description");
           })
           .verifyComplete();

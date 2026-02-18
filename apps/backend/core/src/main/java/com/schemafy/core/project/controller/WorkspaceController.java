@@ -36,6 +36,7 @@ public class WorkspaceController {
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.createWorkspace(request, requesterId)
+        .map(WorkspaceResponse::from)
         .map(BaseResponse::success);
   }
 
@@ -56,6 +57,7 @@ public class WorkspaceController {
       @PathVariable String id, Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.getWorkspace(id, requesterId)
+        .map(WorkspaceResponse::from)
         .map(BaseResponse::success);
   }
 
@@ -67,6 +69,7 @@ public class WorkspaceController {
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.updateWorkspace(id, request, requesterId)
+        .map(WorkspaceResponse::from)
         .map(BaseResponse::success);
   }
 

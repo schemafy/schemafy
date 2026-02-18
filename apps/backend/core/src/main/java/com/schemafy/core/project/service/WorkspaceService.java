@@ -17,7 +17,6 @@ import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
-import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceSummaryResponse;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
@@ -25,6 +24,7 @@ import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.service.dto.WorkspaceDetail;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 
@@ -45,7 +45,7 @@ public class WorkspaceService {
   private final ProjectService projectService;
   private final UserRepository userRepository;
 
-  public Mono<WorkspaceResponse> createWorkspace(
+  public Mono<WorkspaceDetail> createWorkspace(
       CreateWorkspaceRequest request, String userId) {
     return Mono.defer(() -> {
       Workspace workspace = Workspace.create(request.name(),
@@ -57,7 +57,7 @@ public class WorkspaceService {
       return workspaceRepository.save(workspace)
           .flatMap(savedWorkspace -> workspaceMemberRepository.save(
               adminMember).thenReturn(savedWorkspace))
-          .flatMap(savedWorkspace -> buildWorkspaceResponse(
+          .flatMap(savedWorkspace -> buildWorkspaceDetail(
               savedWorkspace, userId));
     }).as(transactionalOperator::transactional);
   }
@@ -77,14 +77,14 @@ public class WorkspaceService {
                 sizeOfWorkspace)));
   }
 
-  public Mono<WorkspaceResponse> getWorkspace(String workspaceId,
+  public Mono<WorkspaceDetail> getWorkspace(String workspaceId,
       String userId) {
     return validateMemberAccess(workspaceId, userId)
         .then(findWorkspaceOrThrow(workspaceId))
-        .flatMap(workspace -> buildWorkspaceResponse(workspace, userId));
+        .flatMap(workspace -> buildWorkspaceDetail(workspace, userId));
   }
 
-  public Mono<WorkspaceResponse> updateWorkspace(String workspaceId,
+  public Mono<WorkspaceDetail> updateWorkspace(String workspaceId,
       UpdateWorkspaceRequest request, String userId) {
     return validateAdminAccess(workspaceId, userId)
         .then(findWorkspaceOrThrow(workspaceId))
@@ -92,7 +92,7 @@ public class WorkspaceService {
           workspace.update(request.name(), request.description());
           return workspaceRepository.save(workspace);
         })
-        .flatMap(savedWorkspace -> buildWorkspaceResponse(
+        .flatMap(savedWorkspace -> buildWorkspaceDetail(
             savedWorkspace, userId))
         .as(transactionalOperator::transactional);
   }
@@ -202,7 +202,7 @@ public class WorkspaceService {
         .map(user -> WorkspaceMemberResponse.of(member, user));
   }
 
-  private Mono<WorkspaceResponse> buildWorkspaceResponse(
+  private Mono<WorkspaceDetail> buildWorkspaceDetail(
       Workspace workspace, String userId) {
     return Mono.zip(
         workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
@@ -212,14 +212,14 @@ public class WorkspaceService {
         workspaceMemberRepository
             .findByWorkspaceIdAndUserIdAndNotDeleted(
                 workspace.getId(), userId)
-            .map(WorkspaceMember::getRole)
-            .defaultIfEmpty(WorkspaceRole.MEMBER.getValue()))
-        .map(tuple -> WorkspaceResponse.of(
+            .switchIfEmpty(Mono.error(
+                new BusinessException(ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)))
+            .map(WorkspaceMember::getRole))
+        .map(tuple -> new WorkspaceDetail(
             workspace,
-            tuple.getT1(), // memberCount
-            tuple.getT2(), // projectCount
-            tuple.getT3()  // currentUserRole
-        ));
+            tuple.getT1(),
+            tuple.getT2(),
+            tuple.getT3()));
   }
 
   private Mono<Workspace> findWorkspaceOrThrow(String workspaceId) {
