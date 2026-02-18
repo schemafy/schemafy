@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS share_links (
     created_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at       TIMESTAMP     NULL,
-    CONSTRAINT pk_share_links PRIMARY KEY (id)
+    CONSTRAINT pk_share_links PRIMARY KEY (id),
+    CONSTRAINT uk_share_links_code UNIQUE (code)
     );

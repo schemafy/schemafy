@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS share_links (
     created_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at       TIMESTAMP     NULL,
-    CONSTRAINT pk_share_links PRIMARY KEY (id)
+    CONSTRAINT pk_share_links PRIMARY KEY (id),
+    CONSTRAINT uk_share_links_code UNIQUE (code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
