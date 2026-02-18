@@ -1,5 +1,6 @@
 package com.schemafy.core.project.repository;
 
+import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
@@ -93,5 +94,18 @@ public interface InvitationRepository
         AND deleted_at IS NULL
       """)
   Mono<Long> countPendingByEmailAndType(String email, String targetType);
+
+  @Modifying
+  @Query("""
+      UPDATE invitations
+      SET status = 'cancelled', resolved_at = NOW(), updated_at = NOW()
+      WHERE target_type = :targetType
+        AND target_id = :targetId
+        AND invited_email = :email
+        AND status = 'pending'
+        AND deleted_at IS NULL
+        AND id != :excludeId
+      """)
+  Mono<Long> cancelOtherPendingInvitations(String targetType, String targetId, String email, String excludeId);
 
 }

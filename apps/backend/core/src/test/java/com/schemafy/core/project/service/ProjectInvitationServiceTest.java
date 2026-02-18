@@ -705,6 +705,77 @@ class ProjectInvitationServiceTest {
           .verify();
     }
 
+    @Test
+    @DisplayName("초대 수락 시 동일 대상의 다른 pending 초대가 cancelled 된다")
+    void acceptInvitation_CancelsOtherPendingInvitations() {
+      // 같은 프로젝트, 같은 이메일로 pending 초대 2개 직접 생성 (서비스 중복 체크 우회)
+      Invitation invitation1 = Invitation.createProjectInvitation(
+          testProject.getId(),
+          testWorkspace.getId(),
+          workspaceMember.getEmail(),
+          ProjectRole.EDITOR,
+          adminUser.getId());
+      invitation1 = invitationRepository.save(invitation1).block();
+
+      Invitation invitation2 = Invitation.createProjectInvitation(
+          testProject.getId(),
+          testWorkspace.getId(),
+          workspaceMember.getEmail(),
+          ProjectRole.VIEWER,
+          adminUser.getId());
+      invitation2 = invitationRepository.save(invitation2).block();
+
+      String acceptedId = invitation1.getId();
+      String otherPendingId = invitation2.getId();
+
+      // invitation1 수락
+      invitationService.acceptInvitation(acceptedId, workspaceMember.getId()).block();
+
+      // 수락한 초대는 ACCEPTED
+      Invitation accepted = invitationRepository.findById(acceptedId).block();
+      assertThat(accepted.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
+
+      // 다른 pending 초대는 CANCELLED
+      Invitation other = invitationRepository.findById(otherPendingId).block();
+      assertThat(other.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+      assertThat(other.getResolvedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("초대 수락 시 다른 프로젝트의 pending 초대는 영향받지 않는다")
+    void acceptInvitation_DoesNotAffectOtherProjectInvitations() {
+      // 다른 프로젝트 생성
+      Project otherProject = Project.create(
+          testWorkspace.getId(), "Other Project", "Desc",
+          ProjectSettings.defaultSettings());
+      otherProject = projectRepository.save(otherProject).block();
+
+      // 현재 프로젝트에 초대
+      Invitation invitation1 = Invitation.createProjectInvitation(
+          testProject.getId(),
+          testWorkspace.getId(),
+          workspaceMember.getEmail(),
+          ProjectRole.EDITOR,
+          adminUser.getId());
+      invitation1 = invitationRepository.save(invitation1).block();
+
+      // 다른 프로젝트에 같은 이메일로 초대
+      Invitation otherProjectInvitation = Invitation.createProjectInvitation(
+          otherProject.getId(),
+          testWorkspace.getId(),
+          workspaceMember.getEmail(),
+          ProjectRole.VIEWER,
+          adminUser.getId());
+      otherProjectInvitation = invitationRepository.save(otherProjectInvitation).block();
+
+      // invitation1 수락
+      invitationService.acceptInvitation(invitation1.getId(), workspaceMember.getId()).block();
+
+      // 다른 프로젝트의 초대는 여전히 PENDING
+      Invitation otherInv = invitationRepository.findById(otherProjectInvitation.getId()).block();
+      assertThat(otherInv.getStatusAsEnum()).isEqualTo(InvitationStatus.PENDING);
+    }
+
   }
 
   @Nested

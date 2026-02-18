@@ -7,7 +7,8 @@ public enum InvitationStatus {
 
   PENDING("pending"),
   ACCEPTED("accepted"),
-  REJECTED("rejected");
+  REJECTED("rejected"),
+  CANCELLED("cancelled");
 
   private final String value;
 
@@ -29,5 +30,7 @@ public enum InvitationStatus {
   public boolean isAccepted() { return this == ACCEPTED; }
 
   public boolean isRejected() { return this == REJECTED; }
+
+  public boolean isCancelled() { return this == CANCELLED; }
 
 }

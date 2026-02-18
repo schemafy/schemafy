@@ -128,6 +128,11 @@ public class ProjectInvitationService {
                         invitation.getProjectRole());
 
                     return invitationRepository.save(invitation)
+                        .then(invitationRepository.cancelOtherPendingInvitations(
+                            invitation.getTargetType(),
+                            invitation.getTargetId(),
+                            invitation.getInvitedEmail(),
+                            invitation.getId()))
                         .then(projectMemberRepository.save(member))
                         .flatMap(this::buildMemberResponse);
                   }));

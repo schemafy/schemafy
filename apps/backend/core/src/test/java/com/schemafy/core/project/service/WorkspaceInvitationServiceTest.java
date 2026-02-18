@@ -644,6 +644,70 @@ class WorkspaceInvitationServiceTest {
           .verify();
     }
 
+    @Test
+    @DisplayName("초대 수락 시 동일 대상의 다른 pending 초대가 cancelled 된다")
+    void acceptInvitation_CancelsOtherPendingInvitations() {
+      // 같은 워크스페이스, 같은 이메일로 pending 초대 2개 직접 생성
+      Invitation invitation1 = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          WorkspaceRole.MEMBER,
+          adminUser.getId());
+      invitation1 = invitationRepository.save(invitation1).block();
+
+      Invitation invitation2 = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          WorkspaceRole.ADMIN,
+          adminUser.getId());
+      invitation2 = invitationRepository.save(invitation2).block();
+
+      String acceptedId = invitation1.getId();
+      String otherPendingId = invitation2.getId();
+
+      // invitation1 수락
+      invitationService.acceptInvitation(acceptedId, invitedUser.getId()).block();
+
+      // 수락한 초대는 ACCEPTED
+      Invitation accepted = invitationRepository.findById(acceptedId).block();
+      assertThat(accepted.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
+
+      // 다른 pending 초대는 CANCELLED
+      Invitation other = invitationRepository.findById(otherPendingId).block();
+      assertThat(other.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+      assertThat(other.getResolvedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("초대 수락 시 다른 워크스페이스의 pending 초대는 영향받지 않는다")
+    void acceptInvitation_DoesNotAffectOtherWorkspaceInvitations() {
+      Workspace otherWorkspace = Workspace.create("Other Workspace", "Desc");
+      otherWorkspace = workspaceRepository.save(otherWorkspace).block();
+
+      // 현재 워크스페이스에 초대
+      Invitation invitation1 = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          WorkspaceRole.MEMBER,
+          adminUser.getId());
+      invitation1 = invitationRepository.save(invitation1).block();
+
+      // 다른 워크스페이스에 같은 이메일로 초대
+      Invitation otherWsInvitation = Invitation.createWorkspaceInvitation(
+          otherWorkspace.getId(),
+          invitedUser.getEmail(),
+          WorkspaceRole.MEMBER,
+          adminUser.getId());
+      otherWsInvitation = invitationRepository.save(otherWsInvitation).block();
+
+      // invitation1 수락
+      invitationService.acceptInvitation(invitation1.getId(), invitedUser.getId()).block();
+
+      // 다른 워크스페이스의 초대는 여전히 PENDING
+      Invitation otherInv = invitationRepository.findById(otherWsInvitation.getId()).block();
+      assertThat(otherInv.getStatusAsEnum()).isEqualTo(InvitationStatus.PENDING);
+    }
+
   }
 
   @Nested

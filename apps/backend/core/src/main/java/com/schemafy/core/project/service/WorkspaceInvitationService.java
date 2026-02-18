@@ -123,6 +123,11 @@ public class WorkspaceInvitationService {
                         invitation.getWorkspaceRole());
 
                     return invitationRepository.save(invitation)
+                        .then(invitationRepository.cancelOtherPendingInvitations(
+                            invitation.getTargetType(),
+                            invitation.getTargetId(),
+                            invitation.getInvitedEmail(),
+                            invitation.getId()))
                         .then(memberRepository.save(member))
                         .flatMap(savedMember -> projectService.propagateToExistingProjects(
                             invitation.getWorkspaceId(),
