@@ -43,7 +43,8 @@ public class ProjectController {
       @Valid @RequestBody CreateProjectRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.createProject(workspaceId, request, userId)
+    return projectService.createProject(workspaceId, request.name(), request.description(), request
+        .getSettingsOrDefault(), userId)
         .map(ProjectResponse::from)
         .map(BaseResponse::success);
   }
@@ -57,6 +58,7 @@ public class ProjectController {
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.getProjects(workspaceId, userId, page, size)
+        .map(result -> result.map(ProjectSummaryResponse::from))
         .map(BaseResponse::success);
   }
 
@@ -78,7 +80,8 @@ public class ProjectController {
       @Valid @RequestBody UpdateProjectRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.updateProject(workspaceId, id, request, userId)
+    return projectService.updateProject(workspaceId, id, request.name(), request.description(), request
+        .getSettingsOrDefault(), userId)
         .map(ProjectResponse::from)
         .map(BaseResponse::success);
   }
@@ -101,6 +104,7 @@ public class ProjectController {
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.getMembers(id, userId, page, size)
+        .map(result -> result.map(ProjectMemberResponse::from))
         .map(BaseResponse::success);
   }
 
@@ -113,7 +117,8 @@ public class ProjectController {
       Authentication authentication) {
     String requesterId = authentication.getName();
     return projectService
-        .updateMemberRole(projectId, userId, request, requesterId)
+        .updateMemberRole(projectId, userId, request.role(), requesterId)
+        .map(ProjectMemberResponse::from)
         .map(BaseResponse::success);
   }
 
@@ -166,7 +171,7 @@ public class ProjectController {
         .flatMap(total -> shareLinkService.getShareLinks(workspaceId, projectId, userId, size, offset)
             .map(link -> ShareLinkResponse.of(link, baseUrl))
             .collectList()
-            .map(list -> PageResponse.of(list, page, size, total)))
+            .map(result -> PageResponse.of(result, page, size, total)))
         .map(BaseResponse::success);
   }
 

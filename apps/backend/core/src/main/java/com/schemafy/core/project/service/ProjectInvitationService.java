@@ -10,9 +10,6 @@ import org.slf4j.LoggerFactory;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
-import com.schemafy.core.project.controller.dto.request.CreateProjectInvitationRequest;
-import com.schemafy.core.project.controller.dto.response.ProjectInvitationResponse;
-import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
@@ -20,6 +17,8 @@ import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.vo.InvitationType;
+import com.schemafy.core.project.repository.vo.ProjectRole;
+import com.schemafy.core.project.service.dto.ProjectMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -41,7 +40,8 @@ public class ProjectInvitationService {
   public Mono<Invitation> createInvitation(
       String workspaceId,
       String projectId,
-      CreateProjectInvitationRequest request,
+      String email,
+      ProjectRole role,
       String currentUserId) {
     return validateProjectAdmin(projectId, currentUserId)
         .then(findProjectOrThrow(projectId))
@@ -50,16 +50,16 @@ public class ProjectInvitationService {
           return Mono.just(project);
         })
         .flatMap(project -> checkNotAlreadyProjectMemberByEmail(
-            projectId, request.email())
+            projectId, email)
             .then(checkDuplicatePendingInvitation(
-                projectId, request.email()))
+                projectId, email))
             .thenReturn(project))
         .flatMap(project -> {
           Invitation invitation = Invitation.createProjectInvitation(
               projectId,
               workspaceId,
-              request.email(),
-              request.role(),
+              email,
+              role,
               currentUserId);
 
           return invitationRepository.save(invitation);
@@ -67,7 +67,7 @@ public class ProjectInvitationService {
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<PageResponse<ProjectInvitationResponse>> getInvitations(
+  public Mono<PageResponse<Invitation>> getInvitations(
       String workspaceId,
       String projectId,
       String currentUserId,
@@ -77,13 +77,12 @@ public class ProjectInvitationService {
         .then(invitationRepository.countProjectInvitations(projectId))
         .flatMap(totalElements -> invitationRepository
             .findProjectInvitations(projectId, size, page * size)
-            .map(ProjectInvitationResponse::of)
             .collectList()
             .map(invitations -> PageResponse.of(
                 invitations, page, size, totalElements)));
   }
 
-  public Mono<PageResponse<ProjectInvitationResponse>> getMyInvitations(
+  public Mono<PageResponse<Invitation>> getMyInvitations(
       String currentUserId,
       int page,
       int size) {
@@ -96,14 +95,13 @@ public class ProjectInvitationService {
           return invitationRepository.countPendingByEmailAndType(email, targetType)
               .flatMap(totalElements -> invitationRepository
                   .findPendingByEmailAndType(email, targetType, size, page * size)
-                  .map(ProjectInvitationResponse::of)
                   .collectList()
                   .map(invitations -> PageResponse.of(
                       invitations, page, size, totalElements)));
         });
   }
 
-  public Mono<ProjectMemberResponse> acceptInvitation(
+  public Mono<ProjectMemberDetail> acceptInvitation(
       String invitationId,
       String currentUserId) {
     return userRepository.findById(currentUserId)
@@ -134,7 +132,7 @@ public class ProjectInvitationService {
                             invitation.getInvitedEmail(),
                             invitation.getId()))
                         .then(projectMemberRepository.save(member))
-                        .flatMap(this::buildMemberResponse);
+                        .flatMap(this::buildMemberDetail);
                   }));
             }))
         .as(transactionalOperator::transactional)
@@ -248,10 +246,10 @@ public class ProjectInvitationService {
         .then();
   }
 
-  private Mono<ProjectMemberResponse> buildMemberResponse(
+  private Mono<ProjectMemberDetail> buildMemberDetail(
       ProjectMember member) {
     return userRepository.findById(member.getUserId())
-        .map(user -> ProjectMemberResponse.of(member, user));
+        .map(user -> new ProjectMemberDetail(member, user));
   }
 
 }

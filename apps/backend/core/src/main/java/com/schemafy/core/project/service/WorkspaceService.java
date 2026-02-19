@@ -12,12 +12,6 @@ import org.slf4j.LoggerFactory;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
-import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
-import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
-import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
-import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
-import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
-import com.schemafy.core.project.controller.dto.response.WorkspaceSummaryResponse;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
@@ -25,6 +19,7 @@ import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.WorkspaceDetail;
+import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 
@@ -46,10 +41,10 @@ public class WorkspaceService {
   private final UserRepository userRepository;
 
   public Mono<WorkspaceDetail> createWorkspace(
-      CreateWorkspaceRequest request, String userId) {
+      String name, String description, String userId) {
     return Mono.defer(() -> {
-      Workspace workspace = Workspace.create(request.name(),
-          request.description());
+      Workspace workspace = Workspace.create(name,
+          description);
 
       WorkspaceMember adminMember = WorkspaceMember.create(
           workspace.getId(), userId, WorkspaceRole.ADMIN);
@@ -62,12 +57,11 @@ public class WorkspaceService {
     }).as(transactionalOperator::transactional);
   }
 
-  public Mono<PageResponse<WorkspaceSummaryResponse>> getWorkspaces(
+  public Mono<PageResponse<Workspace>> getWorkspaces(
       String userId, int page, int size) {
     return workspaceRepository.countByUserId(userId)
         .flatMap(sizeOfWorkspace -> workspaceRepository
             .findByUserIdWithPaging(userId, size, page * size)
-            .map(WorkspaceSummaryResponse::of)
             .collectList()
             .map(content -> PageResponse.of(content, page, size,
                 sizeOfWorkspace)));
@@ -81,11 +75,11 @@ public class WorkspaceService {
   }
 
   public Mono<WorkspaceDetail> updateWorkspace(String workspaceId,
-      UpdateWorkspaceRequest request, String userId) {
+      String name, String description, String userId) {
     return validateAdminAccess(workspaceId, userId)
         .then(findWorkspaceOrThrow(workspaceId))
         .flatMap(workspace -> {
-          workspace.update(request.name(), request.description());
+          workspace.update(name, description);
           return workspaceRepository.save(workspace);
         })
         .flatMap(savedWorkspace -> buildWorkspaceDetail(
@@ -109,7 +103,7 @@ public class WorkspaceService {
         }).as(transactionalOperator::transactional);
   }
 
-  public Mono<PageResponse<WorkspaceMemberResponse>> getMembers(
+  public Mono<PageResponse<WorkspaceMemberDetail>> getMembers(
       String workspaceId, String userId, int page, int size) {
     return validateMemberAccess(workspaceId, userId).then(
         workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
@@ -119,7 +113,7 @@ public class WorkspaceService {
           return workspaceMemberRepository
               .findByWorkspaceIdAndNotDeleted(
                   workspaceId, size, offset)
-              .flatMap(this::buildMemberResponse)
+              .flatMap(this::buildMemberDetail)
               .collectList()
               .map(members -> PageResponse.of(members, page, size,
                   totalElements));
@@ -127,13 +121,14 @@ public class WorkspaceService {
   }
 
   // Soft delete된 멤버는 재활성화
-  public Mono<WorkspaceMemberResponse> addMember(
+  public Mono<WorkspaceMemberDetail> addMember(
       String workspaceId,
-      AddWorkspaceMemberRequest request,
+      String email,
+      WorkspaceRole role,
       String currentUserId) {
 
     return validateAdminAccess(workspaceId, currentUserId)
-        .then(findUserByEmailOrThrow(request.email()))
+        .then(findUserByEmailOrThrow(email))
         .flatMap(targetUser -> workspaceMemberRepository
             .findLatestByWorkspaceIdAndUserId(workspaceId,
                 targetUser.getId())
@@ -149,7 +144,7 @@ public class WorkspaceService {
               // 삭제된 멤버 복원
               return workspaceMemberRepository
                   .restoreDeletedMember(existing.getId(),
-                      request.role().getValue())
+                      role.getValue())
                   .flatMap(updatedCount -> {
                     if (updatedCount == 0) {
                       return Mono.error(new BusinessException(
@@ -164,7 +159,7 @@ public class WorkspaceService {
               WorkspaceMember newMember = WorkspaceMember.create(
                   workspaceId,
                   targetUser.getId(),
-                  request.role());
+                  role);
               return workspaceMemberRepository.save(newMember);
             })))
         .flatMap(savedMember -> projectService.propagateToExistingProjects(
@@ -172,12 +167,12 @@ public class WorkspaceService {
             savedMember.getUserId(),
             savedMember.getRoleAsEnum())
             .then(Mono.just(savedMember)))
-        .flatMap(this::buildMemberResponse)
+        .flatMap(this::buildMemberDetail)
         .onErrorResume(error -> {
           if (error instanceof DataIntegrityViolationException) {
             log.warn(
                 "Duplicate key constraint: workspaceId={}, email={}",
-                workspaceId, request.email());
+                workspaceId, email);
             return Mono.error(new BusinessException(
                 ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS));
           }
@@ -192,10 +187,10 @@ public class WorkspaceService {
             new BusinessException(ErrorCode.USER_NOT_FOUND)));
   }
 
-  private Mono<WorkspaceMemberResponse> buildMemberResponse(
+  private Mono<WorkspaceMemberDetail> buildMemberDetail(
       WorkspaceMember member) {
     return userRepository.findById(member.getUserId())
-        .map(user -> WorkspaceMemberResponse.of(member, user));
+        .map(user -> new WorkspaceMemberDetail(member, user));
   }
 
   private Mono<WorkspaceDetail> buildWorkspaceDetail(
@@ -257,17 +252,17 @@ public class WorkspaceService {
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<WorkspaceMemberResponse> updateMemberRole(
+  public Mono<WorkspaceMemberDetail> updateMemberRole(
       String workspaceId,
       String targetUserId,
-      UpdateMemberRoleRequest request,
+      WorkspaceRole role,
       String currentUserId) {
     return validateAdminAccess(workspaceId, currentUserId)
         .then(findWorkspaceMemberByUserIdAndWorkspaceId(targetUserId,
             workspaceId))
         .flatMap(targetMember -> modifyMemberWithAdminGuard(workspaceId,
-            targetMember, m -> m.updateRole(request.role())))
-        .flatMap(this::buildMemberResponse)
+            targetMember, m -> m.updateRole(role)))
+        .flatMap(this::buildMemberDetail)
         .as(transactionalOperator::transactional);
   }
 

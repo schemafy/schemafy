@@ -35,7 +35,7 @@ public class WorkspaceController {
       @Valid @RequestBody CreateWorkspaceRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.createWorkspace(request, requesterId)
+    return workspaceService.createWorkspace(request.name(), request.description(), requesterId)
         .map(WorkspaceResponse::from)
         .map(BaseResponse::success);
   }
@@ -48,6 +48,7 @@ public class WorkspaceController {
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.getWorkspaces(requesterId, page, size)
+        .map(result -> result.map(WorkspaceSummaryResponse::of))
         .map(BaseResponse::success);
   }
 
@@ -68,7 +69,7 @@ public class WorkspaceController {
       @Valid @RequestBody UpdateWorkspaceRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.updateWorkspace(id, request, requesterId)
+    return workspaceService.updateWorkspace(id, request.name(), request.description(), requesterId)
         .map(WorkspaceResponse::from)
         .map(BaseResponse::success);
   }
@@ -90,6 +91,7 @@ public class WorkspaceController {
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.getMembers(id, requesterId, page, size)
+        .map(result -> result.map(WorkspaceMemberResponse::from))
         .map(BaseResponse::success);
   }
 
@@ -101,7 +103,8 @@ public class WorkspaceController {
       @Valid @RequestBody AddWorkspaceMemberRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.addMember(workspaceId, request, requesterId)
+    return workspaceService.addMember(workspaceId, request.email(), request.role(), requesterId)
+        .map(WorkspaceMemberResponse::from)
         .map(BaseResponse::success);
   }
 
@@ -136,7 +139,8 @@ public class WorkspaceController {
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService
-        .updateMemberRole(workspaceId, userId, request, requesterId)
+        .updateMemberRole(workspaceId, userId, request.role(), requesterId)
+        .map(WorkspaceMemberResponse::from)
         .map(BaseResponse::success);
   }
 

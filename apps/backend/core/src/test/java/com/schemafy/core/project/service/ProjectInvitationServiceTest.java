@@ -133,7 +133,8 @@ class ProjectInvitationServiceTest {
           invitationService.createInvitation(
               testWorkspace.getId(),
               testProject.getId(),
-              request,
+              request.email(),
+              request.role(),
               adminUser.getId()))
           .assertNext(response -> {
             assertThat(response.getProjectId()).isEqualTo(testProject.getId());
@@ -156,7 +157,8 @@ class ProjectInvitationServiceTest {
           invitationService.createInvitation(
               testWorkspace.getId(),
               testProject.getId(),
-              request,
+              request.email(),
+              request.role(),
               adminUser.getId()))
           .assertNext(response -> {
             assertThat(response.getInvitedEmail()).isEqualTo(workspaceMember.getEmail());
@@ -178,7 +180,8 @@ class ProjectInvitationServiceTest {
           invitationService.createInvitation(
               testWorkspace.getId(),
               testProject.getId(),
-              request,
+              request.email(),
+              request.role(),
               workspaceMember.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
@@ -198,7 +201,8 @@ class ProjectInvitationServiceTest {
           invitationService.createInvitation(
               testWorkspace.getId(),
               testProject.getId(),
-              request,
+              request.email(),
+              request.role(),
               workspaceMember.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
@@ -221,7 +225,8 @@ class ProjectInvitationServiceTest {
           invitationService.createInvitation(
               otherWorkspace.getId(),
               testProject.getId(),
-              request,
+              request.email(),
+              request.role(),
               adminUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
@@ -238,11 +243,11 @@ class ProjectInvitationServiceTest {
           workspaceMember.getEmail(), ProjectRole.EDITOR);
 
       invitationService.createInvitation(
-          testWorkspace.getId(), testProject.getId(), request, adminUser.getId()).block();
+          testWorkspace.getId(), testProject.getId(), request.email(), request.role(), adminUser.getId()).block();
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), testProject.getId(), request, adminUser.getId()))
+              testWorkspace.getId(), testProject.getId(), request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -259,7 +264,7 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), "nonexistent-project-id", request, adminUser.getId()))
+              testWorkspace.getId(), "nonexistent-project-id", request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -479,7 +484,7 @@ class ProjectInvitationServiceTest {
           .assertNext(page -> {
             assertThat(page.content()).hasSize(1);
             assertThat(page.totalElements()).isEqualTo(1);
-            assertThat(page.content().get(0).id()).isEqualTo(pendingId);
+            assertThat(page.content().get(0).getId()).isEqualTo(pendingId);
           })
           .verifyComplete();
     }
@@ -500,7 +505,7 @@ class ProjectInvitationServiceTest {
           invitationService.getMyInvitations(outsider.getId(), 0, 20))
           .assertNext(page -> {
             assertThat(page.content()).hasSize(1);
-            assertThat(page.content().get(0).invitedEmail()).isEqualTo(outsider.getEmail());
+            assertThat(page.content().get(0).getInvitedEmail()).isEqualTo(outsider.getEmail());
           })
           .verifyComplete();
     }
@@ -540,8 +545,8 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitationId, workspaceMember.getId()))
           .assertNext(member -> {
-            assertThat(member.userId()).isEqualTo(workspaceMember.getId());
-            assertThat(member.role()).isEqualTo(ProjectRole.EDITOR.getValue());
+            assertThat(member.member().getUserId()).isEqualTo(workspaceMember.getId());
+            assertThat(member.member().getRole()).isEqualTo(ProjectRole.EDITOR.getValue());
           })
           .verifyComplete();
 

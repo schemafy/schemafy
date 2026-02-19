@@ -36,7 +36,7 @@ public class ProjectInvitationController {
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.createInvitation(
-        workspaceId, projectId, request, currentUserId)
+        workspaceId, projectId, request.email(), request.role(), currentUserId)
         .map(ProjectInvitationCreateResponse::of)
         .map(BaseResponse::success);
   }
@@ -52,6 +52,7 @@ public class ProjectInvitationController {
     String currentUserId = auth.getName();
     return invitationService.getInvitations(
         workspaceId, projectId, currentUserId, page, size)
+        .map(result -> result.map(ProjectInvitationResponse::of))
         .map(BaseResponse::success);
   }
 
@@ -62,6 +63,7 @@ public class ProjectInvitationController {
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.getMyInvitations(currentUserId, page, size)
+        .map(result -> result.map(ProjectInvitationResponse::of))
         .map(BaseResponse::success);
   }
 
@@ -71,6 +73,7 @@ public class ProjectInvitationController {
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.acceptInvitation(invitationId, currentUserId)
+        .map(ProjectMemberResponse::from)
         .map(BaseResponse::success);
   }
 

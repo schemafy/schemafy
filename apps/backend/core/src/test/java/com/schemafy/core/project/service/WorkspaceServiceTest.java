@@ -16,7 +16,6 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
-import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
@@ -29,6 +28,7 @@ import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.WorkspaceDetail;
+import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
@@ -120,7 +120,7 @@ class WorkspaceServiceTest {
           "New Description");
 
       Mono<WorkspaceDetail> result = workspaceService.createWorkspace(
-          request, outsiderUser.getId());
+          request.name(), request.description(), outsiderUser.getId());
 
       StepVerifier.create(result)
           .assertNext(detail -> {
@@ -249,7 +249,7 @@ class WorkspaceServiceTest {
           WorkspaceRole.MEMBER);
 
       StepVerifier.create(workspaceService.updateMemberRole(
-          testWorkspace.getId(), adminMember.getUserId(), request,
+          testWorkspace.getId(), adminMember.getUserId(), request.role(),
           adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -282,12 +282,12 @@ class WorkspaceServiceTest {
       UpdateMemberRoleRequest request = new UpdateMemberRoleRequest(
           WorkspaceRole.MEMBER);
 
-      Mono<WorkspaceMemberResponse> result = workspaceService
+      Mono<WorkspaceMemberDetail> result = workspaceService
           .updateMemberRole(testWorkspace.getId(),
-              normalMember.getUserId(), request, adminUser.getId());
+              normalMember.getUserId(), request.role(), adminUser.getId());
 
       StepVerifier.create(result)
-          .assertNext(response -> assertThat(response.role())
+          .assertNext(response -> assertThat(response.member().getRole())
               .isEqualTo(WorkspaceRole.MEMBER.getValue()))
           .verifyComplete();
     }
@@ -306,7 +306,7 @@ class WorkspaceServiceTest {
 
       Mono<Long> resultMono = Flux.range(0, 30)
           .flatMap(i -> workspaceService
-              .addMember(testWorkspace.getId(), request,
+              .addMember(testWorkspace.getId(), request.email(), request.role(),
                   adminUser.getId())
               .subscribeOn(Schedulers.parallel())
               .map(response -> 1) // 성공 시 1 반환
@@ -357,14 +357,14 @@ class WorkspaceServiceTest {
           newUser.getEmail(), WorkspaceRole.MEMBER);
 
       // 멤버 추가
-      WorkspaceMemberResponse added = workspaceService.addMember(
-          testWorkspace.getId(), addRequest, adminUser.getId())
+      WorkspaceMemberDetail added = workspaceService.addMember(
+          testWorkspace.getId(), addRequest.email(), addRequest.role(), adminUser.getId())
           .block();
       assertThat(added).isNotNull();
 
       // 멤버 삭제
       workspaceService.removeMember(
-          testWorkspace.getId(), added.userId(), adminUser.getId())
+          testWorkspace.getId(), added.member().getUserId(), adminUser.getId())
           .block();
 
       // 삭제 확인
@@ -378,14 +378,14 @@ class WorkspaceServiceTest {
       AddWorkspaceMemberRequest readdRequest = new AddWorkspaceMemberRequest(
           newUser.getEmail(), WorkspaceRole.ADMIN); // 다른 role로 재초대
 
-      WorkspaceMemberResponse readded = workspaceService.addMember(
-          testWorkspace.getId(), readdRequest, adminUser.getId())
+      WorkspaceMemberDetail readded = workspaceService.addMember(
+          testWorkspace.getId(), readdRequest.email(), readdRequest.role(), adminUser.getId())
           .block();
 
       // 재활성화 성공
       assertThat(readded).isNotNull();
-      assertThat(readded.userId()).isEqualTo(newUser.getId());
-      assertThat(readded.role())
+      assertThat(readded.member().getUserId()).isEqualTo(newUser.getId());
+      assertThat(readded.member().getRole())
           .isEqualTo(WorkspaceRole.ADMIN.getValue());
 
       // 활성 멤버로 존재 확인
@@ -411,7 +411,7 @@ class WorkspaceServiceTest {
       AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
           newUser.getEmail(), WorkspaceRole.MEMBER);
 
-      workspaceService.addMember(testWorkspace.getId(), request, adminUser.getId()).block();
+      workspaceService.addMember(testWorkspace.getId(), request.email(), request.role(), adminUser.getId()).block();
 
       // 프로젝트에 VIEWER로 추가되었는지 확인
       ProjectMember pm = projectMemberRepository
@@ -435,7 +435,7 @@ class WorkspaceServiceTest {
       AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
           newUser.getEmail(), WorkspaceRole.ADMIN);
 
-      workspaceService.addMember(testWorkspace.getId(), request, adminUser.getId()).block();
+      workspaceService.addMember(testWorkspace.getId(), request.email(), request.role(), adminUser.getId()).block();
 
       ProjectMember pm = projectMemberRepository
           .findByProjectIdAndUserIdAndNotDeleted(project.getId(), newUser.getId()).block();

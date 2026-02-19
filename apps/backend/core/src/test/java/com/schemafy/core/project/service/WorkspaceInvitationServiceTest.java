@@ -115,7 +115,7 @@ class WorkspaceInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), request, adminUser.getId()))
+              testWorkspace.getId(), request.email(), request.role(), adminUser.getId()))
           .assertNext(response -> {
             assertThat(response.getWorkspaceId()).isEqualTo(testWorkspace.getId());
             assertThat(response.getInvitedEmail()).isEqualTo("newuser@test.com");
@@ -134,7 +134,7 @@ class WorkspaceInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), request, adminUser.getId()))
+              testWorkspace.getId(), request.email(), request.role(), adminUser.getId()))
           .assertNext(response -> {
             assertThat(response.getInvitedEmail()).isEqualTo("newuser@test.com");
           })
@@ -153,7 +153,7 @@ class WorkspaceInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), request, memberUser.getId()))
+              testWorkspace.getId(), request.email(), request.role(), memberUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -170,7 +170,7 @@ class WorkspaceInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), request, memberUser.getId()))
+              testWorkspace.getId(), request.email(), request.role(), memberUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -187,7 +187,7 @@ class WorkspaceInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), request, adminUser.getId()))
+              testWorkspace.getId(), request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -203,11 +203,11 @@ class WorkspaceInvitationServiceTest {
           WorkspaceRole.MEMBER);
 
       invitationService.createInvitation(
-          testWorkspace.getId(), request, adminUser.getId()).block();
+          testWorkspace.getId(), request.email(), request.role(), adminUser.getId()).block();
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), request, adminUser.getId()))
+              testWorkspace.getId(), request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -224,7 +224,7 @@ class WorkspaceInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              "nonexistent-workspace-id", request, adminUser.getId()))
+              "nonexistent-workspace-id", request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -425,7 +425,7 @@ class WorkspaceInvitationServiceTest {
           .assertNext(page -> {
             assertThat(page.content()).hasSize(1);
             assertThat(page.totalElements()).isEqualTo(1);
-            assertThat(page.content().get(0).id()).isEqualTo(pendingId);
+            assertThat(page.content().get(0).getId()).isEqualTo(pendingId);
           })
           .verifyComplete();
     }
@@ -445,7 +445,7 @@ class WorkspaceInvitationServiceTest {
           invitationService.listMyInvitations(invitedUser.getId(), 0, 10))
           .assertNext(page -> {
             assertThat(page.content()).hasSize(1);
-            assertThat(page.content().get(0).invitedEmail()).isEqualTo(invitedUser.getEmail());
+            assertThat(page.content().get(0).getInvitedEmail()).isEqualTo(invitedUser.getEmail());
           })
           .verifyComplete();
     }
@@ -484,8 +484,8 @@ class WorkspaceInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitationId, invitedUser.getId()))
           .assertNext(member -> {
-            assertThat(member.userId()).isEqualTo(invitedUser.getId());
-            assertThat(member.role()).isEqualTo(WorkspaceRole.MEMBER.getValue());
+            assertThat(member.member().getUserId()).isEqualTo(invitedUser.getId());
+            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue());
           })
           .verifyComplete();
 
@@ -1006,8 +1006,8 @@ class WorkspaceInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()))
           .assertNext(member -> {
-            assertThat(member.userId()).isEqualTo(invitedUser.getId());
-            assertThat(member.role()).isEqualTo(WorkspaceRole.MEMBER.getValue());
+            assertThat(member.member().getUserId()).isEqualTo(invitedUser.getId());
+            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue());
           })
           .verifyComplete();
     }

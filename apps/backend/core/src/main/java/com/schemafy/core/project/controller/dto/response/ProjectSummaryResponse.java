@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.vo.ProjectRole;
+import com.schemafy.core.project.service.dto.ProjectSummaryDetail;
 
 public record ProjectSummaryResponse(String id, String workspaceId, String name,
     String description, String myRole,
@@ -18,6 +19,10 @@ public record ProjectSummaryResponse(String id, String workspaceId, String name,
         myRole.getValue(),
         project.getCreatedAt(),
         project.getUpdatedAt());
+  }
+
+  public static ProjectSummaryResponse from(ProjectSummaryDetail detail) {
+    return of(detail.project(), detail.role());
   }
 
 }

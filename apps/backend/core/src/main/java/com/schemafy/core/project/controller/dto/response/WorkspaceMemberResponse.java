@@ -3,6 +3,7 @@ package com.schemafy.core.project.controller.dto.response;
 import java.time.Instant;
 
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
 import com.schemafy.core.user.repository.entity.User;
 
 public record WorkspaceMemberResponse(String workspaceId, String userId,
@@ -17,6 +18,10 @@ public record WorkspaceMemberResponse(String workspaceId, String userId,
         user.getEmail(),
         member.getRole(),
         member.getCreatedAt());
+  }
+
+  public static WorkspaceMemberResponse from(WorkspaceMemberDetail detail) {
+    return of(detail.member(), detail.user());
   }
 
 }

@@ -10,9 +10,6 @@ import org.slf4j.LoggerFactory;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
-import com.schemafy.core.project.controller.dto.request.CreateWorkspaceInvitationRequest;
-import com.schemafy.core.project.controller.dto.response.WorkspaceInvitationResponse;
-import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
@@ -20,6 +17,8 @@ import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationType;
+import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -42,20 +41,21 @@ public class WorkspaceInvitationService {
 
   public Mono<Invitation> createInvitation(
       String workspaceId,
-      CreateWorkspaceInvitationRequest request,
+      String email,
+      WorkspaceRole role,
       String currentUserId) {
     return validateAdmin(workspaceId, currentUserId)
         .then(findWorkspaceOrThrow(workspaceId))
         .flatMap(workspace -> checkNotAlreadyMemberByEmail(
-            workspaceId, request.email())
+            workspaceId, email)
             .then(checkDuplicatePendingInvitation(
-                workspaceId, request.email()))
+                workspaceId, email))
             .thenReturn(workspace))
         .flatMap(workspace -> {
           Invitation invitation = Invitation.createWorkspaceInvitation(
               workspaceId,
-              request.email(),
-              request.role(),
+              email,
+              role,
               currentUserId);
 
           return invitationRepository.save(invitation);
@@ -63,7 +63,7 @@ public class WorkspaceInvitationService {
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<PageResponse<WorkspaceInvitationResponse>> listInvitations(
+  public Mono<PageResponse<Invitation>> listInvitations(
       String workspaceId,
       String currentUserId,
       int page,
@@ -72,13 +72,12 @@ public class WorkspaceInvitationService {
         .then(invitationRepository.countWorkspaceInvitations(workspaceId))
         .flatMap(totalElements -> invitationRepository
             .findWorkspaceInvitations(workspaceId, size, page * size)
-            .map(WorkspaceInvitationResponse::of)
             .collectList()
             .map(invitations -> PageResponse.of(
                 invitations, page, size, totalElements)));
   }
 
-  public Mono<PageResponse<WorkspaceInvitationResponse>> listMyInvitations(
+  public Mono<PageResponse<Invitation>> listMyInvitations(
       String currentUserId,
       int page,
       int size) {
@@ -92,14 +91,13 @@ public class WorkspaceInvitationService {
           return invitationRepository.countPendingByEmailAndType(email, targetType)
               .flatMap(totalElements -> invitationRepository
                   .findPendingByEmailAndType(email, targetType, size, page * size)
-                  .map(WorkspaceInvitationResponse::of)
                   .collectList()
                   .map(invitations -> PageResponse.of(
                       invitations, page, size, totalElements)));
         });
   }
 
-  public Mono<WorkspaceMemberResponse> acceptInvitation(
+  public Mono<WorkspaceMemberDetail> acceptInvitation(
       String invitationId,
       String currentUserId) {
     return userRepository.findById(currentUserId)
@@ -134,7 +132,7 @@ public class WorkspaceInvitationService {
                             currentUserId,
                             invitation.getWorkspaceRole())
                             .then(Mono.just(savedMember)))
-                        .flatMap(this::buildMemberResponse);
+                        .flatMap(this::buildMemberDetail);
                   }));
             }))
         .as(transactionalOperator::transactional)
@@ -240,10 +238,10 @@ public class WorkspaceInvitationService {
         .then();
   }
 
-  private Mono<WorkspaceMemberResponse> buildMemberResponse(
+  private Mono<WorkspaceMemberDetail> buildMemberDetail(
       WorkspaceMember member) {
     return userRepository.findById(member.getUserId())
-        .map(user -> WorkspaceMemberResponse.of(member, user));
+        .map(user -> new WorkspaceMemberDetail(member, user));
   }
 
 }

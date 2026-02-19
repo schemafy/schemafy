@@ -14,7 +14,6 @@ import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
-import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
@@ -23,6 +22,7 @@ import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.project.service.dto.ProjectMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
@@ -139,7 +139,7 @@ class ProjectServiceTest {
           projectService.updateMemberRole(
               testProject.getId(),
               adminMember.getUserId(),
-              request,
+              request.role(),
               adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -178,7 +178,7 @@ class ProjectServiceTest {
           projectService.updateMemberRole(
               testProject.getId(),
               ownerMember.getUserId(),
-              request,
+              request.role(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -192,18 +192,18 @@ class ProjectServiceTest {
       UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
           ProjectRole.EDITOR);
 
-      Mono<ProjectMemberResponse> result = projectService
+      Mono<ProjectMemberDetail> result = projectService
           .updateMemberRole(
               testProject.getId(),
               viewerMember.getUserId(),
-              request,
+              request.role(),
               adminUser.getId());
 
       StepVerifier.create(result)
           .assertNext(response -> {
-            assertThat(response.userId())
+            assertThat(response.member().getUserId())
                 .isEqualTo(viewerUser.getId());
-            assertThat(response.role())
+            assertThat(response.member().getRole())
                 .isEqualTo(ProjectRole.EDITOR.getValue());
           })
           .verifyComplete();
@@ -224,7 +224,7 @@ class ProjectServiceTest {
           projectService.updateMemberRole(
               testProject.getId(),
               adminMember.getId(),
-              request,
+              request.role(),
               viewerUser.getId() // VIEWER has no admin rights
           ))
           .expectErrorMatches(e -> e instanceof BusinessException &&
@@ -255,15 +255,15 @@ class ProjectServiceTest {
       UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(ProjectRole.VIEWER);
       StepVerifier.create(
           projectService.updateMemberRole(
-              testProject.getId(), ownerUser.getId(), request, secondAdmin.getId()))
-          .assertNext(response -> assertThat(response.role()).isEqualTo(ProjectRole.VIEWER.getValue()))
+              testProject.getId(), ownerUser.getId(), request.role(), secondAdmin.getId()))
+          .assertNext(response -> assertThat(response.member().getRole()).isEqualTo(ProjectRole.VIEWER.getValue()))
           .verifyComplete();
 
       // 현재: ownerUser(VIEWER) + secondAdmin(ADMIN) = ADMIN 1명
       // ownerUser는 이제 VIEWER이므로 secondAdmin을 강등할 수 없음 (PROJECT_ADMIN_REQUIRED)
       StepVerifier.create(
           projectService.updateMemberRole(
-              testProject.getId(), secondAdmin.getId(), request, ownerUser.getId()))
+              testProject.getId(), secondAdmin.getId(), request.role(), ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e).getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
           .verify();
@@ -417,7 +417,8 @@ class ProjectServiceTest {
       CreateProjectRequest request = new CreateProjectRequest(
           "New Project", "Description", null);
 
-      projectService.createProject(testWorkspace.getId(), request, ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
+          .getSettingsOrDefault(), ownerUser.getId()).block();
 
       // 새로 생성된 프로젝트 찾기
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
@@ -457,7 +458,8 @@ class ProjectServiceTest {
       CreateProjectRequest request = new CreateProjectRequest(
           "New Project", "Description", null);
 
-      projectService.createProject(testWorkspace.getId(), request, ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
+          .getSettingsOrDefault(), ownerUser.getId()).block();
 
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
           .filter(p -> p.getName().equals("New Project"))
@@ -482,7 +484,8 @@ class ProjectServiceTest {
       CreateProjectRequest request = new CreateProjectRequest(
           "New Project", "Description", null);
 
-      projectService.createProject(testWorkspace.getId(), request, ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
+          .getSettingsOrDefault(), ownerUser.getId()).block();
 
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
           .filter(p -> p.getName().equals("New Project"))

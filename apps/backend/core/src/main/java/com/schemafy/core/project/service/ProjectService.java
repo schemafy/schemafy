@@ -10,11 +10,6 @@ import org.slf4j.LoggerFactory;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
-import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
-import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
-import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
-import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
-import com.schemafy.core.project.controller.dto.response.ProjectSummaryResponse;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
@@ -25,6 +20,8 @@ import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.ProjectDetail;
+import com.schemafy.core.project.service.dto.ProjectMemberDetail;
+import com.schemafy.core.project.service.dto.ProjectSummaryDetail;
 import com.schemafy.core.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -44,14 +41,13 @@ public class ProjectService {
   private final UserRepository userRepository;
 
   public Mono<ProjectDetail> createProject(String workspaceId,
-      CreateProjectRequest request, String userId) {
+      String name, String description, ProjectSettings settings, String userId) {
     return validateWorkspaceAdmin(workspaceId, userId).then(
         Mono.defer(() -> {
-          ProjectSettings settings = request.getSettingsOrDefault();
           validateSettings(settings);
 
           Project project = Project.create(workspaceId,
-              request.name(), request.description(), settings);
+              name, description, settings);
 
           ProjectMember adminMember = ProjectMember
               .create(project.getId(), userId, ProjectRole.ADMIN);
@@ -69,7 +65,7 @@ public class ProjectService {
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
+  public Mono<PageResponse<ProjectSummaryDetail>> getProjects(
       String workspaceId, String userId, int page, int size) {
     return Mono.defer(() -> {
       int offset = page * size;
@@ -93,7 +89,7 @@ public class ProjectService {
                     .map(i -> {
                       var project = projects.get(i);
                       var role = ProjectRole.fromString(roles.get(i));
-                      return ProjectSummaryResponse.of(project, role);
+                      return new ProjectSummaryDetail(project, role);
                     })
                     .collectList()
                     .map(content -> PageResponse.of(
@@ -115,15 +111,14 @@ public class ProjectService {
   }
 
   public Mono<ProjectDetail> updateProject(String workspaceId,
-      String projectId, UpdateProjectRequest request, String userId) {
+      String projectId, String name, String description, ProjectSettings settings, String userId) {
     return validateAdminAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           project.belongsToWorkspace(workspaceId);
-          ProjectSettings settings = request.getSettingsOrDefault();
           validateSettings(settings);
 
-          project.update(request.name(), request.description(),
+          project.update(name, description,
               settings);
           return projectRepository.save(project);
         })
@@ -149,7 +144,7 @@ public class ProjectService {
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<PageResponse<ProjectMemberResponse>> getMembers(
+  public Mono<PageResponse<ProjectMemberDetail>> getMembers(
       String projectId, String userId, int page,
       int size) {
     return validateMemberAccess(projectId, userId)
@@ -160,18 +155,15 @@ public class ProjectService {
           return projectMemberRepository
               .findByProjectIdAndNotDeleted(projectId, size,
                   offset)
-              .flatMap(member -> userRepository
-                  .findById(member.getUserId())
-                  .map(user -> ProjectMemberResponse
-                      .of(member, user)))
+              .flatMap(this::buildMemberDetail)
               .collectList()
               .map(members -> PageResponse.of(members, page, size,
                   totalElements));
         });
   }
 
-  public Mono<ProjectMemberResponse> updateMemberRole(String projectId, String targetUserId,
-      UpdateProjectMemberRoleRequest request, String requesterId) {
+  public Mono<ProjectMemberDetail> updateMemberRole(String projectId, String targetUserId,
+      ProjectRole role, String requesterId) {
     return validateAdminAccess(projectId, requesterId)
         .then(Mono.zip(
             findProjectMemberByUserIdAndProjectId(requesterId,
@@ -183,23 +175,20 @@ public class ProjectService {
           ProjectMember target = tuple.getT2();
 
           validateRoleChangePermission(requester, target,
-              request.role());
+              role);
 
           // 마지막 ADMIN 강등 방지
           Mono<Void> adminGuard = Mono.empty();
-          if (target.isAdmin() && request.role() != ProjectRole.ADMIN) {
+          if (target.isAdmin() && role != ProjectRole.ADMIN) {
             adminGuard = validateAdminProtection(projectId);
           }
 
           return adminGuard.then(Mono.defer(() -> {
-            target.updateRole(request.role());
+            target.updateRole(role);
             return projectMemberRepository.save(target);
           }));
         })
-        .flatMap(updatedMember -> userRepository
-            .findById(updatedMember.getUserId())
-            .map(user -> ProjectMemberResponse.of(updatedMember,
-                user)))
+        .flatMap(this::buildMemberDetail)
         .as(transactionalOperator::transactional);
   }
 
@@ -295,6 +284,11 @@ public class ProjectService {
         .switchIfEmpty(Mono.error(
             new BusinessException(ErrorCode.PROJECT_MEMBER_NOT_FOUND)))
         .map(member -> new ProjectDetail(project, member.getRole()));
+  }
+
+  private Mono<ProjectMemberDetail> buildMemberDetail(ProjectMember member) {
+    return userRepository.findById(member.getUserId())
+        .map(user -> new ProjectMemberDetail(member, user));
   }
 
   private Mono<ProjectMember> findProjectMemberByUserIdAndProjectId(

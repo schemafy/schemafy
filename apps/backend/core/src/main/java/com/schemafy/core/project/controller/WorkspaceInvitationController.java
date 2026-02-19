@@ -35,7 +35,7 @@ public class WorkspaceInvitationController {
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.createInvitation(
-        workspaceId, request, currentUserId)
+        workspaceId, request.email(), request.role(), currentUserId)
         .map(WorkspaceInvitationCreateResponse::of)
         .map(BaseResponse::success);
   }
@@ -50,6 +50,7 @@ public class WorkspaceInvitationController {
     String currentUserId = auth.getName();
     return invitationService.listInvitations(
         workspaceId, currentUserId, page, size)
+        .map(result -> result.map(WorkspaceInvitationResponse::of))
         .map(BaseResponse::success);
   }
 
@@ -60,6 +61,7 @@ public class WorkspaceInvitationController {
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.listMyInvitations(currentUserId, page, size)
+        .map(result -> result.map(WorkspaceInvitationResponse::of))
         .map(BaseResponse::success);
   }
 
@@ -69,6 +71,7 @@ public class WorkspaceInvitationController {
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.acceptInvitation(invitationId, currentUserId)
+        .map(WorkspaceMemberResponse::from)
         .map(BaseResponse::success);
   }
 
