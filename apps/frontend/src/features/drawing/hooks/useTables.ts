@@ -23,7 +23,11 @@ export const useTables = () => {
   const changeTableExtraMutation = useChangeTableExtra(selectedSchemaId);
   const deleteTableMutation = useDeleteTable(selectedSchemaId);
 
-  const [tables, setTables] = useState<Node<TableData>[]>([]);
+  const [tables, setTables] = useState<Node<TableData>[]>(() =>
+    Object.values(snapshotsData).map((snapshot) =>
+      transformSnapshotToNode(snapshot, selectedSchemaId),
+    ),
+  );
 
   useEffect(() => {
     const newTables = Object.values(snapshotsData).map((snapshot) =>
