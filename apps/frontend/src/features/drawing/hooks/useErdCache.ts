@@ -8,11 +8,17 @@ export const useErdCache = (schemaId: string) => {
 
   const updateAffectedTables = async (affectedTableIds: string[]) => {
     if (affectedTableIds.length === 0) return;
-    const snapshots = await getTableSnapshots(affectedTableIds);
-    queryClient.setQueryData<Record<string, TableSnapshotResponse>>(
-      erdKeys.schemaSnapshots(schemaId),
-      (old) => (old ? { ...old, ...snapshots } : snapshots),
-    );
+    try {
+      const snapshots = await getTableSnapshots(affectedTableIds);
+      queryClient.setQueryData<Record<string, TableSnapshotResponse>>(
+        erdKeys.schemaSnapshots(schemaId),
+        (old) => (old ? { ...old, ...snapshots } : snapshots),
+      );
+    } catch {
+      queryClient.invalidateQueries({
+        queryKey: erdKeys.schemaSnapshots(schemaId),
+      });
+    }
   };
 
   const removeAndUpdate = async (

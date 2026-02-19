@@ -5,6 +5,10 @@ import { ErrorCategory, type ApiResponse } from '../api/types';
 
 const handleMutationError = (error: Error) => {
   if (!isAxiosError<ApiResponse<unknown>>(error)) {
+    if (error && typeof error === 'object' && 'message' in error) {
+      toast.error(error.message);
+      return;
+    }
     toast.error('An unexpected error occurred. Please try again.');
     return;
   }
