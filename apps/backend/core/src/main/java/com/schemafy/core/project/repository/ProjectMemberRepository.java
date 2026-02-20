@@ -17,16 +17,9 @@ public interface ProjectMemberRepository
   Mono<ProjectMember> findByProjectIdAndUserIdAndNotDeleted(String projectId,
       String userId);
 
-  @Query("SELECT * FROM project_members WHERE project_id = :projectId AND id = :memberId AND deleted_at IS NULL")
-  Mono<ProjectMember> findByProjectIdAndMemberIdAndNotDeleted(
-      String projectId, String memberId);
-
   @Query("SELECT * FROM project_members WHERE project_id = :projectId AND deleted_at IS NULL ORDER BY joined_at LIMIT :limit OFFSET :offset")
   Flux<ProjectMember> findByProjectIdAndNotDeleted(String projectId,
       int limit, int offset);
-
-  @Query("SELECT * FROM project_members WHERE user_id = :userId AND deleted_at IS NULL")
-  Flux<ProjectMember> findByUserIdAndNotDeleted(String userId);
 
   @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND deleted_at IS NULL")
   Mono<Long> countByProjectIdAndNotDeleted(String projectId);
@@ -41,9 +34,6 @@ public interface ProjectMemberRepository
   @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND role = :role AND deleted_at IS NULL")
   Mono<Long> countByProjectIdAndRoleAndNotDeleted(String projectId,
       String role);
-
-  @Query("SELECT * FROM project_members WHERE id = :id AND deleted_at IS NULL")
-  Mono<ProjectMember> findByIdAndNotDeleted(String id);
 
   @Query("""
       SELECT pm.role FROM project_members pm

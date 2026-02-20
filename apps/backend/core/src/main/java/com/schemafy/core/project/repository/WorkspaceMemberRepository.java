@@ -39,6 +39,14 @@ public interface WorkspaceMemberRepository
       int limit, int offset);
 
   @Query("""
+      SELECT * FROM workspace_members
+      WHERE workspace_id = :workspaceId
+        AND deleted_at IS NULL
+      ORDER BY created_at ASC
+      """)
+  Flux<WorkspaceMember> findAllByWorkspaceIdAndNotDeleted(String workspaceId);
+
+  @Query("""
       SELECT COUNT(*) FROM workspace_members
       WHERE workspace_id = :workspaceId
         AND deleted_at IS NULL
@@ -74,15 +82,6 @@ public interface WorkspaceMemberRepository
 
   @Query("""
       SELECT * FROM workspace_members
-      WHERE id = :memberId
-        AND workspace_id = :workspaceId
-        AND deleted_at IS NULL
-      """)
-  Mono<WorkspaceMember> findByIdAndWorkspaceIdAndNotDeleted(String memberId,
-      String workspaceId);
-
-  @Query("""
-      SELECT * FROM workspace_members
       WHERE workspace_id = :workspaceId
         AND user_id = :userId
       ORDER BY created_at DESC
@@ -97,7 +96,8 @@ public interface WorkspaceMemberRepository
           role = :role,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = :memberId
+        AND deleted_at IS NOT NULL
       """)
-  Mono<Void> reactivateMember(String memberId, String role);
+  Mono<Long> restoreDeletedMember(String memberId, String role);
 
 }

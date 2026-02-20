@@ -492,7 +492,7 @@ class MemoServiceTest {
 
     String ownerId = "06D6WCH677C3FCC2Q9SD5M1Y5Y"; // Owner User ID
     AuthenticatedUser ownerUser = AuthenticatedUser.withRoles(ownerId,
-        Set.of(ProjectRole.OWNER));
+        Set.of(ProjectRole.ADMIN));
 
     StepVerifier
         .create(memoService.deleteComment(memo.getId(),

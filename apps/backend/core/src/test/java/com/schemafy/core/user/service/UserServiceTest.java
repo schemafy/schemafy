@@ -12,9 +12,6 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.TestFixture;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
@@ -38,16 +35,8 @@ class UserServiceTest {
   @Autowired
   UserRepository userRepository;
 
-  @Autowired
-  WorkspaceRepository workspaceRepository;
-
-  @Autowired
-  WorkspaceMemberRepository workspaceMemberRepository;
-
   @BeforeEach
   void setUp() {
-    workspaceMemberRepository.deleteAll().block();
-    workspaceRepository.deleteAll().block();
     userRepository.deleteAll().block();
   }
 
@@ -59,13 +48,11 @@ class UserServiceTest {
 
     Mono<User> result = userService.signUp(request.toCommand());
 
-    // 응답 검증
     StepVerifier.create(result)
         .expectNextMatches(
             user -> user.getEmail().equals("test@example.com"))
         .verifyComplete();
 
-    // db 검증
     StepVerifier.create(userRepository.findByEmail("test@example.com"))
         .as("user should be persisted with auditing columns")
         .assertNext(user -> {
@@ -75,47 +62,6 @@ class UserServiceTest {
           assertThat(user.getCreatedAt()).isNotNull();
           assertThat(user.getUpdatedAt()).isNotNull();
           assertThat(user.getDeletedAt()).isNull();
-        })
-        .verifyComplete();
-  }
-
-  @Test
-  @DisplayName("회원가입 시 개인 워크스페이스가 자동으로 생성된다")
-  void signUp_CreatesDefaultWorkspace() {
-    // given
-    SignUpRequest request = new SignUpRequest("test@example.com",
-        "Test User", "password");
-
-    // when
-    User user = userService.signUp(request.toCommand()).block();
-
-    // then - 워크스페이스 생성 검증
-    StepVerifier.create(
-        workspaceRepository.findByOwnerIdAndNotDeleted(user.getId()))
-        .as("default workspace should be created")
-        .assertNext(workspace -> {
-          assertThat(workspace.getName())
-              .isEqualTo("Test User's Workspace");
-          assertThat(workspace.getDescription())
-              .isEqualTo("Personal workspace for Test User");
-          assertThat(workspace.getOwnerId()).isEqualTo(user.getId());
-          assertThat(workspace.getId()).isNotNull();
-          assertThat(workspace.getCreatedAt()).isNotNull();
-        })
-        .verifyComplete();
-
-    // then - 워크스페이스 멤버 생성 검증 (ADMIN 역할)
-    StepVerifier
-        .create(workspaceMemberRepository
-            .findByUserIdAndNotDeleted(user.getId()))
-        .as("user should be added as ADMIN to workspace")
-        .assertNext(member -> {
-          assertThat(member.getUserId()).isEqualTo(user.getId());
-          assertThat(member.getRole())
-              .isEqualTo(WorkspaceRole.ADMIN.getValue());
-          assertThat(member.isAdmin()).isTrue();
-          assertThat(member.getCreatedAt()).isNotNull();
-          assertThat(member.getDeletedAt()).isNull();
         })
         .verifyComplete();
   }
@@ -230,8 +176,8 @@ class UserServiceTest {
   }
 
   @Test
-  @DisplayName("이메일 중복 시 Workspace와 Member가 생성되지 않는다")
-  void signUp_NoOrphanWorkspace_WhenEmailDuplicate() {
+  @DisplayName("이메일 중복 시 User가 생성되지 않는다")
+  void signUp_NoUserCreated_WhenEmailDuplicate() {
     TestFixture
         .createTestUser("duplicate@example.com", "Existing User",
             "password")
@@ -247,17 +193,10 @@ class UserServiceTest {
         .expectError(BusinessException.class)
         .verify();
 
-    // Workspace가 orphan으로 생성되지 않아야 함
-    StepVerifier.create(workspaceRepository.findAll().collectList())
-        .as("No orphan workspace should be created")
-        .assertNext(workspaces -> assertThat(workspaces).isEmpty())
-        .verifyComplete();
-
-    // WorkspaceMember도 orphan으로 생성되지 않아야 함
-    StepVerifier
-        .create(workspaceMemberRepository.findAll().collectList())
-        .as("No orphan workspace member should be created")
-        .assertNext(members -> assertThat(members).isEmpty())
+    // User가 중복 생성되지 않았는지 검증
+    StepVerifier.create(userRepository.findAll().collectList())
+        .as("Only one user should exist")
+        .assertNext(users -> assertThat(users).hasSize(1))
         .verifyComplete();
   }
 
@@ -266,8 +205,8 @@ class UserServiceTest {
   class SignUpTransaction {
 
     @Test
-    @DisplayName("회원가입 성공 시 User, Workspace, WorkspaceMember가 모두 생성된다")
-    void signUp_CreatesAllEntitiesAtomically() {
+    @DisplayName("회원가입 성공 시 User가 생성된다")
+    void signUp_CreatesUserAtomically() {
       SignUpRequest request = new SignUpRequest("atomic@example.com",
           "Atomic User", "password");
 
@@ -281,30 +220,10 @@ class UserServiceTest {
           .assertNext(u -> assertThat(u.getName())
               .isEqualTo("Atomic User"))
           .verifyComplete();
-
-      StepVerifier.create(
-          workspaceRepository
-              .findByOwnerIdAndNotDeleted(user.getId()))
-          .assertNext(workspace -> {
-            assertThat(workspace.getName())
-                .isEqualTo("Atomic User's Workspace");
-            assertThat(workspace.getOwnerId())
-                .isEqualTo(user.getId());
-          })
-          .verifyComplete();
-
-      StepVerifier.create(
-          workspaceMemberRepository.findByUserIdAndNotDeleted(
-              user.getId()))
-          .assertNext(member -> {
-            assertThat(member.getUserId()).isEqualTo(user.getId());
-            assertThat(member.isAdmin()).isTrue();
-          })
-          .verifyComplete();
     }
 
     @Test
-    @DisplayName("동시에 같은 이메일로 가입 시도해도 orphan이 생성되지 않는다")
+    @DisplayName("동시에 같은 이메일로 가입 시도해도 User는 하나만 생성된다")
     void signUp_ConcurrentDuplicateEmailTest() {
       String email = "concurrent@example.com";
       SignUpRequest request1 = new SignUpRequest(email, "User 1",
@@ -328,16 +247,6 @@ class UserServiceTest {
             assertThat(matchingUsers).isEqualTo(1);
           })
           .verifyComplete();
-
-      // Workspace orphan 확인 - 생성된 사용자 수와 동일해야 함
-      long userCount = userRepository.findAll()
-          .filter(u -> email.equals(u.getEmail()))
-          .count().block();
-      long workspaceCount = workspaceRepository.findAll()
-          .filter(w -> w.getName().contains("User"))
-          .count().block();
-
-      assertThat(workspaceCount).isEqualTo(userCount);
     }
 
   }

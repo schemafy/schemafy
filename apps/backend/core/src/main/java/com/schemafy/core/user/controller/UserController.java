@@ -36,10 +36,7 @@ public class UserController {
         .map(ResponseEntity::ok);
   }
 
-  /** 사용자 정보를 조회합니다. 인증된 사용자는 타 사용자의 프로필도 조회할 수 있습니다.
-   *
-   * @param userId 조회할 사용자 ID
-   * @return 사용자 정보 */
+  /** 사용자 정보를 조회합니다. 인증된 사용자는 타 사용자의 프로필도 조회할 수 있습니다. */
   @GetMapping("/users/{userId}")
   public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getUser(
       @PathVariable String userId) {

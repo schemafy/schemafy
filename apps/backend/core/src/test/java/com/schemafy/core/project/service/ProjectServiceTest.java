@@ -12,24 +12,21 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
-import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
-import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
-import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
+import com.schemafy.core.project.service.dto.ProjectMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -58,16 +55,9 @@ class ProjectServiceTest {
   @Autowired
   private UserRepository userRepository;
 
-  @Autowired
-  private ShareLinkRepository shareLinkRepository;
-
-  @Autowired
-  private ShareLinkTokenService tokenService;
-
   private User ownerUser;
   private User adminUser;
   private User viewerUser;
-  private User outsiderUser;
   private Workspace testWorkspace;
   private Project testProject;
   private ProjectMember ownerMember;
@@ -77,7 +67,6 @@ class ProjectServiceTest {
   @BeforeEach
   void setUp() {
     Mono.when(
-        shareLinkRepository.deleteAll(),
         projectMemberRepository.deleteAll(),
         projectRepository.deleteAll(),
         workspaceMemberRepository.deleteAll(),
@@ -98,15 +87,9 @@ class ProjectServiceTest {
         new UserInfo("viewer@test.com", "Viewer User", "password"),
         encoder).flatMap(userRepository::save).block();
 
-    outsiderUser = User.signUp(
-        new UserInfo("outsider@test.com", "Outsider User", "password"),
-        encoder).flatMap(userRepository::save).block();
-
     testWorkspace = Workspace.create(
-        ownerUser.getId(),
         "Test Workspace",
-        "Test Description",
-        WorkspaceSettings.defaultSettings());
+        "Test Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 
     workspaceMemberRepository.save(
@@ -130,7 +113,7 @@ class ProjectServiceTest {
     testProject = projectRepository.save(testProject).block();
 
     ownerMember = ProjectMember.create(testProject.getId(),
-        ownerUser.getId(), ProjectRole.OWNER);
+        ownerUser.getId(), ProjectRole.ADMIN);
     ownerMember = projectMemberRepository.save(ownerMember).block();
 
     adminMember = ProjectMember.create(testProject.getId(),
@@ -140,215 +123,6 @@ class ProjectServiceTest {
     viewerMember = ProjectMember.create(testProject.getId(),
         viewerUser.getId(), ProjectRole.VIEWER);
     viewerMember = projectMemberRepository.save(viewerMember).block();
-  }
-
-  @Nested
-  @DisplayName("ShareLink를 통한 프로젝트 참여")
-  class JoinProjectByShareLink {
-
-    @Test
-    @DisplayName("유효한 토큰으로 새로운 멤버가 추가된다")
-    void validToken_createsNewMember() {
-      User newUser = User.signUp(
-          new UserInfo("newmember@test.com", "New Member",
-              "password"),
-          new BCryptPasswordEncoder()).flatMap(userRepository::save)
-          .block();
-
-      workspaceMemberRepository.save(
-          WorkspaceMember.create(testWorkspace.getId(),
-              newUser.getId(), WorkspaceRole.MEMBER))
-          .block();
-
-      String token = tokenService.generateToken();
-      byte[] tokenHash = tokenService.hashToken(token);
-      ShareLink shareLink = ShareLink.create(
-          testProject.getId(),
-          tokenHash,
-          ShareLinkRole.EDITOR,
-          null);
-      shareLinkRepository.save(shareLink).block();
-
-      Mono<ProjectMemberResponse> result = projectService
-          .joinProjectByShareLink(token, newUser.getId());
-
-      StepVerifier.create(result)
-          .assertNext(response -> {
-            assertThat(response.userId())
-                .isEqualTo(newUser.getId());
-            assertThat(response.role())
-                .isEqualTo(ProjectRole.EDITOR.getValue());
-          })
-          .verifyComplete();
-
-      Long memberCount = projectMemberRepository
-          .countByProjectIdAndNotDeleted(testProject.getId()).block();
-      assertThat(memberCount).isEqualTo(4L); // owner + admin + viewer + new member
-    }
-
-    @Test
-    @DisplayName("유효하지 않은 토큰은 거부된다")
-    void invalidToken_throwsError() {
-      String invalidToken = "invalid-token-12345";
-
-      StepVerifier
-          .create(projectService.joinProjectByShareLink(invalidToken,
-              viewerUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.SHARE_LINK_INVALID)
-          .verify();
-    }
-
-    @Test
-    @DisplayName("워크스페이스 멤버가 아닌 사용자는 거부된다")
-    void nonWorkspaceMember_rejected() {
-      String token = tokenService.generateToken();
-      byte[] tokenHash = tokenService.hashToken(token);
-      ShareLink shareLink = ShareLink.create(
-          testProject.getId(),
-          tokenHash,
-          ShareLinkRole.VIEWER,
-          null);
-      shareLinkRepository.save(shareLink).block();
-
-      StepVerifier
-          .create(projectService.joinProjectByShareLink(token,
-              outsiderUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.WORKSPACE_MEMBERSHIP_REQUIRED)
-          .verify();
-    }
-
-    @Test
-    @DisplayName("기존 멤버의 낮은 권한이 높은 권한으로 업그레이드된다")
-    void existingMemberWithLowerRole_upgraded() {
-      String token = tokenService.generateToken();
-      byte[] tokenHash = tokenService.hashToken(token);
-      ShareLink shareLink = ShareLink.create(
-          testProject.getId(),
-          tokenHash,
-          ShareLinkRole.EDITOR, // Higher privilege than VIEWER
-          null);
-      shareLinkRepository.save(shareLink).block();
-
-      Mono<ProjectMemberResponse> result = projectService
-          .joinProjectByShareLink(token, viewerUser.getId());
-
-      StepVerifier.create(result)
-          .assertNext(response -> {
-            assertThat(response.userId())
-                .isEqualTo(viewerUser.getId());
-            assertThat(response.role())
-                .isEqualTo(ProjectRole.EDITOR.getValue());
-          })
-          .verifyComplete();
-
-      ProjectMember updatedMember = projectMemberRepository
-          .findByProjectIdAndUserIdAndNotDeleted(testProject.getId(),
-              viewerUser.getId())
-          .block();
-      assertThat(updatedMember.getRoleAsEnum())
-          .isEqualTo(ProjectRole.EDITOR);
-    }
-
-    @Test
-    @DisplayName("기존 멤버의 높은 권한은 유지된다 (다운그레이드 없음)")
-    void existingMemberWithHigherRole_noChange() {
-      String token = tokenService.generateToken();
-      byte[] tokenHash = tokenService.hashToken(token);
-      ShareLink shareLink = ShareLink.create(
-          testProject.getId(),
-          tokenHash,
-          ShareLinkRole.VIEWER, // Lower privilege than ADMIN
-          null);
-      shareLinkRepository.save(shareLink).block();
-
-      Mono<ProjectMemberResponse> result = projectService
-          .joinProjectByShareLink(token, adminUser.getId());
-
-      StepVerifier.create(result)
-          .assertNext(response -> {
-            assertThat(response.userId())
-                .isEqualTo(adminUser.getId());
-            assertThat(response.role())
-                .isEqualTo(ProjectRole.ADMIN.getValue());
-          })
-          .verifyComplete();
-
-      ProjectMember unchangedMember = projectMemberRepository
-          .findByProjectIdAndUserIdAndNotDeleted(testProject.getId(),
-              adminUser.getId())
-          .block();
-      assertThat(unchangedMember.getRoleAsEnum())
-          .isEqualTo(ProjectRole.ADMIN);
-    }
-
-    @Test
-    @DisplayName("30명 제한을 초과하면 거부된다")
-    void memberLimitExceeded_rejected() {
-      // 1. 무거운 객체는 루프 밖에서 한 번만 생성
-      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
-      // 2. 27명의 더미 데이터를 병렬(Parallel)로 생성 및 저장
-      Flux.range(0, 27)
-          .flatMap(i ->
-          // User 생성
-          User.signUp(
-              new UserInfo("extra" + i + "@test.com",
-                  "Extra " + i, "password"),
-              encoder)
-              .flatMap(user -> userRepository.save(user))
-              .flatMap(savedUser -> Mono.when(
-                  workspaceMemberRepository.save(
-                      WorkspaceMember.create(
-                          testWorkspace.getId(),
-                          savedUser.getId(),
-                          WorkspaceRole.MEMBER)),
-                  projectMemberRepository.save(
-                      ProjectMember.create(
-                          testProject.getId(),
-                          savedUser.getId(),
-                          ProjectRole.VIEWER)))),
-              10)
-          .then() // 모든 스트림이 완료될 때까지 대기하는 Mono<Void> 반환
-          .block(); // 셋업 과정에서 딱 한 번만 블로킹 (전체 병렬 처리 대기)
-
-      // 3. 데이터 검증 (여기서부터는 단일 연산이므로 기존 로직 유지)
-      Long count = projectMemberRepository
-          .countByProjectIdAndNotDeleted(testProject.getId()).block();
-      assertThat(count).isEqualTo(30L);
-
-      // 4. 거부될 유저 생성
-      User newUser = User.signUp(
-          new UserInfo("rejected@test.com", "Rejected User",
-              "password"),
-          encoder).flatMap(userRepository::save).block();
-
-      workspaceMemberRepository.save(
-          WorkspaceMember.create(testWorkspace.getId(),
-              newUser.getId(), WorkspaceRole.MEMBER))
-          .block();
-
-      // 5. 토큰 생성 및 테스트 수행
-      String token = tokenService.generateToken();
-      byte[] tokenHash = tokenService.hashToken(token);
-
-      ShareLink shareLink = ShareLink.create(
-          testProject.getId(), tokenHash, ShareLinkRole.VIEWER, null);
-      // 테스트 대상 로직 검증은 StepVerifier로 처리 (save도 체이닝 가능하지만 가독성을 위해 block 유지해도 무방)
-      shareLinkRepository.save(shareLink).block();
-
-      StepVerifier
-          .create(projectService.joinProjectByShareLink(token,
-              newUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED)
-          .verify();
-    }
-
   }
 
   @Nested
@@ -363,10 +137,9 @@ class ProjectServiceTest {
 
       StepVerifier.create(
           projectService.updateMemberRole(
-              testWorkspace.getId(),
               testProject.getId(),
-              adminMember.getId(),
-              request,
+              adminMember.getUserId(),
+              request.role(),
               adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -403,10 +176,9 @@ class ProjectServiceTest {
 
       StepVerifier.create(
           projectService.updateMemberRole(
-              testWorkspace.getId(),
               testProject.getId(),
-              ownerMember.getId(),
-              request,
+              ownerMember.getUserId(),
+              request.role(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -420,25 +192,24 @@ class ProjectServiceTest {
       UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
           ProjectRole.EDITOR);
 
-      Mono<ProjectMemberResponse> result = projectService
+      Mono<ProjectMemberDetail> result = projectService
           .updateMemberRole(
-              testWorkspace.getId(),
               testProject.getId(),
-              viewerMember.getId(),
-              request,
+              viewerMember.getUserId(),
+              request.role(),
               adminUser.getId());
 
       StepVerifier.create(result)
           .assertNext(response -> {
-            assertThat(response.userId())
+            assertThat(response.member().getUserId())
                 .isEqualTo(viewerUser.getId());
-            assertThat(response.role())
+            assertThat(response.member().getRole())
                 .isEqualTo(ProjectRole.EDITOR.getValue());
           })
           .verifyComplete();
 
       ProjectMember updated = projectMemberRepository
-          .findByIdAndNotDeleted(viewerMember.getId())
+          .findByProjectIdAndUserIdAndNotDeleted(testProject.getId(), viewerUser.getId())
           .block();
       assertThat(updated.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
     }
@@ -447,19 +218,54 @@ class ProjectServiceTest {
     @DisplayName("관리자 권한이 없으면 거부된다")
     void nonAdmin_rejected() {
       UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
-          ProjectRole.COMMENTER);
+          ProjectRole.VIEWER);
 
       StepVerifier.create(
           projectService.updateMemberRole(
-              testWorkspace.getId(),
               testProject.getId(),
               adminMember.getId(),
-              request,
+              request.role(),
               viewerUser.getId() // VIEWER has no admin rights
           ))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
                   .getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
+          .verify();
+    }
+
+    @Test
+    @DisplayName("마지막 ADMIN을 다른 역할로 강등 시도 시 방지된다")
+    void demoteLastAdmin_prevented() {
+      // adminMember와 viewerMember 제거하여 ownerUser만 ADMIN으로 남김
+      projectMemberRepository.deleteById(adminMember.getId()).block();
+      projectMemberRepository.deleteById(viewerMember.getId()).block();
+
+      // 새 ADMIN 추가 (요청자 역할)
+      User secondAdmin = User.signUp(
+          new UserInfo("second@test.com", "Second Admin", "password"),
+          new BCryptPasswordEncoder()).flatMap(userRepository::save).block();
+      workspaceMemberRepository.save(
+          WorkspaceMember.create(testWorkspace.getId(), secondAdmin.getId(), WorkspaceRole.ADMIN)).block();
+      ProjectMember secondAdminMember = ProjectMember.create(
+          testProject.getId(), secondAdmin.getId(), ProjectRole.ADMIN);
+      projectMemberRepository.save(secondAdminMember).block();
+
+      // 현재: ownerUser(ADMIN) + secondAdmin(ADMIN) = 2명
+      // secondAdmin이 ownerUser를 VIEWER로 강등 → 성공 (ADMIN 1명 남음)
+      UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(ProjectRole.VIEWER);
+      StepVerifier.create(
+          projectService.updateMemberRole(
+              testProject.getId(), ownerUser.getId(), request.role(), secondAdmin.getId()))
+          .assertNext(response -> assertThat(response.member().getRole()).isEqualTo(ProjectRole.VIEWER.getValue()))
+          .verifyComplete();
+
+      // 현재: ownerUser(VIEWER) + secondAdmin(ADMIN) = ADMIN 1명
+      // ownerUser는 이제 VIEWER이므로 secondAdmin을 강등할 수 없음 (PROJECT_ADMIN_REQUIRED)
+      StepVerifier.create(
+          projectService.updateMemberRole(
+              testProject.getId(), secondAdmin.getId(), request.role(), ownerUser.getId()))
+          .expectErrorMatches(e -> e instanceof BusinessException &&
+              ((BusinessException) e).getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
           .verify();
     }
 
@@ -477,13 +283,12 @@ class ProjectServiceTest {
 
       StepVerifier.create(
           projectService.removeMember(
-              testWorkspace.getId(),
               testProject.getId(),
-              ownerMember.getId(),
+              ownerMember.getUserId(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED)
+                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED)
           .verify();
     }
 
@@ -494,9 +299,8 @@ class ProjectServiceTest {
           .countByProjectIdAndNotDeleted(testProject.getId()).block();
 
       Mono<Void> result = projectService.removeMember(
-          testWorkspace.getId(),
           testProject.getId(),
-          viewerMember.getId(),
+          viewerMember.getUserId(),
           adminUser.getId());
 
       StepVerifier.create(result).verifyComplete();
@@ -515,7 +319,6 @@ class ProjectServiceTest {
     void nonAdmin_rejected() {
       StepVerifier.create(
           projectService.removeMember(
-              testWorkspace.getId(),
               testProject.getId(),
               adminMember.getId(),
               viewerUser.getId() // VIEWER has no admin rights
@@ -540,12 +343,11 @@ class ProjectServiceTest {
 
       StepVerifier.create(
           projectService.leaveProject(
-              testWorkspace.getId(),
               testProject.getId(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED)
+                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED)
           .verify();
     }
 
@@ -560,7 +362,6 @@ class ProjectServiceTest {
       assertThat(memberCount).isEqualTo(1L);
 
       Mono<Void> result = projectService.leaveProject(
-          testWorkspace.getId(),
           testProject.getId(),
           viewerUser.getId());
 
@@ -583,7 +384,6 @@ class ProjectServiceTest {
       assertThat(beforeCount).isEqualTo(3L); // owner, admin, viewer
 
       Mono<Void> result = projectService.leaveProject(
-          testWorkspace.getId(),
           testProject.getId(),
           viewerUser.getId());
 
@@ -601,6 +401,102 @@ class ProjectServiceTest {
       Long afterCount = projectMemberRepository
           .countByProjectIdAndNotDeleted(testProject.getId()).block();
       assertThat(afterCount).isEqualTo(beforeCount - 1);
+    }
+
+  }
+
+  @Nested
+  @DisplayName("프로젝트 생성 시 워크스페이스 멤버 자동 추가")
+  class CreateProjectMemberPropagation {
+
+    @Test
+    @DisplayName("프로젝트 생성 시 워크스페이스 MEMBER는 프로젝트 VIEWER로 추가된다")
+    void createProject_WorkspaceMember_AddedAsProjectViewer() {
+      // ownerUser는 workspace ADMIN, adminUser와 viewerUser는 workspace MEMBER
+      // createProject는 workspace ADMIN만 호출 가능
+      CreateProjectRequest request = new CreateProjectRequest(
+          "New Project", "Description", null);
+
+      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
+          .getSettingsOrDefault(), ownerUser.getId()).block();
+
+      // 새로 생성된 프로젝트 찾기
+      var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
+          .filter(p -> p.getName().equals("New Project"))
+          .collectList().block();
+      assertThat(projects).hasSize(1);
+      String newProjectId = projects.get(0).getId();
+
+      // ownerUser는 ADMIN으로 추가 (생성자)
+      ProjectMember ownerPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, ownerUser.getId()).block();
+      assertThat(ownerPm).isNotNull();
+      assertThat(ownerPm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+
+      // adminUser는 workspace MEMBER이므로 VIEWER로 추가
+      ProjectMember adminPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, adminUser.getId()).block();
+      assertThat(adminPm).isNotNull();
+      assertThat(adminPm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+
+      // viewerUser는 workspace MEMBER이므로 VIEWER로 추가
+      ProjectMember viewerPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, viewerUser.getId()).block();
+      assertThat(viewerPm).isNotNull();
+      assertThat(viewerPm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+    }
+
+    @Test
+    @DisplayName("삭제된 워크스페이스 멤버는 프로젝트에 추가되지 않는다")
+    void createProject_DeletedWorkspaceMember_Skipped() {
+      // viewerUser의 워크스페이스 멤버십을 soft-delete
+      WorkspaceMember viewerWsMember = workspaceMemberRepository
+          .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspace.getId(), viewerUser.getId()).block();
+      viewerWsMember.delete();
+      workspaceMemberRepository.save(viewerWsMember).block();
+
+      CreateProjectRequest request = new CreateProjectRequest(
+          "New Project", "Description", null);
+
+      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
+          .getSettingsOrDefault(), ownerUser.getId()).block();
+
+      var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
+          .filter(p -> p.getName().equals("New Project"))
+          .collectList().block();
+      String newProjectId = projects.get(0).getId();
+
+      // viewerUser는 soft-deleted이므로 프로젝트에 추가되지 않아야 함
+      ProjectMember viewerPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, viewerUser.getId()).block();
+      assertThat(viewerPm).isNull();
+
+      // adminUser는 활성 멤버이므로 추가되어야 함
+      ProjectMember adminPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, adminUser.getId()).block();
+      assertThat(adminPm).isNotNull();
+      assertThat(adminPm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+    }
+
+    @Test
+    @DisplayName("프로젝트 생성자는 중복 추가되지 않는다")
+    void createProject_CreatorNotDuplicated() {
+      CreateProjectRequest request = new CreateProjectRequest(
+          "New Project", "Description", null);
+
+      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
+          .getSettingsOrDefault(), ownerUser.getId()).block();
+
+      var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
+          .filter(p -> p.getName().equals("New Project"))
+          .collectList().block();
+      String newProjectId = projects.get(0).getId();
+
+      // 생성자(ownerUser)의 프로젝트 멤버 수가 정확히 1이어야 함
+      Long ownerCount = projectMemberRepository
+          .countByProjectIdAndNotDeleted(newProjectId).block();
+      // 3명: ownerUser(ADMIN) + adminUser(VIEWER) + viewerUser(VIEWER)
+      assertThat(ownerCount).isEqualTo(3L);
     }
 
   }

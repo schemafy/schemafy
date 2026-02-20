@@ -3,17 +3,19 @@ package com.schemafy.core.project.controller.dto.response;
 import java.time.Instant;
 
 import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
+import com.schemafy.core.project.service.dto.WorkspaceDetail;
 
 public record WorkspaceResponse(String id, String name, String description,
-    String ownerId, WorkspaceSettings settings, Instant createdAt,
-    Instant updatedAt) {
+    Instant createdAt, Instant updatedAt,
+    Long projectCount, String currentUserRole) {
 
-  public static WorkspaceResponse from(Workspace workspace) {
+  public static WorkspaceResponse from(WorkspaceDetail detail) {
+    Workspace workspace = detail.workspace();
     return new WorkspaceResponse(workspace.getId(), workspace.getName(),
-        workspace.getDescription(), workspace.getOwnerId(),
-        workspace.getSettingsAsVo(), workspace.getCreatedAt(),
-        workspace.getUpdatedAt());
+        workspace.getDescription(),
+        workspace.getCreatedAt(), workspace.getUpdatedAt(),
+        detail.projectCount(),
+        detail.currentUserRole());
   }
 
 }

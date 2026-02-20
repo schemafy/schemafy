@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.config.R2dbcConfig;
 import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 
 import reactor.test.StepVerifier;
 
@@ -29,8 +28,8 @@ class WorkspaceRepositoryTest {
   void setUp() {
     workspaceRepository.deleteAll().block();
 
-    testWorkspace = Workspace.create("owner123", "Test Workspace",
-        "Test Description", WorkspaceSettings.defaultSettings());
+    testWorkspace = Workspace.create("Test Workspace",
+        "Test Description");
   }
 
   @Test
@@ -40,7 +39,6 @@ class WorkspaceRepositoryTest {
         .assertNext(workspace -> {
           assertThat(workspace.getId()).isNotNull();
           assertThat(workspace.getName()).isEqualTo("Test Workspace");
-          assertThat(workspace.getOwnerId()).isEqualTo("owner123");
           assertThat(workspace.getDescription()).isEqualTo(
               "Test Description");
         }).verifyComplete();
@@ -73,25 +71,11 @@ class WorkspaceRepositoryTest {
   }
 
   @Test
-  @DisplayName("Owner로 워크스페이스 조회")
-  void findByOwnerIdAndNotDeleted() {
-    workspaceRepository.save(testWorkspace).block();
-
-    StepVerifier.create(
-        workspaceRepository.findByOwnerIdAndNotDeleted("owner123"))
-        .assertNext(workspace -> {
-          assertThat(workspace.getOwnerId()).isEqualTo("owner123");
-          assertThat(workspace.getName()).isEqualTo("Test Workspace");
-        }).verifyComplete();
-  }
-
-  @Test
   @DisplayName("워크스페이스 수정 테스트")
   void updateWorkspace() {
     Workspace saved = workspaceRepository.save(testWorkspace).block();
 
-    saved.update("Updated Name", "Updated Description",
-        WorkspaceSettings.defaultSettings());
+    saved.update("Updated Name", "Updated Description");
     Workspace updated = workspaceRepository.save(saved).block();
 
     StepVerifier.create(workspaceRepository.findById(updated.getId()))
