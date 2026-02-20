@@ -35,6 +35,9 @@ public interface ProjectMemberRepository
   Mono<Long> countByProjectIdAndRoleAndNotDeleted(String projectId,
       String role);
 
+  @Query("SELECT * FROM project_members WHERE project_id = :projectId AND user_id = :userId ORDER BY created_at DESC LIMIT 1")
+  Mono<ProjectMember> findLatestByProjectIdAndUserId(String projectId, String userId);
+
   @Query("""
       SELECT pm.role FROM project_members pm
       INNER JOIN projects p ON pm.project_id = p.id

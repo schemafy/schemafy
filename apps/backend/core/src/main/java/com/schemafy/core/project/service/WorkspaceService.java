@@ -142,17 +142,9 @@ public class WorkspaceService {
               }
 
               // 삭제된 멤버 복원
-              return workspaceMemberRepository
-                  .restoreDeletedMember(existing.getId(),
-                      role.getValue())
-                  .flatMap(updatedCount -> {
-                    if (updatedCount == 0) {
-                      return Mono.error(new BusinessException(
-                          ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS));
-                    }
-                    return workspaceMemberRepository
-                        .findById(existing.getId());
-                  });
+              existing.restore();
+              existing.updateRole(role);
+              return workspaceMemberRepository.save(existing);
             })
             .switchIfEmpty(Mono.defer(() -> {
               // 신규 멤버 생성

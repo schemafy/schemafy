@@ -1,5 +1,6 @@
 package com.schemafy.core.project.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -120,18 +121,19 @@ public class ProjectInvitationService {
                     log.info("Accepting invitation: id={}, status={}", invitation.getId(), invitation.getStatus());
                     invitation.accept();
 
-                    ProjectMember member = ProjectMember.create(
-                        invitation.getProjectId(),
-                        currentUserId,
-                        invitation.getProjectRole());
-
                     return invitationRepository.save(invitation)
                         .then(invitationRepository.cancelOtherPendingInvitations(
                             invitation.getTargetType(),
                             invitation.getTargetId(),
                             invitation.getInvitedEmail(),
                             invitation.getId()))
-                        .then(projectMemberRepository.save(member))
+                        .then(saveOrRestoreProjectMember(invitation.getProjectId(), currentUserId, invitation
+                            .getProjectRole()))
+                        .onErrorResume(DataIntegrityViolationException.class, e -> {
+                          log.warn("Concurrent member creation on invitation accept: invitationId={}", invitationId);
+                          return Mono.error(new BusinessException(
+                              ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
+                        })
                         .flatMap(this::buildMemberDetail);
                   }));
             }))
@@ -244,6 +246,23 @@ public class ProjectInvitationService {
               return Mono.empty();
             }))
         .then();
+  }
+
+  private Mono<ProjectMember> saveOrRestoreProjectMember(
+      String projectId,
+      String userId,
+      ProjectRole role) {
+    return projectMemberRepository.findLatestByProjectIdAndUserId(projectId, userId)
+        .flatMap(existing -> {
+          if (!existing.isDeleted()) {
+            return Mono.error(new BusinessException(
+                ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
+          }
+          existing.restore();
+          existing.updateRole(role);
+          return projectMemberRepository.save(existing);
+        })
+        .switchIfEmpty(Mono.defer(() -> projectMemberRepository.save(ProjectMember.create(projectId, userId, role))));
   }
 
   private Mono<ProjectMemberDetail> buildMemberDetail(

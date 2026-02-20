@@ -384,20 +384,21 @@ public class ProjectService {
 
     return projectRepository.findByWorkspaceIdAndNotDeleted(workspaceId)
         .flatMap(project -> projectMemberRepository
-            .existsByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
-            .flatMap(exists -> {
-              if (exists) {
-                return Mono.empty();
+            .findLatestByProjectIdAndUserId(project.getId(), userId)
+            .flatMap(existing -> {
+              if (!existing.isDeleted()) {
+                return Mono.just(existing);
               }
+              existing.restore();
+              existing.updateRole(projectRole);
+              return projectMemberRepository.save(existing);
+            })
+            .switchIfEmpty(Mono.defer(() -> {
               ProjectMember newMember = ProjectMember.create(
                   project.getId(), userId, projectRole);
-              return projectMemberRepository.save(newMember).then();
-            })
-            .onErrorResume(DataIntegrityViolationException.class, e -> {
-              log.warn("Duplicate key on auto-add user {} to project {}: {}",
-                  userId, project.getId(), e.getMessage());
-              return Mono.empty();
+              return projectMemberRepository.save(newMember);
             }))
+            .then())
         .then();
   }
 

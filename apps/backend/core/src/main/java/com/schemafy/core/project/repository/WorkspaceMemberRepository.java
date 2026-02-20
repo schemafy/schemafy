@@ -90,14 +90,4 @@ public interface WorkspaceMemberRepository
   Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(String workspaceId,
       String userId);
 
-  @Query("""
-      UPDATE workspace_members
-      SET deleted_at = NULL,
-          role = :role,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = :memberId
-        AND deleted_at IS NOT NULL
-      """)
-  Mono<Long> restoreDeletedMember(String memberId, String role);
-
 }

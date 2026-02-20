@@ -1,5 +1,6 @@
 package com.schemafy.core.project.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -115,18 +116,19 @@ public class WorkspaceInvitationService {
                   .then(Mono.defer(() -> {
                     invitation.accept();
 
-                    WorkspaceMember member = WorkspaceMember.create(
-                        invitation.getWorkspaceId(),
-                        currentUserId,
-                        invitation.getWorkspaceRole());
-
                     return invitationRepository.save(invitation)
                         .then(invitationRepository.cancelOtherPendingInvitations(
                             invitation.getTargetType(),
                             invitation.getTargetId(),
                             invitation.getInvitedEmail(),
                             invitation.getId()))
-                        .then(memberRepository.save(member))
+                        .then(saveOrRestoreWorkspaceMember(invitation.getWorkspaceId(), currentUserId, invitation
+                            .getWorkspaceRole()))
+                        .onErrorResume(DataIntegrityViolationException.class, e -> {
+                          log.warn("Concurrent member creation on invitation accept: invitationId={}", invitationId);
+                          return Mono.error(new BusinessException(
+                              ErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER));
+                        })
                         .flatMap(savedMember -> projectService.propagateToExistingProjects(
                             invitation.getWorkspaceId(),
                             currentUserId,
@@ -236,6 +238,23 @@ public class WorkspaceInvitationService {
               return Mono.empty();
             }))
         .then();
+  }
+
+  private Mono<WorkspaceMember> saveOrRestoreWorkspaceMember(
+      String workspaceId,
+      String userId,
+      WorkspaceRole role) {
+    return memberRepository.findLatestByWorkspaceIdAndUserId(workspaceId, userId)
+        .flatMap(existing -> {
+          if (!existing.isDeleted()) {
+            return Mono.error(new BusinessException(
+                ErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER));
+          }
+          existing.restore();
+          existing.updateRole(role);
+          return memberRepository.save(existing);
+        })
+        .switchIfEmpty(Mono.defer(() -> memberRepository.save(WorkspaceMember.create(workspaceId, userId, role))));
   }
 
   private Mono<WorkspaceMemberDetail> buildMemberDetail(

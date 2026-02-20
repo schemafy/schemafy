@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS workspace_members (
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMP    NULL,
-    CONSTRAINT pk_workspace_members PRIMARY KEY (id)
+    CONSTRAINT pk_workspace_members PRIMARY KEY (id),
+    CONSTRAINT uq_workspace_members_user UNIQUE (workspace_id, user_id)
     );
 
 CREATE INDEX IF NOT EXISTS idx_workspace_members_access ON workspace_members (workspace_id, user_id, deleted_at);
@@ -42,7 +43,8 @@ CREATE TABLE IF NOT EXISTS project_members (
     created_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP   NULL,
-    CONSTRAINT pk_project_members PRIMARY KEY (id)
+    CONSTRAINT pk_project_members PRIMARY KEY (id),
+    CONSTRAINT uq_project_members_user UNIQUE (project_id, user_id)
     );
 
 CREATE INDEX IF NOT EXISTS idx_project_members_access ON project_members (project_id, user_id, deleted_at);
