@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkAccessLogRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
@@ -185,7 +186,7 @@ class PublicShareLinkControllerTest {
     webTestClient.get().uri(PUBLIC_API_PATH + "/invalid-token").exchange()
         .expectStatus().isUnauthorized().expectBody()
         .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .isEqualTo(ShareLinkErrorCode.INVALID.code());
   }
 
   @Test
@@ -200,7 +201,7 @@ class PublicShareLinkControllerTest {
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token).exchange()
         .expectStatus().isUnauthorized().expectBody()
         .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .isEqualTo(ShareLinkErrorCode.INVALID.code());
   }
 
   @Test
@@ -214,7 +215,7 @@ class PublicShareLinkControllerTest {
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token).exchange()
         .expectStatus().isUnauthorized().expectBody()
         .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .isEqualTo(ShareLinkErrorCode.INVALID.code());
   }
 
   @Test
@@ -229,7 +230,7 @@ class PublicShareLinkControllerTest {
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token).exchange()
         .expectStatus().isUnauthorized().expectBody()
         .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .isEqualTo(ShareLinkErrorCode.INVALID.code());
   }
 
   private ShareLink createShareLink(String token, ShareLinkRole role,

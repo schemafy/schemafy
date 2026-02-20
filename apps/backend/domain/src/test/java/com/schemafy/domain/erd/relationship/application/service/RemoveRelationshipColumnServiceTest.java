@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
@@ -21,8 +22,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelations
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 
 import reactor.core.publisher.Mono;
@@ -209,7 +209,7 @@ class RemoveRelationshipColumnServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.removeRelationshipColumn(command))
-            .expectError(RelationshipNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
             .verify();
 
         then(deleteRelationshipColumnPort).shouldHaveNoInteractions();
@@ -230,7 +230,7 @@ class RemoveRelationshipColumnServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.removeRelationshipColumn(command))
-            .expectError(RelationshipColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.COLUMN_NOT_FOUND))
             .verify();
 
         then(deleteRelationshipColumnPort).shouldHaveNoInteractions();

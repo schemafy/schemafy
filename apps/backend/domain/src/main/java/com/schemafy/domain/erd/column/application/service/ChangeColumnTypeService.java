@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnMetaPort;
@@ -17,8 +18,7 @@ import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
@@ -56,7 +56,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
 
     return rejectIfForeignKeyColumn(command.columnId())
         .then(getColumnByIdPort.findColumnById(command.columnId()))
-        .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
+        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
         .flatMap(column -> {
           affectedTableIds.add(column.tableId());
           return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
@@ -78,7 +78,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
           boolean isFk = relationshipColumns.stream()
               .anyMatch(rc -> rc.fkColumnId().equals(columnId));
           if (isFk) {
-            return Mono.error(new ForeignKeyColumnProtectedException(
+            return Mono.error(new DomainException(ColumnErrorCode.FK_PROTECTED,
                 "Foreign key column type cannot be changed directly"));
           }
           return Mono.empty();

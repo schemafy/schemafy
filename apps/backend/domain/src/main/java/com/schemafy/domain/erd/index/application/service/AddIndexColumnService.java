@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.index.application.port.in.AddIndexColumnCommand;
@@ -18,7 +19,7 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndex
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
@@ -40,7 +41,7 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
   @Override
   public Mono<MutationResult<AddIndexColumnResult>> addIndexColumn(AddIndexColumnCommand command) {
     return getIndexByIdPort.findIndexById(command.indexId())
-        .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+        .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
         .flatMap(index -> validateAndAdd(index, command)
             .map(result -> MutationResult.of(result, index.tableId())));
   }

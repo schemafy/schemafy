@@ -10,9 +10,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableUseCase;
@@ -171,7 +172,7 @@ class DeleteSchemaServiceTest {
           .willAnswer(invocation -> invocation.getArgument(0));
 
       StepVerifier.create(sut.deleteSchema(command))
-          .expectError(SchemaNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NOT_FOUND))
           .verify();
 
       then(deleteSchemaPort).shouldHaveNoInteractions();

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
@@ -17,7 +18,6 @@ import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelations
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNameInvalidException;
 import com.schemafy.domain.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableNameCommand;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableNameUseCase;
@@ -25,8 +25,7 @@ import com.schemafy.domain.erd.table.application.port.out.ChangeTableNamePort;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -51,11 +50,11 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   public Mono<MutationResult<Void>> changeTableName(ChangeTableNameCommand command) {
     return getTableByIdPort.findTableById(command.tableId())
         .switchIfEmpty(Mono.error(
-            new TableNotExistException("Table not found: " + command.tableId())))
+            new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
         .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
             .flatMap(exists -> {
               if (exists) {
-                return Mono.error(new TableNameDuplicateException(
+                return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
                     "A table with the name '" + command.newName() + "' already exists in the schema."));
               }
 
@@ -221,7 +220,7 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
     try {
       RelationshipValidator.validateName(name);
       return true;
-    } catch (RelationshipNameInvalidException exception) {
+    } catch (DomainException exception) {
       return false;
     }
   }

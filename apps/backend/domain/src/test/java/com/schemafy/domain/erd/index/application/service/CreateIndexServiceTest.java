@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.index.application.port.in.CreateIndexColumnCommand;
@@ -24,19 +25,13 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPor
 import com.schemafy.domain.erd.index.application.port.out.IndexExistsPort;
 import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNameDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexPositionInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexTypeInvalidException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -384,7 +379,7 @@ class CreateIndexServiceTest {
       var command = IndexFixture.createCommandWithType(null);
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexTypeInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.TYPE_INVALID))
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();
@@ -399,7 +394,7 @@ class CreateIndexServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(TableNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();
@@ -417,7 +412,7 @@ class CreateIndexServiceTest {
           .willReturn(Mono.just(true));
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexNameDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NAME_DUPLICATE))
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();
@@ -441,7 +436,7 @@ class CreateIndexServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.COLUMN_NOT_FOUND))
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();
@@ -466,7 +461,7 @@ class CreateIndexServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexColumnDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.COLUMN_DUPLICATE))
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();
@@ -493,7 +488,7 @@ class CreateIndexServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexPositionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.POSITION_INVALID))
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();
@@ -517,7 +512,7 @@ class CreateIndexServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexColumnSortDirectionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.COLUMN_SORT_DIRECTION_INVALID))
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();
@@ -546,7 +541,7 @@ class CreateIndexServiceTest {
           .willReturn(Mono.just(existingColumns));
 
       StepVerifier.create(sut.createIndex(command))
-          .expectError(IndexDefinitionDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.DEFINITION_DUPLICATE))
           .verify();
 
       then(createIndexPort).shouldHaveNoInteractions();

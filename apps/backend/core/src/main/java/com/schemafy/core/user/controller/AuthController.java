@@ -7,14 +7,14 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.service.UserService;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,7 +73,7 @@ public class AuthController {
   private String extractRefreshTokenFromCookie(ServerHttpRequest request) {
     var refreshTokenCookie = request.getCookies().getFirst("refreshToken");
     if (refreshTokenCookie == null) {
-      throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
+      throw new DomainException(AuthErrorCode.MISSING_REFRESH_TOKEN);
     }
     return refreshTokenCookie.getValue();
   }

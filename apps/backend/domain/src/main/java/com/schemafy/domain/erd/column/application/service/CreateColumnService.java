@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnResult;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
@@ -15,10 +16,10 @@ import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class CreateColumnService implements CreateColumnUseCase {
         command.scale());
 
     return getTableByIdPort.findTableById(command.tableId())
-        .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
+        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
         .flatMap(table -> fetchSchemaAndColumns(table)
             .flatMap(tuple -> createColumn(table, tuple, command, lengthScale))
             .map(result -> MutationResult.of(result, table.id())));
@@ -51,7 +52,7 @@ public class CreateColumnService implements CreateColumnUseCase {
 
   private Mono<Tuple2<Schema, List<Column>>> fetchSchemaAndColumns(Table table) {
     Mono<Schema> schemaMono = getSchemaByIdPort.findSchemaById(table.schemaId())
-        .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found")));
+        .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found")));
     Mono<List<Column>> columnsMono = getColumnsByTableIdPort.findColumnsByTableId(table.id())
         .defaultIfEmpty(List.of());
     return Mono.zip(schemaMono, columnsMono);

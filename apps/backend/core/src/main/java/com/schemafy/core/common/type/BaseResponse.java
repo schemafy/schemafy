@@ -21,16 +21,10 @@ public class BaseResponse<T> {
 
   public static <T> BaseResponse<T> error(String code, String message) {
     return new BaseResponse<>(false, null,
-        new ErrorResponse(code, message, null));
+        new ErrorResponse(code, message));
   }
 
-  public static <T> BaseResponse<T> error(String code, String message,
-      Object details) {
-    return new BaseResponse<>(false, null,
-        new ErrorResponse(code, message, details));
-  }
-
-  private record ErrorResponse(String code, String message, Object details) {
+  private record ErrorResponse(String code, String message) {
   }
 
 }

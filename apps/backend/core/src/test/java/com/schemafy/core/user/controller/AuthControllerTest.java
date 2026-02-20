@@ -22,10 +22,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
 
 import reactor.test.StepVerifier;
@@ -118,7 +120,7 @@ class AuthControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
   }
 
   static Stream<Arguments> invalidSignUpRequests() {
@@ -174,7 +176,7 @@ class AuthControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
   }
 
   static Stream<Arguments> invalidLoginRequests() {
@@ -198,7 +200,7 @@ class AuthControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
+        .isEqualTo(UserErrorCode.NOT_FOUND.code());
   }
 
   @Test
@@ -223,7 +225,7 @@ class AuthControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.LOGIN_FAILED.getCode());
+        .isEqualTo(UserErrorCode.LOGIN_FAILED.code());
   }
 
   @Test
@@ -281,7 +283,8 @@ class AuthControllerTest {
         .expectStatus().isUnauthorized()
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code").isEqualTo("A004");
+        .jsonPath("$.error.code")
+        .isEqualTo(AuthErrorCode.INVALID_TOKEN_TYPE.code());
   }
 
   @Test
@@ -293,7 +296,7 @@ class AuthControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
+        .isEqualTo(AuthErrorCode.MISSING_REFRESH_TOKEN.code());
   }
 
 }

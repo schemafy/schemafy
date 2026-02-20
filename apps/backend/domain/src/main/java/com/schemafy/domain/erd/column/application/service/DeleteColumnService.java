@@ -9,12 +9,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
@@ -89,7 +89,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
           boolean isFk = relationshipColumns.stream()
               .anyMatch(rc -> rc.fkColumnId().equals(columnId));
           if (isFk) {
-            return Mono.error(new ForeignKeyColumnProtectedException(
+            return Mono.error(new DomainException(ColumnErrorCode.FK_PROTECTED,
                 "Foreign key columns cannot be deleted directly"));
           }
           return Mono.empty();
@@ -106,7 +106,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
 
     Mono<Void> trackTableId = getColumnByIdPort.findColumnById(columnId)
         .switchIfEmpty(Mono.error(
-            new ColumnNotExistException("Column not found: " + columnId)))
+            new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found: " + columnId)))
         .doOnNext(column -> affectedTableIds.add(column.tableId()))
         .then();
 

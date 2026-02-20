@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
@@ -19,6 +19,7 @@ import com.schemafy.core.erd.controller.dto.request.UpdateMemoRequest;
 import com.schemafy.core.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoResponse;
+import com.schemafy.core.erd.exception.MemoErrorCode;
 import com.schemafy.core.erd.repository.MemoCommentRepository;
 import com.schemafy.core.erd.repository.MemoRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
@@ -27,6 +28,7 @@ import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.user.controller.dto.response.UserSummaryResponse;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaUseCase;
 
@@ -88,7 +90,7 @@ public class MemoService {
   public Mono<MemoDetailResponse> getMemo(String memoId) {
     return memoRepository.findByIdAndDeletedAtIsNull(memoId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+            new DomainException(MemoErrorCode.NOT_FOUND)))
         .flatMap(this::buildMemoDetailResponse);
   }
 
@@ -128,14 +130,14 @@ public class MemoService {
       UpdateMemoRequest request, AuthenticatedUser user) {
     return memoRepository.findByIdAndDeletedAtIsNull(memoId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+            new DomainException(MemoErrorCode.NOT_FOUND)))
         .flatMap(memo -> updateMemoIfAuthor(memo, request, user));
   }
 
   private Mono<MemoResponse> updateMemoIfAuthor(Memo memo,
       UpdateMemoRequest request, AuthenticatedUser user) {
     if (!memo.getAuthorId().equals(user.userId())) {
-      return Mono.error(new BusinessException(ErrorCode.ACCESS_DENIED));
+      return Mono.error(new DomainException(AuthErrorCode.ACCESS_DENIED));
     }
     memo.setPositions(request.positions());
     return memoRepository.save(memo)
@@ -148,7 +150,7 @@ public class MemoService {
     return memoRepository
         .findByIdAndDeletedAtIsNull(memoId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+            new DomainException(MemoErrorCode.NOT_FOUND)))
         .flatMap(memo -> checkDeletePermission(user, memo.getAuthorId())
             .then(Mono.defer(() -> {
               memo.delete();
@@ -161,7 +163,7 @@ public class MemoService {
       CreateMemoCommentRequest request, AuthenticatedUser user) {
     return memoRepository.findByIdAndDeletedAtIsNull(memoId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+            new DomainException(MemoErrorCode.NOT_FOUND)))
         .then(saveComment(memoId, request.body(), user));
   }
 
@@ -180,7 +182,7 @@ public class MemoService {
   public Flux<MemoCommentResponse> getComments(String memoId) {
     return memoRepository.findByIdAndDeletedAtIsNull(memoId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+            new DomainException(MemoErrorCode.NOT_FOUND)))
         .thenMany(memoCommentRepository
             .findByMemoIdAndDeletedAtIsNullOrderByIdAsc(memoId)
             .collectList()
@@ -210,8 +212,8 @@ public class MemoService {
     return memoCommentRepository
         .findByIdAndDeletedAtIsNull(commentId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(
-                ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
+            new DomainException(
+                MemoErrorCode.COMMENT_NOT_FOUND)))
         .flatMap(comment -> updateCommentIfValid(comment, memoId,
             request, user));
   }
@@ -221,15 +223,15 @@ public class MemoService {
       AuthenticatedUser user) {
     if (!comment.getMemoId().equals(memoId)) {
       return Mono.error(
-          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+          new DomainException(CommonErrorCode.INVALID_PARAMETER));
     }
     return memoRepository.findByIdAndDeletedAtIsNull(memoId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+            new DomainException(MemoErrorCode.NOT_FOUND)))
         .then(Mono.defer(() -> {
           if (!comment.getAuthorId().equals(user.userId())) {
             return Mono.error(
-                new BusinessException(ErrorCode.ACCESS_DENIED));
+                new DomainException(AuthErrorCode.ACCESS_DENIED));
           }
           comment.setBody(request.body());
           return memoCommentRepository.save(comment)
@@ -246,8 +248,8 @@ public class MemoService {
         memoCommentRepository
             .findByIdAndDeletedAtIsNull(commentId)
             .switchIfEmpty(Mono.error(
-                new BusinessException(
-                    ErrorCode.ERD_MEMO_COMMENT_NOT_FOUND)))
+                new DomainException(
+                    MemoErrorCode.COMMENT_NOT_FOUND)))
             .flatMap(comment -> validateCommentMemoId(comment,
                 memoId)
                 .then(checkDeletePermission(user,
@@ -261,7 +263,7 @@ public class MemoService {
       String memoId) {
     if (!comment.getMemoId().equals(memoId)) {
       return Mono.error(
-          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+          new DomainException(CommonErrorCode.INVALID_PARAMETER));
     }
     return Mono.empty();
   }
@@ -271,7 +273,7 @@ public class MemoService {
     return memoRepository
         .findByIdAndDeletedAtIsNull(memoId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.ERD_MEMO_NOT_FOUND)))
+            new DomainException(MemoErrorCode.NOT_FOUND)))
         .flatMap(memo -> isLastRemainingComment(memoId, commentId)
             .flatMap(isLast -> isLast
                 ? deleteMemo(memo)
@@ -309,7 +311,7 @@ public class MemoService {
         || user.roles().contains(ProjectRole.ADMIN);
     if (!isAdminOrOwner && !authorId.equals(user.userId())) {
       return Mono.error(
-          new BusinessException(ErrorCode.ACCESS_DENIED));
+          new DomainException(AuthErrorCode.ACCESS_DENIED));
     }
     return Mono.empty();
   }

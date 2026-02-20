@@ -17,7 +17,7 @@ import org.openapitools.jackson.nullable.JsonNullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
@@ -56,6 +56,7 @@ import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintCo
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 import reactor.core.publisher.Mono;
@@ -180,7 +181,7 @@ class ConstraintControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
 
     then(createConstraintUseCase).shouldHaveNoInteractions();
   }
@@ -340,7 +341,7 @@ class ConstraintControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .isEqualTo(ConstraintErrorCode.INVALID_VALUE.code());
 
     then(changeConstraintCheckExprUseCase).shouldHaveNoInteractions();
   }
@@ -437,7 +438,7 @@ class ConstraintControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .isEqualTo(ConstraintErrorCode.INVALID_VALUE.code());
 
     then(changeConstraintDefaultExprUseCase).shouldHaveNoInteractions();
   }

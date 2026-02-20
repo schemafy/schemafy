@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.domain.common.exception.DomainException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,7 +34,7 @@ class MySqlDdlUtilsTest {
   @NullAndEmptySource
   @ValueSource(strings = { "   ", "\t" })
   void requireNonBlank_withBlankValues_throwsException(String value) {
-    assertThrows(BusinessException.class,
+    assertThrows(DomainException.class,
         () -> MySqlDdlUtils.requireNonBlank(value, "field"));
   }
 
@@ -62,13 +62,13 @@ class MySqlDdlUtilsTest {
   @ParameterizedTest
   @NullAndEmptySource
   void sanitizeDataType_withNullOrEmpty_throwsException(String type) {
-    assertThrows(BusinessException.class,
+    assertThrows(DomainException.class,
         () -> MySqlDdlUtils.sanitizeDataType(type));
   }
 
   @Test
   void sanitizeDataType_withInvalidFormat_throwsException() {
-    assertThrows(BusinessException.class,
+    assertThrows(DomainException.class,
         () -> MySqlDdlUtils.sanitizeDataType("123invalid"));
   }
 
@@ -86,7 +86,7 @@ class MySqlDdlUtilsTest {
 
   @Test
   void sanitizeLengthScale_withInvalidFormat_throwsException() {
-    assertThrows(BusinessException.class,
+    assertThrows(DomainException.class,
         () -> MySqlDdlUtils.sanitizeLengthScale("abc"));
   }
 
@@ -110,7 +110,7 @@ class MySqlDdlUtilsTest {
 
   @Test
   void sanitizeIndexType_withInvalidType_throwsException() {
-    assertThrows(BusinessException.class,
+    assertThrows(DomainException.class,
         () -> MySqlDdlUtils.sanitizeIndexType("INVALID"));
   }
 
@@ -122,7 +122,7 @@ class MySqlDdlUtilsTest {
 
   @Test
   void sanitizeSortDirection_withInvalidDirection_throwsException() {
-    assertThrows(BusinessException.class,
+    assertThrows(DomainException.class,
         () -> MySqlDdlUtils.sanitizeSortDirection("INVALID"));
   }
 
@@ -135,7 +135,7 @@ class MySqlDdlUtilsTest {
   @Test
   void quoteColumn_withColumnNotFound_throwsException() {
     Map<String, String> columnMap = Map.of("col1", "user_name");
-    assertThrows(BusinessException.class,
+    assertThrows(DomainException.class,
         () -> MySqlDdlUtils.quoteColumn(columnMap, "col2"));
   }
 

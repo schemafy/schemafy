@@ -11,8 +11,8 @@ import org.springframework.web.reactive.result.method.HandlerMethodArgumentResol
 import org.springframework.web.server.ServerWebExchange;
 
 import com.schemafy.core.common.annotation.ApiVersion;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Mono;
 
@@ -38,16 +38,16 @@ public class ApiVersionArgumentResolver
         HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
 
     if (pathVariables == null || !pathVariables.containsKey("version")) {
-      return Mono.error(new BusinessException(
-          ErrorCode.COMMON_API_VERSION_MISSING));
+      return Mono.error(new DomainException(
+          CommonErrorCode.API_VERSION_MISSING));
     }
 
     String versionString = pathVariables.get("version");
 
     if (versionString == null
         || !VERSION_PATTERN.matcher(versionString).matches()) {
-      return Mono.error(new BusinessException(
-          ErrorCode.COMMON_API_VERSION_INVALID));
+      return Mono.error(new DomainException(
+          CommonErrorCode.API_VERSION_INVALID));
     }
 
     if (parameter.getParameterType().equals(String.class)) {

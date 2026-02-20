@@ -30,7 +30,7 @@ import com.schemafy.core.erd.controller.dto.request.CreateConstraintRequest;
 import com.schemafy.core.erd.controller.dto.response.AddConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
@@ -56,6 +56,7 @@ import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTa
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -128,7 +129,7 @@ public class ConstraintController {
       @PathVariable String constraintId,
       @Valid @RequestBody ChangeConstraintCheckExprRequest request) {
     if (!request.checkExpr().isPresent()) {
-      throw new InvalidValueException("checkExpr must be provided");
+      throw new DomainException(ConstraintErrorCode.INVALID_VALUE, "checkExpr must be provided");
     }
     ChangeConstraintCheckExprCommand command = new ChangeConstraintCheckExprCommand(
         constraintId,
@@ -146,7 +147,7 @@ public class ConstraintController {
       @PathVariable String constraintId,
       @Valid @RequestBody ChangeConstraintDefaultExprRequest request) {
     if (!request.defaultExpr().isPresent()) {
-      throw new InvalidValueException("defaultExpr must be provided");
+      throw new DomainException(ConstraintErrorCode.INVALID_VALUE, "defaultExpr must be provided");
     }
     ChangeConstraintDefaultExprCommand command = new ChangeConstraintDefaultExprCommand(
         constraintId,

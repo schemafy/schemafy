@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
@@ -28,7 +29,7 @@ import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTa
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
@@ -134,7 +135,7 @@ class ConstraintCascadeDeleteIntegrationTest {
 
       StepVerifier.create(getConstraintUseCase.getConstraint(
           new GetConstraintQuery(result.constraintId())))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -268,7 +269,7 @@ class ConstraintCascadeDeleteIntegrationTest {
       // 제약조건도 삭제되어야 함
       StepVerifier.create(getConstraintUseCase.getConstraint(
           new GetConstraintQuery(result.constraintId())))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
     }
 

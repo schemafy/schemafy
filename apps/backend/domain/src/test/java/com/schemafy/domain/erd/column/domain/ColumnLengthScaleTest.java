@@ -4,7 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,7 +44,7 @@ class ColumnLengthScaleTest {
     @DisplayName("length와 precision/scale을 동시에 설정하면 예외가 발생한다")
     void throwsWhenLengthAndPrecisionBothSet() {
       assertThatThrownBy(() -> new ColumnLengthScale(255, 10, 2))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("length cannot be combined with precision/scale");
     }
 
@@ -52,11 +52,11 @@ class ColumnLengthScaleTest {
     @DisplayName("length가 0 이하이면 예외가 발생한다")
     void throwsWhenLengthIsZeroOrNegative() {
       assertThatThrownBy(() -> new ColumnLengthScale(0, null, null))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("length must be positive");
 
       assertThatThrownBy(() -> new ColumnLengthScale(-1, null, null))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("length must be positive");
     }
 
@@ -64,11 +64,11 @@ class ColumnLengthScaleTest {
     @DisplayName("precision이 0 이하이면 예외가 발생한다")
     void throwsWhenPrecisionIsZeroOrNegative() {
       assertThatThrownBy(() -> new ColumnLengthScale(null, 0, 2))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("precision must be positive");
 
       assertThatThrownBy(() -> new ColumnLengthScale(null, -1, 2))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("precision must be positive");
     }
 
@@ -76,7 +76,7 @@ class ColumnLengthScaleTest {
     @DisplayName("scale이 음수이면 예외가 발생한다")
     void throwsWhenScaleIsNegative() {
       assertThatThrownBy(() -> new ColumnLengthScale(null, 10, -1))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("scale must be zero or positive");
     }
 
@@ -84,7 +84,7 @@ class ColumnLengthScaleTest {
     @DisplayName("precision 없이 scale만 설정하면 예외가 발생한다")
     void throwsWhenScaleWithoutPrecision() {
       assertThatThrownBy(() -> new ColumnLengthScale(null, null, 2))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("precision is required when scale is provided");
     }
 
@@ -92,7 +92,7 @@ class ColumnLengthScaleTest {
     @DisplayName("scale 없이 precision만 설정하면 예외가 발생한다")
     void throwsWhenPrecisionWithoutScale() {
       assertThatThrownBy(() -> new ColumnLengthScale(null, 10, null))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("scale is required when precision is provided");
     }
 

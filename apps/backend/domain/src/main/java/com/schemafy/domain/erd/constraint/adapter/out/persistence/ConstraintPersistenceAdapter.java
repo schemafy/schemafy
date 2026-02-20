@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintExpressionPort;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
@@ -14,7 +15,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintP
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -96,7 +97,7 @@ class ConstraintPersistenceAdapter implements
   private Mono<ConstraintEntity> findConstraintOrError(String constraintId) {
     return constraintRepository.findById(constraintId)
         .switchIfEmpty(Mono.error(
-            new ConstraintNotExistException("Constraint not found: " + constraintId)));
+            new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found: " + constraintId)));
   }
 
 }

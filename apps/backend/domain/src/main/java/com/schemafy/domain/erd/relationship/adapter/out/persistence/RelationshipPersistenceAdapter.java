@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipCardinalityPort;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipExtraPort;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipKindPort;
@@ -18,7 +19,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 
@@ -144,7 +145,7 @@ class RelationshipPersistenceAdapter implements
   private Mono<RelationshipEntity> findRelationshipOrError(String relationshipId) {
     return relationshipRepository.findById(relationshipId)
         .switchIfEmpty(Mono.error(
-            new RelationshipNotExistException("Relationship not found: " + relationshipId)));
+            new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found: " + relationshipId)));
   }
 
 }

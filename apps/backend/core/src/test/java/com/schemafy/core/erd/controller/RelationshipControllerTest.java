@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddRelationshipColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipCardinalityRequest;
@@ -185,7 +185,7 @@ class RelationshipControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
 
     then(createRelationshipUseCase).shouldHaveNoInteractions();
   }
@@ -210,7 +210,7 @@ class RelationshipControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(false)
         .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
 
     then(createRelationshipUseCase).shouldHaveNoInteractions();
   }

@@ -3,7 +3,8 @@ package com.schemafy.domain.erd.column.domain;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 
 public record ColumnLengthScale(
     Integer length,
@@ -16,22 +17,22 @@ public record ColumnLengthScale(
 
   public ColumnLengthScale {
     if (length != null && (precision != null || scale != null)) {
-      throw new InvalidValueException("length cannot be combined with precision/scale");
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "length cannot be combined with precision/scale");
     }
     if (length != null && length <= 0) {
-      throw new InvalidValueException("length must be positive");
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "length must be positive");
     }
     if (precision != null && precision <= 0) {
-      throw new InvalidValueException("precision must be positive");
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "precision must be positive");
     }
     if (scale != null && scale < 0) {
-      throw new InvalidValueException("scale must be zero or positive");
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "scale must be zero or positive");
     }
     if (precision != null && scale == null) {
-      throw new InvalidValueException("scale is required when precision is provided");
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "scale is required when precision is provided");
     }
     if (precision == null && scale != null) {
-      throw new InvalidValueException("precision is required when scale is provided");
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "precision is required when scale is provided");
     }
   }
 

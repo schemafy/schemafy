@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
@@ -19,8 +20,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColu
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 import lombok.RequiredArgsConstructor;
@@ -43,11 +43,11 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
   public Mono<MutationResult<Void>> removeConstraintColumn(RemoveConstraintColumnCommand command) {
     return getConstraintColumnByIdPort
         .findConstraintColumnById(command.constraintColumnId())
-        .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException(
+        .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.COLUMN_NOT_FOUND,
             "Constraint column not found: " + command.constraintColumnId())))
         .flatMap(constraintColumn -> getConstraintByIdPort
             .findConstraintById(constraintColumn.constraintId())
-            .switchIfEmpty(Mono.error(new ConstraintNotExistException(
+            .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND,
                 "Constraint not found: " + constraintColumn.constraintId())))
             .flatMap(constraint -> {
               Set<String> affectedTableIds = new HashSet<>();

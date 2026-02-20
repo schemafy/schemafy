@@ -10,8 +10,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
@@ -20,13 +18,16 @@ import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceSummaryResponse;
+import com.schemafy.core.project.exception.WorkspaceErrorCode;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.repository.vo.WorkspaceSettings;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -85,7 +86,7 @@ public class WorkspaceService {
     return validateMemberAccess(workspaceId, userId).then(
         workspaceRepository.findByIdAndNotDeleted(workspaceId))
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
+            new DomainException(WorkspaceErrorCode.NOT_FOUND)))
         .map(WorkspaceResponse::from);
   }
 
@@ -94,7 +95,7 @@ public class WorkspaceService {
     return validateAdminAccess(workspaceId, userId).then(
         workspaceRepository.findByIdAndNotDeleted(workspaceId))
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
+            new DomainException(WorkspaceErrorCode.NOT_FOUND)))
         .flatMap(workspace -> {
           WorkspaceSettings settings = request.getSettingsOrDefault();
           validateSettings(settings);
@@ -110,11 +111,11 @@ public class WorkspaceService {
     return validateAdminAccess(workspaceId, userId)
         .then(workspaceRepository.findByIdAndNotDeleted(workspaceId))
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)))
+            new DomainException(WorkspaceErrorCode.NOT_FOUND)))
         .flatMap(workspace -> {
           if (workspace.isDeleted()) {
-            return Mono.error(new BusinessException(
-                ErrorCode.WORKSPACE_ALREADY_DELETED));
+            return Mono.error(new DomainException(
+                WorkspaceErrorCode.ALREADY_DELETED));
           }
           workspace.delete();
           return workspaceRepository.save(workspace)
@@ -159,8 +160,8 @@ public class WorkspaceService {
                 log.warn(
                     "Member already exists and is active: memberId={}",
                     existing.getId());
-                return Mono.error(new BusinessException(
-                    ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS));
+                return Mono.error(new DomainException(
+                    WorkspaceErrorCode.MEMBER_ALREADY_EXISTS));
               }
 
               // 삭제된 멤버 재활성화
@@ -179,8 +180,8 @@ public class WorkspaceService {
                     log.warn(
                         "Workspace member limit exceeded: workspaceId={}",
                         workspaceId);
-                    return Mono.error(new BusinessException(
-                        ErrorCode.WORKSPACE_MEMBER_LIMIT_EXCEEDED));
+                    return Mono.error(new DomainException(
+                        WorkspaceErrorCode.MEMBER_LIMIT_EXCEEDED));
                   }
 
                   WorkspaceMember newMember = WorkspaceMember
@@ -197,8 +198,8 @@ public class WorkspaceService {
             log.warn(
                 "Duplicate key constraint: workspaceId={}, userId={}",
                 workspaceId, request.userId());
-            return Mono.error(new BusinessException(
-                ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS));
+            return Mono.error(new DomainException(
+                WorkspaceErrorCode.MEMBER_ALREADY_EXISTS));
           }
           return Mono.error(error);
         })
@@ -208,7 +209,7 @@ public class WorkspaceService {
   private Mono<Void> validateUserExists(String userId) {
     return userRepository.findById(userId)
         .switchIfEmpty(Mono
-            .error(new BusinessException(ErrorCode.USER_NOT_FOUND)))
+            .error(new DomainException(UserErrorCode.NOT_FOUND)))
         .then();
   }
 
@@ -276,8 +277,8 @@ public class WorkspaceService {
             workspaceId, userId)
         .flatMap(exists -> {
           if (!exists) {
-            return Mono.error(new BusinessException(
-                ErrorCode.WORKSPACE_ACCESS_DENIED));
+            return Mono.error(new DomainException(
+                WorkspaceErrorCode.ACCESS_DENIED));
           }
           return Mono.empty();
         });
@@ -287,8 +288,8 @@ public class WorkspaceService {
     return findWorkspaceMemberByUserIdAndWorkspaceId(userId, workspaceId)
         .flatMap(member -> {
           if (!member.isAdmin()) {
-            return Mono.error(new BusinessException(
-                ErrorCode.WORKSPACE_ADMIN_REQUIRED));
+            return Mono.error(new DomainException(
+                WorkspaceErrorCode.ADMIN_REQUIRED));
           }
           return Mono.empty();
         });
@@ -308,8 +309,8 @@ public class WorkspaceService {
             WorkspaceRole.ADMIN.getValue())
         .flatMap(count -> {
           if (count <= 1) {
-            return Mono.error(new BusinessException(
-                ErrorCode.LAST_ADMIN_CANNOT_LEAVE));
+            return Mono.error(new DomainException(
+                WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE));
           }
           action.accept(member);
           return workspaceMemberRepository.save(member);
@@ -323,8 +324,8 @@ public class WorkspaceService {
     return workspaceMemberRepository
         .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(
-                ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)));
+            new DomainException(
+                WorkspaceErrorCode.MEMBER_NOT_FOUND)));
   }
 
   private Mono<WorkspaceMember> findWorkspaceMemberByMemberIdAndWorkspaceId(
@@ -332,15 +333,15 @@ public class WorkspaceService {
     return workspaceMemberRepository
         .findByIdAndWorkspaceIdAndNotDeleted(memberId, workspaceId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(
-                ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)));
+            new DomainException(
+                WorkspaceErrorCode.MEMBER_NOT_FOUND)));
   }
 
   private void validateSettings(WorkspaceSettings settings) {
     settings.validate();
     String json = settings.toJson();
     if (json.length() > 65536) {
-      throw new BusinessException(ErrorCode.WORKSPACE_SETTINGS_TOO_LARGE);
+      throw new DomainException(WorkspaceErrorCode.SETTINGS_TOO_LARGE);
     }
   }
 

@@ -3,8 +3,6 @@ package com.schemafy.core.project.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
@@ -12,6 +10,9 @@ import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
 import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectSummaryResponse;
+import com.schemafy.core.project.exception.ProjectErrorCode;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
+import com.schemafy.core.project.exception.WorkspaceErrorCode;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
@@ -23,6 +24,7 @@ import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -116,8 +118,8 @@ public class ProjectService {
         .then(findProjectById(projectId))
         .flatMap(project -> {
           if (!project.belongsToWorkspace(workspaceId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.WORKSPACE_MISMATCH));
           }
           return Mono.just(ProjectResponse.from(project));
         });
@@ -129,8 +131,8 @@ public class ProjectService {
         .then(findProjectById(projectId))
         .flatMap(project -> {
           if (!project.belongsToWorkspace(workspaceId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.WORKSPACE_MISMATCH));
           }
 
           ProjectSettings settings = request.getSettingsOrDefault();
@@ -150,12 +152,12 @@ public class ProjectService {
         .then(findProjectById(projectId))
         .flatMap(project -> {
           if (!project.belongsToWorkspace(workspaceId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.WORKSPACE_MISMATCH));
           }
           if (project.isDeleted()) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_ALREADY_DELETED));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.ALREADY_DELETED));
           }
           project.delete();
           return projectRepository.save(project)
@@ -193,19 +195,19 @@ public class ProjectService {
 
     return shareLinkRepository.findValidByTokenHash(tokenHash)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
+            new DomainException(ShareLinkErrorCode.INVALID)))
         .flatMap(shareLink -> projectRepository
             .findByIdAndNotDeleted(shareLink.getProjectId())
             .switchIfEmpty(Mono.error(
-                new BusinessException(
-                    ErrorCode.PROJECT_NOT_FOUND)))
+                new DomainException(
+                    ProjectErrorCode.NOT_FOUND)))
             .flatMap(project -> workspaceMemberRepository
                 .existsByWorkspaceIdAndUserIdAndNotDeleted(
                     project.getWorkspaceId(), userId)
                 .flatMap(isWorkspaceMember -> {
                   if (!isWorkspaceMember) {
-                    return Mono.error(new BusinessException(
-                        ErrorCode.WORKSPACE_MEMBERSHIP_REQUIRED));
+                    return Mono.error(new DomainException(
+                        ProjectErrorCode.WORKSPACE_MEMBERSHIP_REQUIRED));
                   }
                   return createOrUpdateProjectMember(project,
                       shareLink, userId);
@@ -249,18 +251,18 @@ public class ProjectService {
 
     // 요청자가 본인의 역할을 변경하려는지
     if (target.getUserId().equals(requester.getUserId())) {
-      throw new BusinessException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
+      throw new DomainException(ProjectErrorCode.CANNOT_CHANGE_OWN_ROLE);
     }
 
     // 요청자가 부여하려는 역할 이상의 권한을 가지고 있는지
     if (!requesterRole.isHigherOrEqualThan(newRole)) {
-      throw new BusinessException(ErrorCode.CANNOT_ASSIGN_HIGHER_ROLE);
+      throw new DomainException(ProjectErrorCode.CANNOT_ASSIGN_HIGHER_ROLE);
     }
 
     // 요청자가 대상의 현재 역할 이상의 권한을 가지고 있는지
     if (!requesterRole.isHigherOrEqualThan(targetCurrentRole)) {
-      throw new BusinessException(
-          ErrorCode.CANNOT_MODIFY_HIGHER_ROLE_MEMBER);
+      throw new DomainException(
+          ProjectErrorCode.CANNOT_MODIFY_HIGHER_ROLE_MEMBER);
     }
   }
 
@@ -321,8 +323,8 @@ public class ProjectService {
             .countByProjectIdAndNotDeleted(project.getId())
             .flatMap(memberCount -> {
               if (memberCount >= MAX_PROJECT_MEMBERS) {
-                return Mono.error(new BusinessException(
-                    ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED));
+                return Mono.error(new DomainException(
+                    ProjectErrorCode.MEMBER_LIMIT_EXCEEDED));
               }
 
               ShareLinkRole shareLinkRole = shareLink
@@ -353,8 +355,8 @@ public class ProjectService {
           long totalAdminCount = ownerCount + adminCount;
 
           if (totalAdminCount <= 1) {
-            return Mono.error(new BusinessException(
-                ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.LAST_OWNER_CANNOT_BE_REMOVED));
           }
           return Mono.empty();
         });
@@ -375,7 +377,7 @@ public class ProjectService {
   private Mono<Project> findProjectById(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
+            new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
 
   private Mono<ProjectMember> findProjectMemberByMemberIdAndProjectId(
@@ -383,8 +385,8 @@ public class ProjectService {
     return projectMemberRepository
         .findByProjectIdAndMemberIdAndNotDeleted(projectId, memberId)
         .filter(member -> member.getProjectId().equals(projectId))
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.MEMBER_NOT_FOUND)));
   }
 
   private Mono<ProjectMember> findProjectMemberByUserIdAndProjectId(
@@ -392,8 +394,8 @@ public class ProjectService {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
         .filter(member -> member.getProjectId().equals(projectId))
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.MEMBER_NOT_FOUND)));
   }
 
   private Mono<Void> protectAdmin(String projectId,
@@ -415,8 +417,8 @@ public class ProjectService {
       String userId) {
     return workspaceMemberRepository
         .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.WORKSPACE_ACCESS_DENIED)))
+        .switchIfEmpty(Mono.error(new DomainException(
+            WorkspaceErrorCode.ACCESS_DENIED)))
         .then();
   }
 
@@ -425,7 +427,7 @@ public class ProjectService {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
         .then();
   }
 
@@ -433,10 +435,10 @@ public class ProjectService {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
         .filter(ProjectMember::isAdmin)
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.PROJECT_ADMIN_REQUIRED)))
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.ADMIN_REQUIRED)))
         .then();
   }
 
@@ -444,7 +446,7 @@ public class ProjectService {
     settings.validate();
     String json = settings.toJson();
     if (json.length() > 65536) {
-      throw new BusinessException(ErrorCode.PROJECT_SETTINGS_TOO_LARGE);
+      throw new DomainException(ProjectErrorCode.SETTINGS_TOO_LARGE);
     }
   }
 

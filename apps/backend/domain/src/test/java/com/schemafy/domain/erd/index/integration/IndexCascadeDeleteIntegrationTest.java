@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
@@ -28,7 +29,7 @@ import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuer
 import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.domain.erd.index.application.port.in.RemoveIndexColumnCommand;
 import com.schemafy.domain.erd.index.application.port.in.RemoveIndexColumnUseCase;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
@@ -135,7 +136,7 @@ class IndexCascadeDeleteIntegrationTest {
 
       StepVerifier.create(getIndexUseCase.getIndex(
           new GetIndexQuery(result.indexId())))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -269,7 +270,7 @@ class IndexCascadeDeleteIntegrationTest {
       // 인덱스도 삭제되어야 함
       StepVerifier.create(getIndexUseCase.getIndex(
           new GetIndexQuery(result.indexId())))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
     }
 

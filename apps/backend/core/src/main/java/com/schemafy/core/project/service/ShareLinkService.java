@@ -3,18 +3,20 @@ package com.schemafy.core.project.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
 import com.schemafy.core.project.controller.dto.response.ShareLinkAccessResponse;
 import com.schemafy.core.project.controller.dto.response.ShareLinkResponse;
+import com.schemafy.core.project.exception.ProjectErrorCode;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
+import com.schemafy.core.project.exception.WorkspaceErrorCode;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.ShareLinkAccessLog;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,11 +78,11 @@ public class ShareLinkService {
     return validateWorkspaceMember(workspaceId, userId)
         .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
+            new DomainException(ShareLinkErrorCode.NOT_FOUND)))
         .flatMap(shareLink -> {
           if (!shareLink.getProjectId().equals(projectId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.WORKSPACE_MISMATCH));
           }
           return validateProjectAdmin(workspaceId,
               shareLink.getProjectId(), userId)
@@ -93,11 +95,11 @@ public class ShareLinkService {
     return validateWorkspaceMember(workspaceId, userId)
         .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
+            new DomainException(ShareLinkErrorCode.NOT_FOUND)))
         .flatMap(shareLink -> {
           if (!shareLink.getProjectId().equals(projectId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.WORKSPACE_MISMATCH));
           }
           return validateProjectAdmin(workspaceId,
               shareLink.getProjectId(), userId)
@@ -115,11 +117,11 @@ public class ShareLinkService {
     return validateWorkspaceMember(workspaceId, userId)
         .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)))
+            new DomainException(ShareLinkErrorCode.NOT_FOUND)))
         .flatMap(shareLink -> {
           if (!shareLink.getProjectId().equals(projectId)) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_WORKSPACE_MISMATCH));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.WORKSPACE_MISMATCH));
           }
           return validateProjectAdmin(workspaceId,
               shareLink.getProjectId(), userId)
@@ -138,7 +140,7 @@ public class ShareLinkService {
 
     return shareLinkRepository.findValidByTokenHash(tokenHash)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
+            new DomainException(ShareLinkErrorCode.INVALID)))
         .flatMap(shareLink -> {
           ShareLinkAccessLog accessLog = ShareLinkAccessLog.create(
               shareLink.getId(), userId, ipAddress, userAgent);
@@ -146,8 +148,8 @@ public class ShareLinkService {
           Mono<Project> fetchProject = projectRepository
               .findByIdAndNotDeleted(shareLink.getProjectId())
               .switchIfEmpty(Mono.error(
-                  new BusinessException(
-                      ErrorCode.PROJECT_NOT_FOUND)));
+                  new DomainException(
+                      ProjectErrorCode.NOT_FOUND)));
 
           Mono<Void> recordAccess = Mono.when(
               accessLogRepository.save(accessLog),
@@ -176,8 +178,8 @@ public class ShareLinkService {
         .existsByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
         .flatMap(exists -> {
           if (!exists) {
-            return Mono.error(new BusinessException(
-                ErrorCode.WORKSPACE_ACCESS_DENIED));
+            return Mono.error(new DomainException(
+                WorkspaceErrorCode.ACCESS_DENIED));
           }
           return Mono.empty();
         });
@@ -187,18 +189,18 @@ public class ShareLinkService {
       String projectId, String userId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_NOT_FOUND)))
+            new DomainException(ProjectErrorCode.NOT_FOUND)))
         .filter(project -> project.belongsToWorkspace(workspaceId))
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.PROJECT_WORKSPACE_MISMATCH)))
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.WORKSPACE_MISMATCH)))
         .flatMap(project -> projectMemberRepository
             .findByProjectIdAndUserIdAndNotDeleted(projectId,
                 userId))
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
         .filter(ProjectMember::isAdmin)
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.PROJECT_ADMIN_REQUIRED)))
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.ADMIN_REQUIRED)))
         .then();
   }
 

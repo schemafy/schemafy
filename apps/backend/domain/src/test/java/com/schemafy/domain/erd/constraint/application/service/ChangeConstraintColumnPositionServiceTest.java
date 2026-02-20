@@ -10,11 +10,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 
@@ -160,7 +161,7 @@ class ChangeConstraintColumnPositionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
-          .expectError(ConstraintColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_NOT_FOUND))
           .verify();
 
       then(changeConstraintColumnPositionPort).shouldHaveNoInteractions();

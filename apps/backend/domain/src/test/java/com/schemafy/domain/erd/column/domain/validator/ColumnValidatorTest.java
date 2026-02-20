@@ -9,18 +9,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
-import com.schemafy.domain.erd.column.domain.exception.ColumnAutoIncrementNotAllowedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnCharsetNotAllowedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnDataTypeInvalidException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnLengthRequiredException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameDuplicateException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameInvalidException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameReservedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnPositionInvalidException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnPrecisionRequiredException;
-import com.schemafy.domain.erd.column.domain.exception.MultipleAutoIncrementColumnException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +40,7 @@ class ColumnValidatorTest {
     @DisplayName("blank이면 예외가 발생한다")
     void throwsWhenBlank(String name) {
       assertThatThrownBy(() -> ColumnValidator.validateName(name))
-          .isInstanceOf(ColumnNameInvalidException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
           .hasMessageContaining("blank");
     }
 
@@ -58,7 +50,7 @@ class ColumnValidatorTest {
       String longName = "a".repeat(41);
 
       assertThatThrownBy(() -> ColumnValidator.validateName(longName))
-          .isInstanceOf(ColumnNameInvalidException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
           .hasMessageContaining("40");
     }
 
@@ -67,7 +59,7 @@ class ColumnValidatorTest {
     @DisplayName("잘못된 형식이면 예외가 발생한다")
     void throwsWhenInvalidFormat(String name) {
       assertThatThrownBy(() -> ColumnValidator.validateName(name))
-          .isInstanceOf(ColumnNameInvalidException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
           .hasMessageContaining("invalid format");
     }
 
@@ -85,7 +77,7 @@ class ColumnValidatorTest {
     @DisplayName("예약어면 예외가 발생한다 (대문자)")
     void throwsForReservedKeywordsUppercase(String keyword) {
       assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(MYSQL, keyword))
-          .isInstanceOf(ColumnNameReservedException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_RESERVED))
           .hasMessageContaining("reserved keyword");
     }
 
@@ -95,7 +87,7 @@ class ColumnValidatorTest {
     @DisplayName("예약어면 예외가 발생한다 (소문자)")
     void throwsForReservedKeywordsLowercase(String keyword) {
       assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(MYSQL, keyword))
-          .isInstanceOf(ColumnNameReservedException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_RESERVED))
           .hasMessageContaining("reserved keyword");
     }
 
@@ -118,7 +110,7 @@ class ColumnValidatorTest {
     @DisplayName("null 벤더면 MySQL 기본값으로 검사한다")
     void usesDefaultVendorWhenNull() {
       assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(null, "SELECT"))
-          .isInstanceOf(ColumnNameReservedException.class);
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_RESERVED));
     }
 
     @ParameterizedTest
@@ -126,7 +118,7 @@ class ColumnValidatorTest {
     @DisplayName("확장된 예약어도 검사한다")
     void throwsForExtendedReservedKeywords(String keyword) {
       assertThatThrownBy(() -> ColumnValidator.validateReservedKeyword(MYSQL, keyword))
-          .isInstanceOf(ColumnNameReservedException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_RESERVED))
           .hasMessageContaining("reserved keyword");
     }
 
@@ -143,7 +135,7 @@ class ColumnValidatorTest {
       List<Column> columns = List.of(existingColumn);
 
       assertThatThrownBy(() -> ColumnValidator.validateNameUniqueness(columns, "existing_column", null))
-          .isInstanceOf(ColumnNameDuplicateException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_DUPLICATE))
           .hasMessageContaining("already exists");
     }
 
@@ -154,7 +146,7 @@ class ColumnValidatorTest {
       List<Column> columns = List.of(existingColumn);
 
       assertThatThrownBy(() -> ColumnValidator.validateNameUniqueness(columns, "existing_column", null))
-          .isInstanceOf(ColumnNameDuplicateException.class);
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.NAME_DUPLICATE));
     }
 
     @Test
@@ -219,7 +211,7 @@ class ColumnValidatorTest {
     @DisplayName("지원하지 않는 타입이면 예외가 발생한다")
     void throwsForUnsupportedTypes(String dataType) {
       assertThatThrownBy(() -> ColumnValidator.validateDataType(dataType))
-          .isInstanceOf(ColumnDataTypeInvalidException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.DATA_TYPE_INVALID))
           .hasMessageContaining("Unsupported");
     }
 
@@ -229,7 +221,7 @@ class ColumnValidatorTest {
     @DisplayName("blank면 예외가 발생한다")
     void throwsWhenBlank(String dataType) {
       assertThatThrownBy(() -> ColumnValidator.validateDataType(dataType))
-          .isInstanceOf(ColumnDataTypeInvalidException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.DATA_TYPE_INVALID))
           .hasMessageContaining("blank");
     }
 
@@ -244,12 +236,12 @@ class ColumnValidatorTest {
     @DisplayName("VARCHAR/CHAR는 length가 필수이다")
     void requiresLengthForVarcharAndChar(String dataType) {
       assertThatThrownBy(() -> ColumnValidator.validateLengthScale(dataType, null))
-          .isInstanceOf(ColumnLengthRequiredException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.LENGTH_REQUIRED))
           .hasMessageContaining("Length is required");
 
       var noLength = new ColumnLengthScale(null, 10, 2);
       assertThatThrownBy(() -> ColumnValidator.validateLengthScale(dataType, noLength))
-          .isInstanceOf(ColumnLengthRequiredException.class);
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.LENGTH_REQUIRED));
     }
 
     @ParameterizedTest
@@ -267,12 +259,12 @@ class ColumnValidatorTest {
     @DisplayName("DECIMAL/NUMERIC은 precision/scale이 필수이다")
     void requiresPrecisionScaleForDecimalAndNumeric(String dataType) {
       assertThatThrownBy(() -> ColumnValidator.validateLengthScale(dataType, null))
-          .isInstanceOf(ColumnPrecisionRequiredException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
           .hasMessageContaining("Precision and scale are required");
 
       var noScale = new ColumnLengthScale(255, null, null);
       assertThatThrownBy(() -> ColumnValidator.validateLengthScale(dataType, noScale))
-          .isInstanceOf(ColumnPrecisionRequiredException.class);
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED));
     }
 
     @ParameterizedTest
@@ -312,7 +304,7 @@ class ColumnValidatorTest {
     @DisplayName("비정수 타입이면 autoIncrement가 허용되지 않는다")
     void disallowsAutoIncrementForNonIntegerTypes(String dataType) {
       assertThatThrownBy(() -> ColumnValidator.validateAutoIncrement(dataType, true, List.of(), null))
-          .isInstanceOf(ColumnAutoIncrementNotAllowedException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED))
           .hasMessageContaining("only allowed for integer types");
     }
 
@@ -330,7 +322,7 @@ class ColumnValidatorTest {
       List<Column> columns = List.of(existingAutoIncrement);
 
       assertThatThrownBy(() -> ColumnValidator.validateAutoIncrement("INT", true, columns, null))
-          .isInstanceOf(MultipleAutoIncrementColumnException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.MULTIPLE_AUTO_INCREMENT))
           .hasMessageContaining("Only one auto-increment column");
     }
 
@@ -364,7 +356,7 @@ class ColumnValidatorTest {
     @DisplayName("비텍스트 타입이면 charset/collation이 허용되지 않는다")
     void disallowsCharsetForNonTextTypes(String dataType) {
       assertThatThrownBy(() -> ColumnValidator.validateCharsetAndCollation(dataType, "utf8mb4", null))
-          .isInstanceOf(ColumnCharsetNotAllowedException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.CHARSET_NOT_ALLOWED))
           .hasMessageContaining("only allowed for text types");
     }
 
@@ -403,7 +395,7 @@ class ColumnValidatorTest {
     @DisplayName("음수이면 예외가 발생한다")
     void throwsForNegative() {
       assertThatThrownBy(() -> ColumnValidator.validatePosition(-1))
-          .isInstanceOf(ColumnPositionInvalidException.class)
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.POSITION_INVALID))
           .hasMessageContaining("zero or positive");
     }
 

@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
@@ -20,8 +21,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintById
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 
@@ -145,7 +145,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
 
       then(deleteConstraintColumnPort).shouldHaveNoInteractions();
@@ -159,7 +159,7 @@ class RemoveConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.removeConstraintColumn(command))
-          .expectError(ConstraintColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_NOT_FOUND))
           .verify();
 
       then(deleteConstraintColumnPort).shouldHaveNoInteractions();

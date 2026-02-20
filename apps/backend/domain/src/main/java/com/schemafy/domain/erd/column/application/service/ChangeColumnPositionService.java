@@ -6,14 +6,14 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionUseCase;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnPositionPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnPositionInvalidException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -30,7 +30,7 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
   public Mono<MutationResult<Void>> changeColumnPosition(ChangeColumnPositionCommand command) {
     return Mono.defer(() -> {
       return getColumnByIdPort.findColumnById(command.columnId())
-          .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
+          .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
           .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
               .defaultIfEmpty(List.of())
               .flatMap(columns -> reorderColumns(column, columns, command.seqNo()))
@@ -42,13 +42,13 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
 
   private Mono<List<Column>> reorderColumns(Column targetColumn, List<Column> columns, int nextPosition) {
     if (columns.isEmpty()) {
-      return Mono.error(new ColumnPositionInvalidException("Column not found"));
+      return Mono.error(new DomainException(ColumnErrorCode.POSITION_INVALID, "Column not found"));
     }
 
     List<Column> reordered = new ArrayList<>(columns);
     int currentIndex = findIndex(reordered, targetColumn.id());
     if (currentIndex < 0) {
-      return Mono.error(new ColumnNotExistException("Column not found"));
+      return Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found"));
     }
 
     Column movingColumn = reordered.remove(currentIndex);

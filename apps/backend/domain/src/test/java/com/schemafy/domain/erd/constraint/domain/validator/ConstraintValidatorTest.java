@@ -10,19 +10,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintExpressionRequiredException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
-import com.schemafy.domain.erd.constraint.domain.exception.UniqueSameAsPrimaryKeyException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 
@@ -41,7 +34,7 @@ class ConstraintValidatorTest {
     @DisplayName("null이거나 빈 문자열이면 예외가 발생한다")
     void throwsWhenNullOrEmpty(String name) {
       assertThatThrownBy(() -> ConstraintValidator.validateName(name))
-          .isInstanceOf(ConstraintNameInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.NAME_INVALID));
     }
 
     @ParameterizedTest
@@ -49,7 +42,7 @@ class ConstraintValidatorTest {
     @DisplayName("공백 문자열이면 예외가 발생한다")
     void throwsWhenBlank(String name) {
       assertThatThrownBy(() -> ConstraintValidator.validateName(name))
-          .isInstanceOf(ConstraintNameInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.NAME_INVALID));
     }
 
     @Test
@@ -58,7 +51,7 @@ class ConstraintValidatorTest {
       String longName = "a".repeat(256);
 
       assertThatThrownBy(() -> ConstraintValidator.validateName(longName))
-          .isInstanceOf(ConstraintNameInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.NAME_INVALID));
     }
 
     @ParameterizedTest
@@ -88,7 +81,7 @@ class ConstraintValidatorTest {
     @DisplayName("음수면 예외가 발생한다")
     void throwsWhenNegative() {
       assertThatThrownBy(() -> ConstraintValidator.validatePosition(-1))
-          .isInstanceOf(ConstraintPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -117,7 +110,7 @@ class ConstraintValidatorTest {
       List<Integer> seqNos = List.of(-1, 0);
 
       assertThatThrownBy(() -> ConstraintValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(ConstraintPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -126,7 +119,7 @@ class ConstraintValidatorTest {
       List<Integer> seqNos = List.of(0, 0);
 
       assertThatThrownBy(() -> ConstraintValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(ConstraintPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -135,7 +128,7 @@ class ConstraintValidatorTest {
       List<Integer> seqNos = List.of(0, 2);
 
       assertThatThrownBy(() -> ConstraintValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(ConstraintPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -144,7 +137,7 @@ class ConstraintValidatorTest {
       List<Integer> seqNos = List.of(1, 2);
 
       assertThatThrownBy(() -> ConstraintValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(ConstraintPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -179,7 +172,7 @@ class ConstraintValidatorTest {
 
       assertThatThrownBy(() -> ConstraintValidator.validateColumnExistence(
           tableColumns, columnIds, "test_constraint"))
-          .isInstanceOf(ConstraintColumnNotExistException.class)
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_NOT_FOUND))
           .hasMessageContaining("col2");
     }
 
@@ -231,7 +224,7 @@ class ConstraintValidatorTest {
 
       assertThatThrownBy(() -> ConstraintValidator.validateColumnUniqueness(
           columnIds, "test_constraint"))
-          .isInstanceOf(ConstraintColumnDuplicateException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_DUPLICATE));
     }
 
     @Test
@@ -241,7 +234,7 @@ class ConstraintValidatorTest {
 
       assertThatThrownBy(() -> ConstraintValidator.validateColumnUniqueness(
           columnIds, "test_constraint"))
-          .isInstanceOf(ConstraintColumnDuplicateException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_DUPLICATE));
     }
 
     @Test
@@ -291,7 +284,7 @@ class ConstraintValidatorTest {
       assertThatThrownBy(() -> ConstraintValidator.validateDefaultColumnCardinality(
           ConstraintKind.DEFAULT,
           List.of("col1", "col2")))
-          .isInstanceOf(ConstraintColumnCountInvalidException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_COUNT_INVALID));
     }
 
     @Test
@@ -327,7 +320,7 @@ class ConstraintValidatorTest {
           List.of("col1"),
           "new_pk",
           null))
-          .isInstanceOf(ConstraintDefinitionDuplicateException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.DEFINITION_DUPLICATE));
     }
 
     @Test
@@ -409,7 +402,7 @@ class ConstraintValidatorTest {
           List.of("col1"),
           "uq_test",
           null))
-          .isInstanceOf(UniqueSameAsPrimaryKeyException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.UNIQUE_SAME_AS_PRIMARY_KEY));
     }
 
     @Test
@@ -482,7 +475,7 @@ class ConstraintValidatorTest {
     void throwsWhenCheckExprMissing(String checkExpr) {
       assertThatThrownBy(() -> ConstraintValidator.validateExpressionRequired(
           ConstraintKind.CHECK, checkExpr, null))
-          .isInstanceOf(ConstraintExpressionRequiredException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.EXPRESSION_REQUIRED));
     }
 
     @ParameterizedTest
@@ -492,7 +485,7 @@ class ConstraintValidatorTest {
     void throwsWhenDefaultExprMissing(String defaultExpr) {
       assertThatThrownBy(() -> ConstraintValidator.validateExpressionRequired(
           ConstraintKind.DEFAULT, null, defaultExpr))
-          .isInstanceOf(ConstraintExpressionRequiredException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.EXPRESSION_REQUIRED));
     }
 
     @Test
@@ -543,7 +536,7 @@ class ConstraintValidatorTest {
           constraints,
           ConstraintKind.PRIMARY_KEY,
           null))
-          .isInstanceOf(MultiplePrimaryKeyConstraintException.class);
+          .matches(DomainException.hasErrorCode(ConstraintErrorCode.MULTIPLE_PRIMARY_KEY));
     }
 
     @Test

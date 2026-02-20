@@ -1,12 +1,13 @@
 package com.schemafy.domain.erd.constraint.application.port.in;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 
 public record GetConstraintColumnsByConstraintIdQuery(String constraintId) {
 
   public GetConstraintColumnsByConstraintIdQuery {
     if (constraintId == null || constraintId.isBlank()) {
-      throw new InvalidValueException("constraintId must not be blank");
+      throw new DomainException(ConstraintErrorCode.INVALID_VALUE, "constraintId must not be blank");
     }
   }
 

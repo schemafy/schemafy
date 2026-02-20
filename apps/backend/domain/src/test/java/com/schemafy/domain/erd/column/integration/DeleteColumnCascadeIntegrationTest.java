@@ -11,14 +11,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnQuery;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnUseCase;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintUseCase;
@@ -150,11 +150,11 @@ class DeleteColumnCascadeIntegrationTest {
             .verifyComplete();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(pkColumnId)))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(fkColumnId)))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         StepVerifier.create(getConstraintsByTableIdUseCase.getConstraintsByTableId(
@@ -229,11 +229,11 @@ class DeleteColumnCascadeIntegrationTest {
             .verifyComplete();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(fkColumnId1)))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(fkColumnId2)))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
@@ -303,15 +303,15 @@ class DeleteColumnCascadeIntegrationTest {
             .verifyComplete();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(colAId)))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(colBId)))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         StepVerifier.create(getColumnUseCase.getColumn(new GetColumnQuery(colCId)))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
@@ -383,7 +383,7 @@ class DeleteColumnCascadeIntegrationTest {
     @DisplayName("FK 컬럼은 직접 삭제할 수 없다")
     void rejectsDeletionOfForeignKeyColumn() {
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)))
-          .expectError(ForeignKeyColumnProtectedException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.FK_PROTECTED))
           .verify();
 
       // FK 컬럼이 여전히 존재하는지 확인

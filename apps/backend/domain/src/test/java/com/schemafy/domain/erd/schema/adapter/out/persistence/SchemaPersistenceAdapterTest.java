@@ -9,8 +9,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.config.R2dbcTestConfiguration;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import reactor.test.StepVerifier;
@@ -133,7 +134,7 @@ class SchemaPersistenceAdapterTest {
     @DisplayName("존재하지 않는 스키마면 예외를 발생시킨다")
     void throwsWhenSchemaNotExists() {
       StepVerifier.create(sut.changeSchemaName("non-existent-id", "new_name"))
-          .expectError(SchemaNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NOT_FOUND))
           .verify();
     }
 

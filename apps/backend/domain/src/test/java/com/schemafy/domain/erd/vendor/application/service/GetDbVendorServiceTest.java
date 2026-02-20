@@ -8,9 +8,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.vendor.application.port.in.GetDbVendorQuery;
 import com.schemafy.domain.erd.vendor.application.port.out.GetDbVendorByDisplayNamePort;
-import com.schemafy.domain.erd.vendor.domain.exception.DbVendorNotExistException;
+import com.schemafy.domain.erd.vendor.domain.exception.VendorErrorCode;
 import com.schemafy.domain.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
@@ -73,7 +74,7 @@ class GetDbVendorServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.getDbVendor(query))
-            .expectError(DbVendorNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(VendorErrorCode.NOT_FOUND))
             .verify();
 
         then(getDbVendorByDisplayNamePort).should().findByDisplayName(query.displayName());

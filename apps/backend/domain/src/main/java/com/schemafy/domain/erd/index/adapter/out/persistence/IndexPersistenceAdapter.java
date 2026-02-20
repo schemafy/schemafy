@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexNamePort;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexTypePort;
 import com.schemafy.domain.erd.index.application.port.out.CreateIndexPort;
@@ -14,7 +15,7 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.domain.erd.index.application.port.out.IndexExistsPort;
 import com.schemafy.domain.erd.index.domain.Index;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 
 import lombok.RequiredArgsConstructor;
@@ -95,7 +96,7 @@ class IndexPersistenceAdapter implements
 
   private Mono<IndexEntity> findIndexOrError(String indexId) {
     return indexRepository.findById(indexId)
-        .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found: " + indexId)));
+        .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found: " + indexId)));
   }
 
 }

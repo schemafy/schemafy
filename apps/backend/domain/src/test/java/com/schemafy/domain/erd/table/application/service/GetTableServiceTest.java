@@ -8,8 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -75,7 +76,7 @@ class GetTableServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.getTable(query))
-            .expectError(TableNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
             .verify();
       }
 
