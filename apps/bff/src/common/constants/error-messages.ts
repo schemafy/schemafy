@@ -35,8 +35,14 @@ const notFound = (item: string): ErrorInfo => ({
 
 export const ErrorMessages: Record<string, ErrorInfo> = {
   COMMON_SYSTEM_ERROR: SOMETHING_WENT_WRONG,
-  COMMON_INVALID_PARAMETER: { message: 'Invalid parameter.', category: ErrorCategory.SILENT },
-  COMMON_API_VERSION_MISSING: { message: 'API version is missing.', category: ErrorCategory.SILENT },
+  COMMON_INVALID_PARAMETER: {
+    message: 'Invalid parameter.',
+    category: ErrorCategory.SILENT,
+  },
+  COMMON_API_VERSION_MISSING: {
+    message: 'API version is missing.',
+    category: ErrorCategory.SILENT,
+  },
   COMMON_API_VERSION_INVALID: {
     message: 'Invalid API version format. (e.g., v1.0, v2.1)',
     category: ErrorCategory.SILENT,
@@ -236,9 +242,18 @@ export const ErrorMessages: Record<string, ErrorInfo> = {
     message: 'Invalid share link. Please check and try again.',
     category: ErrorCategory.USER_FEEDBACK,
   },
-  SHARE_LINK_INVALID_PROJECT_ID: { message: 'Invalid project ID.', category: ErrorCategory.SILENT },
-  SHARE_LINK_INVALID_TOKEN_HASH: { message: 'Invalid token hash.', category: ErrorCategory.SILENT },
-  SHARE_LINK_INVALID_ROLE: { message: 'Invalid role.', category: ErrorCategory.SILENT },
+  SHARE_LINK_INVALID_PROJECT_ID: {
+    message: 'Invalid project ID.',
+    category: ErrorCategory.SILENT,
+  },
+  SHARE_LINK_INVALID_TOKEN_HASH: {
+    message: 'Invalid token hash.',
+    category: ErrorCategory.SILENT,
+  },
+  SHARE_LINK_INVALID_ROLE: {
+    message: 'Invalid role.',
+    category: ErrorCategory.SILENT,
+  },
   SHARE_LINK_INVALID_EXPIRATION: {
     message: 'Expiration date must be in the future.',
     category: ErrorCategory.USER_FEEDBACK,

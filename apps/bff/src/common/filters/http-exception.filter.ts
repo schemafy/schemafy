@@ -233,7 +233,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
     );
   }
 
-  private isProblemDetailsResponse(data: unknown): data is BackendProblemDetails {
+  private isProblemDetailsResponse(
+    data: unknown,
+  ): data is BackendProblemDetails {
     if (typeof data !== 'object' || data === null) {
       return false;
     }
