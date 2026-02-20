@@ -1,62 +1,147 @@
 import type { Node } from '@xyflow/react';
-import type { Table, Column, Constraint } from '@/types';
-import type { TableData, ColumnType, ConstraintKind, Point } from '../types';
+import type { Constraint } from '@/types';
+import type {
+  TableData,
+  ColumnType,
+  ConstraintKind,
+  Point,
+  IndexDataType,
+  IndexSortDir,
+  IndexType,
+} from '../types';
+import type { TableSnapshotResponse } from '../api';
 
-type TableExtra = {
+export type TableExtra = {
   position?: Point;
 };
 
-export const hasConstraint = (
-  constraints: Constraint[],
-  columnId: string,
-  kind: ConstraintKind,
-): boolean => {
-  const checkSingleColumn = kind !== 'PRIMARY_KEY';
+export const parseTableExtra = (extraString: string | null): TableExtra => {
+  if (!extraString) return {};
 
-  return constraints.some((c) => {
-    if (c.kind !== kind) return false;
-    if (checkSingleColumn && c.columns.length !== 1) return false;
-    return c.columns.some((cc) => cc.columnId === columnId);
-  });
+  try {
+    return JSON.parse(extraString) as TableExtra;
+  } catch {
+    return {};
+  }
 };
 
-export const transformColumn = (
-  col: Column,
-  constraints: Constraint[],
+type ConstraintMap = {
+  primaryKeys: Set<string>;
+  notNulls: Set<string>;
+  uniques: Set<string>;
+};
+
+const buildConstraintMap = (constraints: Constraint[]): ConstraintMap => {
+  const map: ConstraintMap = {
+    primaryKeys: new Set(),
+    notNulls: new Set(),
+    uniques: new Set(),
+  };
+
+  constraints.forEach((constraint) => {
+    const columnIds = constraint.columns.map((c) => c.columnId);
+
+    switch (constraint.kind) {
+      case 'PRIMARY_KEY':
+        columnIds.forEach((id) => map.primaryKeys.add(id));
+        break;
+      case 'NOT_NULL':
+        if (columnIds.length === 1) {
+          map.notNulls.add(columnIds[0]);
+        }
+        break;
+      case 'UNIQUE':
+        if (columnIds.length === 1) {
+          map.uniques.add(columnIds[0]);
+        }
+        break;
+    }
+  });
+
+  return map;
+};
+
+const transformColumnWithMap = (
+  columnId: string,
+  columnName: string,
+  dataType: string,
+  constraintMap: ConstraintMap,
+  foreignKeyColumnIds: Set<string>,
 ): ColumnType => {
-  const isPrimaryKey = hasConstraint(constraints, col.id, 'PRIMARY_KEY');
-  const isNotNull = hasConstraint(constraints, col.id, 'NOT_NULL');
-  const isUnique = isPrimaryKey || hasConstraint(constraints, col.id, 'UNIQUE');
+  const isPrimaryKey = constraintMap.primaryKeys.has(columnId);
+  const isForeignKey = foreignKeyColumnIds.has(columnId);
+  const isNotNull = constraintMap.notNulls.has(columnId);
+  const isUnique = isPrimaryKey || constraintMap.uniques.has(columnId);
 
   return {
-    id: col.id,
-    name: col.name,
-    type: col.dataType || 'VARCHAR',
+    id: columnId,
+    name: columnName,
+    type: dataType || 'VARCHAR',
     isPrimaryKey,
+    isForeignKey,
     isNotNull,
     isUnique,
   };
 };
 
-export const transformTableToNode = (
-  table: Table,
+export const transformSnapshotToNode = (
+  snapshot: TableSnapshotResponse,
   schemaId: string,
 ): Node<TableData> => {
-  const extra = (table.extra || {}) as TableExtra;
+  const extra = parseTableExtra(snapshot.table.extra);
   const position = extra.position || { x: 0, y: 0 };
-  const columns = table.columns.map((col) =>
-    transformColumn(col, table.constraints),
+
+  const constraints: Constraint[] = snapshot.constraints.map((c) => ({
+    ...c.constraint,
+    kind: c.constraint.kind as ConstraintKind,
+    columns: c.columns.map((col) => ({ ...col, isAffected: false })),
+    isAffected: false,
+  }));
+
+  const constraintMap = buildConstraintMap(constraints);
+
+  const foreignKeyColumnIds = new Set<string>();
+  snapshot.relationships.forEach((rel) => {
+    if (rel.relationship.fkTableId === snapshot.table.id) {
+      rel.columns.forEach((col) => foreignKeyColumnIds.add(col.fkColumnId));
+    }
+  });
+
+  const columns = snapshot.columns.map((col) =>
+    transformColumnWithMap(
+      col.id,
+      col.name,
+      col.dataType,
+      constraintMap,
+      foreignKeyColumnIds,
+    ),
   );
 
+  const indexes: IndexDataType[] = snapshot.indexes.map((indexSnapshot) => ({
+    id: indexSnapshot.index.id,
+    tableId: indexSnapshot.index.tableId,
+    name: indexSnapshot.index.name,
+    type: indexSnapshot.index.type as IndexType,
+    columns: indexSnapshot.columns.map((col) => ({
+      id: col.id,
+      indexId: col.indexId,
+      columnId: col.columnId,
+      seqNo: col.seqNo,
+      sortDir: col.sortDirection as IndexSortDir,
+      isAffected: false,
+    })),
+    isAffected: false,
+  }));
+
   return {
-    id: table.id,
+    id: snapshot.table.id,
     type: 'table',
     position,
     data: {
-      tableName: table.name,
+      tableName: snapshot.table.name,
       columns,
-      indexes: table.indexes || [],
-      constraints: table.constraints || [],
+      indexes,
+      constraints,
       schemaId,
     },
   };

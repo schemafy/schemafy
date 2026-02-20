@@ -82,6 +82,14 @@ export const EditModeColumn = ({
     onUpdateColumn(column.id, 'name', value);
   };
 
+  const isFk = column.isForeignKey;
+  const isDeleteDisabled = isLastColumn || isFk;
+  const deleteTitle = isFk
+    ? 'Cannot delete a foreign key column'
+    : isLastColumn
+      ? 'Cannot delete the last column'
+      : 'Remove Column';
+
   return (
     <div className="p-2 space-y-2 text-schemafy-text">
       <div className="flex items-center gap-2">
@@ -101,20 +109,19 @@ export const EditModeColumn = ({
 
         <TypeSelector
           value={column.type}
+          disabled={isFk}
           onChange={(value) => onUpdateColumn(column.id, 'type', value)}
         />
 
         <button
           onClick={() => onRemoveColumn(column.id)}
-          disabled={isLastColumn}
+          disabled={isDeleteDisabled}
           className={`p-1 rounded flex-shrink-0 ${
-            isLastColumn
+            isDeleteDisabled
               ? 'text-schemafy-dark-gray cursor-not-allowed'
               : 'text-schemafy-destructive hover:bg-red-100'
           }`}
-          title={
-            isLastColumn ? 'Cannot delete the last column' : 'Remove Column'
-          }
+          title={deleteTitle}
         >
           <Trash2 size={12} />
         </button>
@@ -126,15 +133,17 @@ export const EditModeColumn = ({
 };
 
 export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
+  const nameClassName = column.isPrimaryKey
+    ? 'font-bold text-schemafy-yellow'
+    : column.isForeignKey
+      ? 'font-bold text-schemafy-green'
+      : 'text-schemafy-text';
+
   return (
     <div className="p-2 text-schemafy-text">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <span
-            className={`text-sm ${column.isPrimaryKey ? 'font-bold text-schemafy-yellow' : 'text-schemafy-text'}`}
-          >
-            {column.name}
-          </span>
+          <span className={`text-sm ${nameClassName}`}>{column.name}</span>
           <span className="text-xs text-schemafy-dark-gray font-mono">
             ({column.type})
           </span>
@@ -165,10 +174,25 @@ export const DragHandle = ({
   );
 };
 
-export const TypeSelector = ({ value, onChange }: TypeSelectorProps) => {
+export const TypeSelector = ({
+  value,
+  disabled,
+  onChange,
+}: TypeSelectorProps) => {
   return (
-    <Select onValueChange={(value) => onChange(value)} value={value}>
-      <SelectTrigger className="text-xs font-mono p-1.5 border border-schemafy-light-gray rounded focus:outline-none w-[6rem]">
+    <Select
+      onValueChange={(value) => onChange(value)}
+      value={value}
+      disabled={disabled}
+    >
+      <SelectTrigger
+        className="text-xs font-mono p-1.5 border border-schemafy-light-gray rounded focus:outline-none w-[6rem]"
+        title={
+          disabled
+            ? 'Cannot change the type of a foreign key column'
+            : undefined
+        }
+      >
         <SelectValue placeholder={value} />
       </SelectTrigger>
       <SelectContent popover="auto">
@@ -192,12 +216,18 @@ export const ColumnConstraints = ({
     <div className="flex flex-wrap gap-3 text-xs ml-4">
       {CONSTRAINTS.filter(({ visible }) => visible).map(
         ({ key, label, color }) => {
-          const isDisabled = column.isPrimaryKey && key === 'isNotNull';
+          const isFkDisabled = column.isForeignKey && key === 'isPrimaryKey';
+          const isDisabled =
+            isFkDisabled || (column.isPrimaryKey && key === 'isNotNull');
+          const title = isFkDisabled
+            ? 'Cannot change PK constraint on a foreign key column'
+            : undefined;
 
           return (
             <label
               key={key}
               className={`flex items-center gap-1 ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+              title={title}
             >
               <input
                 type="checkbox"
@@ -218,20 +248,18 @@ export const ColumnConstraints = ({
 };
 
 export const ColumnBadges = ({ column }: ColumnBadgesProps) => {
-  if (column.isPrimaryKey) {
-    return (
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-schemafy-yellow font-medium">PK</span>
-      </div>
-    );
-  }
-
   return (
     <div className="flex items-center gap-1">
-      {column.isNotNull && (
+      {column.isPrimaryKey && (
+        <span className="text-xs text-schemafy-yellow font-medium">PK</span>
+      )}
+      {column.isForeignKey && (
+        <span className="text-xs text-schemafy-green font-medium">FK</span>
+      )}
+      {!column.isPrimaryKey && column.isNotNull && (
         <span className="text-xs text-schemafy-destructive font-medium">*</span>
       )}
-      {column.isUnique && (
+      {!column.isPrimaryKey && column.isUnique && (
         <span className="text-xs text-schemafy-blue font-medium">UQ</span>
       )}
     </div>

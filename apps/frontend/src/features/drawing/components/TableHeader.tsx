@@ -1,4 +1,4 @@
-import { Edit, Check, Settings, Plus, Trash } from 'lucide-react';
+import { Edit, Check, Settings, Plus, Trash, Loader2 } from 'lucide-react';
 
 interface TableHeaderProps {
   tableName: string;
@@ -11,6 +11,7 @@ interface TableHeaderProps {
   onEditingNameChange: (name: string) => void;
   onToggleColumnEditMode: () => void;
   onSaveAllPendingChanges: () => void;
+  isAddingColumn: boolean;
   onAddColumn: () => void;
   onDeleteTable: () => void;
 }
@@ -26,6 +27,7 @@ export const TableHeader = ({
   onEditingNameChange,
   onToggleColumnEditMode,
   onSaveAllPendingChanges,
+  isAddingColumn,
   onAddColumn,
   onDeleteTable,
 }: TableHeaderProps) => {
@@ -89,10 +91,15 @@ export const TableHeader = ({
         )}
         <button
           onClick={onAddColumn}
-          className="p-1 hover:bg-schemafy-dark-gray rounded"
+          disabled={isAddingColumn}
+          className="p-1 hover:bg-schemafy-dark-gray rounded disabled:opacity-50"
           title="Add Column"
         >
-          <Plus size={14} />
+          {isAddingColumn ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Plus size={14} />
+          )}
         </button>
         <button
           onClick={onDeleteTable}

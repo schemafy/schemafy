@@ -23,6 +23,14 @@ export class SchemaController {
     return this.schemaService.createSchema(data, authHeader);
   }
 
+  @Get('projects/:projectId/schemas')
+  async getSchemasByProjectId(
+    @Param('projectId') projectId: string,
+    @Headers('authorization') authHeader: string,
+  ) {
+    return this.schemaService.getSchemasByProjectId(projectId, authHeader);
+  }
+
   @Get('schemas/:schemaId')
   async getSchema(
     @Param('schemaId') schemaId: string,

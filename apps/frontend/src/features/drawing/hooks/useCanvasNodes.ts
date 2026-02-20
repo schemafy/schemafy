@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import type { NodeChange } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import type { TableData } from '../types';
@@ -9,6 +9,10 @@ interface UseCanvasNodesParams {
   memos: Node<MemoData>[];
   onTablesChange: (changes: NodeChange[]) => void;
   onMemosChange: (changes: NodeChange[]) => void;
+  onTableDragStop?: (event: React.MouseEvent, node: Node<TableData>) => void;
+  onMemoDragStop?: (event: React.MouseEvent, node: Node<MemoData>) => void;
+  onTablesDelete?: (nodes: Node<TableData>[]) => void;
+  onMemosDelete?: (nodes: Node<MemoData>[]) => void;
 }
 
 export const useCanvasNodes = ({
@@ -16,8 +20,15 @@ export const useCanvasNodes = ({
   memos,
   onTablesChange,
   onMemosChange,
+  onTableDragStop,
+  onMemoDragStop,
+  onTablesDelete,
+  onMemosDelete,
 }: UseCanvasNodesParams) => {
   const nodes = useMemo(() => [...tables, ...memos], [tables, memos]);
+
+  const tableIds = useMemo(() => new Set(tables.map((t) => t.id)), [tables]);
+  const memoIds = useMemo(() => new Set(memos.map((m) => m.id)), [memos]);
 
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -27,12 +38,9 @@ export const useCanvasNodes = ({
       changes.forEach((change) => {
         if (!('id' in change)) return;
 
-        const isTable = tables.some((t) => t.id === change.id);
-        const isMemo = memos.some((m) => m.id === change.id);
-
-        if (isTable) {
+        if (tableIds.has(change.id)) {
           tableChanges.push(change);
-        } else if (isMemo) {
+        } else if (memoIds.has(change.id)) {
           memoChanges.push(change);
         }
       });
@@ -45,8 +53,37 @@ export const useCanvasNodes = ({
         onMemosChange(memoChanges);
       }
     },
-    [tables, memos, onTablesChange, onMemosChange],
+    [tableIds, memoIds, onTablesChange, onMemosChange],
   );
 
-  return { nodes, handleNodesChange };
+  const handleNodeDragStop = (event: React.MouseEvent, node: Node) => {
+    if (tableIds.has(node.id) && onTableDragStop) {
+      onTableDragStop(event, node as Node<TableData>);
+    } else if (memoIds.has(node.id) && onMemoDragStop) {
+      onMemoDragStop(event, node as Node<MemoData>);
+    }
+  };
+
+  const handleNodesDelete = (deletedNodes: Node[]) => {
+    const tableNodes: Node<TableData>[] = [];
+    const memoNodes: Node<MemoData>[] = [];
+
+    deletedNodes.forEach((node) => {
+      if (tableIds.has(node.id)) {
+        tableNodes.push(node as Node<TableData>);
+      } else if (memoIds.has(node.id)) {
+        memoNodes.push(node as Node<MemoData>);
+      }
+    });
+
+    if (tableNodes.length > 0 && onTablesDelete) {
+      onTablesDelete(tableNodes);
+    }
+
+    if (memoNodes.length > 0 && onMemosDelete) {
+      onMemosDelete(memoNodes);
+    }
+  };
+
+  return { nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete };
 };

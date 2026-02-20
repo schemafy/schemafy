@@ -1,4 +1,5 @@
-import { ThemeProvider } from '@/lib';
+import { ThemeProvider, queryClient } from '@/lib';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
@@ -10,29 +11,31 @@ function App() {
   useAuthBootstrap();
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
-      <TooltipProvider>
-        <ReactFlowProvider>
-          <Router>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/signup" element={<SignUpPage />} />
-                <Route path="/signin" element={<SignInPage />} />
-                <Route
-                  path="/canvas"
-                  element={
-                    <RequireAuth>
-                      <CanvasPage />
-                    </RequireAuth>
-                  }
-                />
-              </Routes>
-            </Layout>
-          </Router>
-        </ReactFlowProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
+        <TooltipProvider>
+          <ReactFlowProvider>
+            <Router>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/signup" element={<SignUpPage />} />
+                  <Route path="/signin" element={<SignInPage />} />
+                  <Route
+                    path="/canvas"
+                    element={
+                      <RequireAuth>
+                        <CanvasPage />
+                      </RequireAuth>
+                    }
+                  />
+                </Routes>
+              </Layout>
+            </Router>
+          </ReactFlowProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

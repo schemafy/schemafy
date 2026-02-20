@@ -108,6 +108,14 @@ export const ErrorMessages: Record<string, ErrorInfo> = {
   },
   E011: notFound('Memo'),
   E012: notFound('Comment'),
+  E013: {
+    message: 'Schema name already exists. Please use a different name.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  E014: {
+    message: 'Table name already exists. Please use a different name.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
 
   W001: notFound('Workspace'),
   W002: {

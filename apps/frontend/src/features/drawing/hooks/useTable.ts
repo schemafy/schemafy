@@ -1,34 +1,35 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
-import type { ErdStore } from '@/store/erd.store';
+import { useChangeTableName, useDeleteTable } from './useTableMutations';
 
 interface UseTableProps {
-  erdStore: ErdStore;
   schemaId: string;
   tableId: string;
   tableName: string;
 }
 
-export const useTable = ({
-  erdStore,
-  schemaId,
-  tableId,
-  tableName,
-}: UseTableProps) => {
+export const useTable = ({ schemaId, tableId, tableName }: UseTableProps) => {
   const [isEditingTableName, setIsEditingTableName] = useState(false);
   const [editingTableName, setEditingTableName] = useState(tableName);
 
+  const changeTableNameMutation = useChangeTableName(schemaId);
+  const deleteTableMutation = useDeleteTable(schemaId);
+
   const saveTableName = () => {
-    try {
-      erdStore.changeTableName(schemaId, tableId, editingTableName);
-      setIsEditingTableName(false);
-    } catch {
-      toast.error('Failed to save table name');
-    }
+    changeTableNameMutation.mutate(
+      {
+        tableId,
+        data: { newName: editingTableName },
+      },
+      {
+        onSuccess: () => {
+          setIsEditingTableName(false);
+        },
+      },
+    );
   };
 
   const deleteTable = () => {
-    erdStore.deleteTable(schemaId, tableId);
+    deleteTableMutation.mutate(tableId);
   };
 
   return {

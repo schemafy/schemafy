@@ -1,18 +1,19 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useRelationships } from './useRelationships';
 import { useTables } from './useTables';
 import { useViewport } from './useViewport';
-import { useCanvasInitialization } from './useCanvasInitialization';
 import { useCanvasKeyboard } from './useCanvasKeyboard';
 import { useCanvasNodes } from './useCanvasNodes';
 import { useMemoContext } from '../../memo/hooks/useMemoStore';
+import { useSelectedSchema } from '../contexts';
 import type { RelationshipConfig, Point } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 
 const CURSOR_THROTTLE_MS = 100;
 
 export const useCanvasController = () => {
+  const { projectId } = useSelectedSchema();
   const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
 
@@ -31,7 +32,12 @@ export const useCanvasController = () => {
     null,
   );
 
-  useCanvasInitialization();
+  useEffect(() => {
+    collaborationStore.connect(projectId);
+    return () => {
+      collaborationStore.disconnect();
+    };
+  }, [projectId]);
 
   useCanvasKeyboard({
     chatInputPosition,
@@ -41,7 +47,8 @@ export const useCanvasController = () => {
   });
 
   const { handleMoveEnd } = useViewport();
-  const { tables, addTable, onTablesChange } = useTables();
+  const { tables, addTable, onTablesChange, onNodeDragStop, onNodesDelete } =
+    useTables();
   const { memos, onMemosChange, createMemo } = useMemoContext();
 
   const {
@@ -55,16 +62,19 @@ export const useCanvasController = () => {
     onReconnectEnd,
     updateRelationshipConfig,
     deleteRelationship,
-    changeRelationshipName,
+    updateRelationshipName,
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
-  const { nodes, handleNodesChange } = useCanvasNodes({
-    tables,
-    memos,
-    onTablesChange,
-    onMemosChange,
-  });
+  const { nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete } =
+    useCanvasNodes({
+      tables,
+      memos,
+      onTablesChange,
+      onMemosChange,
+      onTableDragStop: onNodeDragStop,
+      onTablesDelete: onNodesDelete,
+    });
 
   const handleMemoCancel = () => {
     setTempMemoPosition(null);
@@ -155,6 +165,8 @@ export const useCanvasController = () => {
     },
     handlers: {
       handleNodesChange,
+      handleNodeDragStop,
+      handleNodesDelete,
       onRelationshipsChange,
       handleMoveEnd,
       onConnect,
@@ -163,7 +175,7 @@ export const useCanvasController = () => {
       onReconnectStart,
       onReconnectEnd,
       updateRelationshipConfig,
-      changeRelationshipName,
+      updateRelationshipName,
       deleteRelationship,
       handleMemoCancel,
       handleMemoCreate,

@@ -1,11 +1,18 @@
-import { ulid } from 'ulid';
-import type { ErdStore } from '@/store/erd.store';
 import type { IndexType, IndexSortDir } from '../types';
 import type { Index } from '@/types';
 import { generateUniqueName } from '../utils/nameGenerator';
+import {
+  useCreateIndex,
+  useDeleteIndex,
+  useChangeIndexName,
+  useChangeIndexType,
+  useAddIndexColumn,
+  useRemoveIndexColumn,
+  useChangeIndexColumnSortDirection,
+} from './useIndexMutations';
+import { useDebouncedMutation } from './useDebouncedMutation';
 
 interface UseIndexesProps {
-  erdStore: ErdStore;
   schemaId: string;
   tableId: string;
   tableName: string;
@@ -13,88 +20,88 @@ interface UseIndexesProps {
 }
 
 export const useIndexes = ({
-  erdStore,
   schemaId,
   tableId,
   tableName,
   indexes,
 }: UseIndexesProps) => {
+  const createIndexMutation = useCreateIndex(schemaId);
+  const deleteIndexMutation = useDeleteIndex(schemaId);
+  const changeIndexNameMutation = useChangeIndexName(schemaId);
+  const changeIndexTypeMutation = useChangeIndexType(schemaId);
+  const addColumnMutation = useAddIndexColumn(schemaId);
+  const removeColumnMutation = useRemoveIndexColumn(schemaId);
+  const changeSortDirMutation = useChangeIndexColumnSortDirection(schemaId);
+
+  const debouncedChangeIndexName = useDebouncedMutation(
+    changeIndexNameMutation,
+  );
+
   const createIndex = () => {
     const existingIndexNames = indexes.map((idx) => idx.name);
 
-    erdStore.createIndex(schemaId, tableId, {
-      id: ulid(),
+    createIndexMutation.mutate({
+      tableId,
       name: generateUniqueName(existingIndexNames, `idx_${tableName}_`),
-      type: 'BTREE' as IndexType,
-      comment: null,
-      columns: [],
-      isAffected: false,
+      type: 'BTREE',
     });
   };
 
   const deleteIndex = (indexId: string) => {
-    erdStore.deleteIndex(schemaId, tableId, indexId);
+    deleteIndexMutation.mutate(indexId);
   };
 
-  const changeIndexName = (indexId: string, newName: string) => {
-    erdStore.changeIndexName(schemaId, tableId, indexId, newName);
+  const updateIndexName = (indexId: string, newName: string) => {
+    debouncedChangeIndexName.mutate({
+      indexId,
+      data: { newName },
+    });
   };
 
-  const changeIndexType = (indexId: string, newType: IndexType) => {
-    const index = indexes.find((idx) => idx.id === indexId);
-    if (!index) return;
-
-    erdStore.deleteIndex(schemaId, tableId, indexId);
-    erdStore.createIndex(schemaId, tableId, {
-      ...index,
-      type: newType,
+  const updateIndexType = (indexId: string, newType: IndexType) => {
+    changeIndexTypeMutation.mutate({
+      indexId,
+      data: { type: newType },
     });
   };
 
   const addColumnToIndex = (indexId: string, columnId: string) => {
     const index = indexes.find((idx) => idx.id === indexId);
     if (index) {
-      erdStore.addColumnToIndex(schemaId, tableId, indexId, {
-        id: ulid(),
-        columnId,
-        seqNo: index.columns.length,
-        sortDir: 'ASC' as IndexSortDir,
-        isAffected: false,
+      addColumnMutation.mutate({
+        indexId,
+        data: {
+          columnId,
+          seqNo: index.columns.length,
+          sortDirection: 'ASC',
+        },
       });
     }
   };
 
-  const removeColumnFromIndex = (indexId: string, indexColumnId: string) => {
-    erdStore.removeColumnFromIndex(schemaId, tableId, indexId, indexColumnId);
+  const removeColumnFromIndex = (indexColumnId: string) => {
+    removeColumnMutation.mutate(indexColumnId);
   };
 
-  const changeSortDir = (
-    indexId: string,
-    indexColumnId: string,
-    sortDir: IndexSortDir,
-  ) => {
-    const index = indexes.find((idx) => idx.id === indexId);
-    if (!index) return;
-
-    const indexColumn = index.columns.find((col) => col.id === indexColumnId);
-    if (!indexColumn) return;
-
-    erdStore.deleteIndex(schemaId, tableId, indexId);
-    erdStore.createIndex(schemaId, tableId, {
-      ...index,
-      columns: index.columns.map((col) =>
-        col.id === indexColumnId ? { ...col, sortDir } : col,
-      ),
+  const updateSortDir = (indexColumnId: string, sortDir: IndexSortDir) => {
+    changeSortDirMutation.mutate({
+      indexColumnId,
+      data: { sortDirection: sortDir },
     });
+  };
+
+  const saveAllPendingChanges = () => {
+    debouncedChangeIndexName.flush();
   };
 
   return {
     createIndex,
     deleteIndex,
-    changeIndexName,
-    changeIndexType,
+    updateIndexName,
+    updateIndexType,
     addColumnToIndex,
     removeColumnFromIndex,
-    changeSortDir,
+    updateSortDir,
+    saveAllPendingChanges,
   };
 };

@@ -13,7 +13,7 @@ export type ConstraintKind =
   | 'DEFAULT'
   | 'NOT_NULL';
 export type RelationshipKind = 'IDENTIFYING' | 'NON_IDENTIFYING';
-export type RelationshipCardinality = '1:1' | '1:N';
+export type RelationshipCardinality = 'ONE_TO_ONE' | 'ONE_TO_MANY';
 export type RelationshipAction =
   | 'NO_ACTION'
   | 'RESTRICT'

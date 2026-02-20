@@ -1,164 +1,148 @@
 import type { Connection, Edge } from '@xyflow/react';
-import { ulid } from 'ulid';
-import { toast } from 'sonner';
-import type { Relationship, Schema } from '@/types';
+import type {
+  TableSnapshotResponse,
+  RelationshipSnapshotResponse,
+  ConstraintSnapshotResponse,
+} from '../api';
 import {
   RELATIONSHIP_TYPES,
   RELATIONSHIP_STYLE_TYPES,
-  type RelationshipConfig,
   type RelationshipType,
   type RelationshipExtra,
+  type ConnectionValidationResult,
 } from '../types';
 
-export const getRelationshipType = (cardinality: string): RelationshipType => {
-  return cardinality === '1:N' ? 'one-to-many' : 'one-to-one';
+const getRelationshipType = (cardinality: string): RelationshipType => {
+  return cardinality === 'ONE_TO_MANY' ? 'one-to-many' : 'one-to-one';
 };
 
-export const getRelationshipStyle = (isNonIdentifying: boolean) => {
+const getRelationshipStyle = (isNonIdentifying: boolean) => {
   return isNonIdentifying
     ? RELATIONSHIP_STYLE_TYPES.dashed
     : RELATIONSHIP_STYLE_TYPES.solid;
 };
 
-export const findRelationshipInSchema = (
-  schema: Schema,
-  relationshipId: string,
-): Relationship | undefined => {
-  for (const table of schema.tables) {
-    const relationship = table.relationships.find(
-      (r) => r.id === relationshipId,
-    );
-    if (relationship) return relationship;
-  }
-  return undefined;
-};
-
-interface CreateRelationshipParams {
-  schema: Schema;
-  connection: Connection;
-  relationshipConfig: RelationshipConfig;
-}
-
-export const createRelationshipFromConnection = ({
-  schema,
-  connection,
-  relationshipConfig,
-}: CreateRelationshipParams): Relationship | null => {
-  if (!connection.source || !connection.target) {
-    return null;
-  }
-
-  const sourceTable = schema.tables.find((t) => t.id === connection.source);
-  if (!sourceTable) {
-    toast.error('Source table not found');
-    return null;
-  }
-
-  const targetTable = schema.tables.find((t) => t.id === connection.target);
-  if (!targetTable) {
-    toast.error('Target table not found');
-    return null;
-  }
-
-  const targetPk = targetTable.constraints.find(
-    (c) => c.kind === 'PRIMARY_KEY',
-  );
-
-  if (!targetPk || targetPk.columns.length === 0) {
-    toast.error(
-      'Target table must have a primary key to create a relationship',
-    );
-    return null;
-  }
-
-  const targetPkColumnIds = targetPk.columns.map((c) => c.columnId);
-
-  const relId = ulid();
-  const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
-  const kind = relationshipConfig.isNonIdentifying
-    ? 'NON_IDENTIFYING'
-    : 'IDENTIFYING';
-
-  const relationshipColumns = targetPkColumnIds.map((pkColId, index) => {
-    return {
-      id: ulid(),
-      relationshipId: relId,
-      fkColumnId: ulid(),
-      pkColumnId: pkColId,
-      seqNo: index + 1,
-      isAffected: false,
-    };
-  });
+export const convertRelationshipSnapshotToEdge = (
+  snapshot: RelationshipSnapshotResponse,
+): Edge => {
+  const { relationship } = snapshot;
+  const extra = parseRelationshipExtra(relationship.extra);
+  const relationshipType = getRelationshipType(relationship.cardinality);
+  const isNonIdentifying = relationship.kind === 'NON_IDENTIFYING';
+  const style = getRelationshipStyle(isNonIdentifying);
+  const baseConfig = RELATIONSHIP_TYPES[relationshipType];
 
   return {
-    id: relId,
-    fkTableId: connection.source,
-    pkTableId: connection.target,
-    name: `${sourceTable.name}_${targetTable.name}`,
-    kind,
-    cardinality: typeConfig.cardinality,
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-    fkEnforced: false,
-    columns: relationshipColumns,
-    isAffected: false,
-    extra: {
-      sourceHandle: connection.sourceHandle,
-      targetHandle: connection.targetHandle,
+    id: relationship.id,
+    source: relationship.fkTableId,
+    target: relationship.pkTableId,
+    sourceHandle: extra.fkHandle,
+    targetHandle: extra.pkHandle,
+    type: 'customSmoothStep',
+    style,
+    markerStart: baseConfig.markerStart,
+    markerEnd: baseConfig.markerEnd,
+    label: relationship.name,
+    labelStyle: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: style.stroke,
     },
-  };
+    data: {
+      relationshipType,
+      isNonIdentifying,
+      controlPoint1: extra.controlPoint1,
+      controlPoint2: extra.controlPoint2,
+    },
+  } as Edge;
 };
 
-export const shouldRecreateRelationship = (
-  currentRelationship: Relationship,
-  newKind: string,
-  newCardinality: string,
-): boolean => {
-  return (
-    currentRelationship.kind !== newKind ||
-    currentRelationship.cardinality !== newCardinality
+export const convertSnapshotsToEdges = (
+  snapshots: Record<string, TableSnapshotResponse>,
+): Edge[] => {
+  const seenRelationshipIds = new Set<string>();
+
+  return Object.values(snapshots).flatMap((snapshot) =>
+    snapshot.relationships
+      .filter((relSnapshot) => {
+        if (seenRelationshipIds.has(relSnapshot.relationship.id)) {
+          return false;
+        }
+        seenRelationshipIds.add(relSnapshot.relationship.id);
+        return true;
+      })
+      .map((relSnapshot) => convertRelationshipSnapshotToEdge(relSnapshot)),
   );
 };
 
-export const convertRelationshipsToEdges = (schema: Schema): Edge[] => {
-  const allRelationships: Edge[] = [];
+export const findRelationshipById = (
+  snapshots: Record<string, TableSnapshotResponse>,
+  relationshipId: string,
+): RelationshipSnapshotResponse | undefined => {
+  return Object.values(snapshots)
+    .flatMap((s) => s.relationships)
+    .find((r) => r.relationship.id === relationshipId);
+};
 
-  schema.tables.forEach((table) => {
-    table.relationships.forEach((rel) => {
-      const relationshipType = getRelationshipType(rel.cardinality);
-      const baseConfig = RELATIONSHIP_TYPES[relationshipType];
-      const isNonIdentifying = rel.kind === 'NON_IDENTIFYING';
-      const style = getRelationshipStyle(isNonIdentifying);
-      const extra = (rel.extra || {}) as RelationshipExtra;
+export const parseRelationshipExtra = (
+  extraString: string | null,
+): RelationshipExtra => {
+  if (!extraString) return {};
 
-      const edge: Edge = {
-        id: rel.id,
-        source: rel.fkTableId,
-        target: rel.pkTableId,
-        sourceHandle: extra.sourceHandle,
-        targetHandle: extra.targetHandle,
-        type: 'customSmoothStep',
-        style,
-        markerStart: baseConfig.markerStart,
-        markerEnd: baseConfig.markerEnd,
-        label: rel.name,
-        labelStyle: {
-          fontSize: 12,
-          fontWeight: 'bold',
-          color: style.stroke,
-        },
-        data: {
-          relationshipType,
-          isNonIdentifying,
-          controlPoint1: extra.controlPoint1,
-          controlPoint2: extra.controlPoint2,
-          dbRelationship: rel,
-        },
-      } as Edge;
+  try {
+    return JSON.parse(extraString) as RelationshipExtra;
+  } catch {
+    return {};
+  }
+};
 
-      allRelationships.push(edge);
-    });
-  });
+interface ValidateConnectionParams {
+  snapshots: Record<string, TableSnapshotResponse>;
+  connection: Connection;
+}
 
-  return allRelationships;
+const findPrimaryKey = (snapshot: TableSnapshotResponse) =>
+  snapshot.constraints.find((c) => c.constraint.kind === 'PRIMARY_KEY');
+
+const hasValidPrimaryKey = (pk: ConstraintSnapshotResponse | undefined) =>
+  pk && pk.columns.length > 0;
+
+export const validateConnection = ({
+  snapshots,
+  connection,
+}: ValidateConnectionParams): ConnectionValidationResult => {
+  if (!connection.source || !connection.target) {
+    return { isValid: false, error: 'Invalid connection' };
+  }
+
+  const sourceSnapshot = snapshots[connection.source];
+  const targetSnapshot = snapshots[connection.target];
+
+  if (!sourceSnapshot || !targetSnapshot) {
+    return { isValid: false, error: 'Table not found' };
+  }
+
+  const sourcePk = findPrimaryKey(sourceSnapshot);
+  const targetPk = findPrimaryKey(targetSnapshot);
+
+  if (!hasValidPrimaryKey(targetPk) && !hasValidPrimaryKey(sourcePk)) {
+    return {
+      isValid: false,
+      error: 'At least one table must have a primary key',
+    };
+  }
+
+  const targetHasPk = hasValidPrimaryKey(targetPk);
+  const pkTableId = targetHasPk ? connection.target : connection.source;
+  const fkTableId = targetHasPk ? connection.source : connection.target;
+  const pkColumnIds = (targetHasPk ? targetPk : sourcePk)!.columns.map(
+    (c) => c.columnId,
+  );
+
+  return {
+    isValid: true,
+    fkTableId,
+    pkTableId,
+    pkColumnIds,
+  };
 };
