@@ -185,7 +185,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<BaseResponse<Object>> handleDataIntegrityViolationException(
       DataIntegrityViolationException e) {
-    ErrorCode errorCode = ErrorCode.ERD_DATA_INTEGRITY_VIOLATION;
+    ErrorCode errorCode = ErrorCode.COMMON_DATA_INTEGRITY_VIOLATION;
     log.warn(
         "[DataIntegrityViolationException] Data integrity violation: {}",
         e.getMessage());
