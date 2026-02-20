@@ -86,6 +86,25 @@ export const SelectedSchemaProvider = ({
     [storageKey],
   );
 
+  const createInitialSchema = useCallback(() => {
+    createMutationRef.current.mutate(
+      {
+        projectId,
+        dbVendorName: 'mysql',
+        name: 'schema1',
+        charset: 'utf8mb4',
+        collation: 'utf8mb4_general_ci',
+      },
+      {
+        onSuccess: (response) => {
+          if (response.data) {
+            setSelectedSchemaId(response.data.id);
+          }
+        },
+      },
+    );
+  }, [projectId, setSelectedSchemaId]);
+
   useEffect(() => {
     if (selectedSchemaId && !isSchemasLoading && schemas) {
       const isValid = schemas.some((s) => s.id === selectedSchemaId);
@@ -105,22 +124,7 @@ export const SelectedSchemaProvider = ({
       initializationAttempted.current = true;
 
       if (schemas.length === 0) {
-        createMutationRef.current.mutate(
-          {
-            projectId,
-            dbVendorName: 'mysql',
-            name: 'schema1',
-            charset: 'utf8mb4',
-            collation: 'utf8mb4_general_ci',
-          },
-          {
-            onSuccess: (response) => {
-              if (response.data) {
-                setSelectedSchemaId(response.data.id);
-              }
-            },
-          },
-        );
+        createInitialSchema();
       } else {
         setSelectedSchemaId(schemas[0].id);
       }
@@ -129,7 +133,7 @@ export const SelectedSchemaProvider = ({
     selectedSchemaId,
     schemas,
     isSchemasLoading,
-    projectId,
+    createInitialSchema,
     setSelectedSchemaId,
   ]);
 
@@ -143,6 +147,10 @@ export const SelectedSchemaProvider = ({
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [storageKey]);
+
+  if (!selectedSchemaId && createSchemaMutation.isError) {
+    return <SchemaError onRetry={createInitialSchema} />;
+  }
 
   if (!selectedSchemaId) {
     return <SchemaLoading />;
