@@ -138,7 +138,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.updateMemberRole(
               testProject.getId(),
-              adminMember.getUserId(),
+              adminUser.getId(),
               request.role(),
               adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
@@ -177,7 +177,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.updateMemberRole(
               testProject.getId(),
-              ownerMember.getUserId(),
+              ownerUser.getId(),
               request.role(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
@@ -195,7 +195,7 @@ class ProjectServiceTest {
       Mono<ProjectMemberDetail> result = projectService
           .updateMemberRole(
               testProject.getId(),
-              viewerMember.getUserId(),
+              viewerUser.getId(),
               request.role(),
               adminUser.getId());
 
@@ -215,7 +215,7 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("관리자 권한이 없으면 거부된다")
+    @DisplayName("관리자 권한이 없으면 권한 변경이 거부된다")
     void nonAdmin_rejected() {
       UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
           ProjectRole.VIEWER);
@@ -223,7 +223,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.updateMemberRole(
               testProject.getId(),
-              adminMember.getId(),
+              adminUser.getId(),
               request.role(),
               viewerUser.getId() // VIEWER has no admin rights
           ))
@@ -284,7 +284,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.removeMember(
               testProject.getId(),
-              ownerMember.getUserId(),
+              ownerUser.getId(),
               ownerUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -300,7 +300,7 @@ class ProjectServiceTest {
 
       Mono<Void> result = projectService.removeMember(
           testProject.getId(),
-          viewerMember.getUserId(),
+          viewerUser.getId(),
           adminUser.getId());
 
       StepVerifier.create(result).verifyComplete();
@@ -320,7 +320,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.removeMember(
               testProject.getId(),
-              adminMember.getId(),
+              adminUser.getId(),
               viewerUser.getId() // VIEWER has no admin rights
           ))
           .expectErrorMatches(e -> e instanceof BusinessException &&

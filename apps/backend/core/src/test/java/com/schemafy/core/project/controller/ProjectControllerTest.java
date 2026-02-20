@@ -418,7 +418,7 @@ class ProjectControllerTest {
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), targetMember.getUserId())
+            testWorkspaceId, project.getId(), testUser2Id)
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isOk().expectBody()
@@ -458,7 +458,7 @@ class ProjectControllerTest {
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), targetMember.getUserId())
+            testWorkspaceId, project.getId(), testUser2Id)
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request).exchange()
@@ -492,7 +492,7 @@ class ProjectControllerTest {
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), ownerMember.getUserId())
+            testWorkspaceId, project.getId(), testUserId)
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().is4xxClientError();
@@ -520,7 +520,7 @@ class ProjectControllerTest {
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), ownerMember.getUserId())
+            testWorkspaceId, project.getId(), testUserId)
         .header("Authorization", "Bearer " + accessToken2)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isForbidden();
@@ -569,7 +569,7 @@ class ProjectControllerTest {
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}",
-            testWorkspaceId, project.getId(), targetMember.getUserId())
+            testWorkspaceId, project.getId(), testUser2Id)
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isNoContent().expectBody()
         .consumeWith(document("project-member-remove",
@@ -600,7 +600,7 @@ class ProjectControllerTest {
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}",
-            testWorkspaceId, project.getId(), ownerMember.getUserId())
+            testWorkspaceId, project.getId(), testUserId)
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isForbidden();
   }

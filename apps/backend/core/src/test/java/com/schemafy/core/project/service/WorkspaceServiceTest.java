@@ -234,7 +234,7 @@ class WorkspaceServiceTest {
       workspaceMemberRepository.deleteById(normalMember.getId()).block();
 
       StepVerifier.create(workspaceService.removeMember(
-          testWorkspace.getId(), adminMember.getUserId(),
+          testWorkspace.getId(), adminUser.getId(),
           adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -249,7 +249,7 @@ class WorkspaceServiceTest {
           WorkspaceRole.MEMBER);
 
       StepVerifier.create(workspaceService.updateMemberRole(
-          testWorkspace.getId(), adminMember.getUserId(), request.role(),
+          testWorkspace.getId(), adminUser.getId(), request.role(),
           adminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
@@ -261,7 +261,7 @@ class WorkspaceServiceTest {
     @DisplayName("일반 멤버 제거 성공")
     void removeMember_NormalMember_Success() {
       Mono<Void> result = workspaceService.removeMember(
-          testWorkspace.getId(), normalMember.getUserId(),
+          testWorkspace.getId(), memberUser.getId(),
           adminUser.getId());
 
       StepVerifier.create(result).verifyComplete();
@@ -284,7 +284,7 @@ class WorkspaceServiceTest {
 
       Mono<WorkspaceMemberDetail> result = workspaceService
           .updateMemberRole(testWorkspace.getId(),
-              normalMember.getUserId(), request.role(), adminUser.getId());
+              memberUser.getId(), request.role(), adminUser.getId());
 
       StepVerifier.create(result)
           .assertNext(response -> assertThat(response.member().getRole())
