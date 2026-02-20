@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.r2dbc.core.DatabaseClient;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -397,6 +399,54 @@ class ConstraintColumnPersistenceAdapterTest {
     void doesNotThrowWhenColumnIdNotExists() {
       StepVerifier.create(sut.deleteByColumnId("non-existent-column-id"))
           .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("동시성 및 무결성 제약")
+  class ConcurrencyAndIntegrity {
+
+    @BeforeEach
+    void setUpConstraint() {
+      var constraint = ConstraintFixture.defaultConstraint();
+      constraintAdapter.createConstraint(constraint).block();
+    }
+
+    @Test
+    @DisplayName("낙관적 락 충돌 시 예외가 발생한다")
+    void throwsWhenOptimisticLockConflict() {
+      var column = ConstraintFixture.constraintColumn(
+          COLUMN_ID_1, CONSTRAINT_ID_1, TABLE_COLUMN_ID_1, 0);
+      sut.createConstraintColumn(column).block();
+
+      var stale = constraintColumnRepository.findById(COLUMN_ID_1).block();
+      var latest = constraintColumnRepository.findById(COLUMN_ID_1).block();
+      assertThat(stale).isNotNull();
+      assertThat(latest).isNotNull();
+
+      latest.setSeqNo(1);
+      constraintColumnRepository.save(latest).block();
+
+      stale.setSeqNo(2);
+      StepVerifier.create(constraintColumnRepository.save(stale))
+          .expectError(OptimisticLockingFailureException.class)
+          .verify();
+    }
+
+    @Test
+    @DisplayName("중복 매핑 저장 시 유니크 제약 예외가 발생한다")
+    void throwsWhenDuplicateMapping() {
+      var column1 = ConstraintFixture.constraintColumn(
+          COLUMN_ID_1, CONSTRAINT_ID_1, TABLE_COLUMN_ID_1, 0);
+      var duplicate = ConstraintFixture.constraintColumn(
+          COLUMN_ID_2, CONSTRAINT_ID_1, TABLE_COLUMN_ID_1, 1);
+
+      sut.createConstraintColumn(column1).block();
+
+      StepVerifier.create(sut.createConstraintColumn(duplicate))
+          .expectError(DataIntegrityViolationException.class)
+          .verify();
     }
 
   }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -38,6 +39,7 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumn(
@@ -55,7 +57,8 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
                   tables.pkTable(),
                   command))
               .map(result -> MutationResult.of(result, affectedTableIds));
-        });
+        })
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<TablePair> loadTables(Relationship relationship) {

@@ -2,6 +2,9 @@ package com.schemafy.domain.erd.index.application.service;
 
 import java.util.List;
 
+import org.springframework.transaction.reactive.TransactionalOperator;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeIndexColumnSortDirectionService")
@@ -49,8 +53,17 @@ class ChangeIndexColumnSortDirectionServiceTest {
   @Mock
   GetIndexesByTableIdPort getIndexesByTableIdPort;
 
+  @Mock
+  TransactionalOperator transactionalOperator;
+
   @InjectMocks
   ChangeIndexColumnSortDirectionService sut;
+
+  @BeforeEach
+  void setUpTransaction() {
+    lenient().when(transactionalOperator.transactional(any(Mono.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("changeIndexColumnSortDirection 메서드는")

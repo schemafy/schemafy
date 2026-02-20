@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
@@ -31,6 +32,7 @@ public class ChangeRelationshipColumnPositionService
   private final GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<Void>> changeRelationshipColumnPosition(
@@ -48,7 +50,8 @@ public class ChangeRelationshipColumnPositionService
                     relationshipColumn,
                     columns,
                     command.seqNo()))
-                .thenReturn(MutationResult.<Void>of(null, toTableIdSet(relationship)))));
+                .thenReturn(MutationResult.<Void>of(null, toTableIdSet(relationship)))))
+        .as(transactionalOperator::transactional);
   }
 
   private static Set<String> toTableIdSet(Relationship relationship) {

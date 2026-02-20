@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -38,6 +39,9 @@ public class IndexEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
+  @Version
+  private Long version;
+
   IndexEntity(
       String id,
       String tableId,
@@ -50,7 +54,7 @@ public class IndexEntity implements Persistable<String> {
   }
 
   @Override
-  public boolean isNew() { return this.createdAt == null; }
+  public boolean isNew() { return this.version == null; }
 
   @Override
   public String getId() { return this.id; }

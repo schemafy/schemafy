@@ -1,6 +1,7 @@
 package com.schemafy.domain.erd.table.application.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
@@ -25,6 +26,7 @@ public class CreateTableService implements CreateTableUseCase {
   private final CreateTablePort createTablePort;
   private final TableExistsPort tableExistsPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<CreateTableResult>> createTable(CreateTableCommand command) {
@@ -61,7 +63,8 @@ public class CreateTableService implements CreateTableUseCase {
                             savedTable.collation()))
                         .map(result -> MutationResult.of(result, id));
                   }));
-        });
+        })
+        .as(transactionalOperator::transactional);
   }
 
   private static boolean hasText(String value) {

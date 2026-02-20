@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexColumnSortDirectionCommand;
@@ -34,6 +35,7 @@ public class ChangeIndexColumnSortDirectionService
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<Void>> changeIndexColumnSortDirection(
@@ -48,7 +50,8 @@ public class ChangeIndexColumnSortDirectionService
         .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
             .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
             .flatMap(index -> validateAndChange(index, indexColumn, command)
-                .thenReturn(MutationResult.<Void>of(null, index.tableId()))));
+                .thenReturn(MutationResult.<Void>of(null, index.tableId()))))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> validateAndChange(
