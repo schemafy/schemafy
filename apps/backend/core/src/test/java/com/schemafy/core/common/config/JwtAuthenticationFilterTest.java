@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schemafy.core.common.exception.ProblemDetailFactory;
+import com.schemafy.core.common.exception.ProblemProperties;
 import com.schemafy.core.common.security.jwt.JwtAuthenticationFilter;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
@@ -38,7 +40,8 @@ class JwtAuthenticationFilterTest {
 
   @BeforeEach
   void setUp() {
-    errorResponseWriter = new WebExchangeErrorWriter(new ObjectMapper());
+    errorResponseWriter = new WebExchangeErrorWriter(new ObjectMapper(),
+        new ProblemDetailFactory(new ProblemProperties()));
     jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider,
         errorResponseWriter);
   }

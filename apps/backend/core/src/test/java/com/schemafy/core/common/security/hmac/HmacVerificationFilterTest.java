@@ -18,6 +18,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schemafy.core.common.exception.ProblemDetailFactory;
+import com.schemafy.core.common.exception.ProblemProperties;
 import com.schemafy.core.common.security.hmac.HmacProperties.EnforcementMode;
 import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 
@@ -54,7 +56,8 @@ class HmacVerificationFilterTest {
     hmacProperties.setEnabled(true);
     hmacProperties.setEnforcementMode(EnforcementMode.ENFORCE);
 
-    errorWriter = new WebExchangeErrorWriter(new ObjectMapper());
+    errorWriter = new WebExchangeErrorWriter(new ObjectMapper(),
+        new ProblemDetailFactory(new ProblemProperties()));
     filter = new HmacVerificationFilter(hmacProperties, nonceCache,
         errorWriter);
   }

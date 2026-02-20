@@ -149,9 +149,8 @@ class ProjectControllerTest {
             ProjectApiSnippets.createProjectRequest(),
             ProjectApiSnippets.createProjectResponseHeaders(),
             ProjectApiSnippets.createProjectResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.name").isEqualTo("My Project")
-        .jsonPath("$.result.workspaceId").isEqualTo(testWorkspaceId);
+        .jsonPath("$.name").isEqualTo("My Project")
+        .jsonPath("$.workspaceId").isEqualTo(testWorkspaceId);
 
     projectMemberRepository.findByUserIdAndNotDeleted(testUserId)
         .collectList().block().forEach(member -> {
@@ -210,9 +209,8 @@ class ProjectControllerTest {
             ProjectApiSnippets.getProjectsQueryParameters(),
             ProjectApiSnippets.getProjectsResponseHeaders(),
             ProjectApiSnippets.getProjectsResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.content[0].name")
-        .isEqualTo("Test Project").jsonPath("$.result.totalElements")
+        .jsonPath("$.content[0].name")
+        .isEqualTo("Test Project").jsonPath("$.totalElements")
         .isEqualTo(1);
   }
 
@@ -239,9 +237,8 @@ class ProjectControllerTest {
             ProjectApiSnippets.getProjectRequestHeaders(),
             ProjectApiSnippets.getProjectResponseHeaders(),
             ProjectApiSnippets.getProjectResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.id")
-        .isEqualTo(project.getId()).jsonPath("$.result.name")
+        .jsonPath("$.id")
+        .isEqualTo(project.getId()).jsonPath("$.name")
         .isEqualTo("Test Project");
   }
 
@@ -291,9 +288,8 @@ class ProjectControllerTest {
             ProjectApiSnippets.updateProjectRequest(),
             ProjectApiSnippets.updateProjectResponseHeaders(),
             ProjectApiSnippets.updateProjectResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.name").isEqualTo("Updated Project")
-        .jsonPath("$.result.settings.theme").isEqualTo("dark");
+        .jsonPath("$.name").isEqualTo("Updated Project")
+        .jsonPath("$.settings.theme").isEqualTo("dark");
   }
 
   @Test
@@ -395,8 +391,7 @@ class ProjectControllerTest {
             ProjectApiSnippets.getProjectMembersQueryParameters(),
             ProjectApiSnippets.getProjectMembersResponseHeaders(),
             ProjectApiSnippets.getProjectMembersResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.totalElements")
+        .jsonPath("$.totalElements")
         .isEqualTo(1);
   }
 
@@ -435,8 +430,8 @@ class ProjectControllerTest {
             ProjectApiSnippets
                 .joinProjectByShareLinkResponseHeaders(),
             ProjectApiSnippets.joinProjectByShareLinkResponse()))
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("editor").jsonPath("$.result.userId")
+        .jsonPath("$.role").isEqualTo("editor")
+        .jsonPath("$.userId")
         .isEqualTo(testUser2Id);
 
     ProjectMember newMember = projectMemberRepository
@@ -475,8 +470,7 @@ class ProjectControllerTest {
         .header("Authorization", "Bearer " + accessToken2)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isCreated().expectBody()
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("editor");
+        .jsonPath("$.role").isEqualTo("editor");
   }
 
   @Test
@@ -507,8 +501,7 @@ class ProjectControllerTest {
         .header("Authorization", "Bearer " + accessToken2)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isCreated().expectBody()
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("editor");
+        .jsonPath("$.role").isEqualTo("editor");
 
     ProjectMember upgradedMember = projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(project.getId(),
@@ -605,8 +598,7 @@ class ProjectControllerTest {
             ProjectApiSnippets.updateMemberRoleRequest(),
             ProjectApiSnippets.updateMemberRoleResponseHeaders(),
             ProjectApiSnippets.updateMemberRoleResponse()))
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("editor");
+        .jsonPath("$.role").isEqualTo("editor");
 
     ProjectMember updatedMember = projectMemberRepository
         .findById(targetMember.getId()).block();
@@ -641,8 +633,7 @@ class ProjectControllerTest {
         .bodyValue(request).exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.role")
+        .jsonPath("$.role")
         .isEqualTo(ProjectRole.ADMIN.getValue());
 
     ProjectMember updatedMember = projectMemberRepository

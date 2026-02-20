@@ -80,7 +80,7 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
 
   public static Snippet createConstraintResponse() {
     return createResponseFieldsSnippet(
-        mutationResponseFields(constraintResponseFields("result.data.")));
+        mutationResponseFields(constraintResponseFields("data.")));
   }
 
   // ========== GET /api/constraints/{constraintId} ==========
@@ -96,7 +96,7 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
 
   public static Snippet getConstraintResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(constraintResponseFields("result.")));
+        successResponseFields(constraintResponseFields("")));
   }
 
   // ========== GET /api/tables/{tableId}/constraints ==========
@@ -115,19 +115,8 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
   }
 
   public static Snippet getConstraintsByTableIdResponse() {
-    return createResponseFieldsSnippet(concat(
-        new FieldDescriptor[] {
-          fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-              .description("요청 성공 여부"),
-          fieldWithPath("result").type(JsonFieldType.ARRAY)
-              .description("제약조건 목록")
-        },
-        concat(
-            constraintResponseFields("result[]."),
-            new FieldDescriptor[] {
-              fieldWithPath("error").type(JsonFieldType.NULL)
-                  .description("에러 정보 (성공 시 null)").optional()
-            })));
+    return createResponseFieldsSnippet(
+        constraintResponseFields("[]."));
   }
 
   // ========== PATCH /api/constraints/{constraintId}/name ==========
@@ -239,19 +228,8 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
   }
 
   public static Snippet getConstraintColumnsResponse() {
-    return createResponseFieldsSnippet(concat(
-        new FieldDescriptor[] {
-          fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-              .description("요청 성공 여부"),
-          fieldWithPath("result").type(JsonFieldType.ARRAY)
-              .description("제약조건 컬럼 목록")
-        },
-        concat(
-            constraintColumnResponseFields("result[]."),
-            new FieldDescriptor[] {
-              fieldWithPath("error").type(JsonFieldType.NULL)
-                  .description("에러 정보 (성공 시 null)").optional()
-            })));
+    return createResponseFieldsSnippet(
+        constraintColumnResponseFields("[]."));
   }
 
   // ========== POST /api/constraints/{constraintId}/columns ==========
@@ -279,15 +257,15 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
   public static Snippet addConstraintColumnResponse() {
     return createResponseFieldsSnippet(
         mutationResponseFields(
-            fieldWithPath("result.data.id").type(JsonFieldType.STRING)
+            fieldWithPath("data.id").type(JsonFieldType.STRING)
                 .description("제약조건 컬럼 ID (ULID)"),
-            fieldWithPath("result.data.constraintId").type(JsonFieldType.STRING)
+            fieldWithPath("data.constraintId").type(JsonFieldType.STRING)
                 .description("제약조건 ID (ULID)"),
-            fieldWithPath("result.data.columnId").type(JsonFieldType.STRING)
+            fieldWithPath("data.columnId").type(JsonFieldType.STRING)
                 .description("컬럼 ID (ULID)"),
-            fieldWithPath("result.data.seqNo").type(JsonFieldType.NUMBER)
+            fieldWithPath("data.seqNo").type(JsonFieldType.NUMBER)
                 .description("순서 번호"),
-            fieldWithPath("result.data.cascadeCreatedColumns").type(JsonFieldType.ARRAY)
+            fieldWithPath("data.cascadeCreatedColumns").type(JsonFieldType.ARRAY)
                 .description("FK 제약조건 추가 시 자동 생성된 컬럼 목록").optional()));
   }
 
@@ -327,7 +305,7 @@ public class ConstraintApiSnippets extends RestDocsSnippets {
 
   public static Snippet getConstraintColumnResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(constraintColumnResponseFields("result.")));
+        successResponseFields(constraintColumnResponseFields("")));
   }
 
   // ========== PATCH /api/constraint-columns/{constraintColumnId}/position ==========

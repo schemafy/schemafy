@@ -161,8 +161,8 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.data.id").isEqualTo(tableId)
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.data.id").isEqualTo(tableId)
         .consumeWith(document("table-create",
             TableApiSnippets.createTableRequestHeaders(),
             TableApiSnippets.createTableRequest(),
@@ -193,9 +193,8 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(tableId)
-        .jsonPath("$.result.extra").isEqualTo("{\"position\":{\"x\":10,\"y\":20}}")
+        .jsonPath("$.id").isEqualTo(tableId)
+        .jsonPath("$.extra").isEqualTo("{\"position\":{\"x\":10,\"y\":20}}")
         .consumeWith(document("table-get",
             TableApiSnippets.getTablePathParameters(),
             TableApiSnippets.getTableRequestHeaders(),
@@ -266,14 +265,13 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.table.id").isEqualTo(tableId)
-        .jsonPath("$.result.table.extra").isEqualTo("{\"position\":{\"x\":30,\"y\":40}}")
-        .jsonPath("$.result.columns[0].id").isEqualTo(columnId)
-        .jsonPath("$.result.constraints[0].constraint.id").isEqualTo(constraintId)
-        .jsonPath("$.result.relationships[0].relationship.id").isEqualTo(relationshipId)
-        .jsonPath("$.result.indexes[0].index.id").isEqualTo(indexId)
-        .jsonPath("$.result.indexes[0].columns[0].seqNo").isEqualTo(0)
+        .jsonPath("$.table.id").isEqualTo(tableId)
+        .jsonPath("$.table.extra").isEqualTo("{\"position\":{\"x\":30,\"y\":40}}")
+        .jsonPath("$.columns[0].id").isEqualTo(columnId)
+        .jsonPath("$.constraints[0].constraint.id").isEqualTo(constraintId)
+        .jsonPath("$.relationships[0].relationship.id").isEqualTo(relationshipId)
+        .jsonPath("$.indexes[0].index.id").isEqualTo(indexId)
+        .jsonPath("$.indexes[0].columns[0].seqNo").isEqualTo(0)
         .consumeWith(document("table-snapshot",
             TableApiSnippets.getTableSnapshotPathParameters(),
             TableApiSnippets.getTableSnapshotRequestHeaders(),
@@ -320,7 +318,6 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("table-snapshots-batch",
             TableApiSnippets.getTableSnapshotsQueryParameters(),
             TableApiSnippets.getTableSnapshotsRequestHeaders(),
@@ -347,9 +344,8 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].id").isEqualTo(tableId1)
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].id").isEqualTo(tableId1)
         .consumeWith(document("table-list-by-schema",
             TableApiSnippets.getTablesBySchemaIdPathParameters(),
             TableApiSnippets.getTablesBySchemaIdRequestHeaders(),
@@ -374,8 +370,7 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("table-change-name",
             TableApiSnippets.changeTableNamePathParameters(),
             TableApiSnippets.changeTableNameRequestHeaders(),
@@ -402,8 +397,7 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("table-change-meta",
             TableApiSnippets.changeTableMetaPathParameters(),
             TableApiSnippets.changeTableMetaRequestHeaders(),
@@ -430,7 +424,7 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true);
+        .jsonPath("$.affectedTableIds").isArray();
   }
 
   @Test
@@ -451,7 +445,7 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true);
+        .jsonPath("$.affectedTableIds").isArray();
   }
 
   @Test
@@ -472,8 +466,7 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("table-change-extra",
             TableApiSnippets.changeTableExtraPathParameters(),
             TableApiSnippets.changeTableExtraRequestHeaders(),
@@ -500,8 +493,7 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray();
 
     then(changeTableExtraUseCase).should()
         .changeTableExtra(new ChangeTableExtraCommand(tableId,
@@ -523,8 +515,7 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("table-delete",
             TableApiSnippets.deleteTablePathParameters(),
             TableApiSnippets.deleteTableRequestHeaders(),

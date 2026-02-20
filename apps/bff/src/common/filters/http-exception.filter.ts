@@ -20,6 +20,16 @@ import {
   getMessageFromStatus,
 } from '../constants/http-status-maps.js';
 
+type BackendProblemDetails = {
+  type?: string;
+  title?: string;
+  status?: number;
+  detail?: string;
+  instance?: string;
+  reason?: string;
+  [key: string]: unknown;
+};
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
@@ -59,6 +69,28 @@ export class HttpExceptionFilter implements ExceptionFilter {
     this.logger.warn(
       `${context} - Backend error: ${status} - ${JSON.stringify(rawData)}`,
     );
+
+    if (this.isProblemDetailsResponse(rawData)) {
+      const reason =
+        typeof rawData.reason === 'string' ? rawData.reason : undefined;
+      const detail =
+        typeof rawData.detail === 'string' ? rawData.detail : undefined;
+      const title =
+        typeof rawData.title === 'string' ? rawData.title : undefined;
+      const errorCode = reason ?? getErrorCodeFromStatus(status);
+      const fallbackMessage = detail ?? title ?? getMessageFromStatus(status);
+      const errorInfo = getErrorInfo(errorCode, fallbackMessage);
+
+      return {
+        status,
+        errorResponse: this.createErrorResponse(
+          errorCode,
+          errorInfo.message,
+          errorInfo.category,
+          this.extractProblemDetails(rawData),
+        ),
+      };
+    }
 
     if (this.isValidBackendResponse(rawData)) {
       const { code, message, details } = rawData.error;
@@ -201,6 +233,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
     );
   }
 
+  private isProblemDetailsResponse(data: unknown): data is BackendProblemDetails {
+    if (typeof data !== 'object' || data === null) {
+      return false;
+    }
+
+    const problem = data as Record<string, unknown>;
+    return (
+      'type' in problem ||
+      'title' in problem ||
+      'status' in problem ||
+      'detail' in problem ||
+      'instance' in problem
+    );
+  }
+
   private extractValidationInfo(defaultMessage: string, response: unknown) {
     if (
       typeof response !== 'object' ||
@@ -234,5 +281,34 @@ export class HttpExceptionFilter implements ExceptionFilter {
       ...details,
       ...(originalMessage && { originalMessage }),
     };
+  }
+
+  private extractProblemDetails(
+    problem: BackendProblemDetails,
+  ): Record<string, unknown> | undefined {
+    const details: Record<string, unknown> = {};
+
+    if (typeof problem.type === 'string') {
+      details.type = problem.type;
+    }
+    if (typeof problem.instance === 'string') {
+      details.instance = problem.instance;
+    }
+    if (typeof problem.detail === 'string') {
+      details.originalDetail = problem.detail;
+    }
+
+    const extensionEntries = Object.entries(problem).filter(
+      ([key]) =>
+        !['type', 'title', 'status', 'detail', 'instance', 'reason'].includes(
+          key,
+        ),
+    );
+
+    if (extensionEntries.length > 0) {
+      details.extensions = Object.fromEntries(extensionEntries);
+    }
+
+    return Object.keys(details).length > 0 ? details : undefined;
   }
 }

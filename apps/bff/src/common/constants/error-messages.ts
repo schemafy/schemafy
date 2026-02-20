@@ -69,6 +69,23 @@ export const ErrorMessages: Record<string, ErrorInfo> = {
   AUTH_MALFORMED_TOKEN: SESSION_EXPIRED,
   AUTH_TOKEN_VALIDATION_ERROR: SESSION_EXPIRED,
 
+  HMAC_SIGNATURE_MISSING: {
+    message: 'Security signature is missing.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  HMAC_SIGNATURE_INVALID: {
+    message: 'Invalid request signature.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  HMAC_TIMESTAMP_EXPIRED: {
+    message: 'Request has expired. Please try again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  HMAC_NONCE_DUPLICATE: {
+    message: 'Duplicate request detected. Please retry.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+
   USER_NOT_FOUND: {
     message: 'User not found. Please check and try again.',
     category: ErrorCategory.USER_FEEDBACK,

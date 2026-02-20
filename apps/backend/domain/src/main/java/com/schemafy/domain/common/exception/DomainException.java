@@ -1,8 +1,8 @@
 package com.schemafy.domain.common.exception;
 
-import lombok.Getter;
-
 import java.util.function.Predicate;
+
+import lombok.Getter;
 
 @Getter
 public class DomainException extends RuntimeException {

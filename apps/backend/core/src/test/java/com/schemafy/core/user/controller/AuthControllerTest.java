@@ -91,9 +91,8 @@ class AuthControllerTest {
             signUpRequest(),
             signUpResponseHeaders(),
             signUpResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isNotEmpty()
-        .jsonPath("$.result.email").isEqualTo("test@example.com");
+        .jsonPath("$.id").isNotEmpty()
+        .jsonPath("$.email").isEqualTo("test@example.com");
 
     StepVerifier.create(userRepository.findByEmail("test@example.com"))
         .as("user should be persisted with auditing columns")
@@ -118,8 +117,8 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
         .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
   }
 
@@ -160,8 +159,7 @@ class AuthControllerTest {
             loginRequest(),
             loginResponseHeaders(),
             loginResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.email").isEqualTo("test@example.com");
+        .jsonPath("$.email").isEqualTo("test@example.com");
   }
 
   @DisplayName("유효하지 않은 로그인 요청은 실패한다")
@@ -174,8 +172,8 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
         .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
   }
 
@@ -198,8 +196,8 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isNotFound()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
+        .jsonPath("$.status").isEqualTo(404)
+        .jsonPath("$.reason")
         .isEqualTo(UserErrorCode.NOT_FOUND.code());
   }
 
@@ -223,8 +221,8 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isUnauthorized()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
+        .jsonPath("$.status").isEqualTo(401)
+        .jsonPath("$.reason")
         .isEqualTo(UserErrorCode.LOGIN_FAILED.code());
   }
 
@@ -242,7 +240,7 @@ class AuthControllerTest {
         .expectBody(byte[].class).returnResult();
 
     String responseBody = new String(signupResult.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.result.id");
+    String userId = JsonPath.read(responseBody, "$.id");
     String refreshToken = generateRefreshToken(userId);
 
     webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
@@ -254,9 +252,7 @@ class AuthControllerTest {
         .expectBody()
         .consumeWith(document("user-refresh",
             refreshTokenRequestCookies(),
-            refreshTokenResponseHeaders(),
-            refreshTokenResponse()))
-        .jsonPath("$.success").isEqualTo(true);
+            refreshTokenResponseHeaders()));
   }
 
   @Test
@@ -273,7 +269,7 @@ class AuthControllerTest {
         .expectBody(byte[].class).returnResult();
 
     String responseBody = new String(signupResult.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.result.id");
+    String userId = JsonPath.read(responseBody, "$.id");
     String accessToken = generateAccessToken(userId);
 
     // 쿠키로 Access Token 전달 (잘못된 토큰 타입)
@@ -282,8 +278,8 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isUnauthorized()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
+        .jsonPath("$.status").isEqualTo(401)
+        .jsonPath("$.reason")
         .isEqualTo(AuthErrorCode.INVALID_TOKEN_TYPE.code());
   }
 
@@ -294,8 +290,8 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isUnauthorized()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
+        .jsonPath("$.status").isEqualTo(401)
+        .jsonPath("$.reason")
         .isEqualTo(AuthErrorCode.MISSING_REFRESH_TOKEN.code());
   }
 

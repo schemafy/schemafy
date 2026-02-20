@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnMetaRequest;
@@ -66,7 +65,7 @@ public class ColumnController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/columns")
-  public Mono<BaseResponse<MutationResponse<ColumnResponse>>> createColumn(
+  public Mono<MutationResponse<ColumnResponse>> createColumn(
       @Valid @RequestBody CreateColumnRequest request) {
     CreateColumnCommand command = new CreateColumnCommand(
         request.tableId(),
@@ -84,35 +83,32 @@ public class ColumnController {
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             ColumnResponse.from(result.result(), request.tableId()),
-            result.affectedTableIds()))
-        .map(BaseResponse::success);
+            result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/columns/{columnId}")
-  public Mono<BaseResponse<ColumnResponse>> getColumn(
+  public Mono<ColumnResponse> getColumn(
       @PathVariable String columnId) {
     GetColumnQuery query = new GetColumnQuery(columnId);
     return getColumnUseCase.getColumn(query)
-        .map(ColumnResponse::from)
-        .map(BaseResponse::success);
+        .map(ColumnResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}/columns")
-  public Mono<BaseResponse<List<ColumnResponse>>> getColumnsByTableId(
+  public Mono<List<ColumnResponse>> getColumnsByTableId(
       @PathVariable String tableId) {
     GetColumnsByTableIdQuery query = new GetColumnsByTableIdQuery(tableId);
     return getColumnsByTableIdUseCase.getColumnsByTableId(query)
         .map(columns -> columns.stream()
             .map(ColumnResponse::from)
-            .toList())
-        .map(BaseResponse::success);
+            .toList());
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/name")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeColumnName(
+  public Mono<MutationResponse<Void>> changeColumnName(
       @PathVariable String columnId,
       @Valid @RequestBody ChangeColumnNameRequest request) {
     ChangeColumnNameCommand command = new ChangeColumnNameCommand(
@@ -121,13 +117,12 @@ public class ColumnController {
     return changeColumnNameUseCase.changeColumnName(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/type")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeColumnType(
+  public Mono<MutationResponse<Void>> changeColumnType(
       @PathVariable String columnId,
       @Valid @RequestBody ChangeColumnTypeRequest request) {
     ChangeColumnTypeCommand command = new ChangeColumnTypeCommand(
@@ -139,13 +134,12 @@ public class ColumnController {
     return changeColumnTypeUseCase.changeColumnType(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/meta")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeColumnMeta(
+  public Mono<MutationResponse<Void>> changeColumnMeta(
       @PathVariable String columnId,
       @RequestBody ChangeColumnMetaRequest request) {
     ChangeColumnMetaCommand command = new ChangeColumnMetaCommand(
@@ -157,13 +151,12 @@ public class ColumnController {
     return changeColumnMetaUseCase.changeColumnMeta(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/position")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeColumnPosition(
+  public Mono<MutationResponse<Void>> changeColumnPosition(
       @PathVariable String columnId,
       @RequestBody ChangeColumnPositionRequest request) {
     ChangeColumnPositionCommand command = new ChangeColumnPositionCommand(
@@ -172,20 +165,18 @@ public class ColumnController {
     return changeColumnPositionUseCase.changeColumnPosition(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/columns/{columnId}")
-  public Mono<BaseResponse<MutationResponse<Void>>> deleteColumn(
+  public Mono<MutationResponse<Void>> deleteColumn(
       @PathVariable String columnId) {
     DeleteColumnCommand command = new DeleteColumnCommand(columnId);
     return deleteColumnUseCase.deleteColumn(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {

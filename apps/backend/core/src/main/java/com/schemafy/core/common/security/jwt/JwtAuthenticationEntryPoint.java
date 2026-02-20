@@ -22,10 +22,7 @@ public class JwtAuthenticationEntryPoint
   public Mono<Void> commence(ServerWebExchange exchange,
       AuthenticationException ex) {
     DomainErrorCode errorCode = AuthErrorCode.AUTHENTICATION_REQUIRED;
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        errorCode.status(),
-        errorCode.code(),
+    return errorResponseWriter.writeErrorResponse(exchange, errorCode,
         errorCode.code());
   }
 

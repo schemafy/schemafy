@@ -166,8 +166,7 @@ public class HmacVerificationFilter implements WebFilter {
           errorCode.code());
       return chain.filter(exchange);
     }
-    return errorWriter.writeErrorResponse(exchange,
-        errorCode.status(), errorCode.code(),
+    return errorWriter.writeErrorResponse(exchange, errorCode,
         errorCode.code());
   }
 

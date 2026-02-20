@@ -21,10 +21,7 @@ public class JwtAccessDeniedHandler implements ServerAccessDeniedHandler {
   public Mono<Void> handle(ServerWebExchange exchange,
       AccessDeniedException denied) {
     DomainErrorCode errorCode = AuthErrorCode.ACCESS_DENIED;
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        errorCode.status(),
-        errorCode.code(),
+    return errorResponseWriter.writeErrorResponse(exchange, errorCode,
         errorCode.code());
   }
 

@@ -5,7 +5,6 @@ import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDoc
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -109,7 +108,6 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("memo-create",
             requestHeaders(
                 headerWithName("Content-Type")
@@ -127,44 +125,40 @@ class MemoControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("생성된 메모 정보"),
-                fieldWithPath("result.id")
+                fieldWithPath("id")
                     .description("메모 ID"),
-                fieldWithPath("result.schemaId")
+                fieldWithPath("schemaId")
                     .description("스키마 ID"),
-                fieldWithPath("result.author")
+                fieldWithPath("author")
                     .description("작성자 정보"),
-                fieldWithPath("result.author.id")
+                fieldWithPath("author.id")
                     .description("작성자 ID"),
-                fieldWithPath("result.author.name")
+                fieldWithPath("author.name")
                     .description("작성자 이름"),
-                fieldWithPath("result.positions")
+                fieldWithPath("positions")
                     .description("메모 위치"),
-                fieldWithPath("result.createdAt")
+                fieldWithPath("createdAt")
                     .description("생성 일시"),
-                fieldWithPath("result.updatedAt")
+                fieldWithPath("updatedAt")
                     .description("수정 일시"),
-                fieldWithPath("result.comments")
+                fieldWithPath("comments")
                     .description("메모 댓글 목록"),
-                fieldWithPath("result.comments[].id")
+                fieldWithPath("comments[].id")
                     .description("댓글 ID"),
-                fieldWithPath("result.comments[].memoId")
+                fieldWithPath("comments[].memoId")
                     .description("메모 ID"),
-                fieldWithPath("result.comments[].author")
+                fieldWithPath("comments[].author")
                     .description("작성자 정보"),
-                fieldWithPath("result.comments[].author.id")
+                fieldWithPath("comments[].author.id")
                     .description("작성자 ID"),
                 fieldWithPath(
-                    "result.comments[].author.name")
+                    "comments[].author.name")
                     .description("작성자 이름"),
-                fieldWithPath("result.comments[].body")
+                fieldWithPath("comments[].body")
                     .description("댓글 내용"),
-                fieldWithPath("result.comments[].createdAt")
+                fieldWithPath("comments[].createdAt")
                     .description("생성 일시"),
-                fieldWithPath("result.comments[].updatedAt")
+                fieldWithPath("comments[].updatedAt")
                     .description("수정 일시"))));
   }
 
@@ -210,7 +204,6 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("memo-get",
             pathParameters(
                 parameterWithName("memoId")
@@ -223,43 +216,40 @@ class MemoControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result").description("메모 정보"),
-                fieldWithPath("result.id")
+                fieldWithPath("id")
                     .description("메모 ID"),
-                fieldWithPath("result.schemaId")
+                fieldWithPath("schemaId")
                     .description("스키마 ID"),
-                fieldWithPath("result.author")
+                fieldWithPath("author")
                     .description("작성자 정보"),
-                fieldWithPath("result.author.id")
+                fieldWithPath("author.id")
                     .description("작성자 ID"),
-                fieldWithPath("result.author.name")
+                fieldWithPath("author.name")
                     .description("작성자 이름"),
-                fieldWithPath("result.positions")
+                fieldWithPath("positions")
                     .description("메모 위치"),
-                fieldWithPath("result.createdAt")
+                fieldWithPath("createdAt")
                     .description("생성 일시"),
-                fieldWithPath("result.updatedAt")
+                fieldWithPath("updatedAt")
                     .description("수정 일시"),
-                fieldWithPath("result.comments")
+                fieldWithPath("comments")
                     .description("메모 댓글 목록"),
-                fieldWithPath("result.comments[].id")
+                fieldWithPath("comments[].id")
                     .description("댓글 ID"),
-                fieldWithPath("result.comments[].memoId")
+                fieldWithPath("comments[].memoId")
                     .description("메모 ID"),
-                fieldWithPath("result.comments[].author")
+                fieldWithPath("comments[].author")
                     .description("작성자 정보"),
-                fieldWithPath("result.comments[].author.id")
+                fieldWithPath("comments[].author.id")
                     .description("작성자 ID"),
                 fieldWithPath(
-                    "result.comments[].author.name")
+                    "comments[].author.name")
                     .description("작성자 이름"),
-                fieldWithPath("result.comments[].body")
+                fieldWithPath("comments[].body")
                     .description("댓글 내용"),
-                fieldWithPath("result.comments[].createdAt")
+                fieldWithPath("comments[].createdAt")
                     .description("생성 일시"),
-                fieldWithPath("result.comments[].updatedAt")
+                fieldWithPath("comments[].updatedAt")
                     .description("수정 일시"))));
   }
 
@@ -292,9 +282,8 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].schemaId").isEqualTo(schemaId);
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].schemaId").isEqualTo(schemaId);
   }
 
   @Test
@@ -330,7 +319,6 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("memo-update",
             pathParameters(
                 parameterWithName("memoId")
@@ -349,25 +337,21 @@ class MemoControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("수정된 메모 정보"),
-                fieldWithPath("result.id")
+                fieldWithPath("id")
                     .description("메모 ID"),
-                fieldWithPath("result.schemaId")
+                fieldWithPath("schemaId")
                     .description("스키마 ID"),
-                fieldWithPath("result.author")
+                fieldWithPath("author")
                     .description("작성자 정보"),
-                fieldWithPath("result.author.id")
+                fieldWithPath("author.id")
                     .description("작성자 ID"),
-                fieldWithPath("result.author.name")
+                fieldWithPath("author.name")
                     .description("작성자 이름"),
-                fieldWithPath("result.positions")
+                fieldWithPath("positions")
                     .description("메모 위치"),
-                fieldWithPath("result.createdAt")
+                fieldWithPath("createdAt")
                     .description("생성 일시"),
-                fieldWithPath("result.updatedAt")
+                fieldWithPath("updatedAt")
                     .description("수정 일시"))));
   }
 
@@ -385,7 +369,6 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("memo-delete",
             pathParameters(
                 parameterWithName("memoId")
@@ -393,18 +376,7 @@ class MemoControllerTest {
             requestHeaders(
                 headerWithName("Accept")
                     .description(
-                        "응답 포맷 (application/json)")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .type(JsonFieldType.BOOLEAN)
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .type(JsonFieldType.NULL)
-                    .description("응답 데이터 (null)")
-                    .optional())));
+                        "응답 포맷 (application/json)"))));
   }
 
   @Test
@@ -441,7 +413,6 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("memo-comment-create",
             pathParameters(
                 parameterWithName("memoId")
@@ -459,25 +430,21 @@ class MemoControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("생성된 댓글 정보"),
-                fieldWithPath("result.id")
+                fieldWithPath("id")
                     .description("댓글 ID"),
-                fieldWithPath("result.memoId")
+                fieldWithPath("memoId")
                     .description("메모 ID"),
-                fieldWithPath("result.author")
+                fieldWithPath("author")
                     .description("작성자 정보"),
-                fieldWithPath("result.author.id")
+                fieldWithPath("author.id")
                     .description("작성자 ID"),
-                fieldWithPath("result.author.name")
+                fieldWithPath("author.name")
                     .description("작성자 이름"),
-                fieldWithPath("result.body")
+                fieldWithPath("body")
                     .description("댓글 내용"),
-                fieldWithPath("result.createdAt")
+                fieldWithPath("createdAt")
                     .description("생성 일시"),
-                fieldWithPath("result.updatedAt")
+                fieldWithPath("updatedAt")
                     .description("수정 일시"))));
   }
 
@@ -509,7 +476,6 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("memo-comment-list",
             pathParameters(
                 parameterWithName("memoId")
@@ -522,25 +488,21 @@ class MemoControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("댓글 목록"),
-                fieldWithPath("result[].id")
+                fieldWithPath("[].id")
                     .description("댓글 ID"),
-                fieldWithPath("result[].memoId")
+                fieldWithPath("[].memoId")
                     .description("메모 ID"),
-                fieldWithPath("result[].author")
+                fieldWithPath("[].author")
                     .description("작성자 정보"),
-                fieldWithPath("result[].author.id")
+                fieldWithPath("[].author.id")
                     .description("작성자 ID"),
-                fieldWithPath("result[].author.name")
+                fieldWithPath("[].author.name")
                     .description("작성자 이름"),
-                fieldWithPath("result[].body")
+                fieldWithPath("[].body")
                     .description("댓글 내용"),
-                fieldWithPath("result[].createdAt")
+                fieldWithPath("[].createdAt")
                     .description("생성 일시"),
-                fieldWithPath("result[].updatedAt")
+                fieldWithPath("[].updatedAt")
                     .description("수정 일시"))));
   }
 
@@ -580,7 +542,6 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("memo-comment-update",
             pathParameters(
                 parameterWithName("memoId")
@@ -600,25 +561,21 @@ class MemoControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success")
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .description("수정된 댓글 정보"),
-                fieldWithPath("result.id")
+                fieldWithPath("id")
                     .description("댓글 ID"),
-                fieldWithPath("result.memoId")
+                fieldWithPath("memoId")
                     .description("메모 ID"),
-                fieldWithPath("result.author")
+                fieldWithPath("author")
                     .description("작성자 정보"),
-                fieldWithPath("result.author.id")
+                fieldWithPath("author.id")
                     .description("작성자 ID"),
-                fieldWithPath("result.author.name")
+                fieldWithPath("author.name")
                     .description("작성자 이름"),
-                fieldWithPath("result.body")
+                fieldWithPath("body")
                     .description("댓글 내용"),
-                fieldWithPath("result.createdAt")
+                fieldWithPath("createdAt")
                     .description("생성 일시"),
-                fieldWithPath("result.updatedAt")
+                fieldWithPath("updatedAt")
                     .description("수정 일시"))));
   }
 
@@ -639,7 +596,6 @@ class MemoControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("memo-comment-delete",
             pathParameters(
                 parameterWithName("memoId")
@@ -649,18 +605,7 @@ class MemoControllerTest {
             requestHeaders(
                 headerWithName("Accept")
                     .description(
-                        "응답 포맷 (application/json)")),
-            responseHeaders(
-                headerWithName("Content-Type")
-                    .description("응답 컨텐츠 타입")),
-            responseFields(
-                fieldWithPath("success")
-                    .type(JsonFieldType.BOOLEAN)
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .type(JsonFieldType.NULL)
-                    .description("응답 데이터 (null)")
-                    .optional())));
+                        "응답 포맷 (application/json)"))));
   }
 
 }

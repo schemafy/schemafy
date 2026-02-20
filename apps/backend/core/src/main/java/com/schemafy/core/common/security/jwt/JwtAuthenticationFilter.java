@@ -90,10 +90,7 @@ public class JwtAuthenticationFilter implements WebFilter {
 
   private Mono<Void> handleJwtError(ServerWebExchange exchange,
       DomainErrorCode errorCode, String errorMessage) {
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        errorCode.status(),
-        errorCode.code(),
+    return errorResponseWriter.writeErrorResponse(exchange, errorCode,
         errorMessage);
   }
 

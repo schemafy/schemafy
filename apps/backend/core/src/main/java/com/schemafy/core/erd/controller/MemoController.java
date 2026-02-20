@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -39,87 +38,80 @@ public class MemoController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PostMapping("/memos")
-  public Mono<BaseResponse<MemoDetailResponse>> createMemo(
+  public Mono<MemoDetailResponse> createMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
       @Valid @RequestBody CreateMemoRequest request) {
-    return memoService.createMemo(request, user)
-        .map(BaseResponse::success);
+    return memoService.createMemo(request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/memos/{memoId}")
-  public Mono<BaseResponse<MemoDetailResponse>> getMemo(
+  public Mono<MemoDetailResponse> getMemo(
       @PathVariable String memoId) {
-    return memoService.getMemo(memoId)
-        .map(BaseResponse::success);
+    return memoService.getMemo(memoId);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}/memos")
-  public Mono<BaseResponse<List<MemoResponse>>> getMemosBySchemaId(
+  public Mono<List<MemoResponse>> getMemosBySchemaId(
       @PathVariable String schemaId) {
     return memoService.getMemosBySchemaId(schemaId)
-        .collectList()
-        .map(BaseResponse::success);
+        .collectList();
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PutMapping("/memos/{memoId}")
-  public Mono<BaseResponse<MemoResponse>> updateMemo(
+  public Mono<MemoResponse> updateMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
       @PathVariable String memoId,
       @Valid @RequestBody UpdateMemoRequest request) {
-    return memoService.updateMemo(memoId, request, user)
-        .map(BaseResponse::success);
+    return memoService.updateMemo(memoId, request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @DeleteMapping("/memos/{memoId}")
-  public Mono<BaseResponse<Void>> deleteMemo(
+  public Mono<Void> deleteMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
       @PathVariable String memoId) {
     return memoService.deleteMemo(memoId, user)
-        .then(Mono.just(BaseResponse.success(null)));
+        .then();
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PostMapping("/memos/{memoId}/comments")
-  public Mono<BaseResponse<MemoCommentResponse>> createMemoComment(
+  public Mono<MemoCommentResponse> createMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
       @PathVariable String memoId,
       @Valid @RequestBody CreateMemoCommentRequest request) {
-    return memoService.createComment(memoId, request, user)
-        .map(BaseResponse::success);
+    return memoService.createComment(memoId, request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/memos/{memoId}/comments")
-  public Mono<BaseResponse<List<MemoCommentResponse>>> getMemoComments(
+  public Mono<List<MemoCommentResponse>> getMemoComments(
       @PathVariable String memoId) {
     return memoService.getComments(memoId)
-        .collectList()
-        .map(BaseResponse::success);
+        .collectList();
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PutMapping("/memos/{memoId}/comments/{commentId}")
-  public Mono<BaseResponse<MemoCommentResponse>> updateMemoComment(
+  public Mono<MemoCommentResponse> updateMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
       @PathVariable String memoId,
       @PathVariable String commentId,
       @Valid @RequestBody UpdateMemoCommentRequest request) {
-    return memoService.updateComment(memoId, commentId, request, user)
-        .map(BaseResponse::success);
+    return memoService.updateComment(memoId, commentId, request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @DeleteMapping("/memos/{memoId}/comments/{commentId}")
-  public Mono<BaseResponse<Void>> deleteMemoComment(
+  public Mono<Void> deleteMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
       @PathVariable String memoId,
       @PathVariable String commentId) {
     return memoService.deleteComment(memoId, commentId, user)
-        .then(Mono.just(BaseResponse.success(null)));
+        .then();
   }
 
 }
