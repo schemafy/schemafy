@@ -112,8 +112,7 @@ public final class MySqlDdlUtils {
 
     String normalized = action.toUpperCase().trim();
     if (!VALID_REFERENTIAL_ACTIONS.contains(normalized)) {
-      throw new IllegalArgumentException(
-          "Invalid referential action: " + action);
+      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(normalized);
   }
