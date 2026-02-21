@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableExtraRequest;
@@ -103,7 +102,7 @@ public class TableController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/tables")
-  public Mono<BaseResponse<MutationResponse<TableResponse>>> createTable(
+  public Mono<MutationResponse<TableResponse>> createTable(
       @Valid @RequestBody CreateTableRequest request) {
     CreateTableCommand command = new CreateTableCommand(
         request.schemaId(),
@@ -115,37 +114,33 @@ public class TableController {
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             TableResponse.from(result.result(), request.schemaId()),
-            result.affectedTableIds()))
-        .map(BaseResponse::success);
+            result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}")
-  public Mono<BaseResponse<TableResponse>> getTable(
+  public Mono<TableResponse> getTable(
       @PathVariable String tableId) {
     GetTableQuery query = new GetTableQuery(tableId);
     return getTableUseCase.getTable(query)
-        .map(TableResponse::from)
-        .map(BaseResponse::success);
+        .map(TableResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}/snapshot")
-  public Mono<BaseResponse<TableSnapshotResponse>> getTableSnapshot(
+  public Mono<TableSnapshotResponse> getTableSnapshot(
       @PathVariable String tableId) {
-    return fetchTableSnapshot(tableId)
-        .map(BaseResponse::success);
+    return fetchTableSnapshot(tableId);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/snapshots")
-  public Mono<BaseResponse<Map<String, TableSnapshotResponse>>> getTableSnapshots(
+  public Mono<Map<String, TableSnapshotResponse>> getTableSnapshots(
       @RequestParam List<String> tableIds) {
     return Flux.fromIterable(tableIds)
         .flatMap(tableId -> fetchTableSnapshot(tableId)
             .onErrorResume(e -> Mono.empty()))
-        .collectMap(snapshot -> snapshot.table().id(), Function.identity())
-        .map(BaseResponse::success);
+        .collectMap(snapshot -> snapshot.table().id(), Function.identity());
   }
 
   private Mono<TableSnapshotResponse> fetchTableSnapshot(String tableId) {
@@ -222,18 +217,17 @@ public class TableController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}/tables")
-  public Mono<BaseResponse<List<TableResponse>>> getTablesBySchemaId(
+  public Mono<List<TableResponse>> getTablesBySchemaId(
       @PathVariable String schemaId) {
     GetTablesBySchemaIdQuery query = new GetTablesBySchemaIdQuery(schemaId);
     return getTablesBySchemaIdUseCase.getTablesBySchemaId(query)
         .map(TableResponse::from)
-        .collectList()
-        .map(BaseResponse::success);
+        .collectList();
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/name")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeTableName(
+  public Mono<MutationResponse<Void>> changeTableName(
       @PathVariable String tableId,
       @Valid @RequestBody ChangeTableNameRequest request) {
     ChangeTableNameCommand command = new ChangeTableNameCommand(
@@ -242,13 +236,12 @@ public class TableController {
     return changeTableNameUseCase.changeTableName(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/meta")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeTableMeta(
+  public Mono<MutationResponse<Void>> changeTableMeta(
       @PathVariable String tableId,
       @RequestBody ChangeTableMetaRequest request) {
     ChangeTableMetaCommand command = new ChangeTableMetaCommand(
@@ -258,13 +251,12 @@ public class TableController {
     return changeTableMetaUseCase.changeTableMeta(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/extra")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeTableExtra(
+  public Mono<MutationResponse<Void>> changeTableExtra(
       @PathVariable String tableId,
       @RequestBody ChangeTableExtraRequest request) {
     ChangeTableExtraCommand command = new ChangeTableExtraCommand(
@@ -273,28 +265,25 @@ public class TableController {
     return changeTableExtraUseCase.changeTableExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/tables/{tableId}")
-  public Mono<BaseResponse<MutationResponse<Void>>> deleteTable(
+  public Mono<MutationResponse<Void>> deleteTable(
       @PathVariable String tableId) {
     DeleteTableCommand command = new DeleteTableCommand(tableId);
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return deleteTableUseCase.deleteTable(command)
-          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-          .map(BaseResponse::success);
+          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
     }
     return broadcaster.resolveFromTableId(tableId)
         .flatMap(ctx -> deleteTableUseCase.deleteTable(command)
             .flatMap(result -> broadcaster
                 .broadcastWithContext(ctx, result.affectedTableIds())
                 .thenReturn(result)))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {

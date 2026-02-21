@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.out.ChangeSchemaNamePort;
 import com.schemafy.domain.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
@@ -12,7 +13,7 @@ import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemasByProjectIdPort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -72,7 +73,7 @@ class SchemaPersistenceAdapter implements
 
   private Mono<SchemaEntity> findSchemaOrError(String schemaId) {
     return schemaRepository.findById(schemaId)
-        .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found: " + schemaId)));
+        .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + schemaId)));
   }
 
 }

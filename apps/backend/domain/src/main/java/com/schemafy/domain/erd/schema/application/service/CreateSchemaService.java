@@ -3,13 +3,14 @@ package com.schemafy.domain.erd.schema.application.service;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaResult;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ class CreateSchemaService implements CreateSchemaUseCase {
         .existsActiveByProjectIdAndName(command.projectId(), command.name())
         .flatMap(exists -> {
           if (exists) {
-            return Mono.error(new SchemaNameDuplicateException(
+            return Mono.error(new DomainException(SchemaErrorCode.NAME_DUPLICATE,
                 "Schema name '%s' already exists in project".formatted(command.name())));
           }
 

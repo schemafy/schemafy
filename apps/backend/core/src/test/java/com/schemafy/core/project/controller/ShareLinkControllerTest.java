@@ -169,11 +169,10 @@ class ShareLinkControllerTest {
             ShareLinkApiSnippets.createShareLinkRequest(),
             ShareLinkApiSnippets.createShareLinkResponseHeaders(),
             ShareLinkApiSnippets.createShareLinkResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.projectId").isEqualTo(testProject.getId())
-        .jsonPath("$.result.role").isEqualTo("viewer")
-        .jsonPath("$.result.token").isNotEmpty()
-        .jsonPath("$.result.isRevoked").isEqualTo(false);
+        .jsonPath("$.projectId").isEqualTo(testProject.getId())
+        .jsonPath("$.role").isEqualTo("viewer")
+        .jsonPath("$.token").isNotEmpty()
+        .jsonPath("$.isRevoked").isEqualTo(false);
   }
 
   @Test
@@ -187,9 +186,8 @@ class ShareLinkControllerTest {
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isCreated().expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.role").isEqualTo("editor")
-        .jsonPath("$.result.expiresAt").isNotEmpty();
+        .jsonPath("$.role").isEqualTo("editor")
+        .jsonPath("$.expiresAt").isNotEmpty();
   }
 
   @Test
@@ -234,9 +232,8 @@ class ShareLinkControllerTest {
             ShareLinkApiSnippets.getShareLinksQueryParameters(),
             ShareLinkApiSnippets.getShareLinksResponseHeaders(),
             ShareLinkApiSnippets.getShareLinksResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.totalElements").isEqualTo(2)
-        .jsonPath("$.result.content").isArray();
+        .jsonPath("$.totalElements").isEqualTo(2)
+        .jsonPath("$.content").isArray();
   }
 
   @Test
@@ -256,9 +253,8 @@ class ShareLinkControllerTest {
             ShareLinkApiSnippets.getShareLinkRequestHeaders(),
             ShareLinkApiSnippets.getShareLinkResponseHeaders(),
             ShareLinkApiSnippets.getShareLinkResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.id")
-        .isEqualTo(shareLink.getId()).jsonPath("$.result.role")
+        .jsonPath("$.id")
+        .isEqualTo(shareLink.getId()).jsonPath("$.role")
         .isEqualTo("viewer");
   }
 
@@ -285,9 +281,7 @@ class ShareLinkControllerTest {
         .expectBody()
         .consumeWith(document("share-link-revoke",
             ShareLinkApiSnippets.revokeShareLinkPathParameters(),
-            ShareLinkApiSnippets.revokeShareLinkRequestHeaders(),
-            ShareLinkApiSnippets.revokeShareLinkResponseHeaders(),
-            ShareLinkApiSnippets.revokeShareLinkResponse()));
+            ShareLinkApiSnippets.revokeShareLinkRequestHeaders()));
 
     // Verify revoked
     ShareLink revoked = shareLinkRepository

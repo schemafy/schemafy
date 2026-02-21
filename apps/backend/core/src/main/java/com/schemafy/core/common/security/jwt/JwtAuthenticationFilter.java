@@ -3,7 +3,6 @@ package com.schemafy.core.common.security.jwt;
 import jakarta.validation.constraints.NotNull;
 
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -13,8 +12,9 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
+import com.schemafy.domain.common.exception.DomainErrorCode;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -43,21 +43,16 @@ public class JwtAuthenticationFilter implements WebFilter {
       return chain.filter(exchange);
     }
 
-    // JWT 검증을 boundedElastic 스케줄러로 분리 (블로킹 호출 방지)
     return Mono.fromCallable(() -> validateTokenAndGetAuth(token))
         .subscribeOn(Schedulers.boundedElastic())
         .flatMap(result -> {
           if (result.valid()) {
             return chain.filter(exchange)
                 .contextWrite(ReactiveSecurityContextHolder
-                    .withAuthentication(
-                        result.authentication()));
-          } else {
-            return handleJwtError(exchange,
-                result.errorType(),
-                result.errorMessage(),
-                result.status());
+                    .withAuthentication(result.authentication()));
           }
+          return handleJwtError(exchange, result.errorCode(),
+              result.errorMessage());
         })
         .onErrorResume(e -> handleUnexpectedError(exchange));
   }
@@ -69,11 +64,11 @@ public class JwtAuthenticationFilter implements WebFilter {
 
       if (!JwtProvider.ACCESS_TOKEN.equals(tokenType)) {
         return AuthenticationResult
-            .error(ErrorCode.INVALID_ACCESS_TOKEN_TYPE);
+            .error(AuthErrorCode.INVALID_ACCESS_TOKEN_TYPE);
       }
 
       if (!jwtProvider.validateToken(token, userId)) {
-        return AuthenticationResult.error(ErrorCode.INVALID_TOKEN);
+        return AuthenticationResult.error(AuthErrorCode.INVALID_TOKEN);
       }
 
       String userName = jwtProvider.extractClaim(token,
@@ -85,39 +80,26 @@ public class JwtAuthenticationFilter implements WebFilter {
       return AuthenticationResult.success(authentication);
 
     } catch (ExpiredJwtException e) {
-      return AuthenticationResult.error(ErrorCode.EXPIRED_TOKEN);
+      return AuthenticationResult.error(AuthErrorCode.EXPIRED_TOKEN);
     } catch (JwtException e) {
-      return AuthenticationResult.error(ErrorCode.MALFORMED_TOKEN);
+      return AuthenticationResult.error(AuthErrorCode.MALFORMED_TOKEN);
     } catch (Exception e) {
-      return AuthenticationResult.error(ErrorCode.TOKEN_VALIDATION_ERROR);
+      return AuthenticationResult.error(AuthErrorCode.TOKEN_VALIDATION_ERROR);
     }
   }
 
   private Mono<Void> handleJwtError(ServerWebExchange exchange,
-      String errorCode, String errorMessage, HttpStatus status) {
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        status,
-        errorCode,
+      DomainErrorCode errorCode, String errorMessage) {
+    return errorResponseWriter.writeErrorResponse(exchange, errorCode,
         errorMessage);
   }
 
-  private Mono<Void> handleJwtError(ServerWebExchange exchange,
-      ErrorCode errorCode) {
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        errorCode.getStatus(),
-        errorCode.getCode(),
-        errorCode.getMessage());
-  }
-
   private Mono<Void> handleUnexpectedError(ServerWebExchange exchange) {
-    return handleJwtError(exchange, ErrorCode.TOKEN_VALIDATION_ERROR);
+    DomainErrorCode errorCode = AuthErrorCode.TOKEN_VALIDATION_ERROR;
+    return handleJwtError(exchange, errorCode, errorCode.code());
   }
 
   private AuthenticatedUser createPrincipal(String userId, String userName) {
-    // TODO: JWT 클레임 또는 DB 조회를 통해 역할(roles)을 채워 넣는다.
-    // 현재는 모든 프로젝트 롤을 부여해 hasAuthority 기반 접근제어를 통과시키는 임시 구현.
     return AuthenticatedUser.withAllRoles(userId, userName);
   }
 
@@ -145,19 +127,17 @@ public class JwtAuthenticationFilter implements WebFilter {
   private record AuthenticationResult(
       boolean valid,
       UsernamePasswordAuthenticationToken authentication,
-      HttpStatus status,
-      String errorType,
+      DomainErrorCode errorCode,
       String errorMessage) {
 
     static AuthenticationResult success(
         UsernamePasswordAuthenticationToken authentication) {
-      return new AuthenticationResult(true, authentication, null, null,
-          null);
+      return new AuthenticationResult(true, authentication, null, null);
     }
 
-    static AuthenticationResult error(ErrorCode errorCode) {
-      return new AuthenticationResult(false, null, errorCode.getStatus(),
-          errorCode.getCode(), errorCode.getMessage());
+    static AuthenticationResult error(DomainErrorCode errorCode) {
+      return new AuthenticationResult(false, null, errorCode,
+          errorCode.code());
     }
 
   }

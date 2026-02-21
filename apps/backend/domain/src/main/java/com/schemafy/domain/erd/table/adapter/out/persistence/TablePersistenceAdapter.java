@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.table.application.port.out.CascadeDeleteTablePort;
 import com.schemafy.domain.erd.table.application.port.out.CascadeDeleteTablesBySchemaIdPort;
 import com.schemafy.domain.erd.table.application.port.out.ChangeTableExtraPort;
@@ -16,7 +17,7 @@ import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.application.port.out.GetTablesBySchemaIdPort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -115,7 +116,7 @@ class TablePersistenceAdapter implements
 
   private Mono<TableEntity> findTableOrError(String tableId) {
     return tableRepository.findById(tableId)
-        .switchIfEmpty(Mono.error(new TableNotExistException("Table not found: " + tableId)));
+        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + tableId)));
   }
 
   private static boolean hasText(String value) {

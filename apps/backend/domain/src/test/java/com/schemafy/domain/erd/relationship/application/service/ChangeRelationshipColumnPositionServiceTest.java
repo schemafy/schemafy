@@ -10,12 +10,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 
 import reactor.core.publisher.Mono;
@@ -109,7 +110,7 @@ class ChangeRelationshipColumnPositionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
-          .expectError(RelationshipPositionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.POSITION_INVALID))
           .verify();
 
       then(changeRelationshipColumnPositionPort).shouldHaveNoInteractions();

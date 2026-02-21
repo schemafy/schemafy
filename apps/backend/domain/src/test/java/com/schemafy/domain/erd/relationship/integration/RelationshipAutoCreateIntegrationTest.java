@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
@@ -172,7 +172,7 @@ class RelationshipAutoCreateIntegrationTest {
         Cardinality.ONE_TO_MANY);
 
     StepVerifier.create(createRelationshipUseCase.createRelationship(createCommand))
-        .expectError(InvalidValueException.class)
+        .expectError(DomainException.class)
         .verify();
   }
 

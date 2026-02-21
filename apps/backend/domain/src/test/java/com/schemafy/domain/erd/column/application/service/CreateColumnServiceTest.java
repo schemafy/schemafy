@@ -10,23 +10,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.exception.ColumnAutoIncrementNotAllowedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnCharsetNotAllowedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnLengthRequiredException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameDuplicateException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameReservedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnPrecisionRequiredException;
-import com.schemafy.domain.erd.column.domain.exception.MultipleAutoIncrementColumnException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -207,7 +202,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(TableNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -233,7 +228,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(SchemaNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NOT_FOUND))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -261,7 +256,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(List.of(existingColumn)));
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(ColumnNameDuplicateException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_DUPLICATE))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -288,7 +283,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(ColumnNameReservedException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_RESERVED))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -315,7 +310,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(ColumnLengthRequiredException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.LENGTH_REQUIRED))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -342,7 +337,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(ColumnPrecisionRequiredException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -380,7 +375,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.createColumn(commandWithWrongType))
-            .expectError(ColumnAutoIncrementNotAllowedException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -409,7 +404,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(List.of(existingAutoIncrement)));
 
         StepVerifier.create(sut.createColumn(command))
-            .expectError(MultipleAutoIncrementColumnException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.MULTIPLE_AUTO_INCREMENT))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -447,7 +442,7 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.createColumn(commandWithInt))
-            .expectError(ColumnCharsetNotAllowedException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.CHARSET_NOT_ALLOWED))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();

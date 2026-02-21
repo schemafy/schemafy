@@ -13,14 +13,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipKindPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsBySchemaIdPort;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipCyclicReferenceException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
@@ -162,7 +161,7 @@ class ChangeRelationshipKindServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeRelationshipKind(command))
-            .expectError(RelationshipNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
             .verify();
 
         then(changeRelationshipKindPort).shouldHaveNoInteractions();
@@ -181,7 +180,7 @@ class ChangeRelationshipKindServiceTest {
             RelationshipFixture.DEFAULT_ID, null);
 
         StepVerifier.create(sut.changeRelationshipKind(command))
-            .expectError(InvalidValueException.class)
+            .expectError(DomainException.class)
             .verify();
 
         then(changeRelationshipKindPort).shouldHaveNoInteractions();
@@ -216,7 +215,7 @@ class ChangeRelationshipKindServiceTest {
             .willReturn(Mono.just(List.of(relationship, reverseRelationship)));
 
         StepVerifier.create(sut.changeRelationshipKind(command))
-            .expectError(RelationshipCyclicReferenceException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE))
             .verify();
 
         then(changeRelationshipKindPort).shouldHaveNoInteractions();
@@ -254,7 +253,7 @@ class ChangeRelationshipKindServiceTest {
             .willReturn(Mono.just(List.of(relationshipAB, relationshipBC, relationshipCA)));
 
         StepVerifier.create(sut.changeRelationshipKind(command))
-            .expectError(RelationshipCyclicReferenceException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE))
             .verify();
 
         then(changeRelationshipKindPort).shouldHaveNoInteractions();

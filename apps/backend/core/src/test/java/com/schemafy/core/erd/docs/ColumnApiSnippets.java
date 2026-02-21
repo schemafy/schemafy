@@ -90,7 +90,7 @@ public class ColumnApiSnippets extends RestDocsSnippets {
   /** 컬럼 생성 응답 */
   public static Snippet createColumnResponse() {
     return createResponseFieldsSnippet(
-        mutationResponseFields(columnResponseFields("result.data.")));
+        mutationResponseFields(columnResponseFields("data.")));
   }
 
   // ========== GET /api/columns/{columnId} - 컬럼 조회 ==========
@@ -115,7 +115,7 @@ public class ColumnApiSnippets extends RestDocsSnippets {
   /** 컬럼 조회 응답 */
   public static Snippet getColumnResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(columnResponseFields("result.")));
+        successResponseFields(columnResponseFields("")));
   }
 
   // ========== GET /api/tables/{tableId}/columns - 테이블별 컬럼 목록 조회 ==========
@@ -139,19 +139,8 @@ public class ColumnApiSnippets extends RestDocsSnippets {
 
   /** 테이블별 컬럼 목록 조회 응답 */
   public static Snippet getColumnsByTableIdResponse() {
-    return createResponseFieldsSnippet(concat(
-        new FieldDescriptor[] {
-          fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-              .description("요청 성공 여부"),
-          fieldWithPath("result").type(JsonFieldType.ARRAY)
-              .description("컬럼 목록")
-        },
-        concat(
-            columnResponseFields("result[]."),
-            new FieldDescriptor[] {
-              fieldWithPath("error").type(JsonFieldType.NULL)
-                  .description("에러 정보 (성공 시 null)").optional()
-            })));
+    return createResponseFieldsSnippet(
+        columnResponseFields("[]."));
   }
 
   // ========== PATCH /api/columns/{columnId}/name - 컬럼 이름 변경 ==========

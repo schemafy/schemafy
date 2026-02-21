@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkAccessLogRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
@@ -124,13 +125,12 @@ class PublicShareLinkControllerTest {
         null);
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token).exchange()
-        .expectStatus().isOk().expectBody().jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.projectId")
-        .isEqualTo(testProject.getId()).jsonPath("$.result.projectName")
-        .isEqualTo("Test Project").jsonPath("$.result.grantedRole")
+        .expectStatus().isOk().expectBody().jsonPath("$.projectId")
+        .isEqualTo(testProject.getId()).jsonPath("$.projectName")
+        .isEqualTo("Test Project").jsonPath("$.grantedRole")
         .isEqualTo("viewer") // Anonymous gets VIEWER
-        .jsonPath("$.result.canEdit").isEqualTo(false)
-        .jsonPath("$.result.canComment").isEqualTo(false);
+        .jsonPath("$.canEdit").isEqualTo(false)
+        .jsonPath("$.canComment").isEqualTo(false);
   }
 
   @Test
@@ -142,11 +142,10 @@ class PublicShareLinkControllerTest {
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token)
         .header("Authorization", "Bearer " + accessToken).exchange()
-        .expectStatus().isOk().expectBody().jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.grantedRole")
+        .expectStatus().isOk().expectBody().jsonPath("$.grantedRole")
         .isEqualTo("editor") // Gets ShareLink's role
-        .jsonPath("$.result.canEdit").isEqualTo(true)
-        .jsonPath("$.result.canComment").isEqualTo(true);
+        .jsonPath("$.canEdit").isEqualTo(true)
+        .jsonPath("$.canComment").isEqualTo(true);
   }
 
   @Test
@@ -159,9 +158,9 @@ class PublicShareLinkControllerTest {
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token)
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isOk().expectBody()
-        .jsonPath("$.result.grantedRole").isEqualTo("viewer")
-        .jsonPath("$.result.canEdit").isEqualTo(false)
-        .jsonPath("$.result.canComment").isEqualTo(false);
+        .jsonPath("$.grantedRole").isEqualTo("viewer")
+        .jsonPath("$.canEdit").isEqualTo(false)
+        .jsonPath("$.canComment").isEqualTo(false);
   }
 
   @Test
@@ -174,9 +173,9 @@ class PublicShareLinkControllerTest {
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token)
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isOk().expectBody()
-        .jsonPath("$.result.grantedRole").isEqualTo("commenter")
-        .jsonPath("$.result.canEdit").isEqualTo(false)
-        .jsonPath("$.result.canComment").isEqualTo(true);
+        .jsonPath("$.grantedRole").isEqualTo("commenter")
+        .jsonPath("$.canEdit").isEqualTo(false)
+        .jsonPath("$.canComment").isEqualTo(true);
   }
 
   @Test
@@ -184,8 +183,8 @@ class PublicShareLinkControllerTest {
   void accessByToken_InvalidToken() {
     webTestClient.get().uri(PUBLIC_API_PATH + "/invalid-token").exchange()
         .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .jsonPath("$.status").isEqualTo(401).jsonPath("$.reason")
+        .isEqualTo(ShareLinkErrorCode.INVALID.code());
   }
 
   @Test
@@ -199,8 +198,8 @@ class PublicShareLinkControllerTest {
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token).exchange()
         .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .jsonPath("$.status").isEqualTo(401).jsonPath("$.reason")
+        .isEqualTo(ShareLinkErrorCode.INVALID.code());
   }
 
   @Test
@@ -213,8 +212,8 @@ class PublicShareLinkControllerTest {
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token).exchange()
         .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .jsonPath("$.status").isEqualTo(401).jsonPath("$.reason")
+        .isEqualTo(ShareLinkErrorCode.INVALID.code());
   }
 
   @Test
@@ -228,8 +227,8 @@ class PublicShareLinkControllerTest {
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + token).exchange()
         .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .jsonPath("$.status").isEqualTo(401).jsonPath("$.reason")
+        .isEqualTo(ShareLinkErrorCode.INVALID.code());
   }
 
   private ShareLink createShareLink(String token, ShareLinkRole role,

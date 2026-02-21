@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.in.RemoveIndexColumnCommand;
 import com.schemafy.domain.erd.index.application.port.in.RemoveIndexColumnUseCase;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnPositionPort;
@@ -16,8 +17,7 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -37,10 +37,10 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
   @Override
   public Mono<MutationResult<Void>> removeIndexColumn(RemoveIndexColumnCommand command) {
     return getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-        .switchIfEmpty(Mono.error(new IndexColumnNotExistException(
-            "Index column not found")))
+        .switchIfEmpty(Mono.error(new DomainException(
+            IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
         .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
-            .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
             .flatMap(index -> deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
                 .then(handleRemainingColumns(index.id()))
                 .thenReturn(MutationResult.<Void>of(null, index.tableId()))))

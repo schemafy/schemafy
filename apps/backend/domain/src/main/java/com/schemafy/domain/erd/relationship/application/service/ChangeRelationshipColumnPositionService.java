@@ -8,6 +8,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipColumnPositionUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
@@ -16,8 +17,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -36,11 +36,11 @@ public class ChangeRelationshipColumnPositionService
   public Mono<MutationResult<Void>> changeRelationshipColumnPosition(
       ChangeRelationshipColumnPositionCommand command) {
     return getRelationshipColumnByIdPort.findRelationshipColumnById(command.relationshipColumnId())
-        .switchIfEmpty(Mono.error(new RelationshipPositionInvalidException(
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
             "Relationship column not found")))
         .flatMap(relationshipColumn -> getRelationshipByIdPort
             .findRelationshipById(relationshipColumn.relationshipId())
-            .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
             .flatMap(relationship -> getRelationshipColumnsByRelationshipIdPort
                 .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
                 .defaultIfEmpty(List.of())
@@ -63,14 +63,14 @@ public class ChangeRelationshipColumnPositionService
       List<RelationshipColumn> columns,
       int nextPosition) {
     if (columns.isEmpty()) {
-      return Mono.error(new RelationshipPositionInvalidException(
+      return Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
           "Relationship column not found"));
     }
 
     List<RelationshipColumn> reordered = new ArrayList<>(columns);
     int currentIndex = findIndex(reordered, relationshipColumn.id());
     if (currentIndex < 0) {
-      return Mono.error(new RelationshipPositionInvalidException(
+      return Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
           "Relationship column not found"));
     }
     RelationshipColumn movingColumn = reordered.remove(currentIndex);

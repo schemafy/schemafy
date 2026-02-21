@@ -8,8 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 
 import reactor.core.publisher.Mono;
@@ -61,7 +62,7 @@ class GetRelationshipColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.getRelationshipColumn(query))
-          .expectError(RelationshipColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.COLUMN_NOT_FOUND))
           .verify();
     }
 

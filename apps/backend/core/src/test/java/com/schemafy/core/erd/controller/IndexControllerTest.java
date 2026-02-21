@@ -145,8 +145,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.data.id").isEqualTo(indexId)
+        .jsonPath("$.data.id").isEqualTo(indexId)
         .consumeWith(document("index-create",
             IndexApiSnippets.createIndexRequestHeaders(),
             IndexApiSnippets.createIndexRequest(),
@@ -171,8 +170,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(indexId)
+        .jsonPath("$.id").isEqualTo(indexId)
         .consumeWith(document("index-get",
             IndexApiSnippets.getIndexPathParameters(),
             IndexApiSnippets.getIndexRequestHeaders(),
@@ -199,9 +197,8 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].id").isEqualTo(indexId1)
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].id").isEqualTo(indexId1)
         .consumeWith(document("index-list-by-table",
             IndexApiSnippets.getIndexesByTableIdPathParameters(),
             IndexApiSnippets.getIndexesByTableIdRequestHeaders(),
@@ -228,8 +225,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("index-change-name",
             IndexApiSnippets.changeIndexNamePathParameters(),
             IndexApiSnippets.changeIndexNameRequestHeaders(),
@@ -257,8 +253,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("index-change-type",
             IndexApiSnippets.changeIndexTypePathParameters(),
             IndexApiSnippets.changeIndexTypeRequestHeaders(),
@@ -283,8 +278,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("index-delete",
             IndexApiSnippets.deleteIndexPathParameters(),
             IndexApiSnippets.deleteIndexRequestHeaders(),
@@ -316,9 +310,8 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].id").isEqualTo(indexColumnId1)
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].id").isEqualTo(indexColumnId1)
         .consumeWith(document("index-columns-list",
             IndexApiSnippets.getIndexColumnsPathParameters(),
             IndexApiSnippets.getIndexColumnsRequestHeaders(),
@@ -354,8 +347,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.data.id").isEqualTo(indexColumnId)
+        .jsonPath("$.data.id").isEqualTo(indexColumnId)
         .consumeWith(document("index-column-add",
             IndexApiSnippets.addIndexColumnPathParameters(),
             IndexApiSnippets.addIndexColumnRequestHeaders(),
@@ -379,8 +371,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("index-column-remove",
             IndexApiSnippets.removeIndexColumnPathParameters(),
             IndexApiSnippets.removeIndexColumnRequestHeaders(),
@@ -407,8 +398,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(indexColumnId)
+        .jsonPath("$.id").isEqualTo(indexColumnId)
         .consumeWith(document("index-column-get",
             IndexApiSnippets.getIndexColumnPathParameters(),
             IndexApiSnippets.getIndexColumnRequestHeaders(),
@@ -436,8 +426,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("index-column-change-position",
             IndexApiSnippets.changeIndexColumnPositionPathParameters(),
             IndexApiSnippets.changeIndexColumnPositionRequestHeaders(),
@@ -466,8 +455,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("index-column-change-sort-direction",
             IndexApiSnippets.changeIndexColumnSortDirectionPathParameters(),
             IndexApiSnippets.changeIndexColumnSortDirectionRequestHeaders(),

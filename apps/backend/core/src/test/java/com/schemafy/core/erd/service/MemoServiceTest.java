@@ -11,14 +11,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.TestFixture;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoRequest;
 import com.schemafy.core.erd.controller.dto.response.MemoDetailResponse;
+import com.schemafy.core.erd.exception.MemoErrorCode;
 import com.schemafy.core.erd.repository.MemoCommentRepository;
 import com.schemafy.core.erd.repository.MemoRepository;
 import com.schemafy.core.erd.repository.entity.Memo;
@@ -27,10 +28,11 @@ import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaResult;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -122,7 +124,7 @@ class MemoServiceTest {
 
     StepVerifier
         .create(memoService.createMemo(request, user))
-        .expectError(SchemaNotExistException.class)
+        .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NOT_FOUND))
         .verify();
   }
 
@@ -273,9 +275,9 @@ class MemoServiceTest {
     StepVerifier
         .create(memoService.updateMemo(memo.getId(), request,
             otherUser))
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.ACCESS_DENIED)
+        .expectErrorMatches(e -> e instanceof DomainException
+            && ((DomainException) e)
+                .getErrorCode() == AuthErrorCode.ACCESS_DENIED)
         .verify();
   }
 
@@ -423,9 +425,9 @@ class MemoServiceTest {
 
     StepVerifier.create(memoService.updateComment(
         "06D6W1GAHD51T5NJPK29Q6BCR9", comment.getId(), request, user))
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+        .expectErrorMatches(e -> e instanceof DomainException
+            && ((DomainException) e)
+                .getErrorCode() == CommonErrorCode.INVALID_PARAMETER)
         .verify();
   }
 
@@ -574,9 +576,9 @@ class MemoServiceTest {
     StepVerifier
         .create(memoService.deleteComment("06D6W1GAHD51T5NJPK29Q6BCR9",
             comment.getId(), user))
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.COMMON_INVALID_PARAMETER)
+        .expectErrorMatches(e -> e instanceof DomainException
+            && ((DomainException) e)
+                .getErrorCode() == CommonErrorCode.INVALID_PARAMETER)
         .verify();
   }
 
@@ -617,9 +619,9 @@ class MemoServiceTest {
   void getMemo_notFound() {
     StepVerifier
         .create(memoService.getMemo("06D6W1GAHD51T5NJPK29Q6BCR9"))
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.ERD_MEMO_NOT_FOUND)
+        .expectErrorMatches(e -> e instanceof DomainException
+            && ((DomainException) e)
+                .getErrorCode() == MemoErrorCode.NOT_FOUND)
         .verify();
   }
 
@@ -633,9 +635,9 @@ class MemoServiceTest {
     StepVerifier
         .create(memoService.createComment(
             "06D6W1GAHD51T5NJPK29Q6BCR9", request, user))
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.ERD_MEMO_NOT_FOUND)
+        .expectErrorMatches(e -> e instanceof DomainException
+            && ((DomainException) e)
+                .getErrorCode() == MemoErrorCode.NOT_FOUND)
         .verify();
   }
 
@@ -645,9 +647,9 @@ class MemoServiceTest {
     StepVerifier
         .create(memoService.getComments("06D6W1GAHD51T5NJPK29Q6BCR9")
             .collectList())
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.ERD_MEMO_NOT_FOUND)
+        .expectErrorMatches(e -> e instanceof DomainException
+            && ((DomainException) e)
+                .getErrorCode() == MemoErrorCode.NOT_FOUND)
         .verify();
   }
 
@@ -674,9 +676,9 @@ class MemoServiceTest {
 
     StepVerifier.create(memoService.updateComment(memo.getId(),
         comment.getId(), request, otherUser))
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.ACCESS_DENIED)
+        .expectErrorMatches(e -> e instanceof DomainException
+            && ((DomainException) e)
+                .getErrorCode() == AuthErrorCode.ACCESS_DENIED)
         .verify();
   }
 
@@ -713,9 +715,9 @@ class MemoServiceTest {
     StepVerifier
         .create(memoService.deleteComment(memo.getId(),
             targetComment.getId(), otherUser))
-        .expectErrorMatches(e -> e instanceof BusinessException
-            && ((BusinessException) e)
-                .getErrorCode() == ErrorCode.ACCESS_DENIED)
+        .expectErrorMatches(e -> e instanceof DomainException
+            && ((DomainException) e)
+                .getErrorCode() == AuthErrorCode.ACCESS_DENIED)
         .verify();
   }
 

@@ -9,8 +9,8 @@ import java.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +45,7 @@ public class ShareLinkTokenService {
       String salted = token + pepper;
       return digest.digest(salted.getBytes(StandardCharsets.UTF_8));
     } catch (NoSuchAlgorithmException e) {
-      throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+      throw new DomainException(CommonErrorCode.INTERNAL_SERVER_ERROR);
     }
   }
 

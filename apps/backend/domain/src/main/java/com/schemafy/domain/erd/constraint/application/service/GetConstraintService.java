@@ -2,11 +2,12 @@ package com.schemafy.domain.erd.constraint.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintQuery;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintUseCase;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -21,7 +22,7 @@ public class GetConstraintService implements GetConstraintUseCase {
   public Mono<Constraint> getConstraint(GetConstraintQuery query) {
     return getConstraintByIdPort.findConstraintById(query.constraintId())
         .switchIfEmpty(Mono.error(
-            new ConstraintNotExistException("Constraint not found: " + query.constraintId())));
+            new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found: " + query.constraintId())));
   }
 
 }

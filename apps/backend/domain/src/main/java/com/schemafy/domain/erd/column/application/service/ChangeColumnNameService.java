@@ -5,20 +5,21 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnNameUseCase;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnNamePort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -37,7 +38,7 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
   @Override
   public Mono<MutationResult<Void>> changeColumnName(ChangeColumnNameCommand command) {
     return getColumnByIdPort.findColumnById(command.columnId())
-        .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found")))
+        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
         .flatMap(column -> fetchTableSchemaAndColumns(column)
             .flatMap(tuple -> applyChange(column, tuple, command.newName()))
             .thenReturn(MutationResult.<Void>of(null, column.tableId())));
@@ -45,11 +46,11 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
 
   private Mono<Tuple3<Table, Schema, List<Column>>> fetchTableSchemaAndColumns(Column column) {
     Mono<Table> tableMono = getTableByIdPort.findTableById(column.tableId())
-        .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")));
+        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")));
 
     return tableMono.flatMap(table -> {
       Mono<Schema> schemaMono = getSchemaByIdPort.findSchemaById(table.schemaId())
-          .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found")));
+          .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found")));
       Mono<List<Column>> columnsMono = getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
           .defaultIfEmpty(List.of());
       return Mono.zip(Mono.just(table), schemaMono, columnsMono);

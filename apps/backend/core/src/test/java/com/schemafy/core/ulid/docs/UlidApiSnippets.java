@@ -17,7 +17,7 @@ public class UlidApiSnippets extends RestDocsSnippets {
   /** ULID 응답 필드 (result.* 형태) */
   private static FieldDescriptor[] ulidResponseFields() {
     return new FieldDescriptor[] {
-      fieldWithPath("result.ulid").type(JsonFieldType.STRING)
+      fieldWithPath("ulid").type(JsonFieldType.STRING)
           .description("생성된 ULID 문자열")
     };
   }

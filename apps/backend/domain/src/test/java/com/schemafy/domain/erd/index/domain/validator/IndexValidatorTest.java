@@ -10,17 +10,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNameInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexPositionInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexTypeInvalidException;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
@@ -40,7 +34,7 @@ class IndexValidatorTest {
     @DisplayName("null이거나 빈 문자열이면 예외가 발생한다")
     void throwsWhenNullOrEmpty(String name) {
       assertThatThrownBy(() -> IndexValidator.validateName(name))
-          .isInstanceOf(IndexNameInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @ParameterizedTest
@@ -48,7 +42,7 @@ class IndexValidatorTest {
     @DisplayName("공백 문자열이면 예외가 발생한다")
     void throwsWhenBlank(String name) {
       assertThatThrownBy(() -> IndexValidator.validateName(name))
-          .isInstanceOf(IndexNameInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -57,7 +51,7 @@ class IndexValidatorTest {
       String longName = "a".repeat(256);
 
       assertThatThrownBy(() -> IndexValidator.validateName(longName))
-          .isInstanceOf(IndexNameInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @ParameterizedTest
@@ -87,7 +81,7 @@ class IndexValidatorTest {
     @DisplayName("null이면 예외가 발생한다")
     void throwsWhenNull() {
       assertThatThrownBy(() -> IndexValidator.validateType(null))
-          .isInstanceOf(IndexTypeInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -115,7 +109,7 @@ class IndexValidatorTest {
       List<Integer> seqNos = List.of(-1, 0);
 
       assertThatThrownBy(() -> IndexValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(IndexPositionInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -124,7 +118,7 @@ class IndexValidatorTest {
       List<Integer> seqNos = List.of(0, 0);
 
       assertThatThrownBy(() -> IndexValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(IndexPositionInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -133,7 +127,7 @@ class IndexValidatorTest {
       List<Integer> seqNos = List.of(0, 2);
 
       assertThatThrownBy(() -> IndexValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(IndexPositionInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -142,7 +136,7 @@ class IndexValidatorTest {
       List<Integer> seqNos = List.of(1, 2);
 
       assertThatThrownBy(() -> IndexValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(IndexPositionInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -179,7 +173,7 @@ class IndexValidatorTest {
 
       assertThatThrownBy(() -> IndexValidator.validateColumnExistence(
           tableColumns, indexColumns, "test_index"))
-          .isInstanceOf(IndexColumnNotExistException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("col2");
     }
 
@@ -234,7 +228,7 @@ class IndexValidatorTest {
 
       assertThatThrownBy(() -> IndexValidator.validateColumnUniqueness(
           indexColumns, "test_index"))
-          .isInstanceOf(IndexColumnDuplicateException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -246,7 +240,7 @@ class IndexValidatorTest {
 
       assertThatThrownBy(() -> IndexValidator.validateColumnUniqueness(
           indexColumns, "test_index"))
-          .isInstanceOf(IndexColumnDuplicateException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -283,7 +277,7 @@ class IndexValidatorTest {
 
       assertThatThrownBy(() -> IndexValidator.validateSortDirections(
           indexColumns, "test_index"))
-          .isInstanceOf(IndexColumnSortDirectionInvalidException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test
@@ -331,7 +325,7 @@ class IndexValidatorTest {
           candidateColumns,
           "new_idx",
           null))
-          .isInstanceOf(IndexDefinitionDuplicateException.class);
+          .isInstanceOf(DomainException.class);
     }
 
     @Test

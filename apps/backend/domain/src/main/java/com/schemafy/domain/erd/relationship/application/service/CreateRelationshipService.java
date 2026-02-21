@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -31,7 +31,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipTargetTableNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
@@ -64,10 +64,10 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       CreateRelationshipCommand command) {
     return Mono.defer(() -> {
       return getTableByIdPort.findTableById(command.fkTableId())
-          .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
+          .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
               "Relationship fk table not found")))
           .flatMap(fkTable -> getTableByIdPort.findTableById(command.pkTableId())
-              .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
+              .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
                   "Relationship pk table not found")))
               .flatMap(pkTable -> {
                 Set<String> affectedTableIds = new HashSet<>();
@@ -88,11 +88,12 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       CreateRelationshipCommand command,
       Set<String> affectedTableIds) {
     if (!fkTable.schemaId().equals(pkTable.schemaId())) {
-      return Mono.error(new RelationshipTargetTableNotExistException(
+      return Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
           "Relationship tables must belong to the same schema"));
     }
     if (command.kind() == null || command.cardinality() == null) {
-      return Mono.error(new InvalidValueException("Relationship kind and cardinality are required"));
+      return Mono.error(new DomainException(RelationshipErrorCode.INVALID_VALUE,
+          "Relationship kind and cardinality are required"));
     }
 
     return resolveAutoRelationshipName(fkTable, pkTable)
@@ -268,7 +269,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
             }
           }
           if (pkConstraint == null) {
-            return Mono.error(new InvalidValueException(
+            return Mono.error(new DomainException(RelationshipErrorCode.INVALID_VALUE,
                 "PK constraint not found for table '%s'".formatted(pkTable.id())));
           }
           return getConstraintColumnsByConstraintIdPort
@@ -276,7 +277,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
               .defaultIfEmpty(List.of())
               .flatMap(constraintColumns -> {
                 if (constraintColumns.isEmpty()) {
-                  return Mono.error(new InvalidValueException(
+                  return Mono.error(new DomainException(RelationshipErrorCode.INVALID_VALUE,
                       "PK constraint has no columns for table '%s'".formatted(pkTable.id())));
                 }
                 return getColumnsByTableIdPort.findColumnsByTableId(pkTable.id())
@@ -294,7 +295,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       List<ConstraintColumn> constraintColumns,
       String tableId) {
     if (constraintColumns == null || constraintColumns.isEmpty()) {
-      throw new InvalidValueException(
+      throw new DomainException(RelationshipErrorCode.INVALID_VALUE,
           "PK constraint has no columns for table '%s'".formatted(tableId));
     }
     Map<String, Column> columnsById = new HashMap<>();
@@ -310,7 +311,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
     for (ConstraintColumn constraintColumn : ordered) {
       Column column = columnsById.get(normalizeId(constraintColumn.columnId()));
       if (column == null) {
-        throw new InvalidValueException(
+        throw new DomainException(RelationshipErrorCode.INVALID_VALUE,
             "PK column '%s' not found in table '%s'".formatted(
                 constraintColumn.columnId(),
                 tableId));
@@ -318,7 +319,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       pkColumns.add(column);
     }
     if (pkColumns.isEmpty()) {
-      throw new InvalidValueException(
+      throw new DomainException(RelationshipErrorCode.INVALID_VALUE,
           "PK constraint has no columns for table '%s'".formatted(tableId));
     }
     return pkColumns;

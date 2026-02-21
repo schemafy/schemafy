@@ -77,7 +77,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
 
   public static Snippet createRelationshipResponse() {
     return createResponseFieldsSnippet(
-        mutationResponseFields(relationshipResponseFields("result.data.")));
+        mutationResponseFields(relationshipResponseFields("data.")));
   }
 
   // ========== GET /api/relationships/{relationshipId} ==========
@@ -95,7 +95,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
 
   public static Snippet getRelationshipResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(relationshipResponseFields("result.")));
+        successResponseFields(relationshipResponseFields("")));
   }
 
   // ========== GET /api/tables/{tableId}/relationships ==========
@@ -114,19 +114,8 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
   }
 
   public static Snippet getRelationshipsByTableIdResponse() {
-    return createResponseFieldsSnippet(concat(
-        new FieldDescriptor[] {
-          fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-              .description("요청 성공 여부"),
-          fieldWithPath("result").type(JsonFieldType.ARRAY)
-              .description("관계 목록")
-        },
-        concat(
-            relationshipResponseFields("result[]."),
-            new FieldDescriptor[] {
-              fieldWithPath("error").type(JsonFieldType.NULL)
-                  .description("에러 정보 (성공 시 null)").optional()
-            })));
+    return createResponseFieldsSnippet(
+        relationshipResponseFields("[]."));
   }
 
   // ========== PATCH /api/relationships/{relationshipId}/name ==========
@@ -264,19 +253,8 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
   }
 
   public static Snippet getRelationshipColumnsResponse() {
-    return createResponseFieldsSnippet(concat(
-        new FieldDescriptor[] {
-          fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-              .description("요청 성공 여부"),
-          fieldWithPath("result").type(JsonFieldType.ARRAY)
-              .description("관계 컬럼 목록")
-        },
-        concat(
-            relationshipColumnResponseFields("result[]."),
-            new FieldDescriptor[] {
-              fieldWithPath("error").type(JsonFieldType.NULL)
-                  .description("에러 정보 (성공 시 null)").optional()
-            })));
+    return createResponseFieldsSnippet(
+        relationshipColumnResponseFields("[]."));
   }
 
   // ========== POST /api/relationships/{relationshipId}/columns ==========
@@ -304,7 +282,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
 
   public static Snippet addRelationshipColumnResponse() {
     return createResponseFieldsSnippet(
-        mutationResponseFields(relationshipColumnResponseFields("result.data.")));
+        mutationResponseFields(relationshipColumnResponseFields("data.")));
   }
 
   // ========== DELETE /api/relationship-columns/{relationshipColumnId} ==========
@@ -343,7 +321,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
 
   public static Snippet getRelationshipColumnResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(relationshipColumnResponseFields("result.")));
+        successResponseFields(relationshipColumnResponseFields("")));
   }
 
   // ========== PATCH /api/relationship-columns/{relationshipColumnId}/position ==========

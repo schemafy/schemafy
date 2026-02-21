@@ -7,7 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +45,7 @@ class SchemaTest {
           SchemaFixture.DEFAULT_NAME,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("id");
     }
 
@@ -61,7 +61,7 @@ class SchemaTest {
           SchemaFixture.DEFAULT_NAME,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("projectId");
     }
 
@@ -77,7 +77,7 @@ class SchemaTest {
           SchemaFixture.DEFAULT_NAME,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("dbVendorName");
     }
 
@@ -93,7 +93,7 @@ class SchemaTest {
           invalidName,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
-          .isInstanceOf(InvalidValueException.class)
+          .isInstanceOf(DomainException.class)
           .hasMessageContaining("name");
     }
 

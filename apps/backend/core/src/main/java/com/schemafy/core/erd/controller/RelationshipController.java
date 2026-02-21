@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.AddRelationshipColumnRequest;
@@ -83,7 +82,7 @@ public class RelationshipController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/relationships")
-  public Mono<BaseResponse<MutationResponse<RelationshipResponse>>> createRelationship(
+  public Mono<MutationResponse<RelationshipResponse>> createRelationship(
       @Valid @RequestBody CreateRelationshipRequest request) {
     CreateRelationshipCommand command = new CreateRelationshipCommand(
         request.fkTableId(),
@@ -95,35 +94,32 @@ public class RelationshipController {
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             RelationshipResponse.from(result.result()),
-            result.affectedTableIds()))
-        .map(BaseResponse::success);
+            result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/relationships/{relationshipId}")
-  public Mono<BaseResponse<RelationshipResponse>> getRelationship(
+  public Mono<RelationshipResponse> getRelationship(
       @PathVariable String relationshipId) {
     GetRelationshipQuery query = new GetRelationshipQuery(relationshipId);
     return getRelationshipUseCase.getRelationship(query)
-        .map(RelationshipResponse::from)
-        .map(BaseResponse::success);
+        .map(RelationshipResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}/relationships")
-  public Mono<BaseResponse<List<RelationshipResponse>>> getRelationshipsByTableId(
+  public Mono<List<RelationshipResponse>> getRelationshipsByTableId(
       @PathVariable String tableId) {
     GetRelationshipsByTableIdQuery query = new GetRelationshipsByTableIdQuery(tableId);
     return getRelationshipsByTableIdUseCase.getRelationshipsByTableId(query)
         .map(relationships -> relationships.stream()
             .map(RelationshipResponse::from)
-            .toList())
-        .map(BaseResponse::success);
+            .toList());
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationships/{relationshipId}/name")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeRelationshipName(
+  public Mono<MutationResponse<Void>> changeRelationshipName(
       @PathVariable String relationshipId,
       @Valid @RequestBody ChangeRelationshipNameRequest request) {
     ChangeRelationshipNameCommand command = new ChangeRelationshipNameCommand(
@@ -132,13 +128,12 @@ public class RelationshipController {
     return changeRelationshipNameUseCase.changeRelationshipName(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationships/{relationshipId}/kind")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeRelationshipKind(
+  public Mono<MutationResponse<Void>> changeRelationshipKind(
       @PathVariable String relationshipId,
       @Valid @RequestBody ChangeRelationshipKindRequest request) {
     ChangeRelationshipKindCommand command = new ChangeRelationshipKindCommand(
@@ -147,13 +142,12 @@ public class RelationshipController {
     return changeRelationshipKindUseCase.changeRelationshipKind(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationships/{relationshipId}/cardinality")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeRelationshipCardinality(
+  public Mono<MutationResponse<Void>> changeRelationshipCardinality(
       @PathVariable String relationshipId,
       @Valid @RequestBody ChangeRelationshipCardinalityRequest request) {
     ChangeRelationshipCardinalityCommand command = new ChangeRelationshipCardinalityCommand(
@@ -162,13 +156,12 @@ public class RelationshipController {
     return changeRelationshipCardinalityUseCase.changeRelationshipCardinality(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationships/{relationshipId}/extra")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeRelationshipExtra(
+  public Mono<MutationResponse<Void>> changeRelationshipExtra(
       @PathVariable String relationshipId,
       @RequestBody ChangeRelationshipExtraRequest request) {
     ChangeRelationshipExtraCommand command = new ChangeRelationshipExtraCommand(
@@ -177,38 +170,35 @@ public class RelationshipController {
     return changeRelationshipExtraUseCase.changeRelationshipExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/relationships/{relationshipId}")
-  public Mono<BaseResponse<MutationResponse<Void>>> deleteRelationship(
+  public Mono<MutationResponse<Void>> deleteRelationship(
       @PathVariable String relationshipId) {
     DeleteRelationshipCommand command = new DeleteRelationshipCommand(relationshipId);
     return deleteRelationshipUseCase.deleteRelationship(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/relationships/{relationshipId}/columns")
-  public Mono<BaseResponse<List<RelationshipColumnResponse>>> getRelationshipColumns(
+  public Mono<List<RelationshipColumnResponse>> getRelationshipColumns(
       @PathVariable String relationshipId) {
     GetRelationshipColumnsByRelationshipIdQuery query = new GetRelationshipColumnsByRelationshipIdQuery(relationshipId);
     return getRelationshipColumnsByRelationshipIdUseCase
         .getRelationshipColumnsByRelationshipId(query)
         .map(columns -> columns.stream()
             .map(RelationshipColumnResponse::from)
-            .toList())
-        .map(BaseResponse::success);
+            .toList());
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/relationships/{relationshipId}/columns")
-  public Mono<BaseResponse<MutationResponse<AddRelationshipColumnResponse>>> addRelationshipColumn(
+  public Mono<MutationResponse<AddRelationshipColumnResponse>> addRelationshipColumn(
       @PathVariable String relationshipId,
       @Valid @RequestBody AddRelationshipColumnRequest request) {
     AddRelationshipColumnCommand command = new AddRelationshipColumnCommand(
@@ -221,36 +211,33 @@ public class RelationshipController {
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             AddRelationshipColumnResponse.from(result.result()),
-            result.affectedTableIds()))
-        .map(BaseResponse::success);
+            result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @DeleteMapping("/relationship-columns/{relationshipColumnId}")
-  public Mono<BaseResponse<MutationResponse<Void>>> removeRelationshipColumn(
+  public Mono<MutationResponse<Void>> removeRelationshipColumn(
       @PathVariable String relationshipColumnId) {
     RemoveRelationshipColumnCommand command = new RemoveRelationshipColumnCommand(
         relationshipColumnId);
     return removeRelationshipColumnUseCase.removeRelationshipColumn(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/relationship-columns/{relationshipColumnId}")
-  public Mono<BaseResponse<RelationshipColumnResponse>> getRelationshipColumn(
+  public Mono<RelationshipColumnResponse> getRelationshipColumn(
       @PathVariable String relationshipColumnId) {
     GetRelationshipColumnQuery query = new GetRelationshipColumnQuery(relationshipColumnId);
     return getRelationshipColumnUseCase.getRelationshipColumn(query)
-        .map(RelationshipColumnResponse::from)
-        .map(BaseResponse::success);
+        .map(RelationshipColumnResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationship-columns/{relationshipColumnId}/position")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeRelationshipColumnPosition(
+  public Mono<MutationResponse<Void>> changeRelationshipColumnPosition(
       @PathVariable String relationshipColumnId,
       @RequestBody ChangeRelationshipColumnPositionRequest request) {
     ChangeRelationshipColumnPositionCommand command = new ChangeRelationshipColumnPositionCommand(
@@ -259,8 +246,7 @@ public class RelationshipController {
     return changeRelationshipColumnPositionUseCase.changeRelationshipColumnPosition(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {

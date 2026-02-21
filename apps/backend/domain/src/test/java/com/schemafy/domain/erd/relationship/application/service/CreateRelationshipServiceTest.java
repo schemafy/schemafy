@@ -13,7 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -31,8 +31,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipCyclicReferenceException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipTargetTableNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
@@ -309,7 +308,7 @@ class CreateRelationshipServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createRelationship(command))
-          .expectError(InvalidValueException.class)
+          .expectError(DomainException.class)
           .verify();
     }
 
@@ -329,7 +328,7 @@ class CreateRelationshipServiceTest {
           .willReturn(Mono.just(pkTable));
 
       StepVerifier.create(sut.createRelationship(command))
-          .expectError(RelationshipTargetTableNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND))
           .verify();
     }
 
@@ -382,7 +381,7 @@ class CreateRelationshipServiceTest {
           .willReturn(Mono.just(List.of(existingRelationship)));
 
       StepVerifier.create(sut.createRelationship(command))
-          .expectError(RelationshipCyclicReferenceException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE))
           .verify();
     }
 

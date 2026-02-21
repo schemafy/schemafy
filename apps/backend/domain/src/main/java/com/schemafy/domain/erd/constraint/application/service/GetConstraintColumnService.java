@@ -2,11 +2,12 @@ package com.schemafy.domain.erd.constraint.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnQuery;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -21,7 +22,7 @@ public class GetConstraintColumnService implements GetConstraintColumnUseCase {
   public Mono<ConstraintColumn> getConstraintColumn(GetConstraintColumnQuery query) {
     return getConstraintColumnByIdPort.findConstraintColumnById(query.constraintColumnId())
         .switchIfEmpty(Mono.error(
-            new ConstraintColumnNotExistException(
+            new DomainException(ConstraintErrorCode.COLUMN_NOT_FOUND,
                 "Constraint column not found: " + query.constraintColumnId())));
   }
 

@@ -5,7 +5,8 @@ import org.springframework.security.web.server.authorization.ServerAccessDeniedH
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
+import com.schemafy.domain.common.exception.DomainErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -19,12 +20,9 @@ public class JwtAccessDeniedHandler implements ServerAccessDeniedHandler {
   @Override
   public Mono<Void> handle(ServerWebExchange exchange,
       AccessDeniedException denied) {
-    ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        errorCode.getStatus(),
-        errorCode.getCode(),
-        errorCode.getMessage());
+    DomainErrorCode errorCode = AuthErrorCode.ACCESS_DENIED;
+    return errorResponseWriter.writeErrorResponse(exchange, errorCode,
+        errorCode.code());
   }
 
 }

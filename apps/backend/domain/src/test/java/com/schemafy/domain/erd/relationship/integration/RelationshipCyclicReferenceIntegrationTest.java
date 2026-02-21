@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
@@ -23,7 +24,7 @@ import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationsh
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.CreateRelationshipUseCase;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipCyclicReferenceException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
@@ -132,7 +133,7 @@ class RelationshipCyclicReferenceIntegrationTest {
           Cardinality.ONE_TO_MANY);
 
       StepVerifier.create(createRelationshipUseCase.createRelationship(createBACommand))
-          .expectError(RelationshipCyclicReferenceException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE))
           .verify();
     }
 
@@ -160,7 +161,7 @@ class RelationshipCyclicReferenceIntegrationTest {
           Cardinality.ONE_TO_MANY);
 
       StepVerifier.create(createRelationshipUseCase.createRelationship(createCACommand))
-          .expectError(RelationshipCyclicReferenceException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE))
           .verify();
     }
 
@@ -234,7 +235,7 @@ class RelationshipCyclicReferenceIntegrationTest {
           abResult.relationshipId(), RelationshipKind.IDENTIFYING);
 
       StepVerifier.create(changeRelationshipKindUseCase.changeRelationshipKind(changeKindCommand))
-          .expectError(RelationshipCyclicReferenceException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE))
           .verify();
     }
 
@@ -286,7 +287,7 @@ class RelationshipCyclicReferenceIntegrationTest {
           caResult.relationshipId(), RelationshipKind.IDENTIFYING);
 
       StepVerifier.create(changeRelationshipKindUseCase.changeRelationshipKind(changeKindCommand))
-          .expectError(RelationshipCyclicReferenceException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE))
           .verify();
     }
 

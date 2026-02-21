@@ -13,16 +13,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnMetaPort;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnTypePort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
-import com.schemafy.domain.erd.column.domain.exception.ColumnAutoIncrementNotAllowedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnCharsetNotAllowedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnPrecisionRequiredException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
@@ -165,7 +163,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         then(changeColumnTypePort).shouldHaveNoInteractions();
@@ -189,7 +187,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectError(ColumnPrecisionRequiredException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
             .verify();
 
         then(changeColumnTypePort).shouldHaveNoInteractions();
@@ -213,7 +211,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectError(ColumnAutoIncrementNotAllowedException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED))
             .verify();
 
         then(changeColumnTypePort).shouldHaveNoInteractions();
@@ -247,7 +245,7 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectError(ColumnCharsetNotAllowedException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.CHARSET_NOT_ALLOWED))
             .verify();
 
         then(changeColumnTypePort).shouldHaveNoInteractions();

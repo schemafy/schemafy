@@ -8,15 +8,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnDuplicateException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipCyclicReferenceException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipEmptyException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNameInvalidException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 
 public final class RelationshipValidator {
@@ -28,11 +24,12 @@ public final class RelationshipValidator {
 
   public static void validateName(String name) {
     if (name == null || name.isBlank()) {
-      throw new RelationshipNameInvalidException("Relationship name must not be blank");
+      throw new DomainException(RelationshipErrorCode.NAME_INVALID, "Relationship name must not be blank");
     }
     String trimmed = name.trim();
     if (trimmed.length() < NAME_MIN_LENGTH || trimmed.length() > NAME_MAX_LENGTH) {
-      throw new RelationshipNameInvalidException(
+      throw new DomainException(
+          RelationshipErrorCode.NAME_INVALID,
           "Relationship name must be between %d and %d characters".formatted(
               NAME_MIN_LENGTH,
               NAME_MAX_LENGTH));
@@ -41,7 +38,8 @@ public final class RelationshipValidator {
 
   public static void validateColumnsNotEmpty(List<RelationshipColumn> columns, String name) {
     if (columns == null || columns.isEmpty()) {
-      throw new RelationshipEmptyException(
+      throw new DomainException(
+          RelationshipErrorCode.EMPTY,
           "Relationship '%s' must have at least one column mapping".formatted(name));
     }
   }
@@ -53,17 +51,20 @@ public final class RelationshipValidator {
     Set<Integer> uniqueSeqNos = new HashSet<>();
     for (Integer seqNo : seqNos) {
       if (seqNo == null || seqNo < 0) {
-        throw new RelationshipPositionInvalidException(
+        throw new DomainException(
+            RelationshipErrorCode.POSITION_INVALID,
             "Relationship column position must be zero or positive");
       }
       if (!uniqueSeqNos.add(seqNo)) {
-        throw new RelationshipPositionInvalidException(
+        throw new DomainException(
+            RelationshipErrorCode.POSITION_INVALID,
             "Relationship column positions must be unique");
       }
     }
     for (int expected = 0; expected < uniqueSeqNos.size(); expected++) {
       if (!uniqueSeqNos.contains(expected)) {
-        throw new RelationshipPositionInvalidException(
+        throw new DomainException(
+            RelationshipErrorCode.POSITION_INVALID,
             "Relationship column positions must be contiguous starting from 0");
       }
     }
@@ -79,13 +80,15 @@ public final class RelationshipValidator {
     }
     for (RelationshipColumn column : columns) {
       if (!containsColumn(fkColumns, column.fkColumnId())) {
-        throw new RelationshipColumnNotExistException(
+        throw new DomainException(
+            RelationshipErrorCode.COLUMN_NOT_FOUND,
             "FK column '%s' specified in relationship '%s' does not exist in the table".formatted(
                 column.fkColumnId(),
                 relationshipName));
       }
       if (!containsColumn(pkColumns, column.pkColumnId())) {
-        throw new RelationshipColumnNotExistException(
+        throw new DomainException(
+            RelationshipErrorCode.COLUMN_NOT_FOUND,
             "PK column '%s' specified in relationship '%s' does not exist in the table".formatted(
                 column.pkColumnId(),
                 relationshipName));
@@ -106,20 +109,23 @@ public final class RelationshipValidator {
       String fkKey = normalizeId(column.fkColumnId());
       String pkKey = normalizeId(column.pkColumnId());
       if (!fkColumnIds.add(fkKey)) {
-        throw new RelationshipColumnDuplicateException(
+        throw new DomainException(
+            RelationshipErrorCode.COLUMN_DUPLICATE,
             "FK column '%s' is already mapped in relationship '%s'".formatted(
                 column.fkColumnId(),
                 relationshipName));
       }
       if (!pkColumnIds.add(pkKey)) {
-        throw new RelationshipColumnDuplicateException(
+        throw new DomainException(
+            RelationshipErrorCode.COLUMN_DUPLICATE,
             "PK column '%s' is already mapped in relationship '%s'".formatted(
                 column.pkColumnId(),
                 relationshipName));
       }
       String pairKey = fkKey + ":" + pkKey;
       if (!pairs.add(pairKey)) {
-        throw new RelationshipColumnDuplicateException(
+        throw new DomainException(
+            RelationshipErrorCode.COLUMN_DUPLICATE,
             "Relationship column mapping '%s:%s' is duplicated in relationship '%s'".formatted(
                 column.fkColumnId(),
                 column.pkColumnId(),
@@ -134,7 +140,8 @@ public final class RelationshipValidator {
       Relationship newRelationship) {
     IdentifyingCycle cycle = detectIdentifyingCycle(relationships, pendingChange, newRelationship);
     if (cycle != null) {
-      throw new RelationshipCyclicReferenceException(
+      throw new DomainException(
+          RelationshipErrorCode.CYCLIC_REFERENCE,
           "Direct cyclic reference detected between tables: %s <-> %s".formatted(
               cycle.fromTableId(),
               cycle.toTableId()));

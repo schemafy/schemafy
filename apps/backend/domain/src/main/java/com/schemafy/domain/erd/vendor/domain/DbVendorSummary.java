@@ -1,6 +1,7 @@
 package com.schemafy.domain.erd.vendor.domain;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.erd.vendor.domain.exception.VendorErrorCode;
 
 public record DbVendorSummary(
     String displayName,
@@ -9,11 +10,11 @@ public record DbVendorSummary(
 
   public DbVendorSummary {
     if (displayName == null || displayName.isBlank())
-      throw new InvalidValueException("displayName must not be blank");
+      throw new DomainException(VendorErrorCode.INVALID_VALUE, "displayName must not be blank");
     if (name == null || name.isBlank())
-      throw new InvalidValueException("name must not be blank");
+      throw new DomainException(VendorErrorCode.INVALID_VALUE, "name must not be blank");
     if (version == null || version.isBlank())
-      throw new InvalidValueException("version must not be blank");
+      throw new DomainException(VendorErrorCode.INVALID_VALUE, "version must not be blank");
   }
 
 }

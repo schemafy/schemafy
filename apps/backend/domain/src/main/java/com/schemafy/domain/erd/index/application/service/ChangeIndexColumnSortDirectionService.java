@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexColumnSortDirectionCommand;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexColumnSortDirectionUseCase;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnSortDirectionPort;
@@ -16,8 +17,7 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndex
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 
 import lombok.RequiredArgsConstructor;
@@ -39,14 +39,15 @@ public class ChangeIndexColumnSortDirectionService
   public Mono<MutationResult<Void>> changeIndexColumnSortDirection(
       ChangeIndexColumnSortDirectionCommand command) {
     if (command.sortDirection() == null) {
-      return Mono.error(new IndexColumnSortDirectionInvalidException(
+      return Mono.error(new DomainException(
+          IndexErrorCode.COLUMN_SORT_DIRECTION_INVALID,
           "Sort direction is invalid for index column"));
     }
     return getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-        .switchIfEmpty(Mono.error(new IndexColumnSortDirectionInvalidException(
-            "Index column not found")))
+        .switchIfEmpty(Mono.error(new DomainException(
+            IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
         .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
-            .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
             .flatMap(index -> validateAndChange(index, indexColumn, command)
                 .thenReturn(MutationResult.<Void>of(null, index.tableId()))));
   }

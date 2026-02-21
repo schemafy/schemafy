@@ -49,51 +49,29 @@ public abstract class RestDocsSnippets {
 
   // ========== 응답 필드 메서드 (하위 클래스에서 사용) ==========
 
-  /** 성공 응답 필드 생성 (result 필드 포함)
+  /** 성공 응답 필드 생성
    *
-   * @param resultFields result 객체 내부 필드들 */
+   * @param resultFields 응답 객체 필드들 */
   protected static FieldDescriptor[] successResponseFields(
       FieldDescriptor... resultFields) {
-    FieldDescriptor[] baseFields = new FieldDescriptor[] {
-      fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-          .description("요청 성공 여부"),
-      fieldWithPath("result").type(JsonFieldType.OBJECT)
-          .description("응답 데이터").optional(),
-      fieldWithPath("error").type(JsonFieldType.NULL)
-          .description("에러 정보 (성공 시 null)").optional()
-    };
-
-    return concat(baseFields, resultFields);
+    return resultFields;
   }
 
-  /** 성공 응답 필드 생성 (result가 null인 경우) */
+  /** 성공 응답 필드 생성 (응답 바디가 없는 경우) */
   protected static FieldDescriptor[] successResponseFieldsWithNullResult() {
-    return new FieldDescriptor[] {
-      fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-          .description("요청 성공 여부"),
-      fieldWithPath("result").type(JsonFieldType.NULL)
-          .description("응답 데이터 (없음)").optional(),
-      fieldWithPath("error").type(JsonFieldType.NULL)
-          .description("에러 정보 (성공 시 null)").optional()
-    };
+    return new FieldDescriptor[] {};
   }
 
   /** MutationResponse 응답 필드 생성 (data 필드 포함)
    *
-   * @param dataFields result.data 객체 내부 필드들 */
+   * @param dataFields data 객체 내부 필드들 */
   protected static FieldDescriptor[] mutationResponseFields(
       FieldDescriptor... dataFields) {
     FieldDescriptor[] baseFields = new FieldDescriptor[] {
-      fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-          .description("요청 성공 여부"),
-      fieldWithPath("result").type(JsonFieldType.OBJECT)
-          .description("뮤테이션 결과"),
-      fieldWithPath("result.data").type(JsonFieldType.OBJECT)
+      fieldWithPath("data").type(JsonFieldType.OBJECT)
           .description("생성/수정된 데이터").optional(),
-      fieldWithPath("result.affectedTableIds").type(JsonFieldType.ARRAY)
-          .description("영향받은 테이블 ID 목록"),
-      fieldWithPath("error").type(JsonFieldType.NULL)
-          .description("에러 정보 (성공 시 null)").optional()
+      fieldWithPath("affectedTableIds").type(JsonFieldType.ARRAY)
+          .description("영향받은 테이블 ID 목록")
     };
     return concat(baseFields, dataFields);
   }
@@ -101,32 +79,28 @@ public abstract class RestDocsSnippets {
   /** MutationResponse 응답 필드 생성 (data가 null인 경우) */
   protected static FieldDescriptor[] mutationResponseFieldsWithNullData() {
     return new FieldDescriptor[] {
-      fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-          .description("요청 성공 여부"),
-      fieldWithPath("result").type(JsonFieldType.OBJECT)
-          .description("뮤테이션 결과"),
-      fieldWithPath("result.data").type(JsonFieldType.NULL)
+      fieldWithPath("data").type(JsonFieldType.NULL)
           .description("응답 데이터 (없음)").optional(),
-      fieldWithPath("result.affectedTableIds").type(JsonFieldType.ARRAY)
-          .description("영향받은 테이블 ID 목록"),
-      fieldWithPath("error").type(JsonFieldType.NULL)
-          .description("에러 정보 (성공 시 null)").optional()
+      fieldWithPath("affectedTableIds").type(JsonFieldType.ARRAY)
+          .description("영향받은 테이블 ID 목록")
     };
   }
 
   /** 에러 응답 필드 생성 */
   protected static FieldDescriptor[] errorResponseFields() {
     return new FieldDescriptor[] {
-      fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-          .description("요청 성공 여부 (항상 false)"),
-      fieldWithPath("result").type(JsonFieldType.NULL)
-          .description("응답 데이터 (에러 시 null)").optional(),
-      fieldWithPath("error").type(JsonFieldType.OBJECT)
-          .description("에러 정보"),
-      fieldWithPath("error.code").type(JsonFieldType.STRING)
-          .description("에러 코드"),
-      fieldWithPath("error.message").type(JsonFieldType.STRING)
-          .description("에러 메시지")
+      fieldWithPath("type").type(JsonFieldType.STRING)
+          .description("문제 유형 URI"),
+      fieldWithPath("title").type(JsonFieldType.STRING)
+          .description("HTTP 상태 제목"),
+      fieldWithPath("status").type(JsonFieldType.NUMBER)
+          .description("HTTP 상태 코드"),
+      fieldWithPath("detail").type(JsonFieldType.STRING)
+          .description("문제 상세 설명"),
+      fieldWithPath("instance").type(JsonFieldType.STRING)
+          .description("문제가 발생한 요청 경로"),
+      fieldWithPath("reason").type(JsonFieldType.STRING)
+          .description("서비스 내부 에러 식별자")
     };
   }
 

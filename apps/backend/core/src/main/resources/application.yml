@@ -47,6 +47,9 @@ hmac:
   enabled: false # TODO: 추후에 BFF에서 HMAC 적용 시 true로 변경
   enforcement-mode: ENFORCE
 
+problem:
+  type-base-uri: about:blank
+
 sharelink:
   pepper: ${SHARELINK_PEPPER:default-pepper-change-me}
 

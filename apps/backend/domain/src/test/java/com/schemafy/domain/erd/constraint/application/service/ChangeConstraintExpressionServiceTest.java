@@ -10,13 +10,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintExpressionPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 
@@ -85,7 +84,7 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintCheckExpr(command))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
 
       then(changeConstraintExpressionPort).shouldHaveNoInteractions();
@@ -101,7 +100,7 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.just(constraint));
 
       StepVerifier.create(sut.changeConstraintCheckExpr(command))
-          .expectError(InvalidValueException.class)
+          .expectError(DomainException.class)
           .verify();
 
       then(changeConstraintExpressionPort).shouldHaveNoInteractions();
@@ -139,7 +138,7 @@ class ChangeConstraintExpressionServiceTest {
           });
 
       StepVerifier.create(sut.changeConstraintCheckExpr(command))
-          .expectError(ConstraintDefinitionDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.DEFINITION_DUPLICATE))
           .verify();
 
       then(changeConstraintExpressionPort).shouldHaveNoInteractions();
@@ -211,7 +210,7 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.just(constraint));
 
       StepVerifier.create(sut.changeConstraintDefaultExpr(command))
-          .expectError(InvalidValueException.class)
+          .expectError(DomainException.class)
           .verify();
 
       then(changeConstraintExpressionPort).shouldHaveNoInteractions();

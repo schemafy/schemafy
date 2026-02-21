@@ -57,8 +57,7 @@ class UlidControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.ulid").isEqualTo(mockUlid)
+        .jsonPath("$.ulid").isEqualTo(mockUlid)
         .consumeWith(document("ulid-generate",
             generateUlidRequestHeaders(),
             generateUlidResponseHeaders(),

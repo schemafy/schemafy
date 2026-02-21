@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.ChangeSchemaNameRequest;
@@ -51,7 +50,7 @@ public class SchemaController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/schemas")
-  public Mono<BaseResponse<MutationResponse<SchemaResponse>>> createSchema(
+  public Mono<MutationResponse<SchemaResponse>> createSchema(
       @Valid @RequestBody CreateSchemaRequest request) {
     CreateSchemaCommand command = new CreateSchemaCommand(
         request.projectId(),
@@ -65,34 +64,31 @@ public class SchemaController {
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             SchemaResponse.from(result.result()),
-            result.affectedTableIds()))
-        .map(BaseResponse::success);
+            result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}")
-  public Mono<BaseResponse<SchemaResponse>> getSchema(
+  public Mono<SchemaResponse> getSchema(
       @PathVariable String schemaId) {
     GetSchemaQuery query = new GetSchemaQuery(schemaId);
     return getSchemaUseCase.getSchema(query)
-        .map(SchemaResponse::from)
-        .map(BaseResponse::success);
+        .map(SchemaResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/projects/{projectId}/schemas")
-  public Mono<BaseResponse<List<SchemaResponse>>> getSchemasByProjectId(
+  public Mono<List<SchemaResponse>> getSchemasByProjectId(
       @PathVariable String projectId) {
     GetSchemasByProjectIdQuery query = new GetSchemasByProjectIdQuery(projectId);
     return getSchemasByProjectIdUseCase.getSchemasByProjectId(query)
         .map(SchemaResponse::from)
-        .collectList()
-        .map(BaseResponse::success);
+        .collectList();
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/schemas/{schemaId}/name")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeSchemaName(
+  public Mono<MutationResponse<Void>> changeSchemaName(
       @PathVariable String schemaId,
       @Valid @RequestBody ChangeSchemaNameRequest request) {
     ChangeSchemaNameCommand command = new ChangeSchemaNameCommand(
@@ -101,28 +97,25 @@ public class SchemaController {
     return changeSchemaNameUseCase.changeSchemaName(command)
         .flatMap(result -> broadcastSchemaChange(schemaId)
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/schemas/{schemaId}")
-  public Mono<BaseResponse<MutationResponse<Void>>> deleteSchema(
+  public Mono<MutationResponse<Void>> deleteSchema(
       @PathVariable String schemaId) {
     DeleteSchemaCommand command = new DeleteSchemaCommand(schemaId);
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return deleteSchemaUseCase.deleteSchema(command)
-          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-          .map(BaseResponse::success);
+          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
     }
     return broadcaster.resolveFromSchemaId(schemaId)
         .flatMap(ctx -> deleteSchemaUseCase.deleteSchema(command)
             .flatMap(result -> broadcaster
                 .broadcastWithContext(ctx, result.affectedTableIds())
                 .thenReturn(result)))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   private Mono<Void> broadcastSchemaChange(String schemaId) {

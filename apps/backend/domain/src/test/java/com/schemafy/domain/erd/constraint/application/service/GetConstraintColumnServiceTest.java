@@ -8,8 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 
 import reactor.core.publisher.Mono;
@@ -60,7 +61,7 @@ class GetConstraintColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.getConstraintColumn(query))
-          .expectError(ConstraintColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_NOT_FOUND))
           .verify();
     }
 

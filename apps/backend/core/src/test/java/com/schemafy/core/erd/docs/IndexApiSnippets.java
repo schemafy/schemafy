@@ -76,7 +76,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
 
   public static Snippet createIndexResponse() {
     return createResponseFieldsSnippet(
-        mutationResponseFields(indexResponseFields("result.data.")));
+        mutationResponseFields(indexResponseFields("data.")));
   }
 
   // ========== GET /api/indexes/{indexId} ==========
@@ -92,7 +92,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
 
   public static Snippet getIndexResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(indexResponseFields("result.")));
+        successResponseFields(indexResponseFields("")));
   }
 
   // ========== GET /api/tables/{tableId}/indexes ==========
@@ -111,19 +111,8 @@ public class IndexApiSnippets extends RestDocsSnippets {
   }
 
   public static Snippet getIndexesByTableIdResponse() {
-    return createResponseFieldsSnippet(concat(
-        new FieldDescriptor[] {
-          fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-              .description("요청 성공 여부"),
-          fieldWithPath("result").type(JsonFieldType.ARRAY)
-              .description("인덱스 목록")
-        },
-        concat(
-            indexResponseFields("result[]."),
-            new FieldDescriptor[] {
-              fieldWithPath("error").type(JsonFieldType.NULL)
-                  .description("에러 정보 (성공 시 null)").optional()
-            })));
+    return createResponseFieldsSnippet(
+        indexResponseFields("[]."));
   }
 
   // ========== PATCH /api/indexes/{indexId}/name ==========
@@ -208,19 +197,8 @@ public class IndexApiSnippets extends RestDocsSnippets {
   }
 
   public static Snippet getIndexColumnsResponse() {
-    return createResponseFieldsSnippet(concat(
-        new FieldDescriptor[] {
-          fieldWithPath("success").type(JsonFieldType.BOOLEAN)
-              .description("요청 성공 여부"),
-          fieldWithPath("result").type(JsonFieldType.ARRAY)
-              .description("인덱스 컬럼 목록")
-        },
-        concat(
-            indexColumnResponseFields("result[]."),
-            new FieldDescriptor[] {
-              fieldWithPath("error").type(JsonFieldType.NULL)
-                  .description("에러 정보 (성공 시 null)").optional()
-            })));
+    return createResponseFieldsSnippet(
+        indexColumnResponseFields("[]."));
   }
 
   // ========== POST /api/indexes/{indexId}/columns ==========
@@ -248,7 +226,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
 
   public static Snippet addIndexColumnResponse() {
     return createResponseFieldsSnippet(
-        mutationResponseFields(indexColumnResponseFields("result.data.")));
+        mutationResponseFields(indexColumnResponseFields("data.")));
   }
 
   // ========== DELETE /api/index-columns/{indexColumnId} ==========
@@ -285,7 +263,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
 
   public static Snippet getIndexColumnResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(indexColumnResponseFields("result.")));
+        successResponseFields(indexColumnResponseFields("")));
   }
 
   // ========== PATCH /api/index-columns/{indexColumnId}/position ==========

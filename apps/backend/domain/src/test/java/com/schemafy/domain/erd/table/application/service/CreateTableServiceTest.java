@@ -8,13 +8,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 import com.schemafy.domain.erd.table.application.port.out.CreateTablePort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
@@ -180,7 +181,7 @@ class CreateTableServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.createTable(command))
-            .expectError(SchemaNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NOT_FOUND))
             .verify();
 
         then(ulidGeneratorPort).shouldHaveNoInteractions();
@@ -202,7 +203,7 @@ class CreateTableServiceTest {
             .willReturn(Mono.just(true));
 
         StepVerifier.create(sut.createTable(command))
-            .expectError(TableNameDuplicateException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NAME_DUPLICATE))
             .verify();
 
         then(createTablePort).shouldHaveNoInteractions();

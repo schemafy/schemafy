@@ -8,6 +8,7 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnMetaPort;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnNamePort;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnPositionPort;
@@ -19,7 +20,7 @@ import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -143,7 +144,7 @@ class ColumnPersistenceAdapter implements
 
   private Mono<ColumnEntity> findColumnOrError(String columnId) {
     return columnRepository.findById(columnId)
-        .switchIfEmpty(Mono.error(new ColumnNotExistException("Column not found: " + columnId)));
+        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found: " + columnId)));
   }
 
   private static boolean hasText(String value) {

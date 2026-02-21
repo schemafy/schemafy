@@ -9,16 +9,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnDuplicateException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipCyclicReferenceException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipEmptyException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNameInvalidException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
@@ -38,7 +34,7 @@ class RelationshipValidatorTest {
     @DisplayName("null이거나 빈 문자열이면 예외가 발생한다")
     void throwsWhenNullOrEmpty(String name) {
       assertThatThrownBy(() -> RelationshipValidator.validateName(name))
-          .isInstanceOf(RelationshipNameInvalidException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.NAME_INVALID));
     }
 
     @ParameterizedTest
@@ -46,7 +42,7 @@ class RelationshipValidatorTest {
     @DisplayName("공백 문자열이면 예외가 발생한다")
     void throwsWhenBlank(String name) {
       assertThatThrownBy(() -> RelationshipValidator.validateName(name))
-          .isInstanceOf(RelationshipNameInvalidException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.NAME_INVALID));
     }
 
     @Test
@@ -55,7 +51,7 @@ class RelationshipValidatorTest {
       String longName = "a".repeat(256);
 
       assertThatThrownBy(() -> RelationshipValidator.validateName(longName))
-          .isInstanceOf(RelationshipNameInvalidException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.NAME_INVALID));
     }
 
     @ParameterizedTest
@@ -85,14 +81,14 @@ class RelationshipValidatorTest {
     @DisplayName("컬럼 리스트가 null이면 예외가 발생한다")
     void throwsWhenNull() {
       assertThatThrownBy(() -> RelationshipValidator.validateColumnsNotEmpty(null, "test"))
-          .isInstanceOf(RelationshipEmptyException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.EMPTY));
     }
 
     @Test
     @DisplayName("컬럼 리스트가 비어있으면 예외가 발생한다")
     void throwsWhenEmpty() {
       assertThatThrownBy(() -> RelationshipValidator.validateColumnsNotEmpty(List.of(), "test"))
-          .isInstanceOf(RelationshipEmptyException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.EMPTY));
     }
 
     @Test
@@ -116,7 +112,7 @@ class RelationshipValidatorTest {
       List<Integer> seqNos = List.of(-1, 0);
 
       assertThatThrownBy(() -> RelationshipValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(RelationshipPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -125,7 +121,7 @@ class RelationshipValidatorTest {
       List<Integer> seqNos = List.of(0, 0);
 
       assertThatThrownBy(() -> RelationshipValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(RelationshipPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -134,7 +130,7 @@ class RelationshipValidatorTest {
       List<Integer> seqNos = List.of(0, 2);
 
       assertThatThrownBy(() -> RelationshipValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(RelationshipPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -143,7 +139,7 @@ class RelationshipValidatorTest {
       List<Integer> seqNos = List.of(1, 2);
 
       assertThatThrownBy(() -> RelationshipValidator.validateSeqNoIntegrity(seqNos))
-          .isInstanceOf(RelationshipPositionInvalidException.class);
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.POSITION_INVALID));
     }
 
     @Test
@@ -180,7 +176,7 @@ class RelationshipValidatorTest {
 
       assertThatThrownBy(() -> RelationshipValidator.validateColumnExistence(
           fkColumns, pkColumns, relationshipColumns, "test"))
-          .isInstanceOf(RelationshipColumnNotExistException.class)
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.COLUMN_NOT_FOUND))
           .hasMessageContaining("FK column");
     }
 
@@ -194,7 +190,7 @@ class RelationshipValidatorTest {
 
       assertThatThrownBy(() -> RelationshipValidator.validateColumnExistence(
           fkColumns, pkColumns, relationshipColumns, "test"))
-          .isInstanceOf(RelationshipColumnNotExistException.class)
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.COLUMN_NOT_FOUND))
           .hasMessageContaining("PK column");
     }
 
@@ -225,7 +221,7 @@ class RelationshipValidatorTest {
           RelationshipFixture.relationshipColumn("rc2", "rel1", "pk2", "fk1", 1));
 
       assertThatThrownBy(() -> RelationshipValidator.validateColumnUniqueness(columns, "test"))
-          .isInstanceOf(RelationshipColumnDuplicateException.class)
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.COLUMN_DUPLICATE))
           .hasMessageContaining("FK column");
     }
 
@@ -237,7 +233,7 @@ class RelationshipValidatorTest {
           RelationshipFixture.relationshipColumn("rc2", "rel1", "pk1", "fk2", 1));
 
       assertThatThrownBy(() -> RelationshipValidator.validateColumnUniqueness(columns, "test"))
-          .isInstanceOf(RelationshipColumnDuplicateException.class)
+          .matches(DomainException.hasErrorCode(RelationshipErrorCode.COLUMN_DUPLICATE))
           .hasMessageContaining("PK column");
     }
 
@@ -274,7 +270,7 @@ class RelationshipValidatorTest {
 
         assertThatThrownBy(() -> RelationshipValidator.validateIdentifyingCycle(
             List.of(existing), null, newRel))
-            .isInstanceOf(RelationshipCyclicReferenceException.class);
+            .matches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE));
       }
 
       @Test
@@ -292,7 +288,7 @@ class RelationshipValidatorTest {
 
         assertThatThrownBy(() -> RelationshipValidator.validateIdentifyingCycle(
             List.of(ab, bc), null, ca))
-            .isInstanceOf(RelationshipCyclicReferenceException.class);
+            .matches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE));
       }
 
       @Test
@@ -304,7 +300,7 @@ class RelationshipValidatorTest {
 
         assertThatThrownBy(() -> RelationshipValidator.validateIdentifyingCycle(
             List.of(), null, selfRef))
-            .isInstanceOf(RelationshipCyclicReferenceException.class);
+            .matches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE));
       }
 
       @Test
@@ -378,7 +374,7 @@ class RelationshipValidatorTest {
 
         assertThatThrownBy(() -> RelationshipValidator.validateIdentifyingCycle(
             List.of(ab, ba), change, null))
-            .isInstanceOf(RelationshipCyclicReferenceException.class);
+            .matches(DomainException.hasErrorCode(RelationshipErrorCode.CYCLIC_REFERENCE));
       }
 
       @Test

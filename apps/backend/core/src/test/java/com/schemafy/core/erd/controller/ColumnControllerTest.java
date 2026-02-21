@@ -130,8 +130,8 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.data.id").isEqualTo(columnId)
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.data.id").isEqualTo(columnId)
         .consumeWith(document("column-create",
             ColumnApiSnippets.createColumnRequestHeaders(),
             ColumnApiSnippets.createColumnRequest(),
@@ -166,8 +166,7 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(columnId)
+        .jsonPath("$.id").isEqualTo(columnId)
         .consumeWith(document("column-get",
             ColumnApiSnippets.getColumnPathParameters(),
             ColumnApiSnippets.getColumnRequestHeaders(),
@@ -196,9 +195,8 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].id").isEqualTo(columnId1)
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].id").isEqualTo(columnId1)
         .consumeWith(document("column-list-by-table",
             ColumnApiSnippets.getColumnsByTableIdPathParameters(),
             ColumnApiSnippets.getColumnsByTableIdRequestHeaders(),
@@ -225,8 +223,7 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("column-change-name",
             ColumnApiSnippets.changeColumnNamePathParameters(),
             ColumnApiSnippets.changeColumnNameRequestHeaders(),
@@ -254,8 +251,7 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("column-change-type",
             ColumnApiSnippets.changeColumnTypePathParameters(),
             ColumnApiSnippets.changeColumnTypeRequestHeaders(),
@@ -283,8 +279,7 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("column-change-meta",
             ColumnApiSnippets.changeColumnMetaPathParameters(),
             ColumnApiSnippets.changeColumnMetaRequestHeaders(),
@@ -312,7 +307,7 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true);
+        .jsonPath("$.affectedTableIds").isArray();
   }
 
   @Test
@@ -334,7 +329,7 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true);
+        .jsonPath("$.affectedTableIds").isArray();
   }
 
   @Test
@@ -356,8 +351,7 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("column-change-position",
             ColumnApiSnippets.changeColumnPositionPathParameters(),
             ColumnApiSnippets.changeColumnPositionRequestHeaders(),
@@ -382,8 +376,7 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("column-delete",
             ColumnApiSnippets.deleteColumnPathParameters(),
             ColumnApiSnippets.deleteColumnRequestHeaders(),

@@ -13,11 +13,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
 import com.schemafy.core.project.controller.dto.response.ShareLinkAccessResponse;
 import com.schemafy.core.project.controller.dto.response.ShareLinkResponse;
+import com.schemafy.core.project.exception.ProjectErrorCode;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
+import com.schemafy.core.project.exception.WorkspaceErrorCode;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
@@ -32,6 +33,7 @@ import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -177,9 +179,9 @@ class ShareLinkServiceTest {
           testUser2.getId());
 
       StepVerifier.create(result)
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.PROJECT_ACCESS_DENIED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.ACCESS_DENIED)
           .verify();
     }
 
@@ -201,9 +203,9 @@ class ShareLinkServiceTest {
           outsider.getId());
 
       StepVerifier.create(result)
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.WORKSPACE_ACCESS_DENIED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == WorkspaceErrorCode.ACCESS_DENIED)
           .verify();
     }
 
@@ -253,9 +255,9 @@ class ShareLinkServiceTest {
           .create(shareLinkService.getShareLink(testWorkspace.getId(),
               testProject.getId(), "nonexistent-id",
               testUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.SHARE_LINK_NOT_FOUND)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ShareLinkErrorCode.NOT_FOUND)
           .verify();
     }
 
@@ -365,9 +367,9 @@ class ShareLinkServiceTest {
               "Test Agent");
 
       StepVerifier.create(result)
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.SHARE_LINK_INVALID)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ShareLinkErrorCode.INVALID)
           .verify();
     }
 
@@ -386,9 +388,9 @@ class ShareLinkServiceTest {
           .accessByToken(token, null, "127.0.0.1", "Test Agent");
 
       StepVerifier.create(result)
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.SHARE_LINK_INVALID)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ShareLinkErrorCode.INVALID)
           .verify();
     }
 
@@ -415,9 +417,9 @@ class ShareLinkServiceTest {
           .accessByToken(token, null, "127.0.0.1", "Test Agent");
 
       StepVerifier.create(result)
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.SHARE_LINK_INVALID)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ShareLinkErrorCode.INVALID)
           .verify();
     }
 

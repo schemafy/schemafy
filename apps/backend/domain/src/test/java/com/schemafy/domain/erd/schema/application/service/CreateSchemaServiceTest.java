@@ -8,10 +8,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.domain.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNameDuplicateException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
@@ -92,7 +93,7 @@ class CreateSchemaServiceTest {
             .willReturn(Mono.just(true));
 
         StepVerifier.create(sut.createSchema(command))
-            .expectError(SchemaNameDuplicateException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NAME_DUPLICATE))
             .verify();
 
         then(createSchemaPort).shouldHaveNoInteractions();

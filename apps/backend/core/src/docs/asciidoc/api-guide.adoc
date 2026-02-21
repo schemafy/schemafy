@@ -12,18 +12,19 @@
 
 Schemafy API
 
-=== 기본 응답 형식
+=== 에러 응답 형식
 
-모든 API는 다음과 같은 공통 응답 형식을 사용합니다.
+에러 발생 시 API는 RFC 9457 Problem Details 형식으로 응답합니다.
 
 [source,json]
 ----
 {
-  "success": true,
-  "result": {
-    // API별 응답 데이터
-  },
-  "error": null
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid request input",
+  "instance": "/api/v1.0/...",
+  "reason": "COMMON_INVALID_PARAMETER"
 }
 ----
 
@@ -33,24 +34,28 @@ Schemafy API
 |===
 |필드명 |설명 |타입
 
-|`success`
-|요청 성공 여부
-|Boolean
-
-|`result`
-|응답 데이터 (성공시)
-|Object
-
-|`error`
-|에러 정보 (실패시)
-|Object
-
-|`error.code`
-|에러 코드
+|`type`
+|문제 유형 URI
 |String
 
-|`error.message`
-|에러 메시지
+|`title`
+|HTTP 상태 제목
+|String
+
+|`status`
+|HTTP 상태 코드
+|Number
+
+|`detail`
+|문제 상세 설명
+|String
+
+|`instance`
+|문제가 발생한 요청 경로
+|String
+
+|`reason`
+|서비스 내부 에러 식별자
 |String
 |===
 
@@ -135,19 +140,19 @@ Authorization: Bearer {accessToken}
 |===
 |코드 |HTTP 상태 |설명
 
-|`H001`
+|`HMAC_SIGNATURE_MISSING`
 |401
 |HMAC 서명이 누락되었습니다.
 
-|`H002`
+|`HMAC_SIGNATURE_INVALID`
 |401
 |HMAC 서명이 유효하지 않습니다.
 
-|`H003`
+|`HMAC_TIMESTAMP_EXPIRED`
 |401
 |HMAC 타임스탬프가 만료되었습니다. (허용 범위: ±30초)
 
-|`H004`
+|`HMAC_NONCE_DUPLICATE`
 |401
 |중복된 HMAC 논스입니다.
 |===

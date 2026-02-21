@@ -8,8 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
 
 import reactor.core.publisher.Mono;
@@ -61,7 +62,7 @@ class GetIndexServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.getIndex(query))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
     }
 

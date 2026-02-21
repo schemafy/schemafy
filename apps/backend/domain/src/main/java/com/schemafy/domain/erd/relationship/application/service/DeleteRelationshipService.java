@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.DeleteRelationshipCommand;
@@ -17,7 +18,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.DeleteRelations
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -39,7 +40,7 @@ public class DeleteRelationshipService implements DeleteRelationshipUseCase {
     String relationshipId = command.relationshipId();
 
     return getRelationshipByIdPort.findRelationshipById(relationshipId)
-        .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
         .flatMap(relationship -> {
           Set<String> affectedTableIds = new HashSet<>();
           affectedTableIds.add(relationship.fkTableId());

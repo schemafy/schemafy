@@ -114,8 +114,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.createWorkspaceRequest(),
             WorkspaceApiSnippets.createWorkspaceResponseHeaders(),
             WorkspaceApiSnippets.createWorkspaceResponse()))
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.name")
-        .isEqualTo("My Workspace");
+        .jsonPath("$.name").isEqualTo("My Workspace");
 
     workspaceMemberRepository.findByUserIdAndNotDeleted(testUserId)
         .collectList().block().forEach(member -> {
@@ -157,9 +156,8 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.getWorkspacesQueryParameters(),
             WorkspaceApiSnippets.getWorkspacesResponseHeaders(),
             WorkspaceApiSnippets.getWorkspacesResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.content[0].name")
-        .isEqualTo("Test Workspace").jsonPath("$.result.totalElements")
+        .jsonPath("$.content[0].name")
+        .isEqualTo("Test Workspace").jsonPath("$.totalElements")
         .isEqualTo(1);
   }
 
@@ -184,9 +182,8 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.getWorkspaceRequestHeaders(),
             WorkspaceApiSnippets.getWorkspaceResponseHeaders(),
             WorkspaceApiSnippets.getWorkspaceResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.id")
-        .isEqualTo(workspace.getId()).jsonPath("$.result.name")
+        .jsonPath("$.id")
+        .isEqualTo(workspace.getId()).jsonPath("$.name")
         .isEqualTo("Test Workspace");
   }
 
@@ -233,8 +230,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.updateWorkspaceRequest(),
             WorkspaceApiSnippets.updateWorkspaceResponseHeaders(),
             WorkspaceApiSnippets.updateWorkspaceResponse()))
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.name")
-        .isEqualTo("Updated Workspace");
+        .jsonPath("$.name").isEqualTo("Updated Workspace");
   }
 
   @Test
@@ -334,8 +330,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets
                 .getWorkspaceMembersResponseHeaders(),
             WorkspaceApiSnippets.getWorkspaceMembersResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.totalElements")
+        .jsonPath("$.totalElements")
         .isEqualTo(1);
   }
 
@@ -387,9 +382,8 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.addMemberRequest(),
             WorkspaceApiSnippets.addMemberResponseHeaders(),
             WorkspaceApiSnippets.addMemberResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.userId").isEqualTo(testUser2Id)
-        .jsonPath("$.result.role")
+        .jsonPath("$.userId").isEqualTo(testUser2Id)
+        .jsonPath("$.role")
         .isEqualTo(WorkspaceRole.MEMBER.getValue());
   }
 

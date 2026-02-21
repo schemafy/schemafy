@@ -108,7 +108,6 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("schema-create",
             requestHeaders(
                 headerWithName("Content-Type")
@@ -125,19 +124,14 @@ class SchemaControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success").description("요청 성공 여부"),
-                fieldWithPath("result").description("뮤테이션 결과"),
-                fieldWithPath("result.data").description("생성된 스키마 정보").optional(),
-                fieldWithPath("result.data.id").description("스키마 ID"),
-                fieldWithPath("result.data.projectId").description("프로젝트 ID"),
-                fieldWithPath("result.data.dbVendorName").description("DB 벤더 이름"),
-                fieldWithPath("result.data.name").description("스키마 이름"),
-                fieldWithPath("result.data.charset").description("문자셋").optional(),
-                fieldWithPath("result.data.collation").description("콜레이션").optional(),
-                fieldWithPath("result.affectedTableIds").description("영향받은 테이블 ID 목록"),
-                fieldWithPath("error")
-                    .type(JsonFieldType.NULL)
-                    .description("에러 정보 (성공 시 null)").optional())));
+                fieldWithPath("data").description("생성된 스키마 정보").optional(),
+                fieldWithPath("data.id").description("스키마 ID"),
+                fieldWithPath("data.projectId").description("프로젝트 ID"),
+                fieldWithPath("data.dbVendorName").description("DB 벤더 이름"),
+                fieldWithPath("data.name").description("스키마 이름"),
+                fieldWithPath("data.charset").description("문자셋").optional(),
+                fieldWithPath("data.collation").description("콜레이션").optional(),
+                fieldWithPath("affectedTableIds").description("영향받은 테이블 ID 목록"))));
   }
 
   @Test
@@ -162,7 +156,6 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("schema-get",
             pathParameters(
                 parameterWithName("schemaId")
@@ -174,14 +167,12 @@ class SchemaControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success").description("요청 성공 여부"),
-                fieldWithPath("result").description("스키마 정보"),
-                fieldWithPath("result.id").description("스키마 ID"),
-                fieldWithPath("result.projectId").description("프로젝트 ID"),
-                fieldWithPath("result.dbVendorName").description("DB 벤더 이름"),
-                fieldWithPath("result.name").description("스키마 이름"),
-                fieldWithPath("result.charset").description("문자셋"),
-                fieldWithPath("result.collation").description("콜레이션"))));
+                fieldWithPath("id").description("스키마 ID"),
+                fieldWithPath("projectId").description("프로젝트 ID"),
+                fieldWithPath("dbVendorName").description("DB 벤더 이름"),
+                fieldWithPath("name").description("스키마 이름"),
+                fieldWithPath("charset").description("문자셋"),
+                fieldWithPath("collation").description("콜레이션"))));
   }
 
   @Test
@@ -214,7 +205,6 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("schema-list-by-project",
             pathParameters(
                 parameterWithName("projectId")
@@ -226,17 +216,13 @@ class SchemaControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success").description("요청 성공 여부"),
-                fieldWithPath("result[]").description("스키마 목록"),
-                fieldWithPath("result[].id").description("스키마 ID"),
-                fieldWithPath("result[].projectId").description("프로젝트 ID"),
-                fieldWithPath("result[].dbVendorName").description("DB 벤더 이름"),
-                fieldWithPath("result[].name").description("스키마 이름"),
-                fieldWithPath("result[].charset").description("문자셋"),
-                fieldWithPath("result[].collation").description("콜레이션"),
-                fieldWithPath("error")
-                    .type(JsonFieldType.NULL)
-                    .description("에러 정보 (성공 시 null)").optional())));
+                fieldWithPath("[]").description("스키마 목록"),
+                fieldWithPath("[].id").description("스키마 ID"),
+                fieldWithPath("[].projectId").description("프로젝트 ID"),
+                fieldWithPath("[].dbVendorName").description("DB 벤더 이름"),
+                fieldWithPath("[].name").description("스키마 이름"),
+                fieldWithPath("[].charset").description("문자셋"),
+                fieldWithPath("[].collation").description("콜레이션"))));
   }
 
   @Test
@@ -256,7 +242,6 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("schema-change-name",
             pathParameters(
                 parameterWithName("schemaId")
@@ -272,22 +257,13 @@ class SchemaControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success")
-                    .type(JsonFieldType.BOOLEAN)
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .type(JsonFieldType.OBJECT)
-                    .description("뮤테이션 결과"),
-                fieldWithPath("result.data")
+                fieldWithPath("data")
                     .type(JsonFieldType.NULL)
                     .description("응답 데이터 (없음)")
                     .optional(),
-                fieldWithPath("result.affectedTableIds")
+                fieldWithPath("affectedTableIds")
                     .type(JsonFieldType.ARRAY)
-                    .description("영향받은 테이블 ID 목록"),
-                fieldWithPath("error")
-                    .type(JsonFieldType.NULL)
-                    .description("에러 정보 (성공 시 null)").optional())));
+                    .description("영향받은 테이블 ID 목록"))));
   }
 
   @Test
@@ -305,7 +281,6 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
         .consumeWith(document("schema-delete",
             pathParameters(
                 parameterWithName("schemaId")
@@ -317,22 +292,13 @@ class SchemaControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success")
-                    .type(JsonFieldType.BOOLEAN)
-                    .description("요청 성공 여부"),
-                fieldWithPath("result")
-                    .type(JsonFieldType.OBJECT)
-                    .description("뮤테이션 결과"),
-                fieldWithPath("result.data")
+                fieldWithPath("data")
                     .type(JsonFieldType.NULL)
                     .description("응답 데이터 (없음)")
                     .optional(),
-                fieldWithPath("result.affectedTableIds")
+                fieldWithPath("affectedTableIds")
                     .type(JsonFieldType.ARRAY)
-                    .description("영향받은 테이블 ID 목록"),
-                fieldWithPath("error")
-                    .type(JsonFieldType.NULL)
-                    .description("에러 정보 (성공 시 null)").optional())));
+                    .description("영향받은 테이블 ID 목록"))));
   }
 
 }

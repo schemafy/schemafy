@@ -3,15 +3,16 @@ package com.schemafy.domain.erd.table.application.service;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.CreateTableResult;
 import com.schemafy.domain.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.domain.erd.table.application.port.out.CreateTablePort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -31,12 +32,12 @@ public class CreateTableService implements CreateTableUseCase {
     return tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.name())
         .flatMap(exists -> {
           if (exists) {
-            return Mono.error(new TableNameDuplicateException(
+            return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
                 "Table name '%s' already exists in schema".formatted(command.name())));
           }
 
           return getSchemaByIdPort.findSchemaById(command.schemaId())
-              .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found")))
+              .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found")))
               .flatMap(schema -> Mono.fromCallable(ulidGeneratorPort::generate)
                   .flatMap(id -> {
                     String resolvedCharset = hasText(command.charset())
