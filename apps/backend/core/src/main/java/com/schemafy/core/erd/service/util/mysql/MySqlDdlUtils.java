@@ -13,6 +13,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MySqlDdlUtils {
 
+  private static final Set<String> VALID_REFERENTIAL_ACTIONS = Set.of(
+      "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION");
+
   private static final Set<String> VALID_SORT_DIRECTIONS = Set.of("ASC", "DESC");
 
   private static final Set<String> VALID_INDEX_TYPES = Set.of(
@@ -98,6 +101,17 @@ public final class MySqlDdlUtils {
 
     String normalized = sortDir.toUpperCase().trim();
     if (!VALID_SORT_DIRECTIONS.contains(normalized)) {
+      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+    }
+    return Optional.of(normalized);
+  }
+
+  public static Optional<String> sanitizeReferentialAction(String action) {
+    if (action == null || action.isEmpty())
+      return Optional.empty();
+
+    String normalized = action.toUpperCase().trim();
+    if (!VALID_REFERENTIAL_ACTIONS.contains(normalized)) {
       throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(normalized);

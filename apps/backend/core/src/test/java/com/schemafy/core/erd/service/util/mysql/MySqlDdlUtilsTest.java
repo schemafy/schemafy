@@ -126,6 +126,18 @@ class MySqlDdlUtilsTest {
         () -> MySqlDdlUtils.sanitizeSortDirection("INVALID"));
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = { "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION" })
+  void sanitizeReferentialAction_withValidActions_returnsOptional(String action) {
+    assertEquals(Optional.of(action), MySqlDdlUtils.sanitizeReferentialAction(action.toLowerCase()));
+  }
+
+  @Test
+  void sanitizeReferentialAction_withInvalidAction_throwsException() {
+    assertThrows(BusinessException.class,
+        () -> MySqlDdlUtils.sanitizeReferentialAction("INVALID"));
+  }
+
   @Test
   void quoteColumn_withValidColumnId_returnsQuotedName() {
     Map<String, String> columnMap = Map.of("col1", "user_name");
