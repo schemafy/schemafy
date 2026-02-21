@@ -1,5 +1,13 @@
 package com.schemafy.core.erd.service.util.mysql;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
@@ -7,13 +15,6 @@ import com.schemafy.core.erd.controller.dto.response.ConstraintSnapshotResponse;
 import com.schemafy.core.erd.controller.dto.response.TableResponse;
 import com.schemafy.core.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
