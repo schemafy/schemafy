@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -66,7 +67,7 @@ class ProjectInvitationServiceTest {
   private UserRepository userRepository;
 
   private User adminUser;
-  private User workspaceMember;
+  private User workspaceUser;
   private User outsider;
   private Workspace testWorkspace;
   private Project testProject;
@@ -88,7 +89,7 @@ class ProjectInvitationServiceTest {
         new UserInfo("admin@test.com", "Admin User", "password"),
         encoder).flatMap(userRepository::save).block();
 
-    workspaceMember = User.signUp(
+    workspaceUser = User.signUp(
         new UserInfo("member@test.com", "Member User", "password"),
         encoder).flatMap(userRepository::save).block();
 
@@ -104,7 +105,7 @@ class ProjectInvitationServiceTest {
     workspaceMemberRepository.save(wsMemberAdmin).block();
 
     WorkspaceMember wsMember = WorkspaceMember.create(
-        testWorkspace.getId(), workspaceMember.getId(), WorkspaceRole.MEMBER);
+        testWorkspace.getId(), workspaceUser.getId(), WorkspaceRole.MEMBER);
     workspaceMemberRepository.save(wsMember).block();
 
     testProject = Project.create(
@@ -127,7 +128,7 @@ class ProjectInvitationServiceTest {
     @DisplayName("프로젝트 관리자가 워크스페이스 멤버를 초대하면 성공한다")
     void createInvitation_Success() {
       CreateProjectInvitationRequest request = new CreateProjectInvitationRequest(
-          workspaceMember.getEmail(), ProjectRole.EDITOR);
+          workspaceUser.getEmail(), ProjectRole.EDITOR);
 
       StepVerifier.create(
           invitationService.createInvitation(
@@ -139,7 +140,7 @@ class ProjectInvitationServiceTest {
           .assertNext(response -> {
             assertThat(response.getProjectId()).isEqualTo(testProject.getId());
             assertThat(response.getWorkspaceId()).isEqualTo(testWorkspace.getId());
-            assertThat(response.getInvitedEmail()).isEqualTo(workspaceMember.getEmail());
+            assertThat(response.getInvitedEmail()).isEqualTo(workspaceUser.getEmail());
             assertThat(response.getInvitedRole()).isEqualTo(ProjectRole.EDITOR.getValue());
             assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.getValue());
             assertThat(response.getInvitedBy()).isEqualTo(adminUser.getId());
@@ -151,7 +152,7 @@ class ProjectInvitationServiceTest {
     @DisplayName("이메일이 대문자여도 소문자로 저장된다")
     void createInvitation_EmailLowerCase() {
       CreateProjectInvitationRequest request = new CreateProjectInvitationRequest(
-          workspaceMember.getEmail().toUpperCase(), ProjectRole.EDITOR);
+          workspaceUser.getEmail().toUpperCase(), ProjectRole.EDITOR);
 
       StepVerifier.create(
           invitationService.createInvitation(
@@ -161,7 +162,7 @@ class ProjectInvitationServiceTest {
               request.role(),
               adminUser.getId()))
           .assertNext(response -> {
-            assertThat(response.getInvitedEmail()).isEqualTo(workspaceMember.getEmail());
+            assertThat(response.getInvitedEmail()).isEqualTo(workspaceUser.getEmail());
           })
           .verifyComplete();
     }
@@ -170,7 +171,7 @@ class ProjectInvitationServiceTest {
     @DisplayName("프로젝트 관리자가 아니면 초대에 실패한다")
     void createInvitation_NotAdmin_Fails() {
       ProjectMember editorMember = ProjectMember.create(
-          testProject.getId(), workspaceMember.getId(), ProjectRole.EDITOR);
+          testProject.getId(), workspaceUser.getId(), ProjectRole.EDITOR);
       projectMemberRepository.save(editorMember).block();
 
       CreateProjectInvitationRequest request = new CreateProjectInvitationRequest("newuser@test.com",
@@ -182,7 +183,7 @@ class ProjectInvitationServiceTest {
               testProject.getId(),
               request.email(),
               request.role(),
-              workspaceMember.getId()))
+              workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -203,7 +204,7 @@ class ProjectInvitationServiceTest {
               testProject.getId(),
               request.email(),
               request.role(),
-              workspaceMember.getId()))
+              workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -240,7 +241,7 @@ class ProjectInvitationServiceTest {
     @DisplayName("동일한 이메일에 대한 대기 중인 초대가 있으면 실패한다")
     void createInvitation_DuplicatePending_Fails() {
       CreateProjectInvitationRequest request = new CreateProjectInvitationRequest(
-          workspaceMember.getEmail(), ProjectRole.EDITOR);
+          workspaceUser.getEmail(), ProjectRole.EDITOR);
 
       invitationService.createInvitation(
           testWorkspace.getId(), testProject.getId(), request.email(), request.role(), adminUser.getId()).block();
@@ -366,14 +367,14 @@ class ProjectInvitationServiceTest {
     @DisplayName("프로젝트 관리자가 아니면 목록 조회에 실패한다")
     void listInvitations_NotAdmin_Fails() {
       ProjectMember editorMember = ProjectMember.create(
-          testProject.getId(), workspaceMember.getId(), ProjectRole.EDITOR);
+          testProject.getId(), workspaceUser.getId(), ProjectRole.EDITOR);
       projectMemberRepository.save(editorMember).block();
 
       StepVerifier.create(
           invitationService.getInvitations(
               testWorkspace.getId(),
               testProject.getId(),
-              workspaceMember.getId(),
+              workspaceUser.getId(),
               0,
               10))
           .expectErrorSatisfies(error -> {
@@ -516,7 +517,7 @@ class ProjectInvitationServiceTest {
       invitationRepository.save(myInvitation).block();
 
       Invitation otherInvitation = Invitation.createProjectInvitation(
-          testProject.getId(), testWorkspace.getId(), workspaceMember.getEmail(), ProjectRole.VIEWER, adminUser
+          testProject.getId(), testWorkspace.getId(), workspaceUser.getEmail(), ProjectRole.VIEWER, adminUser
               .getId());
       invitationRepository.save(otherInvitation).block();
 
@@ -584,7 +585,7 @@ class ProjectInvitationServiceTest {
       Invitation invitation = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
@@ -592,9 +593,9 @@ class ProjectInvitationServiceTest {
       String invitationId = invitation.getId();
 
       StepVerifier.create(
-          invitationService.acceptInvitation(invitationId, workspaceMember.getId()))
+          invitationService.acceptInvitation(invitationId, workspaceUser.getId()))
           .assertNext(member -> {
-            assertThat(member.member().getUserId()).isEqualTo(workspaceMember.getId());
+            assertThat(member.member().getUserId()).isEqualTo(workspaceUser.getId());
             assertThat(member.member().getRole()).isEqualTo(ProjectRole.EDITOR.getValue());
           })
           .verifyComplete();
@@ -608,7 +609,7 @@ class ProjectInvitationServiceTest {
     @DisplayName("초대가 존재하지 않으면 실패한다")
     void acceptInvitation_NotFound_Fails() {
       StepVerifier.create(
-          invitationService.acceptInvitation("nonexistent-id", workspaceMember.getId()))
+          invitationService.acceptInvitation("nonexistent-id", workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -629,7 +630,7 @@ class ProjectInvitationServiceTest {
       invitation = invitationRepository.save(invitation).block();
 
       StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), workspaceMember.getId()))
+          invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -642,19 +643,19 @@ class ProjectInvitationServiceTest {
     @DisplayName("이미 프로젝트 멤버인 경우 초대 수락에 실패한다")
     void acceptInvitation_AlreadyProjectMember_Fails() {
       ProjectMember existingMember = ProjectMember.create(
-          testProject.getId(), workspaceMember.getId(), ProjectRole.VIEWER);
+          testProject.getId(), workspaceUser.getId(), ProjectRole.VIEWER);
       projectMemberRepository.save(existingMember).block();
 
       Invitation invitation = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
 
       StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), workspaceMember.getId()))
+          invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -670,20 +671,16 @@ class ProjectInvitationServiceTest {
       Invitation invitation = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
 
-      try {
-        var field = invitation.getClass().getDeclaredField("expiresAt");
-        field.setAccessible(true);
-        field.set(invitation, Instant.now().minusSeconds(3600));
-      } catch (Exception e) {}
+      ReflectionTestUtils.setField(invitation, "expiresAt", Instant.now().minusSeconds(3600));
       invitationRepository.save(invitation).block();
 
       StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), workspaceMember.getId()))
+          invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -698,15 +695,15 @@ class ProjectInvitationServiceTest {
       Invitation invitation = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
 
-      invitationService.acceptInvitation(invitation.getId(), workspaceMember.getId()).block();
+      invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()).block();
 
       StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), workspaceMember.getId()))
+          invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -721,15 +718,15 @@ class ProjectInvitationServiceTest {
       Invitation invitation = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
 
-      invitationService.rejectInvitation(invitation.getId(), workspaceMember.getId()).block();
+      invitationService.rejectInvitation(invitation.getId(), workspaceUser.getId()).block();
 
       StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), workspaceMember.getId()))
+          invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -766,7 +763,7 @@ class ProjectInvitationServiceTest {
       Invitation invitation1 = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation1 = invitationRepository.save(invitation1).block();
@@ -774,7 +771,7 @@ class ProjectInvitationServiceTest {
       Invitation invitation2 = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.VIEWER,
           adminUser.getId());
       invitation2 = invitationRepository.save(invitation2).block();
@@ -783,7 +780,7 @@ class ProjectInvitationServiceTest {
       String otherPendingId = invitation2.getId();
 
       // invitation1 수락
-      invitationService.acceptInvitation(acceptedId, workspaceMember.getId()).block();
+      invitationService.acceptInvitation(acceptedId, workspaceUser.getId()).block();
 
       // 수락한 초대는 ACCEPTED
       Invitation accepted = invitationRepository.findById(acceptedId).block();
@@ -808,7 +805,7 @@ class ProjectInvitationServiceTest {
       Invitation invitation1 = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation1 = invitationRepository.save(invitation1).block();
@@ -817,13 +814,13 @@ class ProjectInvitationServiceTest {
       Invitation otherProjectInvitation = Invitation.createProjectInvitation(
           otherProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.VIEWER,
           adminUser.getId());
       otherProjectInvitation = invitationRepository.save(otherProjectInvitation).block();
 
       // invitation1 수락
-      invitationService.acceptInvitation(invitation1.getId(), workspaceMember.getId()).block();
+      invitationService.acceptInvitation(invitation1.getId(), workspaceUser.getId()).block();
 
       // 다른 프로젝트의 초대는 여전히 PENDING
       Invitation otherInv = invitationRepository.findById(otherProjectInvitation.getId()).block();
@@ -842,7 +839,7 @@ class ProjectInvitationServiceTest {
       Invitation invitation = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
@@ -850,7 +847,7 @@ class ProjectInvitationServiceTest {
       String invitationId = invitation.getId();
 
       StepVerifier.create(
-          invitationService.rejectInvitation(invitationId, workspaceMember.getId()))
+          invitationService.rejectInvitation(invitationId, workspaceUser.getId()))
           .verifyComplete();
 
       Invitation updated = invitationRepository.findById(invitationId).block();
@@ -862,7 +859,7 @@ class ProjectInvitationServiceTest {
     @DisplayName("초대가 존재하지 않으면 실패한다")
     void rejectInvitation_NotFound_Fails() {
       StepVerifier.create(
-          invitationService.rejectInvitation("nonexistent-id", workspaceMember.getId()))
+          invitationService.rejectInvitation("nonexistent-id", workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -883,7 +880,7 @@ class ProjectInvitationServiceTest {
       invitation = invitationRepository.save(invitation).block();
 
       StepVerifier.create(
-          invitationService.rejectInvitation(invitation.getId(), workspaceMember.getId()))
+          invitationService.rejectInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -898,15 +895,15 @@ class ProjectInvitationServiceTest {
       Invitation invitation = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
 
-      invitationService.acceptInvitation(invitation.getId(), workspaceMember.getId()).block();
+      invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()).block();
 
       StepVerifier.create(
-          invitationService.rejectInvitation(invitation.getId(), workspaceMember.getId()))
+          invitationService.rejectInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -921,15 +918,15 @@ class ProjectInvitationServiceTest {
       Invitation invitation = Invitation.createProjectInvitation(
           testProject.getId(),
           testWorkspace.getId(),
-          workspaceMember.getEmail(),
+          workspaceUser.getEmail(),
           ProjectRole.EDITOR,
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
 
-      invitationService.rejectInvitation(invitation.getId(), workspaceMember.getId()).block();
+      invitationService.rejectInvitation(invitation.getId(), workspaceUser.getId()).block();
 
       StepVerifier.create(
-          invitationService.rejectInvitation(invitation.getId(), workspaceMember.getId()))
+          invitationService.rejectInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -1007,6 +1004,46 @@ class ProjectInvitationServiceTest {
             assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_TYPE_MISMATCH);
           })
           .verify();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("재초대 시나리오")
+  class ReInvitationTests {
+
+    @Test
+    @DisplayName("제거된 프로젝트 멤버를 초대하면 기존 레코드가 복원되고 역할이 갱신된다")
+    void reInvite_AfterRemoval_RestoresMember() {
+      // workspaceMember를 프로젝트에 EDITOR 역할로 추가 후 soft-delete
+      ProjectMember existingMember = ProjectMember.create(
+          testProject.getId(), workspaceUser.getId(), ProjectRole.EDITOR);
+      existingMember = projectMemberRepository.save(existingMember).block();
+      existingMember.delete();
+      projectMemberRepository.save(existingMember).block();
+      final String originalMemberId = existingMember.getId();
+
+      // VIEWER 역할로 초대 생성 후 수락
+      Invitation invitation = Invitation.createProjectInvitation(
+          testProject.getId(),
+          testWorkspace.getId(),
+          workspaceUser.getEmail(),
+          ProjectRole.VIEWER,
+          adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+      invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()).block();
+
+      // 기존 row가 복원됐는지 확인 (새 row가 아닌 같은 ID)
+      ProjectMember restored = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(testProject.getId(), workspaceUser.getId())
+          .block();
+      assertThat(restored).isNotNull();
+      assertThat(restored.getId()).isEqualTo(originalMemberId);
+      assertThat(restored.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+      assertThat(restored.isDeleted()).isFalse();
+
+      Invitation accepted = invitationRepository.findById(invitation.getId()).block();
+      assertThat(accepted.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
     }
 
   }

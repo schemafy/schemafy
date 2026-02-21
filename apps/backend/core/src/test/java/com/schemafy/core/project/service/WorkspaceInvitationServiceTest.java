@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -537,12 +538,7 @@ class WorkspaceInvitationServiceTest {
           adminUser.getId());
       invitation = invitationRepository.save(invitation).block();
 
-      invitation.getClass().getDeclaredFields();
-      try {
-        var field = invitation.getClass().getDeclaredField("expiresAt");
-        field.setAccessible(true);
-        field.set(invitation, Instant.now().minusSeconds(3600));
-      } catch (Exception e) {}
+      ReflectionTestUtils.setField(invitation, "expiresAt", Instant.now().minusSeconds(3600));
       invitationRepository.save(invitation).block();
 
       StepVerifier.create(
@@ -1008,6 +1004,136 @@ class WorkspaceInvitationServiceTest {
           .assertNext(member -> {
             assertThat(member.member().getUserId()).isEqualTo(invitedUser.getId());
             assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue());
+          })
+          .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("재초대 시나리오")
+  class ReInvitationTests {
+
+    @Test
+    @DisplayName("탈퇴한 멤버를 초대하면 기존 레코드가 복원되고 역할이 갱신된다")
+    void reInvite_AfterLeave_RestoresMember() {
+      // invitedUser를 MEMBER로 추가 후 soft-delete
+      WorkspaceMember existingMember = WorkspaceMember.create(
+          testWorkspace.getId(), invitedUser.getId(), WorkspaceRole.MEMBER);
+      existingMember = memberRepository.save(existingMember).block();
+      existingMember.delete();
+      memberRepository.save(existingMember).block();
+      final String originalMemberId = existingMember.getId();
+
+      // 동일 이메일로 ADMIN 초대 생성 및 수락
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.ADMIN, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()).block();
+
+      // 기존 row(same ID)가 복원되고 역할이 ADMIN으로 갱신되었는지 확인
+      WorkspaceMember restored = memberRepository
+          .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspace.getId(), invitedUser.getId()).block();
+      assertThat(restored).isNotNull();
+      assertThat(restored.getId()).isEqualTo(originalMemberId);
+      assertThat(restored.getRoleAsEnum()).isEqualTo(WorkspaceRole.ADMIN);
+      assertThat(restored.isDeleted()).isFalse();
+
+      Invitation accepted = invitationRepository.findById(invitation.getId()).block();
+      assertThat(accepted.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
+    }
+
+    @Test
+    @DisplayName("워크스페이스와 프로젝트 모두 탈퇴 후 재초대 시 프로젝트 멤버도 함께 복원된다")
+    void reInvite_AfterLeaveWorkspaceAndProject_RestoresBothMemberships() {
+      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc",
+          ProjectSettings.defaultSettings());
+      project = projectRepository.save(project).block();
+
+      // invitedUser를 워크스페이스(MEMBER) + 프로젝트(EDITOR) 멤버로 추가 후 둘 다 soft-delete
+      WorkspaceMember wsMember = WorkspaceMember.create(
+          testWorkspace.getId(), invitedUser.getId(), WorkspaceRole.MEMBER);
+      wsMember = memberRepository.save(wsMember).block();
+      wsMember.delete();
+      memberRepository.save(wsMember).block();
+
+      ProjectMember pm = ProjectMember.create(project.getId(), invitedUser.getId(), ProjectRole.EDITOR);
+      pm = projectMemberRepository.save(pm).block();
+      pm.delete();
+      projectMemberRepository.save(pm).block();
+
+      final String originalWsMemberId = wsMember.getId();
+      final String originalProjectMemberId = pm.getId();
+
+      // ADMIN으로 워크스페이스 초대 생성 및 수락
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.ADMIN, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()).block();
+
+      // 워크스페이스 멤버 복원 확인 (같은 row, ADMIN으로 갱신)
+      WorkspaceMember restoredWs = memberRepository
+          .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspace.getId(), invitedUser.getId()).block();
+      assertThat(restoredWs).isNotNull();
+      assertThat(restoredWs.getId()).isEqualTo(originalWsMemberId);
+      assertThat(restoredWs.getRoleAsEnum()).isEqualTo(WorkspaceRole.ADMIN);
+
+      // 프로젝트 멤버 복원 확인 (같은 row, ADMIN으로 전파)
+      ProjectMember restoredPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), invitedUser.getId()).block();
+      assertThat(restoredPm).isNotNull();
+      assertThat(restoredPm.getId()).isEqualTo(originalProjectMemberId);
+      assertThat(restoredPm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    }
+
+    @Test
+    @DisplayName("미가입 이메일로 워크스페이스를 초대하면 가입 후 수락할 수 있다")
+    void reInvite_UnregisteredEmail_SucceedsAfterSignUp() {
+      String unregisteredEmail = "future-ws@test.com";
+
+      // 미가입 이메일로 초대 생성
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), unregisteredEmail, WorkspaceRole.MEMBER, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      // 해당 이메일로 가입 후 수락
+      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+      User newUser = User.signUp(
+          new UserInfo(unregisteredEmail, "Future User", "password"),
+          encoder).flatMap(userRepository::save).block();
+
+      StepVerifier.create(
+          invitationService.acceptInvitation(invitation.getId(), newUser.getId()))
+          .assertNext(member -> {
+            assertThat(member.member().getUserId()).isEqualTo(newUser.getId());
+            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue());
+          })
+          .verifyComplete();
+
+      WorkspaceMember created = memberRepository
+          .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspace.getId(), newUser.getId()).block();
+      assertThat(created).isNotNull();
+    }
+
+    @Test
+    @DisplayName("거부된 초대 이후 동일 이메일로 새 초대를 생성하면 성공한다")
+    void reInvite_AfterRejection_NewInvitationSucceeds() {
+      // 초대 생성 후 거부
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+      invitationService.rejectInvitation(invitation.getId(), invitedUser.getId()).block();
+
+      // 거부 후 동일 이메일로 새 초대 생성 → PENDING 아니므로 성공
+      StepVerifier.create(
+          invitationService.createInvitation(
+              testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.ADMIN, adminUser.getId()))
+          .assertNext(newInvitation -> {
+            assertThat(newInvitation.getInvitedEmail()).isEqualTo(invitedUser.getEmail());
+            assertThat(newInvitation.getStatusAsEnum()).isEqualTo(InvitationStatus.PENDING);
+            assertThat(newInvitation.getInvitedRole()).isEqualTo(WorkspaceRole.ADMIN.getValue());
           })
           .verifyComplete();
     }
