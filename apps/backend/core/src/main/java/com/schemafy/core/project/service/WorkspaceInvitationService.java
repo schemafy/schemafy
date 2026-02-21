@@ -203,7 +203,7 @@ public class WorkspaceInvitationService {
         .countPendingWorkspaceInvitation(workspaceId, email)
         .flatMap(count -> {
           if (count > 0) {
-            log.info("Duplicate pending invitation: workspace={}, email={}",
+            log.warn("Duplicate pending invitation: workspace={}, email={}",
                 workspaceId, email);
             return Mono.error(new BusinessException(
                 ErrorCode.INVITATION_ALREADY_EXISTS));

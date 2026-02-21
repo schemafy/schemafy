@@ -118,7 +118,6 @@ public class ProjectInvitationService {
               invitation.validateInvitedEmailMatches(user.getEmail());
               return checkNotAlreadyProjectMember(invitation.getProjectId(), currentUserId)
                   .then(Mono.defer(() -> {
-                    log.info("Accepting invitation: id={}, status={}", invitation.getId(), invitation.getStatus());
                     invitation.accept();
 
                     return invitationRepository.save(invitation)
