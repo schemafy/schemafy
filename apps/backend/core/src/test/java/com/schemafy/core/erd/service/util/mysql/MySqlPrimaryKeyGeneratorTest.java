@@ -123,7 +123,7 @@ class MySqlPrimaryKeyGeneratorTest {
         new TableResponse("t1", null, "users", null, null, null),
         null, List.of(pk), null, null);
 
-    assertThrows(IllegalArgumentException.class,
+    assertThrows(BusinessException.class,
         () -> generator.generate(table, Collections.emptyMap()));
   }
 

@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintSnapshotResponse;
 import com.schemafy.core.erd.controller.dto.response.TableSnapshotResponse;
@@ -35,7 +37,7 @@ public class MySqlPrimaryKeyGenerator {
       Map<String, String> columnIdToName) {
     List<ConstraintColumnResponse> cols = getColumns(pk);
     if (cols.isEmpty()) {
-      throw new IllegalArgumentException("Primary key must have at least one column");
+      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
     }
 
     String columns = cols.stream()
