@@ -4,6 +4,7 @@ public record CreateTableResult(
     String tableId,
     String name,
     String charset,
-    String collation) {
+    String collation,
+    String extra) {
 
 }

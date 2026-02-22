@@ -51,14 +51,16 @@ public class CreateTableService implements CreateTableUseCase {
                         command.schemaId(),
                         command.name(),
                         resolvedCharset,
-                        resolvedCollation);
+                        resolvedCollation,
+                        command.extra());
 
                     return createTablePort.createTable(table)
                         .map(savedTable -> new CreateTableResult(
                             savedTable.id(),
                             savedTable.name(),
                             savedTable.charset(),
-                            savedTable.collation()))
+                            savedTable.collation(),
+                            savedTable.extra()))
                         .map(result -> MutationResult.of(result, id));
                   }));
         });

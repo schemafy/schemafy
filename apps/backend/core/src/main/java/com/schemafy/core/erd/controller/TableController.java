@@ -109,7 +109,8 @@ public class TableController {
         request.schemaId(),
         request.name(),
         request.charset(),
-        request.collation());
+        request.collation(),
+        request.extra());
     return createTableUseCase.createTable(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))

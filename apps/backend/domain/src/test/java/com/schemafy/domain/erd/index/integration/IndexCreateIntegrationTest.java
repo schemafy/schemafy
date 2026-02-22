@@ -111,7 +111,7 @@ class IndexCreateIntegrationTest {
     schemaId = schemaResult.id();
 
     var createTableCommand = new CreateTableCommand(
-        schemaId, "test_table", "utf8mb4", "utf8mb4_general_ci");
+        schemaId, "test_table", "utf8mb4", "utf8mb4_general_ci", null);
     var tableResult = createTableUseCase.createTable(createTableCommand).block().result();
     tableId = tableResult.tableId();
 
