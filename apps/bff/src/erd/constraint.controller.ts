@@ -3,12 +3,12 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   Patch,
   Post,
 } from '@nestjs/common';
 import { ConstraintService } from './constraint.service';
+import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
   AddConstraintColumnRequest,
   ChangeConstraintCheckExprRequest,
@@ -25,7 +25,7 @@ export class ConstraintController {
   @Post('constraints')
   async createConstraint(
     @Body() data: CreateConstraintRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.createConstraint(data, authHeader);
   }
@@ -33,7 +33,7 @@ export class ConstraintController {
   @Get('constraints/:constraintId')
   async getConstraint(
     @Param('constraintId') constraintId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.getConstraint(constraintId, authHeader);
   }
@@ -41,7 +41,7 @@ export class ConstraintController {
   @Get('tables/:tableId/constraints')
   async getConstraintsByTableId(
     @Param('tableId') tableId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.getConstraintsByTableId(tableId, authHeader);
   }
@@ -50,7 +50,7 @@ export class ConstraintController {
   async changeConstraintName(
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintNameRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.changeConstraintName(
       constraintId,
@@ -63,7 +63,7 @@ export class ConstraintController {
   async changeConstraintCheckExpr(
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintCheckExprRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.changeConstraintCheckExpr(
       constraintId,
@@ -76,7 +76,7 @@ export class ConstraintController {
   async changeConstraintDefaultExpr(
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintDefaultExprRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.changeConstraintDefaultExpr(
       constraintId,
@@ -88,7 +88,7 @@ export class ConstraintController {
   @Delete('constraints/:constraintId')
   async deleteConstraint(
     @Param('constraintId') constraintId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.deleteConstraint(constraintId, authHeader);
   }
@@ -96,7 +96,7 @@ export class ConstraintController {
   @Get('constraints/:constraintId/columns')
   async getConstraintColumns(
     @Param('constraintId') constraintId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.getConstraintColumns(
       constraintId,
@@ -108,7 +108,7 @@ export class ConstraintController {
   async addConstraintColumn(
     @Param('constraintId') constraintId: string,
     @Body() data: AddConstraintColumnRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.addConstraintColumn(
       constraintId,
@@ -120,7 +120,7 @@ export class ConstraintController {
   @Delete('constraint-columns/:constraintColumnId')
   async removeConstraintColumn(
     @Param('constraintColumnId') constraintColumnId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.removeConstraintColumn(
       constraintColumnId,
@@ -131,7 +131,7 @@ export class ConstraintController {
   @Get('constraint-columns/:constraintColumnId')
   async getConstraintColumn(
     @Param('constraintColumnId') constraintColumnId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.getConstraintColumn(
       constraintColumnId,
@@ -143,7 +143,7 @@ export class ConstraintController {
   async changeConstraintColumnPosition(
     @Param('constraintColumnId') constraintColumnId: string,
     @Body() data: ChangeConstraintColumnPositionRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.constraintService.changeConstraintColumnPosition(
       constraintColumnId,

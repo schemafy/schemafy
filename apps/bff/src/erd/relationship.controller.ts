@@ -3,12 +3,12 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   Patch,
   Post,
 } from '@nestjs/common';
 import { RelationshipService } from './relationship.service';
+import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
   AddRelationshipColumnRequest,
   ChangeRelationshipCardinalityRequest,
@@ -26,7 +26,7 @@ export class RelationshipController {
   @Post('relationships')
   async createRelationship(
     @Body() data: CreateRelationshipRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.createRelationship(data, authHeader);
   }
@@ -34,7 +34,7 @@ export class RelationshipController {
   @Get('relationships/:relationshipId')
   async getRelationship(
     @Param('relationshipId') relationshipId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.getRelationship(relationshipId, authHeader);
   }
@@ -42,7 +42,7 @@ export class RelationshipController {
   @Get('tables/:tableId/relationships')
   async getRelationshipsByTableId(
     @Param('tableId') tableId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.getRelationshipsByTableId(
       tableId,
@@ -54,7 +54,7 @@ export class RelationshipController {
   async changeRelationshipName(
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipNameRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.changeRelationshipName(
       relationshipId,
@@ -67,7 +67,7 @@ export class RelationshipController {
   async changeRelationshipKind(
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipKindRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.changeRelationshipKind(
       relationshipId,
@@ -80,7 +80,7 @@ export class RelationshipController {
   async changeRelationshipCardinality(
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipCardinalityRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.changeRelationshipCardinality(
       relationshipId,
@@ -93,7 +93,7 @@ export class RelationshipController {
   async changeRelationshipExtra(
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipExtraRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.changeRelationshipExtra(
       relationshipId,
@@ -105,7 +105,7 @@ export class RelationshipController {
   @Delete('relationships/:relationshipId')
   async deleteRelationship(
     @Param('relationshipId') relationshipId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.deleteRelationship(
       relationshipId,
@@ -116,7 +116,7 @@ export class RelationshipController {
   @Get('relationships/:relationshipId/columns')
   async getRelationshipColumns(
     @Param('relationshipId') relationshipId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.getRelationshipColumns(
       relationshipId,
@@ -128,7 +128,7 @@ export class RelationshipController {
   async addRelationshipColumn(
     @Param('relationshipId') relationshipId: string,
     @Body() data: AddRelationshipColumnRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.addRelationshipColumn(
       relationshipId,
@@ -140,7 +140,7 @@ export class RelationshipController {
   @Delete('relationship-columns/:relationshipColumnId')
   async removeRelationshipColumn(
     @Param('relationshipColumnId') relationshipColumnId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.removeRelationshipColumn(
       relationshipColumnId,
@@ -151,7 +151,7 @@ export class RelationshipController {
   @Get('relationship-columns/:relationshipColumnId')
   async getRelationshipColumn(
     @Param('relationshipColumnId') relationshipColumnId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.getRelationshipColumn(
       relationshipColumnId,
@@ -163,7 +163,7 @@ export class RelationshipController {
   async changeRelationshipColumnPosition(
     @Param('relationshipColumnId') relationshipColumnId: string,
     @Body() data: ChangeRelationshipColumnPositionRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.relationshipService.changeRelationshipColumnPosition(
       relationshipColumnId,
