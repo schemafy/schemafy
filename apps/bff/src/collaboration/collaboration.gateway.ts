@@ -6,6 +6,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
+import {ConfigService} from "@nestjs/config";
 
 type WebSocketClient = WebSocket & {
   backendWs?: WebSocket;
@@ -28,7 +29,7 @@ export class CollaborationGateway
   @WebSocketServer()
   server: Server;
 
-  constructor() {}
+  constructor(private readonly configService: ConfigService) {}
 
   handleConnection(client: WebSocketClient, request: IncomingMessage) {
     const validationResult = this.validateRequest(client, request);
@@ -83,8 +84,7 @@ export class CollaborationGateway
     projectId: string,
     accessToken: string,
   ) {
-    const backendBaseUrl =
-      process.env.BACKEND_WS_URL || 'ws://localhost:8080/ws/collaboration';
+    const backendBaseUrl = this.configService.get<string>('BACKEND_WS_URL', 'ws://localhost:8080/ws/collaboration');
     const backendUrl = `${backendBaseUrl}?projectId=${projectId}`;
     const backendWs = new WebSocket(backendUrl, {
       headers: {

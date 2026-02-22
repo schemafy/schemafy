@@ -4,8 +4,10 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Injectable,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import axios, { AxiosError } from 'axios';
 import {
@@ -20,10 +22,15 @@ import {
   getMessageFromStatus,
 } from '../constants/http-status-maps.js';
 
+@Injectable()
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
-  private readonly isProduction = process.env.NODE_ENV === 'production';
+  private readonly isProduction: boolean;
+
+  constructor(private readonly configService: ConfigService) {
+    this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+  }
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
