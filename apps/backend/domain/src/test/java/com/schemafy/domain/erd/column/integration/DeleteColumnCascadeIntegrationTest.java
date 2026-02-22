@@ -115,11 +115,11 @@ class DeleteColumnCascadeIntegrationTest {
         schemaId = schemaResult.id();
 
         var pkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
+            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
         pkTableId = pkTableResult.tableId();
 
         var fkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
+            schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
         fkTableId = fkTableResult.tableId();
 
         var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
@@ -195,15 +195,15 @@ class DeleteColumnCascadeIntegrationTest {
         schemaId = schemaResult.id();
 
         var pkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
+            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
         pkTableId = pkTableResult.tableId();
 
         var fkTableResult1 = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "fk_table_1", "utf8mb4", "utf8mb4_general_ci")).block().result();
+            schemaId, "fk_table_1", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
         fkTableId1 = fkTableResult1.tableId();
 
         var fkTableResult2 = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "fk_table_2", "utf8mb4", "utf8mb4_general_ci")).block().result();
+            schemaId, "fk_table_2", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
         fkTableId2 = fkTableResult2.tableId();
 
         var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
@@ -269,15 +269,15 @@ class DeleteColumnCascadeIntegrationTest {
         schemaId = schemaResult.id();
 
         var tableAResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "table_a", "utf8mb4", "utf8mb4_general_ci")).block().result();
+            schemaId, "table_a", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
         tableAId = tableAResult.tableId();
 
         var tableBResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "table_b", "utf8mb4", "utf8mb4_general_ci")).block().result();
+            schemaId, "table_b", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
         tableBId = tableBResult.tableId();
 
         var tableCResult = createTableUseCase.createTable(new CreateTableCommand(
-            schemaId, "table_c", "utf8mb4", "utf8mb4_general_ci")).block().result();
+            schemaId, "table_c", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
         tableCId = tableCResult.tableId();
 
         var colAResult = createColumnUseCase.createColumn(new CreateColumnCommand(
@@ -352,11 +352,11 @@ class DeleteColumnCascadeIntegrationTest {
       schemaId = schemaResult.id();
 
       var pkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-          schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
+          schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
       pkTableId = pkTableResult.tableId();
 
       var fkTableResult = createTableUseCase.createTable(new CreateTableCommand(
-          schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci")).block().result();
+          schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci", null)).block().result();
       fkTableId = fkTableResult.tableId();
 
       var pkColumnResult = createColumnUseCase.createColumn(new CreateColumnCommand(
@@ -401,7 +401,7 @@ class DeleteColumnCascadeIntegrationTest {
     var createCommand = new CreateRelationshipCommand(fkTableId,
         pkTableId,
         kind,
-        Cardinality.ONE_TO_MANY);
+        Cardinality.ONE_TO_MANY, null);
     var result = createRelationshipUseCase.createRelationship(createCommand).block().result();
     var columns = getRelationshipColumnsByRelationshipIdUseCase
         .getRelationshipColumnsByRelationshipId(

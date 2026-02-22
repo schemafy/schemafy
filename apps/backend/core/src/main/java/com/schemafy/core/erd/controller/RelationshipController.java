@@ -89,7 +89,8 @@ public class RelationshipController {
         request.fkTableId(),
         request.pkTableId(),
         request.kind(),
-        request.cardinality());
+        request.cardinality(),
+        request.extra());
     return createRelationshipUseCase.createRelationship(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))

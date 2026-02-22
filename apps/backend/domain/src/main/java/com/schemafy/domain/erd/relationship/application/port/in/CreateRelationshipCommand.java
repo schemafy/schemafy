@@ -7,5 +7,6 @@ public record CreateRelationshipCommand(
     String fkTableId,
     String pkTableId,
     RelationshipKind kind,
-    Cardinality cardinality) {
+    Cardinality cardinality,
+    String extra) {
 }
