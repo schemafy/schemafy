@@ -6,7 +6,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
-import {ConfigService} from "@nestjs/config";
+import { ConfigService } from '@nestjs/config';
 
 type WebSocketClient = WebSocket & {
   backendWs?: WebSocket;
@@ -84,7 +84,10 @@ export class CollaborationGateway
     projectId: string,
     accessToken: string,
   ) {
-    const backendBaseUrl = this.configService.get<string>('BACKEND_WS_URL', 'ws://localhost:8080/ws/collaboration');
+    const backendBaseUrl = this.configService.get<string>(
+      'BACKEND_WS_URL',
+      'ws://localhost:8080/ws/collaboration',
+    );
     const backendUrl = `${backendBaseUrl}?projectId=${projectId}`;
     const backendWs = new WebSocket(backendUrl, {
       headers: {

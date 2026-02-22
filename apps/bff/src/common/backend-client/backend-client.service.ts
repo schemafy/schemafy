@@ -10,11 +10,16 @@ export class BackendClientService {
   private readonly hmacSecret: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.hmacSecret =
-      this.configService.get<string>('HMAC_SECRET', 'default-hmac-secret-change-me-in-production');
+    this.hmacSecret = this.configService.get<string>(
+      'HMAC_SECRET',
+      'default-hmac-secret-change-me-in-production',
+    );
 
     this.client = axios.create({
-      baseURL: this.configService.get<string>('BACKEND_URL', 'http://localhost:8080'),
+      baseURL: this.configService.get<string>(
+        'BACKEND_URL',
+        'http://localhost:8080',
+      ),
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
