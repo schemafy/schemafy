@@ -216,7 +216,7 @@ public class RelationshipFixture {
         DEFAULT_FK_TABLE_ID,
         DEFAULT_PK_TABLE_ID,
         DEFAULT_KIND,
-        DEFAULT_CARDINALITY);
+        DEFAULT_CARDINALITY, null);
   }
 
   public static CreateRelationshipCommand createCommandWithTables(
@@ -225,7 +225,7 @@ public class RelationshipFixture {
         fkTableId,
         pkTableId,
         DEFAULT_KIND,
-        DEFAULT_CARDINALITY);
+        DEFAULT_CARDINALITY, null);
   }
 
   public static CreateRelationshipCommand createIdentifyingCommand() {
@@ -233,7 +233,7 @@ public class RelationshipFixture {
         DEFAULT_FK_TABLE_ID,
         DEFAULT_PK_TABLE_ID,
         RelationshipKind.IDENTIFYING,
-        DEFAULT_CARDINALITY);
+        DEFAULT_CARDINALITY, null);
   }
 
   public static CreateRelationshipCommand createIdentifyingCommandWithTables(
@@ -242,7 +242,7 @@ public class RelationshipFixture {
         fkTableId,
         pkTableId,
         RelationshipKind.IDENTIFYING,
-        DEFAULT_CARDINALITY);
+        DEFAULT_CARDINALITY, null);
   }
 
   public static CreateRelationshipCommand createCommandWithKind(RelationshipKind kind) {
@@ -250,7 +250,7 @@ public class RelationshipFixture {
         DEFAULT_FK_TABLE_ID,
         DEFAULT_PK_TABLE_ID,
         kind,
-        DEFAULT_CARDINALITY);
+        DEFAULT_CARDINALITY, null);
   }
 
   public static ChangeRelationshipNameCommand changeNameCommand(String newName) {

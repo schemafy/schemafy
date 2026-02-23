@@ -115,7 +115,7 @@ class CreateRelationshipServiceTest {
       var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
@@ -178,7 +178,7 @@ class CreateRelationshipServiceTest {
       var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
@@ -236,7 +236,7 @@ class CreateRelationshipServiceTest {
       var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
@@ -291,7 +291,7 @@ class CreateRelationshipServiceTest {
       var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
 
@@ -319,7 +319,7 @@ class CreateRelationshipServiceTest {
       var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, OTHER_SCHEMA_ID, "pk_table");
 
@@ -339,7 +339,7 @@ class CreateRelationshipServiceTest {
       var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
