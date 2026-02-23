@@ -103,13 +103,24 @@ public class OAuthController {
             }))
         .flatMap(userService::loginOrSignUpOAuth)
         .map(user -> {
-          return ResponseEntity.status(HttpStatus.FOUND)
+          return ResponseEntity
+              .status(HttpStatus.FOUND)
               .headers(jwtTokenIssuer.issueTokens(
                   user.getId(), user.getName()))
               .header(HttpHeaders.SET_COOKIE,
                   expireStateCookie().toString())
               .location(buildFrontendCallbackUri(null, null))
+              .<Void>build();
+        })
+        .onErrorResume(e -> {
+          ResponseEntity<Void> errorResponse = ResponseEntity
+              .status(HttpStatus.FOUND)
+              .header(HttpHeaders.SET_COOKIE,
+                  expireStateCookie().toString())
+              .location(
+                  buildFrontendCallbackUri("server_error", null))
               .build();
+          return Mono.just(errorResponse);
         });
   }
 

@@ -220,6 +220,52 @@ class OAuthControllerTest {
     }
 
     @Test
+    @DisplayName("토큰 교환 실패 시 프론트엔드로 에러 리다이렉트한다")
+    void callback_tokenExchangeFailed() {
+      String state = "valid-state";
+      given(gitHubOAuthService.exchangeCodeForToken("test-code"))
+          .willReturn(Mono.error(new RuntimeException("token exchange error")));
+      given(gitHubOAuthProperties.getFrontendCallbackUrl())
+          .willReturn("http://localhost:3000/oauth/callback");
+
+      webTestClient.get()
+          .uri(API_BASE_PATH
+              + "/oauth/github/callback?code=test-code&state="
+              + state)
+          .cookie("oauth_state", state)
+          .exchange()
+          .expectStatus().isFound()
+          .expectHeader().valueMatches("Location",
+              ".*oauth_error=server_error.*")
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*oauth_state=.*Max-Age=0.*");
+    }
+
+    @Test
+    @DisplayName("사용자 정보 조회 실패 시 프론트엔드로 에러 리다이렉트한다")
+    void callback_userInfoFetchFailed() {
+      String state = "valid-state";
+      given(gitHubOAuthService.exchangeCodeForToken("test-code"))
+          .willReturn(Mono.just("gho_test_token"));
+      given(gitHubOAuthService.fetchGitHubUser("gho_test_token"))
+          .willReturn(Mono.error(new RuntimeException("user info error")));
+      given(gitHubOAuthProperties.getFrontendCallbackUrl())
+          .willReturn("http://localhost:3000/oauth/callback");
+
+      webTestClient.get()
+          .uri(API_BASE_PATH
+              + "/oauth/github/callback?code=test-code&state="
+              + state)
+          .cookie("oauth_state", state)
+          .exchange()
+          .expectStatus().isFound()
+          .expectHeader().valueMatches("Location",
+              ".*oauth_error=server_error.*")
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*oauth_state=.*Max-Age=0.*");
+    }
+
+    @Test
     @DisplayName("code와 error가 모두 없으면 잘못된 요청 에러를 반환한다")
     void callback_missingCodeAndError() {
       String state = "valid-state";
