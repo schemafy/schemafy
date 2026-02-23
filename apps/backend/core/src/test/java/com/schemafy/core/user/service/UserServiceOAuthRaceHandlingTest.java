@@ -76,8 +76,8 @@ class UserServiceOAuthRaceHandlingTest {
     doReturn(
         Mono.empty(),
         Mono.just(linkedProvider))
-            .when(userAuthProviderRepository)
-            .findByProviderAndProviderUserId("GITHUB", providerUserId);
+        .when(userAuthProviderRepository)
+        .findByProviderAndProviderUserId("GITHUB", providerUserId);
     doReturn(Mono.error(new DuplicateKeyException("duplicate provider")))
         .when(userAuthProviderRepository)
         .save(any(UserAuthProvider.class));
