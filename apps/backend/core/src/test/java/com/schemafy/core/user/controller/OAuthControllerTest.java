@@ -8,6 +8,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.config.TestSecurityConfig;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProperties;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
@@ -28,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
 @WebFluxTest(controllers = OAuthController.class)
@@ -54,10 +57,21 @@ class OAuthControllerTest {
   private JwtTokenIssuer jwtTokenIssuer;
 
   @MockitoBean
+  private JwtProperties jwtProperties;
+
+  @MockitoBean
   private JwtProvider jwtProvider;
 
   @MockitoBean
   private WebExchangeErrorWriter webExchangeErrorWriter;
+
+  @BeforeEach
+  void setUp() {
+    JwtProperties.Cookie cookie = new JwtProperties.Cookie();
+    cookie.setSecure(false);
+    cookie.setSameSite("Strict");
+    given(jwtProperties.getCookie()).willReturn(cookie);
+  }
 
   @Nested
   @DisplayName("GitHub 인가 요청")
@@ -76,7 +90,29 @@ class OAuthControllerTest {
           .expectStatus().isFound()
           .expectHeader().valueMatches("Location",
               "https://github.com/login/oauth/authorize.*")
-          .expectHeader().exists("Set-Cookie");
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*SameSite=Lax.*")
+          .expectHeader().valueMatches("Set-Cookie",
+              "^(?!.*Secure).*$");
+    }
+
+    @Test
+    @DisplayName("jwt cookie secure 설정이 true면 state 쿠키도 Secure로 설정된다")
+    void authorize_setsSecureStateCookieWhenConfigured() {
+      JwtProperties.Cookie cookie = new JwtProperties.Cookie();
+      cookie.setSecure(true);
+      cookie.setSameSite("Strict");
+      given(jwtProperties.getCookie()).willReturn(cookie);
+      given(gitHubOAuthService.getAuthorizeUrl(anyString()))
+          .willReturn(
+              "https://github.com/login/oauth/authorize?client_id=test");
+
+      webTestClient.get()
+          .uri(API_BASE_PATH + "/oauth/github/authorize")
+          .exchange()
+          .expectStatus().isFound()
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*Secure.*");
     }
 
   }
@@ -152,6 +188,51 @@ class OAuthControllerTest {
           .expectHeader().valueMatches("Location",
               "http://localhost:3000/oauth/callback")
           .expectHeader().exists("Set-Cookie");
+    }
+
+    @Test
+    @DisplayName("provider error 콜백은 프론트엔드로 리다이렉트하고 state 쿠키를 만료한다")
+    void callback_providerErrorRedirectsToFrontend() {
+      String state = "valid-state";
+      given(gitHubOAuthProperties.getFrontendCallbackUrl())
+          .willReturn("http://localhost:3000/oauth/callback");
+
+      webTestClient.get()
+          .uri(API_BASE_PATH
+              + "/oauth/github/callback?state="
+              + state
+              + "&error=access_denied&error_description=user_denied")
+          .cookie("oauth_state", state)
+          .exchange()
+          .expectStatus().isFound()
+          .expectHeader().valueMatches("Location",
+              "http://localhost:3000/oauth/callback\\?provider=github&oauth_error=access_denied&oauth_error_description=user_denied")
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*oauth_state=.*Max-Age=0.*SameSite=Lax.*");
+
+      verify(gitHubOAuthService, never())
+          .exchangeCodeForToken(anyString());
+      verify(gitHubOAuthService, never())
+          .fetchGitHubUser(anyString());
+      verify(userService, never()).loginOrSignUpOAuth(any());
+      verify(jwtTokenIssuer, never())
+          .issueTokens(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("code와 error가 모두 없으면 잘못된 요청 에러를 반환한다")
+    void callback_missingCodeAndError() {
+      String state = "valid-state";
+
+      webTestClient.get()
+          .uri(API_BASE_PATH + "/oauth/github/callback?state=" + state)
+          .cookie("oauth_state", state)
+          .exchange()
+          .expectStatus().isBadRequest()
+          .expectBody()
+          .jsonPath("$.success").isEqualTo(false)
+          .jsonPath("$.error.code")
+          .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
     }
 
     @Test

@@ -4,15 +4,19 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.UUID;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProperties;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.user.oauth.GitHubOAuthProperties;
 import com.schemafy.core.user.oauth.GitHubOAuthService;
@@ -38,36 +42,47 @@ public class OAuthController {
   private final GitHubOAuthProperties gitHubOAuthProperties;
   private final UserService userService;
   private final JwtTokenIssuer jwtTokenIssuer;
+  private final JwtProperties jwtProperties;
 
   @GetMapping("/oauth/github/authorize")
   public Mono<ResponseEntity<Void>> authorize() {
     String state = UUID.randomUUID().toString();
     String authorizeUrl = gitHubOAuthService.getAuthorizeUrl(state);
 
-    ResponseCookie stateCookie = ResponseCookie
-        .from(OAUTH_STATE_COOKIE, state)
-        .httpOnly(true)
-        .secure(false)
-        .path("/")
-        .maxAge(STATE_COOKIE_MAX_AGE)
-        .sameSite("Lax")
-        .build();
+    ResponseCookie stateCookie = createStateCookie(state,
+        STATE_COOKIE_MAX_AGE);
 
     return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
-        .header("Set-Cookie", stateCookie.toString())
+        .header(HttpHeaders.SET_COOKIE, stateCookie.toString())
         .location(URI.create(authorizeUrl))
         .build());
   }
 
   @GetMapping("/oauth/github/callback")
   public Mono<ResponseEntity<Void>> callback(
-      @RequestParam String code,
-      @RequestParam String state,
+      @RequestParam(required = false) String code,
+      @RequestParam(required = false) String state,
+      @RequestParam(name = "error", required = false) String error,
+      @RequestParam(name = "error_description", required = false) String errorDescription,
       ServerHttpRequest request) {
     String cookieState = extractStateCookie(request);
-    if (!state.equals(cookieState)) {
+    if (!StringUtils.hasText(state) || !state.equals(cookieState)) {
       return Mono.error(
           new BusinessException(ErrorCode.OAUTH_STATE_MISMATCH));
+    }
+
+    if (StringUtils.hasText(error)) {
+      return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
+          .header(HttpHeaders.SET_COOKIE,
+              expireStateCookie().toString())
+          .location(buildFrontendCallbackUri(error,
+              errorDescription))
+          .build());
+    }
+
+    if (!StringUtils.hasText(code)) {
+      return Mono.error(
+          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
     }
 
     return gitHubOAuthService.exchangeCodeForToken(code)
@@ -88,21 +103,12 @@ public class OAuthController {
             }))
         .flatMap(userService::loginOrSignUpOAuth)
         .map(user -> {
-          ResponseCookie expireStateCookie = ResponseCookie
-              .from(OAUTH_STATE_COOKIE, "")
-              .httpOnly(true)
-              .path("/")
-              .maxAge(0)
-              .build();
-
           return ResponseEntity.status(HttpStatus.FOUND)
               .headers(jwtTokenIssuer.issueTokens(
                   user.getId(), user.getName()))
-              .header("Set-Cookie",
-                  expireStateCookie.toString())
-              .location(URI.create(
-                  gitHubOAuthProperties
-                      .getFrontendCallbackUrl()))
+              .header(HttpHeaders.SET_COOKIE,
+                  expireStateCookie().toString())
+              .location(buildFrontendCallbackUri(null, null))
               .build();
         });
   }
@@ -110,6 +116,39 @@ public class OAuthController {
   private String extractStateCookie(ServerHttpRequest request) {
     var cookie = request.getCookies().getFirst(OAUTH_STATE_COOKIE);
     return cookie != null ? cookie.getValue() : null;
+  }
+
+  private ResponseCookie createStateCookie(String value, Duration maxAge) {
+    return ResponseCookie.from(OAUTH_STATE_COOKIE, value)
+        .httpOnly(true)
+        .secure(jwtProperties.getCookie().isSecure())
+        .path("/")
+        .maxAge(maxAge)
+        .sameSite("Lax")
+        .build();
+  }
+
+  private ResponseCookie expireStateCookie() {
+    return createStateCookie("", Duration.ZERO);
+  }
+
+  private URI buildFrontendCallbackUri(String error,
+      String errorDescription) {
+    UriComponentsBuilder builder = UriComponentsBuilder
+        .fromUriString(gitHubOAuthProperties.getFrontendCallbackUrl());
+
+    if (StringUtils.hasText(error)) {
+      builder.queryParam("provider", "github")
+          .queryParam("oauth_error", error);
+      if (StringUtils.hasText(errorDescription)) {
+        builder.queryParam("oauth_error_description",
+            errorDescription);
+      }
+    }
+
+    return builder.build()
+        .encode()
+        .toUri();
   }
 
 }
