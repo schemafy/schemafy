@@ -229,6 +229,22 @@ class GitHubOAuthServiceTest {
           .verify();
     }
 
+    @Test
+    @DisplayName("이메일 API 호출 실패 시 OAUTH_USER_INFO_FAILED를 반환한다")
+    void fetchGitHubUserEmail_apiFailed() {
+      stubApiGet(Mono.error(new RuntimeException("GitHub API unavailable")),
+          null);
+
+      StepVerifier
+          .create(gitHubOAuthService
+              .fetchGitHubUserEmail("gho_test_token"))
+          .expectErrorMatches(
+              e -> e instanceof BusinessException
+                  && ((BusinessException) e)
+                      .getErrorCode() == ErrorCode.OAUTH_USER_INFO_FAILED)
+          .verify();
+    }
+
   }
 
 }

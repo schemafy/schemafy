@@ -41,7 +41,8 @@ public class GitHubOAuthService {
         .bodyValue(Map.of(
             "client_id", properties.getClientId(),
             "client_secret", properties.getClientSecret(),
-            "code", code))
+            "code", code,
+            "redirect_uri", properties.getRedirectUri()))
         .retrieve()
         .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {
         })
@@ -96,7 +97,7 @@ public class GitHubOAuthService {
             e -> {
               log.error("GitHub email fetch error", e);
               return new BusinessException(
-                  ErrorCode.OAUTH_EMAIL_NOT_AVAILABLE);
+                  ErrorCode.OAUTH_USER_INFO_FAILED);
             });
   }
 

@@ -46,8 +46,11 @@ public class JwtAuthenticationFilter implements WebFilter {
     boolean publicPath = isPublicPath(exchange.getRequest());
 
     // JWT 검증을 boundedElastic 스케줄러로 분리 (블로킹 호출 방지)
+    // onErrorResume은 JWT 검증 단계 오류만 처리하도록 flatMap 이전에 배치
     return Mono.fromCallable(() -> validateTokenAndGetAuth(token))
         .subscribeOn(Schedulers.boundedElastic())
+        .onErrorResume(e -> Mono.just(
+            AuthenticationResult.error(ErrorCode.TOKEN_VALIDATION_ERROR)))
         .flatMap(result -> {
           if (result.valid()) {
             return chain.filter(exchange)
@@ -63,10 +66,7 @@ public class JwtAuthenticationFilter implements WebFilter {
                 result.errorMessage(),
                 result.status());
           }
-        })
-        .onErrorResume(e -> publicPath
-            ? chain.filter(exchange)
-            : handleUnexpectedError(exchange));
+        });
   }
 
   private AuthenticationResult validateTokenAndGetAuth(String token) {
@@ -107,19 +107,6 @@ public class JwtAuthenticationFilter implements WebFilter {
         status,
         errorCode,
         errorMessage);
-  }
-
-  private Mono<Void> handleJwtError(ServerWebExchange exchange,
-      ErrorCode errorCode) {
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        errorCode.getStatus(),
-        errorCode.getCode(),
-        errorCode.getMessage());
-  }
-
-  private Mono<Void> handleUnexpectedError(ServerWebExchange exchange) {
-    return handleJwtError(exchange, ErrorCode.TOKEN_VALIDATION_ERROR);
   }
 
   private AuthenticatedUser createPrincipal(String userId, String userName) {
