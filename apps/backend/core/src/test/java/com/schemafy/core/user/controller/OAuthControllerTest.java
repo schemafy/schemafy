@@ -1,6 +1,7 @@
 package com.schemafy.core.user.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
@@ -28,13 +29,16 @@ import com.schemafy.core.user.service.UserService;
 
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @WebFluxTest(controllers = OAuthController.class)
 @Import(TestSecurityConfig.class)
+@AutoConfigureRestDocs
 @DisplayName("OAuthController 테스트")
 class OAuthControllerTest {
 
@@ -93,7 +97,10 @@ class OAuthControllerTest {
           .expectHeader().valueMatches("Set-Cookie",
               ".*SameSite=Lax.*")
           .expectHeader().valueMatches("Set-Cookie",
-              "^(?!.*Secure).*$");
+              "^(?!.*Secure).*$")
+          .expectBody()
+          .consumeWith(document("oauth-github-authorize",
+              oauthAuthorizeResponseHeaders()));
     }
 
     @Test
@@ -187,7 +194,8 @@ class OAuthControllerTest {
           .expectStatus().isFound()
           .expectHeader().valueMatches("Location",
               "http://localhost:3000/oauth/callback")
-          .expectHeader().exists("Set-Cookie");
+          .expectHeader().exists("Set-Cookie")
+          .expectBody().isEmpty();
     }
 
     @Test
