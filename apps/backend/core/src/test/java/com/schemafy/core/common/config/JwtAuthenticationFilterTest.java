@@ -21,6 +21,7 @@ import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,6 +59,7 @@ class JwtAuthenticationFilterTest {
     when(jwtProvider.getTokenType(token))
         .thenReturn(JwtProvider.ACCESS_TOKEN);
     when(jwtProvider.validateToken(token, userId)).thenReturn(true);
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
 
     StepVerifier
         .create(jwtAuthenticationFilter.filter(exchange, filterChain)

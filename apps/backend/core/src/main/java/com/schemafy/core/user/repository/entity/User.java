@@ -48,8 +48,22 @@ public class User extends BaseEntity {
     }).subscribeOn(Schedulers.boundedElastic());
   }
 
+  public static User signUpOAuth(String email, String name) {
+    Email validatedEmail = new Email(email);
+    User newUser = new User(
+        validatedEmail.address(),
+        name,
+        null,
+        UserStatus.ACTIVE);
+    newUser.setId(UlidGenerator.generate());
+    return newUser;
+  }
+
   public Mono<Boolean> matchesPassword(String rawPassword,
       PasswordEncoder passwordEncoder) {
+    if (this.password == null) {
+      return Mono.just(false);
+    }
     return Mono.fromCallable(
         () -> passwordEncoder.matches(rawPassword, this.password))
         .subscribeOn(Schedulers.boundedElastic());

@@ -120,4 +120,14 @@ public class UserApiSnippets extends RestDocsSnippets {
         successResponseFieldsWithNullResult());
   }
 
+  // ========== GitHub OAuth API ==========
+
+  public static Snippet oauthAuthorizeResponseHeaders() {
+    return createResponseHeadersSnippet(
+        headerWithName("Location")
+            .description("GitHub OAuth 인가 페이지 URL"),
+        headerWithName("Set-Cookie")
+            .description("CSRF 방어용 state 쿠키 (oauth_state, HttpOnly, SameSite=Lax, Max-Age=600)"));
+  }
+
 }

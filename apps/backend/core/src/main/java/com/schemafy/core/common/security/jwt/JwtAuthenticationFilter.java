@@ -43,23 +43,30 @@ public class JwtAuthenticationFilter implements WebFilter {
       return chain.filter(exchange);
     }
 
+    boolean publicPath = isPublicPath(exchange.getRequest());
+
     // JWT 검증을 boundedElastic 스케줄러로 분리 (블로킹 호출 방지)
+    // onErrorResume은 JWT 검증 단계 오류만 처리하도록 flatMap 이전에 배치
     return Mono.fromCallable(() -> validateTokenAndGetAuth(token))
         .subscribeOn(Schedulers.boundedElastic())
+        .onErrorResume(e -> Mono.just(
+            AuthenticationResult.error(ErrorCode.TOKEN_VALIDATION_ERROR)))
         .flatMap(result -> {
           if (result.valid()) {
             return chain.filter(exchange)
                 .contextWrite(ReactiveSecurityContextHolder
                     .withAuthentication(
                         result.authentication()));
+          } else if (publicPath) {
+            // public 경로에서는 토큰이 무효해도 에러 없이 통과
+            return chain.filter(exchange);
           } else {
             return handleJwtError(exchange,
                 result.errorType(),
                 result.errorMessage(),
                 result.status());
           }
-        })
-        .onErrorResume(e -> handleUnexpectedError(exchange));
+        });
   }
 
   private AuthenticationResult validateTokenAndGetAuth(String token) {
@@ -102,23 +109,15 @@ public class JwtAuthenticationFilter implements WebFilter {
         errorMessage);
   }
 
-  private Mono<Void> handleJwtError(ServerWebExchange exchange,
-      ErrorCode errorCode) {
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        errorCode.getStatus(),
-        errorCode.getCode(),
-        errorCode.getMessage());
-  }
-
-  private Mono<Void> handleUnexpectedError(ServerWebExchange exchange) {
-    return handleJwtError(exchange, ErrorCode.TOKEN_VALIDATION_ERROR);
-  }
-
   private AuthenticatedUser createPrincipal(String userId, String userName) {
     // TODO: JWT 클레임 또는 DB 조회를 통해 역할(roles)을 채워 넣는다.
     // 현재는 모든 프로젝트 롤을 부여해 hasAuthority 기반 접근제어를 통과시키는 임시 구현.
     return AuthenticatedUser.withAllRoles(userId, userName);
+  }
+
+  private boolean isPublicPath(ServerHttpRequest request) {
+    String path = request.getPath().pathWithinApplication().value();
+    return path.startsWith("/public/api/");
   }
 
   private String extractToken(ServerHttpRequest request) {
@@ -131,7 +130,7 @@ public class JwtAuthenticationFilter implements WebFilter {
     }
 
     String path = request.getPath().pathWithinApplication().value();
-    if (path != null && path.startsWith("/ws/")) {
+    if (path.startsWith("/ws/")) {
       var cookie = request.getCookies()
           .getFirst(ACCESS_TOKEN_COOKIE_NAME);
       if (cookie != null && StringUtils.hasText(cookie.getValue())) {

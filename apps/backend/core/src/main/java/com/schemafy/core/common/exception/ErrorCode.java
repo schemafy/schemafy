@@ -139,6 +139,16 @@ public enum ErrorCode {
   SHARE_LINK_INVALID_EXPIRATION(HttpStatus.BAD_REQUEST, "S008",
       "만료 시간은 미래 시간이어야 합니다."),
 
+  // OAuth
+  OAUTH_CODE_EXCHANGE_FAILED(HttpStatus.BAD_GATEWAY, "O001",
+      "OAuth 인증 코드 교환에 실패했습니다."),
+  OAUTH_USER_INFO_FAILED(HttpStatus.BAD_GATEWAY, "O002",
+      "OAuth 사용자 정보 조회에 실패했습니다."),
+  OAUTH_STATE_MISMATCH(HttpStatus.BAD_REQUEST, "O003",
+      "OAuth 상태값이 일치하지 않습니다."),
+  OAUTH_EMAIL_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "O004",
+      "OAuth 제공자에서 이메일을 가져올 수 없습니다."),
+
   // HMAC
   HMAC_SIGNATURE_MISSING(HttpStatus.UNAUTHORIZED, "H001",
       "HMAC 서명이 누락되었습니다."),
