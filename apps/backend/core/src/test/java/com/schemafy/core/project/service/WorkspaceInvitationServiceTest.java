@@ -28,7 +28,6 @@ import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -891,9 +890,9 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("MEMBER로 초대 수락 시 모든 기존 프로젝트에 VIEWER로 추가된다")
     void acceptInvitation_Member_PropagatesAsViewer() {
-      Project project1 = Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings());
+      Project project1 = Project.create(testWorkspace.getId(), "Project 1", "Desc");
       project1 = projectRepository.save(project1).block();
-      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Desc", ProjectSettings.defaultSettings());
+      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Desc");
       project2 = projectRepository.save(project2).block();
 
       // MEMBER로 초대 생성
@@ -920,7 +919,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("ADMIN으로 초대 수락 시 모든 기존 프로젝트에 ADMIN으로 추가된다")
     void acceptInvitation_Admin_PropagatesAsAdmin() {
-      Project project = Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings());
+      Project project = Project.create(testWorkspace.getId(), "Project 1", "Desc");
       project = projectRepository.save(project).block();
 
       Invitation invitation = Invitation.createWorkspaceInvitation(
@@ -938,7 +937,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("이미 프로젝트 멤버인 경우 기존 역할이 유지된다")
     void acceptInvitation_AlreadyProjectMember_KeepsExistingRole() {
-      Project project = Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings());
+      Project project = Project.create(testWorkspace.getId(), "Project 1", "Desc");
       project = projectRepository.save(project).block();
 
       // 미리 EDITOR로 프로젝트 멤버 추가
@@ -963,15 +962,13 @@ class WorkspaceInvitationServiceTest {
     @DisplayName("삭제된 프로젝트에는 전파되지 않는다")
     void acceptInvitation_DeletedProject_Skipped() {
       // 프로젝트 생성 후 삭제
-      Project project = Project.create(testWorkspace.getId(), "Deleted Project", "Desc", ProjectSettings
-          .defaultSettings());
+      Project project = Project.create(testWorkspace.getId(), "Deleted Project", "Desc");
       project = projectRepository.save(project).block();
       project.delete();
       projectRepository.save(project).block();
 
       // 활성 프로젝트 하나 생성
-      Project activeProject = Project.create(testWorkspace.getId(), "Active Project", "Desc", ProjectSettings
-          .defaultSettings());
+      Project activeProject = Project.create(testWorkspace.getId(), "Active Project", "Desc");
       activeProject = projectRepository.save(activeProject).block();
 
       Invitation invitation = Invitation.createWorkspaceInvitation(
@@ -1047,8 +1044,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("워크스페이스와 프로젝트 모두 탈퇴 후 재초대 시 프로젝트 멤버도 함께 복원된다")
     void reInvite_AfterLeaveWorkspaceAndProject_RestoresBothMemberships() {
-      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc",
-          ProjectSettings.defaultSettings());
+      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc");
       project = projectRepository.save(project).block();
 
       // invitedUser를 워크스페이스(MEMBER) + 프로젝트(EDITOR) 멤버로 추가 후 둘 다 soft-delete

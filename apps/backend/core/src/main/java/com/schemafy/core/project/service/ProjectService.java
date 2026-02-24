@@ -17,7 +17,6 @@ import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.ProjectDetail;
 import com.schemafy.core.project.service.dto.ProjectMemberDetail;
@@ -41,13 +40,11 @@ public class ProjectService {
   private final UserRepository userRepository;
 
   public Mono<ProjectDetail> createProject(String workspaceId,
-      String name, String description, ProjectSettings settings, String userId) {
+      String name, String description, String userId) {
     return validateWorkspaceAdmin(workspaceId, userId).then(
         Mono.defer(() -> {
-          validateSettings(settings);
-
           Project project = Project.create(workspaceId,
-              name, description, settings);
+              name, description);
 
           ProjectMember adminMember = ProjectMember
               .create(project.getId(), userId, ProjectRole.ADMIN);
@@ -111,15 +108,13 @@ public class ProjectService {
   }
 
   public Mono<ProjectDetail> updateProject(String workspaceId,
-      String projectId, String name, String description, ProjectSettings settings, String userId) {
+      String projectId, String name, String description, String userId) {
     return validateAdminAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           project.belongsToWorkspace(workspaceId);
-          validateSettings(settings);
 
-          project.update(name, description,
-              settings);
+          project.update(name, description);
           return projectRepository.save(project);
         })
         .flatMap(savedProject -> buildProjectDetail(savedProject, userId))
@@ -344,14 +339,6 @@ public class ProjectService {
         .switchIfEmpty(Mono.error(new BusinessException(
             ErrorCode.PROJECT_ADMIN_REQUIRED)))
         .then();
-  }
-
-  private void validateSettings(ProjectSettings settings) {
-    settings.validate();
-    String json = settings.toJson();
-    if (json.length() > 65536) {
-      throw new BusinessException(ErrorCode.PROJECT_SETTINGS_TOO_LARGE);
-    }
   }
 
   private Mono<Void> propagateWorkspaceMembersToProject(

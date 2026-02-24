@@ -25,7 +25,6 @@ import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.WorkspaceDetail;
 import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
@@ -399,8 +398,7 @@ class WorkspaceServiceTest {
     @Test
     @DisplayName("멤버 직접 추가 시 기존 프로젝트에 VIEWER로 자동 추가된다")
     void addMember_PropagatesAsViewerToExistingProjects() {
-      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc", ProjectSettings
-          .defaultSettings());
+      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc");
       project = projectRepository.save(project).block();
 
       BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -424,9 +422,9 @@ class WorkspaceServiceTest {
     @DisplayName("멤버 제거 시 해당 워크스페이스의 프로젝트 멤버십도 cascade soft-delete 된다")
     void removeMember_cascadesProjectMemberships() {
       Project project1 = projectRepository.save(
-          Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings())).block();
+          Project.create(testWorkspace.getId(), "Project 1", "Desc")).block();
       Project project2 = projectRepository.save(
-          Project.create(testWorkspace.getId(), "Project 2", "Desc", ProjectSettings.defaultSettings())).block();
+          Project.create(testWorkspace.getId(), "Project 2", "Desc")).block();
 
       projectMemberRepository.save(
           ProjectMember.create(project1.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
@@ -455,9 +453,9 @@ class WorkspaceServiceTest {
           WorkspaceMember.create(otherWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER)).block();
 
       Project projectInWs = projectRepository.save(
-          Project.create(testWorkspace.getId(), "WS Project", "Desc", ProjectSettings.defaultSettings())).block();
+          Project.create(testWorkspace.getId(), "WS Project", "Desc")).block();
       Project projectInOther = projectRepository.save(
-          Project.create(otherWorkspace.getId(), "Other Project", "Desc", ProjectSettings.defaultSettings())).block();
+          Project.create(otherWorkspace.getId(), "Other Project", "Desc")).block();
 
       projectMemberRepository.save(
           ProjectMember.create(projectInWs.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
@@ -494,9 +492,9 @@ class WorkspaceServiceTest {
       @DisplayName("MEMBER→ADMIN 승격 시 해당 워크스페이스의 프로젝트 역할도 ADMIN으로 변경된다")
       void updateMemberRole_propagatesUpgradeToProjects() {
         Project project1 = projectRepository.save(
-            Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings())).block();
+            Project.create(testWorkspace.getId(), "Project 1", "Desc")).block();
         Project project2 = projectRepository.save(
-            Project.create(testWorkspace.getId(), "Project 2", "Desc", ProjectSettings.defaultSettings())).block();
+            Project.create(testWorkspace.getId(), "Project 2", "Desc")).block();
 
         projectMemberRepository.save(
             ProjectMember.create(project1.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
@@ -522,7 +520,7 @@ class WorkspaceServiceTest {
       @DisplayName("ADMIN→MEMBER 강등 시 해당 워크스페이스의 프로젝트 역할도 VIEWER로 변경된다")
       void updateMemberRole_propagatesDowngradeToProjects() {
         Project project = projectRepository.save(
-            Project.create(testWorkspace.getId(), "Downgrade Project", "Desc", ProjectSettings.defaultSettings()))
+            Project.create(testWorkspace.getId(), "Downgrade Project", "Desc"))
             .block();
 
         projectMemberRepository.save(
@@ -565,9 +563,9 @@ class WorkspaceServiceTest {
             WorkspaceMember.create(otherWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER)).block();
 
         Project projectInWs = projectRepository.save(
-            Project.create(testWorkspace.getId(), "WS Project", "Desc", ProjectSettings.defaultSettings())).block();
+            Project.create(testWorkspace.getId(), "WS Project", "Desc")).block();
         Project projectInOther = projectRepository.save(
-            Project.create(otherWorkspace.getId(), "Other Project", "Desc", ProjectSettings.defaultSettings())).block();
+            Project.create(otherWorkspace.getId(), "Other Project", "Desc")).block();
 
         projectMemberRepository.save(
             ProjectMember.create(projectInWs.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
@@ -596,7 +594,7 @@ class WorkspaceServiceTest {
       @DisplayName("ADMIN→MEMBER 강등 시 프로젝트 EDITOR 역할은 보호된다 (VIEWER로 내려가지 않음)")
       void updateMemberRole_downgrade_preservesEditorRole() {
         Project project = projectRepository.save(
-            Project.create(testWorkspace.getId(), "Editor Project", "Desc", ProjectSettings.defaultSettings()))
+            Project.create(testWorkspace.getId(), "Editor Project", "Desc"))
             .block();
 
         projectMemberRepository.save(
@@ -620,7 +618,7 @@ class WorkspaceServiceTest {
       @DisplayName("MEMBER→ADMIN 승격 시 프로젝트 EDITOR 역할은 ADMIN으로 덮어씌워진다")
       void updateMemberRole_upgrade_overridesEditorRole() {
         Project project = projectRepository.save(
-            Project.create(testWorkspace.getId(), "Editor Upgrade Project", "Desc", ProjectSettings.defaultSettings()))
+            Project.create(testWorkspace.getId(), "Editor Upgrade Project", "Desc"))
             .block();
 
         projectMemberRepository.save(
@@ -644,7 +642,7 @@ class WorkspaceServiceTest {
       @DisplayName("같은 역할로 변경 시 에러 없이 정상 완료된다")
       void updateMemberRole_sameRole_noOp() {
         Project project = projectRepository.save(
-            Project.create(testWorkspace.getId(), "Same Role Project", "Desc", ProjectSettings.defaultSettings()))
+            Project.create(testWorkspace.getId(), "Same Role Project", "Desc"))
             .block();
 
         projectMemberRepository.save(
@@ -665,7 +663,7 @@ class WorkspaceServiceTest {
       @DisplayName("유일 Project ADMIN 강등 시 VIEWER로 강등된다")
       void updateMemberRole_soleProjectAdmin_downgradeProceeds() {
         Project project = projectRepository.save(
-            Project.create(testWorkspace.getId(), "Sole Admin Project", "Desc", ProjectSettings.defaultSettings()))
+            Project.create(testWorkspace.getId(), "Sole Admin Project", "Desc"))
             .block();
 
         projectMemberRepository.save(
@@ -691,8 +689,7 @@ class WorkspaceServiceTest {
     @Test
     @DisplayName("ADMIN으로 직접 추가 시 기존 프로젝트에 ADMIN으로 자동 추가된다")
     void addMember_Admin_PropagatesAsAdminToExistingProjects() {
-      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc", ProjectSettings
-          .defaultSettings());
+      Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc");
       project = projectRepository.save(project).block();
 
       BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -777,7 +774,7 @@ class WorkspaceServiceTest {
     @DisplayName("멤버 탈퇴 시 해당 워크스페이스의 프로젝트 멤버십도 cascade soft-delete 된다")
     void leaveMember_cascadesProjectMemberships() {
       Project project = projectRepository.save(
-          Project.create(testWorkspace.getId(), "Cascade Project", "Desc", ProjectSettings.defaultSettings())).block();
+          Project.create(testWorkspace.getId(), "Cascade Project", "Desc")).block();
       projectMemberRepository.save(
           ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
 
@@ -797,7 +794,7 @@ class WorkspaceServiceTest {
           WorkspaceMember.create(singleMemberWorkspace.getId(), memberUser.getId(), WorkspaceRole.ADMIN)).block();
 
       Project project = projectRepository.save(
-          Project.create(singleMemberWorkspace.getId(), "Solo Project", "Desc", ProjectSettings.defaultSettings()))
+          Project.create(singleMemberWorkspace.getId(), "Solo Project", "Desc"))
           .block();
       projectMemberRepository.save(
           ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.ADMIN)).block();
@@ -833,9 +830,9 @@ class WorkspaceServiceTest {
           WorkspaceMember.create(newWorkspace.getId(), adminUser.getId(), WorkspaceRole.ADMIN)).block();
 
       Project project1 = projectRepository.save(
-          Project.create(newWorkspace.getId(), "Project A", "Desc", ProjectSettings.defaultSettings())).block();
+          Project.create(newWorkspace.getId(), "Project A", "Desc")).block();
       Project project2 = projectRepository.save(
-          Project.create(newWorkspace.getId(), "Project B", "Desc", ProjectSettings.defaultSettings())).block();
+          Project.create(newWorkspace.getId(), "Project B", "Desc")).block();
 
       projectMemberRepository.save(
           ProjectMember.create(project1.getId(), adminUser.getId(), ProjectRole.ADMIN)).block();

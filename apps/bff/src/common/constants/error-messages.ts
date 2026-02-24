@@ -23,11 +23,6 @@ const CHECK_INPUT: ErrorInfo = {
   category: ErrorCategory.USER_FEEDBACK,
 };
 
-const SETTINGS_TOO_LARGE: ErrorInfo = {
-  message: 'Settings are too large. Please reduce the size and try again.',
-  category: ErrorCategory.USER_FEEDBACK,
-};
-
 const notFound = (item: string): ErrorInfo => ({
   message: `${item} not found. Please check and try again.`,
   category: ErrorCategory.USER_FEEDBACK,
@@ -114,11 +109,6 @@ export const ErrorMessages: Record<string, ErrorInfo> = {
     message: "You don't have access to this workspace.",
     category: ErrorCategory.USER_FEEDBACK,
   },
-  W003: {
-    message: 'Failed to save settings. Please check the format and try again.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  W004: SETTINGS_TOO_LARGE,
   W005: {
     message: 'This workspace has been deleted.',
     category: ErrorCategory.USER_FEEDBACK,
@@ -167,7 +157,6 @@ export const ErrorMessages: Record<string, ErrorInfo> = {
     message: 'This project is not part of the current workspace.',
     category: ErrorCategory.USER_FEEDBACK,
   },
-  P006: SETTINGS_TOO_LARGE,
   P007: {
     message: 'This project has been deleted.',
     category: ErrorCategory.USER_FEEDBACK,

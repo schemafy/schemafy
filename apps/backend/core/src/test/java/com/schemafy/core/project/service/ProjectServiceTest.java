@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
@@ -20,7 +19,6 @@ import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.ProjectMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
@@ -105,11 +103,7 @@ class ProjectServiceTest {
             viewerUser.getId(), WorkspaceRole.MEMBER))
         .block();
 
-    testProject = Project.create(
-        testWorkspace.getId(),
-        "Test Project",
-        "Test Description",
-        ProjectSettings.defaultSettings());
+    testProject = Project.create(testWorkspace.getId(), "Test Project", "Test Description");
     testProject = projectRepository.save(testProject).block();
 
     ownerMember = ProjectMember.create(testProject.getId(),
@@ -414,11 +408,7 @@ class ProjectServiceTest {
     void createProject_WorkspaceMember_AddedAsProjectViewer() {
       // ownerUser는 workspace ADMIN, adminUser와 viewerUser는 workspace MEMBER
       // createProject는 workspace ADMIN만 호출 가능
-      CreateProjectRequest request = new CreateProjectRequest(
-          "New Project", "Description", null);
-
-      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
-          .getSettingsOrDefault(), ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), "New Project", "Description", ownerUser.getId()).block();
 
       // 새로 생성된 프로젝트 찾기
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
@@ -455,11 +445,7 @@ class ProjectServiceTest {
       viewerWsMember.delete();
       workspaceMemberRepository.save(viewerWsMember).block();
 
-      CreateProjectRequest request = new CreateProjectRequest(
-          "New Project", "Description", null);
-
-      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
-          .getSettingsOrDefault(), ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), "New Project", "Description", ownerUser.getId()).block();
 
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
           .filter(p -> p.getName().equals("New Project"))
@@ -481,11 +467,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("프로젝트 생성자는 중복 추가되지 않는다")
     void createProject_CreatorNotDuplicated() {
-      CreateProjectRequest request = new CreateProjectRequest(
-          "New Project", "Description", null);
-
-      projectService.createProject(testWorkspace.getId(), request.name(), request.description(), request
-          .getSettingsOrDefault(), ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), "New Project", "Description", ownerUser.getId()).block();
 
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
           .filter(p -> p.getName().equals("New Project"))

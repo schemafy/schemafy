@@ -29,7 +29,6 @@ import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -106,9 +105,7 @@ class PublicShareLinkControllerTest {
     workspaceMemberRepository.save(member).block();
 
     // Create project owned by testUser
-    testProject = Project.create(testWorkspace.getId(),
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    testProject = Project.create(testWorkspace.getId(), "Test Project", "Description");
     testProject = projectRepository.save(testProject).block();
   }
 

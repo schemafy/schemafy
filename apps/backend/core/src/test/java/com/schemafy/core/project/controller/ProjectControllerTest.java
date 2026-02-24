@@ -133,7 +133,7 @@ class ProjectControllerTest {
   @DisplayName("프로젝트 생성에 성공한다")
   void createProjectSuccess() {
     CreateProjectRequest request = new CreateProjectRequest("My Project",
-        "Test Description", ProjectSettings.defaultSettings());
+        "Test Description");
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -158,7 +158,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 생성 시 이름이 없으면 실패한다")
   void createProjectFailWithoutName() {
-    CreateProjectRequest request = new CreateProjectRequest("", null, null);
+    CreateProjectRequest request = new CreateProjectRequest("", null);
 
     webTestClient.post().uri(apiBasePath)
         .header("Authorization", "Bearer " + accessToken)
@@ -174,7 +174,7 @@ class ProjectControllerTest {
         .flatMap(workspaceMemberRepository::delete).block();
 
     CreateProjectRequest request = new CreateProjectRequest("My Project",
-        "Description", null);
+        "Description");
 
     webTestClient.post().uri(apiBasePath)
         .header("Authorization", "Bearer " + accessToken2)
@@ -185,9 +185,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 목록 조회에 성공한다")
   void getProjectsSuccess() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -215,9 +213,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 상세 조회에 성공한다")
   void getProjectSuccess() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -244,9 +240,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("멤버가 아닌 사용자는 프로젝트 조회에 실패한다")
   void getProjectFailWhenNotMember() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -261,9 +255,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 수정에 성공한다")
   void updateProjectSuccess() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -271,8 +263,7 @@ class ProjectControllerTest {
     projectMemberRepository.save(member).block();
 
     UpdateProjectRequest request = new UpdateProjectRequest(
-        "Updated Project", "Updated Description",
-        new ProjectSettings("dark", "en"));
+        "Updated Project", "Updated Description");
 
     webTestClient.put()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -288,16 +279,13 @@ class ProjectControllerTest {
             ProjectApiSnippets.updateProjectResponseHeaders(),
             ProjectApiSnippets.updateProjectResponse()))
         .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.name").isEqualTo("Updated Project")
-        .jsonPath("$.result.settings.theme").isEqualTo("dark");
+        .jsonPath("$.result.name").isEqualTo("Updated Project");
   }
 
   @Test
   @DisplayName("Admin이 아닌 사용자는 프로젝트 수정에 실패한다")
   void updateProjectFailWhenNotAdmin() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member1 = ProjectMember.create(project.getId(),
@@ -309,7 +297,7 @@ class ProjectControllerTest {
     projectMemberRepository.save(member2).block();
 
     UpdateProjectRequest request = new UpdateProjectRequest(
-        "Updated Project", "Updated Description", null);
+        "Updated Project", "Updated Description");
 
     webTestClient.put().uri(apiBasePath + "/" + project.getId())
         .header("Authorization", "Bearer " + accessToken2)
@@ -320,9 +308,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 삭제에 성공한다")
   void deleteProjectSuccess() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -349,9 +335,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN이 아닌 사용자는 프로젝트 삭제에 실패한다")
   void deleteProjectFailWhenNotOwner() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member1 = ProjectMember.create(project.getId(),
@@ -370,9 +354,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("멤버 목록 조회에 성공한다")
   void getMembersSuccess() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -399,9 +381,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN 멤버는 다른 멤버의 역할을 변경할 수 있다")
   void updateMemberRole_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -439,9 +419,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN 멤버는 다른 멤버의 역할을 변경할 수 있다")
   void updateMemberRole_Success2() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -477,9 +455,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("자기 자신의 역할은 변경할 수 없다")
   void updateMemberRole_SelfModification_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -501,9 +477,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN 권한 없이 역할 변경은 실패한다")
   void updateMemberRole_NoAdminAccess_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -529,9 +503,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 멤버 역할 변경 시도시 실패한다")
   void updateMemberRole_MemberNotFound() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -553,9 +525,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("멤버 제거에 성공한다")
   void removeMember_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -584,9 +554,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN 권한 없이 멤버 제거할 수 없다")
   void removeMember_NoAdminAccess_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -608,9 +576,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 멤버를 제거할 수 없다")
   void removeMember_MemberNotFound() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -628,9 +594,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("사용자는 프로젝트를 자발적으로 탈퇴할 수 있다")
   void leaveProject_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -661,9 +625,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("마지막 멤버 탈퇴시 프로젝트도 삭제된다")
   void leaveProject_LastMember_ProjectDeleted() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -685,9 +647,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("마지막 OWNER는 워크 스페이스 내에 멤버가 존재시 탈퇴를 할 수 없다")
   void leaveProject_LastOwner_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -709,9 +669,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 멤버가 아닌 경우 탈퇴 시도시 실패한다")
   void leaveProject_NotMember_NotFound() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember ownerMember = ProjectMember.create(project.getId(),
@@ -729,9 +687,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 생성에 성공한다")
   void createShareLink_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -762,9 +718,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 목록 조회에 성공한다")
   void getShareLinks_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -796,9 +750,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 상세 조회에 성공한다")
   void getShareLink_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -831,9 +783,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 비활성화에 성공한다")
   void revokeShareLink_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -864,9 +814,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 삭제에 성공한다")
   void deleteShareLink_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -892,9 +840,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("EDITOR는 공유 링크를 생성할 수 없다")
   void createShareLink_EditorRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -913,9 +859,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("VIEWER는 공유 링크를 생성할 수 없다")
   void createShareLink_ViewerRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -934,9 +878,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 멤버가 아닌 사용자는 공유 링크를 생성할 수 없다")
   void createShareLink_NotMember_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -955,9 +897,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("VIEWER는 공유 링크 목록을 조회할 수 없다")
   void getShareLinks_ViewerRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -976,9 +916,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("EDITOR는 공유 링크 상세를 조회할 수 없다")
   void getShareLink_EditorRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember adminMember = ProjectMember.create(project.getId(),
@@ -1004,9 +942,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("VIEWER는 공유 링크를 비활성화할 수 없다")
   void revokeShareLink_ViewerRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember adminMember = ProjectMember.create(project.getId(),
@@ -1032,9 +968,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("EDITOR는 공유 링크를 삭제할 수 없다")
   void deleteShareLink_EditorRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember adminMember = ProjectMember.create(project.getId(),
@@ -1060,9 +994,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 공유 링크 조회 시 실패한다")
   void getShareLink_NotFound() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -1081,9 +1013,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 공유 링크 비활성화 시 실패한다")
   void revokeShareLink_NotFound() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -1102,9 +1032,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 공유 링크 삭제 시 실패한다")
   void deleteShareLink_NotFound() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -1135,9 +1063,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 목록 조회 시 페이징이 정상 동작한다")
   void getShareLinks_Pagination_Success() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -1185,9 +1111,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("비활성화된 공유 링크도 목록에 포함된다")
   void getShareLinks_IncludesRevokedLinks() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -1218,9 +1142,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("이미 비활성화된 공유 링크를 다시 비활성화하려고 하면 실패한다")
   void revokeShareLink_AlreadyRevoked_Fail() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),
@@ -1244,9 +1166,7 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크가 없는 프로젝트의 목록 조회는 빈 배열을 반환한다")
   void getShareLinks_EmptyProject_ReturnsEmptyList() {
-    Project project = Project.create(testWorkspaceId,
-        "Test Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
     ProjectMember member = ProjectMember.create(project.getId(),

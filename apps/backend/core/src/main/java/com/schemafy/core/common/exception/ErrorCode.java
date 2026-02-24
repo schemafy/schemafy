@@ -98,8 +98,6 @@ public enum ErrorCode {
   PROJECT_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "P004", "프로젝트 관리자 권한이 필요합니다."),
   PROJECT_WORKSPACE_MISMATCH(HttpStatus.BAD_REQUEST, "P005",
       "프로젝트가 해당 워크스페이스에 속하지 않습니다."),
-  PROJECT_SETTINGS_TOO_LARGE(HttpStatus.BAD_REQUEST, "P006",
-      "프로젝트 설정 크기가 너무 큽니다. (최대 64KB)"),
   PROJECT_ALREADY_DELETED(HttpStatus.CONFLICT, "P007", "이미 삭제된 프로젝트입니다."),
   CANNOT_ASSIGN_HIGHER_ROLE(HttpStatus.BAD_REQUEST, "P008",
       "요청자의 권한보다 높은 권한을 부여할 수 없습니다."),

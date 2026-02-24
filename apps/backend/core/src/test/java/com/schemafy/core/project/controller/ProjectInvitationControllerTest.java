@@ -32,7 +32,6 @@ import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -126,11 +125,7 @@ class ProjectInvitationControllerTest {
         testWorkspace.getId(), workspaceMemberId, WorkspaceRole.MEMBER);
     workspaceMemberRepository.save(normalWsMember).block();
 
-    testProject = Project.create(
-        testWorkspace.getId(),
-        "Test Project",
-        "Test Description",
-        ProjectSettings.defaultSettings());
+    testProject = Project.create(testWorkspace.getId(), "Test Project", "Test Description");
     testProject = projectRepository.save(testProject).block();
 
     ProjectMember adminProjMember = ProjectMember.create(
@@ -348,8 +343,7 @@ class ProjectInvitationControllerTest {
     @DisplayName("인증된 사용자가 초대 목록을 조회하면 200 OK를 반환한다")
     void listMyInvitations_Success() {
       User outsiderUser = userRepository.findById(outsiderId).block();
-      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2", ProjectSettings
-          .defaultSettings());
+      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2");
       project2 = projectRepository.save(project2).block();
 
       Invitation invitation1 = Invitation.createProjectInvitation(
@@ -405,8 +399,7 @@ class ProjectInvitationControllerTest {
       User outsiderUser = userRepository.findById(outsiderId).block();
 
       for (int i = 0; i < 5; i++) {
-        Project project = Project.create(testWorkspace.getId(), "Project " + i, "Description " + i, ProjectSettings
-            .defaultSettings());
+        Project project = Project.create(testWorkspace.getId(), "Project " + i, "Description " + i);
         project = projectRepository.save(project).block();
         Invitation invitation = Invitation.createProjectInvitation(
             project.getId(), testWorkspace.getId(), outsiderUser.getEmail(), ProjectRole.VIEWER, adminUserId);
@@ -436,8 +429,7 @@ class ProjectInvitationControllerTest {
           testProject.getId(), testWorkspace.getId(), outsiderUser.getEmail(), ProjectRole.VIEWER, adminUserId);
       pending = invitationRepository.save(pending).block();
 
-      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2", ProjectSettings
-          .defaultSettings());
+      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2");
       project2 = projectRepository.save(project2).block();
       Invitation accepted = Invitation.createProjectInvitation(
           project2.getId(), testWorkspace.getId(), outsiderUser.getEmail(), ProjectRole.VIEWER, adminUserId);

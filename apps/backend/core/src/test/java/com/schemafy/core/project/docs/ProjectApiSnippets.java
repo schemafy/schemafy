@@ -17,40 +17,26 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
   // ========== Project 도메인 공통 필드 ==========
 
-  /** ProjectSettings 응답 필드 */
-  private static FieldDescriptor[] projectSettingsFields(String prefix) {
-    return new FieldDescriptor[] {
-      fieldWithPath(prefix + "theme").type(JsonFieldType.STRING)
-          .description("테마 설정 (예: light, dark)"),
-      fieldWithPath(prefix + "language").type(JsonFieldType.STRING)
-          .description("언어 설정 (예: ko, en)")
-    };
-  }
-
   /** Project 응답 필드 (상세 정보) */
   private static FieldDescriptor[] projectResponseFields() {
-    return concat(
-        new FieldDescriptor[] {
-          fieldWithPath("result.id").type(JsonFieldType.STRING)
-              .description("프로젝트 고유 ID"),
-          fieldWithPath("result.workspaceId")
-              .type(JsonFieldType.STRING)
-              .description("소속 워크스페이스 ID"),
-          fieldWithPath("result.name").type(JsonFieldType.STRING)
-              .description("프로젝트 이름"),
-          fieldWithPath("result.description")
-              .type(JsonFieldType.STRING)
-              .description("프로젝트 설명").optional(),
-          fieldWithPath("result.settings").type(JsonFieldType.OBJECT)
-              .description("프로젝트 설정"),
-          fieldWithPath("result.createdAt").type(JsonFieldType.STRING)
-              .description("생성 시각"),
-          fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
-              .description("수정 시각"),
-          fieldWithPath("result.currentUserRole").type(JsonFieldType.STRING)
-              .description("현재 사용자의 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)")
-        },
-        projectSettingsFields("result.settings."));
+    return new FieldDescriptor[] {
+      fieldWithPath("result.id").type(JsonFieldType.STRING)
+          .description("프로젝트 고유 ID"),
+      fieldWithPath("result.workspaceId")
+          .type(JsonFieldType.STRING)
+          .description("소속 워크스페이스 ID"),
+      fieldWithPath("result.name").type(JsonFieldType.STRING)
+          .description("프로젝트 이름"),
+      fieldWithPath("result.description")
+          .type(JsonFieldType.STRING)
+          .description("프로젝트 설명").optional(),
+      fieldWithPath("result.createdAt").type(JsonFieldType.STRING)
+          .description("생성 시각"),
+      fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
+          .description("수정 시각"),
+      fieldWithPath("result.currentUserRole").type(JsonFieldType.STRING)
+          .description("현재 사용자의 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)")
+    };
   }
 
   /** ProjectSummary 응답 필드 (목록 조회용) */
@@ -94,15 +80,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("프로젝트 이름 (필수)"),
         fieldWithPath("description").type(JsonFieldType.STRING)
-            .description("프로젝트 설명").optional(),
-        fieldWithPath("settings").type(JsonFieldType.OBJECT)
-            .description("프로젝트 설정 (null인 경우 기본값 사용)").optional(),
-        fieldWithPath("settings.theme").type(JsonFieldType.STRING)
-            .description("테마 설정").optional(),
-        fieldWithPath("settings.language").type(JsonFieldType.STRING)
-            .description("언어 설정").optional(),
-        fieldWithPath("settings.defaultView").type(JsonFieldType.STRING)
-            .description("기본 뷰 설정").optional());
+            .description("프로젝트 설명").optional());
   }
 
   /** 프로젝트 생성 응답 헤더 */
@@ -215,13 +193,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("프로젝트 이름 (필수)"),
         fieldWithPath("description").type(JsonFieldType.STRING)
-            .description("프로젝트 설명").optional(),
-        fieldWithPath("settings").type(JsonFieldType.OBJECT)
-            .description("프로젝트 설정 (null인 경우 기본값 사용)").optional(),
-        fieldWithPath("settings.theme").type(JsonFieldType.STRING)
-            .description("테마 설정").optional(),
-        fieldWithPath("settings.language").type(JsonFieldType.STRING)
-            .description("언어 설정").optional());
+            .description("프로젝트 설명").optional());
   }
 
   /** 프로젝트 수정 응답 헤더 */

@@ -26,7 +26,6 @@ import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -99,11 +98,7 @@ class ProjectInvitationRaceConditionTest {
         testWorkspace.getId(), invitedUser.getId(), WorkspaceRole.MEMBER);
     workspaceMemberRepository.save(invitedWsMember).block();
 
-    testProject = Project.create(
-        testWorkspace.getId(),
-        "Test Project",
-        "Test Description",
-        ProjectSettings.defaultSettings());
+    testProject = Project.create(testWorkspace.getId(), "Test Project", "Test Description");
     testProject = projectRepository.save(testProject).block();
 
     ProjectMember adminProjMember = ProjectMember.create(

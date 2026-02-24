@@ -43,8 +43,7 @@ public class ProjectController {
       @Valid @RequestBody CreateProjectRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.createProject(workspaceId, request.name(), request.description(), request
-        .getSettingsOrDefault(), userId)
+    return projectService.createProject(workspaceId, request.name(), request.description(), userId)
         .map(ProjectResponse::from)
         .map(BaseResponse::success);
   }
@@ -80,8 +79,7 @@ public class ProjectController {
       @Valid @RequestBody UpdateProjectRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.updateProject(workspaceId, id, request.name(), request.description(), request
-        .getSettingsOrDefault(), userId)
+    return projectService.updateProject(workspaceId, id, request.name(), request.description(), userId)
         .map(ProjectResponse::from)
         .map(BaseResponse::success);
   }

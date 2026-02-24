@@ -3,11 +3,10 @@ package com.schemafy.core.project.controller.dto.response;
 import java.time.Instant;
 
 import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.service.dto.ProjectDetail;
 
 public record ProjectResponse(String id, String workspaceId,
-    String name, String description, ProjectSettings settings,
+    String name, String description,
     Instant createdAt, Instant updatedAt,
     String currentUserRole) {
 
@@ -15,7 +14,6 @@ public record ProjectResponse(String id, String workspaceId,
     Project project = detail.project();
     return new ProjectResponse(project.getId(), project.getWorkspaceId(),
         project.getName(), project.getDescription(),
-        project.getSettingsAsVo(),
         project.getCreatedAt(), project.getUpdatedAt(),
         detail.currentUserRole());
   }

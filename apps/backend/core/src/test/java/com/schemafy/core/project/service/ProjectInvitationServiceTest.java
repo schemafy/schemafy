@@ -28,7 +28,6 @@ import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -108,11 +107,7 @@ class ProjectInvitationServiceTest {
         testWorkspace.getId(), workspaceUser.getId(), WorkspaceRole.MEMBER);
     workspaceMemberRepository.save(wsMember).block();
 
-    testProject = Project.create(
-        testWorkspace.getId(),
-        "Test Project",
-        "Test Description",
-        ProjectSettings.defaultSettings());
+    testProject = Project.create(testWorkspace.getId(), "Test Project", "Test Description");
     testProject = projectRepository.save(testProject).block();
 
     adminProjectMember = ProjectMember.create(
@@ -395,11 +390,9 @@ class ProjectInvitationServiceTest {
     @DisplayName("사용자가 받은 대기 중인 초대 목록을 조회할 수 있다")
     void listMyInvitations_Success() {
       // 다른 프로젝트들 생성
-      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2", ProjectSettings
-          .defaultSettings());
+      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2");
       project2 = projectRepository.save(project2).block();
-      Project project3 = Project.create(testWorkspace.getId(), "Project 3", "Description 3", ProjectSettings
-          .defaultSettings());
+      Project project3 = Project.create(testWorkspace.getId(), "Project 3", "Description 3");
       project3 = projectRepository.save(project3).block();
 
       // outsider에게 여러 초대 생성
@@ -444,8 +437,7 @@ class ProjectInvitationServiceTest {
     @DisplayName("페이지네이션이 올바르게 동작한다")
     void listMyInvitations_Pagination() {
       for (int i = 0; i < 5; i++) {
-        Project project = Project.create(testWorkspace.getId(), "Project " + i, "Description " + i, ProjectSettings
-            .defaultSettings());
+        Project project = Project.create(testWorkspace.getId(), "Project " + i, "Description " + i);
         project = projectRepository.save(project).block();
         Invitation invitation = Invitation.createProjectInvitation(
             project.getId(),
@@ -481,8 +473,7 @@ class ProjectInvitationServiceTest {
       pending = invitationRepository.save(pending).block();
       final String pendingId = pending.getId();
 
-      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2", ProjectSettings
-          .defaultSettings());
+      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2");
       project2 = projectRepository.save(project2).block();
       Invitation accepted = Invitation.createProjectInvitation(
           project2.getId(), testWorkspace.getId(), outsider.getEmail(), ProjectRole.VIEWER, adminUser.getId());
@@ -490,8 +481,7 @@ class ProjectInvitationServiceTest {
       accepted.accept();
       invitationRepository.save(accepted).block();
 
-      Project project3 = Project.create(testWorkspace.getId(), "Project 3", "Description 3", ProjectSettings
-          .defaultSettings());
+      Project project3 = Project.create(testWorkspace.getId(), "Project 3", "Description 3");
       project3 = projectRepository.save(project3).block();
       Invitation rejected = Invitation.createProjectInvitation(
           project3.getId(), testWorkspace.getId(), outsider.getEmail(), ProjectRole.VIEWER, adminUser.getId());
@@ -796,9 +786,7 @@ class ProjectInvitationServiceTest {
     @DisplayName("초대 수락 시 다른 프로젝트의 pending 초대는 영향받지 않는다")
     void acceptInvitation_DoesNotAffectOtherProjectInvitations() {
       // 다른 프로젝트 생성
-      Project otherProject = Project.create(
-          testWorkspace.getId(), "Other Project", "Desc",
-          ProjectSettings.defaultSettings());
+      Project otherProject = Project.create(testWorkspace.getId(), "Other Project", "Desc");
       otherProject = projectRepository.save(otherProject).block();
 
       // 현재 프로젝트에 초대
