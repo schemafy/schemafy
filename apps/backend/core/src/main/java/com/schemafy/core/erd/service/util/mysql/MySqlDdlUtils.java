@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public final class MySqlDdlUtils {
 
   private static final Set<String> VALID_REFERENTIAL_ACTIONS = Set.of(
-      "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION");
+      "CASCADE", "SET NULL", "RESTRICT", "NO ACTION");
 
   private static final Set<String> VALID_SORT_DIRECTIONS = Set.of("ASC", "DESC");
 
