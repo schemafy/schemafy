@@ -72,4 +72,18 @@ public interface ProjectMemberRepository
       """)
   Mono<Long> softDeleteByWorkspaceIdAndUserId(String workspaceId, String userId);
 
+  @Query("""
+      UPDATE project_members
+      SET role = :role, updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = :userId
+        AND project_id IN (
+          SELECT id FROM projects
+          WHERE workspace_id = :workspaceId AND deleted_at IS NULL
+        )
+        AND deleted_at IS NULL
+        AND role != :role
+        AND (role != 'editor' OR :role = 'admin')
+      """)
+  Mono<Long> updateRoleByWorkspaceIdAndUserId(String workspaceId, String userId, String role);
+
 }

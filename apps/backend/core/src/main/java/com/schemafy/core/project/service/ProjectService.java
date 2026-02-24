@@ -295,7 +295,6 @@ public class ProjectService {
       String userId, String projectId) {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-        .filter(member -> member.getProjectId().equals(projectId))
         .switchIfEmpty(Mono.error(new BusinessException(
             ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
   }
@@ -375,6 +374,19 @@ public class ProjectService {
                   wsMember.getUserId(), projectId, e.getMessage());
               return Mono.empty();
             }))
+        .then();
+  }
+
+  public Mono<Void> updateRoleInAllProjects(String workspaceId, String userId, WorkspaceRole workspaceRole) {
+    ProjectRole projectRole = workspaceRole.toProjectRole();
+    return projectMemberRepository.updateRoleByWorkspaceIdAndUserId(
+            workspaceId, userId, projectRole.getValue())
+        .doOnNext(count -> {
+          if (count > 0) {
+            log.info("Propagated role to {} project memberships: workspace={}, user={}, role={}",
+                count, workspaceId, userId, projectRole);
+          }
+        })
         .then();
   }
 

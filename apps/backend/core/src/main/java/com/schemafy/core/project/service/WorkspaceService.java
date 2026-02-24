@@ -268,6 +268,9 @@ public class WorkspaceService {
             workspaceId))
         .flatMap(targetMember -> modifyMemberWithAdminGuard(workspaceId,
             targetMember, m -> m.updateRole(role)))
+        .flatMap(savedMember ->
+            projectService.updateRoleInAllProjects(workspaceId, targetUserId, role)
+                .thenReturn(savedMember))
         .flatMap(this::buildMemberDetail)
         .as(transactionalOperator::transactional);
   }

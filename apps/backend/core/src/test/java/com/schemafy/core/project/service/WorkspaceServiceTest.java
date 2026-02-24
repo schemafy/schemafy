@@ -486,6 +486,208 @@ class WorkspaceServiceTest {
       assertThat(deleted.isDeleted()).isTrue();
     }
 
+    @Nested
+    @DisplayName("역할 변경 전파 (UpdateMemberRole)")
+    class UpdateMemberRole {
+
+      @Test
+      @DisplayName("MEMBER→ADMIN 승격 시 해당 워크스페이스의 프로젝트 역할도 ADMIN으로 변경된다")
+      void updateMemberRole_propagatesUpgradeToProjects() {
+        Project project1 = projectRepository.save(
+            Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings())).block();
+        Project project2 = projectRepository.save(
+            Project.create(testWorkspace.getId(), "Project 2", "Desc", ProjectSettings.defaultSettings())).block();
+
+        projectMemberRepository.save(
+            ProjectMember.create(project1.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+        projectMemberRepository.save(
+            ProjectMember.create(project2.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+
+        // memberUser는 setUp에서 이미 WorkspaceRole.MEMBER → ADMIN으로 직접 승격 (중간 단계 없음)
+        workspaceService.updateMemberRole(
+            testWorkspace.getId(), memberUser.getId(), WorkspaceRole.ADMIN, adminUser.getId()).block();
+
+        ProjectMember pm1 = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(project1.getId(), memberUser.getId()).block();
+        ProjectMember pm2 = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(project2.getId(), memberUser.getId()).block();
+
+        assertThat(pm1).isNotNull();
+        assertThat(pm1.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+        assertThat(pm2).isNotNull();
+        assertThat(pm2.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+      }
+
+      @Test
+      @DisplayName("ADMIN→MEMBER 강등 시 해당 워크스페이스의 프로젝트 역할도 VIEWER로 변경된다")
+      void updateMemberRole_propagatesDowngradeToProjects() {
+        Project project = projectRepository.save(
+            Project.create(testWorkspace.getId(), "Downgrade Project", "Desc", ProjectSettings.defaultSettings()))
+            .block();
+
+        projectMemberRepository.save(
+            ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.ADMIN)).block();
+
+        // normalMember를 ADMIN으로 먼저 승격
+        normalMember.updateRole(WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(normalMember).block();
+
+        workspaceService.updateMemberRole(
+            testWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER, adminUser.getId()).block();
+
+        ProjectMember pm = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(project.getId(), memberUser.getId()).block();
+
+        assertThat(pm).isNotNull();
+        assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+      }
+
+      @Test
+      @DisplayName("프로젝트 멤버십이 없는 경우 에러 없이 WS 역할만 변경된다")
+      void updateMemberRole_noProjects_succeeds() {
+        normalMember.updateRole(WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(normalMember).block();
+
+        StepVerifier.create(workspaceService.updateMemberRole(
+            testWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER, adminUser.getId()))
+            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue()))
+            .verifyComplete();
+      }
+
+      @Test
+      @DisplayName("Workspace-A 역할 변경 시 Workspace-B 프로젝트 역할은 영향 없다")
+      void updateMemberRole_cascadeDoesNotAffectOtherWorkspace() {
+        Workspace otherWorkspace = workspaceRepository.save(
+            Workspace.create("Other Workspace", "Desc")).block();
+        workspaceMemberRepository.save(
+            WorkspaceMember.create(otherWorkspace.getId(), adminUser.getId(), WorkspaceRole.ADMIN)).block();
+        workspaceMemberRepository.save(
+            WorkspaceMember.create(otherWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER)).block();
+
+        Project projectInWs = projectRepository.save(
+            Project.create(testWorkspace.getId(), "WS Project", "Desc", ProjectSettings.defaultSettings())).block();
+        Project projectInOther = projectRepository.save(
+            Project.create(otherWorkspace.getId(), "Other Project", "Desc", ProjectSettings.defaultSettings())).block();
+
+        projectMemberRepository.save(
+            ProjectMember.create(projectInWs.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+        projectMemberRepository.save(
+            ProjectMember.create(projectInOther.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+
+        // normalMember를 ADMIN으로 먼저 승격
+        normalMember.updateRole(WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(normalMember).block();
+
+        workspaceService.updateMemberRole(
+            testWorkspace.getId(), memberUser.getId(), WorkspaceRole.ADMIN, adminUser.getId()).block();
+
+        ProjectMember pmWs = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(projectInWs.getId(), memberUser.getId()).block();
+        ProjectMember pmOther = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(projectInOther.getId(), memberUser.getId()).block();
+
+        assertThat(pmWs).isNotNull();
+        assertThat(pmWs.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+        assertThat(pmOther).isNotNull();
+        assertThat(pmOther.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+      }
+
+      @Test
+      @DisplayName("ADMIN→MEMBER 강등 시 프로젝트 EDITOR 역할은 보호된다 (VIEWER로 내려가지 않음)")
+      void updateMemberRole_downgrade_preservesEditorRole() {
+        Project project = projectRepository.save(
+            Project.create(testWorkspace.getId(), "Editor Project", "Desc", ProjectSettings.defaultSettings()))
+            .block();
+
+        projectMemberRepository.save(
+            ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.EDITOR)).block();
+
+        // normalMember를 ADMIN으로 먼저 승격
+        normalMember.updateRole(WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(normalMember).block();
+
+        workspaceService.updateMemberRole(
+            testWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER, adminUser.getId()).block();
+
+        ProjectMember pm = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(project.getId(), memberUser.getId()).block();
+
+        assertThat(pm).isNotNull();
+        assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
+      }
+
+      @Test
+      @DisplayName("MEMBER→ADMIN 승격 시 프로젝트 EDITOR 역할은 ADMIN으로 덮어씌워진다")
+      void updateMemberRole_upgrade_overridesEditorRole() {
+        Project project = projectRepository.save(
+            Project.create(testWorkspace.getId(), "Editor Upgrade Project", "Desc", ProjectSettings.defaultSettings()))
+            .block();
+
+        projectMemberRepository.save(
+            ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.EDITOR)).block();
+
+        // normalMember를 ADMIN으로 먼저 승격 (이후 테스트 대상 멤버를 ADMIN으로 변경)
+        normalMember.updateRole(WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(normalMember).block();
+
+        workspaceService.updateMemberRole(
+            testWorkspace.getId(), memberUser.getId(), WorkspaceRole.ADMIN, adminUser.getId()).block();
+
+        ProjectMember pm = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(project.getId(), memberUser.getId()).block();
+
+        assertThat(pm).isNotNull();
+        assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+      }
+
+      @Test
+      @DisplayName("같은 역할로 변경 시 에러 없이 정상 완료된다")
+      void updateMemberRole_sameRole_noOp() {
+        Project project = projectRepository.save(
+            Project.create(testWorkspace.getId(), "Same Role Project", "Desc", ProjectSettings.defaultSettings()))
+            .block();
+
+        projectMemberRepository.save(
+            ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+
+        StepVerifier.create(workspaceService.updateMemberRole(
+            testWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER, adminUser.getId()))
+            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue()))
+            .verifyComplete();
+
+        ProjectMember pm = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(project.getId(), memberUser.getId()).block();
+        assertThat(pm).isNotNull();
+        assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+      }
+
+      @Test
+      @DisplayName("유일 Project ADMIN 강등 시 VIEWER로 강등된다")
+      void updateMemberRole_soleProjectAdmin_downgradeProceeds() {
+        Project project = projectRepository.save(
+            Project.create(testWorkspace.getId(), "Sole Admin Project", "Desc", ProjectSettings.defaultSettings()))
+            .block();
+
+        projectMemberRepository.save(
+            ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.ADMIN)).block();
+
+        // normalMember를 ADMIN으로 승격 후 다시 MEMBER로 강등 (admin guard 없이 통과해야 함)
+        normalMember.updateRole(WorkspaceRole.ADMIN);
+        workspaceMemberRepository.save(normalMember).block();
+
+        StepVerifier.create(workspaceService.updateMemberRole(
+            testWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER, adminUser.getId()))
+            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue()))
+            .verifyComplete();
+
+        ProjectMember pm = projectMemberRepository
+            .findByProjectIdAndUserIdAndNotDeleted(project.getId(), memberUser.getId()).block();
+        assertThat(pm).isNotNull();
+        assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+      }
+
+    }
+
     @Test
     @DisplayName("ADMIN으로 직접 추가 시 기존 프로젝트에 ADMIN으로 자동 추가된다")
     void addMember_Admin_PropagatesAsAdminToExistingProjects() {
