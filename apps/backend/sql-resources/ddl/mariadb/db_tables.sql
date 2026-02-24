@@ -7,7 +7,14 @@ CREATE TABLE IF NOT EXISTS db_tables (
     extra       JSON         NULL,
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    version     BIGINT       NOT NULL DEFAULT 0,
     deleted_at  TIMESTAMP    NULL,
-    CONSTRAINT pk_db_tables PRIMARY KEY (id)
+    CONSTRAINT pk_db_tables PRIMARY KEY (id),
+    CONSTRAINT uq_db_tables_schema_name UNIQUE (schema_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE db_tables
+    ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_db_tables_schema_name
+    ON db_tables (schema_id, name);

@@ -1,5 +1,8 @@
 package com.schemafy.domain.erd.table.application.service;
 
+import org.springframework.transaction.reactive.TransactionalOperator;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,8 +45,17 @@ class CreateTableServiceTest {
   @Mock
   GetSchemaByIdPort getSchemaByIdPort;
 
+  @Mock
+  TransactionalOperator transactionalOperator;
+
   @InjectMocks
   CreateTableService sut;
+
+  @BeforeEach
+  void setUpTransaction() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Nested
   @DisplayName("createTable 메서드는")

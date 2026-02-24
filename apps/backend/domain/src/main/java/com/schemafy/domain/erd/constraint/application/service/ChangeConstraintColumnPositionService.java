@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
@@ -27,25 +28,26 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
   private final GetConstraintColumnByIdPort getConstraintColumnByIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<Void>> changeConstraintColumnPosition(
       ChangeConstraintColumnPositionCommand command) {
-    return Mono.defer(() -> {
-      return getConstraintColumnByIdPort.findConstraintColumnById(command.constraintColumnId())
-          .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException("Constraint column not found")))
-          .flatMap(constraintColumn -> getConstraintByIdPort
-              .findConstraintById(constraintColumn.constraintId())
-              .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
-              .flatMap(constraint -> getConstraintColumnsByConstraintIdPort
-                  .findConstraintColumnsByConstraintId(constraintColumn.constraintId())
-                  .defaultIfEmpty(List.of())
-                  .flatMap(columns -> reorderColumns(
-                      constraintColumn,
-                      columns,
-                      command.seqNo()))
-                  .thenReturn(MutationResult.<Void>of(null, constraint.tableId()))));
-    });
+    return Mono.defer(() -> getConstraintColumnByIdPort
+        .findConstraintColumnById(command.constraintColumnId())
+        .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException("Constraint column not found")))
+        .flatMap(constraintColumn -> getConstraintByIdPort
+            .findConstraintById(constraintColumn.constraintId())
+            .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
+            .flatMap(constraint -> getConstraintColumnsByConstraintIdPort
+                .findConstraintColumnsByConstraintId(constraintColumn.constraintId())
+                .defaultIfEmpty(List.of())
+                .flatMap(columns -> reorderColumns(
+                    constraintColumn,
+                    columns,
+                    command.seqNo()))
+                .thenReturn(MutationResult.<Void>of(null, constraint.tableId())))))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> reorderColumns(
