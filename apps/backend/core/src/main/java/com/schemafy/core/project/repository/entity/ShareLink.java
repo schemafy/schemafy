@@ -40,7 +40,7 @@ public class ShareLink extends BaseEntity {
     if (projectId == null || projectId.isBlank()) {
       throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
     }
-    if (code == null || code.isBlank() || code.length() < 22) {
+    if (code == null || code.isBlank()) {
       throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_CODE);
     }
 
