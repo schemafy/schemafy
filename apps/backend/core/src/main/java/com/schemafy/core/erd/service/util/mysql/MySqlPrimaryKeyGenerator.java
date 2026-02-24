@@ -50,13 +50,13 @@ public class MySqlPrimaryKeyGenerator {
         escapeIdentifier(tableName), columns);
   }
 
-  public static List<ConstraintSnapshotResponse> getConstraints(TableSnapshotResponse table) {
+  private List<ConstraintSnapshotResponse> getConstraints(TableSnapshotResponse table) {
     return table.constraints() != null
         ? table.constraints()
         : Collections.emptyList();
   }
 
-  public static List<ConstraintColumnResponse> getColumns(ConstraintSnapshotResponse c) {
+  private List<ConstraintColumnResponse> getColumns(ConstraintSnapshotResponse c) {
     return c.columns() != null ? c.columns() : Collections.emptyList();
   }
 
