@@ -1,10 +1,10 @@
-import { Button, InputField } from '@/components';
-import type { SignInFormValues, ValidationRules } from '../types';
-import { useFormState } from '../hooks';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signIn } from '@/features/auth/api';
-import { authStore } from '@/store/auth.store';
+import {Button, InputField} from '@/components';
+import type {SignInFormValues, ValidationRules} from '../types';
+import {useFormState} from '../hooks';
+import {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {signIn} from '@/features/auth/api';
+import {authStore} from '@/store/auth.store';
 
 const formFields = [
   {
@@ -42,13 +42,20 @@ const validationRules: ValidationRules<SignInFormValues> = {
 };
 
 export const SignInForm = () => {
-  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
-    initialForm,
-    validationRules,
+  const {form, errors, handleChange, handleBlur, resetForm} = useFormState(
+      initialForm,
+      validationRules,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
   const navigate = useNavigate();
+
+  const handleGitHubLogin = () => {
+    const baseUrl =
+      import.meta.env.VITE_PUBLIC_BASE_URL ||
+      'http://localhost:8080/public/api/v1.0';
+    window.location.href = `${baseUrl}/oauth/github/authorize`;
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,7 +84,7 @@ export const SignInForm = () => {
       }
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : '로그인에 실패했습니다.',
+          error instanceof Error ? error.message : '로그인에 실패했습니다.',
       );
     } finally {
       setIsSubmitting(false);
@@ -85,48 +92,51 @@ export const SignInForm = () => {
   };
 
   return (
-    <form
-      noValidate
-      className="flex flex-col w-full max-w-[480px]"
-      onSubmit={handleSubmit}
-    >
-      {formFields.map((field) => (
-        <InputField
-          key={field.name}
-          label={field.label}
-          type={field.type}
-          name={field.name}
-          placeholder={field.label}
-          required={field.required}
-          value={form[field.name]}
-          error={errors[field.name]}
-          onChange={handleChange}
-          onBlur={handleBlur}
-        />
-      ))}
-      <Button
-        variant={'none'}
-        size={'none'}
-        className="text-schemafy-dark-gray pt-1 pb-3"
+      <form
+          noValidate
+          className="flex flex-col w-full max-w-[480px]"
+          onSubmit={handleSubmit}
       >
-        Forgot Password?
-      </Button>
-      <div className="flex flex-col w-full gap-6 py-3">
-        <Button type="submit" disabled={isSubmitting} round fullWidth>
-          {isSubmitting ? 'Sign In...' : 'Sign In'}
+        {formFields.map((field) => (
+            <InputField
+                key={field.name}
+                label={field.label}
+                type={field.type}
+                name={field.name}
+                placeholder={field.label}
+                required={field.required}
+                value={form[field.name]}
+                error={errors[field.name]}
+                onChange={handleChange}
+                onBlur={handleBlur}
+            />
+        ))}
+        <Button
+            variant={'none'}
+            size={'none'}
+            className="text-schemafy-dark-gray pt-1 pb-3"
+        >
+          Forgot Password?
         </Button>
-        {submitError && (
-          <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
-        )}
-        <div className="flex flex-col w-full gap-2">
-          <Button variant={'secondary'} round fullWidth>
-            Continue with GitHub
+        <div className="flex flex-col w-full gap-6 py-3">
+          <Button type="submit" disabled={isSubmitting} round fullWidth>
+            {isSubmitting ? 'Sign In...' : 'Sign In'}
           </Button>
-          <Button variant={'secondary'} round fullWidth>
-            Continue with Google
-          </Button>
+          {submitError && (
+              <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
+          )}
+          <div className="flex flex-col w-full gap-2">
+            <Button
+              type="button"
+              variant={'secondary'}
+              round
+              fullWidth
+              onClick={handleGitHubLogin}
+            >
+              Continue with GitHub
+            </Button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
   );
 };
