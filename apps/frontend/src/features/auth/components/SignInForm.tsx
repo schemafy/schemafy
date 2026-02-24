@@ -1,10 +1,10 @@
-import {Button, InputField} from '@/components';
-import type {SignInFormValues, ValidationRules} from '../types';
-import {useFormState} from '../hooks';
-import {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {signIn} from '@/features/auth/api';
-import {authStore} from '@/store/auth.store';
+import { Button, InputField } from '@/components';
+import type { SignInFormValues, ValidationRules } from '../types';
+import { useFormState } from '../hooks';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { signIn } from '@/features/auth/api';
+import { authStore } from '@/store/auth.store';
 
 const formFields = [
   {
@@ -42,9 +42,9 @@ const validationRules: ValidationRules<SignInFormValues> = {
 };
 
 export const SignInForm = () => {
-  const {form, errors, handleChange, handleBlur, resetForm} = useFormState(
-      initialForm,
-      validationRules,
+  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
+    initialForm,
+    validationRules,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
@@ -84,7 +84,7 @@ export const SignInForm = () => {
       }
     } catch (error) {
       setSubmitError(
-          error instanceof Error ? error.message : '로그인에 실패했습니다.',
+        error instanceof Error ? error.message : '로그인에 실패했습니다.',
       );
     } finally {
       setIsSubmitting(false);
@@ -92,51 +92,51 @@ export const SignInForm = () => {
   };
 
   return (
-      <form
-          noValidate
-          className="flex flex-col w-full max-w-[480px]"
-          onSubmit={handleSubmit}
+    <form
+      noValidate
+      className="flex flex-col w-full max-w-[480px]"
+      onSubmit={handleSubmit}
+    >
+      {formFields.map((field) => (
+        <InputField
+          key={field.name}
+          label={field.label}
+          type={field.type}
+          name={field.name}
+          placeholder={field.label}
+          required={field.required}
+          value={form[field.name]}
+          error={errors[field.name]}
+          onChange={handleChange}
+          onBlur={handleBlur}
+        />
+      ))}
+      <Button
+        variant={'none'}
+        size={'none'}
+        className="text-schemafy-dark-gray pt-1 pb-3"
       >
-        {formFields.map((field) => (
-            <InputField
-                key={field.name}
-                label={field.label}
-                type={field.type}
-                name={field.name}
-                placeholder={field.label}
-                required={field.required}
-                value={form[field.name]}
-                error={errors[field.name]}
-                onChange={handleChange}
-                onBlur={handleBlur}
-            />
-        ))}
-        <Button
-            variant={'none'}
-            size={'none'}
-            className="text-schemafy-dark-gray pt-1 pb-3"
-        >
-          Forgot Password?
+        Forgot Password?
+      </Button>
+      <div className="flex flex-col w-full gap-6 py-3">
+        <Button type="submit" disabled={isSubmitting} round fullWidth>
+          {isSubmitting ? 'Sign In...' : 'Sign In'}
         </Button>
-        <div className="flex flex-col w-full gap-6 py-3">
-          <Button type="submit" disabled={isSubmitting} round fullWidth>
-            {isSubmitting ? 'Sign In...' : 'Sign In'}
+        {submitError && (
+          <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
+        )}
+        <div className="flex flex-col w-full gap-2">
+          <Button
+            type="button"
+            variant={'secondary'}
+            round
+            fullWidth
+            onClick={handleGitHubLogin}
+          >
+            Continue with GitHub
           </Button>
-          {submitError && (
-              <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
-          )}
-          <div className="flex flex-col w-full gap-2">
-            <Button
-              type="button"
-              variant={'secondary'}
-              round
-              fullWidth
-              onClick={handleGitHubLogin}
-            >
-              Continue with GitHub
-            </Button>
-          </div>
         </div>
-      </form>
+      </div>
+    </form>
   );
 };
