@@ -42,7 +42,7 @@ const validationRules: ValidationRules<SignInFormValues> = {
 };
 
 interface SignInFormProps {
-  oauthError?: string;
+  oauthError: string | null;
 }
 
 export const SignInForm = ({oauthError}: SignInFormProps) => {
