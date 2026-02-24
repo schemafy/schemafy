@@ -147,8 +147,8 @@ class WorkspaceInvitationControllerTest {
           .jsonPath("$.success").isEqualTo(true)
           .jsonPath("$.result.workspaceId").isEqualTo(testWorkspace.getId())
           .jsonPath("$.result.invitedEmail").isEqualTo("newuser@test.com")
-          .jsonPath("$.result.invitedRole").isEqualTo(WorkspaceRole.MEMBER.getValue())
-          .jsonPath("$.result.status").isEqualTo(InvitationStatus.PENDING.getValue());
+          .jsonPath("$.result.invitedRole").isEqualTo(WorkspaceRole.MEMBER.name())
+          .jsonPath("$.result.status").isEqualTo(InvitationStatus.PENDING.name());
     }
 
     @Test
@@ -461,7 +461,7 @@ class WorkspaceInvitationControllerTest {
           .jsonPath("$.success").isEqualTo(true)
           .jsonPath("$.result.userId").isEqualTo(invitedUserId)
           .jsonPath("$.result.workspaceId").isEqualTo(testWorkspace.getId())
-          .jsonPath("$.result.role").isEqualTo(WorkspaceRole.MEMBER.getValue());
+          .jsonPath("$.result.role").isEqualTo(WorkspaceRole.MEMBER.name());
 
       Invitation updated = invitationRepository.findById(invitation.getId()).block();
       assertThat(updated.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);

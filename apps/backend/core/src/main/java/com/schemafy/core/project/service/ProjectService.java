@@ -253,7 +253,7 @@ public class ProjectService {
   private Mono<Void> validateAdminProtection(String projectId) {
     return projectMemberRepository
         .countByProjectIdAndRoleAndNotDeleted(projectId,
-            ProjectRole.ADMIN.getValue())
+            ProjectRole.ADMIN.name())
         .flatMap(adminCount -> {
           if (adminCount <= 1) {
             return Mono.error(new BusinessException(
@@ -380,7 +380,7 @@ public class ProjectService {
   public Mono<Void> updateRoleInAllProjects(String workspaceId, String userId, WorkspaceRole workspaceRole) {
     ProjectRole projectRole = workspaceRole.toProjectRole();
     return projectMemberRepository.updateRoleByWorkspaceIdAndUserId(
-            workspaceId, userId, projectRole.getValue())
+        workspaceId, userId, projectRole.name())
         .doOnNext(count -> {
           if (count > 0) {
             log.info("Propagated role to {} project memberships: workspace={}, user={}, role={}",

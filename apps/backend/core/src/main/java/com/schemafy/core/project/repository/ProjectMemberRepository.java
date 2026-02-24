@@ -82,7 +82,7 @@ public interface ProjectMemberRepository
         )
         AND deleted_at IS NULL
         AND role != :role
-        AND (role != 'editor' OR :role = 'admin')
+        AND (role != 'EDITOR' OR :role = 'ADMIN')
       """)
   Mono<Long> updateRoleByWorkspaceIdAndUserId(String workspaceId, String userId, String role);
 

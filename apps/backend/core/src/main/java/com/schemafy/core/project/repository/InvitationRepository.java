@@ -3,12 +3,14 @@ package com.schemafy.core.project.repository;
 import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
 
 import com.schemafy.core.project.repository.entity.Invitation;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Repository
 public interface InvitationRepository
     extends ReactiveCrudRepository<Invitation, String> {
 
@@ -42,7 +44,7 @@ public interface InvitationRepository
       WHERE target_type = 'WORKSPACE'
         AND target_id = :workspaceId
         AND invited_email = :email
-        AND status = 'pending'
+        AND status = 'PENDING'
         AND deleted_at IS NULL
       """)
   Mono<Long> countPendingWorkspaceInvitation(String workspaceId, String email);
@@ -70,7 +72,7 @@ public interface InvitationRepository
       WHERE target_type = 'PROJECT'
         AND target_id = :projectId
         AND invited_email = :email
-        AND status = 'pending'
+        AND status = 'PENDING'
         AND deleted_at IS NULL
       """)
   Mono<Long> countPendingProjectInvitation(String projectId, String email);
@@ -79,7 +81,7 @@ public interface InvitationRepository
       SELECT * FROM invitations
       WHERE target_type = :targetType
         AND invited_email = :email
-        AND status = 'pending'
+        AND status = 'PENDING'
         AND deleted_at IS NULL
       ORDER BY created_at DESC
       LIMIT :limit OFFSET :offset
@@ -90,7 +92,7 @@ public interface InvitationRepository
       SELECT COUNT(*) FROM invitations
       WHERE target_type = :targetType
         AND invited_email = :email
-        AND status = 'pending'
+        AND status = 'PENDING'
         AND deleted_at IS NULL
       """)
   Mono<Long> countPendingByEmailAndType(String email, String targetType);
@@ -98,11 +100,11 @@ public interface InvitationRepository
   @Modifying
   @Query("""
       UPDATE invitations
-      SET status = 'cancelled', resolved_at = NOW(), updated_at = NOW()
+      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW()
       WHERE target_type = :targetType
         AND target_id = :targetId
         AND invited_email = :email
-        AND status = 'pending'
+        AND status = 'PENDING'
         AND deleted_at IS NULL
         AND id != :excludeId
       """)

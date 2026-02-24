@@ -152,7 +152,7 @@ class ProjectControllerTest {
         .jsonPath("$.result.workspaceId").isEqualTo(testWorkspaceId);
 
     projectMemberRepository.findRolesByWorkspaceIdAndUserIdWithPaging(testWorkspaceId, testUserId, 100, 0)
-        .collectList().block().forEach(role -> assertThat(role).isEqualTo(ProjectRole.ADMIN.getValue()));
+        .collectList().block().forEach(role -> assertThat(role).isEqualTo(ProjectRole.ADMIN.name()));
   }
 
   @Test
@@ -429,11 +429,11 @@ class ProjectControllerTest {
             ProjectApiSnippets.updateMemberRoleResponseHeaders(),
             ProjectApiSnippets.updateMemberRoleResponse()))
         .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("editor");
+        .isEqualTo("EDITOR");
 
     ProjectMember updatedMember = projectMemberRepository
         .findById(targetMember.getId()).block();
-    assertThat(updatedMember.getRole()).isEqualTo("editor");
+    assertThat(updatedMember.getRole()).isEqualTo("EDITOR");
   }
 
   @Test
@@ -466,12 +466,12 @@ class ProjectControllerTest {
         .expectBody()
         .jsonPath("$.success").isEqualTo(true)
         .jsonPath("$.result.role")
-        .isEqualTo(ProjectRole.ADMIN.getValue());
+        .isEqualTo(ProjectRole.ADMIN.name());
 
     ProjectMember updatedMember = projectMemberRepository
         .findById(targetMember.getId()).block();
     assertThat(updatedMember.getRole())
-        .isEqualTo(ProjectRole.ADMIN.getValue());
+        .isEqualTo(ProjectRole.ADMIN.name());
   }
 
   @Test

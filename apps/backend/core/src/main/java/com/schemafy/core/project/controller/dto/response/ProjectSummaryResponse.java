@@ -16,7 +16,7 @@ public record ProjectSummaryResponse(String id, String workspaceId, String name,
         project.getWorkspaceId(),
         project.getName(),
         project.getDescription(),
-        myRole.getValue(),
+        myRole.name(),
         project.getCreatedAt(),
         project.getUpdatedAt());
   }

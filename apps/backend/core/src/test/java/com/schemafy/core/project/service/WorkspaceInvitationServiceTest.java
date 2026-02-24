@@ -120,8 +120,8 @@ class WorkspaceInvitationServiceTest {
           .assertNext(response -> {
             assertThat(response.getWorkspaceId()).isEqualTo(testWorkspace.getId());
             assertThat(response.getInvitedEmail()).isEqualTo("newuser@test.com");
-            assertThat(response.getInvitedRole()).isEqualTo(WorkspaceRole.MEMBER.getValue());
-            assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.getValue());
+            assertThat(response.getInvitedRole()).isEqualTo(WorkspaceRole.MEMBER.name());
+            assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.name());
             assertThat(response.getInvitedBy()).isEqualTo(adminUser.getId());
           })
           .verifyComplete();
@@ -486,7 +486,7 @@ class WorkspaceInvitationServiceTest {
           invitationService.acceptInvitation(invitationId, invitedUser.getId()))
           .assertNext(member -> {
             assertThat(member.member().getUserId()).isEqualTo(invitedUser.getId());
-            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue());
+            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.name());
           })
           .verifyComplete();
 
@@ -1003,7 +1003,7 @@ class WorkspaceInvitationServiceTest {
           invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()))
           .assertNext(member -> {
             assertThat(member.member().getUserId()).isEqualTo(invitedUser.getId());
-            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue());
+            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.name());
           })
           .verifyComplete();
     }
@@ -1108,7 +1108,7 @@ class WorkspaceInvitationServiceTest {
           invitationService.acceptInvitation(invitation.getId(), newUser.getId()))
           .assertNext(member -> {
             assertThat(member.member().getUserId()).isEqualTo(newUser.getId());
-            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue());
+            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.name());
           })
           .verifyComplete();
 
@@ -1133,7 +1133,7 @@ class WorkspaceInvitationServiceTest {
           .assertNext(newInvitation -> {
             assertThat(newInvitation.getInvitedEmail()).isEqualTo(invitedUser.getEmail());
             assertThat(newInvitation.getStatusAsEnum()).isEqualTo(InvitationStatus.PENDING);
-            assertThat(newInvitation.getInvitedRole()).isEqualTo(WorkspaceRole.ADMIN.getValue());
+            assertThat(newInvitation.getInvitedRole()).isEqualTo(WorkspaceRole.ADMIN.name());
           })
           .verifyComplete();
     }

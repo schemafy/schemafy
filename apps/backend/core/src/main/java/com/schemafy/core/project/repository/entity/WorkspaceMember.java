@@ -26,7 +26,7 @@ public class WorkspaceMember extends BaseEntity {
     WorkspaceMember workspaceMember = new WorkspaceMember(
         workspaceId,
         userId,
-        role.getValue());
+        role.name());
     workspaceMember.setId(UlidGenerator.generate());
     return workspaceMember;
   }
@@ -37,7 +37,7 @@ public class WorkspaceMember extends BaseEntity {
   @Override
   public String getId() { return id; }
 
-  public WorkspaceRole getRoleAsEnum() { return WorkspaceRole.fromValue(this.role); }
+  public WorkspaceRole getRoleAsEnum() { return WorkspaceRole.fromString(this.role); }
 
   public boolean isAdmin() { return getRoleAsEnum().isAdmin(); }
 
@@ -46,7 +46,7 @@ public class WorkspaceMember extends BaseEntity {
   }
 
   public void updateRole(WorkspaceRole newRole) {
-    this.role = newRole.getValue();
+    this.role = newRole.name();
   }
 
 }

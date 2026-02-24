@@ -118,7 +118,7 @@ class WorkspaceControllerTest {
     workspaceMemberRepository.findByUserIdAndNotDeleted(testUserId)
         .collectList().block().forEach(member -> {
           assertThat(member.getRole())
-              .isEqualTo(WorkspaceRole.ADMIN.getValue());
+              .isEqualTo(WorkspaceRole.ADMIN.name());
         });
   }
 
@@ -386,7 +386,7 @@ class WorkspaceControllerTest {
         .jsonPath("$.success").isEqualTo(true)
         .jsonPath("$.result.userId").isEqualTo(testUser2Id)
         .jsonPath("$.result.role")
-        .isEqualTo(WorkspaceRole.MEMBER.getValue());
+        .isEqualTo(WorkspaceRole.MEMBER.name());
   }
 
   @Test
@@ -525,7 +525,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.updateMemberRoleResponse()))
         .jsonPath("$.success").isEqualTo(true)
         .jsonPath("$.result.role")
-        .isEqualTo(WorkspaceRole.ADMIN.getValue());
+        .isEqualTo(WorkspaceRole.ADMIN.name());
   }
 
 }

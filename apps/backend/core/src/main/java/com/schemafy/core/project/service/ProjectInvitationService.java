@@ -91,7 +91,7 @@ public class ProjectInvitationService {
         .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)))
         .flatMap(user -> {
           String email = user.getEmail();
-          String targetType = InvitationType.PROJECT.getValue();
+          String targetType = InvitationType.PROJECT.name();
 
           return invitationRepository.countPendingByEmailAndType(email, targetType)
               .flatMap(totalElements -> invitationRepository

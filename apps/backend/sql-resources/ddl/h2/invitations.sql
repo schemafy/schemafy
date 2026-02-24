@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS invitations (
     invited_email VARCHAR(255) NOT NULL,
     invited_role  VARCHAR(32)  NOT NULL,
     invited_by    CHAR(26)     NOT NULL,
-    status        VARCHAR(32)  NOT NULL DEFAULT 'pending',
+    status        VARCHAR(32)  NOT NULL DEFAULT 'PENDING',
     expires_at    TIMESTAMP    NOT NULL,
     resolved_at   TIMESTAMP    NULL,
     version       INT          NOT NULL DEFAULT 0,

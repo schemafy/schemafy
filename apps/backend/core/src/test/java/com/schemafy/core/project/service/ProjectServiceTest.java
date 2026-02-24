@@ -204,7 +204,7 @@ class ProjectServiceTest {
             assertThat(response.member().getUserId())
                 .isEqualTo(viewerUser.getId());
             assertThat(response.member().getRole())
-                .isEqualTo(ProjectRole.EDITOR.getValue());
+                .isEqualTo(ProjectRole.EDITOR.name());
           })
           .verifyComplete();
 
@@ -256,7 +256,7 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.updateMemberRole(
               testProject.getId(), ownerUser.getId(), request.role(), secondAdmin.getId()))
-          .assertNext(response -> assertThat(response.member().getRole()).isEqualTo(ProjectRole.VIEWER.getValue()))
+          .assertNext(response -> assertThat(response.member().getRole()).isEqualTo(ProjectRole.VIEWER.name()))
           .verifyComplete();
 
       // 현재: ownerUser(VIEWER) + secondAdmin(ADMIN) = ADMIN 1명

@@ -48,13 +48,13 @@ public class Invitation extends BaseEntity {
       WorkspaceRole role,
       String invitedBy) {
     Invitation invitation = new Invitation(
-        InvitationType.WORKSPACE.getValue(),
+        InvitationType.WORKSPACE.name(),
         workspaceId,
         null,
         invitedEmail.toLowerCase(),
-        role.getValue(),
+        role.name(),
         invitedBy,
-        InvitationStatus.PENDING.getValue(),
+        InvitationStatus.PENDING.name(),
         Instant.now().plus(EXPIRATION_DAYS, ChronoUnit.DAYS),
         null,
         0);
@@ -69,13 +69,13 @@ public class Invitation extends BaseEntity {
       ProjectRole role,
       String invitedBy) {
     Invitation invitation = new Invitation(
-        InvitationType.PROJECT.getValue(),
+        InvitationType.PROJECT.name(),
         projectId,
         workspaceId,
         invitedEmail.toLowerCase(),
-        role.getValue(),
+        role.name(),
         invitedBy,
-        InvitationStatus.PENDING.getValue(),
+        InvitationStatus.PENDING.name(),
         Instant.now().plus(EXPIRATION_DAYS, ChronoUnit.DAYS),
         null,
         0);
@@ -85,9 +85,9 @@ public class Invitation extends BaseEntity {
 
   public boolean isExpired() { return Instant.now().isAfter(this.expiresAt); }
 
-  public InvitationStatus getStatusAsEnum() { return InvitationStatus.fromValue(this.status); }
+  public InvitationStatus getStatusAsEnum() { return InvitationStatus.fromString(this.status); }
 
-  public InvitationType getTargetTypeAsEnum() { return InvitationType.fromValue(this.targetType); }
+  public InvitationType getTargetTypeAsEnum() { return InvitationType.fromString(this.targetType); }
 
   public String getWorkspaceId() {
     if (getTargetTypeAsEnum().isWorkspace()) {
@@ -107,12 +107,9 @@ public class Invitation extends BaseEntity {
     if (!getTargetTypeAsEnum().isWorkspace()) {
       throw new BusinessException(ErrorCode.INVITATION_TYPE_MISMATCH);
     }
-    return WorkspaceRole.fromValue(this.invitedRole);
+    return WorkspaceRole.fromString(this.invitedRole);
   }
 
-  /** Get project role (only for PROJECT invitations)
-   *
-   * @throws BusinessException if not a project invitation */
   public ProjectRole getProjectRole() {
     if (!getTargetTypeAsEnum().isProject()) {
       throw new BusinessException(ErrorCode.INVITATION_TYPE_MISMATCH);
@@ -130,7 +127,7 @@ public class Invitation extends BaseEntity {
     if (isExpired()) {
       throw new BusinessException(ErrorCode.INVITATION_EXPIRED);
     }
-    this.status = InvitationStatus.ACCEPTED.getValue();
+    this.status = InvitationStatus.ACCEPTED.name();
     this.resolvedAt = Instant.now();
   }
 
@@ -141,7 +138,7 @@ public class Invitation extends BaseEntity {
           : ErrorCode.PROJECT_INVITATION_ALREADY_MODIFICATION;
       throw new BusinessException(errorCode);
     }
-    this.status = InvitationStatus.REJECTED.getValue();
+    this.status = InvitationStatus.REJECTED.name();
     this.resolvedAt = Instant.now();
   }
 

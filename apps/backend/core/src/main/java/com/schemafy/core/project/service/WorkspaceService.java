@@ -268,9 +268,8 @@ public class WorkspaceService {
             workspaceId))
         .flatMap(targetMember -> modifyMemberWithAdminGuard(workspaceId,
             targetMember, m -> m.updateRole(role)))
-        .flatMap(savedMember ->
-            projectService.updateRoleInAllProjects(workspaceId, targetUserId, role)
-                .thenReturn(savedMember))
+        .flatMap(savedMember -> projectService.updateRoleInAllProjects(workspaceId, targetUserId, role)
+            .thenReturn(savedMember))
         .flatMap(this::buildMemberDetail)
         .as(transactionalOperator::transactional);
   }
@@ -310,7 +309,7 @@ public class WorkspaceService {
 
     return workspaceMemberRepository
         .countByWorkspaceIdAndRoleAndNotDeleted(workspaceId,
-            WorkspaceRole.ADMIN.getValue())
+            WorkspaceRole.ADMIN.name())
         .flatMap(count -> {
           if (count <= 1) {
             return Mono.error(new BusinessException(

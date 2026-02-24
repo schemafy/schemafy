@@ -288,7 +288,7 @@ class WorkspaceServiceTest {
 
       StepVerifier.create(result)
           .assertNext(response -> assertThat(response.member().getRole())
-              .isEqualTo(WorkspaceRole.MEMBER.getValue()))
+              .isEqualTo(WorkspaceRole.MEMBER.name()))
           .verifyComplete();
     }
 
@@ -386,7 +386,7 @@ class WorkspaceServiceTest {
       assertThat(readded).isNotNull();
       assertThat(readded.member().getUserId()).isEqualTo(newUser.getId());
       assertThat(readded.member().getRole())
-          .isEqualTo(WorkspaceRole.ADMIN.getValue());
+          .isEqualTo(WorkspaceRole.ADMIN.name());
 
       // 활성 멤버로 존재 확인
       Boolean existsAfterReadd = workspaceMemberRepository
@@ -550,7 +550,7 @@ class WorkspaceServiceTest {
 
         StepVerifier.create(workspaceService.updateMemberRole(
             testWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER, adminUser.getId()))
-            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue()))
+            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.name()))
             .verifyComplete();
       }
 
@@ -652,7 +652,7 @@ class WorkspaceServiceTest {
 
         StepVerifier.create(workspaceService.updateMemberRole(
             testWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER, adminUser.getId()))
-            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue()))
+            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.name()))
             .verifyComplete();
 
         ProjectMember pm = projectMemberRepository
@@ -677,7 +677,7 @@ class WorkspaceServiceTest {
 
         StepVerifier.create(workspaceService.updateMemberRole(
             testWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER, adminUser.getId()))
-            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.getValue()))
+            .assertNext(detail -> assertThat(detail.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.name()))
             .verifyComplete();
 
         ProjectMember pm = projectMemberRepository

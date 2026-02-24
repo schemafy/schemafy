@@ -1,22 +1,13 @@
 package com.schemafy.core.project.repository.vo;
 
-import lombok.Getter;
-
-@Getter
 public enum InvitationType {
 
-  WORKSPACE("WORKSPACE"),
-  PROJECT("PROJECT");
+  WORKSPACE,
+  PROJECT;
 
-  private final String value;
-
-  InvitationType(String value) {
-    this.value = value;
-  }
-
-  public static InvitationType fromValue(String value) {
+  public static InvitationType fromString(String value) {
     for (InvitationType type : InvitationType.values()) {
-      if (type.value.equalsIgnoreCase(value)) {
+      if (type.name().equalsIgnoreCase(value)) {
         return type;
       }
     }

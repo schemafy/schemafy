@@ -87,7 +87,7 @@ public class WorkspaceInvitationService {
             new BusinessException(ErrorCode.USER_NOT_FOUND)))
         .flatMap(user -> {
           String email = user.getEmail();
-          String targetType = InvitationType.WORKSPACE.getValue();
+          String targetType = InvitationType.WORKSPACE.name();
 
           return invitationRepository.countPendingByEmailAndType(email, targetType)
               .flatMap(totalElements -> invitationRepository

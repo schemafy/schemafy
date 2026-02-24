@@ -1,24 +1,15 @@
 package com.schemafy.core.project.repository.vo;
 
-import lombok.Getter;
-
-@Getter
 public enum InvitationStatus {
 
-  PENDING("pending"),
-  ACCEPTED("accepted"),
-  REJECTED("rejected"),
-  CANCELLED("cancelled");
+  PENDING,
+  ACCEPTED,
+  REJECTED,
+  CANCELLED;
 
-  private final String value;
-
-  InvitationStatus(String value) {
-    this.value = value;
-  }
-
-  public static InvitationStatus fromValue(String value) {
+  public static InvitationStatus fromString(String value) {
     for (InvitationStatus status : InvitationStatus.values()) {
-      if (status.value.equals(value)) {
+      if (status.name().equalsIgnoreCase(value)) {
         return status;
       }
     }

@@ -141,8 +141,8 @@ class ProjectInvitationServiceTest {
             assertThat(response.getProjectId()).isEqualTo(testProject.getId());
             assertThat(response.getWorkspaceId()).isEqualTo(testWorkspace.getId());
             assertThat(response.getInvitedEmail()).isEqualTo(workspaceUser.getEmail());
-            assertThat(response.getInvitedRole()).isEqualTo(ProjectRole.EDITOR.getValue());
-            assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.getValue());
+            assertThat(response.getInvitedRole()).isEqualTo(ProjectRole.EDITOR.name());
+            assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.name());
             assertThat(response.getInvitedBy()).isEqualTo(adminUser.getId());
           })
           .verifyComplete();
@@ -271,7 +271,7 @@ class ProjectInvitationServiceTest {
               adminUser.getId()))
           .assertNext(response -> {
             assertThat(response.getInvitedEmail()).isEqualTo(unregisteredEmail);
-            assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.getValue());
+            assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.name());
           })
           .verifyComplete();
     }
@@ -571,7 +571,7 @@ class ProjectInvitationServiceTest {
           invitationService.acceptInvitation(invitation.getId(), newUser.getId()))
           .assertNext(member -> {
             assertThat(member.member().getUserId()).isEqualTo(newUser.getId());
-            assertThat(member.member().getRole()).isEqualTo(ProjectRole.EDITOR.getValue());
+            assertThat(member.member().getRole()).isEqualTo(ProjectRole.EDITOR.name());
           })
           .verifyComplete();
 
@@ -596,7 +596,7 @@ class ProjectInvitationServiceTest {
           invitationService.acceptInvitation(invitationId, workspaceUser.getId()))
           .assertNext(member -> {
             assertThat(member.member().getUserId()).isEqualTo(workspaceUser.getId());
-            assertThat(member.member().getRole()).isEqualTo(ProjectRole.EDITOR.getValue());
+            assertThat(member.member().getRole()).isEqualTo(ProjectRole.EDITOR.name());
           })
           .verifyComplete();
 

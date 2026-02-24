@@ -27,13 +27,13 @@ public class ProjectMember extends BaseEntity {
   public static ProjectMember create(String projectId, String userId,
       ProjectRole role) {
     ProjectMember member = new ProjectMember(projectId, userId,
-        role.getValue(), Instant.now());
+        role.name(), Instant.now());
     member.setId(UlidGenerator.generate());
     return member;
   }
 
   public void updateRole(ProjectRole role) {
-    this.role = role.getValue();
+    this.role = role.name();
   }
 
   public ProjectRole getRoleAsEnum() { return ProjectRole.fromString(this.role); }
