@@ -45,8 +45,8 @@ interface SignInFormProps {
   oauthError: string | null;
 }
 
-export const SignInForm = ({oauthError}: SignInFormProps) => {
-  const {form, errors, handleChange, handleBlur, resetForm} = useFormState(
+export const SignInForm = ({ oauthError }: SignInFormProps) => {
+  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
     initialForm,
     validationRules,
   );
