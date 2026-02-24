@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
+import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
@@ -37,6 +38,7 @@ public class WorkspaceService {
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final ProjectRepository projectRepository;
+  private final ProjectMemberRepository projectMemberRepository;
   private final ProjectService projectService;
   private final UserRepository userRepository;
 
@@ -89,7 +91,12 @@ public class WorkspaceService {
 
   public Mono<Void> deleteWorkspace(String workspaceId, String userId) {
     return validateAdminAccess(workspaceId, userId)
-        .then(findWorkspaceOrThrow(workspaceId))
+        .then(doDeleteWorkspace(workspaceId))
+        .as(transactionalOperator::transactional);
+  }
+
+  private Mono<Void> doDeleteWorkspace(String workspaceId) {
+    return findWorkspaceOrThrow(workspaceId)
         .flatMap(workspace -> {
           if (workspace.isDeleted()) {
             return Mono.error(new BusinessException(
@@ -97,10 +104,17 @@ public class WorkspaceService {
           }
           workspace.delete();
           return workspaceRepository.save(workspace)
-              .then(workspaceMemberRepository
-                  .softDeleteByWorkspaceId(
-                      workspaceId));
-        }).as(transactionalOperator::transactional);
+              .then(projectRepository.findByWorkspaceIdAndNotDeleted(workspaceId)
+                  .concatMap(project -> projectMemberRepository
+                      .softDeleteByProjectId(project.getId())
+                      .then(Mono.defer(() -> {
+                        project.delete();
+                        return projectRepository.save(project);
+                      }))
+                      .then())
+                  .then(workspaceMemberRepository
+                      .softDeleteByWorkspaceId(workspaceId)));
+        });
   }
 
   public Mono<PageResponse<WorkspaceMemberDetail>> getMembers(
@@ -217,7 +231,7 @@ public class WorkspaceService {
             targetUserId, workspaceId))
         .flatMap(targetMember -> modifyMemberWithAdminGuard(workspaceId,
             targetMember, WorkspaceMember::delete))
-        .then()
+        .then(projectService.removeFromAllProjects(workspaceId, targetUserId))
         .as(transactionalOperator::transactional);
   }
 
@@ -231,14 +245,14 @@ public class WorkspaceService {
             .countByWorkspaceIdAndNotDeleted(workspaceId)
             .flatMap(totalMembers -> {
               if (totalMembers == 1) {
-                return this.deleteWorkspace(workspaceId,
-                    targetUserId);
+                return doDeleteWorkspace(workspaceId);
               }
 
               return modifyMemberWithAdminGuard(
                   workspaceId,
                   member,
-                  WorkspaceMember::delete);
+                  WorkspaceMember::delete)
+                  .then(projectService.removeFromAllProjects(workspaceId, targetUserId));
             }))
         .then()
         .as(transactionalOperator::transactional);

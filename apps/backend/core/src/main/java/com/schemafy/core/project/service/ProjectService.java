@@ -378,12 +378,23 @@ public class ProjectService {
         .then();
   }
 
+  public Mono<Void> removeFromAllProjects(String workspaceId, String userId) {
+    return projectMemberRepository.softDeleteByWorkspaceIdAndUserId(workspaceId, userId)
+        .doOnNext(count -> {
+          if (count > 0) {
+            log.info("Cascade removed {} project memberships: workspace={}, user={}",
+                count, workspaceId, userId);
+          }
+        })
+        .then();
+  }
+
   public Mono<Void> propagateToExistingProjects(
       String workspaceId, String userId, WorkspaceRole workspaceRole) {
     ProjectRole projectRole = workspaceRole.toProjectRole();
 
     return projectRepository.findByWorkspaceIdAndNotDeleted(workspaceId)
-        .flatMap(project -> projectMemberRepository
+        .concatMap(project -> projectMemberRepository
             .findLatestByProjectIdAndUserId(project.getId(), userId)
             .flatMap(existing -> {
               if (!existing.isDeleted()) {

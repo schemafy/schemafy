@@ -55,8 +55,9 @@ public interface WorkspaceMemberRepository
 
   @Query("""
       UPDATE workspace_members
-      SET deleted_at = CURRENT_TIMESTAMP
+      SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
       WHERE workspace_id = :workspaceId
+        AND deleted_at IS NULL
       """)
   Mono<Void> softDeleteByWorkspaceId(String workspaceId);
 

@@ -421,6 +421,72 @@ class WorkspaceServiceTest {
     }
 
     @Test
+    @DisplayName("멤버 제거 시 해당 워크스페이스의 프로젝트 멤버십도 cascade soft-delete 된다")
+    void removeMember_cascadesProjectMemberships() {
+      Project project1 = projectRepository.save(
+          Project.create(testWorkspace.getId(), "Project 1", "Desc", ProjectSettings.defaultSettings())).block();
+      Project project2 = projectRepository.save(
+          Project.create(testWorkspace.getId(), "Project 2", "Desc", ProjectSettings.defaultSettings())).block();
+
+      projectMemberRepository.save(
+          ProjectMember.create(project1.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+      projectMemberRepository.save(
+          ProjectMember.create(project2.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+
+      workspaceService.removeMember(testWorkspace.getId(), memberUser.getId(), adminUser.getId()).block();
+
+      ProjectMember pm1 = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project1.getId(), memberUser.getId()).block();
+      ProjectMember pm2 = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project2.getId(), memberUser.getId()).block();
+
+      assertThat(pm1).isNull();
+      assertThat(pm2).isNull();
+    }
+
+    @Test
+    @DisplayName("멤버 제거 시 다른 워크스페이스의 프로젝트 멤버십은 영향 없다")
+    void removeMember_cascadeDoesNotAffectOtherWorkspace() {
+      Workspace otherWorkspace = workspaceRepository.save(
+          Workspace.create("Other Workspace", "Desc")).block();
+      workspaceMemberRepository.save(
+          WorkspaceMember.create(otherWorkspace.getId(), adminUser.getId(), WorkspaceRole.ADMIN)).block();
+      workspaceMemberRepository.save(
+          WorkspaceMember.create(otherWorkspace.getId(), memberUser.getId(), WorkspaceRole.MEMBER)).block();
+
+      Project projectInWs = projectRepository.save(
+          Project.create(testWorkspace.getId(), "WS Project", "Desc", ProjectSettings.defaultSettings())).block();
+      Project projectInOther = projectRepository.save(
+          Project.create(otherWorkspace.getId(), "Other Project", "Desc", ProjectSettings.defaultSettings())).block();
+
+      projectMemberRepository.save(
+          ProjectMember.create(projectInWs.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+      projectMemberRepository.save(
+          ProjectMember.create(projectInOther.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+
+      workspaceService.removeMember(testWorkspace.getId(), memberUser.getId(), adminUser.getId()).block();
+
+      ProjectMember pmWs = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(projectInWs.getId(), memberUser.getId()).block();
+      ProjectMember pmOther = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(projectInOther.getId(), memberUser.getId()).block();
+
+      assertThat(pmWs).isNull();
+      assertThat(pmOther).isNotNull();
+    }
+
+    @Test
+    @DisplayName("프로젝트 멤버십이 없는 멤버 제거 시 정상 성공")
+    void removeMember_noProjectMemberships_succeeds() {
+      StepVerifier.create(workspaceService.removeMember(
+          testWorkspace.getId(), memberUser.getId(), adminUser.getId()))
+          .verifyComplete();
+
+      WorkspaceMember deleted = workspaceMemberRepository.findById(normalMember.getId()).block();
+      assertThat(deleted.isDeleted()).isTrue();
+    }
+
+    @Test
     @DisplayName("ADMIN으로 직접 추가 시 기존 프로젝트에 ADMIN으로 자동 추가된다")
     void addMember_Admin_PropagatesAsAdminToExistingProjects() {
       Project project = Project.create(testWorkspace.getId(), "Test Project", "Desc", ProjectSettings
@@ -503,6 +569,101 @@ class WorkspaceServiceTest {
           .findByIdAndNotDeleted(testWorkspace.getId()).block();
       assertThat(workspace).isNotNull();
       assertThat(workspace.isDeleted()).isFalse();
+    }
+
+    @Test
+    @DisplayName("멤버 탈퇴 시 해당 워크스페이스의 프로젝트 멤버십도 cascade soft-delete 된다")
+    void leaveMember_cascadesProjectMemberships() {
+      Project project = projectRepository.save(
+          Project.create(testWorkspace.getId(), "Cascade Project", "Desc", ProjectSettings.defaultSettings())).block();
+      projectMemberRepository.save(
+          ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+
+      workspaceService.leaveMember(testWorkspace.getId(), memberUser.getId()).block();
+
+      ProjectMember pm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), memberUser.getId()).block();
+      assertThat(pm).isNull();
+    }
+
+    @Test
+    @DisplayName("마지막 멤버 탈퇴 시 워크스페이스의 프로젝트와 프로젝트 멤버십도 cascade soft-delete 된다")
+    void leaveMember_lastMember_cascadesProjectsAndMembers() {
+      Workspace singleMemberWorkspace = workspaceRepository.save(
+          Workspace.create("Single Member WS", "Desc")).block();
+      WorkspaceMember singleMember = workspaceMemberRepository.save(
+          WorkspaceMember.create(singleMemberWorkspace.getId(), memberUser.getId(), WorkspaceRole.ADMIN)).block();
+
+      Project project = projectRepository.save(
+          Project.create(singleMemberWorkspace.getId(), "Solo Project", "Desc", ProjectSettings.defaultSettings()))
+          .block();
+      projectMemberRepository.save(
+          ProjectMember.create(project.getId(), memberUser.getId(), ProjectRole.ADMIN)).block();
+
+      String workspaceId = singleMemberWorkspace.getId();
+      String projectId = project.getId();
+
+      workspaceService.leaveMember(workspaceId, memberUser.getId()).block();
+
+      Workspace deletedWs = workspaceRepository.findById(workspaceId).block();
+      assertThat(deletedWs.isDeleted()).isTrue();
+
+      Project deletedProject = projectRepository.findById(projectId).block();
+      assertThat(deletedProject.isDeleted()).isTrue();
+
+      ProjectMember pm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(projectId, memberUser.getId()).block();
+      assertThat(pm).isNull();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("워크스페이스 삭제 cascade")
+  class DeleteWorkspaceCascade {
+
+    @Test
+    @DisplayName("워크스페이스 삭제 시 프로젝트와 프로젝트 멤버십도 cascade soft-delete 된다")
+    void deleteWorkspace_cascadesProjectsAndMembers() {
+      Workspace newWorkspace = workspaceRepository.save(
+          Workspace.create("Cascade Workspace", "Desc")).block();
+      workspaceMemberRepository.save(
+          WorkspaceMember.create(newWorkspace.getId(), adminUser.getId(), WorkspaceRole.ADMIN)).block();
+
+      Project project1 = projectRepository.save(
+          Project.create(newWorkspace.getId(), "Project A", "Desc", ProjectSettings.defaultSettings())).block();
+      Project project2 = projectRepository.save(
+          Project.create(newWorkspace.getId(), "Project B", "Desc", ProjectSettings.defaultSettings())).block();
+
+      projectMemberRepository.save(
+          ProjectMember.create(project1.getId(), adminUser.getId(), ProjectRole.ADMIN)).block();
+      projectMemberRepository.save(
+          ProjectMember.create(project1.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+      projectMemberRepository.save(
+          ProjectMember.create(project2.getId(), adminUser.getId(), ProjectRole.ADMIN)).block();
+      projectMemberRepository.save(
+          ProjectMember.create(project2.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
+
+      String workspaceId = newWorkspace.getId();
+      String project1Id = project1.getId();
+      String project2Id = project2.getId();
+
+      workspaceService.deleteWorkspace(workspaceId, adminUser.getId()).block();
+
+      Project deletedProject1 = projectRepository.findById(project1Id).block();
+      Project deletedProject2 = projectRepository.findById(project2Id).block();
+      assertThat(deletedProject1.isDeleted()).isTrue();
+      assertThat(deletedProject2.isDeleted()).isTrue();
+
+      StepVerifier.create(projectMemberRepository
+          .findByProjectIdAndNotDeleted(project1Id, 100, 0).collectList())
+          .assertNext(members -> assertThat(members).isEmpty())
+          .verifyComplete();
+
+      StepVerifier.create(projectMemberRepository
+          .findByProjectIdAndNotDeleted(project2Id, 100, 0).collectList())
+          .assertNext(members -> assertThat(members).isEmpty())
+          .verifyComplete();
     }
 
   }
