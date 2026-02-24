@@ -41,8 +41,12 @@ const validationRules: ValidationRules<SignInFormValues> = {
   },
 };
 
-export const SignInForm = () => {
-  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
+interface SignInFormProps {
+  oauthError?: string;
+}
+
+export const SignInForm = ({oauthError}: SignInFormProps) => {
+  const {form, errors, handleChange, handleBlur, resetForm} = useFormState(
     initialForm,
     validationRules,
   );
@@ -124,6 +128,9 @@ export const SignInForm = () => {
         </Button>
         {submitError && (
           <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
+        )}
+        {oauthError && (
+          <p className="text-red-600 text-sm mt-2 mb-2">{oauthError}</p>
         )}
         <div className="flex flex-col w-full gap-2">
           <Button
