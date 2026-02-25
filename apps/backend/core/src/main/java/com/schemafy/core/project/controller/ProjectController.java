@@ -32,7 +32,7 @@ public class ProjectController {
   private final ProjectService projectService;
   private final ShareLinkService shareLinkService;
 
-  @Value("${app.base-url:https://schemafy.com}")
+  @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
 
   @PreAuthorize("hasAnyRole('ADMIN')")
