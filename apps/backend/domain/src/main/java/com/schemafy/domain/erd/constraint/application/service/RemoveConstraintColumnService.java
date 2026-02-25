@@ -58,7 +58,7 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
                       constraintColumn.columnId(),
                       affectedTableIds))
                   .then(reorderOrDeleteConstraint(constraint.id()))
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
             }))
         .as(transactionalOperator::transactional);
   }

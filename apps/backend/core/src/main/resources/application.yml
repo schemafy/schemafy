@@ -47,6 +47,13 @@ hmac:
   enabled: false # TODO: 추후에 BFF에서 HMAC 적용 시 true로 변경
   enforcement-mode: ENFORCE
 
+oauth:
+  github:
+    client-id: ${GITHUB_CLIENT_ID:}
+    client-secret: ${GITHUB_CLIENT_SECRET:}
+    redirect-uri: ${GITHUB_REDIRECT_URI:}
+    frontend-callback-url: ${GITHUB_FRONTEND_CALLBACK_URL:}
+
 sharelink:
   pepper: ${SHARELINK_PEPPER:default-pepper-change-me}
 

@@ -56,7 +56,7 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
               .defaultIfEmpty(List.of())
               .flatMap(columns -> applyChange(column, columns, command, affectedTableIds));
         })
-        .thenReturn(MutationResult.<Void>of(null, affectedTableIds))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
         .as(transactionalOperator::transactional);
   }
 

@@ -5,6 +5,7 @@ import java.time.Instant;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -45,17 +46,21 @@ public class TableEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
+  @Version
+  private Long version;
+
   @Builder
   private TableEntity(String id, String schemaId, String name,
-      String charset, String collation) {
+      String charset, String collation, String extra) {
     this.id = id;
     this.schemaId = schemaId;
     this.name = name;
     this.charset = charset;
     this.collation = collation;
+    this.extra = extra;
   }
 
   @Override
-  public boolean isNew() { return this.createdAt == null; }
+  public boolean isNew() { return this.version == null; }
 
 }

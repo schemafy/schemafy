@@ -502,8 +502,8 @@ class ColumnPersistenceAdapterTest {
     @Test
     @DisplayName("테이블의 모든 컬럼을 삭제한다")
     void deletesAllColumnsOfTable() {
-      var column1 = ColumnFixture.columnWithId(COLUMN_ID_1);
-      var column2 = ColumnFixture.columnWithId(COLUMN_ID_2);
+      var column1 = ColumnFixture.columnWithIdAndName(COLUMN_ID_1, "column_1");
+      var column2 = ColumnFixture.columnWithIdAndName(COLUMN_ID_2, "column_2");
       sut.createColumn(column1).block();
       sut.createColumn(column2).block();
 

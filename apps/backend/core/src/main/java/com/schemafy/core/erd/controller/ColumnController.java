@@ -1,9 +1,11 @@
 package com.schemafy.core.erd.controller;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.Valid;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnMetaRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnNameRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeColumnPositionRequest;
@@ -59,6 +62,8 @@ public class ColumnController {
   private final ChangeColumnPositionUseCase changeColumnPositionUseCase;
   private final DeleteColumnUseCase deleteColumnUseCase;
 
+  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/columns")
   public Mono<BaseResponse<MutationResponse<ColumnResponse>>> createColumn(
@@ -75,6 +80,8 @@ public class ColumnController {
         request.collation(),
         request.comment());
     return createColumnUseCase.createColumn(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             ColumnResponse.from(result.result(), request.tableId()),
             result.affectedTableIds()))
@@ -112,6 +119,8 @@ public class ColumnController {
         columnId,
         request.newName());
     return changeColumnNameUseCase.changeColumnName(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -128,6 +137,8 @@ public class ColumnController {
         request.precision(),
         request.scale());
     return changeColumnTypeUseCase.changeColumnType(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -144,6 +155,8 @@ public class ColumnController {
         toPatchField(request.collation()),
         toPatchField(request.comment()));
     return changeColumnMetaUseCase.changeColumnMeta(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -157,6 +170,8 @@ public class ColumnController {
         columnId,
         request.seqNo());
     return changeColumnPositionUseCase.changeColumnPosition(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -167,8 +182,18 @@ public class ColumnController {
       @PathVariable String columnId) {
     DeleteColumnCommand command = new DeleteColumnCommand(columnId);
     return deleteColumnUseCase.deleteColumn(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
+  }
+
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return Mono.empty();
+    }
+    return broadcaster.broadcast(affectedTableIds);
   }
 
 }

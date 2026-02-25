@@ -58,7 +58,7 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
                   .then(handleRemainingColumns(relationship.id()))
                   .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)))
                   .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
             }))
         .as(transactionalOperator::transactional);
   }

@@ -59,7 +59,7 @@ public class DeleteTableService implements DeleteTableUseCase {
                 .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                 .then())
             .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
-            .thenReturn(MutationResult.<Void>of(null, affectedTableIds)))
+            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
         .as(transactionalOperator::transactional);
   }
 

@@ -15,9 +15,12 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
+import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.dto.LoginCommand;
+import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -35,8 +38,20 @@ class UserServiceTest {
   @Autowired
   UserRepository userRepository;
 
+  @Autowired
+  WorkspaceRepository workspaceRepository;
+
+  @Autowired
+  UserAuthProviderRepository userAuthProviderRepository;
+
+  @Autowired
+  WorkspaceMemberRepository workspaceMemberRepository;
+
   @BeforeEach
   void setUp() {
+    userAuthProviderRepository.deleteAll().block();
+    workspaceMemberRepository.deleteAll().block();
+    workspaceRepository.deleteAll().block();
     userRepository.deleteAll().block();
   }
 
@@ -198,6 +213,106 @@ class UserServiceTest {
         .as("Only one user should exist")
         .assertNext(users -> assertThat(users).hasSize(1))
         .verifyComplete();
+  }
+
+  @Nested
+  @DisplayName("OAuth 로그인/가입")
+  class OAuthLoginOrSignUp {
+
+    @Test
+    @DisplayName("신규 OAuth 사용자가 가입되고 워크스페이스가 생성된다")
+    void loginOrSignUpOAuth_newUser() {
+      OAuthLoginCommand command = new OAuthLoginCommand(
+          "oauth@example.com", "OAuth User",
+          AuthProvider.GITHUB, "12345");
+
+      StepVerifier.create(userService.loginOrSignUpOAuth(command))
+          .assertNext(user -> {
+            assertThat(user.getEmail()).isEqualTo("oauth@example.com");
+            assertThat(user.getName()).isEqualTo("OAuth User");
+            assertThat(user.getPassword()).isNull();
+          })
+          .verifyComplete();
+
+      StepVerifier.create(
+          userRepository.findByEmail("oauth@example.com"))
+          .assertNext(user -> {
+            assertThat(user.getId()).isNotNull();
+            assertThat(user.getCreatedAt()).isNotNull();
+          })
+          .verifyComplete();
+
+      StepVerifier.create(
+          userAuthProviderRepository
+              .findByProviderAndProviderUserId("GITHUB",
+                  "12345"))
+          .assertNext(provider -> {
+            assertThat(provider.getProvider()).isEqualTo("GITHUB");
+            assertThat(provider.getProviderUserId())
+                .isEqualTo("12345");
+          })
+          .verifyComplete();
+
+      StepVerifier.create(workspaceRepository.findAll().collectList())
+          .assertNext(
+              workspaces -> assertThat(workspaces).hasSize(1))
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("같은 이메일의 기존 유저가 있으면 자동 연동된다")
+    void loginOrSignUpOAuth_linkExistingUser() {
+      User existingUser = TestFixture
+          .createTestUser("existing@example.com", "Existing User",
+              "password")
+          .flatMap(userRepository::save)
+          .block();
+
+      OAuthLoginCommand command = new OAuthLoginCommand(
+          "existing@example.com", "Existing User",
+          AuthProvider.GITHUB, "67890");
+
+      StepVerifier.create(userService.loginOrSignUpOAuth(command))
+          .assertNext(user -> {
+            assertThat(user.getId()).isEqualTo(existingUser.getId());
+            assertThat(user.getEmail())
+                .isEqualTo("existing@example.com");
+          })
+          .verifyComplete();
+
+      StepVerifier.create(
+          userAuthProviderRepository
+              .findByProviderAndProviderUserId("GITHUB",
+                  "67890"))
+          .assertNext(provider -> assertThat(provider.getUserId())
+              .isEqualTo(existingUser.getId()))
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("이미 연동된 provider로 로그인하면 기존 유저를 반환한다")
+    void loginOrSignUpOAuth_existingProvider() {
+      OAuthLoginCommand command = new OAuthLoginCommand(
+          "provider@example.com", "Provider User",
+          AuthProvider.GITHUB, "11111");
+
+      User firstLogin = userService.loginOrSignUpOAuth(command)
+          .block();
+
+      StepVerifier.create(userService.loginOrSignUpOAuth(command))
+          .assertNext(user -> {
+            assertThat(user.getId()).isEqualTo(firstLogin.getId());
+            assertThat(user.getEmail())
+                .isEqualTo("provider@example.com");
+          })
+          .verifyComplete();
+
+      StepVerifier
+          .create(userAuthProviderRepository.findAll().collectList())
+          .assertNext(providers -> assertThat(providers).hasSize(1))
+          .verifyComplete();
+    }
+
   }
 
   @Nested

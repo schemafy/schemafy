@@ -1,9 +1,11 @@
 package com.schemafy.core.erd.controller;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.Valid;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.AddIndexColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeIndexColumnPositionRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeIndexColumnSortDirectionRequest;
@@ -74,6 +77,8 @@ public class IndexController {
   private final ChangeIndexColumnPositionUseCase changeIndexColumnPositionUseCase;
   private final ChangeIndexColumnSortDirectionUseCase changeIndexColumnSortDirectionUseCase;
 
+  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/indexes")
   public Mono<BaseResponse<MutationResponse<IndexResponse>>> createIndex(
@@ -84,6 +89,8 @@ public class IndexController {
         request.type(),
         mapIndexColumns(request.columns()));
     return createIndexUseCase.createIndex(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             IndexResponse.from(result.result(), request.tableId()),
             result.affectedTableIds()))
@@ -121,6 +128,8 @@ public class IndexController {
         indexId,
         request.newName());
     return changeIndexNameUseCase.changeIndexName(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -134,6 +143,8 @@ public class IndexController {
         indexId,
         request.type());
     return changeIndexTypeUseCase.changeIndexType(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -144,6 +155,8 @@ public class IndexController {
       @PathVariable String indexId) {
     DeleteIndexCommand command = new DeleteIndexCommand(indexId);
     return deleteIndexUseCase.deleteIndex(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -171,6 +184,8 @@ public class IndexController {
         request.seqNo(),
         request.sortDirection());
     return addIndexColumnUseCase.addIndexColumn(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.of(
             AddIndexColumnResponse.from(result.result()),
             result.affectedTableIds()))
@@ -183,6 +198,8 @@ public class IndexController {
       @PathVariable String indexColumnId) {
     RemoveIndexColumnCommand command = new RemoveIndexColumnCommand(indexColumnId);
     return removeIndexColumnUseCase.removeIndexColumn(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -206,6 +223,8 @@ public class IndexController {
         indexColumnId,
         request.seqNo());
     return changeIndexColumnPositionUseCase.changeIndexColumnPosition(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
   }
@@ -219,8 +238,18 @@ public class IndexController {
         indexColumnId,
         request.sortDirection());
     return changeIndexColumnSortDirectionUseCase.changeIndexColumnSortDirection(command)
+        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+            .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
         .map(BaseResponse::success);
+  }
+
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+    if (broadcaster == null) {
+      return Mono.empty();
+    }
+    return broadcaster.broadcast(affectedTableIds);
   }
 
   private static List<CreateIndexColumnCommand> mapIndexColumns(

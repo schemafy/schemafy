@@ -60,7 +60,7 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
                 oldKind,
                 newKind,
                 affectedTableIds)
-                .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
           }
           return getTableByIdPort.findTableById(relationship.fkTableId())
               .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
@@ -74,7 +74,7 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
                       oldKind,
                       newKind,
                       affectedTableIds))
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds)));
+                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))));
         })
         .as(transactionalOperator::transactional);
   }
