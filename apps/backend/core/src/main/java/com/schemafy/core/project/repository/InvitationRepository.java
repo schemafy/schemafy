@@ -100,7 +100,7 @@ public interface InvitationRepository
   @Modifying
   @Query("""
       UPDATE invitations
-      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW()
+      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW(), version = version + 1
       WHERE target_type = :targetType
         AND target_id = :targetId
         AND invited_email = :email

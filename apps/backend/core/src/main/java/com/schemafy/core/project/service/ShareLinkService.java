@@ -39,7 +39,7 @@ public class ShareLinkService {
         .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
         .doOnNext(shareLink -> log.info(
             "ShareLink access success - code: {}, projectId: {}, userId: {}, ip: {}, userAgent: {}",
-            code, shareLink.getProjectId(), user, ipAddress, userAgent))
+            maskCode(code), shareLink.getProjectId(), user, ipAddress, userAgent))
         .flatMap(shareLink -> shareLinkRepository.incrementAccessCount(shareLink.getId())
             .onErrorResume(e -> {
               log.error("Failed to increment access count for ShareLink InvitationId: {}", shareLink.getId(), e);
@@ -48,7 +48,7 @@ public class ShareLinkService {
             .then(projectRepository.findByIdAndNotDeleted(shareLink.getProjectId()))
             .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_NOT_FOUND))))
         .doOnError(ex -> log.info("ShareLink access failed - code: {}, userId: {}, ip: {}, userAgent: {}, reason: {}",
-            code, user, ipAddress, userAgent, ex.getMessage()));
+            maskCode(code), user, ipAddress, userAgent, ex.getMessage()));
   }
 
   public Mono<ShareLink> createShareLink(String workspaceId, String projectId, String userId) {
@@ -117,6 +117,12 @@ public class ShareLinkService {
   private Mono<Project> findProjectById(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
+  }
+
+  private String maskCode(String code) {
+    if (code == null || code.length() <= 4)
+      return "***";
+    return code.substring(0, Math.min(8, code.length())) + "***";
   }
 
   private Mono<Void> validateAdminAccess(String workspaceId, String projectId, String userId) {
