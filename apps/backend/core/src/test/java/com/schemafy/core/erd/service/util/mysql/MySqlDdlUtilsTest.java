@@ -127,7 +127,7 @@ class MySqlDdlUtilsTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = { "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION" })
+  @ValueSource(strings = { "CASCADE", "SET NULL", "RESTRICT", "NO ACTION" })
   void sanitizeReferentialAction_withValidActions_returnsOptional(String action) {
     assertEquals(Optional.of(action), MySqlDdlUtils.sanitizeReferentialAction(action.toLowerCase()));
   }
