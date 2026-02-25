@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
+import { gitHubLogin } from "@/features/auth/lib/oauth.ts";
 
 const formFields = [
   {
@@ -45,8 +46,8 @@ interface SignInFormProps {
   oauthError: string | null;
 }
 
-export const SignInForm = ({ oauthError }: SignInFormProps) => {
-  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
+export const SignInForm = ({oauthError}: SignInFormProps) => {
+  const {form, errors, handleChange, handleBlur, resetForm} = useFormState(
     initialForm,
     validationRules,
   );
@@ -54,12 +55,9 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
   const [submitError, setSubmitError] = useState<string>('');
   const navigate = useNavigate();
 
-  const handleGitHubLogin = () => {
-    const baseUrl =
-      import.meta.env.VITE_PUBLIC_BASE_URL ||
-      'http://localhost:8080/public/api/v1.0';
-    window.location.href = `${baseUrl}/oauth/github/authorize`;
-  };
+  const handleGithubLogin = () => {
+    gitHubLogin();
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -138,7 +136,7 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
             variant={'secondary'}
             round
             fullWidth
-            onClick={handleGitHubLogin}
+            onClick={handleGithubLogin}
           >
             Continue with GitHub
           </Button>
