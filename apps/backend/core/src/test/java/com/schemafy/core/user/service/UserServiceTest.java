@@ -39,19 +39,11 @@ class UserServiceTest {
   UserRepository userRepository;
 
   @Autowired
-  WorkspaceRepository workspaceRepository;
-
-  @Autowired
   UserAuthProviderRepository userAuthProviderRepository;
-
-  @Autowired
-  WorkspaceMemberRepository workspaceMemberRepository;
 
   @BeforeEach
   void setUp() {
     userAuthProviderRepository.deleteAll().block();
-    workspaceMemberRepository.deleteAll().block();
-    workspaceRepository.deleteAll().block();
     userRepository.deleteAll().block();
   }
 
@@ -220,7 +212,7 @@ class UserServiceTest {
   class OAuthLoginOrSignUp {
 
     @Test
-    @DisplayName("신규 OAuth 사용자가 가입되고 워크스페이스가 생성된다")
+    @DisplayName("신규 OAuth 사용자가 가입된다")
     void loginOrSignUpOAuth_newUser() {
       OAuthLoginCommand command = new OAuthLoginCommand(
           "oauth@example.com", "OAuth User",
@@ -251,11 +243,6 @@ class UserServiceTest {
             assertThat(provider.getProviderUserId())
                 .isEqualTo("12345");
           })
-          .verifyComplete();
-
-      StepVerifier.create(workspaceRepository.findAll().collectList())
-          .assertNext(
-              workspaces -> assertThat(workspaces).hasSize(1))
           .verifyComplete();
     }
 

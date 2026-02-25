@@ -54,35 +54,6 @@ public class UserService {
                 ErrorCode.USER_ALREADY_EXISTS));
   }
 
-  private Mono<User> createDefaultWorkspace(User user) {
-    String workspaceName = user.getName() + "'s Workspace";
-    String workspaceDescription = "Personal workspace for "
-        + user.getName();
-    WorkspaceSettings defaultSettings = WorkspaceSettings.defaultSettings();
-
-    Workspace workspace = Workspace.create(
-        user.getId(),
-        workspaceName,
-        workspaceDescription,
-        defaultSettings);
-
-    WorkspaceMember adminMember = WorkspaceMember.create(
-        workspace.getId(),
-        user.getId(),
-        WorkspaceRole.ADMIN);
-
-    return workspaceRepository.save(workspace)
-        .flatMap(savedWorkspace -> workspaceMemberRepository
-            .save(adminMember)
-            .thenReturn(user))
-        .doOnSuccess(
-            u -> log.info("Created default workspace for user: {}",
-                user.getId()))
-        .doOnError(e -> log.error(
-            "Failed to create default workspace for user: {}",
-            user.getId(), e));
-  }
-
   public Mono<User> loginOrSignUpOAuth(OAuthLoginCommand command) {
     return userAuthProviderRepository
         .findByProviderAndProviderUserId(
@@ -135,7 +106,7 @@ public class UserService {
             e -> new BusinessException(
                 ErrorCode.USER_ALREADY_EXISTS))
         .flatMap(savedUser -> saveAuthProvider(savedUser, command)
-            .then(createDefaultWorkspace(savedUser)));
+            .thenReturn(savedUser));
   }
 
   private Mono<UserAuthProvider> saveAuthProvider(User user,

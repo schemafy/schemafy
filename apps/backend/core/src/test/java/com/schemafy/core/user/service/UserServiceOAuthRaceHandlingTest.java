@@ -14,8 +14,6 @@ import org.mockito.Mockito;
 import com.schemafy.core.common.TestFixture;
 import com.schemafy.core.common.exception.BusinessException;
 import com.schemafy.core.common.exception.ErrorCode;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -44,18 +42,10 @@ class UserServiceOAuthRaceHandlingTest {
   @MockitoSpyBean
   UserAuthProviderRepository userAuthProviderRepository;
 
-  @Autowired
-  WorkspaceRepository workspaceRepository;
-
-  @Autowired
-  WorkspaceMemberRepository workspaceMemberRepository;
-
   @BeforeEach
   void setUp() {
     Mockito.reset(userRepository, userAuthProviderRepository);
     userAuthProviderRepository.deleteAll().block();
-    workspaceMemberRepository.deleteAll().block();
-    workspaceRepository.deleteAll().block();
     userRepository.deleteAll().block();
   }
 
