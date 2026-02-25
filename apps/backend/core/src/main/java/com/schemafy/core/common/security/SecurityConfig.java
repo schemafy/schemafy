@@ -1,7 +1,6 @@
 package com.schemafy.core.common.security;
 
-import java.util.Optional;
-
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -49,7 +48,7 @@ public class SecurityConfig {
       ServerHttpSecurity http,
       JwtAuthenticationFilter jwtAuthenticationFilter,
       HmacProperties hmacProperties,
-      Optional<NonceCache> nonceCache,
+      ObjectProvider<NonceCache> nonceCache,
       WebExchangeErrorWriter errorWriter,
       JwtAuthenticationEntryPoint authenticationEntryPoint,
       JwtAccessDeniedHandler accessDeniedHandler) {
@@ -77,7 +76,7 @@ public class SecurityConfig {
         .addFilterAt(jwtAuthenticationFilter,
             SecurityWebFiltersOrder.AUTHENTICATION);
 
-    nonceCache.ifPresent(cache -> {
+    nonceCache.ifAvailable(cache -> {
       HmacVerificationFilter hmacFilter = new HmacVerificationFilter(
           hmacProperties, cache, errorWriter);
       http.addFilterAfter(hmacFilter,
