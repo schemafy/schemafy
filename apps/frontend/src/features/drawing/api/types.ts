@@ -38,6 +38,7 @@ export type CreateTableRequest = {
   name: string;
   charset: string;
   collation: string;
+  extra?: string;
 };
 
 export type ChangeTableNameRequest = {
@@ -267,6 +268,7 @@ export type CreateRelationshipRequest = {
   pkTableId: string;
   kind: string;
   cardinality: string;
+  extra?: string;
 };
 
 export type ChangeRelationshipNameRequest = {

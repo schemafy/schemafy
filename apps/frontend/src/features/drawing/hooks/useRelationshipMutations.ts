@@ -24,20 +24,8 @@ import { useErdCache } from './useErdCache';
 export const useCreateRelationshipWithExtra = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: async (data: {
-      request: CreateRelationshipRequest;
-      extra: string;
-    }) => {
-      const createResult = await createRelationship(data.request);
-      if (createResult.data) {
-        const extraResult = await changeRelationshipExtra(
-          createResult.data.id,
-          { extra: data.extra },
-        );
-        return extraResult;
-      }
-      return createResult;
-    },
+    mutationFn: (data: { request: CreateRelationshipRequest; extra: string }) =>
+      createRelationship({ ...data.request, extra: data.extra }),
     onSuccess: (result) => {
       updateAffectedTables(result.affectedTableIds);
     },
