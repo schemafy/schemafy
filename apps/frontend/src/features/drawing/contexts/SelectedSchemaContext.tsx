@@ -132,17 +132,6 @@ export const SelectedSchemaProvider = ({
     setSelectedSchemaId,
   ]);
 
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === storageKey) {
-        setSelectedSchemaIdState(e.newValue);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [storageKey]);
-
   if (!selectedSchemaId && isCreateSchemaError) {
     return <SchemaError onRetry={createInitialSchema} />;
   }

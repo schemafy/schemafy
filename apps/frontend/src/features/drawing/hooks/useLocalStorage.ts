@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 export const useLocalStorage = <T>(
   key: string,
@@ -14,18 +14,21 @@ export const useLocalStorage = <T>(
     }
   });
 
-  const setValue = (value: T | ((prev: T) => T)) => {
-    setStoredValue((prev) => {
-      try {
-        const valueToStore = value instanceof Function ? value(prev) : value;
-        localStorage.setItem(key, JSON.stringify(valueToStore));
-        return valueToStore;
-      } catch (error) {
-        console.error(`Error setting localStorage key "${key}":`, error);
-        return prev;
-      }
-    });
-  };
+  const setValue = useCallback(
+    (value: T | ((prev: T) => T)) => {
+      setStoredValue((prev) => {
+        try {
+          const valueToStore = value instanceof Function ? value(prev) : value;
+          localStorage.setItem(key, JSON.stringify(valueToStore));
+          return valueToStore;
+        } catch (error) {
+          console.error(`Error setting localStorage key "${key}":`, error);
+          return prev;
+        }
+      });
+    },
+    [key],
+  );
 
   return [storedValue, setValue];
 };

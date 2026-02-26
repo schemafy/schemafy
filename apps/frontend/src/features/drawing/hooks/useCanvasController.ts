@@ -7,6 +7,7 @@ import { useCanvasKeyboard } from './useCanvasKeyboard';
 import { useCanvasNodes } from './useCanvasNodes';
 import { useMemoContext } from '../../memo/hooks/useMemoStore';
 import { useSelectedSchema } from '../contexts';
+import { useSchemas } from './useSchemas';
 import type { RelationshipConfig, Point } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 
@@ -14,6 +15,7 @@ const CURSOR_THROTTLE_MS = 100;
 
 export const useCanvasController = () => {
   const { projectId } = useSelectedSchema();
+  const { data: schemas } = useSchemas(projectId);
   const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
 
@@ -46,7 +48,8 @@ export const useCanvasController = () => {
     setChatInputPosition,
   });
 
-  const { handleMoveEnd } = useViewport();
+  const schemaIds = schemas?.map((s) => s.id) ?? [];
+  const { handleMoveEnd } = useViewport(schemaIds);
   const { tables, addTable, onTablesChange, onNodeDragStop, onNodesDelete } =
     useTables();
   const { memos, onMemosChange, createMemo } = useMemoContext();
