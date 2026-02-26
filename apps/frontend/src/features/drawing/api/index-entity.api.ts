@@ -19,7 +19,7 @@ export const createIndex = async (
     ApiResponse<MutationResponse<IndexResponse>>
   >('/indexes', data);
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -29,7 +29,7 @@ export const getIndex = async (indexId: string): Promise<IndexResponse> => {
     `/indexes/${indexId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error;
+    throw data.error ?? new Error('Unknown API error')
   }
   return data.result;
 };
@@ -41,7 +41,7 @@ export const getIndexesByTableId = async (
     `/tables/${tableId}/indexes`,
   );
   if (!data.success || !data.result) {
-    throw data.error;
+    throw data.error ?? new Error('Unknown API error')
   }
   return data.result;
 };
@@ -55,7 +55,7 @@ export const changeIndexName = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -69,7 +69,7 @@ export const changeIndexType = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -81,7 +81,7 @@ export const deleteIndex = async (
     `/indexes/${indexId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -93,7 +93,7 @@ export const getIndexColumns = async (
     `/indexes/${indexId}/columns`,
   );
   if (!data.success || !data.result) {
-    throw data.error;
+    throw data.error ?? new Error('Unknown API error')
   }
   return data.result;
 };
@@ -106,7 +106,7 @@ export const addIndexColumn = async (
     ApiResponse<MutationResponse<AddIndexColumnResponse>>
   >(`/indexes/${indexId}/columns`, data);
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -118,7 +118,7 @@ export const removeIndexColumn = async (
     `/index-columns/${indexColumnId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -130,7 +130,7 @@ export const getIndexColumn = async (
     `/index-columns/${indexColumnId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error;
+    throw data.error ?? new Error('Unknown API error')
   }
   return data.result;
 };
@@ -144,7 +144,7 @@ export const changeIndexColumnPosition = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -158,7 +158,7 @@ export const changeIndexColumnSortDirection = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };

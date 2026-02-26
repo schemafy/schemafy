@@ -22,7 +22,7 @@ const getRelationshipStyle = (isNonIdentifying: boolean) => {
     : RELATIONSHIP_STYLE_TYPES.solid;
 };
 
-export const convertRelationshipSnapshotToEdge = (
+const convertRelationshipSnapshotToEdge = (
   snapshot: RelationshipSnapshotResponse,
 ): Edge => {
   const { relationship } = snapshot;

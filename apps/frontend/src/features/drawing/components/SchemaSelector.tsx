@@ -47,6 +47,7 @@ export const SchemaSelector = () => {
   const handleAddSchema = () => {
     const trimmedName = newSchemaName.trim();
     if (!validateSchemaName(trimmedName)) {
+      toast.error('Schema name must be 1-20 characters');
       return;
     }
 
@@ -73,13 +74,15 @@ export const SchemaSelector = () => {
 
   const handleSaveEdit = (schemaId: string) => {
     const trimmedName = editingSchemaName.trim();
-    if (validateSchemaName(trimmedName)) {
-      changeSchemaNameMutation.mutate({
-        schemaId,
-        data: { newName: trimmedName },
-      });
-      cancelEdit();
+    if (!validateSchemaName(trimmedName)) {
+      toast.error('Schema name must be 1-20 characters');
+      return;
     }
+    changeSchemaNameMutation.mutate({
+      schemaId,
+      data: { newName: trimmedName },
+    });
+    cancelEdit();
   };
 
   const handleCancelAdding = () => {

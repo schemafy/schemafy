@@ -66,28 +66,23 @@ export const SelectedSchemaProvider = ({
   );
 
   const { data: schemas, isLoading: isSchemasLoading } = useSchemas(projectId);
-  const createSchemaMutation = useCreateSchema(projectId);
-  const createMutationRef = useRef(createSchemaMutation);
-  createMutationRef.current = createSchemaMutation;
+  const { mutate: createSchema, isError: isCreateSchemaError } =
+    useCreateSchema(projectId);
 
   const setSelectedSchemaId = useCallback(
     (schemaId: string | null) => {
       setSelectedSchemaIdState(schemaId);
-      try {
-        if (schemaId) {
-          localStorage.setItem(storageKey, schemaId);
-        } else {
-          localStorage.removeItem(storageKey);
-        }
-      } catch (error) {
-        console.error('Failed to update localStorage:', error);
+      if (schemaId) {
+        localStorage.setItem(storageKey, schemaId);
+      } else {
+        localStorage.removeItem(storageKey);
       }
     },
     [storageKey],
   );
 
   const createInitialSchema = useCallback(() => {
-    createMutationRef.current.mutate(
+    createSchema(
       {
         projectId,
         dbVendorName: 'mysql',
@@ -97,13 +92,13 @@ export const SelectedSchemaProvider = ({
       },
       {
         onSuccess: (response) => {
-          if (response.data) {
+          if (response?.data) {
             setSelectedSchemaId(response.data.id);
           }
         },
       },
     );
-  }, [projectId, setSelectedSchemaId]);
+  }, [createSchema, projectId, setSelectedSchemaId]);
 
   useEffect(() => {
     if (selectedSchemaId && !isSchemasLoading && schemas) {
@@ -148,7 +143,7 @@ export const SelectedSchemaProvider = ({
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [storageKey]);
 
-  if (!selectedSchemaId && createSchemaMutation.isError) {
+  if (!selectedSchemaId && isCreateSchemaError) {
     return <SchemaError onRetry={createInitialSchema} />;
   }
 

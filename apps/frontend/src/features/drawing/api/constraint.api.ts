@@ -19,7 +19,7 @@ export const createConstraint = async (
     ApiResponse<MutationResponse<ConstraintResponse>>
   >('/constraints', data);
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -31,7 +31,7 @@ export const getConstraint = async (
     `/constraints/${constraintId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error;
+    throw data.error ?? new Error('Unknown API error')
   }
   return data.result;
 };
@@ -43,7 +43,7 @@ export const getConstraintsByTableId = async (
     `/tables/${tableId}/constraints`,
   );
   if (!data.success || !data.result) {
-    throw data.error;
+    throw data.error ?? new Error('Unknown API error')
   }
   return data.result;
 };
@@ -57,7 +57,7 @@ export const changeConstraintName = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -71,7 +71,7 @@ export const changeConstraintCheckExpr = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -85,7 +85,7 @@ export const changeConstraintDefaultExpr = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -97,7 +97,7 @@ export const deleteConstraint = async (
     `/constraints/${constraintId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -109,7 +109,7 @@ export const getConstraintColumns = async (
     `/constraints/${constraintId}/columns`,
   );
   if (!data.success || !data.result) {
-    throw data.error;
+    throw data.error ?? new Error('Unknown API error')
   }
   return data.result;
 };
@@ -122,7 +122,7 @@ export const addConstraintColumn = async (
     ApiResponse<MutationResponse<AddConstraintColumnResponse>>
   >(`/constraints/${constraintId}/columns`, data);
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -134,7 +134,7 @@ export const removeConstraintColumn = async (
     `/constraint-columns/${constraintColumnId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };
@@ -146,7 +146,7 @@ export const getConstraintColumn = async (
     `/constraint-columns/${constraintColumnId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error;
+    throw data.error ?? new Error('Unknown API error')
   }
   return data.result;
 };
@@ -160,7 +160,7 @@ export const changeConstraintColumnPosition = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error;
+    throw res.error ?? new Error('Unknown API error')
   }
   return res.result;
 };

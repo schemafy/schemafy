@@ -156,7 +156,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipReconnectSuccessful.current = false;
   };
 
-  const onReconnect = async (
+  const onReconnect = (
     oldRelationship: Edge,
     newConnection: Connection,
   ) => {
@@ -193,8 +193,11 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
             : newConnection.sourceHandle) ?? undefined,
       }));
     } else {
-      await deleteRelationshipMutation.mutateAsync(oldRelationship.id);
-      createRelationshipFromValidation(validation, newConnection);
+      deleteRelationshipMutation.mutate(oldRelationship.id, {
+        onSuccess: () => {
+          createRelationshipFromValidation(validation, newConnection);
+        },
+      });
     }
   };
 

@@ -63,7 +63,7 @@ export const ColumnRow = ({
   );
 };
 
-export const EditModeColumn = ({
+const EditModeColumn = ({
   column,
   isLastColumn,
   onDragStart,
@@ -132,7 +132,7 @@ export const EditModeColumn = ({
   );
 };
 
-export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
+const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
   const nameClassName = column.isPrimaryKey
     ? 'font-bold text-schemafy-yellow'
     : column.isForeignKey
@@ -155,7 +155,7 @@ export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
   );
 };
 
-export const DragHandle = ({
+const DragHandle = ({
   columnId,
   onDragStart,
   onDragEnd,
@@ -174,7 +174,7 @@ export const DragHandle = ({
   );
 };
 
-export const TypeSelector = ({
+const TypeSelector = ({
   value,
   disabled,
   onChange,
@@ -208,7 +208,7 @@ export const TypeSelector = ({
   );
 };
 
-export const ColumnConstraints = ({
+const ColumnConstraints = ({
   column,
   onUpdateColumn,
 }: ColumnConstraintsProps) => {
@@ -247,7 +247,7 @@ export const ColumnConstraints = ({
   );
 };
 
-export const ColumnBadges = ({ column }: ColumnBadgesProps) => {
+const ColumnBadges = ({ column }: ColumnBadgesProps) => {
   return (
     <div className="flex items-center gap-1">
       {column.isPrimaryKey && (
