@@ -114,12 +114,12 @@ class DeleteTableIntegrationTest {
         schemaId = schemaResult.id();
 
         var createPkTableCommand = new CreateTableCommand(
-            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci");
+            schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci", null);
         var pkTableResult = createTableUseCase.createTable(createPkTableCommand).block().result();
         pkTableId = pkTableResult.tableId();
 
         var createFkTableCommand = new CreateTableCommand(
-            schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci");
+            schemaId, "fk_table", "utf8mb4", "utf8mb4_general_ci", null);
         var fkTableResult = createTableUseCase.createTable(createFkTableCommand).block().result();
         fkTableId = fkTableResult.tableId();
 
@@ -151,7 +151,7 @@ class DeleteTableIntegrationTest {
         var createRelationshipCommand = new CreateRelationshipCommand(fkTableId,
             pkTableId,
             RelationshipKind.NON_IDENTIFYING,
-            Cardinality.ONE_TO_MANY);
+            Cardinality.ONE_TO_MANY, null);
         createRelationshipUseCase.createRelationship(createRelationshipCommand).block();
       }
 

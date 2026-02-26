@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.r2dbc.core.DatabaseClient;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -417,6 +419,54 @@ class RelationshipColumnPersistenceAdapterTest {
     void doesNotThrowWhenColumnIdNotExists() {
       StepVerifier.create(sut.deleteByColumnId("non-existent-column-id"))
           .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("동시성 및 무결성 제약")
+  class ConcurrencyAndIntegrity {
+
+    @BeforeEach
+    void setUpRelationship() {
+      var relationship = RelationshipFixture.defaultRelationship();
+      relationshipAdapter.createRelationship(relationship).block();
+    }
+
+    @Test
+    @DisplayName("낙관적 락 충돌 시 예외가 발생한다")
+    void throwsWhenOptimisticLockConflict() {
+      var column = RelationshipFixture.relationshipColumn(
+          COLUMN_ID_1, RELATIONSHIP_ID_1, PK_COLUMN_ID_1, FK_COLUMN_ID_1, 0);
+      sut.createRelationshipColumn(column).block();
+
+      var stale = relationshipColumnRepository.findById(COLUMN_ID_1).block();
+      var latest = relationshipColumnRepository.findById(COLUMN_ID_1).block();
+      assertThat(stale).isNotNull();
+      assertThat(latest).isNotNull();
+
+      latest.setSeqNo(1);
+      relationshipColumnRepository.save(latest).block();
+
+      stale.setSeqNo(2);
+      StepVerifier.create(relationshipColumnRepository.save(stale))
+          .expectError(OptimisticLockingFailureException.class)
+          .verify();
+    }
+
+    @Test
+    @DisplayName("중복 매핑 저장 시 유니크 제약 예외가 발생한다")
+    void throwsWhenDuplicateMapping() {
+      var column1 = RelationshipFixture.relationshipColumn(
+          COLUMN_ID_1, RELATIONSHIP_ID_1, PK_COLUMN_ID_1, FK_COLUMN_ID_1, 0);
+      var duplicateFk = RelationshipFixture.relationshipColumn(
+          COLUMN_ID_2, RELATIONSHIP_ID_1, PK_COLUMN_ID_2, FK_COLUMN_ID_1, 1);
+
+      sut.createRelationshipColumn(column1).block();
+
+      StepVerifier.create(sut.createRelationshipColumn(duplicateFk))
+          .expectError(DataIntegrityViolationException.class)
+          .verify();
     }
 
   }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnPositionCommand;
@@ -25,6 +26,7 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
   private final ChangeColumnPositionPort changeColumnPositionPort;
   private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<Void>> changeColumnPosition(ChangeColumnPositionCommand command) {
@@ -36,7 +38,8 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
               .flatMap(columns -> reorderColumns(column, columns, command.seqNo()))
               .flatMap(reordered -> changeColumnPositionPort
                   .changeColumnPositions(column.tableId(), reordered))
-              .thenReturn(MutationResult.<Void>of(null, column.tableId())));
+              .thenReturn(MutationResult.<Void>of(null, column.tableId())))
+          .as(transactionalOperator::transactional);
     });
   }
 

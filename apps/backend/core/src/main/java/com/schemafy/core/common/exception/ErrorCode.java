@@ -72,6 +72,10 @@ public enum ErrorCode {
       "메모 댓글을 찾을 수 없습니다."),
   ERD_SCHEMA_NAME_DUPLICATE(HttpStatus.CONFLICT, "E013", "스키마 이름이 중복됩니다."),
   ERD_TABLE_NAME_DUPLICATE(HttpStatus.CONFLICT, "E014", "테이블 이름이 중복됩니다."),
+  ERD_CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "E015",
+      "다른 사용자가 먼저 수정했습니다. 최신 상태를 확인해주세요."),
+  COMMON_DATA_INTEGRITY_VIOLATION(HttpStatus.CONFLICT, "C009",
+      "데이터 무결성 제약조건 위반입니다."),
 
   // WORKSPACE
   WORKSPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "W001", "워크스페이스를 찾을 수 없습니다."),
@@ -138,6 +142,16 @@ public enum ErrorCode {
   SHARE_LINK_INVALID_ROLE(HttpStatus.BAD_REQUEST, "S007", "권한이 유효하지 않습니다."),
   SHARE_LINK_INVALID_EXPIRATION(HttpStatus.BAD_REQUEST, "S008",
       "만료 시간은 미래 시간이어야 합니다."),
+
+  // OAuth
+  OAUTH_CODE_EXCHANGE_FAILED(HttpStatus.BAD_GATEWAY, "O001",
+      "OAuth 인증 코드 교환에 실패했습니다."),
+  OAUTH_USER_INFO_FAILED(HttpStatus.BAD_GATEWAY, "O002",
+      "OAuth 사용자 정보 조회에 실패했습니다."),
+  OAUTH_STATE_MISMATCH(HttpStatus.BAD_REQUEST, "O003",
+      "OAuth 상태값이 일치하지 않습니다."),
+  OAUTH_EMAIL_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "O004",
+      "OAuth 제공자에서 이메일을 가져올 수 없습니다."),
 
   // HMAC
   HMAC_SIGNATURE_MISSING(HttpStatus.UNAUTHORIZED, "H001",

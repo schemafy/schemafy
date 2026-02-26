@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexColumnPositionCommand;
@@ -27,6 +28,7 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
   private final GetIndexColumnByIdPort getIndexColumnByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexByIdPort getIndexByIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<Void>> changeIndexColumnPosition(
@@ -39,7 +41,8 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
                 .findIndexColumnsByIndexId(indexColumn.indexId())
                 .defaultIfEmpty(List.of())
                 .flatMap(columns -> reorderColumns(indexColumn, columns, command.seqNo()))
-                .thenReturn(MutationResult.<Void>of(null, index.tableId()))));
+                .thenReturn(MutationResult.<Void>of(null, index.tableId()))))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> reorderColumns(

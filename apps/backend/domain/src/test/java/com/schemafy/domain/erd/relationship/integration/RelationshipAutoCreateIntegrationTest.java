@@ -85,7 +85,7 @@ class RelationshipAutoCreateIntegrationTest {
     var createCommand = new CreateRelationshipCommand(fkTableId,
         pkTableId,
         RelationshipKind.NON_IDENTIFYING,
-        Cardinality.ONE_TO_MANY);
+        Cardinality.ONE_TO_MANY, null);
     var result = createRelationshipUseCase.createRelationship(createCommand).block().result();
 
     assertThat(result.name()).isEqualTo("rel_fk_table_to_pk_table");
@@ -129,13 +129,13 @@ class RelationshipAutoCreateIntegrationTest {
     var childToGrandchild = new CreateRelationshipCommand(grandchildTableId,
         childTableId,
         RelationshipKind.NON_IDENTIFYING,
-        Cardinality.ONE_TO_MANY);
+        Cardinality.ONE_TO_MANY, null);
     var childRelationship = createRelationshipUseCase.createRelationship(childToGrandchild).block().result();
 
     var parentToChild = new CreateRelationshipCommand(childTableId,
         parentTableId,
         RelationshipKind.IDENTIFYING,
-        Cardinality.ONE_TO_MANY);
+        Cardinality.ONE_TO_MANY, null);
     createRelationshipUseCase.createRelationship(parentToChild).block();
 
     StepVerifier.create(getColumnsByTableIdUseCase.getColumnsByTableId(
@@ -169,7 +169,7 @@ class RelationshipAutoCreateIntegrationTest {
     var createCommand = new CreateRelationshipCommand(fkTableId,
         pkTableId,
         RelationshipKind.NON_IDENTIFYING,
-        Cardinality.ONE_TO_MANY);
+        Cardinality.ONE_TO_MANY, null);
 
     StepVerifier.create(createRelationshipUseCase.createRelationship(createCommand))
         .expectError(InvalidValueException.class)
@@ -187,7 +187,7 @@ class RelationshipAutoCreateIntegrationTest {
 
   private String createTable(String schemaId, String name) {
     var createTableCommand = new CreateTableCommand(
-        schemaId, name, "utf8mb4", "utf8mb4_general_ci");
+        schemaId, name, "utf8mb4", "utf8mb4_general_ci", null);
     var tableResult = createTableUseCase.createTable(createTableCommand).block().result();
     return tableResult.tableId();
   }
