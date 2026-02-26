@@ -223,14 +223,25 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const typeConfig = RELATIONSHIP_TYPES[config.type];
     const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
 
-    if (relationship.kind !== newKind) {
-      changeRelationshipKindMutation.mutate({
-        relationshipId,
-        data: { kind: newKind },
-      });
-    }
+    const needsKindUpdate = relationship.kind !== newKind;
+    const needsCardinalityUpdate =
+      relationship.cardinality !== typeConfig.cardinality;
 
-    if (relationship.cardinality !== typeConfig.cardinality) {
+    if (needsKindUpdate) {
+      changeRelationshipKindMutation.mutate(
+        { relationshipId, data: { kind: newKind } },
+        {
+          onSuccess: () => {
+            if (needsCardinalityUpdate) {
+              changeRelationshipCardinalityMutation.mutate({
+                relationshipId,
+                data: { cardinality: typeConfig.cardinality },
+              });
+            }
+          },
+        },
+      );
+    } else if (needsCardinalityUpdate) {
       changeRelationshipCardinalityMutation.mutate({
         relationshipId,
         data: { cardinality: typeConfig.cardinality },
