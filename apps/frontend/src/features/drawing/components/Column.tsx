@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { Trash2, GripVertical } from 'lucide-react';
-import { DATA_TYPES, CONSTRAINTS } from '../types';
+import { CONSTRAINTS } from '../types';
 import type {
   ColumnRowProps,
   EditModeColumnProps,
@@ -10,19 +10,21 @@ import type {
   ColumnConstraintsProps,
   ColumnBadgesProps,
 } from '../types';
+import type { VendorDatatype } from '../api/vendor.types';
 import {
   Select,
   SelectGroup,
   SelectContent,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
-  SelectValue,
 } from '@/components';
 
 export const ColumnRow = ({
   column,
   isEditMode,
   isLastColumn,
+  vendorTypes,
   draggedItem,
   dragOverItem,
   onDragStart,
@@ -51,6 +53,7 @@ export const ColumnRow = ({
         <EditModeColumn
           column={column}
           isLastColumn={isLastColumn}
+          vendorTypes={vendorTypes}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
           onUpdateColumn={onUpdateColumn}
@@ -66,6 +69,7 @@ export const ColumnRow = ({
 const EditModeColumn = ({
   column,
   isLastColumn,
+  vendorTypes,
   onDragStart,
   onDragEnd,
   onUpdateColumn,
@@ -80,6 +84,14 @@ const EditModeColumn = ({
   const handleNameChange = (value: string) => {
     setLocalName(value);
     onUpdateColumn(column.id, 'name', value);
+  };
+
+  const handleTypeChange = (dataType: string, lengthScale: string) => {
+    onUpdateColumn(
+      column.id,
+      'type',
+      JSON.stringify({ dataType, lengthScale }),
+    );
   };
 
   const isFk = column.isForeignKey;
@@ -109,8 +121,10 @@ const EditModeColumn = ({
 
         <TypeSelector
           value={column.type}
+          lengthScale={column.lengthScale}
+          vendorTypes={vendorTypes}
           disabled={isFk}
-          onChange={(value) => onUpdateColumn(column.id, 'type', value)}
+          onChange={handleTypeChange}
         />
 
         <button
@@ -145,7 +159,7 @@ const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
         <div className="flex items-center gap-2">
           <span className={`text-sm ${nameClassName}`}>{column.name}</span>
           <span className="text-xs text-schemafy-dark-gray font-mono">
-            ({column.type})
+            ({formatTypeDisplay(column.type, column.lengthScale)})
           </span>
         </div>
 
@@ -170,33 +184,149 @@ const DragHandle = ({ columnId, onDragStart, onDragEnd }: DragHandleProps) => {
   );
 };
 
-const TypeSelector = ({ value, disabled, onChange }: TypeSelectorProps) => {
+const CATEGORY_LABELS: Record<string, string> = {
+  numeric: 'Numeric',
+  datetime: 'Date & Time',
+  string: 'String',
+  binary: 'Binary',
+  json: 'JSON',
+};
+
+const getCategoryGroup = (category: string): string => {
+  const prefix = category.split('_')[0];
+  return prefix;
+};
+
+const groupTypesByCategory = (
+  types: VendorDatatype[],
+): Map<string, VendorDatatype[]> => {
+  const groups = new Map<string, VendorDatatype[]>();
+  for (const type of types) {
+    const group = getCategoryGroup(type.category);
+    if (!groups.has(group)) {
+      groups.set(group, []);
+    }
+    groups.get(group)!.push(type);
+  }
+  return groups;
+};
+
+const parseLengthScale = (
+  lengthScale: string,
+): Record<string, number | null> => {
+  try {
+    return JSON.parse(lengthScale || '{}');
+  } catch {
+    return {};
+  }
+};
+
+const formatTypeDisplay = (type: string, lengthScale: string): string => {
+  const parsed = parseLengthScale(lengthScale);
+  const values = Object.values(parsed).filter((v) => v != null);
+  if (values.length === 0) return type;
+  return `${type}(${values.join(',')})`;
+};
+
+export const TypeSelector = ({
+  value,
+  lengthScale,
+  vendorTypes,
+  disabled,
+  onChange,
+}: TypeSelectorProps) => {
+  const parsed = parseLengthScale(lengthScale);
+  const selectedType = vendorTypes.find((t) => t.sqlType === value);
+  const params = selectedType?.parameters ?? [];
+  const grouped = useMemo(
+    () => groupTypesByCategory(vendorTypes),
+    [vendorTypes],
+  );
+
+  const handleTypeSelect = (newType: string) => {
+    onChange(newType, '{}');
+  };
+
+  const handleParamBlur = (paramName: string, paramValue: string) => {
+    const num = Number(paramValue);
+    const updated = {
+      ...parsed,
+      [paramName]: paramValue && !isNaN(num) ? num : null,
+    };
+    onChange(value, JSON.stringify(updated));
+  };
+
   return (
-    <Select
-      onValueChange={(value) => onChange(value)}
-      value={value}
-      disabled={disabled}
-    >
-      <SelectTrigger
-        className="text-xs font-mono p-1.5 border border-schemafy-light-gray rounded focus:outline-none w-[6rem]"
-        title={
-          disabled
-            ? 'Cannot change the type of a foreign key column'
-            : undefined
-        }
+    <div className="flex items-center gap-0.5 text-xs font-mono">
+      <Select
+        onValueChange={handleTypeSelect}
+        value={value}
+        disabled={disabled}
       >
-        <SelectValue placeholder={value} />
-      </SelectTrigger>
-      <SelectContent popover="auto">
-        <SelectGroup>
-          {DATA_TYPES.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type}
-            </SelectItem>
+        <SelectTrigger
+          className="text-xs font-mono px-2 py-1 border border-schemafy-light-gray rounded focus:outline-none w-auto min-w-[5rem] [&>span]:line-clamp-none"
+          title={
+            disabled
+              ? 'Cannot change the type of a foreign key column'
+              : undefined
+          }
+        >
+          <span className="flex items-center gap-0.5 whitespace-nowrap">
+            <span>{value || 'Type'}</span>
+            {params.length > 0 && (
+              <>
+                <span>(</span>
+                {params
+                  .sort((a, b) => a.order - b.order)
+                  .map((param, i) => (
+                    <Fragment key={param.name}>
+                      {i > 0 && <span>,</span>}
+                      <input
+                        key={`${value}-${param.name}`}
+                        type="number"
+                        defaultValue={parsed[param.name] ?? ''}
+                        placeholder={param.label}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                        }}
+                        onBlur={(e) =>
+                          handleParamBlur(param.name, e.target.value)
+                        }
+                        className="w-8 text-center bg-transparent border-b border-schemafy-dark-gray focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </Fragment>
+                  ))}
+                <span>)</span>
+              </>
+            )}
+          </span>
+        </SelectTrigger>
+        <SelectContent className="max-h-60">
+          {[...grouped.entries()].map(([group, types], i) => (
+            <SelectGroup
+              key={group}
+              className={
+                i > 0 ? 'border-t border-schemafy-light-gray mt-1 pt-1' : ''
+              }
+            >
+              <SelectLabel>{CATEGORY_LABELS[group] ?? group}</SelectLabel>
+              {types.map((type) => (
+                <SelectItem key={type.sqlType} value={type.sqlType}>
+                  {type.displayName}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+        </SelectContent>
+      </Select>
+    </div>
   );
 };
 

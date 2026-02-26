@@ -77,6 +77,7 @@ const transformColumnWithMap = (
     id: columnId,
     name: columnName,
     type: dataType || 'VARCHAR',
+    lengthScale: col.lengthScale || '',
     isPrimaryKey,
     isForeignKey,
     isNotNull,

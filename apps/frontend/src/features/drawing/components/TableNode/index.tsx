@@ -14,9 +14,28 @@ import {
   useChangeColumnPosition,
 } from '../../hooks';
 import { ConnectionHandles } from './ConnectionHandles';
+import { useVendors, useVendor } from '../../api/vendor.hooks';
+import type { VendorDatatype } from '../../api/vendor.types';
 
 const TableNodeComponent = ({ data, id }: TableProps) => {
   const [isColumnEditMode, setIsColumnEditMode] = useState(false);
+
+  const schema =
+    erdStore.erdState.state === 'loaded'
+      ? erdStore.erdState.database.schemas.find((s) => s.id === data.schemaId)
+      : undefined;
+
+  const { data: vendorsData } = useVendors();
+  const vendorDisplayName =
+    schema && vendorsData?.result
+      ? (vendorsData.result.find(
+          (v) => v.name === schema.dbVendorId.toLowerCase(),
+        )?.displayName ?? '')
+      : '';
+
+  const { data: vendorData } = useVendor(vendorDisplayName);
+  const vendorTypes: VendorDatatype[] =
+    vendorData?.result?.datatypeMappings?.types ?? [];
 
   const { columns, indexes, constraints } = data;
 
@@ -98,6 +117,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
             column={column}
             isEditMode={isColumnEditMode}
             isLastColumn={columns.length === 1}
+            vendorTypes={vendorTypes}
             draggedItem={dragAndDrop.draggedItem}
             dragOverItem={dragAndDrop.dragOverItem}
             onDragStart={dragAndDrop.handleDragStart}
