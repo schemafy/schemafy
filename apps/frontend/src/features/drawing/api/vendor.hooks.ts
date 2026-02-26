@@ -5,6 +5,7 @@ export const useVendors = () => {
   return useQuery({
     queryKey: ['vendors'],
     queryFn: listVendors,
+    staleTime: Infinity,
   });
 };
 
@@ -13,5 +14,6 @@ export const useVendor = (displayName: string) => {
     queryKey: ['vendors', displayName],
     queryFn: () => getVendor(displayName),
     enabled: !!displayName,
+    staleTime: Infinity,
   });
 };
