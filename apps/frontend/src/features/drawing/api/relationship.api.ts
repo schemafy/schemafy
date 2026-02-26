@@ -20,7 +20,7 @@ export const createRelationship = async (
     ApiResponse<MutationResponse<RelationshipResponse>>
   >('/relationships', data);
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -32,7 +32,7 @@ export const getRelationship = async (
     `/relationships/${relationshipId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -44,7 +44,7 @@ export const getRelationshipsByTableId = async (
     `/tables/${tableId}/relationships`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -58,7 +58,7 @@ export const changeRelationshipName = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -72,7 +72,7 @@ export const changeRelationshipKind = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -86,7 +86,7 @@ export const changeRelationshipCardinality = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -100,7 +100,7 @@ export const changeRelationshipExtra = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -112,7 +112,7 @@ export const deleteRelationship = async (
     `/relationships/${relationshipId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -124,7 +124,7 @@ export const getRelationshipColumns = async (
     ApiResponse<RelationshipColumnResponse[]>
   >(`/relationships/${relationshipId}/columns`);
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -137,7 +137,7 @@ export const addRelationshipColumn = async (
     ApiResponse<MutationResponse<AddRelationshipColumnResponse>>
   >(`/relationships/${relationshipId}/columns`, data);
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -149,7 +149,7 @@ export const removeRelationshipColumn = async (
     `/relationship-columns/${relationshipColumnId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -161,7 +161,7 @@ export const getRelationshipColumn = async (
     `/relationship-columns/${relationshipColumnId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -175,7 +175,7 @@ export const changeRelationshipColumnPosition = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };

@@ -16,7 +16,7 @@ export const createColumn = async (
     ApiResponse<MutationResponse<ColumnResponse>>
   >('/columns', data);
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -26,7 +26,7 @@ export const getColumn = async (columnId: string): Promise<ColumnResponse> => {
     `/columns/${columnId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -38,7 +38,7 @@ export const getColumnsByTableId = async (
     `/tables/${tableId}/columns`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -52,7 +52,7 @@ export const changeColumnName = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -66,7 +66,7 @@ export const changeColumnType = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -80,7 +80,7 @@ export const changeColumnMeta = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -94,7 +94,7 @@ export const changeColumnPosition = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -106,7 +106,7 @@ export const deleteColumn = async (
     `/columns/${columnId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };

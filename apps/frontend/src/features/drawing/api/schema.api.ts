@@ -13,7 +13,7 @@ export const createSchema = async (
     ApiResponse<MutationResponse<SchemaResponse>>
   >('/schemas', data);
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -25,7 +25,7 @@ export const getSchemasByProjectId = async (
     `/projects/${projectId}/schemas`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -35,7 +35,7 @@ export const getSchema = async (schemaId: string): Promise<SchemaResponse> => {
     `/schemas/${schemaId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -49,7 +49,7 @@ export const changeSchemaName = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -61,7 +61,7 @@ export const deleteSchema = async (
     `/schemas/${schemaId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };

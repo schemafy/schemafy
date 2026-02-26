@@ -156,10 +156,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     relationshipReconnectSuccessful.current = false;
   };
 
-  const onReconnect = (
-    oldRelationship: Edge,
-    newConnection: Connection,
-  ) => {
+  const onReconnect = (oldRelationship: Edge, newConnection: Connection) => {
     const validation = validateConnection({
       snapshots: snapshotsData,
       connection: newConnection,

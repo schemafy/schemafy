@@ -155,11 +155,7 @@ const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
   );
 };
 
-const DragHandle = ({
-  columnId,
-  onDragStart,
-  onDragEnd,
-}: DragHandleProps) => {
+const DragHandle = ({ columnId, onDragStart, onDragEnd }: DragHandleProps) => {
   return (
     <span
       draggable
@@ -174,11 +170,7 @@ const DragHandle = ({
   );
 };
 
-const TypeSelector = ({
-  value,
-  disabled,
-  onChange,
-}: TypeSelectorProps) => {
+const TypeSelector = ({ value, disabled, onChange }: TypeSelectorProps) => {
   return (
     <Select
       onValueChange={(value) => onChange(value)}

@@ -16,7 +16,7 @@ export const createTable = async (
     ApiResponse<MutationResponse<TableResponse>>
   >('/tables', data);
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -26,7 +26,7 @@ export const getTable = async (tableId: string): Promise<TableResponse> => {
     `/tables/${tableId}`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -38,7 +38,7 @@ export const getTablesBySchemaId = async (
     `/schemas/${schemaId}/tables`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -50,7 +50,7 @@ export const getTableSnapshot = async (
     `/tables/${tableId}/snapshot`,
   );
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -62,7 +62,7 @@ export const getTableSnapshots = async (
     ApiResponse<Record<string, TableSnapshotResponse>>
   >('/tables/snapshots', { params: { tableIds } });
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
@@ -76,7 +76,7 @@ export const changeTableName = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -90,7 +90,7 @@ export const changeTableMeta = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -104,7 +104,7 @@ export const changeTableExtra = async (
     data,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -116,7 +116,7 @@ export const deleteTable = async (
     `/tables/${tableId}`,
   );
   if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error')
+    throw res.error ?? new Error('Unknown API error');
   }
   return res.result;
 };
@@ -128,7 +128,7 @@ export const getSchemaWithSnapshots = async (
     ApiResponse<Record<string, TableSnapshotResponse>>
   >(`/schemas/${schemaId}/snapshots`);
   if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error')
+    throw data.error ?? new Error('Unknown API error');
   }
   return data.result;
 };
