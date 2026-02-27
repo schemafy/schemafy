@@ -2,14 +2,12 @@ package com.schemafy.core.common.security.hmac;
 
 import javax.crypto.SecretKey;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -24,8 +22,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Component
-@ConditionalOnProperty(prefix = "hmac", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class HmacVerificationFilter implements WebFilter {
 
   static final String HEADER_SIGNATURE = "X-Hmac-Signature";
