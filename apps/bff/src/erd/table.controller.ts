@@ -95,5 +95,4 @@ export class TableController {
   ) {
     return this.tableService.deleteTable(tableId, authHeader);
   }
-
 }
