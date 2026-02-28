@@ -1,4 +1,4 @@
-import { type ApiResponse, bffClient } from '@/lib/api';
+import { type ApiResponse, apiClient } from '@/lib/api';
 import type {
   MutationResponse,
   ColumnResponse,
@@ -12,7 +12,7 @@ import type {
 export const createColumn = async (
   data: CreateColumnRequest,
 ): Promise<MutationResponse<ColumnResponse>> => {
-  const { data: res } = await bffClient.post<
+  const { data: res } = await apiClient.post<
     ApiResponse<MutationResponse<ColumnResponse>>
   >('/columns', data);
   if (!res.success || !res.result) {
@@ -22,7 +22,7 @@ export const createColumn = async (
 };
 
 export const getColumn = async (columnId: string): Promise<ColumnResponse> => {
-  const { data } = await bffClient.get<ApiResponse<ColumnResponse>>(
+  const { data } = await apiClient.get<ApiResponse<ColumnResponse>>(
     `/columns/${columnId}`,
   );
   if (!data.success || !data.result) {
@@ -34,7 +34,7 @@ export const getColumn = async (columnId: string): Promise<ColumnResponse> => {
 export const getColumnsByTableId = async (
   tableId: string,
 ): Promise<ColumnResponse[]> => {
-  const { data } = await bffClient.get<ApiResponse<ColumnResponse[]>>(
+  const { data } = await apiClient.get<ApiResponse<ColumnResponse[]>>(
     `/tables/${tableId}/columns`,
   );
   if (!data.success || !data.result) {
@@ -47,7 +47,7 @@ export const changeColumnName = async (
   columnId: string,
   data: ChangeColumnNameRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/columns/${columnId}/name`,
     data,
   );
@@ -61,7 +61,7 @@ export const changeColumnType = async (
   columnId: string,
   data: ChangeColumnTypeRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/columns/${columnId}/type`,
     data,
   );
@@ -75,7 +75,7 @@ export const changeColumnMeta = async (
   columnId: string,
   data: ChangeColumnMetaRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/columns/${columnId}/meta`,
     data,
   );
@@ -89,7 +89,7 @@ export const changeColumnPosition = async (
   columnId: string,
   data: ChangeColumnPositionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/columns/${columnId}/position`,
     data,
   );
@@ -102,7 +102,7 @@ export const changeColumnPosition = async (
 export const deleteColumn = async (
   columnId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
     `/columns/${columnId}`,
   );
   if (!res.success || !res.result) {

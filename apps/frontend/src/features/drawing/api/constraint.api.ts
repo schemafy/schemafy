@@ -1,4 +1,4 @@
-import { type ApiResponse, bffClient } from '@/lib/api';
+import { type ApiResponse, apiClient } from '@/lib/api';
 import type {
   MutationResponse,
   ConstraintResponse,
@@ -15,7 +15,7 @@ import type {
 export const createConstraint = async (
   data: CreateConstraintRequest,
 ): Promise<MutationResponse<ConstraintResponse>> => {
-  const { data: res } = await bffClient.post<
+  const { data: res } = await apiClient.post<
     ApiResponse<MutationResponse<ConstraintResponse>>
   >('/constraints', data);
   if (!res.success || !res.result) {
@@ -27,7 +27,7 @@ export const createConstraint = async (
 export const getConstraint = async (
   constraintId: string,
 ): Promise<ConstraintResponse> => {
-  const { data } = await bffClient.get<ApiResponse<ConstraintResponse>>(
+  const { data } = await apiClient.get<ApiResponse<ConstraintResponse>>(
     `/constraints/${constraintId}`,
   );
   if (!data.success || !data.result) {
@@ -39,7 +39,7 @@ export const getConstraint = async (
 export const getConstraintsByTableId = async (
   tableId: string,
 ): Promise<ConstraintResponse[]> => {
-  const { data } = await bffClient.get<ApiResponse<ConstraintResponse[]>>(
+  const { data } = await apiClient.get<ApiResponse<ConstraintResponse[]>>(
     `/tables/${tableId}/constraints`,
   );
   if (!data.success || !data.result) {
@@ -52,7 +52,7 @@ export const changeConstraintName = async (
   constraintId: string,
   data: ChangeConstraintNameRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/constraints/${constraintId}/name`,
     data,
   );
@@ -66,7 +66,7 @@ export const changeConstraintCheckExpr = async (
   constraintId: string,
   data: ChangeConstraintCheckExprRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/constraints/${constraintId}/check-expr`,
     data,
   );
@@ -80,7 +80,7 @@ export const changeConstraintDefaultExpr = async (
   constraintId: string,
   data: ChangeConstraintDefaultExprRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/constraints/${constraintId}/default-expr`,
     data,
   );
@@ -93,7 +93,7 @@ export const changeConstraintDefaultExpr = async (
 export const deleteConstraint = async (
   constraintId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
     `/constraints/${constraintId}`,
   );
   if (!res.success || !res.result) {
@@ -105,7 +105,7 @@ export const deleteConstraint = async (
 export const getConstraintColumns = async (
   constraintId: string,
 ): Promise<ConstraintColumnResponse[]> => {
-  const { data } = await bffClient.get<ApiResponse<ConstraintColumnResponse[]>>(
+  const { data } = await apiClient.get<ApiResponse<ConstraintColumnResponse[]>>(
     `/constraints/${constraintId}/columns`,
   );
   if (!data.success || !data.result) {
@@ -118,7 +118,7 @@ export const addConstraintColumn = async (
   constraintId: string,
   data: AddConstraintColumnRequest,
 ): Promise<MutationResponse<AddConstraintColumnResponse>> => {
-  const { data: res } = await bffClient.post<
+  const { data: res } = await apiClient.post<
     ApiResponse<MutationResponse<AddConstraintColumnResponse>>
   >(`/constraints/${constraintId}/columns`, data);
   if (!res.success || !res.result) {
@@ -130,7 +130,7 @@ export const addConstraintColumn = async (
 export const removeConstraintColumn = async (
   constraintColumnId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
     `/constraint-columns/${constraintColumnId}`,
   );
   if (!res.success || !res.result) {
@@ -142,7 +142,7 @@ export const removeConstraintColumn = async (
 export const getConstraintColumn = async (
   constraintColumnId: string,
 ): Promise<ConstraintColumnResponse> => {
-  const { data } = await bffClient.get<ApiResponse<ConstraintColumnResponse>>(
+  const { data } = await apiClient.get<ApiResponse<ConstraintColumnResponse>>(
     `/constraint-columns/${constraintColumnId}`,
   );
   if (!data.success || !data.result) {
@@ -155,7 +155,7 @@ export const changeConstraintColumnPosition = async (
   constraintColumnId: string,
   data: ChangeConstraintColumnPositionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/constraint-columns/${constraintColumnId}/position`,
     data,
   );

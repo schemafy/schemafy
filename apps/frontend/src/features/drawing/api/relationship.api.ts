@@ -1,4 +1,4 @@
-import { type ApiResponse, bffClient } from '@/lib/api';
+import { type ApiResponse, apiClient } from '@/lib/api';
 import type {
   MutationResponse,
   RelationshipResponse,
@@ -16,7 +16,7 @@ import type {
 export const createRelationship = async (
   data: CreateRelationshipRequest,
 ): Promise<MutationResponse<RelationshipResponse>> => {
-  const { data: res } = await bffClient.post<
+  const { data: res } = await apiClient.post<
     ApiResponse<MutationResponse<RelationshipResponse>>
   >('/relationships', data);
   if (!res.success || !res.result) {
@@ -28,7 +28,7 @@ export const createRelationship = async (
 export const getRelationship = async (
   relationshipId: string,
 ): Promise<RelationshipResponse> => {
-  const { data } = await bffClient.get<ApiResponse<RelationshipResponse>>(
+  const { data } = await apiClient.get<ApiResponse<RelationshipResponse>>(
     `/relationships/${relationshipId}`,
   );
   if (!data.success || !data.result) {
@@ -40,7 +40,7 @@ export const getRelationship = async (
 export const getRelationshipsByTableId = async (
   tableId: string,
 ): Promise<RelationshipResponse[]> => {
-  const { data } = await bffClient.get<ApiResponse<RelationshipResponse[]>>(
+  const { data } = await apiClient.get<ApiResponse<RelationshipResponse[]>>(
     `/tables/${tableId}/relationships`,
   );
   if (!data.success || !data.result) {
@@ -53,7 +53,7 @@ export const changeRelationshipName = async (
   relationshipId: string,
   data: ChangeRelationshipNameRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/relationships/${relationshipId}/name`,
     data,
   );
@@ -67,7 +67,7 @@ export const changeRelationshipKind = async (
   relationshipId: string,
   data: ChangeRelationshipKindRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/relationships/${relationshipId}/kind`,
     data,
   );
@@ -81,7 +81,7 @@ export const changeRelationshipCardinality = async (
   relationshipId: string,
   data: ChangeRelationshipCardinalityRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/relationships/${relationshipId}/cardinality`,
     data,
   );
@@ -95,7 +95,7 @@ export const changeRelationshipExtra = async (
   relationshipId: string,
   data: ChangeRelationshipExtraRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/relationships/${relationshipId}/extra`,
     data,
   );
@@ -108,7 +108,7 @@ export const changeRelationshipExtra = async (
 export const deleteRelationship = async (
   relationshipId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
     `/relationships/${relationshipId}`,
   );
   if (!res.success || !res.result) {
@@ -120,7 +120,7 @@ export const deleteRelationship = async (
 export const getRelationshipColumns = async (
   relationshipId: string,
 ): Promise<RelationshipColumnResponse[]> => {
-  const { data } = await bffClient.get<
+  const { data } = await apiClient.get<
     ApiResponse<RelationshipColumnResponse[]>
   >(`/relationships/${relationshipId}/columns`);
   if (!data.success || !data.result) {
@@ -133,7 +133,7 @@ export const addRelationshipColumn = async (
   relationshipId: string,
   data: AddRelationshipColumnRequest,
 ): Promise<MutationResponse<AddRelationshipColumnResponse>> => {
-  const { data: res } = await bffClient.post<
+  const { data: res } = await apiClient.post<
     ApiResponse<MutationResponse<AddRelationshipColumnResponse>>
   >(`/relationships/${relationshipId}/columns`, data);
   if (!res.success || !res.result) {
@@ -145,7 +145,7 @@ export const addRelationshipColumn = async (
 export const removeRelationshipColumn = async (
   relationshipColumnId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
     `/relationship-columns/${relationshipColumnId}`,
   );
   if (!res.success || !res.result) {
@@ -157,7 +157,7 @@ export const removeRelationshipColumn = async (
 export const getRelationshipColumn = async (
   relationshipColumnId: string,
 ): Promise<RelationshipColumnResponse> => {
-  const { data } = await bffClient.get<ApiResponse<RelationshipColumnResponse>>(
+  const { data } = await apiClient.get<ApiResponse<RelationshipColumnResponse>>(
     `/relationship-columns/${relationshipColumnId}`,
   );
   if (!data.success || !data.result) {
@@ -170,7 +170,7 @@ export const changeRelationshipColumnPosition = async (
   relationshipColumnId: string,
   data: ChangeRelationshipColumnPositionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/relationship-columns/${relationshipColumnId}/position`,
     data,
   );

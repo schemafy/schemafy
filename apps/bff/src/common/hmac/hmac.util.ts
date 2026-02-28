@@ -65,8 +65,15 @@ export function createHmacHeaders(
   }
 
   if (config.params) {
-    const params = new URLSearchParams(config.params);
-    params.forEach((value, key) => url.searchParams.append(key, value));
+    Object.entries(config.params as Record<string, unknown>).forEach(
+      ([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((item) => url.searchParams.append(key, String(item)));
+        } else if (value !== undefined && value !== null) {
+          url.searchParams.append(key, String(value));
+        }
+      },
+    );
   }
 
   const fullPath = url.pathname + url.search;

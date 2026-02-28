@@ -1,4 +1,4 @@
-import { type ApiResponse, bffClient } from '@/lib/api';
+import { type ApiResponse, apiClient } from '@/lib/api';
 import type {
   MutationResponse,
   IndexResponse,
@@ -15,7 +15,7 @@ import type {
 export const createIndex = async (
   data: CreateIndexRequest,
 ): Promise<MutationResponse<IndexResponse>> => {
-  const { data: res } = await bffClient.post<
+  const { data: res } = await apiClient.post<
     ApiResponse<MutationResponse<IndexResponse>>
   >('/indexes', data);
   if (!res.success || !res.result) {
@@ -25,7 +25,7 @@ export const createIndex = async (
 };
 
 export const getIndex = async (indexId: string): Promise<IndexResponse> => {
-  const { data } = await bffClient.get<ApiResponse<IndexResponse>>(
+  const { data } = await apiClient.get<ApiResponse<IndexResponse>>(
     `/indexes/${indexId}`,
   );
   if (!data.success || !data.result) {
@@ -37,7 +37,7 @@ export const getIndex = async (indexId: string): Promise<IndexResponse> => {
 export const getIndexesByTableId = async (
   tableId: string,
 ): Promise<IndexResponse[]> => {
-  const { data } = await bffClient.get<ApiResponse<IndexResponse[]>>(
+  const { data } = await apiClient.get<ApiResponse<IndexResponse[]>>(
     `/tables/${tableId}/indexes`,
   );
   if (!data.success || !data.result) {
@@ -50,7 +50,7 @@ export const changeIndexName = async (
   indexId: string,
   data: ChangeIndexNameRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/indexes/${indexId}/name`,
     data,
   );
@@ -64,7 +64,7 @@ export const changeIndexType = async (
   indexId: string,
   data: ChangeIndexTypeRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/indexes/${indexId}/type`,
     data,
   );
@@ -77,7 +77,7 @@ export const changeIndexType = async (
 export const deleteIndex = async (
   indexId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
     `/indexes/${indexId}`,
   );
   if (!res.success || !res.result) {
@@ -89,7 +89,7 @@ export const deleteIndex = async (
 export const getIndexColumns = async (
   indexId: string,
 ): Promise<IndexColumnResponse[]> => {
-  const { data } = await bffClient.get<ApiResponse<IndexColumnResponse[]>>(
+  const { data } = await apiClient.get<ApiResponse<IndexColumnResponse[]>>(
     `/indexes/${indexId}/columns`,
   );
   if (!data.success || !data.result) {
@@ -102,7 +102,7 @@ export const addIndexColumn = async (
   indexId: string,
   data: AddIndexColumnRequest,
 ): Promise<MutationResponse<AddIndexColumnResponse>> => {
-  const { data: res } = await bffClient.post<
+  const { data: res } = await apiClient.post<
     ApiResponse<MutationResponse<AddIndexColumnResponse>>
   >(`/indexes/${indexId}/columns`, data);
   if (!res.success || !res.result) {
@@ -114,7 +114,7 @@ export const addIndexColumn = async (
 export const removeIndexColumn = async (
   indexColumnId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
     `/index-columns/${indexColumnId}`,
   );
   if (!res.success || !res.result) {
@@ -126,7 +126,7 @@ export const removeIndexColumn = async (
 export const getIndexColumn = async (
   indexColumnId: string,
 ): Promise<IndexColumnResponse> => {
-  const { data } = await bffClient.get<ApiResponse<IndexColumnResponse>>(
+  const { data } = await apiClient.get<ApiResponse<IndexColumnResponse>>(
     `/index-columns/${indexColumnId}`,
   );
   if (!data.success || !data.result) {
@@ -139,7 +139,7 @@ export const changeIndexColumnPosition = async (
   indexColumnId: string,
   data: ChangeIndexColumnPositionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/index-columns/${indexColumnId}/position`,
     data,
   );
@@ -153,7 +153,7 @@ export const changeIndexColumnSortDirection = async (
   indexColumnId: string,
   data: ChangeIndexColumnSortDirectionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await bffClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
     `/index-columns/${indexColumnId}/sort-direction`,
     data,
   );

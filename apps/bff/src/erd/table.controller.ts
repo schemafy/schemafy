@@ -29,14 +29,6 @@ export class TableController {
     return this.tableService.createTable(data, authHeader);
   }
 
-  @Get('tables/snapshots')
-  async getTableSnapshots(
-    @Query('tableIds') tableIds: string[],
-    @Headers('authorization') authHeader: string,
-  ) {
-    return this.tableService.getTableSnapshots(tableIds, authHeader);
-  }
-
   @Get('tables/:tableId')
   async getTable(
     @Param('tableId') tableId: string,
@@ -104,11 +96,4 @@ export class TableController {
     return this.tableService.deleteTable(tableId, authHeader);
   }
 
-  @Get('schemas/:schemaId/snapshots')
-  async getSchemaWithSnapshots(
-    @Param('schemaId') schemaId: string,
-    @AuthHeader() authHeader: string,
-  ) {
-    return this.tableService.getSchemaWithSnapshots(schemaId, authHeader);
-  }
 }
