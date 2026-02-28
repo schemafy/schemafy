@@ -24,7 +24,7 @@ type ProjectState = {
 const projectStates = new Map<string, ProjectState>();
 
 const WEBSOCKET_URL =
-  import.meta.env.VITE_BFF_WS_URL || 'ws://localhost:4000/ws/collaboration';
+  import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
 
 const HEARTBEAT_INTERVAL = 30000;
 const HEARTBEAT_TIMEOUT = 60000;

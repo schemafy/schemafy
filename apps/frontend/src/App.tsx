@@ -4,7 +4,13 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { TooltipProvider } from '@/components';
-import { LandingPage, SignInPage, SignUpPage, CanvasPage } from '@/pages';
+import {
+  LandingPage,
+  SignInPage,
+  SignUpPage,
+  CanvasPage,
+  OAuthCallbackPage,
+} from '@/pages';
 import { RequireAuth, useAuthBootstrap } from '@/features/auth';
 
 function App() {
@@ -21,6 +27,10 @@ function App() {
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/signup" element={<SignUpPage />} />
                   <Route path="/signin" element={<SignInPage />} />
+                  <Route
+                    path="/oauth/callback"
+                    element={<OAuthCallbackPage />}
+                  />
                   <Route
                     path="/canvas"
                     element={

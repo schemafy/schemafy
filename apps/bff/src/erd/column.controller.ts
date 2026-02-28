@@ -3,12 +3,12 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   Patch,
   Post,
 } from '@nestjs/common';
 import { ColumnService } from './column.service';
+import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
   ChangeColumnMetaRequest,
   ChangeColumnNameRequest,
@@ -24,7 +24,7 @@ export class ColumnController {
   @Post('columns')
   async createColumn(
     @Body() data: CreateColumnRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.columnService.createColumn(data, authHeader);
   }
@@ -32,7 +32,7 @@ export class ColumnController {
   @Get('columns/:columnId')
   async getColumn(
     @Param('columnId') columnId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.columnService.getColumn(columnId, authHeader);
   }
@@ -40,7 +40,7 @@ export class ColumnController {
   @Get('tables/:tableId/columns')
   async getColumnsByTableId(
     @Param('tableId') tableId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.columnService.getColumnsByTableId(tableId, authHeader);
   }
@@ -49,7 +49,7 @@ export class ColumnController {
   async changeColumnName(
     @Param('columnId') columnId: string,
     @Body() data: ChangeColumnNameRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.columnService.changeColumnName(columnId, data, authHeader);
   }
@@ -58,7 +58,7 @@ export class ColumnController {
   async changeColumnType(
     @Param('columnId') columnId: string,
     @Body() data: ChangeColumnTypeRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.columnService.changeColumnType(columnId, data, authHeader);
   }
@@ -67,7 +67,7 @@ export class ColumnController {
   async changeColumnMeta(
     @Param('columnId') columnId: string,
     @Body() data: ChangeColumnMetaRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.columnService.changeColumnMeta(columnId, data, authHeader);
   }
@@ -76,7 +76,7 @@ export class ColumnController {
   async changeColumnPosition(
     @Param('columnId') columnId: string,
     @Body() data: ChangeColumnPositionRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.columnService.changeColumnPosition(columnId, data, authHeader);
   }
@@ -84,7 +84,7 @@ export class ColumnController {
   @Delete('columns/:columnId')
   async deleteColumn(
     @Param('columnId') columnId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.columnService.deleteColumn(columnId, authHeader);
   }

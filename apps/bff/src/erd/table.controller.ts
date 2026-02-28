@@ -3,13 +3,13 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { TableService } from './table.service';
+import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
   ChangeTableExtraRequest,
   ChangeTableMetaRequest,
@@ -24,7 +24,7 @@ export class TableController {
   @Post('tables')
   async createTable(
     @Body() data: CreateTableRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.createTable(data, authHeader);
   }
@@ -40,7 +40,7 @@ export class TableController {
   @Get('tables/:tableId')
   async getTable(
     @Param('tableId') tableId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.getTable(tableId, authHeader);
   }
@@ -48,7 +48,7 @@ export class TableController {
   @Get('schemas/:schemaId/tables')
   async getTablesBySchemaId(
     @Param('schemaId') schemaId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.getTablesBySchemaId(schemaId, authHeader);
   }
@@ -56,16 +56,24 @@ export class TableController {
   @Get('tables/:tableId/snapshot')
   async getTableSnapshot(
     @Param('tableId') tableId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.getTableSnapshot(tableId, authHeader);
+  }
+
+  @Get('tables/snapshots')
+  async getTableSnapshots(
+    @Query('tableIds') tableIds: string[],
+    @AuthHeader() authHeader: string,
+  ) {
+    return this.tableService.getTableSnapshots(tableIds, authHeader);
   }
 
   @Patch('tables/:tableId/name')
   async changeTableName(
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableNameRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.changeTableName(tableId, data, authHeader);
   }
@@ -74,7 +82,7 @@ export class TableController {
   async changeTableMeta(
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableMetaRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.changeTableMeta(tableId, data, authHeader);
   }
@@ -83,7 +91,7 @@ export class TableController {
   async changeTableExtra(
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableExtraRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.changeTableExtra(tableId, data, authHeader);
   }
@@ -91,7 +99,7 @@ export class TableController {
   @Delete('tables/:tableId')
   async deleteTable(
     @Param('tableId') tableId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.deleteTable(tableId, authHeader);
   }
@@ -99,7 +107,7 @@ export class TableController {
   @Get('schemas/:schemaId/snapshots')
   async getSchemaWithSnapshots(
     @Param('schemaId') schemaId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.tableService.getSchemaWithSnapshots(schemaId, authHeader);
   }
