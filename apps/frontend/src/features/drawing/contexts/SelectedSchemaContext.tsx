@@ -65,7 +65,12 @@ export const SelectedSchemaProvider = ({
     },
   );
 
-  const { data: schemas, isLoading: isSchemasLoading } = useSchemas(projectId);
+  const {
+    data: schemas,
+    isLoading: isSchemasLoading,
+    isError: isSchemasError,
+    refetch: refetchSchemas,
+  } = useSchemas(projectId);
   const { mutate: createSchema, isError: isCreateSchemaError } =
     useCreateSchema(projectId);
 
@@ -101,7 +106,12 @@ export const SelectedSchemaProvider = ({
   }, [createSchema, projectId, setSelectedSchemaId]);
 
   useEffect(() => {
-    if (selectedSchemaId && !isSchemasLoading && schemas) {
+    if (
+      selectedSchemaId &&
+      !isSchemasLoading &&
+      schemas &&
+      schemas.length > 0
+    ) {
       const isValid = schemas.some((s) => s.id === selectedSchemaId);
       if (!isValid) {
         setSelectedSchemaId(schemas[0]?.id ?? null);
@@ -132,8 +142,12 @@ export const SelectedSchemaProvider = ({
     setSelectedSchemaId,
   ]);
 
-  if (!selectedSchemaId && isCreateSchemaError) {
-    return <SchemaError onRetry={createInitialSchema} />;
+  if (!selectedSchemaId && (isCreateSchemaError || isSchemasError)) {
+    return (
+      <SchemaError
+        onRetry={isSchemasError ? () => refetchSchemas() : createInitialSchema}
+      />
+    );
   }
 
   if (!selectedSchemaId) {

@@ -30,6 +30,7 @@ export const useDebouncedMutation = <TData, TError, TVariables, TContext>(
   return {
     ...mutation,
     mutate: debouncedMutateRef.current,
+    mutateAsync: undefined as never,
     flush,
   };
 };

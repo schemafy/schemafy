@@ -15,6 +15,17 @@ const commonConfig = {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+  paramsSerializer: (params: Record<string, unknown>) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item) => searchParams.append(key, String(item)));
+      } else if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+    return searchParams.toString();
+  },
 };
 
 export const apiClient = axios.create({
