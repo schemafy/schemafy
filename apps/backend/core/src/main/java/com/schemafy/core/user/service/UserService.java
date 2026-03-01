@@ -5,8 +5,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
@@ -15,6 +15,7 @@ import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -22,6 +23,7 @@ import com.schemafy.core.user.repository.entity.UserAuthProvider;
 import com.schemafy.core.user.service.dto.LoginCommand;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 import com.schemafy.core.user.service.dto.SignUpCommand;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,8 +52,8 @@ public class UserService {
   private Mono<Void> checkEmailUniqueness(String email) {
     return userRepository.existsByEmail(email)
         .flatMap(exists -> exists
-            ? Mono.error(new BusinessException(
-                ErrorCode.USER_ALREADY_EXISTS))
+            ? Mono.error(new DomainException(
+                UserErrorCode.ALREADY_EXISTS))
             : Mono.empty());
   }
 
@@ -59,8 +61,8 @@ public class UserService {
     return User.signUp(request.toUserInfo(), passwordEncoder)
         .flatMap(userRepository::save)
         .onErrorMap(DuplicateKeyException.class,
-            e -> new BusinessException(
-                ErrorCode.USER_ALREADY_EXISTS));
+            e -> new DomainException(
+                UserErrorCode.ALREADY_EXISTS));
   }
 
   private Mono<User> createDefaultWorkspace(User user) {
@@ -124,7 +126,8 @@ public class UserService {
                     "OAuth provider link duplicate detected but provider row not found on re-read. provider={}, providerUserId={}",
                     command.provider(), command.providerUserId(), e);
                 return Mono.error(
-                    new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
+                    new DomainException(
+                        CommonErrorCode.INTERNAL_SERVER_ERROR));
               }))
               .flatMap(provider -> userRepository.findById(provider.getUserId()))
               .switchIfEmpty(Mono.defer(() -> {
@@ -132,7 +135,8 @@ public class UserService {
                     "OAuth provider link duplicate detected but linked user not found. provider={}, providerUserId={}",
                     command.provider(), command.providerUserId(), e);
                 return Mono.error(
-                    new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
+                    new DomainException(
+                        CommonErrorCode.INTERNAL_SERVER_ERROR));
               }));
         });
   }
@@ -141,8 +145,8 @@ public class UserService {
     User newUser = User.signUpOAuth(command.email(), command.name());
     return userRepository.save(newUser)
         .onErrorMap(DuplicateKeyException.class,
-            e -> new BusinessException(
-                ErrorCode.USER_ALREADY_EXISTS))
+            e -> new DomainException(
+                UserErrorCode.ALREADY_EXISTS))
         .flatMap(savedUser -> saveAuthProvider(savedUser, command)
             .then(createDefaultWorkspace(savedUser)));
   }
@@ -158,7 +162,7 @@ public class UserService {
     return userRepository.findById(userId)
         .map(UserInfoResponse::from)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.USER_NOT_FOUND)));
+            new DomainException(UserErrorCode.NOT_FOUND)));
   }
 
   public Mono<User> login(LoginCommand command) {
@@ -170,7 +174,7 @@ public class UserService {
   private Mono<User> findUserByEmail(String email) {
     return userRepository.findByEmail(email)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.USER_NOT_FOUND)));
+            new DomainException(UserErrorCode.NOT_FOUND)));
   }
 
   private Mono<User> getUserByPasswordMatch(User user, String password) {
@@ -178,7 +182,7 @@ public class UserService {
         .filter(Boolean::booleanValue)
         .map(matches -> user)
         .switchIfEmpty(Mono
-            .error(new BusinessException(ErrorCode.LOGIN_FAILED)));
+            .error(new DomainException(UserErrorCode.LOGIN_FAILED)));
   }
 
   public Mono<User> getUserFromRefreshToken(String refreshToken) {
@@ -187,21 +191,21 @@ public class UserService {
       String tokenType = jwtProvider.getTokenType(refreshToken);
 
       if (!JwtProvider.REFRESH_TOKEN.equals(tokenType)) {
-        throw new BusinessException(ErrorCode.INVALID_TOKEN_TYPE);
+        throw new DomainException(AuthErrorCode.INVALID_TOKEN_TYPE);
       }
 
       if (!jwtProvider.validateToken(refreshToken, userId)) {
-        throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+        throw new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN);
       }
 
       return userId;
     })
         .flatMap(userRepository::findById)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.USER_NOT_FOUND)))
-        .onErrorMap(e -> !(e instanceof BusinessException),
-            e -> new BusinessException(
-                ErrorCode.INVALID_REFRESH_TOKEN));
+            new DomainException(UserErrorCode.NOT_FOUND)))
+        .onErrorMap(e -> !(e instanceof DomainException),
+            e -> new DomainException(
+                AuthErrorCode.INVALID_REFRESH_TOKEN));
   }
 
 }

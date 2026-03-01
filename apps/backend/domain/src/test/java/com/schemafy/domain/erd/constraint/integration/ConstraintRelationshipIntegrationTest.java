@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.domain.common.PatchField;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnMetaUseCase;
 import com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand;
@@ -37,7 +38,7 @@ import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipC
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipQuery;
 import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipUseCase;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
@@ -246,7 +247,7 @@ class ConstraintRelationshipIntegrationTest {
       // Then: Relationship 자체가 삭제됨
       StepVerifier.create(getRelationshipUseCase.getRelationship(
           new GetRelationshipQuery(relationshipId)))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
     }
 

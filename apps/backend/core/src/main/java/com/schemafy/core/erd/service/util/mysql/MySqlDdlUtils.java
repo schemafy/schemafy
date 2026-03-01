@@ -4,8 +4,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
+import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -29,7 +30,7 @@ public final class MySqlDdlUtils {
 
   public static void requireNonBlank(String value, String fieldName) {
     if (value == null || value.isBlank()) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
   }
 
@@ -41,12 +42,12 @@ public final class MySqlDdlUtils {
 
   public static String sanitizeDataType(String dataType) {
     if (dataType == null || dataType.isEmpty()) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
 
     String normalized = dataType.toUpperCase().trim();
     if (!isValidDataType(normalized)) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     return normalized;
   }
@@ -57,7 +58,7 @@ public final class MySqlDdlUtils {
 
     String trimmed = lengthScale.trim();
     if (!isValidLengthScale(trimmed)) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(trimmed);
   }
@@ -68,7 +69,7 @@ public final class MySqlDdlUtils {
 
     String trimmed = charset.trim();
     if (!isValidIdentifierFormat(trimmed)) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(trimmed);
   }
@@ -79,7 +80,7 @@ public final class MySqlDdlUtils {
 
     String trimmed = collation.trim();
     if (!isValidIdentifierFormat(trimmed)) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(trimmed);
   }
@@ -90,7 +91,7 @@ public final class MySqlDdlUtils {
 
     String normalized = indexType.toUpperCase().trim();
     if (!VALID_INDEX_TYPES.contains(normalized)) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(normalized);
   }
@@ -101,7 +102,7 @@ public final class MySqlDdlUtils {
 
     String normalized = sortDir.toUpperCase().trim();
     if (!VALID_SORT_DIRECTIONS.contains(normalized)) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(normalized);
   }
@@ -112,7 +113,7 @@ public final class MySqlDdlUtils {
 
     String normalized = action.toUpperCase().trim();
     if (!VALID_REFERENTIAL_ACTIONS.contains(normalized)) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(normalized);
   }
@@ -121,7 +122,7 @@ public final class MySqlDdlUtils {
       String columnId) {
     String name = columnIdToName.get(columnId);
     if (name == null) {
-      throw new BusinessException(ErrorCode.ERD_COLUMN_NOT_FOUND);
+      throw new DomainException(ColumnErrorCode.NOT_FOUND);
     }
     return "`" + escapeIdentifier(name) + "`";
   }

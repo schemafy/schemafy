@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexTypeCommand;
 import com.schemafy.domain.erd.index.application.port.in.ChangeIndexTypeUseCase;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexTypePort;
@@ -14,7 +15,7 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndex
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 
 import lombok.RequiredArgsConstructor;
@@ -35,7 +36,7 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
     return Mono.defer(() -> {
       IndexValidator.validateType(command.type());
       return getIndexByIdPort.findIndexById(command.indexId())
-          .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+          .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
           .flatMap(index -> getIndexesByTableIdPort.findIndexesByTableId(index.tableId())
               .defaultIfEmpty(List.of())
               .flatMap(indexes -> fetchIndexColumns(indexes)

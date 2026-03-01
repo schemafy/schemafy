@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintColumnPositionUseCase;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
@@ -14,8 +15,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintById
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -35,18 +35,24 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
       ChangeConstraintColumnPositionCommand command) {
     return Mono.defer(() -> getConstraintColumnByIdPort
         .findConstraintColumnById(command.constraintColumnId())
-        .switchIfEmpty(Mono.error(new ConstraintColumnNotExistException("Constraint column not found")))
+        .switchIfEmpty(Mono.error(new DomainException(
+            ConstraintErrorCode.COLUMN_NOT_FOUND,
+            "Constraint column not found")))
         .flatMap(constraintColumn -> getConstraintByIdPort
             .findConstraintById(constraintColumn.constraintId())
-            .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
+            .switchIfEmpty(Mono.error(new DomainException(
+                ConstraintErrorCode.NOT_FOUND,
+                "Constraint not found")))
             .flatMap(constraint -> getConstraintColumnsByConstraintIdPort
-                .findConstraintColumnsByConstraintId(constraintColumn.constraintId())
+                .findConstraintColumnsByConstraintId(
+                    constraintColumn.constraintId())
                 .defaultIfEmpty(List.of())
                 .flatMap(columns -> reorderColumns(
                     constraintColumn,
                     columns,
                     command.seqNo()))
-                .thenReturn(MutationResult.<Void>of(null, constraint.tableId())))))
+                .thenReturn(MutationResult.<Void>of(null,
+                    constraint.tableId())))))
         .as(transactionalOperator::transactional);
   }
 
@@ -55,16 +61,22 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
       List<ConstraintColumn> columns,
       int nextPosition) {
     if (columns.isEmpty()) {
-      return Mono.error(new ConstraintColumnNotExistException("Constraint column not found"));
+      return Mono.error(new DomainException(
+          ConstraintErrorCode.COLUMN_NOT_FOUND,
+          "Constraint column not found"));
     }
 
     List<ConstraintColumn> reordered = new ArrayList<>(columns);
     int currentIndex = findIndex(reordered, constraintColumn.id());
     if (currentIndex < 0) {
-      return Mono.error(new ConstraintColumnNotExistException("Constraint column not found"));
+      return Mono.error(new DomainException(
+          ConstraintErrorCode.COLUMN_NOT_FOUND,
+          "Constraint column not found"));
     }
+
     ConstraintColumn movingColumn = reordered.remove(currentIndex);
-    int normalizedPosition = Math.clamp(nextPosition, 0, columns.size() - 1);
+    int normalizedPosition = Math.clamp(nextPosition, 0,
+        columns.size() - 1);
     reordered.add(normalizedPosition, movingColumn);
 
     List<ConstraintColumn> updated = new ArrayList<>(reordered.size());
@@ -78,10 +90,12 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
     }
 
     return changeConstraintColumnPositionPort
-        .changeConstraintColumnPositions(constraintColumn.constraintId(), updated);
+        .changeConstraintColumnPositions(
+            constraintColumn.constraintId(), updated);
   }
 
-  private static int findIndex(List<ConstraintColumn> columns, String constraintColumnId) {
+  private static int findIndex(List<ConstraintColumn> columns,
+      String constraintColumnId) {
     for (int index = 0; index < columns.size(); index++) {
       if (equalsIgnoreCase(columns.get(index).id(), constraintColumnId)) {
         return index;

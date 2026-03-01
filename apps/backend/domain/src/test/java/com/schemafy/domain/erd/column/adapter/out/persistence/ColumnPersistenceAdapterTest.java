@@ -11,10 +11,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.config.R2dbcTestConfiguration;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 
 import reactor.test.StepVerifier;
@@ -228,7 +229,7 @@ class ColumnPersistenceAdapterTest {
     @DisplayName("존재하지 않는 컬럼이면 예외가 발생한다")
     void throwsWhenColumnNotExists() {
       StepVerifier.create(sut.changeColumnName("non-existent-id", "new_name"))
-          .expectError(ColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
           .verify();
     }
 

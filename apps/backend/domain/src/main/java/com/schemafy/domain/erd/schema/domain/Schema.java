@@ -1,6 +1,7 @@
 package com.schemafy.domain.erd.schema.domain;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 
 public record Schema(
     String id,
@@ -12,13 +13,13 @@ public record Schema(
 
   public Schema {
     if (id == null || id.isBlank())
-      throw new InvalidValueException("id must not be blank");
+      throw new DomainException(SchemaErrorCode.INVALID_VALUE, "id must not be blank");
     if (projectId == null || projectId.isBlank())
-      throw new InvalidValueException("projectId must not be blank");
+      throw new DomainException(SchemaErrorCode.INVALID_VALUE, "projectId must not be blank");
     if (dbVendorName == null || dbVendorName.isBlank())
-      throw new InvalidValueException("dbVendorName must not be blank");
+      throw new DomainException(SchemaErrorCode.INVALID_VALUE, "dbVendorName must not be blank");
     if (name == null || name.isBlank())
-      throw new InvalidValueException("name must not be blank");
+      throw new DomainException(SchemaErrorCode.INVALID_VALUE, "name must not be blank");
     if (charset == null || charset.isBlank())
       charset = defaultCharset(dbVendorName);
     if (collation == null || collation.isBlank())

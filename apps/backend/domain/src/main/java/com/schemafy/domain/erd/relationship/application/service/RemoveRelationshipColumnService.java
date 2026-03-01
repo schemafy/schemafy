@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
@@ -20,8 +21,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -43,11 +43,11 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
   public Mono<MutationResult<Void>> removeRelationshipColumn(RemoveRelationshipColumnCommand command) {
     return getRelationshipColumnByIdPort
         .findRelationshipColumnById(command.relationshipColumnId())
-        .switchIfEmpty(Mono.error(new RelationshipColumnNotExistException(
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.COLUMN_NOT_FOUND,
             "Relationship column not found")))
         .flatMap(relationshipColumn -> getRelationshipByIdPort
             .findRelationshipById(relationshipColumn.relationshipId())
-            .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
             .flatMap(relationship -> {
               Set<String> affectedTableIds = new HashSet<>();
               affectedTableIds.add(relationship.fkTableId());

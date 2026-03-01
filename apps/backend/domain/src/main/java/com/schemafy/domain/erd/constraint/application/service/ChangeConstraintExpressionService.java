@@ -6,7 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintCheckExprUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.ChangeConstraintDefaultExprCommand;
@@ -17,7 +17,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColu
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.domain.validator.ConstraintValidator;
 
@@ -42,7 +42,7 @@ public class ChangeConstraintExpressionService implements
     return Mono.defer(() -> {
       String normalizedCheckExpr = normalizeOptional(command.checkExpr());
       return getConstraintByIdPort.findConstraintById(command.constraintId())
-          .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
+          .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
           .flatMap(constraint -> {
             validateKind(constraint.kind(), ConstraintKind.CHECK, "check expression");
             return changeExpression(constraint, normalizedCheckExpr, constraint.defaultExpr());
@@ -56,7 +56,7 @@ public class ChangeConstraintExpressionService implements
     return Mono.defer(() -> {
       String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
       return getConstraintByIdPort.findConstraintById(command.constraintId())
-          .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
+          .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
           .flatMap(constraint -> {
             validateKind(constraint.kind(), ConstraintKind.DEFAULT, "default expression");
             return changeExpression(constraint, constraint.checkExpr(), normalizedDefaultExpr);
@@ -112,7 +112,7 @@ public class ChangeConstraintExpressionService implements
 
   private static void validateKind(ConstraintKind actual, ConstraintKind expected, String fieldName) {
     if (actual != expected) {
-      throw new InvalidValueException(
+      throw new DomainException(ConstraintErrorCode.INVALID_VALUE,
           "Only %s constraints can change %s".formatted(expected.name(), fieldName));
     }
   }

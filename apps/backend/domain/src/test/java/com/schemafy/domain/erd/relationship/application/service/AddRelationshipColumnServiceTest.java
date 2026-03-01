@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.relationship.application.port.in.AddRelationshipColumnCommand;
@@ -20,10 +21,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.CreateRelations
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnDuplicateException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipColumnNotExistException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipPositionInvalidException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
@@ -171,7 +169,7 @@ class AddRelationshipColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.addRelationshipColumn(command))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
 
       then(createRelationshipColumnPort).shouldHaveNoInteractions();
@@ -203,7 +201,7 @@ class AddRelationshipColumnServiceTest {
           .willReturn(Mono.just(List.of(existingPkColumn)));
 
       StepVerifier.create(sut.addRelationshipColumn(command))
-          .expectError(RelationshipColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.COLUMN_NOT_FOUND))
           .verify();
 
       then(createRelationshipColumnPort).shouldHaveNoInteractions();
@@ -238,7 +236,7 @@ class AddRelationshipColumnServiceTest {
           .willReturn(Mono.just(List.of(existingPkColumn)));
 
       StepVerifier.create(sut.addRelationshipColumn(command))
-          .expectError(RelationshipColumnDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.COLUMN_DUPLICATE))
           .verify();
 
       then(createRelationshipColumnPort).shouldHaveNoInteractions();
@@ -272,7 +270,7 @@ class AddRelationshipColumnServiceTest {
           .willReturn(Mono.just(List.of(existingPkColumn, newPkColumn)));
 
       StepVerifier.create(sut.addRelationshipColumn(command))
-          .expectError(RelationshipPositionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.POSITION_INVALID))
           .verify();
 
       then(createRelationshipColumnPort).shouldHaveNoInteractions();

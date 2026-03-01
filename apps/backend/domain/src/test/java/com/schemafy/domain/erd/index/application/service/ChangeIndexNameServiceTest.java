@@ -8,12 +8,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexNamePort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.IndexExistsPort;
-import com.schemafy.domain.erd.index.domain.exception.IndexNameDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNameInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
 
 import reactor.core.publisher.Mono;
@@ -68,7 +67,7 @@ class ChangeIndexNameServiceTest {
       var command = IndexFixture.changeNameCommand("index1", null);
 
       StepVerifier.create(sut.changeIndexName(command))
-          .expectError(IndexNameInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NAME_INVALID))
           .verify();
 
       then(changeIndexNamePort).shouldHaveNoInteractions();
@@ -80,7 +79,7 @@ class ChangeIndexNameServiceTest {
       var command = IndexFixture.changeNameCommand("index1", "  ");
 
       StepVerifier.create(sut.changeIndexName(command))
-          .expectError(IndexNameInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NAME_INVALID))
           .verify();
 
       then(changeIndexNamePort).shouldHaveNoInteractions();
@@ -95,7 +94,7 @@ class ChangeIndexNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexName(command))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
 
       then(changeIndexNamePort).shouldHaveNoInteractions();
@@ -113,7 +112,7 @@ class ChangeIndexNameServiceTest {
           .willReturn(Mono.just(true));
 
       StepVerifier.create(sut.changeIndexName(command))
-          .expectError(IndexNameDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NAME_DUPLICATE))
           .verify();
 
       then(changeIndexNamePort).shouldHaveNoInteractions();

@@ -13,10 +13,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.DeleteColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
-import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintPort;
@@ -162,7 +162,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.deleteColumn(command))
-          .expectError(ColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -246,7 +246,7 @@ class DeleteColumnServiceTest {
           .willReturn(Mono.just(List.of(relationshipColumn)));
 
       StepVerifier.create(sut.deleteColumn(command))
-          .expectError(ForeignKeyColumnProtectedException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.FK_PROTECTED))
           .verify();
 
       then(deleteColumnPort).shouldHaveNoInteractions();

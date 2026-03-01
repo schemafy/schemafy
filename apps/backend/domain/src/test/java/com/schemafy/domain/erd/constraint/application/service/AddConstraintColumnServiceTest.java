@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
@@ -25,11 +26,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByT
 import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper.CascadeCreatedInfo;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
@@ -142,7 +139,7 @@ class AddConstraintColumnServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.addConstraintColumn(command))
-          .expectError(ConstraintPositionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.POSITION_INVALID))
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
@@ -183,7 +180,7 @@ class AddConstraintColumnServiceTest {
       given(getConstraintByIdPort.findConstraintById(any())).willReturn(Mono.empty());
 
       StepVerifier.create(sut.addConstraintColumn(command))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
@@ -205,7 +202,7 @@ class AddConstraintColumnServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.addConstraintColumn(command))
-          .expectError(ConstraintColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_NOT_FOUND))
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
@@ -228,7 +225,7 @@ class AddConstraintColumnServiceTest {
           .willReturn(Mono.just(existingColumns));
 
       StepVerifier.create(sut.addConstraintColumn(command))
-          .expectError(ConstraintColumnDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_DUPLICATE))
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
@@ -251,7 +248,7 @@ class AddConstraintColumnServiceTest {
           .willReturn(Mono.just(existingColumns));
 
       StepVerifier.create(sut.addConstraintColumn(command))
-          .expectError(ConstraintColumnCountInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_COUNT_INVALID))
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();
@@ -300,7 +297,7 @@ class AddConstraintColumnServiceTest {
           .willReturn(Mono.just(existingColumns));
 
       StepVerifier.create(sut.addConstraintColumn(command))
-          .expectError(ConstraintPositionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.POSITION_INVALID))
           .verify();
 
       then(createConstraintColumnPort).shouldHaveNoInteractions();

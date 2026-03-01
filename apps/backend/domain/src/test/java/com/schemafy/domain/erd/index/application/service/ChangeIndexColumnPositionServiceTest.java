@@ -13,11 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnPositionPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
-import com.schemafy.domain.erd.index.domain.exception.IndexPositionInvalidException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
 
@@ -205,7 +206,7 @@ class ChangeIndexColumnPositionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
-          .expectError(IndexPositionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.POSITION_INVALID))
           .verify();
 
       then(changeIndexColumnPositionPort).shouldHaveNoInteractions();
@@ -225,7 +226,7 @@ class ChangeIndexColumnPositionServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
-          .expectError(IndexPositionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.POSITION_INVALID))
           .verify();
 
       then(changeIndexColumnPositionPort).shouldHaveNoInteractions();

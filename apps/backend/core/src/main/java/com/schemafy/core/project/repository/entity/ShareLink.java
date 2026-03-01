@@ -4,11 +4,11 @@ import java.time.Instant;
 
 import org.springframework.data.relational.core.mapping.Table;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseEntity;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
 import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -38,19 +38,19 @@ public class ShareLink extends BaseEntity {
   public static ShareLink create(String projectId, byte[] tokenHash,
       ShareLinkRole role, Instant expiresAt) {
     if (projectId == null || projectId.isBlank()) {
-      throw new BusinessException(
-          ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
+      throw new DomainException(
+          ShareLinkErrorCode.INVALID_PROJECT_ID);
     }
     if (tokenHash == null || tokenHash.length != 32) {
-      throw new BusinessException(
-          ErrorCode.SHARE_LINK_INVALID_TOKEN_HASH);
+      throw new DomainException(
+          ShareLinkErrorCode.INVALID_TOKEN_HASH);
     }
     if (role == null) {
-      throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_ROLE);
+      throw new DomainException(ShareLinkErrorCode.INVALID_ROLE);
     }
     if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
-      throw new BusinessException(
-          ErrorCode.SHARE_LINK_INVALID_EXPIRATION);
+      throw new DomainException(
+          ShareLinkErrorCode.INVALID_EXPIRATION);
     }
 
     ShareLink shareLink = new ShareLink(

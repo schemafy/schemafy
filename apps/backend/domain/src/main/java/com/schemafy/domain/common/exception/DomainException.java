@@ -1,13 +1,27 @@
 package com.schemafy.domain.common.exception;
 
-public abstract class DomainException extends RuntimeException {
+import java.util.function.Predicate;
 
-  protected DomainException(String message) {
+import lombok.Getter;
+
+@Getter
+public class DomainException extends RuntimeException {
+
+  private final DomainErrorCode errorCode;
+
+  public DomainException(DomainErrorCode errorCode, String message) {
     super(message);
+    this.errorCode = errorCode;
   }
 
-  protected DomainException(String message, Throwable cause) {
-    super(message, cause);
+  public DomainException(DomainErrorCode errorCode) {
+    super(errorCode.code());
+    this.errorCode = errorCode;
+  }
+
+  public static Predicate<Throwable> hasErrorCode(DomainErrorCode code) {
+    return e -> e instanceof DomainException de
+        && de.getErrorCode() == code;
   }
 
 }

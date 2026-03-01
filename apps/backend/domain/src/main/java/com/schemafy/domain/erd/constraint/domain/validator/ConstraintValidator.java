@@ -8,18 +8,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintExpressionRequiredException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintPositionInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
-import com.schemafy.domain.erd.constraint.domain.exception.UniqueSameAsPrimaryKeyException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 public final class ConstraintValidator {
@@ -31,11 +24,11 @@ public final class ConstraintValidator {
 
   public static void validateName(String name) {
     if (name == null || name.isBlank()) {
-      throw new ConstraintNameInvalidException("Constraint name must not be blank");
+      throw new DomainException(ConstraintErrorCode.NAME_INVALID, "Constraint name must not be blank");
     }
     String trimmed = name.trim();
     if (trimmed.length() < NAME_MIN_LENGTH || trimmed.length() > NAME_MAX_LENGTH) {
-      throw new ConstraintNameInvalidException(
+      throw new DomainException(ConstraintErrorCode.NAME_INVALID,
           "Constraint name must be between %d and %d characters".formatted(
               NAME_MIN_LENGTH,
               NAME_MAX_LENGTH));
@@ -44,7 +37,7 @@ public final class ConstraintValidator {
 
   public static void validatePosition(int seqNo) {
     if (seqNo < 0) {
-      throw new ConstraintPositionInvalidException(
+      throw new DomainException(ConstraintErrorCode.POSITION_INVALID,
           "Constraint column position must be zero or positive");
     }
   }
@@ -56,17 +49,17 @@ public final class ConstraintValidator {
     Set<Integer> uniqueSeqNos = new HashSet<>();
     for (Integer seqNo : seqNos) {
       if (seqNo == null || seqNo < 0) {
-        throw new ConstraintPositionInvalidException(
+        throw new DomainException(ConstraintErrorCode.POSITION_INVALID,
             "Constraint column position must be zero or positive");
       }
       if (!uniqueSeqNos.add(seqNo)) {
-        throw new ConstraintPositionInvalidException(
+        throw new DomainException(ConstraintErrorCode.POSITION_INVALID,
             "Constraint column positions must be unique");
       }
     }
     for (int expected = 0; expected < uniqueSeqNos.size(); expected++) {
       if (!uniqueSeqNos.contains(expected)) {
-        throw new ConstraintPositionInvalidException(
+        throw new DomainException(ConstraintErrorCode.POSITION_INVALID,
             "Constraint column positions must be contiguous starting from 0");
       }
     }
@@ -83,7 +76,7 @@ public final class ConstraintValidator {
       boolean exists = tableColumns.stream()
           .anyMatch(column -> equalsIgnoreCase(column.id(), columnId));
       if (!exists) {
-        throw new ConstraintColumnNotExistException(
+        throw new DomainException(ConstraintErrorCode.COLUMN_NOT_FOUND,
             "Column '%s' specified in constraint '%s' does not exist in the table".formatted(
                 columnId,
                 constraintName));
@@ -101,7 +94,7 @@ public final class ConstraintValidator {
     for (String columnId : columnIds) {
       String key = columnId == null ? null : columnId.toUpperCase(Locale.ROOT);
       if (!uniqueIds.add(key)) {
-        throw new ConstraintColumnDuplicateException(
+        throw new DomainException(ConstraintErrorCode.COLUMN_DUPLICATE,
             "Column '%s' is already included in constraint '%s'".formatted(
                 columnId,
                 constraintName));
@@ -116,7 +109,7 @@ public final class ConstraintValidator {
       return;
     }
     if (columnIds.size() > 1) {
-      throw new ConstraintColumnCountInvalidException(
+      throw new DomainException(ConstraintErrorCode.COLUMN_COUNT_INVALID,
           "DEFAULT constraint allows at most one column");
     }
   }
@@ -147,7 +140,7 @@ public final class ConstraintValidator {
           constraint.defaultExpr(),
           toColumnIds(columns));
       if (candidateDefinition.equals(existingDefinition)) {
-        throw new ConstraintDefinitionDuplicateException(
+        throw new DomainException(ConstraintErrorCode.DEFINITION_DUPLICATE,
             "Constraint '%s' has the same definition as existing constraint '%s'".formatted(
                 constraintName,
                 constraint.name()));
@@ -177,7 +170,7 @@ public final class ConstraintValidator {
           ? List.of()
           : constraintColumns.getOrDefault(constraint.id(), List.of());
       if (candidateColumns.equals(normalizeColumnIds(toColumnIds(columns)))) {
-        throw new UniqueSameAsPrimaryKeyException(
+        throw new DomainException(ConstraintErrorCode.UNIQUE_SAME_AS_PRIMARY_KEY,
             "Unique constraint '%s' duplicates the primary key columns of '%s'".formatted(
                 constraintName,
                 constraint.name()));
@@ -190,11 +183,11 @@ public final class ConstraintValidator {
       String checkExpr,
       String defaultExpr) {
     if (kind == ConstraintKind.CHECK && (checkExpr == null || checkExpr.isBlank())) {
-      throw new ConstraintExpressionRequiredException(
+      throw new DomainException(ConstraintErrorCode.EXPRESSION_REQUIRED,
           "CHECK constraint requires a check expression");
     }
     if (kind == ConstraintKind.DEFAULT && (defaultExpr == null || defaultExpr.isBlank())) {
-      throw new ConstraintExpressionRequiredException(
+      throw new DomainException(ConstraintErrorCode.EXPRESSION_REQUIRED,
           "DEFAULT constraint requires a default expression");
     }
   }
@@ -210,7 +203,7 @@ public final class ConstraintValidator {
         .anyMatch(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY
             && !equalsIgnoreCase(constraint.id(), ignoreConstraintId));
     if (hasPrimaryKey) {
-      throw new MultiplePrimaryKeyConstraintException(
+      throw new DomainException(ConstraintErrorCode.MULTIPLE_PRIMARY_KEY,
           "Only one primary key constraint is allowed per table");
     }
   }

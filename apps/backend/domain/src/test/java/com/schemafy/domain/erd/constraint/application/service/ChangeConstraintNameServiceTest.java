@@ -8,12 +8,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
@@ -81,7 +80,7 @@ class ChangeConstraintNameServiceTest {
       var command = ConstraintFixture.changeNameCommand("");
 
       StepVerifier.create(sut.changeConstraintName(command))
-          .expectError(ConstraintNameInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NAME_INVALID))
           .verify();
 
       then(changeConstraintNamePort).shouldHaveNoInteractions();
@@ -93,7 +92,7 @@ class ChangeConstraintNameServiceTest {
       var command = ConstraintFixture.changeNameCommand("   ");
 
       StepVerifier.create(sut.changeConstraintName(command))
-          .expectError(ConstraintNameInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NAME_INVALID))
           .verify();
 
       then(changeConstraintNamePort).shouldHaveNoInteractions();
@@ -108,7 +107,7 @@ class ChangeConstraintNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintName(command))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
 
       then(changeConstraintNamePort).shouldHaveNoInteractions();
@@ -129,7 +128,7 @@ class ChangeConstraintNameServiceTest {
           .willReturn(Mono.just(true));
 
       StepVerifier.create(sut.changeConstraintName(command))
-          .expectError(ConstraintNameDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NAME_DUPLICATE))
           .verify();
 
       then(changeConstraintNamePort).shouldHaveNoInteractions();

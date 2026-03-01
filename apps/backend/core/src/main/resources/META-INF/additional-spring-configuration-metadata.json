@@ -23,8 +23,13 @@
       "type": "java.lang.Integer",
       "description": "Time-to-live in minutes after an access operation.",
       "defaultValue": 10
+    },
+    {
+      "name": "problem.type-base-uri",
+      "type": "java.lang.String",
+      "description": "Base URI used to build RFC 9457 problem type values. Use about:blank to disable URI expansion.",
+      "defaultValue": "about:blank"
     }
   ]
 }
-
 

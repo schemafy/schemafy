@@ -5,18 +5,10 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
-import com.schemafy.domain.erd.column.domain.exception.ColumnAutoIncrementNotAllowedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnCharsetNotAllowedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnDataTypeInvalidException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnLengthRequiredException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameDuplicateException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameInvalidException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameReservedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnPositionInvalidException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnPrecisionRequiredException;
-import com.schemafy.domain.erd.column.domain.exception.MultipleAutoIncrementColumnException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 
 public final class ColumnValidator {
 
@@ -91,21 +83,21 @@ public final class ColumnValidator {
 
   public static void validateName(String name) {
     if (name == null || name.isBlank()) {
-      throw new ColumnNameInvalidException("Column name must not be blank");
+      throw new DomainException(ColumnErrorCode.NAME_INVALID, "Column name must not be blank");
     }
     String trimmed = name.trim();
     if (trimmed.length() < NAME_MIN_LENGTH || trimmed.length() > NAME_MAX_LENGTH) {
-      throw new ColumnNameInvalidException(
+      throw new DomainException(ColumnErrorCode.NAME_INVALID,
           "Column name must be between %d and %d characters".formatted(NAME_MIN_LENGTH, NAME_MAX_LENGTH));
     }
     if (!NAME_PATTERN.matcher(trimmed).matches()) {
-      throw new ColumnNameInvalidException("Column name has an invalid format");
+      throw new DomainException(ColumnErrorCode.NAME_INVALID, "Column name has an invalid format");
     }
   }
 
   public static void validateReservedKeyword(String dbVendorName, String name) {
     if (ReservedKeywordRegistry.isReserved(dbVendorName, name)) {
-      throw new ColumnNameReservedException("Column name is a reserved keyword: " + name);
+      throw new DomainException(ColumnErrorCode.NAME_RESERVED, "Column name is a reserved keyword: " + name);
     }
   }
 
@@ -121,13 +113,13 @@ public final class ColumnValidator {
         .anyMatch(column -> !equalsIgnoreCase(column.id(), ignoreColumnId)
             && equalsIgnoreCase(column.name(), target));
     if (duplicated) {
-      throw new ColumnNameDuplicateException("Column name already exists in table: " + name);
+      throw new DomainException(ColumnErrorCode.NAME_DUPLICATE, "Column name already exists in table: " + name);
     }
   }
 
   public static String normalizeDataType(String dataType) {
     if (dataType == null || dataType.isBlank()) {
-      throw new ColumnDataTypeInvalidException("Column data type must not be blank");
+      throw new DomainException(ColumnErrorCode.DATA_TYPE_INVALID, "Column data type must not be blank");
     }
     return dataType.trim().toUpperCase(Locale.ROOT);
   }
@@ -135,7 +127,7 @@ public final class ColumnValidator {
   public static void validateDataType(String dataType) {
     String normalized = normalizeDataType(dataType);
     if (!SUPPORTED_TYPES.contains(normalized)) {
-      throw new ColumnDataTypeInvalidException("Unsupported column data type: " + dataType);
+      throw new DomainException(ColumnErrorCode.DATA_TYPE_INVALID, "Unsupported column data type: " + dataType);
     }
   }
 
@@ -143,12 +135,12 @@ public final class ColumnValidator {
     String normalized = normalizeDataType(dataType);
     if (LENGTH_REQUIRED_TYPES.contains(normalized)) {
       if (lengthScale == null || lengthScale.length() == null) {
-        throw new ColumnLengthRequiredException("Length is required for data type: " + normalized);
+        throw new DomainException(ColumnErrorCode.LENGTH_REQUIRED, "Length is required for data type: " + normalized);
       }
     }
     if (PRECISION_REQUIRED_TYPES.contains(normalized)) {
       if (lengthScale == null || lengthScale.precision() == null || lengthScale.scale() == null) {
-        throw new ColumnPrecisionRequiredException(
+        throw new DomainException(ColumnErrorCode.PRECISION_REQUIRED,
             "Precision and scale are required for data type: " + normalized);
       }
     }
@@ -161,7 +153,7 @@ public final class ColumnValidator {
       String ignoreColumnId) {
     String normalized = normalizeDataType(dataType);
     if (autoIncrement && !INTEGER_TYPES.contains(normalized)) {
-      throw new ColumnAutoIncrementNotAllowedException(
+      throw new DomainException(ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED,
           "Auto increment is only allowed for integer types: " + normalized);
     }
     if (autoIncrement && columns != null) {
@@ -169,7 +161,7 @@ public final class ColumnValidator {
           .anyMatch(column -> !equalsIgnoreCase(column.id(), ignoreColumnId)
               && column.autoIncrement());
       if (exists) {
-        throw new MultipleAutoIncrementColumnException("Only one auto-increment column is allowed");
+        throw new DomainException(ColumnErrorCode.MULTIPLE_AUTO_INCREMENT, "Only one auto-increment column is allowed");
       }
     }
   }
@@ -180,14 +172,14 @@ public final class ColumnValidator {
     }
     String normalized = normalizeDataType(dataType);
     if (!TEXT_TYPES.contains(normalized)) {
-      throw new ColumnCharsetNotAllowedException(
+      throw new DomainException(ColumnErrorCode.CHARSET_NOT_ALLOWED,
           "Charset or collation is only allowed for text types: " + normalized);
     }
   }
 
   public static void validatePosition(int seqNo) {
     if (seqNo < 0) {
-      throw new ColumnPositionInvalidException("Column position must be zero or positive");
+      throw new DomainException(ColumnErrorCode.POSITION_INVALID, "Column position must be zero or positive");
     }
   }
 

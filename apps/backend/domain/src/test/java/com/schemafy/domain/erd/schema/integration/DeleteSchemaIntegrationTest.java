@@ -9,13 +9,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaUseCase;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.domain.erd.table.application.port.in.GetTablesBySchemaIdQuery;
@@ -81,7 +82,7 @@ class DeleteSchemaIntegrationTest {
 
         StepVerifier.create(getSchemaUseCase.getSchema(
             new GetSchemaQuery(schemaId)))
-            .expectError(SchemaNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NOT_FOUND))
             .verify();
 
         StepVerifier.create(getTablesBySchemaIdUseCase.getTablesBySchemaId(

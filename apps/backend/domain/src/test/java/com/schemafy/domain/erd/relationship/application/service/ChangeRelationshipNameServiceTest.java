@@ -8,12 +8,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipNamePort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.RelationshipExistsPort;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNameDuplicateException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNameInvalidException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 
 import reactor.core.publisher.Mono;
@@ -74,7 +73,7 @@ class ChangeRelationshipNameServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipName(command))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
 
       then(changeRelationshipNamePort).shouldHaveNoInteractions();
@@ -86,7 +85,7 @@ class ChangeRelationshipNameServiceTest {
       var command = RelationshipFixture.changeNameCommand("");
 
       StepVerifier.create(sut.changeRelationshipName(command))
-          .expectError(RelationshipNameInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NAME_INVALID))
           .verify();
 
       then(changeRelationshipNamePort).shouldHaveNoInteractions();
@@ -104,7 +103,7 @@ class ChangeRelationshipNameServiceTest {
           .willReturn(Mono.just(true));
 
       StepVerifier.create(sut.changeRelationshipName(command))
-          .expectError(RelationshipNameDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NAME_DUPLICATE))
           .verify();
 
       then(changeRelationshipNamePort).shouldHaveNoInteractions();

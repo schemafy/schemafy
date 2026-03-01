@@ -9,8 +9,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.config.R2dbcTestConfiguration;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.test.StepVerifier;
@@ -158,7 +159,7 @@ class TablePersistenceAdapterTest {
     @DisplayName("존재하지 않는 테이블이면 예외를 발생시킨다")
     void throwsWhenTableNotExists() {
       StepVerifier.create(sut.changeTableName("non-existent-id", "new_name"))
-          .expectError(TableNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -244,7 +245,7 @@ class TablePersistenceAdapterTest {
     @DisplayName("존재하지 않는 테이블이면 예외를 발생시킨다")
     void throwsWhenTableNotExists() {
       StepVerifier.create(sut.changeTableMeta("non-existent-id", "utf8", "utf8_general_ci"))
-          .expectError(TableNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -276,7 +277,7 @@ class TablePersistenceAdapterTest {
     @DisplayName("존재하지 않는 테이블이면 예외를 발생시킨다")
     void throwsWhenTableNotExists() {
       StepVerifier.create(sut.changeTableExtra("non-existent-id", "{\"ui\": {}}"))
-          .expectError(TableNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
           .verify();
     }
 

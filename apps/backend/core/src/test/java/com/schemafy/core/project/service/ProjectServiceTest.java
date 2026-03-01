@@ -10,10 +10,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
+import com.schemafy.core.project.exception.ProjectErrorCode;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
@@ -28,6 +28,7 @@ import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -194,9 +195,9 @@ class ProjectServiceTest {
       StepVerifier
           .create(projectService.joinProjectByShareLink(invalidToken,
               viewerUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.SHARE_LINK_INVALID)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ShareLinkErrorCode.INVALID)
           .verify();
     }
 
@@ -215,9 +216,9 @@ class ProjectServiceTest {
       StepVerifier
           .create(projectService.joinProjectByShareLink(token,
               outsiderUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.WORKSPACE_MEMBERSHIP_REQUIRED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.WORKSPACE_MEMBERSHIP_REQUIRED)
           .verify();
     }
 
@@ -343,9 +344,9 @@ class ProjectServiceTest {
       StepVerifier
           .create(projectService.joinProjectByShareLink(token,
               newUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.PROJECT_MEMBER_LIMIT_EXCEEDED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.MEMBER_LIMIT_EXCEEDED)
           .verify();
     }
 
@@ -368,9 +369,9 @@ class ProjectServiceTest {
               adminMember.getId(),
               request,
               adminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.CANNOT_CHANGE_OWN_ROLE)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.CANNOT_CHANGE_OWN_ROLE)
           .verify();
     }
 
@@ -408,9 +409,9 @@ class ProjectServiceTest {
               ownerMember.getId(),
               request,
               ownerUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.CANNOT_CHANGE_OWN_ROLE)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.CANNOT_CHANGE_OWN_ROLE)
           .verify();
     }
 
@@ -457,9 +458,9 @@ class ProjectServiceTest {
               request,
               viewerUser.getId() // VIEWER has no admin rights
           ))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.ADMIN_REQUIRED)
           .verify();
     }
 
@@ -481,9 +482,9 @@ class ProjectServiceTest {
               testProject.getId(),
               ownerMember.getId(),
               ownerUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.LAST_OWNER_CANNOT_BE_REMOVED)
           .verify();
     }
 
@@ -520,9 +521,9 @@ class ProjectServiceTest {
               adminMember.getId(),
               viewerUser.getId() // VIEWER has no admin rights
           ))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.ADMIN_REQUIRED)
           .verify();
     }
 
@@ -543,9 +544,9 @@ class ProjectServiceTest {
               testWorkspace.getId(),
               testProject.getId(),
               ownerUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_OWNER_CANNOT_BE_REMOVED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.LAST_OWNER_CANNOT_BE_REMOVED)
           .verify();
     }
 

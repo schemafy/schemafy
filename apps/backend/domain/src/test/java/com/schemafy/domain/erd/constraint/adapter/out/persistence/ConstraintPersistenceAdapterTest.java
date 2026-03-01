@@ -10,8 +10,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.config.R2dbcTestConfiguration;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 
@@ -213,7 +214,7 @@ class ConstraintPersistenceAdapterTest {
     @DisplayName("존재하지 않는 제약조건이면 예외가 발생한다")
     void throwsWhenConstraintNotExists() {
       StepVerifier.create(sut.changeConstraintName("non-existent-id", "new_name"))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -244,7 +245,7 @@ class ConstraintPersistenceAdapterTest {
     @DisplayName("존재하지 않는 제약조건이면 예외가 발생한다")
     void throwsWhenConstraintNotExists() {
       StepVerifier.create(sut.changeConstraintExpressions("non-existent-id", "value > 0", "0"))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
     }
 

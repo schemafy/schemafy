@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.index.application.port.in.CreateIndexColumnCommand;
@@ -23,11 +24,11 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPor
 import com.schemafy.domain.erd.index.application.port.out.IndexExistsPort;
 import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexNameDuplicateException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.validator.IndexValidator;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -61,7 +62,7 @@ public class CreateIndexService implements CreateIndexUseCase {
       IndexValidator.validateType(command.type());
 
       return getTableByIdPort.findTableById(command.tableId())
-          .switchIfEmpty(Mono.error(new TableNotExistException("Table not found")))
+          .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
           .flatMap(table -> {
             Mono<String> nameMono;
             if (autoName) {
@@ -70,7 +71,8 @@ public class CreateIndexService implements CreateIndexUseCase {
               nameMono = indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
                   .flatMap(exists -> {
                     if (exists) {
-                      return Mono.error(new IndexNameDuplicateException(
+                      return Mono.error(new DomainException(
+                          IndexErrorCode.NAME_DUPLICATE,
                           "Index name '%s' already exists in table".formatted(normalizedName)));
                     }
                     return Mono.just(normalizedName);
