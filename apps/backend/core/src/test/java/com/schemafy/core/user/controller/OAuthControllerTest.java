@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.config.TestSecurityConfig;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProperties;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
@@ -75,6 +74,8 @@ class OAuthControllerTest {
     cookie.setSecure(false);
     cookie.setSameSite("Strict");
     given(jwtProperties.getCookie()).willReturn(cookie);
+    given(gitHubOAuthProperties.getFrontendCallbackUrl())
+        .willReturn("http://localhost:3000/oauth/callback");
   }
 
   @Nested
@@ -136,11 +137,11 @@ class OAuthControllerTest {
               + "/oauth/github/callback?code=test-code&state=wrong-state")
           .cookie("oauth_state", "correct-state")
           .exchange()
-          .expectStatus().isBadRequest()
-          .expectBody()
-          .jsonPath("$.success").isEqualTo(false)
-          .jsonPath("$.error.code")
-          .isEqualTo(ErrorCode.OAUTH_STATE_MISMATCH.getCode());
+          .expectStatus().isFound()
+          .expectHeader().valueMatches("Location",
+              "http://localhost:3000/oauth/callback\\?provider=github&error=state_mismatch")
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*oauth_state=.*Max-Age=0.*");
     }
 
     @Test
@@ -150,11 +151,11 @@ class OAuthControllerTest {
           .uri(API_BASE_PATH
               + "/oauth/github/callback?code=test-code&state=some-state")
           .exchange()
-          .expectStatus().isBadRequest()
-          .expectBody()
-          .jsonPath("$.success").isEqualTo(false)
-          .jsonPath("$.error.code")
-          .isEqualTo(ErrorCode.OAUTH_STATE_MISMATCH.getCode());
+          .expectStatus().isFound()
+          .expectHeader().valueMatches("Location",
+              "http://localhost:3000/oauth/callback\\?provider=github&error=state_mismatch")
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*oauth_state=.*Max-Age=0.*");
     }
 
     @Test
@@ -202,8 +203,6 @@ class OAuthControllerTest {
     @DisplayName("provider error 콜백은 프론트엔드로 리다이렉트하고 state 쿠키를 만료한다")
     void callback_providerErrorRedirectsToFrontend() {
       String state = "valid-state";
-      given(gitHubOAuthProperties.getFrontendCallbackUrl())
-          .willReturn("http://localhost:3000/oauth/callback");
 
       webTestClient.get()
           .uri(API_BASE_PATH
@@ -214,7 +213,7 @@ class OAuthControllerTest {
           .exchange()
           .expectStatus().isFound()
           .expectHeader().valueMatches("Location",
-              "http://localhost:3000/oauth/callback\\?provider=github&oauth_error=access_denied&oauth_error_description=user_denied")
+              "http://localhost:3000/oauth/callback\\?provider=github&error=access_denied&error_description=user_denied")
           .expectHeader().valueMatches("Set-Cookie",
               ".*oauth_state=.*Max-Age=0.*SameSite=Lax.*");
 
@@ -233,8 +232,6 @@ class OAuthControllerTest {
       String state = "valid-state";
       given(gitHubOAuthService.exchangeCodeForToken("test-code"))
           .willReturn(Mono.error(new RuntimeException("token exchange error")));
-      given(gitHubOAuthProperties.getFrontendCallbackUrl())
-          .willReturn("http://localhost:3000/oauth/callback");
 
       webTestClient.get()
           .uri(API_BASE_PATH
@@ -244,7 +241,7 @@ class OAuthControllerTest {
           .exchange()
           .expectStatus().isFound()
           .expectHeader().valueMatches("Location",
-              ".*oauth_error=server_error.*")
+              ".*error=server_error.*")
           .expectHeader().valueMatches("Set-Cookie",
               ".*oauth_state=.*Max-Age=0.*");
     }
@@ -257,8 +254,6 @@ class OAuthControllerTest {
           .willReturn(Mono.just("gho_test_token"));
       given(gitHubOAuthService.fetchGitHubUser("gho_test_token"))
           .willReturn(Mono.error(new RuntimeException("user info error")));
-      given(gitHubOAuthProperties.getFrontendCallbackUrl())
-          .willReturn("http://localhost:3000/oauth/callback");
 
       webTestClient.get()
           .uri(API_BASE_PATH
@@ -268,7 +263,7 @@ class OAuthControllerTest {
           .exchange()
           .expectStatus().isFound()
           .expectHeader().valueMatches("Location",
-              ".*oauth_error=server_error.*")
+              ".*error=server_error.*")
           .expectHeader().valueMatches("Set-Cookie",
               ".*oauth_state=.*Max-Age=0.*");
     }
@@ -282,11 +277,11 @@ class OAuthControllerTest {
           .uri(API_BASE_PATH + "/oauth/github/callback?state=" + state)
           .cookie("oauth_state", state)
           .exchange()
-          .expectStatus().isBadRequest()
-          .expectBody()
-          .jsonPath("$.success").isEqualTo(false)
-          .jsonPath("$.error.code")
-          .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+          .expectStatus().isFound()
+          .expectHeader().valueMatches("Location",
+              ".*error=invalid_request.*error_description=code(%20|\\+)is(%20|\\+)missing.*")
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*oauth_state=.*Max-Age=0.*");
     }
 
     @Test
@@ -314,9 +309,6 @@ class OAuthControllerTest {
           "accessToken=test-access-token; Path=/; HttpOnly");
       given(jwtTokenIssuer.issueTokens("user-id", "Test User"))
           .willReturn(jwtHeaders);
-
-      given(gitHubOAuthProperties.getFrontendCallbackUrl())
-          .willReturn("http://localhost:3000/oauth/callback");
 
       webTestClient.get()
           .uri(API_BASE_PATH

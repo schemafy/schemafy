@@ -22,8 +22,8 @@ import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.dto.LoginCommand;
-import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

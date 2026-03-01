@@ -113,7 +113,7 @@ public final class MySqlDdlUtils {
 
     String normalized = action.toUpperCase().trim();
     if (!VALID_REFERENTIAL_ACTIONS.contains(normalized)) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     return Optional.of(normalized);
   }

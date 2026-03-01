@@ -134,7 +134,7 @@ class MySqlDdlUtilsTest {
 
   @Test
   void sanitizeReferentialAction_withInvalidAction_throwsException() {
-    assertThrows(BusinessException.class,
+    assertThrows(DomainException.class,
         () -> MySqlDdlUtils.sanitizeReferentialAction("INVALID"));
   }
 

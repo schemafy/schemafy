@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.OAuthErrorCode;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,16 +51,16 @@ public class GitHubOAuthService {
           if (accessToken == null) {
             log.error("GitHub token exchange failed: {}",
                 response);
-            return Mono.error(new BusinessException(
-                ErrorCode.OAUTH_CODE_EXCHANGE_FAILED));
+            return Mono.error(new DomainException(
+                OAuthErrorCode.CODE_EXCHANGE_FAILED));
           }
           return Mono.just(accessToken);
         })
-        .onErrorMap(e -> !(e instanceof BusinessException),
+        .onErrorMap(e -> !(e instanceof DomainException),
             e -> {
               log.error("GitHub token exchange error", e);
-              return new BusinessException(
-                  ErrorCode.OAUTH_CODE_EXCHANGE_FAILED);
+              return new DomainException(
+                  OAuthErrorCode.CODE_EXCHANGE_FAILED);
             });
   }
 
@@ -70,11 +70,11 @@ public class GitHubOAuthService {
         .header("Authorization", "Bearer " + accessToken)
         .retrieve()
         .bodyToMono(GitHubUserInfo.class)
-        .onErrorMap(e -> !(e instanceof BusinessException),
+        .onErrorMap(e -> !(e instanceof DomainException),
             e -> {
               log.error("GitHub user info fetch error", e);
-              return new BusinessException(
-                  ErrorCode.OAUTH_USER_INFO_FAILED);
+              return new DomainException(
+                  OAuthErrorCode.USER_INFO_FAILED);
             });
   }
 
@@ -91,13 +91,13 @@ public class GitHubOAuthService {
             .map(e -> (String) e.get("email"))
             .findFirst()
             .map(Mono::just)
-            .orElse(Mono.error(new BusinessException(
-                ErrorCode.OAUTH_EMAIL_NOT_AVAILABLE))))
-        .onErrorMap(e -> !(e instanceof BusinessException),
+            .orElse(Mono.error(new DomainException(
+                OAuthErrorCode.EMAIL_NOT_AVAILABLE))))
+        .onErrorMap(e -> !(e instanceof DomainException),
             e -> {
               log.error("GitHub email fetch error", e);
-              return new BusinessException(
-                  ErrorCode.OAUTH_USER_INFO_FAILED);
+              return new DomainException(
+                  OAuthErrorCode.USER_INFO_FAILED);
             });
   }
 

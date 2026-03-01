@@ -8,12 +8,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.common.exception.BusinessException;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintSnapshotResponse;
 import com.schemafy.core.erd.controller.dto.response.TableResponse;
 import com.schemafy.core.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -100,8 +102,10 @@ class MySqlPrimaryKeyGeneratorTest {
         new TableResponse("t1", null, "", null, null, null),
         null, null, null, null);
 
-    assertThrows(BusinessException.class,
+    DomainException exception = assertThrows(DomainException.class,
         () -> generator.generate(table, Collections.emptyMap()));
+    assertEquals(CommonErrorCode.INVALID_INPUT_VALUE,
+        exception.getErrorCode());
   }
 
   @Test
@@ -110,8 +114,10 @@ class MySqlPrimaryKeyGeneratorTest {
         new TableResponse("t1", null, null, null, null, null),
         null, null, null, null);
 
-    assertThrows(BusinessException.class,
+    DomainException exception = assertThrows(DomainException.class,
         () -> generator.generate(table, Collections.emptyMap()));
+    assertEquals(CommonErrorCode.INVALID_INPUT_VALUE,
+        exception.getErrorCode());
   }
 
   @Test
@@ -124,8 +130,10 @@ class MySqlPrimaryKeyGeneratorTest {
         new TableResponse("t1", null, "users", null, null, null),
         null, List.of(pk), null, null);
 
-    assertThrows(BusinessException.class,
+    DomainException exception = assertThrows(DomainException.class,
         () -> generator.generate(table, Collections.emptyMap()));
+    assertEquals(CommonErrorCode.INVALID_INPUT_VALUE,
+        exception.getErrorCode());
   }
 
   @Test
@@ -140,8 +148,9 @@ class MySqlPrimaryKeyGeneratorTest {
         new TableResponse("t1", null, "users", null, null, null),
         null, List.of(pk), null, null);
 
-    assertThrows(BusinessException.class,
+    DomainException exception = assertThrows(DomainException.class,
         () -> generator.generate(table, Map.of("col1", "id")));
+    assertEquals(ColumnErrorCode.NOT_FOUND, exception.getErrorCode());
   }
 
   @Test

@@ -9,11 +9,11 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.core.erd.controller.dto.response.ConstraintSnapshotResponse;
 import com.schemafy.core.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 import static com.schemafy.core.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
@@ -37,7 +37,7 @@ public class MySqlPrimaryKeyGenerator {
       Map<String, String> columnIdToName) {
     List<ConstraintColumnResponse> cols = getColumns(pk);
     if (cols.isEmpty()) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
 
     String columns = cols.stream()

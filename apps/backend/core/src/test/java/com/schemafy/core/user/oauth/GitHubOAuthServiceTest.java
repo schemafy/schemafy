@@ -19,8 +19,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.OAuthErrorCode;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -139,9 +139,9 @@ class GitHubOAuthServiceTest {
           .create(
               gitHubOAuthService.exchangeCodeForToken("bad-code"))
           .expectErrorMatches(
-              e -> e instanceof BusinessException
-                  && ((BusinessException) e)
-                      .getErrorCode() == ErrorCode.OAUTH_CODE_EXCHANGE_FAILED)
+              e -> e instanceof DomainException
+                  && ((DomainException) e)
+                      .getErrorCode() == OAuthErrorCode.CODE_EXCHANGE_FAILED)
           .verify();
     }
 
@@ -180,9 +180,9 @@ class GitHubOAuthServiceTest {
           .create(
               gitHubOAuthService.fetchGitHubUser("invalid_token"))
           .expectErrorMatches(
-              e -> e instanceof BusinessException
-                  && ((BusinessException) e)
-                      .getErrorCode() == ErrorCode.OAUTH_USER_INFO_FAILED)
+              e -> e instanceof DomainException
+                  && ((DomainException) e)
+                      .getErrorCode() == OAuthErrorCode.USER_INFO_FAILED)
           .verify();
     }
 
@@ -223,9 +223,9 @@ class GitHubOAuthServiceTest {
           .create(gitHubOAuthService
               .fetchGitHubUserEmail("gho_test_token"))
           .expectErrorMatches(
-              e -> e instanceof BusinessException
-                  && ((BusinessException) e)
-                      .getErrorCode() == ErrorCode.OAUTH_EMAIL_NOT_AVAILABLE)
+              e -> e instanceof DomainException
+                  && ((DomainException) e)
+                      .getErrorCode() == OAuthErrorCode.EMAIL_NOT_AVAILABLE)
           .verify();
     }
 
@@ -239,9 +239,9 @@ class GitHubOAuthServiceTest {
           .create(gitHubOAuthService
               .fetchGitHubUserEmail("gho_test_token"))
           .expectErrorMatches(
-              e -> e instanceof BusinessException
-                  && ((BusinessException) e)
-                      .getErrorCode() == ErrorCode.OAUTH_USER_INFO_FAILED)
+              e -> e instanceof DomainException
+                  && ((DomainException) e)
+                      .getErrorCode() == OAuthErrorCode.USER_INFO_FAILED)
           .verify();
     }
 
