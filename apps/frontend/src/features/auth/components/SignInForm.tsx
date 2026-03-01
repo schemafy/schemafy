@@ -77,7 +77,7 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
       resetForm();
       navigate('/');
     } catch {
-      // 에러 토스트는 인터셉터가 처리
+      // 에러 토스트는 signIn 내부에서 처리
     } finally {
       setIsSubmitting(false);
     }

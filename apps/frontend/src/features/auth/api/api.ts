@@ -1,5 +1,6 @@
 import type { AxiosResponse } from 'axios';
 import { apiClient, publicClient } from '@/lib/api/client';
+import { handleApiError } from '@/lib/api/error-handler';
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
 
 import { authStore } from '@/store/auth.store';
@@ -18,19 +19,33 @@ const handleTokenResponse = (response: AxiosResponse): string => {
 };
 
 export const signUp = async (data: SignUpRequest): Promise<AuthResponse> => {
-  const response = await publicClient.post<AuthResponse>('/users/signup', data);
+  try {
+    const response = await publicClient.post<AuthResponse>(
+      '/users/signup',
+      data,
+    );
 
-  handleTokenResponse(response);
+    handleTokenResponse(response);
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
 };
 
 export const signIn = async (data: SignInRequest): Promise<AuthResponse> => {
-  const response = await publicClient.post<AuthResponse>('/users/login', data);
+  try {
+    const response = await publicClient.post<AuthResponse>(
+      '/users/login',
+      data,
+    );
 
-  handleTokenResponse(response);
+    handleTokenResponse(response);
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
 };
 
 export const refreshToken = async (): Promise<string> => {
