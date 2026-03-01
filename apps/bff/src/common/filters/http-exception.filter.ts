@@ -17,10 +17,7 @@ import {
   ErrorCategoryType,
 } from '../types/api-response.types.js';
 import { getErrorInfo } from '../constants/error-messages.js';
-import {
-  getErrorCodeFromStatus,
-  getMessageFromStatus,
-} from '../constants/http-status-maps.js';
+import { getErrorCodeFromStatus } from '../constants/http-status-maps.js';
 
 type BackendProblemDetails = {
   type?: string;
@@ -81,51 +78,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (this.isProblemDetailsResponse(rawData)) {
       const reason =
         typeof rawData.reason === 'string' ? rawData.reason : undefined;
-      const detail =
-        typeof rawData.detail === 'string' ? rawData.detail : undefined;
-      const title =
-        typeof rawData.title === 'string' ? rawData.title : undefined;
       const errorCode = reason ?? getErrorCodeFromStatus(status);
-      const fallbackMessage = detail ?? title ?? getMessageFromStatus(status);
-      const errorInfo = getErrorInfo(errorCode, fallbackMessage);
+      const errorInfo = getErrorInfo(errorCode);
 
       return {
         status,
         errorResponse: this.createErrorResponse(
           errorCode,
-          errorInfo.message,
           errorInfo.category,
           this.extractProblemDetails(rawData),
         ),
       };
     }
 
-    if (this.isValidBackendResponse(rawData)) {
-      const { code, message, details } = rawData.error;
-      const errorCode = code ?? getErrorCodeFromStatus(status);
-      const errorInfo = getErrorInfo(
-        errorCode,
-        message ?? getMessageFromStatus(status),
-      );
-
-      const mergedDetails = this.mergeDetails(details, message);
-
-      return {
-        status,
-        errorResponse: this.createErrorResponse(
-          errorCode,
-          errorInfo.message,
-          errorInfo.category,
-          mergedDetails,
-        ),
-      };
-    }
-
-    return this.buildErrorResult(
-      status,
-      getErrorCodeFromStatus(status),
-      getMessageFromStatus(status),
-    );
+    return this.buildErrorResult(status, getErrorCodeFromStatus(status));
   }
 
   private handleNetworkError(error: AxiosError, context: string) {
@@ -134,7 +100,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return this.buildErrorResult(
         HttpStatus.SERVICE_UNAVAILABLE,
         ErrorCode.BACKEND_UNREACHABLE,
-        'Service is temporarily unavailable. Please try again later.',
         ErrorCategory.USER_FEEDBACK,
       );
     }
@@ -144,7 +109,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return this.buildErrorResult(
         HttpStatus.GATEWAY_TIMEOUT,
         ErrorCode.BACKEND_TIMEOUT,
-        'Request timed out. Please try again.',
         ErrorCategory.USER_FEEDBACK,
       );
     }
@@ -153,7 +117,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return this.buildErrorResult(
       HttpStatus.INTERNAL_SERVER_ERROR,
       ErrorCode.INTERNAL_SERVER_ERROR,
-      'Something went wrong. Please try again later.',
       ErrorCategory.USER_FEEDBACK,
     );
   }
@@ -165,18 +128,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       `${context} - HttpException: ${status} - ${exception.message}`,
     );
 
-    const { message, details } = this.extractValidationInfo(
-      exception.message,
-      exception.getResponse(),
-    );
-
     return {
       status,
       errorResponse: this.createErrorResponse(
         getErrorCodeFromStatus(status),
-        message,
         ErrorCategory.USER_FEEDBACK,
-        details,
       ),
     };
   }
@@ -193,9 +149,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return this.buildErrorResult(
       HttpStatus.INTERNAL_SERVER_ERROR,
       ErrorCode.INTERNAL_SERVER_ERROR,
-      this.isProduction
-        ? 'Something went wrong. Please try again later.'
-        : errorMessage,
       ErrorCategory.USER_FEEDBACK,
     );
   }
@@ -203,42 +156,24 @@ export class HttpExceptionFilter implements ExceptionFilter {
   private buildErrorResult(
     status: number,
     code: string,
-    message: string,
     category: ErrorCategoryType = ErrorCategory.SILENT,
   ) {
     return {
       status,
-      errorResponse: this.createErrorResponse(code, message, category),
+      errorResponse: this.createErrorResponse(code, category),
     };
   }
 
   private createErrorResponse(
     code: string,
-    message: string,
     category: ErrorCategoryType,
     details?: Record<string, unknown>,
   ) {
-    const error: ApiError = { code, message, category };
+    const error: ApiError = { code, category };
     if (!this.isProduction && details) {
       error.details = details;
     }
     return error;
-  }
-
-  private isValidBackendResponse(data: unknown): data is {
-    error: {
-      code?: string;
-      message?: string;
-      details?: Record<string, unknown>;
-    };
-  } {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'error' in data &&
-      typeof (data as { error: unknown }).error === 'object' &&
-      (data as { error: unknown }).error !== null
-    );
   }
 
   private isProblemDetailsResponse(
@@ -249,48 +184,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     const problem = data as Record<string, unknown>;
-    return (
-      'type' in problem ||
-      'title' in problem ||
-      'status' in problem ||
-      'detail' in problem ||
-      'instance' in problem
-    );
-  }
-
-  private extractValidationInfo(defaultMessage: string, response: unknown) {
-    if (
-      typeof response !== 'object' ||
-      response === null ||
-      !('message' in response)
-    ) {
-      return { message: defaultMessage };
-    }
-
-    const responseMessage = (response as { message: unknown }).message;
-
-    if (Array.isArray(responseMessage)) {
-      return {
-        message: responseMessage.join(', '),
-        details: { validationErrors: responseMessage },
-      };
-    }
-
-    return { message: String(responseMessage) };
-  }
-
-  private mergeDetails(
-    details?: Record<string, unknown>,
-    originalMessage?: string,
-  ): Record<string, unknown> | undefined {
-    if (!originalMessage && !details) {
-      return undefined;
-    }
-
-    return {
-      ...details,
-      ...(originalMessage && { originalMessage }),
-    };
+    return 'reason' in problem || ('title' in problem && 'status' in problem);
   }
 
   private extractProblemDetails(

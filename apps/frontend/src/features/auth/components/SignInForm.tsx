@@ -52,7 +52,6 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
     validationRules,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string>('');
   const navigate = useNavigate();
 
   const handleGithubLogin = () => {
@@ -61,7 +60,6 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitError('');
     const hasErrors = Object.keys(errors).length > 0;
     if (hasErrors) {
       return;
@@ -70,24 +68,16 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
     setIsSubmitting(true);
 
     try {
-      const response = await signIn({
+      const user = await signIn({
         email: form.email,
         password: form.password,
       });
 
-      if (response.success) {
-        if (response.result) {
-          authStore.setUser(response.result);
-        }
-        resetForm();
-        navigate('/');
-      } else {
-        setSubmitError(response.error?.message || '로그인에 실패했습니다.');
-      }
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : '로그인에 실패했습니다.',
-      );
+      authStore.setUser(user);
+      resetForm();
+      navigate('/');
+    } catch {
+      // publicClient interceptor
     } finally {
       setIsSubmitting(false);
     }
@@ -124,9 +114,6 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
         <Button type="submit" disabled={isSubmitting} round fullWidth>
           {isSubmitting ? 'Sign In...' : 'Sign In'}
         </Button>
-        {submitError && (
-          <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
-        )}
         {oauthError && (
           <p className="text-red-600 text-sm mt-2 mb-2">{oauthError}</p>
         )}

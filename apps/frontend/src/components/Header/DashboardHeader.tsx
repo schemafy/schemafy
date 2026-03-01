@@ -6,11 +6,11 @@ import { logout } from '@/features/auth/api';
 
 export const DashboardHeader = () => {
   const handleLogout = async () => {
-    const response = await logout();
-    if (response.success) {
+    try {
+      await logout();
       authStore.clearAuth();
-    } else {
-      console.error(response.error?.message || 'Failed to sign out');
+    } catch (error) {
+      console.error('Failed to sign out', error);
     }
   };
 

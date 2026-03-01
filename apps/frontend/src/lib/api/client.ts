@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { authStore } from '../../store/auth.store';
 import { refreshToken } from '@/features/auth/api';
+import { handleApiError } from './error-handler';
 
 const API_BASE_URL: string =
   import.meta.env.VITE_BASE_URL || 'http://localhost:4000/api/v1.0';
@@ -84,3 +85,6 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+apiClient.interceptors.response.use((response) => response, handleApiError);
+publicClient.interceptors.response.use((response) => response, handleApiError);

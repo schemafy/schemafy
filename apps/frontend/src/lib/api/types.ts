@@ -8,8 +8,7 @@ export type ErrorCategoryType =
   (typeof ErrorCategory)[keyof typeof ErrorCategory];
 
 export type ApiError = {
-  code?: string;
-  message: string;
-  category?: ErrorCategoryType;
+  code: string;
+  category: ErrorCategoryType;
   details?: Record<string, unknown>;
 };

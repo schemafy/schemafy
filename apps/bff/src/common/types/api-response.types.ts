@@ -9,7 +9,6 @@ export type ErrorCategoryType =
 
 export type ApiError = {
   code: string;
-  message: string;
   category: ErrorCategoryType;
   details?: Record<string, unknown>;
 };
