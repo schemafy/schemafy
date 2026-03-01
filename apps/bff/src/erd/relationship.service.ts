@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { BackendClientService } from '../common/backend-client/backend-client.service';
-import { ApiResponse } from '../common/types/api-response.types';
 import type {
   AddRelationshipColumnRequest,
   AddRelationshipColumnResponse,
@@ -22,9 +21,9 @@ export class RelationshipService {
   async createRelationship(
     data: CreateRelationshipRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse<RelationshipResponse>>> {
+  ): Promise<MutationResponse<RelationshipResponse>> {
     const response = await this.backendClient.client.post<
-      ApiResponse<MutationResponse<RelationshipResponse>>
+      MutationResponse<RelationshipResponse>
     >(
       '/api/v1.0/relationships',
       data,
@@ -36,10 +35,8 @@ export class RelationshipService {
   async getRelationship(
     relationshipId: string,
     authHeader: string,
-  ): Promise<ApiResponse<RelationshipResponse>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<RelationshipResponse>
-    >(
+  ): Promise<RelationshipResponse> {
+    const response = await this.backendClient.client.get<RelationshipResponse>(
       `/api/v1.0/relationships/${relationshipId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -49,9 +46,9 @@ export class RelationshipService {
   async getRelationshipsByTableId(
     tableId: string,
     authHeader: string,
-  ): Promise<ApiResponse<RelationshipResponse[]>> {
+  ): Promise<RelationshipResponse[]> {
     const response = await this.backendClient.client.get<
-      ApiResponse<RelationshipResponse[]>
+      RelationshipResponse[]
     >(
       `/api/v1.0/tables/${tableId}/relationships`,
       this.backendClient.getAuthConfig(authHeader),
@@ -63,10 +60,8 @@ export class RelationshipService {
     relationshipId: string,
     data: ChangeRelationshipNameRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}/name`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -78,10 +73,8 @@ export class RelationshipService {
     relationshipId: string,
     data: ChangeRelationshipKindRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}/kind`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -93,10 +86,8 @@ export class RelationshipService {
     relationshipId: string,
     data: ChangeRelationshipCardinalityRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}/cardinality`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -108,10 +99,8 @@ export class RelationshipService {
     relationshipId: string,
     data: ChangeRelationshipExtraRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}/extra`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -122,10 +111,8 @@ export class RelationshipService {
   async deleteRelationship(
     relationshipId: string,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.delete<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -135,9 +122,9 @@ export class RelationshipService {
   async getRelationshipColumns(
     relationshipId: string,
     authHeader: string,
-  ): Promise<ApiResponse<RelationshipColumnResponse[]>> {
+  ): Promise<RelationshipColumnResponse[]> {
     const response = await this.backendClient.client.get<
-      ApiResponse<RelationshipColumnResponse[]>
+      RelationshipColumnResponse[]
     >(
       `/api/v1.0/relationships/${relationshipId}/columns`,
       this.backendClient.getAuthConfig(authHeader),
@@ -149,9 +136,9 @@ export class RelationshipService {
     relationshipId: string,
     data: AddRelationshipColumnRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse<AddRelationshipColumnResponse>>> {
+  ): Promise<MutationResponse<AddRelationshipColumnResponse>> {
     const response = await this.backendClient.client.post<
-      ApiResponse<MutationResponse<AddRelationshipColumnResponse>>
+      MutationResponse<AddRelationshipColumnResponse>
     >(
       `/api/v1.0/relationships/${relationshipId}/columns`,
       data,
@@ -163,10 +150,8 @@ export class RelationshipService {
   async removeRelationshipColumn(
     relationshipColumnId: string,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.delete<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/relationship-columns/${relationshipColumnId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -176,13 +161,12 @@ export class RelationshipService {
   async getRelationshipColumn(
     relationshipColumnId: string,
     authHeader: string,
-  ): Promise<ApiResponse<RelationshipColumnResponse>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<RelationshipColumnResponse>
-    >(
-      `/api/v1.0/relationship-columns/${relationshipColumnId}`,
-      this.backendClient.getAuthConfig(authHeader),
-    );
+  ): Promise<RelationshipColumnResponse> {
+    const response =
+      await this.backendClient.client.get<RelationshipColumnResponse>(
+        `/api/v1.0/relationship-columns/${relationshipColumnId}`,
+        this.backendClient.getAuthConfig(authHeader),
+      );
     return response.data;
   }
 
@@ -190,10 +174,8 @@ export class RelationshipService {
     relationshipColumnId: string,
     data: ChangeRelationshipColumnPositionRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationship-columns/${relationshipColumnId}/position`,
       data,
       this.backendClient.getAuthConfig(authHeader),

@@ -222,7 +222,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (!this.isProduction && details) {
       error.details = details;
     }
-    return { success: false, result: null, error };
+    return error;
   }
 
   private isValidBackendResponse(data: unknown): data is {

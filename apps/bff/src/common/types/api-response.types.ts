@@ -14,12 +14,6 @@ export type ApiError = {
   details?: Record<string, unknown>;
 };
 
-export type ApiResponse<T = unknown> = {
-  success: boolean;
-  result: T | null;
-  error: ApiError | null;
-};
-
 export const ErrorCode = {
   BAD_REQUEST: 'BAD_REQUEST',
   UNAUTHORIZED: 'UNAUTHORIZED',
