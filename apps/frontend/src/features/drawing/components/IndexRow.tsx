@@ -21,18 +21,18 @@ import {
   ColumnItem,
   AddColumnSelector,
 } from './EditableRowBase';
-import { getColumnName } from '../utils/columnHelpers';
+import { getColumnName } from '../utils/columnUtils';
 
 export const IndexRow = ({
   index,
   tableColumns,
   isEditMode,
   onDeleteIndex,
-  onChangeIndexName,
-  onChangeIndexType,
+  onUpdateIndexName,
+  onUpdateIndexType,
   onAddColumnToIndex,
   onRemoveColumnFromIndex,
-  onChangeSortDir,
+  onUpdateSortDir,
 }: IndexRowProps) => {
   return (
     <EditableRowBase
@@ -47,11 +47,11 @@ export const IndexRow = ({
           index={item}
           tableColumns={cols}
           onDeleteIndex={onDeleteIndex}
-          onChangeIndexName={onChangeIndexName}
-          onChangeIndexType={onChangeIndexType}
+          onUpdateIndexName={onUpdateIndexName}
+          onUpdateIndexType={onUpdateIndexType}
           onAddColumnToIndex={onAddColumnToIndex}
           onRemoveColumnFromIndex={onRemoveColumnFromIndex}
-          onChangeSortDir={onChangeSortDir}
+          onUpdateSortDir={onUpdateSortDir}
         />
       )}
     />
@@ -94,11 +94,11 @@ export const EditModeIndex = ({
   index,
   tableColumns,
   onDeleteIndex,
-  onChangeIndexName,
-  onChangeIndexType,
+  onUpdateIndexName,
+  onUpdateIndexType,
   onAddColumnToIndex,
   onRemoveColumnFromIndex,
-  onChangeSortDir,
+  onUpdateSortDir,
 }: EditModeIndexProps) => {
   const availableColumns = tableColumns.filter(
     (col) => !index.columns.some((idxCol) => idxCol.columnId === col.id),
@@ -110,11 +110,11 @@ export const EditModeIndex = ({
         <EditableNameInput
           name={index.name}
           placeholder="Index name"
-          onNameChange={(newName) => onChangeIndexName(index.id, newName)}
+          onNameChange={(newName) => onUpdateIndexName(index.id, newName)}
         />
         <Select
           onValueChange={(value) =>
-            onChangeIndexType(index.id, value as IndexType)
+            onUpdateIndexType(index.id, value as IndexType)
           }
           value={index.type}
         >
@@ -145,15 +145,11 @@ export const EditModeIndex = ({
             <ColumnItem
               key={indexColumn.id}
               columnName={getColumnName(tableColumns, indexColumn.columnId)}
-              onRemove={() => onRemoveColumnFromIndex(index.id, indexColumn.id)}
+              onRemove={() => onRemoveColumnFromIndex(indexColumn.id)}
               additionalControls={
                 <Select
                   onValueChange={(value) =>
-                    onChangeSortDir(
-                      index.id,
-                      indexColumn.id,
-                      value as IndexSortDir,
-                    )
+                    onUpdateSortDir(indexColumn.id, value as IndexSortDir)
                   }
                   value={indexColumn.sortDir}
                 >

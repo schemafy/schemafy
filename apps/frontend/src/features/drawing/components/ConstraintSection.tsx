@@ -8,7 +8,7 @@ export const ConstraintSection = ({
   isEditMode,
   onCreateConstraint,
   onDeleteConstraint,
-  onChangeConstraintName,
+  onUpdateConstraintName,
   onAddColumnToConstraint,
   onRemoveColumnFromConstraint,
 }: ConstraintSectionProps) => {
@@ -54,7 +54,7 @@ export const ConstraintSection = ({
               tableColumns={tableColumns}
               isEditMode={isEditMode}
               onDeleteConstraint={onDeleteConstraint}
-              onChangeConstraintName={onChangeConstraintName}
+              onUpdateConstraintName={onUpdateConstraintName}
               onAddColumnToConstraint={onAddColumnToConstraint}
               onRemoveColumnFromConstraint={onRemoveColumnFromConstraint}
             />

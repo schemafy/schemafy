@@ -5,8 +5,8 @@ interface SchemaListItemProps {
   schema: {
     id: string;
     name: string;
-    tables: unknown[];
   };
+  tableCount?: number;
   isEditing: boolean;
   editingName: string;
   onSelect: (schemaId: string) => void;
@@ -19,6 +19,7 @@ interface SchemaListItemProps {
 
 export const SchemaListItem = ({
   schema,
+  tableCount = 0,
   isEditing,
   editingName,
   onSelect,
@@ -43,7 +44,7 @@ export const SchemaListItem = ({
     <div onClick={() => onSelect(schema.id)} className="cursor-pointer">
       <ListItem
         name={schema.name}
-        count={schema.tables.length}
+        count={tableCount}
         onChange={() => onStartEdit(schema.id, schema.name)}
         onDelete={() => onDelete(schema.id)}
       />

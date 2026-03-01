@@ -25,6 +25,19 @@ export class BackendClientService {
         'Content-Type': 'application/json',
       },
       withCredentials: true,
+      paramsSerializer: (params) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params as Record<string, unknown>).forEach(
+          ([key, value]) => {
+            if (Array.isArray(value)) {
+              value.forEach((item) => searchParams.append(key, String(item)));
+            } else if (value !== undefined && value !== null) {
+              searchParams.append(key, String(value));
+            }
+          },
+        );
+        return searchParams.toString();
+      },
     });
 
     this.client.interceptors.request.use((config) => {

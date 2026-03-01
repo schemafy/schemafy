@@ -8,12 +8,16 @@ import {
   Post,
 } from '@nestjs/common';
 import { SchemaService } from './schema.service';
+import { TableService } from './table.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type { ChangeSchemaNameRequest, CreateSchemaRequest } from './erd.types';
 
 @Controller('api/v1.0')
 export class SchemaController {
-  constructor(private readonly schemaService: SchemaService) {}
+  constructor(
+    private readonly schemaService: SchemaService,
+    private readonly tableService: TableService,
+  ) {}
 
   @Post('schemas')
   async createSchema(
@@ -21,6 +25,14 @@ export class SchemaController {
     @AuthHeader() authHeader: string,
   ) {
     return this.schemaService.createSchema(data, authHeader);
+  }
+
+  @Get('projects/:projectId/schemas')
+  async getSchemasByProjectId(
+    @Param('projectId') projectId: string,
+    @AuthHeader() authHeader: string,
+  ) {
+    return this.schemaService.getSchemasByProjectId(projectId, authHeader);
   }
 
   @Get('schemas/:schemaId')
@@ -46,5 +58,13 @@ export class SchemaController {
     @AuthHeader() authHeader: string,
   ) {
     return this.schemaService.deleteSchema(schemaId, authHeader);
+  }
+
+  @Get('schemas/:schemaId/snapshots')
+  async getSchemaWithSnapshots(
+    @Param('schemaId') schemaId: string,
+    @AuthHeader() authHeader: string,
+  ) {
+    return this.tableService.getSchemaWithSnapshots(schemaId, authHeader);
   }
 }
