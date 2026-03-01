@@ -12,3 +12,13 @@ export type ApiError = {
   category: ErrorCategoryType;
   details?: Record<string, unknown>;
 };
+
+type ProblemDetails = {
+  type?: string;
+  detail?: string;
+  title?: string;
+  status?: number;
+  reason?: string;
+};
+
+export type ErrorResponseData = ApiError | ProblemDetails;

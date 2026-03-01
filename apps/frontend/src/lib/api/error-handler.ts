@@ -1,21 +1,14 @@
 import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
-import { ErrorCategory, type ApiError } from './types';
+import { ErrorCategory, type ApiError, type ErrorResponseData } from './types';
 import { getErrorMessage } from './error-messages';
 
-type ProblemDetails = {
-  detail?: string;
-  title?: string;
-  status?: number;
-  reason?: string;
-};
-
-type ErrorResponseData = ApiError | ProblemDetails;
+const isApiError = (data: ErrorResponseData): data is ApiError =>
+  'category' in data && typeof data.category === 'string';
 
 const extractCode = (data: ErrorResponseData): string | undefined => {
-  if ('code' in data && data.code) return data.code;
-  if ('reason' in data && data.reason) return data.reason;
-  return undefined;
+  if (isApiError(data)) return data.code;
+  return data.reason;
 };
 
 export const handleApiError = (error: unknown): Promise<never> => {
@@ -26,17 +19,17 @@ export const handleApiError = (error: unknown): Promise<never> => {
   const errorData = error.response?.data;
 
   if (!errorData) {
-    toast.error('Network error. Please try again.');
+    const { message } = getErrorMessage('NETWORK_ERROR');
+    toast.error(message);
     return Promise.reject(error);
   }
 
   const code = extractCode(errorData);
-  const { message, category } = code
-    ? getErrorMessage(code)
-    : {
-        message: 'An unexpected error occurred. Please try again.',
-        category: ErrorCategory.USER_FEEDBACK,
-      };
+  const errorInfo = getErrorMessage(code ?? '');
+  const category = isApiError(errorData)
+    ? errorData.category
+    : errorInfo.category;
+  const message = errorInfo.message;
 
   switch (category) {
     case ErrorCategory.SILENT:

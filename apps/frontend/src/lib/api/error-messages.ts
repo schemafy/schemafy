@@ -291,6 +291,11 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'Request timed out. Please try again.',
     category: ErrorCategory.USER_FEEDBACK,
   },
+
+  NETWORK_ERROR: {
+    message: 'Network error. Please try again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
 };
 
 const DEFAULT_ERROR: ErrorMessageInfo = {

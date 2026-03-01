@@ -184,7 +184,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     const problem = data as Record<string, unknown>;
-    return 'reason' in problem || ('title' in problem && 'status' in problem);
+    return (
+      'reason' in problem ||
+      'type' in problem ||
+      ('title' in problem && 'status' in problem)
+    );
   }
 
   private extractProblemDetails(
