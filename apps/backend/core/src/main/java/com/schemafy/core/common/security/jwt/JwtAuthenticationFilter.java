@@ -43,18 +43,27 @@ public class JwtAuthenticationFilter implements WebFilter {
       return chain.filter(exchange);
     }
 
+    boolean publicPath = isPublicPath(exchange.getRequest());
+
     return Mono.fromCallable(() -> validateTokenAndGetAuth(token))
         .subscribeOn(Schedulers.boundedElastic())
+        .onErrorResume(e -> Mono.just(
+            AuthenticationResult
+                .error(AuthErrorCode.TOKEN_VALIDATION_ERROR)))
         .flatMap(result -> {
           if (result.valid()) {
             return chain.filter(exchange)
                 .contextWrite(ReactiveSecurityContextHolder
                     .withAuthentication(result.authentication()));
           }
+
+          if (publicPath) {
+            return chain.filter(exchange);
+          }
+
           return handleJwtError(exchange, result.errorCode(),
               result.errorMessage());
-        })
-        .onErrorResume(e -> handleUnexpectedError(exchange));
+        });
   }
 
   private AuthenticationResult validateTokenAndGetAuth(String token) {
@@ -94,13 +103,13 @@ public class JwtAuthenticationFilter implements WebFilter {
         errorMessage);
   }
 
-  private Mono<Void> handleUnexpectedError(ServerWebExchange exchange) {
-    DomainErrorCode errorCode = AuthErrorCode.TOKEN_VALIDATION_ERROR;
-    return handleJwtError(exchange, errorCode, errorCode.code());
-  }
-
   private AuthenticatedUser createPrincipal(String userId, String userName) {
     return AuthenticatedUser.withAllRoles(userId, userName);
+  }
+
+  private boolean isPublicPath(ServerHttpRequest request) {
+    String path = request.getPath().pathWithinApplication().value();
+    return path.startsWith("/public/api/");
   }
 
   private String extractToken(ServerHttpRequest request) {

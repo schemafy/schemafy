@@ -118,7 +118,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                         normalizedName,
                         command.kind(),
                         command.cardinality(),
-                        null));
+                        command.extra()));
               }
 
               return persistAutoRelationship(
@@ -149,7 +149,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
               normalizedName,
               command.kind(),
               command.cardinality(),
-              null);
+              command.extra());
 
           return createRelationshipPort.createRelationship(relationship)
               .flatMap(savedRelationship -> createAutoRelationshipColumns(

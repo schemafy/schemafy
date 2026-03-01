@@ -3,12 +3,12 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   Post,
   Put,
 } from '@nestjs/common';
 import { MemoService } from './memo.service';
+import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
   CreateMemoCommentRequest,
   CreateMemoRequest,
@@ -23,7 +23,7 @@ export class MemoController {
   @Post('memos')
   async createMemo(
     @Body() data: CreateMemoRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.createMemo(data, authHeader);
   }
@@ -31,7 +31,7 @@ export class MemoController {
   @Get('memos/:memoId')
   async getMemo(
     @Param('memoId') memoId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.getMemo(memoId, authHeader);
   }
@@ -39,7 +39,7 @@ export class MemoController {
   @Get('schemas/:schemaId/memos')
   async getSchemaMemos(
     @Param('schemaId') schemaId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.getSchemaMemos(schemaId, authHeader);
   }
@@ -47,7 +47,7 @@ export class MemoController {
   @Get('schemas/:schemaId/memos-with-comments')
   async getSchemaMemosWithComments(
     @Param('schemaId') schemaId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.getSchemaMemosWithComments(schemaId, authHeader);
   }
@@ -56,7 +56,7 @@ export class MemoController {
   async updateMemo(
     @Param('memoId') memoId: string,
     @Body() data: UpdateMemoRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.updateMemo(memoId, data, authHeader);
   }
@@ -64,7 +64,7 @@ export class MemoController {
   @Delete('memos/:memoId')
   async deleteMemo(
     @Param('memoId') memoId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.deleteMemo(memoId, authHeader);
   }
@@ -73,7 +73,7 @@ export class MemoController {
   async createMemoComment(
     @Param('memoId') memoId: string,
     @Body() data: CreateMemoCommentRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.createMemoComment(memoId, data, authHeader);
   }
@@ -81,7 +81,7 @@ export class MemoController {
   @Get('memos/:memoId/comments')
   async getMemoComments(
     @Param('memoId') memoId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.getMemoComments(memoId, authHeader);
   }
@@ -91,7 +91,7 @@ export class MemoController {
     @Param('memoId') memoId: string,
     @Param('commentId') commentId: string,
     @Body() data: UpdateMemoCommentRequest,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.updateMemoComment(
       memoId,
@@ -105,7 +105,7 @@ export class MemoController {
   async deleteMemoComment(
     @Param('memoId') memoId: string,
     @Param('commentId') commentId: string,
-    @Headers('authorization') authHeader: string,
+    @AuthHeader() authHeader: string,
   ) {
     return this.memoService.deleteMemoComment(memoId, commentId, authHeader);
   }

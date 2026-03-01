@@ -3,6 +3,7 @@ package com.schemafy.domain.erd.column.application.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.common.exception.DomainException;
@@ -35,6 +36,7 @@ public class CreateColumnService implements CreateColumnUseCase {
   private final GetTableByIdPort getTableByIdPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<CreateColumnResult>> createColumn(CreateColumnCommand command) {
@@ -47,7 +49,8 @@ public class CreateColumnService implements CreateColumnUseCase {
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
         .flatMap(table -> fetchSchemaAndColumns(table)
             .flatMap(tuple -> createColumn(table, tuple, command, lengthScale))
-            .map(result -> MutationResult.of(result, table.id())));
+            .map(result -> MutationResult.of(result, table.id())))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<Tuple2<Schema, List<Column>>> fetchSchemaAndColumns(Table table) {

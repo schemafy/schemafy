@@ -4,5 +4,6 @@ public record CreateTableCommand(
     String schemaId,
     String name,
     String charset,
-    String collation) {
+    String collation,
+    String extra) {
 }

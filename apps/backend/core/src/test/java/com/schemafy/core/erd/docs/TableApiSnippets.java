@@ -185,7 +185,9 @@ public class TableApiSnippets extends RestDocsSnippets {
         fieldWithPath("charset").type(JsonFieldType.STRING)
             .description("문자셋").optional(),
         fieldWithPath("collation").type(JsonFieldType.STRING)
-            .description("콜레이션").optional());
+            .description("콜레이션").optional(),
+        fieldWithPath("extra").type(JsonFieldType.VARIES)
+            .description("추가 정보 (JSON)").optional());
   }
 
   /** 테이블 생성 응답 헤더 */

@@ -37,6 +37,15 @@ public class TableFixture {
         DEFAULT_COLLATION);
   }
 
+  public static Table tableWithIdAndName(String id, String name) {
+    return new Table(
+        id,
+        DEFAULT_SCHEMA_ID,
+        name,
+        DEFAULT_CHARSET,
+        DEFAULT_COLLATION);
+  }
+
   public static Table tableWithName(String name) {
     return new Table(
         DEFAULT_ID,
@@ -60,7 +69,8 @@ public class TableFixture {
         DEFAULT_SCHEMA_ID,
         DEFAULT_NAME,
         DEFAULT_CHARSET,
-        DEFAULT_COLLATION);
+        DEFAULT_COLLATION,
+        null);
   }
 
   public static CreateTableCommand createCommandWithName(String name) {
@@ -68,7 +78,8 @@ public class TableFixture {
         DEFAULT_SCHEMA_ID,
         name,
         DEFAULT_CHARSET,
-        DEFAULT_COLLATION);
+        DEFAULT_COLLATION,
+        null);
   }
 
   public static CreateTableCommand createCommandWithMeta(String charset, String collation) {
@@ -76,7 +87,8 @@ public class TableFixture {
         DEFAULT_SCHEMA_ID,
         DEFAULT_NAME,
         charset,
-        collation);
+        collation,
+        null);
   }
 
   public static CreateTableCommand createCommandWithoutMeta() {
@@ -88,7 +100,8 @@ public class TableFixture {
         DEFAULT_ID,
         DEFAULT_NAME,
         DEFAULT_CHARSET,
-        DEFAULT_COLLATION);
+        DEFAULT_COLLATION,
+        null);
   }
 
   public static CreateTableResult createResultFrom(Table table) {
@@ -96,7 +109,8 @@ public class TableFixture {
         table.id(),
         table.name(),
         table.charset(),
-        table.collation());
+        table.collation(),
+        table.extra());
   }
 
   public static ChangeTableNameCommand changeNameCommand(String newName) {

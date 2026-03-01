@@ -48,6 +48,13 @@ jwt:
   cookie:
     secure: false
 
+oauth:
+  github:
+    client-id: test-client-id
+    client-secret: test-client-secret
+    redirect-uri: http://localhost:8080/public/api/v1.0/oauth/github/callback
+    frontend-callback-url: http://localhost:3000/oauth/callback
+
 hmac:
   enabled: false
 

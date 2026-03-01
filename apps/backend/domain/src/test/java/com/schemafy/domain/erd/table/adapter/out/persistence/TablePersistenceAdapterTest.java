@@ -90,8 +90,8 @@ class TablePersistenceAdapterTest {
     @Test
     @DisplayName("스키마의 테이블 목록을 반환한다")
     void returnsTablesForSchema() {
-      var table1 = TableFixture.tableWithId("01ARZ3NDEKTSV4RRFFQ69G5TA1");
-      var table2 = TableFixture.tableWithId("01ARZ3NDEKTSV4RRFFQ69G5TA2");
+      var table1 = TableFixture.tableWithIdAndName("01ARZ3NDEKTSV4RRFFQ69G5TA1", "table_1");
+      var table2 = TableFixture.tableWithIdAndName("01ARZ3NDEKTSV4RRFFQ69G5TA2", "table_2");
       sut.createTable(table1).block();
       sut.createTable(table2).block();
 
@@ -309,8 +309,8 @@ class TablePersistenceAdapterTest {
     @Test
     @DisplayName("스키마의 모든 테이블을 삭제한다")
     void deletesAllTablesForSchema() {
-      var table1 = TableFixture.tableWithId("01ARZ3NDEKTSV4RRFFQ69G5TA1");
-      var table2 = TableFixture.tableWithId("01ARZ3NDEKTSV4RRFFQ69G5TA2");
+      var table1 = TableFixture.tableWithIdAndName("01ARZ3NDEKTSV4RRFFQ69G5TA1", "table_1");
+      var table2 = TableFixture.tableWithIdAndName("01ARZ3NDEKTSV4RRFFQ69G5TA2", "table_2");
       sut.createTable(table1).block();
       sut.createTable(table2).block();
 

@@ -18,7 +18,7 @@ public record TableResponse(
         result.name(),
         result.charset(),
         result.collation(),
-        null);
+        result.extra());
   }
 
   public static TableResponse from(Table table) {

@@ -68,7 +68,9 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
         fieldWithPath("kind").type(JsonFieldType.STRING)
             .description("관계 종류 (IDENTIFYING, NON_IDENTIFYING)"),
         fieldWithPath("cardinality").type(JsonFieldType.STRING)
-            .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY)"));
+            .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY)"),
+        fieldWithPath("extra").type(JsonFieldType.VARIES)
+            .description("추가 정보 (JSON)").optional());
   }
 
   public static Snippet createRelationshipResponseHeaders() {

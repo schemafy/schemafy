@@ -3211,6 +3211,33 @@ include::{snippets}/user-refresh/response-fields.adoc[]
 
 ---
 
+=== GitHub OAuth 로그인
+
+GitHub OAuth를 통해 로그인하거나 계정을 생성합니다.
+
+==== GitHub 인가 요청
+
+GitHub OAuth 인가 페이지로 리다이렉트합니다. CSRF 방어를 위해 `oauth_state` 쿠키가 설정됩니다.
+
+[source]
+----
+GET /public/api/v1.0/oauth/github/authorize
+----
+
+[discrete]
+===== 요청
+
+include::{snippets}/oauth-github-authorize/http-request.adoc[]
+include::{snippets}/oauth-github-authorize/curl-request.adoc[]
+
+[discrete]
+===== 응답
+
+include::{snippets}/oauth-github-authorize/response-headers.adoc[]
+include::{snippets}/oauth-github-authorize/http-response.adoc[]
+
+---
+
 == WebSocket API
 
 실시간 기능을 위한 WebSocket API입니다.

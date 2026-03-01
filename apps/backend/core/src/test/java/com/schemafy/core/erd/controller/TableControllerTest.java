@@ -142,13 +142,15 @@ class TableControllerTest {
         schemaId,
         "users",
         "utf8mb4",
-        "utf8mb4_general_ci");
+        "utf8mb4_general_ci",
+        null);
 
     CreateTableResult result = new CreateTableResult(
         tableId,
         "users",
         "utf8mb4",
-        "utf8mb4_general_ci");
+        "utf8mb4_general_ci",
+        null);
 
     given(createTableUseCase.createTable(any(CreateTableCommand.class)))
         .willReturn(Mono.just(MutationResult.of(result, tableId)));

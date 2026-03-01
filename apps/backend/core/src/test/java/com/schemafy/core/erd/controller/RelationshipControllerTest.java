@@ -134,7 +134,8 @@ class RelationshipControllerTest {
         fkTableId,
         pkTableId,
         RelationshipKind.NON_IDENTIFYING,
-        Cardinality.ONE_TO_MANY);
+        Cardinality.ONE_TO_MANY,
+        null);
 
     CreateRelationshipResult result = new CreateRelationshipResult(
         relationshipId,

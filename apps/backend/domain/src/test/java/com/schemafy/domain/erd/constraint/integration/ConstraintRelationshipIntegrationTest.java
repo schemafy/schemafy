@@ -125,7 +125,7 @@ class ConstraintRelationshipIntegrationTest {
 
     // PK Table 생성 (복합키를 가질 테이블)
     var createPkTableCommand = new CreateTableCommand(
-        schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci");
+        schemaId, "pk_table", "utf8mb4", "utf8mb4_general_ci", null);
     var pkTableResult = createTableUseCase.createTable(createPkTableCommand).block().result();
     pkTableId = pkTableResult.tableId();
 
@@ -151,13 +151,13 @@ class ConstraintRelationshipIntegrationTest {
 
     // FK Table 1 생성
     var createFkTable1Command = new CreateTableCommand(
-        schemaId, "fk_table_1", "utf8mb4", "utf8mb4_general_ci");
+        schemaId, "fk_table_1", "utf8mb4", "utf8mb4_general_ci", null);
     var fkTable1Result = createTableUseCase.createTable(createFkTable1Command).block().result();
     fkTableId1 = fkTable1Result.tableId();
 
     // FK Table 2 생성 (다중 Relationship 테스트용)
     var createFkTable2Command = new CreateTableCommand(
-        schemaId, "fk_table_2", "utf8mb4", "utf8mb4_general_ci");
+        schemaId, "fk_table_2", "utf8mb4", "utf8mb4_general_ci", null);
     var fkTable2Result = createTableUseCase.createTable(createFkTable2Command).block().result();
     fkTableId2 = fkTable2Result.tableId();
   }
@@ -173,7 +173,7 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
@@ -212,7 +212,7 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
@@ -258,7 +258,7 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
@@ -297,7 +297,7 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
@@ -336,14 +336,14 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand1 = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block().result();
       String relationshipId1 = relResult1.relationshipId();
 
       var createRelCommand2 = new CreateRelationshipCommand(fkTableId2,
           pkTableId,
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_ONE);
+          Cardinality.ONE_TO_ONE, null);
       var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block().result();
       String relationshipId2 = relResult2.relationshipId();
 
@@ -398,7 +398,7 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
@@ -450,13 +450,13 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand1 = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       createRelationshipUseCase.createRelationship(createRelCommand1).block();
 
       var createRelCommand2 = new CreateRelationshipCommand(fkTableId2,
           pkTableId,
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_ONE);
+          Cardinality.ONE_TO_ONE, null);
       createRelationshipUseCase.createRelationship(createRelCommand2).block();
 
       // Given: PK 테이블에 새 컬럼 추가
@@ -508,7 +508,7 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String relationshipId = relResult.relationshipId();
 
@@ -550,7 +550,7 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String fkColumnId = getFkColumnId(relResult.relationshipId(), pkColumnId1);
 
@@ -580,14 +580,14 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand1 = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult1 = createRelationshipUseCase.createRelationship(createRelCommand1).block().result();
       String fkColumnId1 = getFkColumnId(relResult1.relationshipId(), pkColumnId1);
 
       var createRelCommand2 = new CreateRelationshipCommand(fkTableId2,
           pkTableId,
           RelationshipKind.IDENTIFYING,
-          Cardinality.ONE_TO_ONE);
+          Cardinality.ONE_TO_ONE, null);
       var relResult2 = createRelationshipUseCase.createRelationship(createRelCommand2).block().result();
       String fkColumnId2 = getFkColumnId(relResult2.relationshipId(), pkColumnId1);
 
@@ -644,7 +644,7 @@ class ConstraintRelationshipIntegrationTest {
       var createRelCommand = new CreateRelationshipCommand(fkTableId1,
           pkTableId,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY);
+          Cardinality.ONE_TO_MANY, null);
       var relResult = createRelationshipUseCase.createRelationship(createRelCommand).block().result();
       String varcharFkColumnId = getFkColumnId(relResult.relationshipId(), varcharPkColumnId);
 

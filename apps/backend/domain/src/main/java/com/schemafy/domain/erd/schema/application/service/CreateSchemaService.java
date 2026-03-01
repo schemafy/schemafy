@@ -1,6 +1,7 @@
 package com.schemafy.domain.erd.schema.application.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.common.exception.DomainException;
@@ -23,6 +24,7 @@ class CreateSchemaService implements CreateSchemaUseCase {
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateSchemaPort createSchemaPort;
   private final SchemaExistsPort schemaExistsPort;
+  private final TransactionalOperator transactionalOperator;
 
   @Override
   public Mono<MutationResult<CreateSchemaResult>> createSchema(CreateSchemaCommand command) {
@@ -54,7 +56,8 @@ class CreateSchemaService implements CreateSchemaUseCase {
                         savedSchema.collation()))
                     .map(MutationResult::empty);
               });
-        });
+        })
+        .as(transactionalOperator::transactional);
   }
 
 }
