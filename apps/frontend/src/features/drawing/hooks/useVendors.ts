@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { listVendors, getVendor } from './vendor.api';
+import { listVendors, getVendor } from '../api/vendor.api';
 
 export const useVendors = () => {
   return useQuery({

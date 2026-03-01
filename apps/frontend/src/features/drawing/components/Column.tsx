@@ -10,7 +10,7 @@ import type {
   ColumnConstraintsProps,
   ColumnBadgesProps,
 } from '../types';
-import type { VendorDatatype } from '../api/vendor.types';
+import type { VendorDatatype, DatatypeParameter } from '../api';
 import {
   Select,
   SelectGroup,
@@ -237,7 +237,7 @@ export const TypeSelector = ({
 }: TypeSelectorProps) => {
   const parsed = parseLengthScale(lengthScale);
   const selectedType = vendorTypes.find((t) => t.sqlType === value);
-  const params = selectedType?.parameters ?? [];
+  const params: DatatypeParameter[] = selectedType?.parameters ?? [];
   const grouped = useMemo(
     () => groupTypesByCategory(vendorTypes),
     [vendorTypes],

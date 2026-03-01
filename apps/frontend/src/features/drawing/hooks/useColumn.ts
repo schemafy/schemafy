@@ -32,10 +32,23 @@ export const useColumn = (
     });
   };
 
-  const saveColumnType = (columnId: string, dataType: string) => {
+  const saveColumnType = (columnId: string, typeData: string) => {
+    const { dataType, lengthScale } = JSON.parse(typeData) as {
+      dataType: string;
+      lengthScale: string;
+    };
+    const params = JSON.parse(lengthScale || '{}') as Record<
+      string,
+      number | null
+    >;
     changeColumnTypeMutation.mutate({
       columnId,
-      data: { dataType },
+      data: {
+        dataType,
+        length: params.length ?? null,
+        precision: params.precision ?? null,
+        scale: params.scale ?? null,
+      },
     });
   };
 

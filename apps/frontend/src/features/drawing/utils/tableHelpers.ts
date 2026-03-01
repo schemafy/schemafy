@@ -9,7 +9,7 @@ import type {
   IndexSortDir,
   IndexType,
 } from '../types';
-import type { TableSnapshotResponse } from '../api';
+import type { TableSnapshotResponse, ColumnLengthScale } from '../api';
 
 export type TableExtra = {
   position?: Point;
@@ -65,6 +65,7 @@ const transformColumnWithMap = (
   columnId: string,
   columnName: string,
   dataType: string,
+  lengthScale: ColumnLengthScale,
   constraintMap: ConstraintMap,
   foreignKeyColumnIds: Set<string>,
 ): ColumnType => {
@@ -77,7 +78,7 @@ const transformColumnWithMap = (
     id: columnId,
     name: columnName,
     type: dataType || 'VARCHAR',
-    lengthScale: col.lengthScale || '',
+    lengthScale: JSON.stringify(lengthScale),
     isPrimaryKey,
     isForeignKey,
     isNotNull,
@@ -113,6 +114,7 @@ export const transformSnapshotToNode = (
       col.id,
       col.name,
       col.dataType,
+      col.lengthScale,
       constraintMap,
       foreignKeyColumnIds,
     ),

@@ -12,30 +12,30 @@ import {
   useIndexes,
   useConstraints,
   useChangeColumnPosition,
+  useSchemas,
+  useVendors,
+  useVendor,
 } from '../../hooks';
+import { useSelectedSchema } from '../../contexts';
 import { ConnectionHandles } from './ConnectionHandles';
-import { useVendors, useVendor } from '../../api/vendor.hooks';
-import type { VendorDatatype } from '../../api/vendor.types';
 
 const TableNodeComponent = ({ data, id }: TableProps) => {
   const [isColumnEditMode, setIsColumnEditMode] = useState(false);
 
-  const schema =
-    erdStore.erdState.state === 'loaded'
-      ? erdStore.erdState.database.schemas.find((s) => s.id === data.schemaId)
-      : undefined;
+  const { projectId } = useSelectedSchema();
+  const { data: schemas } = useSchemas(projectId);
+  const schema = schemas?.find((s) => s.id === data.schemaId);
 
   const { data: vendorsData } = useVendors();
   const vendorDisplayName =
     schema && vendorsData?.result
       ? (vendorsData.result.find(
-          (v) => v.name === schema.dbVendorId.toLowerCase(),
+          (v) => v.name === schema.dbVendorName.toLowerCase(),
         )?.displayName ?? '')
       : '';
 
   const { data: vendorData } = useVendor(vendorDisplayName);
-  const vendorTypes: VendorDatatype[] =
-    vendorData?.result?.datatypeMappings?.types ?? [];
+  const vendorTypes = vendorData?.result?.datatypeMappings?.types ?? [];
 
   const { columns, indexes, constraints } = data;
 
