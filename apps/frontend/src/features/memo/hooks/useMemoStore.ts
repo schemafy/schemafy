@@ -41,24 +41,32 @@ export const useMemoStore = () => {
     position: { x: number; y: number },
     content: string,
   ) => {
-    const memo = await memoApi.createMemo({
-      schemaId: SCHEMA_ID,
-      positions: stringifyPosition(position),
-      body: content,
-    });
-    setStoredMemos((prev) => [memo, ...prev]);
+    try {
+      const memo = await memoApi.createMemo({
+        schemaId: SCHEMA_ID,
+        positions: stringifyPosition(position),
+        body: content,
+      });
+      setStoredMemos((prev) => [memo, ...prev]);
+    } catch {}
   };
 
   const updateMemo = useCallback(async (id: string, positions: string) => {
-    const updated = await memoApi.updateMemo(id, { positions });
-    setStoredMemos((prev) =>
-      prev.map((m) => (m.id === id ? { ...updated, comments: m.comments } : m)),
-    );
+    try {
+      const updated = await memoApi.updateMemo(id, { positions });
+      setStoredMemos((prev) =>
+        prev.map((m) =>
+          m.id === id ? { ...updated, comments: m.comments } : m,
+        ),
+      );
+    } catch {}
   }, []);
 
   const deleteMemo = useCallback(async (id: string) => {
-    await memoApi.deleteMemo(id);
-    setStoredMemos((prev) => prev.filter((m) => m.id !== id));
+    try {
+      await memoApi.deleteMemo(id);
+      setStoredMemos((prev) => prev.filter((m) => m.id !== id));
+    } catch {}
   }, []);
 
   const onMemosChange = useCallback(
@@ -81,12 +89,14 @@ export const useMemoStore = () => {
   );
 
   const createComment = async (memoId: string, body: string) => {
-    const comment = await memoApi.createMemoComment(memoId, { body });
-    setStoredMemos((prev) =>
-      prev.map((m) =>
-        m.id === memoId ? { ...m, comments: [...m.comments, comment] } : m,
-      ),
-    );
+    try {
+      const comment = await memoApi.createMemoComment(memoId, { body });
+      setStoredMemos((prev) =>
+        prev.map((m) =>
+          m.id === memoId ? { ...m, comments: [...m.comments, comment] } : m,
+        ),
+      );
+    } catch {}
   };
 
   const updateComment = async (
@@ -94,33 +104,37 @@ export const useMemoStore = () => {
     commentId: string,
     body: string,
   ) => {
-    const updated = await memoApi.updateMemoComment(memoId, commentId, {
-      body,
-    });
-    setStoredMemos((prev) =>
-      prev.map((m) =>
-        m.id === memoId
-          ? {
-              ...m,
-              comments: m.comments.map((c) =>
-                c.id === commentId ? updated : c,
-              ),
-            }
-          : m,
-      ),
-    );
+    try {
+      const updated = await memoApi.updateMemoComment(memoId, commentId, {
+        body,
+      });
+      setStoredMemos((prev) =>
+        prev.map((m) =>
+          m.id === memoId
+            ? {
+                ...m,
+                comments: m.comments.map((c) =>
+                  c.id === commentId ? updated : c,
+                ),
+              }
+            : m,
+        ),
+      );
+    } catch {}
   };
 
   const deleteComment = async (memoId: string, commentId: string) => {
-    await memoApi.deleteMemoComment(memoId, commentId);
-    setStoredMemos((prev) => {
-      const updated = prev.map((m) =>
-        m.id === memoId
-          ? { ...m, comments: m.comments.filter((c) => c.id !== commentId) }
-          : m,
-      );
-      return updated.filter((m) => m.id !== memoId || m.comments.length > 0);
-    });
+    try {
+      await memoApi.deleteMemoComment(memoId, commentId);
+      setStoredMemos((prev) => {
+        const updated = prev.map((m) =>
+          m.id === memoId
+            ? { ...m, comments: m.comments.filter((c) => c.id !== commentId) }
+            : m,
+        );
+        return updated.filter((m) => m.id !== memoId || m.comments.length > 0);
+      });
+    } catch {}
   };
 
   return {
