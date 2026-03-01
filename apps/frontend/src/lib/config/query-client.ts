@@ -1,10 +1,10 @@
 import { QueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { isAxiosError } from 'axios';
-import { ErrorCategory, type ApiResponse } from '../api/types';
+import { ErrorCategory, type ApiError } from '../api/types';
 
 const handleMutationError = (error: Error) => {
-  if (!isAxiosError<ApiResponse<unknown>>(error)) {
+  if (!isAxiosError<ApiError>(error)) {
     if (error && typeof error === 'object' && 'message' in error) {
       toast.error(error.message);
       return;
@@ -13,7 +13,7 @@ const handleMutationError = (error: Error) => {
     return;
   }
 
-  const apiError = error.response?.data?.error;
+  const apiError = error.response?.data;
 
   if (!apiError) {
     toast.error('Network error. Please try again.');

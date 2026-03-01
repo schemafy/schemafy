@@ -1,10 +1,3 @@
-// 기본 형식
-export type ApiResponse<T = unknown> = {
-  success: boolean;
-  result: T | null;
-  error: ApiError | null;
-};
-
 export const ErrorCategory = {
   USER_FEEDBACK: 'USER_FEEDBACK',
   SILENT: 'SILENT',

@@ -9,12 +9,8 @@ export const useAuthBootstrap = () => {
         authStore.setAuthLoading(true);
         await refreshToken();
 
-        const res = await getMyInfo();
-        if (res.success && res.result) {
-          authStore.setUser(res.result);
-        } else {
-          authStore.clearAuth();
-        }
+        const user = await getMyInfo();
+        authStore.setUser(user);
       } catch {
         authStore.clearAuth();
       } finally {

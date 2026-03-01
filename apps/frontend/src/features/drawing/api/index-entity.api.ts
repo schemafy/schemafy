@@ -1,4 +1,4 @@
-import { type ApiResponse, apiClient } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import type {
   MutationResponse,
   IndexResponse,
@@ -15,87 +15,65 @@ import type {
 export const createIndex = async (
   data: CreateIndexRequest,
 ): Promise<MutationResponse<IndexResponse>> => {
-  const { data: res } = await apiClient.post<
-    ApiResponse<MutationResponse<IndexResponse>>
-  >('/indexes', data);
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  const { data: res } = await apiClient.post<MutationResponse<IndexResponse>>(
+    '/indexes',
+    data,
+  );
+  return res;
 };
 
 export const getIndex = async (indexId: string): Promise<IndexResponse> => {
-  const { data } = await apiClient.get<ApiResponse<IndexResponse>>(
-    `/indexes/${indexId}`,
-  );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  const { data } = await apiClient.get<IndexResponse>(`/indexes/${indexId}`);
+  return data;
 };
 
 export const getIndexesByTableId = async (
   tableId: string,
 ): Promise<IndexResponse[]> => {
-  const { data } = await apiClient.get<ApiResponse<IndexResponse[]>>(
+  const { data } = await apiClient.get<IndexResponse[]>(
     `/tables/${tableId}/indexes`,
   );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  return data;
 };
 
 export const changeIndexName = async (
   indexId: string,
   data: ChangeIndexNameRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/indexes/${indexId}/name`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const changeIndexType = async (
   indexId: string,
   data: ChangeIndexTypeRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/indexes/${indexId}/type`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const deleteIndex = async (
   indexId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<MutationResponse>(
     `/indexes/${indexId}`,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const getIndexColumns = async (
   indexId: string,
 ): Promise<IndexColumnResponse[]> => {
-  const { data } = await apiClient.get<ApiResponse<IndexColumnResponse[]>>(
+  const { data } = await apiClient.get<IndexColumnResponse[]>(
     `/indexes/${indexId}/columns`,
   );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  return data;
 };
 
 export const addIndexColumn = async (
@@ -103,62 +81,47 @@ export const addIndexColumn = async (
   data: AddIndexColumnRequest,
 ): Promise<MutationResponse<AddIndexColumnResponse>> => {
   const { data: res } = await apiClient.post<
-    ApiResponse<MutationResponse<AddIndexColumnResponse>>
+    MutationResponse<AddIndexColumnResponse>
   >(`/indexes/${indexId}/columns`, data);
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const removeIndexColumn = async (
   indexColumnId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<MutationResponse>(
     `/index-columns/${indexColumnId}`,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const getIndexColumn = async (
   indexColumnId: string,
 ): Promise<IndexColumnResponse> => {
-  const { data } = await apiClient.get<ApiResponse<IndexColumnResponse>>(
+  const { data } = await apiClient.get<IndexColumnResponse>(
     `/index-columns/${indexColumnId}`,
   );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  return data;
 };
 
 export const changeIndexColumnPosition = async (
   indexColumnId: string,
   data: ChangeIndexColumnPositionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/index-columns/${indexColumnId}/position`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const changeIndexColumnSortDirection = async (
   indexColumnId: string,
   data: ChangeIndexColumnSortDirectionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/index-columns/${indexColumnId}/sort-direction`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };

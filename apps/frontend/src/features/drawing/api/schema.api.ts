@@ -1,4 +1,4 @@
-import { type ApiResponse, apiClient } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import type {
   MutationResponse,
   SchemaResponse,
@@ -9,59 +9,43 @@ import type {
 export const createSchema = async (
   data: CreateSchemaRequest,
 ): Promise<MutationResponse<SchemaResponse>> => {
-  const { data: res } = await apiClient.post<
-    ApiResponse<MutationResponse<SchemaResponse>>
-  >('/schemas', data);
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  const { data: res } = await apiClient.post<MutationResponse<SchemaResponse>>(
+    '/schemas',
+    data,
+  );
+  return res;
 };
 
 export const getSchemasByProjectId = async (
   projectId: string,
 ): Promise<SchemaResponse[]> => {
-  const { data } = await apiClient.get<ApiResponse<SchemaResponse[]>>(
+  const { data } = await apiClient.get<SchemaResponse[]>(
     `/projects/${projectId}/schemas`,
   );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  return data;
 };
 
 export const getSchema = async (schemaId: string): Promise<SchemaResponse> => {
-  const { data } = await apiClient.get<ApiResponse<SchemaResponse>>(
-    `/schemas/${schemaId}`,
-  );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  const { data } = await apiClient.get<SchemaResponse>(`/schemas/${schemaId}`);
+  return data;
 };
 
 export const changeSchemaName = async (
   schemaId: string,
   data: ChangeSchemaNameRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/schemas/${schemaId}/name`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const deleteSchema = async (
   schemaId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<MutationResponse>(
     `/schemas/${schemaId}`,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
