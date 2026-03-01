@@ -4,12 +4,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.in.DeleteIndexCommand;
 import com.schemafy.domain.erd.index.application.port.in.DeleteIndexUseCase;
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.DeleteIndexPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -27,7 +28,7 @@ public class DeleteIndexService implements DeleteIndexUseCase {
   public Mono<MutationResult<Void>> deleteIndex(DeleteIndexCommand command) {
     String indexId = command.indexId();
     return getIndexByIdPort.findIndexById(indexId)
-        .switchIfEmpty(Mono.error(new IndexNotExistException("Index not found")))
+        .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
         .flatMap(index -> deleteIndexColumnsPort.deleteByIndexId(indexId)
             .then(deleteIndexPort.deleteIndex(indexId))
             .thenReturn(MutationResult.<Void>of(null, index.tableId())))

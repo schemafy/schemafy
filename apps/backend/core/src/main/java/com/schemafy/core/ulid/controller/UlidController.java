@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.annotation.ApiVersion;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.ulid.controller.dto.UlidResponse;
 import com.schemafy.core.ulid.service.UlidService;
 
@@ -22,12 +21,11 @@ public class UlidController {
   private final UlidService ulidService;
 
   @GetMapping("/ulid/generate")
-  public Mono<ResponseEntity<BaseResponse<UlidResponse>>> generateTemporaryUlid(
+  public Mono<ResponseEntity<UlidResponse>> generateTemporaryUlid(
       @ApiVersion String version) {
     return ulidService
         .generateTemporaryUlid()
         .map(UlidResponse::new)
-        .map(BaseResponse::success)
         .map(ResponseEntity::ok);
   }
 

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddRelationshipColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeRelationshipCardinalityRequest;
@@ -157,8 +157,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.data.id").isEqualTo(relationshipId)
+        .jsonPath("$.data.id").isEqualTo(relationshipId)
         .consumeWith(document("relationship-create",
             RelationshipApiSnippets.createRelationshipRequestHeaders(),
             RelationshipApiSnippets.createRelationshipRequest(),
@@ -184,9 +183,9 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
 
     then(createRelationshipUseCase).shouldHaveNoInteractions();
   }
@@ -209,9 +208,9 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
 
     then(createRelationshipUseCase).shouldHaveNoInteractions();
   }
@@ -241,8 +240,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(relationshipId)
+        .jsonPath("$.id").isEqualTo(relationshipId)
         .consumeWith(document("relationship-get",
             RelationshipApiSnippets.getRelationshipPathParameters(),
             RelationshipApiSnippets.getRelationshipRequestHeaders(),
@@ -274,9 +272,8 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].id").isEqualTo(relationshipId1)
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].id").isEqualTo(relationshipId1)
         .consumeWith(document("relationship-list-by-table",
             RelationshipApiSnippets.getRelationshipsByTableIdPathParameters(),
             RelationshipApiSnippets.getRelationshipsByTableIdRequestHeaders(),
@@ -304,8 +301,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("relationship-change-name",
             RelationshipApiSnippets.changeRelationshipNamePathParameters(),
             RelationshipApiSnippets.changeRelationshipNameRequestHeaders(),
@@ -334,8 +330,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("relationship-change-kind",
             RelationshipApiSnippets.changeRelationshipKindPathParameters(),
             RelationshipApiSnippets.changeRelationshipKindRequestHeaders(),
@@ -365,8 +360,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("relationship-change-cardinality",
             RelationshipApiSnippets.changeRelationshipCardinalityPathParameters(),
             RelationshipApiSnippets.changeRelationshipCardinalityRequestHeaders(),
@@ -395,8 +389,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("relationship-change-extra",
             RelationshipApiSnippets.changeRelationshipExtraPathParameters(),
             RelationshipApiSnippets.changeRelationshipExtraRequestHeaders(),
@@ -425,8 +418,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray();
 
     then(changeRelationshipExtraUseCase).should().changeRelationshipExtra(
         new ChangeRelationshipExtraCommand(relationshipId, "{\"position\":{\"x\":60,\"y\":90},\"color\":\"#6366f1\"}"));
@@ -449,8 +441,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("relationship-delete",
             RelationshipApiSnippets.deleteRelationshipPathParameters(),
             RelationshipApiSnippets.deleteRelationshipRequestHeaders(),
@@ -482,9 +473,8 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].id").isEqualTo(relationshipColumnId1)
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].id").isEqualTo(relationshipColumnId1)
         .consumeWith(document("relationship-columns-list",
             RelationshipApiSnippets.getRelationshipColumnsPathParameters(),
             RelationshipApiSnippets.getRelationshipColumnsRequestHeaders(),
@@ -522,8 +512,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.data.id").isEqualTo(relationshipColumnId)
+        .jsonPath("$.data.id").isEqualTo(relationshipColumnId)
         .consumeWith(document("relationship-column-add",
             RelationshipApiSnippets.addRelationshipColumnPathParameters(),
             RelationshipApiSnippets.addRelationshipColumnRequestHeaders(),
@@ -548,8 +537,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("relationship-column-remove",
             RelationshipApiSnippets.removeRelationshipColumnPathParameters(),
             RelationshipApiSnippets.removeRelationshipColumnRequestHeaders(),
@@ -577,8 +565,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(relationshipColumnId)
+        .jsonPath("$.id").isEqualTo(relationshipColumnId)
         .consumeWith(document("relationship-column-get",
             RelationshipApiSnippets.getRelationshipColumnPathParameters(),
             RelationshipApiSnippets.getRelationshipColumnRequestHeaders(),
@@ -607,8 +594,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("relationship-column-change-position",
             RelationshipApiSnippets.changeRelationshipColumnPositionPathParameters(),
             RelationshipApiSnippets.changeRelationshipColumnPositionRequestHeaders(),

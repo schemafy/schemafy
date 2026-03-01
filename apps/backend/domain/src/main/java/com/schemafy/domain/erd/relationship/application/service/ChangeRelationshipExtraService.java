@@ -6,11 +6,12 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipExtraCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipExtraUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipExtraPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -25,7 +26,7 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
   @Override
   public Mono<MutationResult<Void>> changeRelationshipExtra(ChangeRelationshipExtraCommand command) {
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-        .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
         .flatMap(relationship -> {
           Set<String> affectedTableIds = new HashSet<>();
           affectedTableIds.add(relationship.fkTableId());

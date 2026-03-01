@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -68,10 +67,9 @@ class DbVendorControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result[0].displayName").isEqualTo("MySQL 8.0")
-        .jsonPath("$.result[0].name").isEqualTo("mysql")
-        .jsonPath("$.result[0].version").isEqualTo("8.0")
+        .jsonPath("$[0].displayName").isEqualTo("MySQL 8.0")
+        .jsonPath("$[0].name").isEqualTo("mysql")
+        .jsonPath("$[0].version").isEqualTo("8.0")
         .consumeWith(document("vendor-list",
             requestHeaders(
                 headerWithName("Accept")
@@ -80,14 +78,9 @@ class DbVendorControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success").description("요청 성공 여부"),
-                fieldWithPath("result").description("벤더 요약 목록"),
-                fieldWithPath("result[].displayName").description("벤더 표시 이름"),
-                fieldWithPath("result[].name").description("벤더 이름"),
-                fieldWithPath("result[].version").description("벤더 버전"),
-                fieldWithPath("error")
-                    .type(JsonFieldType.NULL)
-                    .description("에러 정보 (성공 시 null)").optional())));
+                fieldWithPath("[].displayName").description("벤더 표시 이름"),
+                fieldWithPath("[].name").description("벤더 이름"),
+                fieldWithPath("[].version").description("벤더 버전"))));
   }
 
   @Test
@@ -106,11 +99,10 @@ class DbVendorControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.displayName").isEqualTo("MySQL 8.0")
-        .jsonPath("$.result.name").isEqualTo("mysql")
-        .jsonPath("$.result.version").isEqualTo("8.0")
-        .jsonPath("$.result.datatypeMappings.schemaVersion").isEqualTo(1)
+        .jsonPath("$.displayName").isEqualTo("MySQL 8.0")
+        .jsonPath("$.name").isEqualTo("mysql")
+        .jsonPath("$.version").isEqualTo("8.0")
+        .jsonPath("$.datatypeMappings.schemaVersion").isEqualTo(1)
         .consumeWith(document("vendor-get",
             pathParameters(
                 parameterWithName("displayName")
@@ -122,21 +114,16 @@ class DbVendorControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
-                fieldWithPath("success").description("요청 성공 여부"),
-                fieldWithPath("result").description("벤더 상세 정보"),
-                fieldWithPath("result.displayName").description("벤더 표시 이름"),
-                fieldWithPath("result.name").description("벤더 이름"),
-                fieldWithPath("result.version").description("벤더 버전"),
-                fieldWithPath("result.datatypeMappings").description("데이터타입 매핑 정보"),
-                fieldWithPath("result.datatypeMappings.schemaVersion")
+                fieldWithPath("displayName").description("벤더 표시 이름"),
+                fieldWithPath("name").description("벤더 이름"),
+                fieldWithPath("version").description("벤더 버전"),
+                fieldWithPath("datatypeMappings").description("데이터타입 매핑 정보"),
+                fieldWithPath("datatypeMappings.schemaVersion")
                     .description("스키마 버전"),
-                fieldWithPath("result.datatypeMappings.vendor")
+                fieldWithPath("datatypeMappings.vendor")
                     .description("벤더 식별자"),
-                fieldWithPath("result.datatypeMappings.types")
-                    .description("데이터타입 목록"),
-                fieldWithPath("error")
-                    .type(JsonFieldType.NULL)
-                    .description("에러 정보 (성공 시 null)").optional())));
+                fieldWithPath("datatypeMappings.types")
+                    .description("데이터타입 목록"))));
   }
 
 }

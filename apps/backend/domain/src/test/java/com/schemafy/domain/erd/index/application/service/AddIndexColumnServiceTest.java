@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.index.application.port.in.AddIndexColumnCommand;
@@ -21,9 +22,7 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
@@ -154,7 +153,7 @@ class AddIndexColumnServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.addIndexColumn(command))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
 
       then(createIndexColumnPort).shouldHaveNoInteractions();
@@ -179,7 +178,7 @@ class AddIndexColumnServiceTest {
           .willReturn(Mono.just(List.of(index)));
 
       StepVerifier.create(sut.addIndexColumn(command))
-          .expectError(IndexColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.COLUMN_NOT_FOUND))
           .verify();
 
       then(createIndexColumnPort).shouldHaveNoInteractions();
@@ -204,7 +203,7 @@ class AddIndexColumnServiceTest {
           .willReturn(Mono.just(List.of(index)));
 
       StepVerifier.create(sut.addIndexColumn(command))
-          .expectError(IndexColumnDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.COLUMN_DUPLICATE))
           .verify();
 
       then(createIndexColumnPort).shouldHaveNoInteractions();

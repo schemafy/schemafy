@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
@@ -16,8 +16,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelations
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsBySchemaIdPort;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipTargetTableNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
@@ -39,10 +38,10 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
   @Override
   public Mono<MutationResult<Void>> changeRelationshipKind(ChangeRelationshipKindCommand command) {
     if (command.kind() == null) {
-      return Mono.error(new InvalidValueException("Relationship kind is required"));
+      return Mono.error(new DomainException(RelationshipErrorCode.INVALID_VALUE, "Relationship kind is required"));
     }
     return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-        .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
         .flatMap(relationship -> {
           Set<String> affectedTableIds = new HashSet<>();
           affectedTableIds.add(relationship.fkTableId());
@@ -63,7 +62,7 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
                 .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
           }
           return getTableByIdPort.findTableById(relationship.fkTableId())
-              .switchIfEmpty(Mono.error(new RelationshipTargetTableNotExistException(
+              .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
                   "Relationship fk table not found")))
               .flatMap(table -> getRelationshipsBySchemaIdPort
                   .findRelationshipsBySchemaId(table.schemaId())

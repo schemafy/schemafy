@@ -10,9 +10,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.config.R2dbcTestConfiguration;
 import com.schemafy.domain.erd.relationship.domain.Relationship;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
@@ -242,7 +243,7 @@ class RelationshipPersistenceAdapterTest {
     @DisplayName("존재하지 않는 관계면 예외가 발생한다")
     void throwsWhenRelationshipNotExists() {
       StepVerifier.create(sut.changeRelationshipName("non-existent-id", "new_name"))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -270,7 +271,7 @@ class RelationshipPersistenceAdapterTest {
     @DisplayName("존재하지 않는 관계면 예외가 발생한다")
     void throwsWhenRelationshipNotExists() {
       StepVerifier.create(sut.changeRelationshipKind("non-existent-id", RelationshipKind.IDENTIFYING))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -298,7 +299,7 @@ class RelationshipPersistenceAdapterTest {
     @DisplayName("존재하지 않는 관계면 예외가 발생한다")
     void throwsWhenRelationshipNotExists() {
       StepVerifier.create(sut.changeRelationshipCardinality("non-existent-id", Cardinality.ONE_TO_ONE))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -345,7 +346,7 @@ class RelationshipPersistenceAdapterTest {
     @DisplayName("존재하지 않는 관계면 예외가 발생한다")
     void throwsWhenRelationshipNotExists() {
       StepVerifier.create(sut.changeRelationshipExtra("non-existent-id", "{}"))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
     }
 

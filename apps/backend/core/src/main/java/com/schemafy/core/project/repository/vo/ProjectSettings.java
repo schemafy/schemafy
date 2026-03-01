@@ -2,8 +2,8 @@ package com.schemafy.core.project.repository.vo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
+import com.schemafy.domain.common.exception.DomainException;
 
 public record ProjectSettings(String theme, String language) {
 
@@ -15,10 +15,10 @@ public record ProjectSettings(String theme, String language) {
 
   public void validate() {
     if (theme == null || theme.isBlank()) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
     if (language == null || language.isBlank()) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
   }
 
@@ -26,7 +26,7 @@ public record ProjectSettings(String theme, String language) {
     try {
       return objectMapper.writeValueAsString(this);
     } catch (JsonProcessingException e) {
-      throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+      throw new DomainException(CommonErrorCode.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -37,7 +37,7 @@ public record ProjectSettings(String theme, String language) {
     try {
       return objectMapper.readValue(json, ProjectSettings.class);
     } catch (JsonProcessingException e) {
-      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+      throw new DomainException(CommonErrorCode.INVALID_INPUT_VALUE);
     }
   }
 

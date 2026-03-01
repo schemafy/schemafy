@@ -47,6 +47,9 @@ hmac:
   enabled: true
   enforcement-mode: ENFORCE
 
+problem:
+  type-base-uri: about:blank
+
 oauth:
   github:
     client-id: ${GITHUB_CLIENT_ID:}

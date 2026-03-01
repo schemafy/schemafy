@@ -22,10 +22,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
 
 import reactor.test.StepVerifier;
@@ -89,9 +91,8 @@ class AuthControllerTest {
             signUpRequest(),
             signUpResponseHeaders(),
             signUpResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isNotEmpty()
-        .jsonPath("$.result.email").isEqualTo("test@example.com");
+        .jsonPath("$.id").isNotEmpty()
+        .jsonPath("$.email").isEqualTo("test@example.com");
 
     StepVerifier.create(userRepository.findByEmail("test@example.com"))
         .as("user should be persisted with auditing columns")
@@ -116,9 +117,9 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
   }
 
   static Stream<Arguments> invalidSignUpRequests() {
@@ -158,8 +159,7 @@ class AuthControllerTest {
             loginRequest(),
             loginResponseHeaders(),
             loginResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.email").isEqualTo("test@example.com");
+        .jsonPath("$.email").isEqualTo("test@example.com");
   }
 
   @DisplayName("유효하지 않은 로그인 요청은 실패한다")
@@ -172,9 +172,9 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
   }
 
   static Stream<Arguments> invalidLoginRequests() {
@@ -196,9 +196,9 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isNotFound()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
+        .jsonPath("$.status").isEqualTo(404)
+        .jsonPath("$.reason")
+        .isEqualTo(UserErrorCode.NOT_FOUND.code());
   }
 
   @Test
@@ -221,9 +221,9 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isUnauthorized()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.LOGIN_FAILED.getCode());
+        .jsonPath("$.status").isEqualTo(401)
+        .jsonPath("$.reason")
+        .isEqualTo(UserErrorCode.LOGIN_FAILED.code());
   }
 
   @Test
@@ -240,7 +240,7 @@ class AuthControllerTest {
         .expectBody(byte[].class).returnResult();
 
     String responseBody = new String(signupResult.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.result.id");
+    String userId = JsonPath.read(responseBody, "$.id");
     String refreshToken = generateRefreshToken(userId);
 
     webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
@@ -252,9 +252,7 @@ class AuthControllerTest {
         .expectBody()
         .consumeWith(document("user-refresh",
             refreshTokenRequestCookies(),
-            refreshTokenResponseHeaders(),
-            refreshTokenResponse()))
-        .jsonPath("$.success").isEqualTo(true);
+            refreshTokenResponseHeaders()));
   }
 
   @Test
@@ -271,7 +269,7 @@ class AuthControllerTest {
         .expectBody(byte[].class).returnResult();
 
     String responseBody = new String(signupResult.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.result.id");
+    String userId = JsonPath.read(responseBody, "$.id");
     String accessToken = generateAccessToken(userId);
 
     // 쿠키로 Access Token 전달 (잘못된 토큰 타입)
@@ -280,8 +278,9 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isUnauthorized()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code").isEqualTo("A004");
+        .jsonPath("$.status").isEqualTo(401)
+        .jsonPath("$.reason")
+        .isEqualTo(AuthErrorCode.INVALID_TOKEN_TYPE.code());
   }
 
   @Test
@@ -291,9 +290,9 @@ class AuthControllerTest {
         .exchange()
         .expectStatus().isUnauthorized()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.MISSING_REFRESH_TOKEN.getCode());
+        .jsonPath("$.status").isEqualTo(401)
+        .jsonPath("$.reason")
+        .isEqualTo(AuthErrorCode.MISSING_REFRESH_TOKEN.code());
   }
 
 }

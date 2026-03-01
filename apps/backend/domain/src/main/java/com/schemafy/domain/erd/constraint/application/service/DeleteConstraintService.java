@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.in.DeleteConstraintCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.DeleteConstraintUseCase;
 import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintColumnsByConstraintIdPort;
@@ -15,7 +16,7 @@ import com.schemafy.domain.erd.constraint.application.port.out.DeleteConstraintP
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
   public Mono<MutationResult<Void>> deleteConstraint(DeleteConstraintCommand command) {
     String constraintId = command.constraintId();
     return getConstraintByIdPort.findConstraintById(constraintId)
-        .switchIfEmpty(Mono.error(new ConstraintNotExistException("Constraint not found")))
+        .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
         .flatMap(constraint -> {
           Set<String> affectedTableIds = new HashSet<>();
           affectedTableIds.add(constraint.tableId());

@@ -8,16 +8,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
 import com.schemafy.domain.erd.index.domain.Index;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNameInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexPositionInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexTypeInvalidException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 
@@ -30,11 +25,12 @@ public final class IndexValidator {
 
   public static void validateName(String name) {
     if (name == null || name.isBlank()) {
-      throw new IndexNameInvalidException("Index name must not be blank");
+      throw new DomainException(IndexErrorCode.NAME_INVALID, "Index name must not be blank");
     }
     String trimmed = name.trim();
     if (trimmed.length() < NAME_MIN_LENGTH || trimmed.length() > NAME_MAX_LENGTH) {
-      throw new IndexNameInvalidException(
+      throw new DomainException(
+          IndexErrorCode.NAME_INVALID,
           "Index name must be between %d and %d characters".formatted(
               NAME_MIN_LENGTH,
               NAME_MAX_LENGTH));
@@ -43,7 +39,7 @@ public final class IndexValidator {
 
   public static void validateType(IndexType type) {
     if (type == null) {
-      throw new IndexTypeInvalidException("Index type is required");
+      throw new DomainException(IndexErrorCode.TYPE_INVALID, "Index type is required");
     }
   }
 
@@ -54,16 +50,18 @@ public final class IndexValidator {
     Set<Integer> uniqueSeqNos = new HashSet<>();
     for (Integer seqNo : seqNos) {
       if (seqNo == null || seqNo < 0) {
-        throw new IndexPositionInvalidException(
+        throw new DomainException(
+            IndexErrorCode.POSITION_INVALID,
             "Index column position must be zero or positive");
       }
       if (!uniqueSeqNos.add(seqNo)) {
-        throw new IndexPositionInvalidException("Index column positions must be unique");
+        throw new DomainException(IndexErrorCode.POSITION_INVALID, "Index column positions must be unique");
       }
     }
     for (int expected = 0; expected < uniqueSeqNos.size(); expected++) {
       if (!uniqueSeqNos.contains(expected)) {
-        throw new IndexPositionInvalidException(
+        throw new DomainException(
+            IndexErrorCode.POSITION_INVALID,
             "Index column positions must be contiguous starting from 0");
       }
     }
@@ -78,7 +76,8 @@ public final class IndexValidator {
     }
     for (IndexColumn column : indexColumns) {
       if (!containsColumn(tableColumns, column.columnId())) {
-        throw new IndexColumnNotExistException(
+        throw new DomainException(
+            IndexErrorCode.COLUMN_NOT_FOUND,
             "Column '%s' specified in index '%s' does not exist in the table".formatted(
                 column.columnId(),
                 indexName));
@@ -96,7 +95,8 @@ public final class IndexValidator {
     for (IndexColumn column : indexColumns) {
       String key = normalizeId(column.columnId());
       if (!columnIds.add(key)) {
-        throw new IndexColumnDuplicateException(
+        throw new DomainException(
+            IndexErrorCode.COLUMN_DUPLICATE,
             "Index '%s' has duplicate columns".formatted(indexName));
       }
     }
@@ -111,7 +111,8 @@ public final class IndexValidator {
     for (IndexColumn column : indexColumns) {
       SortDirection sortDirection = column.sortDirection();
       if (sortDirection == null) {
-        throw new IndexColumnSortDirectionInvalidException(
+        throw new DomainException(
+            IndexErrorCode.COLUMN_SORT_DIRECTION_INVALID,
             "Sort direction is invalid for index '%s'".formatted(indexName));
       }
     }
@@ -137,7 +138,8 @@ public final class IndexValidator {
           : indexColumns.getOrDefault(index.id(), List.of());
       String existingDefinition = definitionKey(index.type(), columns);
       if (candidateDefinition.equals(existingDefinition)) {
-        throw new IndexDefinitionDuplicateException(
+        throw new DomainException(
+            IndexErrorCode.DEFINITION_DUPLICATE,
             "Index '%s' has the same definition as existing index '%s'".formatted(
                 indexName,
                 index.name()));

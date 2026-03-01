@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
@@ -22,7 +23,7 @@ import com.schemafy.domain.erd.relationship.application.port.out.GetRelationship
 import com.schemafy.domain.erd.relationship.fixture.RelationshipFixture;
 import com.schemafy.domain.erd.table.application.port.out.DeleteTablePort;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -206,7 +207,7 @@ class DeleteTableServiceTest {
             .willAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(sut.deleteTable(command))
-            .expectError(TableNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
             .verify();
 
         then(deleteTablePort).shouldHaveNoInteractions();

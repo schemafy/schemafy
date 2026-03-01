@@ -22,11 +22,11 @@ public class UserApiSnippets extends RestDocsSnippets {
   /** 사용자 정보 응답 필드 (result.* 형태) */
   private static FieldDescriptor[] userInfoFields() {
     return new FieldDescriptor[] {
-      fieldWithPath("result.id").type(JsonFieldType.STRING)
+      fieldWithPath("id").type(JsonFieldType.STRING)
           .description("사용자 고유 ID (ULID)"),
-      fieldWithPath("result.email").type(JsonFieldType.STRING)
+      fieldWithPath("email").type(JsonFieldType.STRING)
           .description("사용자 이메일"),
-      fieldWithPath("result.name").type(JsonFieldType.STRING)
+      fieldWithPath("name").type(JsonFieldType.STRING)
           .description("사용자 이름")
     };
   }
@@ -95,7 +95,10 @@ public class UserApiSnippets extends RestDocsSnippets {
   }
 
   public static Snippet refreshTokenResponseHeaders() {
-    return createResponseHeadersSnippet(authResponseHeaders());
+    return createResponseHeadersSnippet(
+        headerWithName("Authorization").description("발급된 JWT 액세스 토큰"),
+        headerWithName("Set-Cookie")
+            .description("발급된 리프레시 토큰 (HttpOnly 쿠키)"));
   }
 
   public static Snippet refreshTokenResponse() {

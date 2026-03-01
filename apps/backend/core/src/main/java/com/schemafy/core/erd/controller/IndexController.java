@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.MutationResponse;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.controller.dto.request.AddIndexColumnRequest;
@@ -81,7 +80,7 @@ public class IndexController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/indexes")
-  public Mono<BaseResponse<MutationResponse<IndexResponse>>> createIndex(
+  public Mono<MutationResponse<IndexResponse>> createIndex(
       @Valid @RequestBody CreateIndexRequest request) {
     CreateIndexCommand command = new CreateIndexCommand(
         request.tableId(),
@@ -93,35 +92,32 @@ public class IndexController {
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             IndexResponse.from(result.result(), request.tableId()),
-            result.affectedTableIds()))
-        .map(BaseResponse::success);
+            result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/indexes/{indexId}")
-  public Mono<BaseResponse<IndexResponse>> getIndex(
+  public Mono<IndexResponse> getIndex(
       @PathVariable String indexId) {
     GetIndexQuery query = new GetIndexQuery(indexId);
     return getIndexUseCase.getIndex(query)
-        .map(IndexResponse::from)
-        .map(BaseResponse::success);
+        .map(IndexResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}/indexes")
-  public Mono<BaseResponse<List<IndexResponse>>> getIndexesByTableId(
+  public Mono<List<IndexResponse>> getIndexesByTableId(
       @PathVariable String tableId) {
     GetIndexesByTableIdQuery query = new GetIndexesByTableIdQuery(tableId);
     return getIndexesByTableIdUseCase.getIndexesByTableId(query)
         .map(indexes -> indexes.stream()
             .map(IndexResponse::from)
-            .toList())
-        .map(BaseResponse::success);
+            .toList());
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/indexes/{indexId}/name")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeIndexName(
+  public Mono<MutationResponse<Void>> changeIndexName(
       @PathVariable String indexId,
       @Valid @RequestBody ChangeIndexNameRequest request) {
     ChangeIndexNameCommand command = new ChangeIndexNameCommand(
@@ -130,13 +126,12 @@ public class IndexController {
     return changeIndexNameUseCase.changeIndexName(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/indexes/{indexId}/type")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeIndexType(
+  public Mono<MutationResponse<Void>> changeIndexType(
       @PathVariable String indexId,
       @Valid @RequestBody ChangeIndexTypeRequest request) {
     ChangeIndexTypeCommand command = new ChangeIndexTypeCommand(
@@ -145,37 +140,34 @@ public class IndexController {
     return changeIndexTypeUseCase.changeIndexType(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/indexes/{indexId}")
-  public Mono<BaseResponse<MutationResponse<Void>>> deleteIndex(
+  public Mono<MutationResponse<Void>> deleteIndex(
       @PathVariable String indexId) {
     DeleteIndexCommand command = new DeleteIndexCommand(indexId);
     return deleteIndexUseCase.deleteIndex(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/indexes/{indexId}/columns")
-  public Mono<BaseResponse<List<IndexColumnResponse>>> getIndexColumns(
+  public Mono<List<IndexColumnResponse>> getIndexColumns(
       @PathVariable String indexId) {
     GetIndexColumnsByIndexIdQuery query = new GetIndexColumnsByIndexIdQuery(indexId);
     return getIndexColumnsByIndexIdUseCase.getIndexColumnsByIndexId(query)
         .map(columns -> columns.stream()
             .map(IndexColumnResponse::from)
-            .toList())
-        .map(BaseResponse::success);
+            .toList());
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/indexes/{indexId}/columns")
-  public Mono<BaseResponse<MutationResponse<AddIndexColumnResponse>>> addIndexColumn(
+  public Mono<MutationResponse<AddIndexColumnResponse>> addIndexColumn(
       @PathVariable String indexId,
       @Valid @RequestBody AddIndexColumnRequest request) {
     AddIndexColumnCommand command = new AddIndexColumnCommand(
@@ -188,35 +180,32 @@ public class IndexController {
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             AddIndexColumnResponse.from(result.result()),
-            result.affectedTableIds()))
-        .map(BaseResponse::success);
+            result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @DeleteMapping("/index-columns/{indexColumnId}")
-  public Mono<BaseResponse<MutationResponse<Void>>> removeIndexColumn(
+  public Mono<MutationResponse<Void>> removeIndexColumn(
       @PathVariable String indexColumnId) {
     RemoveIndexColumnCommand command = new RemoveIndexColumnCommand(indexColumnId);
     return removeIndexColumnUseCase.removeIndexColumn(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/index-columns/{indexColumnId}")
-  public Mono<BaseResponse<IndexColumnResponse>> getIndexColumn(
+  public Mono<IndexColumnResponse> getIndexColumn(
       @PathVariable String indexColumnId) {
     GetIndexColumnQuery query = new GetIndexColumnQuery(indexColumnId);
     return getIndexColumnUseCase.getIndexColumn(query)
-        .map(IndexColumnResponse::from)
-        .map(BaseResponse::success);
+        .map(IndexColumnResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/index-columns/{indexColumnId}/position")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeIndexColumnPosition(
+  public Mono<MutationResponse<Void>> changeIndexColumnPosition(
       @PathVariable String indexColumnId,
       @RequestBody ChangeIndexColumnPositionRequest request) {
     ChangeIndexColumnPositionCommand command = new ChangeIndexColumnPositionCommand(
@@ -225,13 +214,12 @@ public class IndexController {
     return changeIndexColumnPositionUseCase.changeIndexColumnPosition(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/index-columns/{indexColumnId}/sort-direction")
-  public Mono<BaseResponse<MutationResponse<Void>>> changeIndexColumnSortDirection(
+  public Mono<MutationResponse<Void>> changeIndexColumnSortDirection(
       @PathVariable String indexColumnId,
       @Valid @RequestBody ChangeIndexColumnSortDirectionRequest request) {
     ChangeIndexColumnSortDirectionCommand command = new ChangeIndexColumnSortDirectionCommand(
@@ -240,8 +228,7 @@ public class IndexController {
     return changeIndexColumnSortDirectionUseCase.changeIndexColumnSortDirection(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()))
-        .map(BaseResponse::success);
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {

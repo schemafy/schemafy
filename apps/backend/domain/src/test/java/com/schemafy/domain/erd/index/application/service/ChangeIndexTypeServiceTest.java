@@ -10,13 +10,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexTypePort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
-import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
-import com.schemafy.domain.erd.index.domain.exception.IndexTypeInvalidException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
@@ -79,7 +78,7 @@ class ChangeIndexTypeServiceTest {
       var command = IndexFixture.changeTypeCommand("index1", null);
 
       StepVerifier.create(sut.changeIndexType(command))
-          .expectError(IndexTypeInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.TYPE_INVALID))
           .verify();
 
       then(changeIndexTypePort).shouldHaveNoInteractions();
@@ -94,7 +93,7 @@ class ChangeIndexTypeServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexType(command))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
 
       then(changeIndexTypePort).shouldHaveNoInteractions();
@@ -123,7 +122,7 @@ class ChangeIndexTypeServiceTest {
           .willReturn(Mono.just(index2Columns));
 
       StepVerifier.create(sut.changeIndexType(command))
-          .expectError(IndexDefinitionDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.DEFINITION_DUPLICATE))
           .verify();
 
       then(changeIndexTypePort).shouldHaveNoInteractions();

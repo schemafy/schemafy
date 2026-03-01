@@ -7,11 +7,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.out.DeleteSchemaPort;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.domain.erd.table.application.port.out.GetTablesBySchemaIdPort;
@@ -35,7 +36,7 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
     String schemaId = command.schemaId();
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
     Mono<Void> ensureExists = getSchemaByIdPort.findSchemaById(schemaId)
-        .switchIfEmpty(Mono.error(new SchemaNotExistException("Schema not found: " + schemaId)))
+        .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + schemaId)))
         .then();
     return ensureExists
         .then(getTablesBySchemaIdPort.findTablesBySchemaId(schemaId)

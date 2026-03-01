@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.domain.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
@@ -26,7 +27,7 @@ import com.schemafy.domain.erd.table.application.port.out.ChangeTableNamePort;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNameDuplicateException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -245,7 +246,7 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.just(true));
 
         StepVerifier.create(sut.changeTableName(command))
-            .expectError(TableNameDuplicateException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NAME_DUPLICATE))
             .verify();
 
         then(changeTableNamePort).shouldHaveNoInteractions();
