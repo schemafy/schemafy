@@ -99,7 +99,7 @@ public class OAuthController {
           return ResponseEntity
               .status(HttpStatus.FOUND)
               .headers(jwtTokenIssuer.issueTokens(
-                  user.getId(), user.getName()))
+                  user.id(), user.name()))
               .header(HttpHeaders.SET_COOKIE,
                   expireStateCookie().toString())
               .location(buildFrontendCallbackUri(null, null))

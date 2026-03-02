@@ -16,11 +16,11 @@ import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.dto.LoginCommand;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.user.domain.User;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -57,7 +57,7 @@ class UserServiceTest {
 
     StepVerifier.create(result)
         .expectNextMatches(
-            user -> user.getEmail().equals("test@example.com"))
+            user -> user.email().equals("test@example.com"))
         .verifyComplete();
 
     StepVerifier.create(userRepository.findByEmail("test@example.com"))
@@ -96,18 +96,18 @@ class UserServiceTest {
   @Test
   @DisplayName("ID로 회원 조회에 성공한다")
   void getUserByIdSuccess() {
-    User user = TestFixture
+    var savedUser = TestFixture
         .createTestUser("test@example.com", "Test User", "password")
         .flatMap(userRepository::save)
         .block();
 
-    Mono<UserInfoResponse> result = userService.getUserById(user.getId());
+    Mono<UserInfoResponse> result = userService.getUserById(savedUser.getId());
 
     StepVerifier.create(result)
         .assertNext(res -> {
-          assertThat(res.id()).isEqualTo(user.getId());
-          assertThat(res.email()).isEqualTo(user.getEmail());
-          assertThat(res.name()).isEqualTo(user.getName());
+          assertThat(res.id()).isEqualTo(savedUser.getId());
+          assertThat(res.email()).isEqualTo(savedUser.getEmail());
+          assertThat(res.name()).isEqualTo(savedUser.getName());
         })
         .verifyComplete();
   }
@@ -142,7 +142,7 @@ class UserServiceTest {
 
     StepVerifier.create(result)
         .expectNextMatches(
-            user -> user.getEmail().equals("test@example.com"))
+            user -> user.email().equals("test@example.com"))
         .verifyComplete();
   }
 
@@ -220,9 +220,9 @@ class UserServiceTest {
 
       StepVerifier.create(userService.loginOrSignUpOAuth(command))
           .assertNext(user -> {
-            assertThat(user.getEmail()).isEqualTo("oauth@example.com");
-            assertThat(user.getName()).isEqualTo("OAuth User");
-            assertThat(user.getPassword()).isNull();
+            assertThat(user.email()).isEqualTo("oauth@example.com");
+            assertThat(user.name()).isEqualTo("OAuth User");
+            assertThat(user.password()).isNull();
           })
           .verifyComplete();
 
@@ -249,7 +249,7 @@ class UserServiceTest {
     @Test
     @DisplayName("같은 이메일의 기존 유저가 있으면 자동 연동된다")
     void loginOrSignUpOAuth_linkExistingUser() {
-      User existingUser = TestFixture
+      var existingUser = TestFixture
           .createTestUser("existing@example.com", "Existing User",
               "password")
           .flatMap(userRepository::save)
@@ -261,8 +261,8 @@ class UserServiceTest {
 
       StepVerifier.create(userService.loginOrSignUpOAuth(command))
           .assertNext(user -> {
-            assertThat(user.getId()).isEqualTo(existingUser.getId());
-            assertThat(user.getEmail())
+            assertThat(user.id()).isEqualTo(existingUser.getId());
+            assertThat(user.email())
                 .isEqualTo("existing@example.com");
           })
           .verifyComplete();
@@ -288,8 +288,8 @@ class UserServiceTest {
 
       StepVerifier.create(userService.loginOrSignUpOAuth(command))
           .assertNext(user -> {
-            assertThat(user.getId()).isEqualTo(firstLogin.getId());
-            assertThat(user.getEmail())
+            assertThat(user.id()).isEqualTo(firstLogin.id());
+            assertThat(user.email())
                 .isEqualTo("provider@example.com");
           })
           .verifyComplete();
@@ -315,13 +315,36 @@ class UserServiceTest {
       User user = userService.signUp(request.toCommand()).block();
 
       assertThat(user).isNotNull();
-      assertThat(user.getId()).isNotNull();
+      assertThat(user.id()).isNotNull();
 
       StepVerifier
           .create(userRepository.findByEmail("atomic@example.com"))
           .assertNext(u -> assertThat(u.getName())
               .isEqualTo("Atomic User"))
           .verifyComplete();
+<<<<<<< HEAD
+=======
+
+      StepVerifier.create(
+          workspaceRepository
+              .findByOwnerIdAndNotDeleted(user.id()))
+          .assertNext(workspace -> {
+            assertThat(workspace.getName())
+                .isEqualTo("Atomic User's Workspace");
+            assertThat(workspace.getOwnerId())
+                .isEqualTo(user.id());
+          })
+          .verifyComplete();
+
+      StepVerifier.create(
+          workspaceMemberRepository.findByUserIdAndNotDeleted(
+              user.id()))
+          .assertNext(member -> {
+            assertThat(member.getUserId()).isEqualTo(user.id());
+            assertThat(member.isAdmin()).isTrue();
+          })
+          .verifyComplete();
+>>>>>>> 3294a9bb (refactor(#158): remove core user re-fetch from user service)
     }
 
     @Test

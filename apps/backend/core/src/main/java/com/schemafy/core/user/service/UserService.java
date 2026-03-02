@@ -45,6 +45,7 @@ public class UserService {
     return loginOrSignUpOAuthUseCase.loginOrSignUpOAuth(
             commandMapper.toLoginOrSignUpOAuthCommand(command))
         .map(result -> result.user())
+        .map(result -> result.user())
         .onErrorMap(this::remapOAuthInconsistentError)
         .as(transactionalOperator::transactional);
   }
