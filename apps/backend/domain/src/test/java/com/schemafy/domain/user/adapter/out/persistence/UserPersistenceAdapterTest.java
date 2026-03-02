@@ -1,6 +1,7 @@
 package com.schemafy.domain.user.adapter.out.persistence;
 
 import java.time.Instant;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
@@ -159,6 +160,48 @@ class UserPersistenceAdapterTest {
           .expectErrorSatisfies(error -> assertThat(error)
               .isInstanceOfAny(DuplicateKeyException.class, DataIntegrityViolationException.class))
           .verify();
+    }
+
+    @Test
+    @DisplayName("findUsersByIds: ID 집합 기반으로 조회하고 미존재 ID는 제외한다")
+    void findUsersByIds_filtersMissingId() {
+      User active = new User(
+          "06D8A000000000000000200012",
+          "active@example.com",
+          "Active",
+          "encoded-password",
+          UserStatus.ACTIVE,
+          null,
+          null,
+          null);
+      User deleted = new User(
+          "06D8A000000000000000200013",
+          "deleted-users@example.com",
+          "Deleted",
+          "encoded-password",
+          UserStatus.ACTIVE,
+          null,
+          null,
+          Instant.parse("2026-01-01T00:00:00Z"));
+      userPersistenceAdapter.createUser(active).block();
+      userPersistenceAdapter.createUser(deleted).block();
+
+      StepVerifier.create(
+          userPersistenceAdapter.findUsersByIds(Set.of(active.id(), deleted.id(), "missing"))
+              .map(User::id)
+              .collectList())
+          .assertNext(ids -> {
+            assertThat(ids).contains(active.id(), deleted.id());
+            assertThat(ids).doesNotContain("missing");
+          })
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("findUsersByIds: 빈 집합이면 empty를 반환한다")
+    void findUsersByIds_emptySet_returnsEmpty() {
+      StepVerifier.create(userPersistenceAdapter.findUsersByIds(Set.of()))
+          .verifyComplete();
     }
 
   }

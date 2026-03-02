@@ -1,13 +1,17 @@
 package com.schemafy.domain.user.adapter.out.persistence;
 
+import java.util.Set;
+
 import com.schemafy.domain.common.PersistenceAdapter;
 import com.schemafy.domain.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.domain.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.domain.user.application.port.out.FindUserByIdPort;
+import com.schemafy.domain.user.application.port.out.FindUsersByIdsPort;
 import com.schemafy.domain.user.application.port.out.CreateUserPort;
 import com.schemafy.domain.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
@@ -16,7 +20,8 @@ class UserPersistenceAdapter implements
     ExistsUserByEmailPort,
     CreateUserPort,
     FindUserByEmailPort,
-    FindUserByIdPort {
+    FindUserByIdPort,
+    FindUsersByIdsPort {
 
   private final DomainUserRepository domainUserRepository;
   private final UserMapper userMapper;
@@ -44,5 +49,10 @@ class UserPersistenceAdapter implements
         .map(userMapper::toDomain);
   }
 
-}
+  @Override
+  public Flux<User> findUsersByIds(Set<String> userIds) {
+    return domainUserRepository.findAllById(userIds)
+        .map(userMapper::toDomain);
+  }
 
+}
