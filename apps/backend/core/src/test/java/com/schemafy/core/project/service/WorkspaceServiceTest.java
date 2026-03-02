@@ -113,7 +113,7 @@ class WorkspaceServiceTest {
 
     @Test
     @DisplayName("워크스페이스 생성 시 멤버도 함께 생성된다")
-    void createWorkspace_CreatesOwnerMember() {
+    void createWorkspace_CreatesAdminMember() {
       CreateWorkspaceRequest request = new CreateWorkspaceRequest(
           "New Workspace",
           "New Description");

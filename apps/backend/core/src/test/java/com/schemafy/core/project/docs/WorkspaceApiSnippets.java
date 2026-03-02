@@ -251,7 +251,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
             fieldWithPath("result.content[].role")
                 .type(JsonFieldType.STRING)
                 .description(
-                    "워크스페이스 내 역할 (OWNER, ADMIN, MEMBER)"),
+                    "워크스페이스 내 역할 (ADMIN, MEMBER)"),
             fieldWithPath("result.content[].joinedAt")
                 .type(JsonFieldType.STRING)
                 .description("가입 시각"),

@@ -88,7 +88,7 @@ class PublicShareLinkControllerTest {
 
     // Create test user
     testUser = User
-        .signUp(new UserInfo("owner@example.com", "Owner",
+        .signUp(new UserInfo("admin@example.com", "Admin",
             "password"), new BCryptPasswordEncoder())
         .flatMap(userRepository::save).block();
 
@@ -104,7 +104,7 @@ class PublicShareLinkControllerTest {
         testUser.getId(), WorkspaceRole.ADMIN);
     workspaceMemberRepository.save(member).block();
 
-    // Create project owned by testUser
+    // Create project created by testUser
     testProject = Project.create(testWorkspace.getId(), "Test Project", "Description");
     testProject = projectRepository.save(testProject).block();
   }

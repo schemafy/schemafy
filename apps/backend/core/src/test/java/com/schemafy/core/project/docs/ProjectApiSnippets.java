@@ -35,7 +35,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
       fieldWithPath("result.updatedAt").type(JsonFieldType.STRING)
           .description("수정 시각"),
       fieldWithPath("result.currentUserRole").type(JsonFieldType.STRING)
-          .description("현재 사용자의 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)")
+          .description("현재 사용자의 역할 (ADMIN, EDITOR, VIEWER)")
     };
   }
 
@@ -52,7 +52,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
           .description("프로젝트 설명").optional(),
       fieldWithPath(prefix + "myRole").type(JsonFieldType.STRING)
           .description(
-              "현재 사용자의 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)"),
+              "현재 사용자의 역할 (ADMIN, EDITOR, VIEWER)"),
       fieldWithPath(prefix + "createdAt").type(JsonFieldType.STRING)
           .description("생성 시각"),
       fieldWithPath(prefix + "updatedAt").type(JsonFieldType.STRING)
@@ -273,7 +273,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
             fieldWithPath("result.content[].role")
                 .type(JsonFieldType.STRING)
                 .description(
-                    "프로젝트 내 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)"),
+                    "프로젝트 내 역할 (ADMIN, EDITOR, VIEWER)"),
             fieldWithPath("result.content[].joinedAt")
                 .type(JsonFieldType.STRING)
                 .description("가입 시각"),
@@ -310,7 +310,7 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return requestFields(
         fieldWithPath("role").type(JsonFieldType.STRING)
             .description(
-                "변경할 역할 (OWNER, ADMIN, EDITOR, COMMENTER, VIEWER)"));
+                "변경할 역할 (ADMIN, EDITOR, VIEWER)"));
   }
 
   /** 멤버 역할 변경 응답 헤더 */

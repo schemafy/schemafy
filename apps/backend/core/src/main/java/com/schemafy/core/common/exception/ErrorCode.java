@@ -97,8 +97,8 @@ public enum ErrorCode {
   // PROJECT
   PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "프로젝트를 찾을 수 없습니다."),
   PROJECT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P002", "프로젝트 접근 권한이 없습니다."),
-  PROJECT_OWNER_ONLY(HttpStatus.FORBIDDEN, "P003",
-      "프로젝트 소유자만 수행할 수 있는 작업입니다."),
+  PROJECT_ADMIN_ONLY(HttpStatus.FORBIDDEN, "P003",
+      "프로젝트 관리자만 수행할 수 있는 작업입니다."),
   PROJECT_ADMIN_REQUIRED(HttpStatus.FORBIDDEN, "P004", "프로젝트 관리자 권한이 필요합니다."),
   PROJECT_WORKSPACE_MISMATCH(HttpStatus.BAD_REQUEST, "P005",
       "프로젝트가 해당 워크스페이스에 속하지 않습니다."),
@@ -111,8 +111,6 @@ public enum ErrorCode {
   // PROJECT MEMBER MANAGEMENT
   CANNOT_CHANGE_OWN_ROLE(HttpStatus.BAD_REQUEST, "PM001",
       "자신의 권한은 변경할 수 없습니다."),
-  LAST_ADMIN_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "PM002",
-      "마지막 관리자는 제거할 수 없습니다."),
   PROJECT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "PM005",
       "프로젝트 멤버를 찾을 수 없습니다."),
   PROJECT_MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "PM006",

@@ -74,7 +74,7 @@ class PublicShareLinkControllerResilienceTest {
         .block();
 
     testUser = User.signUp(
-        new UserInfo("owner@example.com", "Owner", "password"),
+        new UserInfo("admin@example.com", "Admin", "password"),
         new BCryptPasswordEncoder())
         .flatMap(userRepository::save)
         .block();

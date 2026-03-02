@@ -137,7 +137,7 @@ class ProjectInvitationRaceConditionTest {
         } catch (BusinessException e) {
           if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_PROCESSED ||
               e.getErrorCode() == ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED
-                  ||
+              ||
               e.getErrorCode() == ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT) {
             failureCount.incrementAndGet();
           } else {
@@ -245,7 +245,7 @@ class ProjectInvitationRaceConditionTest {
         } catch (BusinessException e) {
           if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_PROCESSED ||
               e.getErrorCode() == ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED
-                  ||
+              ||
               e.getErrorCode() == ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT) {
             failureCount.incrementAndGet();
           } else {

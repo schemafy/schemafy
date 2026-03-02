@@ -146,7 +146,7 @@ export const ErrorMessages: Record<string, ErrorInfo> = {
     category: ErrorCategory.USER_FEEDBACK,
   },
   P003: {
-    message: 'Only the project owner can perform this action.',
+    message: 'Only project admins can perform this action.',
     category: ErrorCategory.USER_FEEDBACK,
   },
   P004: {
@@ -172,10 +172,6 @@ export const ErrorMessages: Record<string, ErrorInfo> = {
 
   PM001: {
     message: 'You cannot change your own role.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  PM002: {
-    message: 'Cannot remove the last owner. Please assign another owner first.',
     category: ErrorCategory.USER_FEEDBACK,
   },
   PM003: {
