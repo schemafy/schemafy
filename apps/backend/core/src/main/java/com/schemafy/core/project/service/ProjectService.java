@@ -99,7 +99,7 @@ public class ProjectService {
   public Mono<ProjectDetail> getProject(String workspaceId,
       String projectId,
       String userId) {
-    return validateMemberAccess(projectId, userId)
+    return validateProjectMember(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           project.belongsToWorkspace(workspaceId);
@@ -109,7 +109,7 @@ public class ProjectService {
 
   public Mono<ProjectDetail> updateProject(String workspaceId,
       String projectId, String name, String description, String userId) {
-    return validateAdminAccess(projectId, userId)
+    return validateProjectAdmin(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           project.belongsToWorkspace(workspaceId);
@@ -123,7 +123,7 @@ public class ProjectService {
 
   public Mono<Void> deleteProject(String workspaceId, String projectId,
       String userId) {
-    return validateAdminAccess(projectId, userId)
+    return validateProjectAdmin(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
           project.belongsToWorkspace(workspaceId);
@@ -142,7 +142,7 @@ public class ProjectService {
   public Mono<PageResponse<ProjectMemberDetail>> getMembers(
       String projectId, String userId, int page,
       int size) {
-    return validateMemberAccess(projectId, userId)
+    return validateProjectMember(projectId, userId)
         .then(projectMemberRepository
             .countByProjectIdAndNotDeleted(projectId))
         .flatMap(totalElements -> {
@@ -159,7 +159,7 @@ public class ProjectService {
 
   public Mono<ProjectMemberDetail> updateMemberRole(String projectId, String targetUserId,
       ProjectRole role, String requesterId) {
-    return validateAdminAccess(projectId, requesterId)
+    return validateProjectAdmin(projectId, requesterId)
         .then(Mono.zip(
             findProjectMemberByUserIdAndProjectId(requesterId,
                 projectId),
@@ -187,8 +187,7 @@ public class ProjectService {
         .as(transactionalOperator::transactional);
   }
 
-  /** 요청자는 부여하려는 역할보다 높거나 같은 권한을 가져야 함
-   * 요청자는 대상의 현재 역할보다 높거나 같은 권한을 가져야 함 */
+  // 요청자는 부여하려는 역할보다 높거나 같은 권한을 가져야 함
   private void validateRoleChangePermission(ProjectMember requester,
       ProjectMember target, ProjectRole newRole) {
     ProjectRole requesterRole = requester.getRoleAsEnum();
@@ -214,7 +213,7 @@ public class ProjectService {
   /** 프로젝트 멤버 제거 (관리자 권한) */
   public Mono<Void> removeMember(String projectId,
       String targetUserId, String requesterId) {
-    return validateAdminAccess(projectId, requesterId)
+    return validateProjectAdmin(projectId, requesterId)
         .then(findProjectMemberByUserIdAndProjectId(targetUserId,
             projectId))
         .flatMap(targetMember -> protectAdmin(projectId, targetMember))
@@ -256,14 +255,6 @@ public class ProjectService {
           }
           return Mono.empty();
         });
-  }
-
-  private Mono<Void> validateMemberAccess(String projectId, String userId) {
-    return validateProjectMember(projectId, userId);
-  }
-
-  private Mono<Void> validateAdminAccess(String projectId, String userId) {
-    return validateProjectAdmin(projectId, userId);
   }
 
   private Mono<Project> findProjectById(String projectId) {
