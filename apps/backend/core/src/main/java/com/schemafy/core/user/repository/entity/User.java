@@ -20,6 +20,7 @@ import reactor.core.scheduler.Schedulers;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("users")
+@Deprecated(forRemoval = false)
 public class User extends BaseEntity {
 
   private String email;

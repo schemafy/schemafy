@@ -1,4 +1,4 @@
-package com.schemafy.core.user.exception;
+package com.schemafy.domain.user.domain.exception;
 
 import org.springframework.http.HttpStatus;
 
@@ -13,8 +13,10 @@ public enum UserErrorCode implements DomainErrorCode {
 
   NOT_FOUND(HttpStatus.NOT_FOUND),
   ALREADY_EXISTS(HttpStatus.CONFLICT),
-  LOGIN_FAILED(HttpStatus.UNAUTHORIZED);
+  LOGIN_FAILED(HttpStatus.UNAUTHORIZED),
+  OAUTH_LINK_INCONSISTENT(HttpStatus.INTERNAL_SERVER_ERROR);
 
   private final HttpStatus status;
 
 }
+

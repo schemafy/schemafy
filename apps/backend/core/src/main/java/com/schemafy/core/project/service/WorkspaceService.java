@@ -25,7 +25,7 @@ import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.repository.vo.WorkspaceSettings;
-import com.schemafy.core.user.exception.UserErrorCode;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.domain.common.exception.DomainException;
 
