@@ -23,91 +23,87 @@ public interface InvitationRepository
 
   @Query("""
       SELECT * FROM invitations
-      WHERE target_type = 'WORKSPACE'
-        AND target_id = :workspaceId
+      WHERE target_type = :targetType
+        AND target_id = :targetId
         AND deleted_at IS NULL
       ORDER BY created_at DESC
       LIMIT :limit OFFSET :offset
       """)
-  Flux<Invitation> findWorkspaceInvitations(String workspaceId, int limit, int offset);
+  Flux<Invitation> findInvitationsByTargetAndId(
+      String targetType,
+      String targetId,
+      int limit,
+      int offset);
 
   @Query("""
       SELECT COUNT(*) FROM invitations
-      WHERE target_type = 'WORKSPACE'
-        AND target_id = :workspaceId
+      WHERE target_type = :targetType
+        AND target_id = :targetId
         AND deleted_at IS NULL
       """)
-  Mono<Long> countWorkspaceInvitations(String workspaceId);
+  Mono<Long> countByTarget(
+      String targetType,
+      String targetId);
 
   @Query("""
       SELECT COUNT(*) FROM invitations
-      WHERE target_type = 'WORKSPACE'
-        AND target_id = :workspaceId
+      WHERE target_type = :targetType
+        AND target_id = :targetId
         AND invited_email = :email
-        AND status = 'PENDING'
+        AND status = :status
         AND deleted_at IS NULL
       """)
-  Mono<Long> countPendingWorkspaceInvitation(String workspaceId, String email);
-
-  @Query("""
-      SELECT * FROM invitations
-      WHERE target_type = 'PROJECT'
-        AND target_id = :projectId
-        AND deleted_at IS NULL
-      ORDER BY created_at DESC
-      LIMIT :limit OFFSET :offset
-      """)
-  Flux<Invitation> findProjectInvitations(String projectId, int limit, int offset);
-
-  @Query("""
-      SELECT COUNT(*) FROM invitations
-      WHERE target_type = 'PROJECT'
-        AND target_id = :projectId
-        AND deleted_at IS NULL
-      """)
-  Mono<Long> countProjectInvitations(String projectId);
-
-  @Query("""
-      SELECT COUNT(*) FROM invitations
-      WHERE target_type = 'PROJECT'
-        AND target_id = :projectId
-        AND invited_email = :email
-        AND status = 'PENDING'
-        AND deleted_at IS NULL
-      """)
-  Mono<Long> countPendingProjectInvitation(String projectId, String email);
+  Mono<Long> countByTargetAndEmailAndStatus(
+      String targetType,
+      String targetId,
+      String email,
+      String status);
 
   @Query("""
       SELECT * FROM invitations
       WHERE target_type = :targetType
         AND invited_email = :email
-        AND status = 'PENDING'
+        AND status = :status
         AND deleted_at IS NULL
       ORDER BY created_at DESC
       LIMIT :limit OFFSET :offset
       """)
-  Flux<Invitation> findPendingByEmailAndType(String email, String targetType, int limit, int offset);
+  Flux<Invitation> findByEmailAndTypeAndStatus(
+      String email,
+      String targetType,
+      String status,
+      int limit,
+      int offset);
 
   @Query("""
       SELECT COUNT(*) FROM invitations
       WHERE target_type = :targetType
         AND invited_email = :email
-        AND status = 'PENDING'
+        AND status = :status
         AND deleted_at IS NULL
       """)
-  Mono<Long> countPendingByEmailAndType(String email, String targetType);
+  Mono<Long> countByEmailAndTypeAndStatus(
+      String email,
+      String targetType,
+      String status);
 
   @Modifying
   @Query("""
       UPDATE invitations
-      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW(), version = version + 1
+      SET status = :resultStatus, resolved_at = NOW(), updated_at = NOW(), version = version + 1
       WHERE target_type = :targetType
         AND target_id = :targetId
         AND invited_email = :email
-        AND status = 'PENDING'
+        AND status = :currentStatus
         AND deleted_at IS NULL
         AND id != :excludeId
       """)
-  Mono<Long> cancelOtherPendingInvitations(String targetType, String targetId, String email, String excludeId);
+  Mono<Long> updateStatusByTargetAndEmail(
+      String targetType,
+      String targetId,
+      String email,
+      String resultStatus,
+      String currentStatus,
+      String excludeId);
 
 }

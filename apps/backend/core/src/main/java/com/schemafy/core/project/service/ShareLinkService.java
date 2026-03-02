@@ -1,6 +1,5 @@
 package com.schemafy.core.project.service;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -35,8 +34,9 @@ public class ShareLinkService {
   public Mono<Project> accessByCode(String code, String userId, String ipAddress, String userAgent) {
     String user = userId != null ? userId : "anonymous";
 
-    return shareLinkRepository.findValidLinkByCode(code, Instant.now())
+    return shareLinkRepository.findByCodeAndNotDeleted(code)
         .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
+        .flatMap(this::validateShareLinkAccessible)
         .doOnNext(shareLink -> log.info(
             "ShareLink access success - code: {}, projectId: {}, userId: {}, ip: {}, userAgent: {}",
             maskCode(code), shareLink.getProjectId(), user, ipAddress, userAgent))
@@ -49,6 +49,14 @@ public class ShareLinkService {
             .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_NOT_FOUND))))
         .doOnError(ex -> log.info("ShareLink access failed - code: {}, userId: {}, ip: {}, userAgent: {}, reason: {}",
             maskCode(code), user, ipAddress, userAgent, ex.getMessage()));
+  }
+
+  private Mono<ShareLink> validateShareLinkAccessible(ShareLink shareLink) {
+    if (Boolean.TRUE.equals(shareLink.getIsRevoked()) || shareLink.isExpired()) {
+      return Mono.error(new BusinessException(ErrorCode.SHARE_LINK_INVALID));
+    }
+
+    return Mono.just(shareLink);
   }
 
   public Mono<ShareLink> createShareLink(String workspaceId, String projectId, String userId) {

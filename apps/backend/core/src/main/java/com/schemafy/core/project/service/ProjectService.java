@@ -366,8 +366,14 @@ public class ProjectService {
 
   public Mono<Void> updateRoleInAllProjects(String workspaceId, String userId, WorkspaceRole workspaceRole) {
     ProjectRole projectRole = workspaceRole.toProjectRole();
-    return projectMemberRepository.updateRoleByWorkspaceIdAndUserId(
-        workspaceId, userId, projectRole.name())
+    return projectMemberRepository
+        .findByWorkspaceIdAndUserId(workspaceId, userId)
+        .filter(member -> shouldPropagateWorkspaceRole(member, projectRole))
+        .concatMap(member -> {
+          member.updateRole(projectRole);
+          return projectMemberRepository.save(member);
+        })
+        .count()
         .doOnNext(count -> {
           if (count > 0) {
             log.info("Propagated role to {} project memberships: workspace={}, user={}, role={}",
@@ -375,6 +381,20 @@ public class ProjectService {
           }
         })
         .then();
+  }
+
+  private boolean shouldPropagateWorkspaceRole(ProjectMember member, ProjectRole targetRole) {
+    ProjectRole currentRole = member.getRoleAsEnum();
+
+    if (currentRole == targetRole) {
+      return false;
+    }
+
+    if (currentRole == ProjectRole.EDITOR && targetRole == ProjectRole.VIEWER) {
+      return false;
+    }
+
+    return true;
   }
 
   public Mono<Void> removeFromAllProjects(String workspaceId, String userId) {

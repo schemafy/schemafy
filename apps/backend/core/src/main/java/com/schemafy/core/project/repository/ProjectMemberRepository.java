@@ -73,17 +73,13 @@ public interface ProjectMemberRepository
   Mono<Long> softDeleteByWorkspaceIdAndUserId(String workspaceId, String userId);
 
   @Query("""
-      UPDATE project_members
-      SET role = :role, updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = :userId
-        AND project_id IN (
-          SELECT id FROM projects
-          WHERE workspace_id = :workspaceId AND deleted_at IS NULL
-        )
-        AND deleted_at IS NULL
-        AND role != :role
-        AND (role != 'EDITOR' OR :role = 'ADMIN')
+      SELECT pm.* FROM project_members pm
+      INNER JOIN projects p ON pm.project_id = p.id
+      WHERE p.workspace_id = :workspaceId
+        AND pm.user_id = :userId
+        AND pm.deleted_at IS NULL
+        AND p.deleted_at IS NULL
       """)
-  Mono<Long> updateRoleByWorkspaceIdAndUserId(String workspaceId, String userId, String role);
+  Flux<ProjectMember> findByWorkspaceIdAndUserId(String workspaceId, String userId);
 
 }

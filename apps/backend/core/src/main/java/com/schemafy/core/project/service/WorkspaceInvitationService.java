@@ -17,6 +17,7 @@ import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
@@ -69,10 +70,18 @@ public class WorkspaceInvitationService {
       String currentUserId,
       int page,
       int size) {
+    String targetType = InvitationType.WORKSPACE.name();
+
     return validateAdmin(workspaceId, currentUserId)
-        .then(invitationRepository.countWorkspaceInvitations(workspaceId))
+        .then(invitationRepository.countByTarget(
+            targetType,
+            workspaceId))
         .flatMap(totalElements -> invitationRepository
-            .findWorkspaceInvitations(workspaceId, size, page * size)
+            .findInvitationsByTargetAndId(
+                targetType,
+                workspaceId,
+                size,
+                page * size)
             .collectList()
             .map(invitations -> PageResponse.of(
                 invitations, page, size, totalElements)));
@@ -88,10 +97,19 @@ public class WorkspaceInvitationService {
         .flatMap(user -> {
           String email = user.getEmail();
           String targetType = InvitationType.WORKSPACE.name();
+          String pendingStatus = InvitationStatus.PENDING.name();
 
-          return invitationRepository.countPendingByEmailAndType(email, targetType)
+          return invitationRepository.countByEmailAndTypeAndStatus(
+              email,
+              targetType,
+              pendingStatus)
               .flatMap(totalElements -> invitationRepository
-                  .findPendingByEmailAndType(email, targetType, size, page * size)
+                  .findByEmailAndTypeAndStatus(
+                      email,
+                      targetType,
+                      pendingStatus,
+                      size,
+                      page * size)
                   .collectList()
                   .map(invitations -> PageResponse.of(
                       invitations, page, size, totalElements)));
@@ -117,10 +135,12 @@ public class WorkspaceInvitationService {
                     invitation.accept();
 
                     return invitationRepository.save(invitation)
-                        .then(invitationRepository.cancelOtherPendingInvitations(
+                        .then(invitationRepository.updateStatusByTargetAndEmail(
                             invitation.getTargetType(),
                             invitation.getTargetId(),
                             invitation.getInvitedEmail(),
+                            InvitationStatus.CANCELLED.name(),
+                            InvitationStatus.PENDING.name(),
                             invitation.getId()))
                         .then(saveOrRestoreWorkspaceMember(invitation.getWorkspaceId(), currentUserId, invitation
                             .getWorkspaceRole()))
@@ -200,7 +220,11 @@ public class WorkspaceInvitationService {
       String workspaceId,
       String email) {
     return invitationRepository
-        .countPendingWorkspaceInvitation(workspaceId, email)
+        .countByTargetAndEmailAndStatus(
+            InvitationType.WORKSPACE.name(),
+            workspaceId,
+            email,
+            InvitationStatus.PENDING.name())
         .flatMap(count -> {
           if (count > 0) {
             log.warn("Duplicate pending invitation: workspace={}, email={}",

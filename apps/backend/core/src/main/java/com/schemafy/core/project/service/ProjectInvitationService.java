@@ -17,6 +17,7 @@ import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
+import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.service.dto.ProjectMemberDetail;
@@ -74,10 +75,18 @@ public class ProjectInvitationService {
       String currentUserId,
       int page,
       int size) {
+    String targetType = InvitationType.PROJECT.name();
+
     return validateProjectAdmin(projectId, currentUserId)
-        .then(invitationRepository.countProjectInvitations(projectId))
+        .then(invitationRepository.countByTarget(
+            targetType,
+            projectId))
         .flatMap(totalElements -> invitationRepository
-            .findProjectInvitations(projectId, size, page * size)
+            .findInvitationsByTargetAndId(
+                targetType,
+                projectId,
+                size,
+                page * size)
             .collectList()
             .map(invitations -> PageResponse.of(
                 invitations, page, size, totalElements)));
@@ -92,10 +101,19 @@ public class ProjectInvitationService {
         .flatMap(user -> {
           String email = user.getEmail();
           String targetType = InvitationType.PROJECT.name();
+          String pendingStatus = InvitationStatus.PENDING.name();
 
-          return invitationRepository.countPendingByEmailAndType(email, targetType)
+          return invitationRepository.countByEmailAndTypeAndStatus(
+              email,
+              targetType,
+              pendingStatus)
               .flatMap(totalElements -> invitationRepository
-                  .findPendingByEmailAndType(email, targetType, size, page * size)
+                  .findByEmailAndTypeAndStatus(
+                      email,
+                      targetType,
+                      pendingStatus,
+                      size,
+                      page * size)
                   .collectList()
                   .map(invitations -> PageResponse.of(
                       invitations, page, size, totalElements)));
@@ -121,10 +139,12 @@ public class ProjectInvitationService {
                     invitation.accept();
 
                     return invitationRepository.save(invitation)
-                        .then(invitationRepository.cancelOtherPendingInvitations(
+                        .then(invitationRepository.updateStatusByTargetAndEmail(
                             invitation.getTargetType(),
                             invitation.getTargetId(),
                             invitation.getInvitedEmail(),
+                            InvitationStatus.CANCELLED.name(),
+                            InvitationStatus.PENDING.name(),
                             invitation.getId()))
                         .then(saveOrRestoreProjectMember(invitation.getProjectId(), currentUserId, invitation
                             .getProjectRole()))
@@ -205,7 +225,11 @@ public class ProjectInvitationService {
       String projectId,
       String email) {
     return invitationRepository
-        .countPendingProjectInvitation(projectId, email)
+        .countByTargetAndEmailAndStatus(
+            InvitationType.PROJECT.name(),
+            projectId,
+            email,
+            InvitationStatus.PENDING.name())
         .flatMap(count -> {
           if (count > 0) {
             log.warn("Duplicate pending invitation: project={}, email={}",
