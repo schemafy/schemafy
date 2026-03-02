@@ -87,7 +87,6 @@ class DeleteMemoCommentServiceTest {
         .willReturn(Mono.empty());
 
     StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
-        "memo-1",
         "comment-1",
         "author-1",
         false)))
@@ -126,7 +125,6 @@ class DeleteMemoCommentServiceTest {
         .willReturn(Mono.empty());
 
     StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
-        "memo-1",
         "comment-2",
         "author-2",
         false)))
@@ -150,12 +148,34 @@ class DeleteMemoCommentServiceTest {
         .willReturn(Mono.just(comment));
 
     StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
-        "memo-1",
         "comment-1",
         "other-user",
         false)))
         .expectErrorMatches(DomainException.hasErrorCode(
             MemoErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("댓글은 존재하지만 부모 메모가 없으면 NOT_FOUND를 반환한다")
+  void deleteComment_parentMemoNotFound() {
+    MemoComment comment = new MemoComment(
+        "comment-1", "memo-1", "author-1", "body",
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-01-01T00:00:00Z"),
+        null);
+
+    given(getMemoCommentByIdPort.findMemoCommentById("comment-1"))
+        .willReturn(Mono.just(comment));
+    given(getMemoByIdPort.findMemoById("memo-1"))
+        .willReturn(Mono.empty());
+
+    StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
+        "comment-1",
+        "author-1",
+        false)))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            MemoErrorCode.NOT_FOUND))
         .verify();
   }
 

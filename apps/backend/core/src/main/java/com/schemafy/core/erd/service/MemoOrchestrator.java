@@ -96,11 +96,11 @@ public class MemoOrchestrator {
         .flatMapMany(this::mapCommentsToResponses);
   }
 
-  public Mono<MemoCommentResponse> updateComment(String memoId,
-      String commentId, UpdateMemoCommentRequest request,
+  public Mono<MemoCommentResponse> updateComment(String commentId,
+      UpdateMemoCommentRequest request,
       AuthenticatedUser user) {
     return updateMemoCommentUseCase.updateMemoComment(
-        commandMapper.toUpdateMemoCommentCommand(memoId, commentId, request,
+        commandMapper.toUpdateMemoCommentCommand(commentId, request,
             user))
         .flatMap(comment -> getUserSummary(comment.authorId())
             .map(author -> responseMapper.toMemoCommentResponse(comment,

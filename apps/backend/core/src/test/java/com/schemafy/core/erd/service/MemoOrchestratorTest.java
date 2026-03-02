@@ -209,7 +209,6 @@ class MemoOrchestratorTest {
         .thenReturn(Mono.error(new DomainException(MemoErrorCode.INVALID_PARAMETER)));
 
     StepVerifier.create(sut.updateComment(
-        "memo-1",
         "comment-1",
         new UpdateMemoCommentRequest("body"),
         AuthenticatedUser.of("user-1")))

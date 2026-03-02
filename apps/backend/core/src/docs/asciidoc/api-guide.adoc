@@ -1438,7 +1438,7 @@ include::{snippets}/memo-comment-list/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/v1.0/memos/{memoId}/comments/{commentId}
+PUT /api/v1.0/memo-comments/{commentId}
 ----
 
 [discrete]
@@ -1470,7 +1470,7 @@ include::{snippets}/memo-comment-update/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/memos/{memoId}/comments/{commentId}
+DELETE /api/v1.0/memo-comments/{commentId}
 ----
 
 [discrete]

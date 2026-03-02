@@ -102,23 +102,21 @@ public class MemoController {
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
-  @PutMapping("/memos/{memoId}/comments/{commentId}")
+  @PutMapping("/memo-comments/{commentId}")
   public Mono<MemoCommentResponse> updateMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
-      @PathVariable String memoId,
       @PathVariable String commentId,
       @Valid @RequestBody UpdateMemoCommentRequest request) {
-    return memoOrchestrator.updateComment(memoId, commentId, request, user);
+    return memoOrchestrator.updateComment(commentId, request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
-  @DeleteMapping("/memos/{memoId}/comments/{commentId}")
+  @DeleteMapping("/memo-comments/{commentId}")
   public Mono<Void> deleteMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
-      @PathVariable String memoId,
       @PathVariable String commentId) {
     return deleteMemoCommentUseCase.deleteMemoComment(
-        commandMapper.toDeleteMemoCommentCommand(memoId, commentId, user))
+        commandMapper.toDeleteMemoCommentCommand(commentId, user))
         .then();
   }
 

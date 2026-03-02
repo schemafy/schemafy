@@ -518,7 +518,6 @@ class MemoControllerTest {
   @Test
   @DisplayName("메모 댓글 수정 API 문서화")
   void updateMemoComment() throws Exception {
-    String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
     String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
     UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
         "수정된 내용");
@@ -538,13 +537,13 @@ class MemoControllerTest {
             }
             """), MemoCommentResponse.class);
 
-    given(memoOrchestrator.updateComment(eq(memoId), eq(commentId),
+    given(memoOrchestrator.updateComment(eq(commentId),
         any(UpdateMemoCommentRequest.class), any()))
         .willReturn(Mono.just(response));
 
     webTestClient.put()
-        .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",
-            memoId, commentId)
+        .uri(API_BASE_PATH + "/memo-comments/{commentId}",
+            commentId)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
@@ -553,8 +552,6 @@ class MemoControllerTest {
         .expectBody()
         .consumeWith(document("memo-comment-update",
             pathParameters(
-                parameterWithName("memoId")
-                    .description("메모 ID"),
                 parameterWithName("commentId")
                     .description("댓글 ID")),
             requestHeaders(
@@ -591,7 +588,6 @@ class MemoControllerTest {
   @Test
   @DisplayName("메모 댓글 삭제 API 문서화")
   void deleteMemoComment() throws Exception {
-    String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
     String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
 
     given(deleteMemoCommentUseCase.deleteMemoComment(
@@ -599,16 +595,14 @@ class MemoControllerTest {
         .willReturn(Mono.empty());
 
     webTestClient.delete()
-        .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",
-            memoId, commentId)
+        .uri(API_BASE_PATH + "/memo-comments/{commentId}",
+            commentId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .consumeWith(document("memo-comment-delete",
             pathParameters(
-                parameterWithName("memoId")
-                    .description("메모 ID"),
                 parameterWithName("commentId")
                     .description("삭제할 댓글 ID")),
             requestHeaders(

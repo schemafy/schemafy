@@ -34,20 +34,12 @@ class DeleteMemoCommentService implements DeleteMemoCommentUseCase {
   public Mono<Void> deleteMemoComment(DeleteMemoCommentCommand command) {
     return getMemoCommentByIdPort.findMemoCommentById(command.commentId())
         .switchIfEmpty(Mono.error(new DomainException(MemoErrorCode.COMMENT_NOT_FOUND)))
-        .flatMap(comment -> validateMemoBinding(command.memoId(), comment.memoId())
-            .then(checkDeletePermission(comment.authorId(), command.requesterId(),
-                command.canDeleteOthers()))
+        .flatMap(comment -> checkDeletePermission(comment.authorId(), command.requesterId(),
+            command.canDeleteOthers())
             .then(Mono.defer(
-                () -> findAndDelete(comment, command.memoId(), command.commentId()))))
+                () -> findAndDelete(comment, comment.memoId(), command.commentId()))))
         .then()
         .as(transactionalOperator::transactional);
-  }
-
-  private Mono<Void> validateMemoBinding(String requestMemoId, String commentMemoId) {
-    if (!commentMemoId.equals(requestMemoId)) {
-      return Mono.error(new DomainException(MemoErrorCode.INVALID_PARAMETER));
-    }
-    return Mono.empty();
   }
 
   private Mono<Void> checkDeletePermission(

@@ -53,10 +53,9 @@ class MemoApiCommandMapperTest {
     var commenter = AuthenticatedUser.withRoles("commenter-1",
         Set.of(ProjectRole.COMMENTER));
 
-    var command = sut.toDeleteMemoCommentCommand("memo-1", "comment-1",
+    var command = sut.toDeleteMemoCommentCommand("comment-1",
         commenter);
 
-    assertThat(command.memoId()).isEqualTo("memo-1");
     assertThat(command.commentId()).isEqualTo("comment-1");
     assertThat(command.requesterId()).isEqualTo("commenter-1");
     assertThat(command.canDeleteOthers()).isFalse();
@@ -72,7 +71,6 @@ class MemoApiCommandMapperTest {
         new UpdateMemoRequest("{\"x\":10}"),
         user);
     var commentCommand = sut.toUpdateMemoCommentCommand(
-        "memo-1",
         "comment-1",
         new UpdateMemoCommentRequest("updated"),
         user);
