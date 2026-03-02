@@ -21,8 +21,6 @@ import com.schemafy.core.erd.service.memo.MemoApiResponseMapper;
 import com.schemafy.core.user.controller.dto.response.UserSummaryResponse;
 import com.schemafy.domain.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.CreateMemoUseCase;
-import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentUseCase;
-import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.GetMemoCommentsUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.GetMemoUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.GetMemosBySchemaIdUseCase;
@@ -41,17 +39,15 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class MemoService {
+public class MemoOrchestrator {
 
   private final CreateMemoUseCase createMemoUseCase;
   private final GetMemoUseCase getMemoUseCase;
   private final GetMemosBySchemaIdUseCase getMemosBySchemaIdUseCase;
   private final UpdateMemoPositionUseCase updateMemoPositionUseCase;
-  private final DeleteMemoUseCase deleteMemoUseCase;
   private final CreateMemoCommentUseCase createMemoCommentUseCase;
   private final GetMemoCommentsUseCase getMemoCommentsUseCase;
   private final UpdateMemoCommentUseCase updateMemoCommentUseCase;
-  private final DeleteMemoCommentUseCase deleteMemoCommentUseCase;
   private final GetUsersByIdsUseCase getUsersByIdsUseCase;
   private final MemoApiCommandMapper commandMapper;
   private final MemoApiResponseMapper responseMapper;
@@ -84,11 +80,6 @@ public class MemoService {
             .map(author -> responseMapper.toMemoResponse(memo, author)));
   }
 
-  public Mono<Void> deleteMemo(String memoId, AuthenticatedUser user) {
-    return deleteMemoUseCase.deleteMemo(
-        commandMapper.toDeleteMemoCommand(memoId, user));
-  }
-
   public Mono<MemoCommentResponse> createComment(String memoId,
       CreateMemoCommentRequest request, AuthenticatedUser user) {
     return createMemoCommentUseCase.createMemoComment(
@@ -114,12 +105,6 @@ public class MemoService {
         .flatMap(comment -> getUserSummary(comment.authorId())
             .map(author -> responseMapper.toMemoCommentResponse(comment,
                 author)));
-  }
-
-  public Mono<Void> deleteComment(String memoId, String commentId,
-      AuthenticatedUser user) {
-    return deleteMemoCommentUseCase.deleteMemoComment(
-        commandMapper.toDeleteMemoCommentCommand(memoId, commentId, user));
   }
 
   private Mono<MemoDetailResponse> buildMemoDetailResponse(MemoDetail detail) {
