@@ -19,8 +19,6 @@ import com.schemafy.core.erd.controller.dto.response.MemoResponse;
 import com.schemafy.core.erd.service.memo.MemoApiCommandMapper;
 import com.schemafy.core.erd.service.memo.MemoApiResponseMapper;
 import com.schemafy.core.user.controller.dto.response.UserSummaryResponse;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.domain.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.CreateMemoUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentUseCase;
@@ -33,6 +31,9 @@ import com.schemafy.domain.erd.memo.application.port.in.UpdateMemoPositionUseCas
 import com.schemafy.domain.erd.memo.domain.Memo;
 import com.schemafy.domain.erd.memo.domain.MemoComment;
 import com.schemafy.domain.erd.memo.domain.MemoDetail;
+import com.schemafy.domain.user.application.port.in.GetUsersByIdsQuery;
+import com.schemafy.domain.user.application.port.in.GetUsersByIdsUseCase;
+import com.schemafy.domain.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -51,7 +52,7 @@ public class MemoService {
   private final GetMemoCommentsUseCase getMemoCommentsUseCase;
   private final UpdateMemoCommentUseCase updateMemoCommentUseCase;
   private final DeleteMemoCommentUseCase deleteMemoCommentUseCase;
-  private final UserRepository userRepository;
+  private final GetUsersByIdsUseCase getUsersByIdsUseCase;
   private final MemoApiCommandMapper commandMapper;
   private final MemoApiResponseMapper responseMapper;
 
@@ -182,14 +183,14 @@ public class MemoService {
     if (userIds.isEmpty()) {
       return Mono.just(Collections.emptyMap());
     }
-    return userRepository.findAllById(userIds)
-        .collectMap(User::getId, UserSummaryResponse::from);
+    return getUsersByIdsUseCase.getUsersByIds(new GetUsersByIdsQuery(userIds))
+        .collectMap(User::id,
+            user -> new UserSummaryResponse(user.id(), user.name()));
   }
 
   private Mono<UserSummaryResponse> getUserSummary(String userId) {
-    return userRepository.findById(userId)
-        .map(UserSummaryResponse::from)
-        .defaultIfEmpty(new UserSummaryResponse(userId, "Unknown"));
+    return loadUserSummaryMap(Collections.singleton(userId))
+        .map(userMap -> getUserFromMap(userMap, userId));
   }
 
   private UserSummaryResponse getUserFromMap(
