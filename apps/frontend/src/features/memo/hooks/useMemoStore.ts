@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
 import * as memoApi from '../api/api';
-import type { Memo, MemoComment } from '../api/types';
+import type { Memo } from '../api/types';
 import {
   stringifyPosition,
   transformApiMemoToNode,
@@ -29,9 +29,8 @@ export const useMemoStore = () => {
 
     memoApi
       .getSchemaMemosWithComments(SCHEMA_ID)
-      .then((res) => {
-        if (!res.success) return;
-        setStoredMemos(res.result as Memo[]);
+      .then((memos) => {
+        setStoredMemos(memos);
       })
       .catch((error) => {
         console.error('Failed to fetch memos:', error);
@@ -42,33 +41,32 @@ export const useMemoStore = () => {
     position: { x: number; y: number },
     content: string,
   ) => {
-    const res = await memoApi.createMemo({
-      schemaId: SCHEMA_ID,
-      positions: stringifyPosition(position),
-      body: content,
-    });
-    if (res.success) {
-      setStoredMemos((prev) => [res.result as Memo, ...prev]);
-    }
+    try {
+      const memo = await memoApi.createMemo({
+        schemaId: SCHEMA_ID,
+        positions: stringifyPosition(position),
+        body: content,
+      });
+      setStoredMemos((prev) => [memo, ...prev]);
+    } catch {}
   };
 
   const updateMemo = useCallback(async (id: string, positions: string) => {
-    const res = await memoApi.updateMemo(id, { positions });
-    if (res.success) {
-      const updated = res.result as Memo;
+    try {
+      const updated = await memoApi.updateMemo(id, { positions });
       setStoredMemos((prev) =>
         prev.map((m) =>
           m.id === id ? { ...updated, comments: m.comments } : m,
         ),
       );
-    }
+    } catch {}
   }, []);
 
   const deleteMemo = useCallback(async (id: string) => {
-    const res = await memoApi.deleteMemo(id);
-    if (res.success) {
+    try {
+      await memoApi.deleteMemo(id);
       setStoredMemos((prev) => prev.filter((m) => m.id !== id));
-    }
+    } catch {}
   }, []);
 
   const onMemosChange = useCallback(
@@ -91,15 +89,14 @@ export const useMemoStore = () => {
   );
 
   const createComment = async (memoId: string, body: string) => {
-    const res = await memoApi.createMemoComment(memoId, { body });
-    if (res.success) {
-      const comment = res.result as MemoComment;
+    try {
+      const comment = await memoApi.createMemoComment(memoId, { body });
       setStoredMemos((prev) =>
         prev.map((m) =>
           m.id === memoId ? { ...m, comments: [...m.comments, comment] } : m,
         ),
       );
-    }
+    } catch {}
   };
 
   const updateComment = async (
@@ -107,9 +104,10 @@ export const useMemoStore = () => {
     commentId: string,
     body: string,
   ) => {
-    const res = await memoApi.updateMemoComment(memoId, commentId, { body });
-    if (res.success) {
-      const updated = res.result as MemoComment;
+    try {
+      const updated = await memoApi.updateMemoComment(memoId, commentId, {
+        body,
+      });
       setStoredMemos((prev) =>
         prev.map((m) =>
           m.id === memoId
@@ -122,12 +120,12 @@ export const useMemoStore = () => {
             : m,
         ),
       );
-    }
+    } catch {}
   };
 
   const deleteComment = async (memoId: string, commentId: string) => {
-    const res = await memoApi.deleteMemoComment(memoId, commentId);
-    if (res.success) {
+    try {
+      await memoApi.deleteMemoComment(memoId, commentId);
       setStoredMemos((prev) => {
         const updated = prev.map((m) =>
           m.id === memoId
@@ -136,7 +134,7 @@ export const useMemoStore = () => {
         );
         return updated.filter((m) => m.id !== memoId || m.comments.length > 0);
       });
-    }
+    } catch {}
   };
 
   return {

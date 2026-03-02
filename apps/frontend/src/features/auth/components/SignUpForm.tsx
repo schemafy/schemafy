@@ -71,12 +71,10 @@ export const SignUpForm = () => {
     validationRules,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string>('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitError('');
 
     const hasErrors = Object.keys(errors).length > 0;
     if (hasErrors) {
@@ -86,22 +84,15 @@ export const SignUpForm = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await signUp({
+      await signUp({
         email: form.email,
         name: form.name,
         password: form.password,
       });
 
-      if (response.success) {
-        resetForm();
-        navigate('/');
-      } else {
-        setSubmitError(response.error?.message || '회원가입에 실패했습니다.');
-      }
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : '회원가입에 실패했습니다.',
-      );
+      resetForm();
+      navigate('/');
+    } catch {
     } finally {
       setIsSubmitting(false);
     }
@@ -127,9 +118,6 @@ export const SignUpForm = () => {
           onBlur={handleBlur}
         />
       ))}
-      {submitError && (
-        <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
-      )}
       <Button type="submit" disabled={isSubmitting} className="my-4" round>
         {isSubmitting ? 'Creating...' : 'Create Account'}
       </Button>

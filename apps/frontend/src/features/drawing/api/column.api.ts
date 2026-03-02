@@ -1,4 +1,4 @@
-import { type ApiResponse, apiClient } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import type {
   MutationResponse,
   ColumnResponse,
@@ -12,101 +12,76 @@ import type {
 export const createColumn = async (
   data: CreateColumnRequest,
 ): Promise<MutationResponse<ColumnResponse>> => {
-  const { data: res } = await apiClient.post<
-    ApiResponse<MutationResponse<ColumnResponse>>
-  >('/columns', data);
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  const { data: res } = await apiClient.post<MutationResponse<ColumnResponse>>(
+    '/columns',
+    data,
+  );
+  return res;
 };
 
 export const getColumn = async (columnId: string): Promise<ColumnResponse> => {
-  const { data } = await apiClient.get<ApiResponse<ColumnResponse>>(
-    `/columns/${columnId}`,
-  );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  const { data } = await apiClient.get<ColumnResponse>(`/columns/${columnId}`);
+  return data;
 };
 
 export const getColumnsByTableId = async (
   tableId: string,
 ): Promise<ColumnResponse[]> => {
-  const { data } = await apiClient.get<ApiResponse<ColumnResponse[]>>(
+  const { data } = await apiClient.get<ColumnResponse[]>(
     `/tables/${tableId}/columns`,
   );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  return data;
 };
 
 export const changeColumnName = async (
   columnId: string,
   data: ChangeColumnNameRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/columns/${columnId}/name`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const changeColumnType = async (
   columnId: string,
   data: ChangeColumnTypeRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/columns/${columnId}/type`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const changeColumnMeta = async (
   columnId: string,
   data: ChangeColumnMetaRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/columns/${columnId}/meta`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const changeColumnPosition = async (
   columnId: string,
   data: ChangeColumnPositionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/columns/${columnId}/position`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const deleteColumn = async (
   columnId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<MutationResponse>(
     `/columns/${columnId}`,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };

@@ -1,4 +1,4 @@
-import { type ApiResponse, apiClient } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import type {
   MutationResponse,
   RelationshipResponse,
@@ -17,116 +17,89 @@ export const createRelationship = async (
   data: CreateRelationshipRequest,
 ): Promise<MutationResponse<RelationshipResponse>> => {
   const { data: res } = await apiClient.post<
-    ApiResponse<MutationResponse<RelationshipResponse>>
+    MutationResponse<RelationshipResponse>
   >('/relationships', data);
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const getRelationship = async (
   relationshipId: string,
 ): Promise<RelationshipResponse> => {
-  const { data } = await apiClient.get<ApiResponse<RelationshipResponse>>(
+  const { data } = await apiClient.get<RelationshipResponse>(
     `/relationships/${relationshipId}`,
   );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  return data;
 };
 
 export const getRelationshipsByTableId = async (
   tableId: string,
 ): Promise<RelationshipResponse[]> => {
-  const { data } = await apiClient.get<ApiResponse<RelationshipResponse[]>>(
+  const { data } = await apiClient.get<RelationshipResponse[]>(
     `/tables/${tableId}/relationships`,
   );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  return data;
 };
 
 export const changeRelationshipName = async (
   relationshipId: string,
   data: ChangeRelationshipNameRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationships/${relationshipId}/name`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const changeRelationshipKind = async (
   relationshipId: string,
   data: ChangeRelationshipKindRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationships/${relationshipId}/kind`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const changeRelationshipCardinality = async (
   relationshipId: string,
   data: ChangeRelationshipCardinalityRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationships/${relationshipId}/cardinality`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const changeRelationshipExtra = async (
   relationshipId: string,
   data: ChangeRelationshipExtraRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationships/${relationshipId}/extra`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const deleteRelationship = async (
   relationshipId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<MutationResponse>(
     `/relationships/${relationshipId}`,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const getRelationshipColumns = async (
   relationshipId: string,
 ): Promise<RelationshipColumnResponse[]> => {
-  const { data } = await apiClient.get<
-    ApiResponse<RelationshipColumnResponse[]>
-  >(`/relationships/${relationshipId}/columns`);
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  const { data } = await apiClient.get<RelationshipColumnResponse[]>(
+    `/relationships/${relationshipId}/columns`,
+  );
+  return data;
 };
 
 export const addRelationshipColumn = async (
@@ -134,48 +107,36 @@ export const addRelationshipColumn = async (
   data: AddRelationshipColumnRequest,
 ): Promise<MutationResponse<AddRelationshipColumnResponse>> => {
   const { data: res } = await apiClient.post<
-    ApiResponse<MutationResponse<AddRelationshipColumnResponse>>
+    MutationResponse<AddRelationshipColumnResponse>
   >(`/relationships/${relationshipId}/columns`, data);
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const removeRelationshipColumn = async (
   relationshipColumnId: string,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.delete<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.delete<MutationResponse>(
     `/relationship-columns/${relationshipColumnId}`,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };
 
 export const getRelationshipColumn = async (
   relationshipColumnId: string,
 ): Promise<RelationshipColumnResponse> => {
-  const { data } = await apiClient.get<ApiResponse<RelationshipColumnResponse>>(
+  const { data } = await apiClient.get<RelationshipColumnResponse>(
     `/relationship-columns/${relationshipColumnId}`,
   );
-  if (!data.success || !data.result) {
-    throw data.error ?? new Error('Unknown API error');
-  }
-  return data.result;
+  return data;
 };
 
 export const changeRelationshipColumnPosition = async (
   relationshipColumnId: string,
   data: ChangeRelationshipColumnPositionRequest,
 ): Promise<MutationResponse> => {
-  const { data: res } = await apiClient.patch<ApiResponse<MutationResponse>>(
+  const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationship-columns/${relationshipColumnId}/position`,
     data,
   );
-  if (!res.success || !res.result) {
-    throw res.error ?? new Error('Unknown API error');
-  }
-  return res.result;
+  return res;
 };

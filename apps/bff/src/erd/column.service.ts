@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { BackendClientService } from '../common/backend-client/backend-client.service';
-import { ApiResponse } from '../common/types/api-response.types';
 import type {
   ChangeColumnMetaRequest,
   ChangeColumnNameRequest,
@@ -18,9 +17,9 @@ export class ColumnService {
   async createColumn(
     data: CreateColumnRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse<ColumnResponse>>> {
+  ): Promise<MutationResponse<ColumnResponse>> {
     const response = await this.backendClient.client.post<
-      ApiResponse<MutationResponse<ColumnResponse>>
+      MutationResponse<ColumnResponse>
     >('/api/v1.0/columns', data, this.backendClient.getAuthConfig(authHeader));
     return response.data;
   }
@@ -28,10 +27,8 @@ export class ColumnService {
   async getColumn(
     columnId: string,
     authHeader: string,
-  ): Promise<ApiResponse<ColumnResponse>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<ColumnResponse>
-    >(
+  ): Promise<ColumnResponse> {
+    const response = await this.backendClient.client.get<ColumnResponse>(
       `/api/v1.0/columns/${columnId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -41,10 +38,8 @@ export class ColumnService {
   async getColumnsByTableId(
     tableId: string,
     authHeader: string,
-  ): Promise<ApiResponse<ColumnResponse[]>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<ColumnResponse[]>
-    >(
+  ): Promise<ColumnResponse[]> {
+    const response = await this.backendClient.client.get<ColumnResponse[]>(
       `/api/v1.0/tables/${tableId}/columns`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -55,10 +50,8 @@ export class ColumnService {
     columnId: string,
     data: ChangeColumnNameRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/columns/${columnId}/name`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -70,10 +63,8 @@ export class ColumnService {
     columnId: string,
     data: ChangeColumnTypeRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/columns/${columnId}/type`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -85,10 +76,8 @@ export class ColumnService {
     columnId: string,
     data: ChangeColumnMetaRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/columns/${columnId}/meta`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -100,10 +89,8 @@ export class ColumnService {
     columnId: string,
     data: ChangeColumnPositionRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/columns/${columnId}/position`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -114,10 +101,8 @@ export class ColumnService {
   async deleteColumn(
     columnId: string,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.delete<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/columns/${columnId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
