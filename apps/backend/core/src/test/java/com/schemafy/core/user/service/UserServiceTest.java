@@ -16,10 +16,10 @@ import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.dto.LoginCommand;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.user.domain.AuthProvider;
 import com.schemafy.domain.user.domain.User;
 
 import reactor.core.publisher.Mono;

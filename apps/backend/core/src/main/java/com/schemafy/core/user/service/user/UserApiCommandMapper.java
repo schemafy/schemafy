@@ -9,7 +9,6 @@ import com.schemafy.domain.user.application.port.in.GetUserByIdQuery;
 import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthCommand;
 import com.schemafy.domain.user.application.port.in.LoginUserCommand;
 import com.schemafy.domain.user.application.port.in.SignUpUserCommand;
-import com.schemafy.domain.user.domain.AuthProvider;
 
 @Component
 public class UserApiCommandMapper {
@@ -30,9 +29,8 @@ public class UserApiCommandMapper {
     return new LoginOrSignUpOAuthCommand(
         command.email(),
         command.name(),
-        AuthProvider.valueOf(command.provider().name()),
+        command.provider(),
         command.providerUserId());
   }
 
 }
-
