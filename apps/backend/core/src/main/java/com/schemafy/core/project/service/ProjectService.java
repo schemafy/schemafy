@@ -171,17 +171,8 @@ public class ProjectService {
 
           validateRoleChangePermission(requester, target,
               role);
-
-          // 마지막 ADMIN 강등 방지
-          Mono<Void> adminGuard = Mono.empty();
-          if (target.isAdmin() && role != ProjectRole.ADMIN) {
-            adminGuard = validateAdminProtection(projectId);
-          }
-
-          return adminGuard.then(Mono.defer(() -> {
-            target.updateRole(role);
-            return projectMemberRepository.save(target);
-          }));
+          target.updateRole(role);
+          return projectMemberRepository.save(target);
         })
         .flatMap(this::buildMemberDetail)
         .as(transactionalOperator::transactional);
@@ -216,45 +207,31 @@ public class ProjectService {
     return validateProjectAdmin(projectId, requesterId)
         .then(findProjectMemberByUserIdAndProjectId(targetUserId,
             projectId))
-        .flatMap(targetMember -> protectAdmin(projectId, targetMember))
+        .flatMap(this::softDeleteMember)
         .as(transactionalOperator::transactional);
   }
 
   /** 프로젝트 자발적 탈퇴 */
   public Mono<Void> leaveProject(String projectId, String userId) {
     return findProjectMemberByUserIdAndProjectId(userId, projectId)
-        .flatMap(member -> protectAdmin(projectId, member)
-            .then(projectMemberRepository
-                .countByProjectIdAndNotDeleted(projectId)
-                .flatMap(memberCount -> {
-                  if (memberCount <= 1) {
-                    return softDeleteMember(member)
-                        .then(projectRepository
-                            .findByIdAndNotDeleted(
-                                projectId)
-                            .flatMap(project -> {
-                              project.delete();
-                              return projectRepository
-                                  .save(project)
-                                  .then();
-                            }));
-                  }
-                  return softDeleteMember(member);
-                })))
+        .flatMap(member -> projectMemberRepository
+            .countByProjectIdAndNotDeleted(projectId)
+            .flatMap(memberCount -> {
+              if (memberCount <= 1) {
+                return softDeleteMember(member)
+                    .then(projectRepository
+                        .findByIdAndNotDeleted(
+                            projectId)
+                        .flatMap(project -> {
+                          project.delete();
+                          return projectRepository
+                              .save(project)
+                              .then();
+                        }));
+              }
+              return softDeleteMember(member);
+            }))
         .as(transactionalOperator::transactional);
-  }
-
-  private Mono<Void> validateAdminProtection(String projectId) {
-    return projectMemberRepository
-        .countByProjectIdAndRoleAndNotDeleted(projectId,
-            ProjectRole.ADMIN.name())
-        .flatMap(adminCount -> {
-          if (adminCount <= 1) {
-            return Mono.error(new BusinessException(
-                ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED));
-          }
-          return Mono.empty();
-        });
   }
 
   private Mono<Project> findProjectById(String projectId) {
@@ -283,16 +260,6 @@ public class ProjectService {
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
         .switchIfEmpty(Mono.error(new BusinessException(
             ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
-  }
-
-  private Mono<Void> protectAdmin(String projectId,
-      ProjectMember targetMember) {
-    if (targetMember.isAdmin()) {
-      return validateAdminProtection(projectId)
-          .then(softDeleteMember(targetMember));
-    }
-
-    return softDeleteMember(targetMember);
   }
 
   private Mono<Void> softDeleteMember(ProjectMember member) {

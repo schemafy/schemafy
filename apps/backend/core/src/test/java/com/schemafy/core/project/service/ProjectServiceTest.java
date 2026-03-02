@@ -53,12 +53,12 @@ class ProjectServiceTest {
   @Autowired
   private UserRepository userRepository;
 
-  private User ownerUser;
+  private User primaryAdminUser;
   private User adminUser;
   private User viewerUser;
   private Workspace testWorkspace;
   private Project testProject;
-  private ProjectMember ownerMember;
+  private ProjectMember primaryAdminMember;
   private ProjectMember adminMember;
   private ProjectMember viewerMember;
 
@@ -73,8 +73,8 @@ class ProjectServiceTest {
 
     BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    ownerUser = User.signUp(
-        new UserInfo("owner@test.com", "Owner User", "password"),
+    primaryAdminUser = User.signUp(
+        new UserInfo("primary-admin@test.com", "Primary Admin User", "password"),
         encoder).flatMap(userRepository::save).block();
 
     adminUser = User.signUp(
@@ -91,7 +91,7 @@ class ProjectServiceTest {
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 
     workspaceMemberRepository.save(
-        WorkspaceMember.create(testWorkspace.getId(), ownerUser.getId(),
+        WorkspaceMember.create(testWorkspace.getId(), primaryAdminUser.getId(),
             WorkspaceRole.ADMIN))
         .block();
     workspaceMemberRepository.save(
@@ -106,9 +106,9 @@ class ProjectServiceTest {
     testProject = Project.create(testWorkspace.getId(), "Test Project", "Test Description");
     testProject = projectRepository.save(testProject).block();
 
-    ownerMember = ProjectMember.create(testProject.getId(),
-        ownerUser.getId(), ProjectRole.ADMIN);
-    ownerMember = projectMemberRepository.save(ownerMember).block();
+    primaryAdminMember = ProjectMember.create(testProject.getId(),
+        primaryAdminUser.getId(), ProjectRole.ADMIN);
+    primaryAdminMember = projectMemberRepository.save(primaryAdminMember).block();
 
     adminMember = ProjectMember.create(testProject.getId(),
         adminUser.getId(), ProjectRole.ADMIN);
@@ -142,8 +142,8 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("마지막 OWNER/ADMIN의 권한 변경은 방지된다")
-    void lastOwnerOrAdminDowngrade_prevented() {
+    @DisplayName("마지막 ADMIN의 권한 변경은 방지된다")
+    void lastAdminDowngrade_prevented() {
       User secondAdmin = User.signUp(
           new UserInfo("admin2@test.com", "Second Admin", "password"),
           new BCryptPasswordEncoder()).flatMap(userRepository::save)
@@ -171,9 +171,9 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.updateMemberRole(
               testProject.getId(),
-              ownerUser.getId(),
+              primaryAdminUser.getId(),
               request.role(),
-              ownerUser.getId()))
+              primaryAdminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e)
                   .getErrorCode() == ErrorCode.CANNOT_CHANGE_OWN_ROLE)
@@ -230,7 +230,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("마지막 ADMIN을 다른 역할로 강등 시도 시 방지된다")
     void demoteLastAdmin_prevented() {
-      // adminMember와 viewerMember 제거하여 ownerUser만 ADMIN으로 남김
+      // adminMember와 viewerMember 제거하여 primaryAdminUser만 ADMIN으로 남김
       projectMemberRepository.deleteById(adminMember.getId()).block();
       projectMemberRepository.deleteById(viewerMember.getId()).block();
 
@@ -244,20 +244,20 @@ class ProjectServiceTest {
           testProject.getId(), secondAdmin.getId(), ProjectRole.ADMIN);
       projectMemberRepository.save(secondAdminMember).block();
 
-      // 현재: ownerUser(ADMIN) + secondAdmin(ADMIN) = 2명
-      // secondAdmin이 ownerUser를 VIEWER로 강등 → 성공 (ADMIN 1명 남음)
+      // 현재: primaryAdminUser(ADMIN) + secondAdmin(ADMIN) = 2명
+      // secondAdmin이 primaryAdminUser를 VIEWER로 강등 → 성공 (ADMIN 1명 남음)
       UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(ProjectRole.VIEWER);
       StepVerifier.create(
           projectService.updateMemberRole(
-              testProject.getId(), ownerUser.getId(), request.role(), secondAdmin.getId()))
+              testProject.getId(), primaryAdminUser.getId(), request.role(), secondAdmin.getId()))
           .assertNext(response -> assertThat(response.member().getRole()).isEqualTo(ProjectRole.VIEWER.name()))
           .verifyComplete();
 
-      // 현재: ownerUser(VIEWER) + secondAdmin(ADMIN) = ADMIN 1명
-      // ownerUser는 이제 VIEWER이므로 secondAdmin을 강등할 수 없음 (PROJECT_ADMIN_REQUIRED)
+      // 현재: primaryAdminUser(VIEWER) + secondAdmin(ADMIN) = ADMIN 1명
+      // primaryAdminUser는 이제 VIEWER이므로 secondAdmin을 강등할 수 없음 (PROJECT_ADMIN_REQUIRED)
       StepVerifier.create(
           projectService.updateMemberRole(
-              testProject.getId(), secondAdmin.getId(), request.role(), ownerUser.getId()))
+              testProject.getId(), secondAdmin.getId(), request.role(), primaryAdminUser.getId()))
           .expectErrorMatches(e -> e instanceof BusinessException &&
               ((BusinessException) e).getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
           .verify();
@@ -270,20 +270,22 @@ class ProjectServiceTest {
   class RemoveMember {
 
     @Test
-    @DisplayName("마지막 OWNER/ADMIN 제거는 방지된다")
-    void lastOwnerOrAdminRemoval_prevented() {
+    @DisplayName("마지막 ADMIN도 제거할 수 있다")
+    void lastAdminRemoval_allowed() {
       projectMemberRepository.deleteById(adminMember.getId()).block();
       projectMemberRepository.deleteById(viewerMember.getId()).block();
 
       StepVerifier.create(
           projectService.removeMember(
               testProject.getId(),
-              ownerUser.getId(),
-              ownerUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED)
-          .verify();
+              primaryAdminUser.getId(),
+              primaryAdminUser.getId()))
+          .verifyComplete();
+
+      ProjectMember deleted = projectMemberRepository
+          .findById(primaryAdminMember.getId()).block();
+      assertThat(deleted).isNotNull();
+      assertThat(deleted.isDeleted()).isTrue();
     }
 
     @Test
@@ -330,25 +332,32 @@ class ProjectServiceTest {
   class LeaveProject {
 
     @Test
-    @DisplayName("마지막 OWNER/ADMIN은 탈퇴할 수 없다")
-    void lastOwnerOrAdminLeave_prevented() {
+    @DisplayName("마지막 ADMIN도 탈퇴할 수 있다")
+    void lastAdminLeave_allowed() {
       projectMemberRepository.deleteById(adminMember.getId()).block();
       projectMemberRepository.deleteById(viewerMember.getId()).block();
 
       StepVerifier.create(
           projectService.leaveProject(
               testProject.getId(),
-              ownerUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_BE_REMOVED)
-          .verify();
+              primaryAdminUser.getId()))
+          .verifyComplete();
+
+      ProjectMember deletedMember = projectMemberRepository
+          .findById(primaryAdminMember.getId()).block();
+      assertThat(deletedMember).isNotNull();
+      assertThat(deletedMember.isDeleted()).isTrue();
+
+      Project deletedProject = projectRepository
+          .findById(testProject.getId()).block();
+      assertThat(deletedProject).isNotNull();
+      assertThat(deletedProject.isDeleted()).isTrue();
     }
 
     @Test
     @DisplayName("마지막 멤버 탈퇴 시 프로젝트도 삭제된다")
     void lastMemberLeave_deletesProject() {
-      projectMemberRepository.deleteById(ownerMember.getId()).block();
+      projectMemberRepository.deleteById(primaryAdminMember.getId()).block();
       projectMemberRepository.deleteById(adminMember.getId()).block();
 
       Long memberCount = projectMemberRepository
@@ -375,7 +384,7 @@ class ProjectServiceTest {
     void normalMemberLeave_success() {
       Long beforeCount = projectMemberRepository
           .countByProjectIdAndNotDeleted(testProject.getId()).block();
-      assertThat(beforeCount).isEqualTo(3L); // owner, admin, viewer
+      assertThat(beforeCount).isEqualTo(3L); // primaryAdmin, admin, viewer
 
       Mono<Void> result = projectService.leaveProject(
           testProject.getId(),
@@ -406,9 +415,10 @@ class ProjectServiceTest {
     @Test
     @DisplayName("프로젝트 생성 시 워크스페이스 MEMBER는 프로젝트 VIEWER로 추가된다")
     void createProject_WorkspaceMember_AddedAsProjectViewer() {
-      // ownerUser는 workspace ADMIN, adminUser와 viewerUser는 workspace MEMBER
+      // primaryAdminUser는 workspace ADMIN, adminUser와 viewerUser는 workspace MEMBER
       // createProject는 workspace ADMIN만 호출 가능
-      projectService.createProject(testWorkspace.getId(), "New Project", "Description", ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), "New Project", "Description", primaryAdminUser.getId())
+          .block();
 
       // 새로 생성된 프로젝트 찾기
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
@@ -417,11 +427,11 @@ class ProjectServiceTest {
       assertThat(projects).hasSize(1);
       String newProjectId = projects.get(0).getId();
 
-      // ownerUser는 ADMIN으로 추가 (생성자)
-      ProjectMember ownerPm = projectMemberRepository
-          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, ownerUser.getId()).block();
-      assertThat(ownerPm).isNotNull();
-      assertThat(ownerPm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+      // primaryAdminUser는 ADMIN으로 추가 (생성자)
+      ProjectMember primaryAdminPm = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(newProjectId, primaryAdminUser.getId()).block();
+      assertThat(primaryAdminPm).isNotNull();
+      assertThat(primaryAdminPm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
 
       // adminUser는 workspace MEMBER이므로 VIEWER로 추가
       ProjectMember adminPm = projectMemberRepository
@@ -445,7 +455,8 @@ class ProjectServiceTest {
       viewerWsMember.delete();
       workspaceMemberRepository.save(viewerWsMember).block();
 
-      projectService.createProject(testWorkspace.getId(), "New Project", "Description", ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), "New Project", "Description", primaryAdminUser.getId())
+          .block();
 
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
           .filter(p -> p.getName().equals("New Project"))
@@ -467,18 +478,19 @@ class ProjectServiceTest {
     @Test
     @DisplayName("프로젝트 생성자는 중복 추가되지 않는다")
     void createProject_CreatorNotDuplicated() {
-      projectService.createProject(testWorkspace.getId(), "New Project", "Description", ownerUser.getId()).block();
+      projectService.createProject(testWorkspace.getId(), "New Project", "Description", primaryAdminUser.getId())
+          .block();
 
       var projects = projectRepository.findByWorkspaceIdAndNotDeleted(testWorkspace.getId())
           .filter(p -> p.getName().equals("New Project"))
           .collectList().block();
       String newProjectId = projects.get(0).getId();
 
-      // 생성자(ownerUser)의 프로젝트 멤버 수가 정확히 1이어야 함
-      Long ownerCount = projectMemberRepository
+      // 생성자를 포함한 전체 프로젝트 멤버 수를 검증
+      Long memberCount = projectMemberRepository
           .countByProjectIdAndNotDeleted(newProjectId).block();
-      // 3명: ownerUser(ADMIN) + adminUser(VIEWER) + viewerUser(VIEWER)
-      assertThat(ownerCount).isEqualTo(3L);
+      // 3명: primaryAdminUser(ADMIN) + adminUser(VIEWER) + viewerUser(VIEWER)
+      assertThat(memberCount).isEqualTo(3L);
     }
 
   }

@@ -334,7 +334,7 @@ class ProjectControllerTest {
 
   @Test
   @DisplayName("ADMIN이 아닌 사용자는 프로젝트 삭제에 실패한다")
-  void deleteProjectFailWhenNotOwner() {
+  void deleteProjectFailWhenNotAdmin() {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
@@ -384,9 +384,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     ProjectMember targetMember = ProjectMember.create(project.getId(),
         testUser2Id, ProjectRole.VIEWER);
@@ -422,9 +422,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     ProjectMember targetMember = ProjectMember.create(project.getId(),
         testUser2Id, ProjectRole.VIEWER);
@@ -458,9 +458,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    ownerMember = projectMemberRepository.save(ownerMember).block();
+    adminMember = projectMemberRepository.save(adminMember).block();
 
     UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
         ProjectRole.VIEWER);
@@ -480,9 +480,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     ProjectMember viewerMember = ProjectMember.create(project.getId(),
         testUser2Id, ProjectRole.VIEWER);
@@ -506,9 +506,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
         ProjectRole.EDITOR);
@@ -528,9 +528,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     ProjectMember targetMember = ProjectMember.create(project.getId(),
         testUser2Id, ProjectRole.VIEWER);
@@ -557,9 +557,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     ProjectMember viewerMember = ProjectMember.create(project.getId(),
         testUser2Id, ProjectRole.VIEWER);
@@ -579,9 +579,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -597,9 +597,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     ProjectMember viewerMember = ProjectMember.create(project.getId(),
         testUser2Id, ProjectRole.VIEWER);
@@ -645,14 +645,14 @@ class ProjectControllerTest {
   }
 
   @Test
-  @DisplayName("마지막 OWNER는 워크 스페이스 내에 멤버가 존재시 탈퇴를 할 수 없다")
-  void leaveProject_LastOwner_Forbidden() {
+  @DisplayName("마지막 ADMIN도 워크스페이스 내에 멤버가 존재하면 탈퇴할 수 있다")
+  void leaveProject_LastAdmin_Allowed() {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     ProjectMember viewerMember = ProjectMember.create(project.getId(),
         testUser2Id, ProjectRole.VIEWER);
@@ -663,7 +663,19 @@ class ProjectControllerTest {
             + "/workspaces/{workspaceId}/projects/{projectId}/members/me",
             testWorkspaceId, project.getId())
         .header("Authorization", "Bearer " + accessToken).exchange()
-        .expectStatus().is4xxClientError();
+        .expectStatus().isNoContent();
+
+    ProjectMember deletedAdmin = projectMemberRepository.findById(adminMember.getId()).block();
+    assertThat(deletedAdmin).isNotNull();
+    assertThat(deletedAdmin.isDeleted()).isTrue();
+
+    ProjectMember remainedViewer = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUser2Id)
+        .block();
+    assertThat(remainedViewer).isNotNull();
+
+    Project remainedProject = projectRepository.findByIdAndNotDeleted(project.getId()).block();
+    assertThat(remainedProject).isNotNull();
   }
 
   @Test
@@ -672,9 +684,9 @@ class ProjectControllerTest {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
     project = projectRepository.save(project).block();
 
-    ProjectMember ownerMember = ProjectMember.create(project.getId(),
+    ProjectMember adminMember = ProjectMember.create(project.getId(),
         testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(ownerMember).block();
+    projectMemberRepository.save(adminMember).block();
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
