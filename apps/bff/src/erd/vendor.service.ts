@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { BackendClientService } from '../common/backend-client/backend-client.service';
-import { ApiResponse } from '../common/types/api-response.types';
 import type {
   DbVendorDetailResponse,
   DbVendorSummaryResponse,
@@ -12,9 +11,9 @@ export class VendorService {
 
   async listVendors(
     authHeader: string,
-  ): Promise<ApiResponse<DbVendorSummaryResponse[]>> {
+  ): Promise<DbVendorSummaryResponse[]> {
     const response = await this.backendClient.client.get<
-      ApiResponse<DbVendorSummaryResponse[]>
+      DbVendorSummaryResponse[]
     >('/api/v1.0/vendors', this.backendClient.getAuthConfig(authHeader));
     return response.data;
   }
@@ -22,9 +21,9 @@ export class VendorService {
   async getVendor(
     displayName: string,
     authHeader: string,
-  ): Promise<ApiResponse<DbVendorDetailResponse>> {
+  ): Promise<DbVendorDetailResponse> {
     const response = await this.backendClient.client.get<
-      ApiResponse<DbVendorDetailResponse>
+      DbVendorDetailResponse
     >(
       `/api/v1.0/vendors/${displayName}`,
       this.backendClient.getAuthConfig(authHeader),

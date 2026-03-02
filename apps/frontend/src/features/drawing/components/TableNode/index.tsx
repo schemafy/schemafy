@@ -28,14 +28,14 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
 
   const { data: vendorsData } = useVendors();
   const vendorDisplayName =
-    schema && vendorsData?.result
-      ? (vendorsData.result.find(
+    schema && vendorsData
+      ? (vendorsData.find(
           (v) => v.name === schema.dbVendorName.toLowerCase(),
         )?.displayName ?? '')
       : '';
 
   const { data: vendorData } = useVendor(vendorDisplayName);
-  const vendorTypes = vendorData?.result?.datatypeMappings?.types ?? [];
+  const vendorTypes = vendorData?.datatypeMappings?.types ?? [];
 
   const { columns, indexes, constraints } = data;
 
