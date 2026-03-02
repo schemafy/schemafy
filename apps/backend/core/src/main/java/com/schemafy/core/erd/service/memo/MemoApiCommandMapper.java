@@ -77,23 +77,19 @@ public class MemoApiCommandMapper {
   }
 
   public UpdateMemoCommentCommand toUpdateMemoCommentCommand(
-      String memoId,
       String commentId,
       UpdateMemoCommentRequest request,
       AuthenticatedUser user) {
     return new UpdateMemoCommentCommand(
-        memoId,
         commentId,
         request.body(),
         user.userId());
   }
 
   public DeleteMemoCommentCommand toDeleteMemoCommentCommand(
-      String memoId,
       String commentId,
       AuthenticatedUser user) {
     return new DeleteMemoCommentCommand(
-        memoId,
         commentId,
         user.userId(),
         permissionPolicy.canDeleteOthers(user));

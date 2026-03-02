@@ -27,11 +27,7 @@ class UpdateMemoCommentService implements UpdateMemoCommentUseCase {
     return getMemoCommentByIdPort.findMemoCommentById(command.commentId())
         .switchIfEmpty(Mono.error(new DomainException(MemoErrorCode.COMMENT_NOT_FOUND)))
         .flatMap(comment -> {
-          if (!comment.memoId().equals(command.memoId())) {
-            return Mono.error(new DomainException(MemoErrorCode.INVALID_PARAMETER));
-          }
-
-          return getMemoByIdPort.findMemoById(command.memoId())
+          return getMemoByIdPort.findMemoById(comment.memoId())
               .switchIfEmpty(Mono.error(new DomainException(MemoErrorCode.NOT_FOUND)))
               .then(Mono.defer(() -> {
                 if (!comment.authorId().equals(command.requesterId())) {
