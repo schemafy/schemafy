@@ -13,7 +13,6 @@ import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 import reactor.test.StepVerifier;
@@ -51,7 +50,7 @@ class UserServiceOAuthRaceHandlingTest {
   @Test
   @DisplayName("같은 이메일의 기존 유저가 있으면 OAuth provider를 자동 연동하고 기존 유저를 반환한다")
   void loginOrSignUpOAuth_linkExistingUser_success() {
-    User existingUser = TestFixture
+    var existingUser = TestFixture
         .createTestUser("existing@example.com", "Existing User", "password")
         .flatMap(userRepository::save)
         .block();
@@ -66,8 +65,8 @@ class UserServiceOAuthRaceHandlingTest {
 
     StepVerifier.create(userService.loginOrSignUpOAuth(command))
         .assertNext(user -> {
-          assertThat(user.getId()).isEqualTo(existingUser.getId());
-          assertThat(user.getEmail()).isEqualTo(existingUser.getEmail());
+          assertThat(user.id()).isEqualTo(existingUser.getId());
+          assertThat(user.email()).isEqualTo(existingUser.getEmail());
         })
         .verifyComplete();
 

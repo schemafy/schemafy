@@ -19,11 +19,11 @@ import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.dto.LoginCommand;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.user.domain.User;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -69,7 +69,7 @@ class UserServiceTest {
     // 응답 검증
     StepVerifier.create(result)
         .expectNextMatches(
-            user -> user.getEmail().equals("test@example.com"))
+            user -> user.email().equals("test@example.com"))
         .verifyComplete();
 
     // db 검증
@@ -98,14 +98,14 @@ class UserServiceTest {
 
     // then - 워크스페이스 생성 검증
     StepVerifier.create(
-        workspaceRepository.findByOwnerIdAndNotDeleted(user.getId()))
+        workspaceRepository.findByOwnerIdAndNotDeleted(user.id()))
         .as("default workspace should be created")
         .assertNext(workspace -> {
           assertThat(workspace.getName())
               .isEqualTo("Test User's Workspace");
           assertThat(workspace.getDescription())
               .isEqualTo("Personal workspace for Test User");
-          assertThat(workspace.getOwnerId()).isEqualTo(user.getId());
+          assertThat(workspace.getOwnerId()).isEqualTo(user.id());
           assertThat(workspace.getId()).isNotNull();
           assertThat(workspace.getCreatedAt()).isNotNull();
         })
@@ -114,10 +114,10 @@ class UserServiceTest {
     // then - 워크스페이스 멤버 생성 검증 (ADMIN 역할)
     StepVerifier
         .create(workspaceMemberRepository
-            .findByUserIdAndNotDeleted(user.getId()))
+            .findByUserIdAndNotDeleted(user.id()))
         .as("user should be added as ADMIN to workspace")
         .assertNext(member -> {
-          assertThat(member.getUserId()).isEqualTo(user.getId());
+          assertThat(member.getUserId()).isEqualTo(user.id());
           assertThat(member.getRole())
               .isEqualTo(WorkspaceRole.ADMIN.getValue());
           assertThat(member.isAdmin()).isTrue();
@@ -150,18 +150,18 @@ class UserServiceTest {
   @Test
   @DisplayName("ID로 회원 조회에 성공한다")
   void getUserByIdSuccess() {
-    User user = TestFixture
+    var savedUser = TestFixture
         .createTestUser("test@example.com", "Test User", "password")
         .flatMap(userRepository::save)
         .block();
 
-    Mono<UserInfoResponse> result = userService.getUserById(user.getId());
+    Mono<UserInfoResponse> result = userService.getUserById(savedUser.getId());
 
     StepVerifier.create(result)
         .assertNext(res -> {
-          assertThat(res.id()).isEqualTo(user.getId());
-          assertThat(res.email()).isEqualTo(user.getEmail());
-          assertThat(res.name()).isEqualTo(user.getName());
+          assertThat(res.id()).isEqualTo(savedUser.getId());
+          assertThat(res.email()).isEqualTo(savedUser.getEmail());
+          assertThat(res.name()).isEqualTo(savedUser.getName());
         })
         .verifyComplete();
   }
@@ -196,7 +196,7 @@ class UserServiceTest {
 
     StepVerifier.create(result)
         .expectNextMatches(
-            user -> user.getEmail().equals("test@example.com"))
+            user -> user.email().equals("test@example.com"))
         .verifyComplete();
   }
 
@@ -281,9 +281,9 @@ class UserServiceTest {
 
       StepVerifier.create(userService.loginOrSignUpOAuth(command))
           .assertNext(user -> {
-            assertThat(user.getEmail()).isEqualTo("oauth@example.com");
-            assertThat(user.getName()).isEqualTo("OAuth User");
-            assertThat(user.getPassword()).isNull();
+            assertThat(user.email()).isEqualTo("oauth@example.com");
+            assertThat(user.name()).isEqualTo("OAuth User");
+            assertThat(user.password()).isNull();
           })
           .verifyComplete();
 
@@ -315,7 +315,7 @@ class UserServiceTest {
     @Test
     @DisplayName("같은 이메일의 기존 유저가 있으면 자동 연동된다")
     void loginOrSignUpOAuth_linkExistingUser() {
-      User existingUser = TestFixture
+      var existingUser = TestFixture
           .createTestUser("existing@example.com", "Existing User",
               "password")
           .flatMap(userRepository::save)
@@ -327,8 +327,8 @@ class UserServiceTest {
 
       StepVerifier.create(userService.loginOrSignUpOAuth(command))
           .assertNext(user -> {
-            assertThat(user.getId()).isEqualTo(existingUser.getId());
-            assertThat(user.getEmail())
+            assertThat(user.id()).isEqualTo(existingUser.getId());
+            assertThat(user.email())
                 .isEqualTo("existing@example.com");
           })
           .verifyComplete();
@@ -354,8 +354,8 @@ class UserServiceTest {
 
       StepVerifier.create(userService.loginOrSignUpOAuth(command))
           .assertNext(user -> {
-            assertThat(user.getId()).isEqualTo(firstLogin.getId());
-            assertThat(user.getEmail())
+            assertThat(user.id()).isEqualTo(firstLogin.id());
+            assertThat(user.email())
                 .isEqualTo("provider@example.com");
           })
           .verifyComplete();
@@ -381,7 +381,7 @@ class UserServiceTest {
       User user = userService.signUp(request.toCommand()).block();
 
       assertThat(user).isNotNull();
-      assertThat(user.getId()).isNotNull();
+      assertThat(user.id()).isNotNull();
 
       StepVerifier
           .create(userRepository.findByEmail("atomic@example.com"))
@@ -391,20 +391,20 @@ class UserServiceTest {
 
       StepVerifier.create(
           workspaceRepository
-              .findByOwnerIdAndNotDeleted(user.getId()))
+              .findByOwnerIdAndNotDeleted(user.id()))
           .assertNext(workspace -> {
             assertThat(workspace.getName())
                 .isEqualTo("Atomic User's Workspace");
             assertThat(workspace.getOwnerId())
-                .isEqualTo(user.getId());
+                .isEqualTo(user.id());
           })
           .verifyComplete();
 
       StepVerifier.create(
           workspaceMemberRepository.findByUserIdAndNotDeleted(
-              user.getId()))
+              user.id()))
           .assertNext(member -> {
-            assertThat(member.getUserId()).isEqualTo(user.getId());
+            assertThat(member.getUserId()).isEqualTo(user.id());
             assertThat(member.isAdmin()).isTrue();
           })
           .verifyComplete();

@@ -23,8 +23,8 @@ import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 import com.schemafy.core.user.oauth.GitHubOAuthProperties;
 import com.schemafy.core.user.oauth.GitHubOAuthService;
 import com.schemafy.core.user.oauth.GitHubUserInfo;
-import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.service.UserService;
+import com.schemafy.domain.user.domain.User;
 
 import reactor.core.publisher.Mono;
 
@@ -322,16 +322,7 @@ class OAuthControllerTest {
   }
 
   private User createTestUser(String id, String email, String name) {
-    User user = User.signUpOAuth(email, name);
-    try {
-      var idField = com.schemafy.core.common.type.BaseEntity.class
-          .getDeclaredField("id");
-      idField.setAccessible(true);
-      idField.set(user, id);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-    return user;
+    return User.signUpOAuth(id, email, name);
   }
 
 }

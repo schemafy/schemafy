@@ -7,8 +7,6 @@ import com.schemafy.core.common.exception.AuthErrorCode;
 import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.service.user.UserApiCommandMapper;
 import com.schemafy.core.user.service.user.UserApiResponseMapper;
 import com.schemafy.core.user.service.user.UserWorkspaceProvisioner;
@@ -20,6 +18,7 @@ import com.schemafy.domain.user.application.port.in.GetUserByIdUseCase;
 import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthUseCase;
 import com.schemafy.domain.user.application.port.in.LoginUserUseCase;
 import com.schemafy.domain.user.application.port.in.SignUpUserUseCase;
+import com.schemafy.domain.user.domain.User;
 import com.schemafy.domain.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -37,14 +36,12 @@ public class UserService {
   private final UserApiCommandMapper commandMapper;
   private final UserApiResponseMapper responseMapper;
   private final UserWorkspaceProvisioner workspaceProvisioner;
-  private final UserRepository userRepository;
   private final JwtProvider jwtProvider;
 
   public Mono<User> signUp(SignUpCommand request) {
     return signUpUserUseCase.signUpUser(
             commandMapper.toSignUpUserCommand(request))
         .flatMap(workspaceProvisioner::createDefaultWorkspace)
-        .flatMap(this::findCoreUserById)
         .as(transactionalOperator::transactional);
   }
 
@@ -54,7 +51,6 @@ public class UserService {
         .flatMap(result -> result.newUser()
             ? workspaceProvisioner.createDefaultWorkspace(result.user())
             : Mono.just(result.user()))
-        .flatMap(this::findCoreUserById)
         .onErrorMap(this::remapOAuthInconsistentError)
         .as(transactionalOperator::transactional);
   }
@@ -65,8 +61,7 @@ public class UserService {
   }
 
   public Mono<User> login(LoginCommand command) {
-    return loginUserUseCase.loginUser(commandMapper.toLoginUserCommand(command))
-        .flatMap(this::findCoreUserById);
+    return loginUserUseCase.loginUser(commandMapper.toLoginUserCommand(command));
   }
 
   public Mono<User> getUserFromRefreshToken(String refreshToken) {
@@ -84,17 +79,11 @@ public class UserService {
 
           return userId;
         })
-        .flatMap(userRepository::findById)
-        .switchIfEmpty(Mono.error(
-            new DomainException(UserErrorCode.NOT_FOUND)))
+        .flatMap(userId -> getUserByIdUseCase
+            .getUserById(commandMapper.toGetUserByIdQuery(userId)))
         .onErrorMap(e -> !(e instanceof DomainException),
             e -> new DomainException(
                 AuthErrorCode.INVALID_REFRESH_TOKEN));
-  }
-
-  private Mono<User> findCoreUserById(com.schemafy.domain.user.domain.User user) {
-    return userRepository.findById(user.id())
-        .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)));
   }
 
   private Throwable remapOAuthInconsistentError(Throwable throwable) {

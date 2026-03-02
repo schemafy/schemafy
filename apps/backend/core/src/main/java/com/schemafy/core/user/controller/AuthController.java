@@ -37,8 +37,8 @@ public class AuthController {
       @Valid @RequestBody SignUpRequest request) {
     return userService.signUp(request.toCommand())
         .map(user -> ResponseEntity.ok()
-            .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
-            .body(UserInfoResponse.from(user)));
+            .headers(jwtTokenIssuer.issueTokens(user.id(), user.name()))
+            .body(new UserInfoResponse(user.id(), user.email(), user.name())));
   }
 
   /** 사용자 인증 후 JWT 토큰을 발급합니다.
@@ -50,8 +50,8 @@ public class AuthController {
       @Valid @RequestBody LoginRequest request) {
     return userService.login(request.toCommand())
         .map(user -> ResponseEntity.ok()
-            .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
-            .body(UserInfoResponse.from(user)));
+            .headers(jwtTokenIssuer.issueTokens(user.id(), user.name()))
+            .body(new UserInfoResponse(user.id(), user.email(), user.name())));
   }
 
   /** Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급합니다.
@@ -64,7 +64,7 @@ public class AuthController {
     return Mono.fromCallable(() -> extractRefreshTokenFromCookie(request))
         .flatMap(userService::getUserFromRefreshToken)
         .map(user -> ResponseEntity.ok()
-            .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
+            .headers(jwtTokenIssuer.issueTokens(user.id(), user.name()))
             .build());
   }
 
