@@ -40,17 +40,12 @@ public class ProjectInvitationService {
   private final UserRepository userRepository;
 
   public Mono<Invitation> createInvitation(
-      String workspaceId,
       String projectId,
       String email,
       ProjectRole role,
       String currentUserId) {
     return validateProjectAdmin(projectId, currentUserId)
         .then(findProjectOrThrow(projectId))
-        .flatMap(project -> {
-          project.belongsToWorkspace(workspaceId);
-          return Mono.just(project);
-        })
         .flatMap(project -> checkNotAlreadyProjectMemberByEmail(
             projectId, email)
             .then(checkDuplicatePendingInvitation(
@@ -59,7 +54,7 @@ public class ProjectInvitationService {
         .flatMap(project -> {
           Invitation invitation = Invitation.createProjectInvitation(
               projectId,
-              workspaceId,
+              project.getWorkspaceId(),
               email,
               role,
               currentUserId);
@@ -70,7 +65,6 @@ public class ProjectInvitationService {
   }
 
   public Mono<PageResponse<Invitation>> getInvitations(
-      String workspaceId,
       String projectId,
       String currentUserId,
       int page,

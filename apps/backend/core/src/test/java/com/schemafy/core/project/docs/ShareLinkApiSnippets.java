@@ -64,12 +64,11 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
     };
   }
 
-  // ========== POST /api/workspaces/{workspaceId}/projects/{projectId}/share-links - 공유 링크 생성 ==========
+  // ========== POST /api/projects/{projectId}/share-links - 공유 링크 생성 ==========
 
   /** 공유 링크 생성 경로 파라미터 */
   public static Snippet createShareLinkPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId").description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"));
   }
 
@@ -89,12 +88,11 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         successResponseFields(shareLinkResponseFields()));
   }
 
-  // ========== GET /api/workspaces/{workspaceId}/projects/{projectId}/share-links - 공유 링크 목록 조회 ==========
+  // ========== GET /api/projects/{projectId}/share-links - 공유 링크 목록 조회 ==========
 
   /** 공유 링크 목록 조회 경로 파라미터 */
   public static Snippet getShareLinksPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId").description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"));
   }
 
@@ -141,12 +139,11 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
             shareLinkSummaryFields("result.content[]."))));
   }
 
-  // ========== GET /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 상세 조회
+  // ========== GET /api/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 상세 조회
 
   /** 공유 링크 상세 조회 경로 파라미터 */
   public static Snippet getShareLinkPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId").description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"),
         parameterWithName("shareLinkId").description("공유 링크 ID"));
   }
@@ -167,12 +164,11 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         successResponseFields(shareLinkResponseFields()));
   }
 
-  // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke - 공유 링크 비활성화
+  // ========== PATCH /api/projects/{projectId}/share-links/{shareLinkId}/revoke - 공유 링크 비활성화
 
   /** 공유 링크 비활성화 경로 파라미터 */
   public static Snippet revokeShareLinkPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId").description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"),
         parameterWithName("shareLinkId").description("공유 링크 ID"));
   }
@@ -193,12 +189,11 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         successResponseFields(shareLinkResponseFields()));
   }
 
-  // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 삭제
+  // ========== DELETE /api/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 삭제
 
   /** 공유 링크 삭제 경로 파라미터 */
   public static Snippet deleteShareLinkPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId").description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"),
         parameterWithName("shareLinkId").description("공유 링크 ID"));
   }

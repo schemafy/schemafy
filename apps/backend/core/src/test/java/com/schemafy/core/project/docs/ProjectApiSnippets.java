@@ -146,14 +146,12 @@ public class ProjectApiSnippets extends RestDocsSnippets {
             projectSummaryFields("result.content[]."))));
   }
 
-  // ========== GET /api/workspaces/{workspaceId}/projects/{id} - 프로젝트 상세 조회 ==========
+  // ========== GET /api/projects/{projectId} - 프로젝트 상세 조회 ==========
 
   /** 프로젝트 상세 조회 경로 파라미터 */
   public static Snippet getProjectPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID"),
-        parameterWithName("id").description("프로젝트 ID"));
+        parameterWithName("projectId").description("프로젝트 ID"));
   }
 
   /** 프로젝트 상세 조회 요청 헤더 */
@@ -172,14 +170,12 @@ public class ProjectApiSnippets extends RestDocsSnippets {
         successResponseFields(projectResponseFields()));
   }
 
-  // ========== PUT /api/workspaces/{workspaceId}/projects/{id} - 프로젝트 수정 ==========
+  // ========== PUT /api/projects/{projectId} - 프로젝트 수정 ==========
 
   /** 프로젝트 수정 경로 파라미터 */
   public static Snippet updateProjectPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID"),
-        parameterWithName("id").description("프로젝트 ID"));
+        parameterWithName("projectId").description("프로젝트 ID"));
   }
 
   /** 프로젝트 수정 요청 헤더 */
@@ -207,14 +203,12 @@ public class ProjectApiSnippets extends RestDocsSnippets {
         successResponseFields(projectResponseFields()));
   }
 
-  // ========== DELETE /api/workspaces/{workspaceId}/projects/{id} - 프로젝트 삭제 ==========
+  // ========== DELETE /api/projects/{projectId} - 프로젝트 삭제 ==========
 
   /** 프로젝트 삭제 경로 파라미터 */
   public static Snippet deleteProjectPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID"),
-        parameterWithName("id").description("프로젝트 ID"));
+        parameterWithName("projectId").description("프로젝트 ID"));
   }
 
   /** 프로젝트 삭제 요청 헤더 */
@@ -222,14 +216,12 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return createRequestHeadersSnippet(authorizationHeader());
   }
 
-  // ========== GET /api/workspaces/{workspaceId}/projects/{id}/members - 프로젝트 멤버 조회 ==========
+  // ========== GET /api/projects/{projectId}/members - 프로젝트 멤버 조회 ==========
 
   /** 프로젝트 멤버 조회 경로 파라미터 */
   public static Snippet getProjectMembersPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID"),
-        parameterWithName("id").description("프로젝트 ID"));
+        parameterWithName("projectId").description("프로젝트 ID"));
   }
 
   /** 프로젝트 멤버 조회 요청 헤더 */
@@ -289,13 +281,11 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                 .description("전체 페이지 수")));
   }
 
-  // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role - 멤버 역할 변경 ==========
+  // ========== PATCH /api/projects/{projectId}/members/{userId}/role - 멤버 역할 변경 ==========
 
   /** 멤버 역할 변경 경로 파라미터 */
   public static Snippet updateMemberRolePathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"),
         parameterWithName("userId").description("사용자 ID"));
   }
@@ -340,13 +330,11 @@ public class ProjectApiSnippets extends RestDocsSnippets {
                 .description("가입 시각")));
   }
 
-  // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/members/{userId} - 멤버 제거 ==========
+  // ========== DELETE /api/projects/{projectId}/members/{userId} - 멤버 제거 ==========
 
   /** 멤버 제거 경로 파라미터 */
   public static Snippet removeMemberPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"),
         parameterWithName("userId").description("사용자 ID"));
   }
@@ -356,13 +344,11 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return createRequestHeadersSnippet(authorizationHeader());
   }
 
-  // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/members/me - 프로젝트 탈퇴 ==========
+  // ========== DELETE /api/projects/{projectId}/members/me - 프로젝트 탈퇴 ==========
 
   /** 프로젝트 탈퇴 경로 파라미터 */
   public static Snippet leaveProjectPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"));
   }
 

@@ -2,8 +2,6 @@ package com.schemafy.core.project.repository.entity;
 
 import org.springframework.data.relational.core.mapping.Table;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseEntity;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 
@@ -32,12 +30,6 @@ public class Project extends BaseEntity {
   public void update(String name, String description) {
     this.name = name;
     this.description = description;
-  }
-
-  public void belongsToWorkspace(String workspaceId) {
-    if (!this.workspaceId.equals(workspaceId)) {
-      throw new BusinessException(ErrorCode.PROJECT_WORKSPACE_MISMATCH);
-    }
   }
 
 }

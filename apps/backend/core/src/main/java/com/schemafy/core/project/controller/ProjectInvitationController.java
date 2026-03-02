@@ -27,31 +27,29 @@ public class ProjectInvitationController {
   private final ProjectInvitationService invitationService;
 
   @PreAuthorize("hasAnyRole('ADMIN')")
-  @PostMapping("/workspaces/{workspaceId}/projects/{projectId}/invitations")
+  @PostMapping("/projects/{projectId}/invitations")
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<BaseResponse<ProjectInvitationCreateResponse>> createInvitation(
-      @PathVariable String workspaceId,
       @PathVariable String projectId,
       @Valid @RequestBody CreateProjectInvitationRequest request,
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.createInvitation(
-        workspaceId, projectId, request.email(), request.role(), currentUserId)
+        projectId, request.email(), request.role(), currentUserId)
         .map(ProjectInvitationCreateResponse::of)
         .map(BaseResponse::success);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
-  @GetMapping("/workspaces/{workspaceId}/projects/{projectId}/invitations")
+  @GetMapping("/projects/{projectId}/invitations")
   public Mono<BaseResponse<PageResponse<ProjectInvitationResponse>>> listInvitations(
-      @PathVariable String workspaceId,
       @PathVariable String projectId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size,
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.getInvitations(
-        workspaceId, projectId, currentUserId, page, size)
+        projectId, currentUserId, page, size)
         .map(result -> result.map(ProjectInvitationResponse::of))
         .map(BaseResponse::success);
   }

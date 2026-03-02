@@ -139,7 +139,7 @@ class ProjectInvitationControllerTest {
   }
 
   @Nested
-  @DisplayName("POST /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/invitations - 초대 생성")
+  @DisplayName("POST /api/v1.0/projects/{projectId}/invitations - 초대 생성")
   class CreateInvitationTests {
 
     @Test
@@ -150,8 +150,8 @@ class ProjectInvitationControllerTest {
           ProjectRole.EDITOR);
 
       webTestClient.post()
-          .uri(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations",
-              testWorkspace.getId(), testProject.getId())
+          .uri(API_BASE + "/projects/{projectId}/invitations",
+              testProject.getId())
           .header("Authorization", "Bearer " + adminToken)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(request)
@@ -179,8 +179,8 @@ class ProjectInvitationControllerTest {
           ProjectRole.VIEWER);
 
       webTestClient.post()
-          .uri(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations",
-              testWorkspace.getId(), testProject.getId())
+          .uri(API_BASE + "/projects/{projectId}/invitations",
+              testProject.getId())
           .header("Authorization", "Bearer " + workspaceMemberToken)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(request)
@@ -194,27 +194,8 @@ class ProjectInvitationControllerTest {
       CreateProjectInvitationRequest request = new CreateProjectInvitationRequest("invalid-email", ProjectRole.VIEWER);
 
       webTestClient.post()
-          .uri(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations",
-              testWorkspace.getId(), testProject.getId())
-          .header("Authorization", "Bearer " + adminToken)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(request)
-          .exchange()
-          .expectStatus().isBadRequest();
-    }
-
-    @Test
-    @DisplayName("워크스페이스와 프로젝트가 일치하지 않으면 400 Bad Request를 반환한다")
-    void createInvitation_WorkspaceMismatch_BadRequest() {
-      Workspace otherWorkspace = Workspace.create("Other Workspace", "Other");
-      otherWorkspace = workspaceRepository.save(otherWorkspace).block();
-
-      CreateProjectInvitationRequest request = new CreateProjectInvitationRequest("newuser@test.com",
-          ProjectRole.VIEWER);
-
-      webTestClient.post()
-          .uri(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations",
-              otherWorkspace.getId(), testProject.getId())
+          .uri(API_BASE + "/projects/{projectId}/invitations",
+              testProject.getId())
           .header("Authorization", "Bearer " + adminToken)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(request)
@@ -230,8 +211,8 @@ class ProjectInvitationControllerTest {
           ProjectRole.EDITOR);
 
       webTestClient.post()
-          .uri(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations",
-              testWorkspace.getId(), testProject.getId())
+          .uri(API_BASE + "/projects/{projectId}/invitations",
+              testProject.getId())
           .header("Authorization", "Bearer " + adminToken)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(request)
@@ -239,8 +220,8 @@ class ProjectInvitationControllerTest {
           .expectStatus().isCreated();
 
       webTestClient.post()
-          .uri(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations",
-              testWorkspace.getId(), testProject.getId())
+          .uri(API_BASE + "/projects/{projectId}/invitations",
+              testProject.getId())
           .header("Authorization", "Bearer " + adminToken)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(request)
@@ -251,7 +232,7 @@ class ProjectInvitationControllerTest {
   }
 
   @Nested
-  @DisplayName("GET /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/invitations - 초대 목록 조회")
+  @DisplayName("GET /api/v1.0/projects/{projectId}/invitations - 초대 목록 조회")
   class ListInvitationsTests {
 
     @Test
@@ -273,8 +254,8 @@ class ProjectInvitationControllerTest {
       invitationRepository.save(invitation2).block();
 
       webTestClient.get()
-          .uri(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations?page=0&size=10",
-              testWorkspace.getId(), testProject.getId())
+          .uri(API_BASE + "/projects/{projectId}/invitations?page=0&size=10",
+              testProject.getId())
           .header("Authorization", "Bearer " + adminToken)
           .exchange()
           .expectStatus().isOk()
@@ -297,10 +278,10 @@ class ProjectInvitationControllerTest {
     void listInvitations_NotAdmin_Forbidden() {
       webTestClient.get()
           .uri(uriBuilder -> uriBuilder
-              .path(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations")
+              .path(API_BASE + "/projects/{projectId}/invitations")
               .queryParam("page", 0)
               .queryParam("size", 10)
-              .build(testWorkspace.getId(), testProject.getId()))
+              .build(testProject.getId()))
           .header("Authorization", "Bearer " + workspaceMemberToken)
           .exchange()
           .expectStatus().isForbidden();
@@ -321,10 +302,10 @@ class ProjectInvitationControllerTest {
 
       webTestClient.get()
           .uri(uriBuilder -> uriBuilder
-              .path(API_BASE + "/workspaces/{workspaceId}/projects/{projectId}/invitations")
+              .path(API_BASE + "/projects/{projectId}/invitations")
               .queryParam("page", 0)
               .queryParam("size", 2)
-              .build(testWorkspace.getId(), testProject.getId()))
+              .build(testProject.getId()))
           .header("Authorization", "Bearer " + adminToken)
           .exchange()
           .expectStatus().isOk()

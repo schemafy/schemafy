@@ -127,7 +127,6 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(),
               testProject.getId(),
               request.email(),
               request.role(),
@@ -151,7 +150,6 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(),
               testProject.getId(),
               request.email(),
               request.role(),
@@ -174,7 +172,6 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(),
               testProject.getId(),
               request.email(),
               request.role(),
@@ -195,7 +192,6 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(),
               testProject.getId(),
               request.email(),
               request.role(),
@@ -209,41 +205,17 @@ class ProjectInvitationServiceTest {
     }
 
     @Test
-    @DisplayName("워크스페이스와 프로젝트가 일치하지 않으면 실패한다")
-    void createInvitation_WorkspaceMismatch_Fails() {
-      Workspace otherWorkspace = Workspace.create("Other Workspace", "Other");
-      otherWorkspace = workspaceRepository.save(otherWorkspace).block();
-
-      CreateProjectInvitationRequest request = new CreateProjectInvitationRequest("newuser@test.com",
-          ProjectRole.VIEWER);
-
-      StepVerifier.create(
-          invitationService.createInvitation(
-              otherWorkspace.getId(),
-              testProject.getId(),
-              request.email(),
-              request.role(),
-              adminUser.getId()))
-          .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.PROJECT_WORKSPACE_MISMATCH);
-          })
-          .verify();
-    }
-
-    @Test
     @DisplayName("동일한 이메일에 대한 대기 중인 초대가 있으면 실패한다")
     void createInvitation_DuplicatePending_Fails() {
       CreateProjectInvitationRequest request = new CreateProjectInvitationRequest(
           workspaceUser.getEmail(), ProjectRole.EDITOR);
 
       invitationService.createInvitation(
-          testWorkspace.getId(), testProject.getId(), request.email(), request.role(), adminUser.getId()).block();
+          testProject.getId(), request.email(), request.role(), adminUser.getId()).block();
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), testProject.getId(), request.email(), request.role(), adminUser.getId()))
+              testProject.getId(), request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -259,7 +231,6 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(),
               testProject.getId(),
               unregisteredEmail,
               ProjectRole.VIEWER,
@@ -279,7 +250,7 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.createInvitation(
-              testWorkspace.getId(), "nonexistent-project-id", request.email(), request.role(), adminUser.getId()))
+              "nonexistent-project-id", request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
@@ -316,7 +287,7 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.getInvitations(
-              testWorkspace.getId(), testProject.getId(), adminUser.getId(), 0, 10))
+              testProject.getId(), adminUser.getId(), 0, 10))
           .assertNext(page -> {
             assertThat(page.content()).hasSize(2);
             assertThat(page.totalElements()).isEqualTo(2);
@@ -341,7 +312,7 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.getInvitations(
-              testWorkspace.getId(), testProject.getId(), adminUser.getId(), 0, 2))
+              testProject.getId(), adminUser.getId(), 0, 2))
           .assertNext(page -> {
             assertThat(page.content()).hasSize(2);
             assertThat(page.totalElements()).isEqualTo(5);
@@ -350,7 +321,7 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.getInvitations(
-              testWorkspace.getId(), testProject.getId(), adminUser.getId(), 2, 2))
+              testProject.getId(), adminUser.getId(), 2, 2))
           .assertNext(page -> {
             assertThat(page.content()).hasSize(1);
             assertThat(page.totalElements()).isEqualTo(5);
@@ -367,7 +338,6 @@ class ProjectInvitationServiceTest {
 
       StepVerifier.create(
           invitationService.getInvitations(
-              testWorkspace.getId(),
               testProject.getId(),
               workspaceUser.getId(),
               0,

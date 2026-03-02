@@ -110,7 +110,7 @@ public class ProjectInvitationApiSnippets extends RestDocsSnippets {
     return createResponseHeadersSnippet(commonResponseHeaders());
   }
 
-  // ========== POST /api/workspaces/{workspaceId}/projects/{projectId}/invitations - 초대 생성 ==========
+  // ========== POST /api/projects/{projectId}/invitations - 초대 생성 ==========
 
   /** 초대 생성 요청 헤더 */
   public static Snippet createInvitationRequestHeaders() {
@@ -120,7 +120,6 @@ public class ProjectInvitationApiSnippets extends RestDocsSnippets {
   /** 초대 생성 경로 파라미터 */
   public static Snippet createInvitationPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId").description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"));
   }
 
@@ -142,7 +141,7 @@ public class ProjectInvitationApiSnippets extends RestDocsSnippets {
     return createResponseHeadersSnippet(commonResponseHeaders());
   }
 
-  // ========== GET /api/workspaces/{workspaceId}/projects/{projectId}/invitations - 초대 목록 조회 ==========
+  // ========== GET /api/projects/{projectId}/invitations - 초대 목록 조회 ==========
 
   /** 초대 목록 조회 요청 헤더 */
   public static Snippet listInvitationsRequestHeaders() {
@@ -152,7 +151,6 @@ public class ProjectInvitationApiSnippets extends RestDocsSnippets {
   /** 초대 목록 조회 경로 파라미터 */
   public static Snippet listInvitationsPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId").description("워크스페이스 ID"),
         parameterWithName("projectId").description("프로젝트 ID"));
   }
 

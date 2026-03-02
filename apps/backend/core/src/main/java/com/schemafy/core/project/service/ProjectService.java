@@ -96,24 +96,19 @@ public class ProjectService {
     });
   }
 
-  public Mono<ProjectDetail> getProject(String workspaceId,
+  public Mono<ProjectDetail> getProject(
       String projectId,
       String userId) {
     return validateProjectMember(projectId, userId)
         .then(findProjectById(projectId))
-        .flatMap(project -> {
-          project.belongsToWorkspace(workspaceId);
-          return buildProjectDetail(project, userId);
-        });
+        .flatMap(project -> buildProjectDetail(project, userId));
   }
 
-  public Mono<ProjectDetail> updateProject(String workspaceId,
+  public Mono<ProjectDetail> updateProject(
       String projectId, String name, String description, String userId) {
     return validateProjectAdmin(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
-          project.belongsToWorkspace(workspaceId);
-
           project.update(name, description);
           return projectRepository.save(project);
         })
@@ -121,12 +116,11 @@ public class ProjectService {
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<Void> deleteProject(String workspaceId, String projectId,
+  public Mono<Void> deleteProject(String projectId,
       String userId) {
     return validateProjectAdmin(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
-          project.belongsToWorkspace(workspaceId);
           if (project.isDeleted()) {
             return Mono.error(new BusinessException(
                 ErrorCode.PROJECT_ALREADY_DELETED));

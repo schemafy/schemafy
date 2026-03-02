@@ -413,7 +413,7 @@ include::{snippets}/workspace-member-add/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/workspaces/{workspaceId}/members/{memberId}
+DELETE /api/v1.0/workspaces/{workspaceId}/members/{userId}
 ----
 
 [discrete]
@@ -461,7 +461,7 @@ include::{snippets}/workspace-member-leave/http-response.adoc[]
 
 [source]
 ----
-PATCH /api/v1.0/workspaces/{workspaceId}/members/{memberId}/role
+PATCH /api/v1.0/workspaces/{workspaceId}/members/{userId}/role
 ----
 
 [discrete]
@@ -709,7 +709,7 @@ include::{snippets}/project-list/response-fields.adoc[]
 
 [source]
 ----
-GET /api/v1.0/workspaces/{workspaceId}/projects/{id}
+GET /api/v1.0/projects/{projectId}
 ----
 
 [discrete]
@@ -740,7 +740,7 @@ include::{snippets}/project-get/response-fields.adoc[]
 
 [source]
 ----
-PUT /api/v1.0/workspaces/{workspaceId}/projects/{id}
+PUT /api/v1.0/projects/{projectId}
 ----
 
 [discrete]
@@ -772,7 +772,7 @@ include::{snippets}/project-update/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/workspaces/{workspaceId}/projects/{id}
+DELETE /api/v1.0/projects/{projectId}
 ----
 
 [discrete]
@@ -796,7 +796,7 @@ include::{snippets}/project-delete/http-response.adoc[]
 
 [source]
 ----
-GET /api/v1.0/workspaces/{workspaceId}/projects/{id}/members
+GET /api/v1.0/projects/{projectId}/members
 ----
 
 [discrete]
@@ -828,7 +828,7 @@ include::{snippets}/project-members/response-fields.adoc[]
 
 [source]
 ----
-PATCH /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}/role
+PATCH /api/v1.0/projects/{projectId}/members/{userId}/role
 ----
 
 [discrete]
@@ -860,7 +860,7 @@ include::{snippets}/project-member-update-role/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/{memberId}
+DELETE /api/v1.0/projects/{projectId}/members/{userId}
 ----
 
 [discrete]
@@ -884,7 +884,7 @@ include::{snippets}/project-member-remove/http-response.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/members/me
+DELETE /api/v1.0/projects/{projectId}/members/me
 ----
 
 [discrete]
@@ -908,7 +908,7 @@ include::{snippets}/project-member-leave/http-response.adoc[]
 
 [source]
 ----
-POST /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/invitations
+POST /api/v1.0/projects/{projectId}/invitations
 ----
 
 [discrete]
@@ -940,7 +940,7 @@ include::{snippets}/project-invitation-create/response-fields.adoc[]
 
 [source]
 ----
-GET /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/invitations
+GET /api/v1.0/projects/{projectId}/invitations
 ----
 
 [discrete]
@@ -1060,7 +1060,7 @@ include::{snippets}/project-invitation-reject/http-response.adoc[]
 
 [source]
 ----
-POST /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links
+POST /api/v1.0/projects/{projectId}/share-links
 ----
 
 [discrete]
@@ -1091,7 +1091,7 @@ include::{snippets}/share-link-create/response-fields.adoc[]
 
 [source]
 ----
-GET /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links
+GET /api/v1.0/projects/{projectId}/share-links
 ----
 
 [discrete]
@@ -1123,7 +1123,7 @@ include::{snippets}/share-link-list/response-fields.adoc[]
 
 [source]
 ----
-GET /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}
+GET /api/v1.0/projects/{projectId}/share-links/{shareLinkId}
 ----
 
 [discrete]
@@ -1154,7 +1154,7 @@ include::{snippets}/share-link-get/response-fields.adoc[]
 
 [source]
 ----
-PATCH /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke
+PATCH /api/v1.0/projects/{projectId}/share-links/{shareLinkId}/revoke
 ----
 
 [discrete]
@@ -1185,7 +1185,7 @@ include::{snippets}/share-link-revoke/response-fields.adoc[]
 
 [source]
 ----
-DELETE /api/v1.0/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}
+DELETE /api/v1.0/projects/{projectId}/share-links/{shareLinkId}
 ----
 
 [discrete]

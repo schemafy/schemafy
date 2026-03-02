@@ -71,7 +71,8 @@ class ProjectControllerTest {
   private String testWorkspaceId;
   private String accessToken;
   private String accessToken2;
-  private String apiBasePath;
+  private String projectBasePath;
+  private String workspaceProjectBasePath;
 
   @BeforeEach
   void setUp() {
@@ -116,7 +117,9 @@ class ProjectControllerTest {
         .create(testWorkspaceId, testUser2Id, WorkspaceRole.MEMBER);
     workspaceMemberRepository.save(member2).block();
 
-    apiBasePath = ApiPath.API.replace("{version}", "v1.0")
+    projectBasePath = ApiPath.API.replace("{version}", "v1.0")
+        + "/projects";
+    workspaceProjectBasePath = ApiPath.API.replace("{version}", "v1.0")
         + "/workspaces/" + testWorkspaceId + "/projects";
   }
 
@@ -160,7 +163,7 @@ class ProjectControllerTest {
   void createProjectFailWithoutName() {
     CreateProjectRequest request = new CreateProjectRequest("", null);
 
-    webTestClient.post().uri(apiBasePath)
+    webTestClient.post().uri(workspaceProjectBasePath)
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isBadRequest();
@@ -176,7 +179,7 @@ class ProjectControllerTest {
     CreateProjectRequest request = new CreateProjectRequest("My Project",
         "Description");
 
-    webTestClient.post().uri(apiBasePath)
+    webTestClient.post().uri(workspaceProjectBasePath)
         .header("Authorization", "Bearer " + accessToken2)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isForbidden();
@@ -221,9 +224,7 @@ class ProjectControllerTest {
     projectMemberRepository.save(member).block();
 
     webTestClient.get()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{id}",
-            testWorkspaceId, project.getId())
+        .uri(projectBasePath + "/{projectId}", project.getId())
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isOk().expectBody()
         .consumeWith(document("project-get",
@@ -247,7 +248,8 @@ class ProjectControllerTest {
         testUserId, ProjectRole.ADMIN);
     projectMemberRepository.save(member).block();
 
-    webTestClient.get().uri(apiBasePath + "/" + project.getId())
+    webTestClient.get()
+        .uri(projectBasePath + "/{projectId}", project.getId())
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isForbidden();
   }
@@ -266,9 +268,7 @@ class ProjectControllerTest {
         "Updated Project", "Updated Description");
 
     webTestClient.put()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{id}",
-            testWorkspaceId, project.getId())
+        .uri(projectBasePath + "/{projectId}", project.getId())
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isOk().expectBody()
@@ -299,7 +299,8 @@ class ProjectControllerTest {
     UpdateProjectRequest request = new UpdateProjectRequest(
         "Updated Project", "Updated Description");
 
-    webTestClient.put().uri(apiBasePath + "/" + project.getId())
+    webTestClient.put()
+        .uri(projectBasePath + "/{projectId}", project.getId())
         .header("Authorization", "Bearer " + accessToken2)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isForbidden();
@@ -316,9 +317,7 @@ class ProjectControllerTest {
     projectMemberRepository.save(member).block();
 
     webTestClient.delete()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{id}",
-            testWorkspaceId, project.getId())
+        .uri(projectBasePath + "/{projectId}", project.getId())
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isNoContent()
         .expectBody()
@@ -346,7 +345,8 @@ class ProjectControllerTest {
         testUser2Id, ProjectRole.EDITOR);
     projectMemberRepository.save(member2).block();
 
-    webTestClient.delete().uri(apiBasePath + "/" + project.getId())
+    webTestClient.delete()
+        .uri(projectBasePath + "/{projectId}", project.getId())
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isForbidden();
   }
@@ -362,9 +362,7 @@ class ProjectControllerTest {
     projectMemberRepository.save(member).block();
 
     webTestClient.get()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{id}/members?page=0&size=20",
-            testWorkspaceId, project.getId())
+        .uri(projectBasePath + "/{projectId}/members?page=0&size=20", project.getId())
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isOk().expectBody()
         .consumeWith(document("project-members",
@@ -397,8 +395,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), testUser2Id)
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), testUser2Id)
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isOk().expectBody()
@@ -435,8 +433,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), testUser2Id)
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), testUser2Id)
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request).exchange()
@@ -467,8 +465,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), testUserId)
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), testUserId)
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().is4xxClientError();
@@ -493,8 +491,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), testUserId)
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), testUserId)
         .header("Authorization", "Bearer " + accessToken2)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().isForbidden();
@@ -515,8 +513,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}/role",
-            testWorkspaceId, project.getId(), "nonexistent123")
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), "nonexistent123")
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().is4xxClientError();
@@ -538,8 +536,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}",
-            testWorkspaceId, project.getId(), testUser2Id)
+            + "/projects/{projectId}/members/{userId}",
+            project.getId(), testUser2Id)
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isNoContent().expectBody()
         .consumeWith(document("project-member-remove",
@@ -567,8 +565,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}",
-            testWorkspaceId, project.getId(), testUserId)
+            + "/projects/{projectId}/members/{userId}",
+            project.getId(), testUserId)
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isForbidden();
   }
@@ -585,8 +583,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/{userId}",
-            testWorkspaceId, project.getId(), "nonexistent123")
+            + "/projects/{projectId}/members/{userId}",
+            project.getId(), "nonexistent123")
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().is4xxClientError();
   }
@@ -607,8 +605,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/me",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/members/me",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isNoContent().expectBody()
         .consumeWith(document("project-member-leave",
@@ -634,8 +632,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/me",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/members/me",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isNoContent();
 
@@ -660,8 +658,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/me",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/members/me",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isNoContent();
 
@@ -690,8 +688,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/members/me",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/members/me",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().is4xxClientError();
   }
@@ -708,8 +706,8 @@ class ProjectControllerTest {
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isCreated()
@@ -742,8 +740,8 @@ class ProjectControllerTest {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=0&size=10",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links?page=0&size=10",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isOk()
@@ -775,8 +773,8 @@ class ProjectControllerTest {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
-            testWorkspaceId, project.getId(), shareLink.getId())
+            + "/projects/{projectId}/share-links/{shareLinkId}",
+            project.getId(), shareLink.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isOk()
@@ -807,8 +805,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
-            testWorkspaceId, project.getId(), shareLink.getId())
+            + "/projects/{projectId}/share-links/{shareLinkId}/revoke",
+            project.getId(), shareLink.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isOk()
@@ -838,8 +836,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
-            testWorkspaceId, project.getId(), shareLink.getId())
+            + "/projects/{projectId}/share-links/{shareLinkId}",
+            project.getId(), shareLink.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isNoContent()
@@ -861,8 +859,8 @@ class ProjectControllerTest {
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
@@ -880,8 +878,8 @@ class ProjectControllerTest {
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
@@ -899,8 +897,8 @@ class ProjectControllerTest {
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
@@ -918,8 +916,8 @@ class ProjectControllerTest {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
@@ -944,8 +942,8 @@ class ProjectControllerTest {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
-            testWorkspaceId, project.getId(), shareLink.getId())
+            + "/projects/{projectId}/share-links/{shareLinkId}",
+            project.getId(), shareLink.getId())
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
@@ -970,8 +968,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
-            testWorkspaceId, project.getId(), shareLink.getId())
+            + "/projects/{projectId}/share-links/{shareLinkId}/revoke",
+            project.getId(), shareLink.getId())
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
@@ -996,8 +994,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
-            testWorkspaceId, project.getId(), shareLink.getId())
+            + "/projects/{projectId}/share-links/{shareLinkId}",
+            project.getId(), shareLink.getId())
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
@@ -1015,8 +1013,8 @@ class ProjectControllerTest {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
-            testWorkspaceId, project.getId(), "nonexistent-id")
+            + "/projects/{projectId}/share-links/{shareLinkId}",
+            project.getId(), "nonexistent-id")
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().is4xxClientError();
@@ -1034,8 +1032,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
-            testWorkspaceId, project.getId(), "nonexistent-id")
+            + "/projects/{projectId}/share-links/{shareLinkId}/revoke",
+            project.getId(), "nonexistent-id")
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().is4xxClientError();
@@ -1053,8 +1051,8 @@ class ProjectControllerTest {
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}",
-            testWorkspaceId, project.getId(), "nonexistent-id")
+            + "/projects/{projectId}/share-links/{shareLinkId}",
+            project.getId(), "nonexistent-id")
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().is4xxClientError();
@@ -1065,8 +1063,8 @@ class ProjectControllerTest {
   void createShareLink_ProjectNotFound() {
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
-            testWorkspaceId, "nonexistent-project-id")
+            + "/projects/{projectId}/share-links",
+            "nonexistent-project-id")
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().is4xxClientError();
@@ -1090,8 +1088,8 @@ class ProjectControllerTest {
     // first page
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=0&size=3",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links?page=0&size=3",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isOk()
@@ -1107,8 +1105,8 @@ class ProjectControllerTest {
     // second page
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links?page=1&size=3",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links?page=1&size=3",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isOk()
@@ -1140,8 +1138,8 @@ class ProjectControllerTest {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isOk()
@@ -1168,8 +1166,8 @@ class ProjectControllerTest {
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke",
-            testWorkspaceId, project.getId(), shareLink.getId())
+            + "/projects/{projectId}/share-links/{shareLinkId}/revoke",
+            project.getId(), shareLink.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().is4xxClientError();
@@ -1187,8 +1185,8 @@ class ProjectControllerTest {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/workspaces/{workspaceId}/projects/{projectId}/share-links",
-            testWorkspaceId, project.getId())
+            + "/projects/{projectId}/share-links",
+            project.getId())
         .header("Authorization", "Bearer " + accessToken)
         .exchange()
         .expectStatus().isOk()

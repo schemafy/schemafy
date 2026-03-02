@@ -10,7 +10,6 @@ import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.ShareLink;
@@ -28,7 +27,6 @@ public class ShareLinkService {
   private final ShareLinkRepository shareLinkRepository;
   private final ProjectRepository projectRepository;
   private final ProjectMemberRepository projectMemberRepository;
-  private final WorkspaceMemberRepository workspaceMemberRepository;
   private final TransactionalOperator transactionalOperator;
 
   public Mono<Project> accessByCode(String code, String userId, String ipAddress, String userAgent) {
@@ -59,14 +57,10 @@ public class ShareLinkService {
     return Mono.just(shareLink);
   }
 
-  public Mono<ShareLink> createShareLink(String workspaceId, String projectId, String userId) {
-    return validateAdminAccess(workspaceId, projectId, userId)
+  public Mono<ShareLink> createShareLink(String projectId, String userId) {
+    return validateAdminAccess(projectId, userId)
         .then(findProjectById(projectId))
         .flatMap(project -> {
-          if (!project.getWorkspaceId().equals(workspaceId)) {
-            return Mono.error(new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
-          }
-
           String code = UUID.randomUUID().toString().replace("-", "");
           ShareLink shareLink = ShareLink.create(projectId, code);
 
@@ -75,26 +69,26 @@ public class ShareLinkService {
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<Long> countShareLinks(String workspaceId, String projectId, String userId) {
-    return validateAdminAccess(workspaceId, projectId, userId)
+  public Mono<Long> countShareLinks(String projectId, String userId) {
+    return validateAdminAccess(projectId, userId)
         .then(shareLinkRepository.countByProjectIdAndNotDeleted(projectId));
   }
 
   public Flux<ShareLink> getShareLinks(
-      String workspaceId, String projectId, String userId, int size, int offset) {
-    return validateAdminAccess(workspaceId, projectId, userId)
+      String projectId, String userId, int size, int offset) {
+    return validateAdminAccess(projectId, userId)
         .thenMany(shareLinkRepository.findByProjectIdAndNotDeleted(projectId, size, offset));
   }
 
   public Mono<ShareLink> getShareLink(
-      String workspaceId, String projectId, String shareLinkId, String userId) {
-    return validateAdminAccess(workspaceId, projectId, userId)
+      String projectId, String shareLinkId, String userId) {
+    return validateAdminAccess(projectId, userId)
         .then(findShareLinkById(shareLinkId, projectId));
   }
 
   public Mono<ShareLink> revokeShareLink(
-      String workspaceId, String projectId, String shareLinkId, String userId) {
-    return validateAdminAccess(workspaceId, projectId, userId)
+      String projectId, String shareLinkId, String userId) {
+    return validateAdminAccess(projectId, userId)
         .then(findShareLinkById(shareLinkId, projectId))
         .flatMap(shareLink -> {
           if (shareLink.getIsRevoked()) {
@@ -107,8 +101,8 @@ public class ShareLinkService {
   }
 
   public Mono<Void> deleteShareLink(
-      String workspaceId, String projectId, String shareLinkId, String userId) {
-    return validateAdminAccess(workspaceId, projectId, userId)
+      String projectId, String shareLinkId, String userId) {
+    return validateAdminAccess(projectId, userId)
         .then(findShareLinkById(shareLinkId, projectId))
         .flatMap(link -> {
           link.delete();
@@ -133,15 +127,12 @@ public class ShareLinkService {
     return code.substring(0, Math.min(8, code.length())) + "***";
   }
 
-  private Mono<Void> validateAdminAccess(String workspaceId, String projectId, String userId) {
-    return workspaceMemberRepository
-        .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
-        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.WORKSPACE_ACCESS_DENIED)))
-        .then(projectMemberRepository
-            .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-            .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
-            .filter(ProjectMember::isAdmin)
-            .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_ADMIN_REQUIRED))))
+  private Mono<Void> validateAdminAccess(String projectId, String userId) {
+    return projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
+        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+        .filter(ProjectMember::isAdmin)
+        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_ADMIN_REQUIRED)))
         .then();
   }
 
