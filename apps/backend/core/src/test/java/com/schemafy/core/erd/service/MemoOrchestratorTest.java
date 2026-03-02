@@ -2,7 +2,6 @@ package com.schemafy.core.erd.service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,12 +16,9 @@ import com.schemafy.core.erd.controller.dto.request.UpdateMemoRequest;
 import com.schemafy.core.erd.service.memo.MemoApiCommandMapper;
 import com.schemafy.core.erd.service.memo.MemoApiResponseMapper;
 import com.schemafy.core.erd.service.memo.MemoDeletePermissionPolicy;
-import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.CreateMemoUseCase;
-import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentUseCase;
-import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.GetMemoCommentsUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.GetMemoUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.GetMemosBySchemaIdUseCase;
@@ -45,8 +41,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("MemoService")
-class MemoServiceTest {
+@DisplayName("MemoOrchestrator")
+class MemoOrchestratorTest {
 
   @Mock
   CreateMemoUseCase createMemoUseCase;
@@ -61,9 +57,6 @@ class MemoServiceTest {
   UpdateMemoPositionUseCase updateMemoPositionUseCase;
 
   @Mock
-  DeleteMemoUseCase deleteMemoUseCase;
-
-  @Mock
   CreateMemoCommentUseCase createMemoCommentUseCase;
 
   @Mock
@@ -73,25 +66,20 @@ class MemoServiceTest {
   UpdateMemoCommentUseCase updateMemoCommentUseCase;
 
   @Mock
-  DeleteMemoCommentUseCase deleteMemoCommentUseCase;
-
-  @Mock
   GetUsersByIdsUseCase getUsersByIdsUseCase;
 
-  MemoService sut;
+  MemoOrchestrator sut;
 
   @BeforeEach
   void setUp() {
-    sut = new MemoService(
+    sut = new MemoOrchestrator(
         createMemoUseCase,
         getMemoUseCase,
         getMemosBySchemaIdUseCase,
         updateMemoPositionUseCase,
-        deleteMemoUseCase,
         createMemoCommentUseCase,
         getMemoCommentsUseCase,
         updateMemoCommentUseCase,
-        deleteMemoCommentUseCase,
         getUsersByIdsUseCase,
         new MemoApiCommandMapper(new MemoDeletePermissionPolicy()),
         new MemoApiResponseMapper());
@@ -212,22 +200,6 @@ class MemoServiceTest {
           assertThat(response.author().name()).isEqualTo("Unknown");
         })
         .verifyComplete();
-  }
-
-  @Test
-  @DisplayName("deleteComment: 도메인 ACCESS_DENIED를 그대로 전달한다")
-  void deleteComment_accessDenied_passthrough() {
-    when(deleteMemoCommentUseCase.deleteMemoComment(any()))
-        .thenReturn(Mono.error(new DomainException(MemoErrorCode.ACCESS_DENIED)));
-
-    StepVerifier.create(sut.deleteComment(
-        "memo-1",
-        "comment-1",
-        AuthenticatedUser.withRoles("user-1", Set.of(ProjectRole.COMMENTER))))
-        .expectErrorMatches(error -> error instanceof DomainException
-            && ((DomainException) error)
-                .getErrorCode() == MemoErrorCode.ACCESS_DENIED)
-        .verify();
   }
 
   @Test
