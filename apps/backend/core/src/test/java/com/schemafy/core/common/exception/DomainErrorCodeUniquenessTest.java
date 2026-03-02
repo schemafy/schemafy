@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.exception.ShareLinkErrorCode;
 import com.schemafy.core.project.exception.WorkspaceErrorCode;
-import com.schemafy.core.user.exception.UserErrorCode;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.domain.common.exception.DomainErrorCode;
 import com.schemafy.domain.erd.memo.domain.exception.MemoErrorCode;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;

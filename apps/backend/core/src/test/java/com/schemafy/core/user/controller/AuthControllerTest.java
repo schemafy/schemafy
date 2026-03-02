@@ -27,7 +27,7 @@ import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.core.user.exception.UserErrorCode;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
 
 import reactor.test.StepVerifier;

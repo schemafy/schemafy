@@ -13,7 +13,7 @@ import com.schemafy.core.common.TestFixture;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
-import com.schemafy.core.user.exception.UserErrorCode;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;

@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("user_auth_providers")
+@Deprecated(forRemoval = false)
 public class UserAuthProvider extends BaseEntity {
 
   private String userId;
