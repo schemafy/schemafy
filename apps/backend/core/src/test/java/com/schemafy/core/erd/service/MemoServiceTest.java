@@ -18,8 +18,6 @@ import com.schemafy.core.erd.service.memo.MemoApiCommandMapper;
 import com.schemafy.core.erd.service.memo.MemoApiResponseMapper;
 import com.schemafy.core.erd.service.memo.MemoDeletePermissionPolicy;
 import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.domain.erd.memo.application.port.in.CreateMemoUseCase;
@@ -34,6 +32,9 @@ import com.schemafy.domain.erd.memo.domain.Memo;
 import com.schemafy.domain.erd.memo.domain.MemoComment;
 import com.schemafy.domain.erd.memo.domain.MemoDetail;
 import com.schemafy.domain.erd.memo.domain.exception.MemoErrorCode;
+import com.schemafy.domain.user.application.port.in.GetUsersByIdsUseCase;
+import com.schemafy.domain.user.domain.User;
+import com.schemafy.domain.user.domain.UserStatus;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -41,7 +42,6 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,7 +76,7 @@ class MemoServiceTest {
   DeleteMemoCommentUseCase deleteMemoCommentUseCase;
 
   @Mock
-  UserRepository userRepository;
+  GetUsersByIdsUseCase getUsersByIdsUseCase;
 
   MemoService sut;
 
@@ -92,7 +92,7 @@ class MemoServiceTest {
         getMemoCommentsUseCase,
         updateMemoCommentUseCase,
         deleteMemoCommentUseCase,
-        userRepository,
+        getUsersByIdsUseCase,
         new MemoApiCommandMapper(new MemoDeletePermissionPolicy()),
         new MemoApiResponseMapper());
   }
@@ -120,10 +120,16 @@ class MemoServiceTest {
     when(getMemoUseCase.getMemo(any()))
         .thenReturn(Mono.just(new MemoDetail(memo, List.of(comment))));
 
-    User user = mock(User.class);
-    when(user.getId()).thenReturn("author-1");
-    when(user.getName()).thenReturn("작성자");
-    when(userRepository.findAllById(any(Iterable.class)))
+    User user = new User(
+        "author-1",
+        "author-1@example.com",
+        "작성자",
+        null,
+        UserStatus.ACTIVE,
+        null,
+        null,
+        null);
+    when(getUsersByIdsUseCase.getUsersByIds(any()))
         .thenReturn(Flux.just(user));
 
     StepVerifier.create(sut.getMemo("memo-1"))
@@ -154,11 +160,17 @@ class MemoServiceTest {
     when(updateMemoPositionUseCase.updateMemoPosition(any()))
         .thenReturn(Mono.just(updated));
 
-    User user = mock(User.class);
-    when(user.getId()).thenReturn("author-1");
-    when(user.getName()).thenReturn("작성자");
-    when(userRepository.findById("author-1"))
-        .thenReturn(Mono.just(user));
+    User user = new User(
+        "author-1",
+        "author-1@example.com",
+        "작성자",
+        null,
+        UserStatus.ACTIVE,
+        null,
+        null,
+        null);
+    when(getUsersByIdsUseCase.getUsersByIds(any()))
+        .thenReturn(Flux.just(user));
 
     StepVerifier.create(sut.updateMemo(
         "memo-1",
@@ -170,6 +182,34 @@ class MemoServiceTest {
           assertThat(response.positions()).isEqualTo("{\"x\":100}");
           assertThat(response.author().id()).isEqualTo("author-1");
           assertThat(response.author().name()).isEqualTo("작성자");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("updateMemo: 작성자 정보가 없으면 Unknown으로 fallback 한다")
+  void updateMemo_unknownUserFallback() {
+    Memo updated = new Memo(
+        "memo-1",
+        "schema-1",
+        "author-1",
+        "{\"x\":100}",
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-01-02T00:00:00Z"),
+        null);
+
+    when(updateMemoPositionUseCase.updateMemoPosition(any()))
+        .thenReturn(Mono.just(updated));
+    when(getUsersByIdsUseCase.getUsersByIds(any()))
+        .thenReturn(Flux.empty());
+
+    StepVerifier.create(sut.updateMemo(
+        "memo-1",
+        new UpdateMemoRequest("{\"x\":100}"),
+        AuthenticatedUser.of("author-1")))
+        .assertNext(response -> {
+          assertThat(response.author().id()).isEqualTo("author-1");
+          assertThat(response.author().name()).isEqualTo("Unknown");
         })
         .verifyComplete();
   }
