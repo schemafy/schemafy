@@ -120,8 +120,8 @@ public class Invitation extends BaseEntity {
   public void accept() {
     if (!getStatusAsEnum().isPending()) {
       ErrorCode errorCode = getTargetTypeAsEnum().isWorkspace()
-          ? ErrorCode.WORKSPACE_INVITATION_ALREADY_MODIFICATION
-          : ErrorCode.PROJECT_INVITATION_ALREADY_MODIFICATION;
+          ? ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
+          : ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED;
       throw new BusinessException(errorCode);
     }
     if (isExpired()) {
@@ -134,8 +134,8 @@ public class Invitation extends BaseEntity {
   public void reject() {
     if (!getStatusAsEnum().isPending()) {
       ErrorCode errorCode = getTargetTypeAsEnum().isWorkspace()
-          ? ErrorCode.WORKSPACE_INVITATION_ALREADY_MODIFICATION
-          : ErrorCode.PROJECT_INVITATION_ALREADY_MODIFICATION;
+          ? ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
+          : ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED;
       throw new BusinessException(errorCode);
     }
     this.status = InvitationStatus.REJECTED.name();

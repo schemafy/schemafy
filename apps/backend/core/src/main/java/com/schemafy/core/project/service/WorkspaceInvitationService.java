@@ -163,7 +163,7 @@ public class WorkspaceInvitationService {
             .doBeforeRetry(signal -> log.warn(
                 "Retrying due to concurrent modification: invitationId={}", invitationId)))
         .onErrorMap(OptimisticLockingFailureException.class, e -> new BusinessException(
-            ErrorCode.INVITATION_CONCURRENT_MODIFICATION));
+            ErrorCode.INVITATION_CONCURRENT_PROCESSED));
   }
 
   public Mono<Void> rejectInvitation(
@@ -188,7 +188,7 @@ public class WorkspaceInvitationService {
             .doBeforeRetry(signal -> log.warn(
                 "Retrying due to concurrent modification: invitationId={}", invitationId)))
         .onErrorMap(OptimisticLockingFailureException.class, e -> new BusinessException(
-            ErrorCode.INVITATION_CONCURRENT_MODIFICATION)).then();
+            ErrorCode.INVITATION_CONCURRENT_PROCESSED)).then();
   }
 
   private Mono<Invitation> findInvitationOrThrow(String invitationId) {

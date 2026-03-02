@@ -109,8 +109,9 @@ class WorkspaceInvitationOptimisticLockingTest {
               .block();
           successCount.incrementAndGet();
         } catch (BusinessException e) {
-          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_MODIFICATION ||
-              e.getErrorCode() == ErrorCode.WORKSPACE_INVITATION_ALREADY_MODIFICATION ||
+          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_PROCESSED ||
+              e.getErrorCode() == ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
+                  ||
               e.getErrorCode() == ErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER) {
             failureCount.incrementAndGet();
           } else {
@@ -162,8 +163,8 @@ class WorkspaceInvitationOptimisticLockingTest {
               .block();
           successCount.incrementAndGet();
         } catch (BusinessException e) {
-          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_MODIFICATION ||
-              e.getErrorCode() == ErrorCode.WORKSPACE_INVITATION_ALREADY_MODIFICATION) {
+          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_PROCESSED ||
+              e.getErrorCode() == ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED) {
             failureCount.incrementAndGet();
           } else {
             throw e;
@@ -216,8 +217,9 @@ class WorkspaceInvitationOptimisticLockingTest {
             rejectSuccessCount.incrementAndGet();
           }
         } catch (BusinessException e) {
-          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_MODIFICATION ||
-              e.getErrorCode() == ErrorCode.WORKSPACE_INVITATION_ALREADY_MODIFICATION ||
+          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_PROCESSED ||
+              e.getErrorCode() == ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
+                  ||
               e.getErrorCode() == ErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER) {
             failureCount.incrementAndGet();
           } else {

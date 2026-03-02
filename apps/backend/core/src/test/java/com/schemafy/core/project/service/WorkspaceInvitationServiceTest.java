@@ -589,7 +589,7 @@ class WorkspaceInvitationServiceTest {
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.WORKSPACE_INVITATION_ALREADY_MODIFICATION);
+            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED);
           })
           .verify();
     }
@@ -780,7 +780,7 @@ class WorkspaceInvitationServiceTest {
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.WORKSPACE_INVITATION_ALREADY_MODIFICATION);
+            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED);
           })
           .verify();
     }
@@ -802,7 +802,7 @@ class WorkspaceInvitationServiceTest {
           .expectErrorSatisfies(error -> {
             assertThat(error).isInstanceOf(BusinessException.class);
             BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.WORKSPACE_INVITATION_ALREADY_MODIFICATION);
+            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED);
           })
           .verify();
     }
