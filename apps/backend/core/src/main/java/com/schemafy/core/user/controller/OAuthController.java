@@ -18,9 +18,9 @@ import com.schemafy.core.common.security.jwt.JwtProperties;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.user.oauth.GitHubOAuthProperties;
 import com.schemafy.core.user.oauth.GitHubOAuthService;
-import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.UserService;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
+import com.schemafy.domain.user.domain.AuthProvider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

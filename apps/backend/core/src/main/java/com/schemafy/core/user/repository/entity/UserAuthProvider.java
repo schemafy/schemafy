@@ -11,6 +11,12 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/**
+ * Transitional legacy entity for read compatibility in core module.
+ * <p>
+ * User auth-provider ownership is moving to domain user adapters.
+ * Keep this entity for compatibility only until project/workspace tracks are migrated.
+ */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
