@@ -1,15 +1,14 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { ChangeColumnNameRequest, ChangeColumnTypeRequest, ColumnResponse, CreateColumnRequest } from '../../api';
 import { changeColumnName, changeColumnPosition, changeColumnType, createColumn, deleteColumn } from '../../api';
-import type { ErdCommand } from '../ErdCommand';
-import { updateAffectedTablesInCache } from '../erdCacheHelpers';
+import { BaseErdCommand } from '../erdCacheHelpers';
 
 type ColumnCommandBase = {
   schemaId: string;
   queryClient: QueryClient;
 }
 
-export class CreateColumnCommand implements ErdCommand {
+export class CreateColumnCommand extends BaseErdCommand {
   private currentColumnId: string;
 
   constructor(
@@ -19,32 +18,25 @@ export class CreateColumnCommand implements ErdCommand {
       originalRequest: CreateColumnRequest;
     },
   ) {
+    super(params.schemaId, params.queryClient);
     this.currentColumnId = params.columnId;
   }
 
   async undo(): Promise<void> {
     const result = await deleteColumn(this.currentColumnId);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
     const result = await createColumn(this.params.originalRequest);
     this.currentColumnId = result.data.id;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class DeleteColumnCommand implements ErdCommand {
+export class DeleteColumnCommand extends BaseErdCommand {
   private restoredColumnId: string | null = null;
 
   constructor(
@@ -55,6 +47,7 @@ export class DeleteColumnCommand implements ErdCommand {
       seqNo: number;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -80,11 +73,7 @@ export class DeleteColumnCommand implements ErdCommand {
       await changeColumnPosition(result.data.id, {seqNo});
     }
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -93,15 +82,11 @@ export class DeleteColumnCommand implements ErdCommand {
     const result = await deleteColumn(idToDelete);
     this.restoredColumnId = null;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeColumnNameCommand implements ErdCommand {
+export class ChangeColumnNameCommand extends BaseErdCommand {
   constructor(
     private params: ColumnCommandBase & {
       columnId: string;
@@ -109,6 +94,7 @@ export class ChangeColumnNameCommand implements ErdCommand {
       newName: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -118,11 +104,7 @@ export class ChangeColumnNameCommand implements ErdCommand {
 
     const result = await changeColumnName(this.params.columnId, newNameData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -132,15 +114,11 @@ export class ChangeColumnNameCommand implements ErdCommand {
 
     const result = await changeColumnName(this.params.columnId, newNameData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeColumnTypeCommand implements ErdCommand {
+export class ChangeColumnTypeCommand extends BaseErdCommand {
   constructor(
     private params: ColumnCommandBase & {
       columnId: string;
@@ -148,6 +126,7 @@ export class ChangeColumnTypeCommand implements ErdCommand {
       newType: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -156,12 +135,8 @@ export class ChangeColumnTypeCommand implements ErdCommand {
     };
 
     const result = await changeColumnType(this.params.columnId, newTypeData);
-    
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -171,10 +146,6 @@ export class ChangeColumnTypeCommand implements ErdCommand {
 
     const result = await changeColumnType(this.params.columnId, newTypeData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }

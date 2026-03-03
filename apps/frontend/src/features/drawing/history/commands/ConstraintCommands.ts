@@ -7,15 +7,14 @@ import {
   deleteConstraint,
   removeConstraintColumn,
 } from '../../api';
-import type { ErdCommand } from '../ErdCommand';
-import { updateAffectedTablesInCache } from '../erdCacheHelpers';
+import { BaseErdCommand } from '../erdCacheHelpers';
 
 interface ConstraintCommandBase {
   schemaId: string;
   queryClient: QueryClient;
 }
 
-export class CreateConstraintCommand implements ErdCommand {
+export class CreateConstraintCommand extends BaseErdCommand {
   private currentConstraintId: string;
 
   constructor(
@@ -24,30 +23,23 @@ export class CreateConstraintCommand implements ErdCommand {
       originalRequest: CreateConstraintRequest;
     },
   ) {
+    super(params.schemaId, params.queryClient);
     this.currentConstraintId = params.constraintId;
   }
 
   async undo(): Promise<void> {
     const result = await deleteConstraint(this.currentConstraintId);
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
     const result = await createConstraint(this.params.originalRequest);
     this.currentConstraintId = result.data.id;
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class DeleteConstraintCommand implements ErdCommand {
+export class DeleteConstraintCommand extends BaseErdCommand {
   private restoredConstraintId: string | null = null;
 
   constructor(
@@ -55,10 +47,11 @@ export class DeleteConstraintCommand implements ErdCommand {
       snapshot: ConstraintSnapshotResponse;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
-    const {snapshot, schemaId, queryClient} = this.params;
+    const {snapshot} = this.params;
     const {constraint, columns} = snapshot;
 
     const newConstraintData: CreateConstraintRequest = {
@@ -79,22 +72,18 @@ export class DeleteConstraintCommand implements ErdCommand {
       });
     }
 
-    await updateAffectedTablesInCache(queryClient, schemaId, result.affectedTableIds);
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
     if (!this.restoredConstraintId) return;
     const result = await deleteConstraint(this.restoredConstraintId);
     this.restoredConstraintId = null;
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeConstraintNameCommand implements ErdCommand {
+export class ChangeConstraintNameCommand extends BaseErdCommand {
   constructor(
     private params: ConstraintCommandBase & {
       constraintId: string;
@@ -102,32 +91,25 @@ export class ChangeConstraintNameCommand implements ErdCommand {
       newName: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
     const result = await changeConstraintName(this.params.constraintId, {
       newName: this.params.previousName,
     });
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
     const result = await changeConstraintName(this.params.constraintId, {
       newName: this.params.newName,
     });
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class AddConstraintColumnCommand implements ErdCommand {
+export class AddConstraintColumnCommand extends BaseErdCommand {
   private currentConstraintColumnId: string;
 
   constructor(
@@ -138,16 +120,13 @@ export class AddConstraintColumnCommand implements ErdCommand {
       seqNo: number;
     },
   ) {
+    super(params.schemaId, params.queryClient);
     this.currentConstraintColumnId = params.constraintColumnId;
   }
 
   async undo(): Promise<void> {
     const result = await removeConstraintColumn(this.currentConstraintColumnId);
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -156,15 +135,11 @@ export class AddConstraintColumnCommand implements ErdCommand {
       seqNo: this.params.seqNo,
     });
     this.currentConstraintColumnId = result.data.id;
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class RemoveConstraintColumnCommand implements ErdCommand {
+export class RemoveConstraintColumnCommand extends BaseErdCommand {
   private restoredConstraintColumnId: string | null = null;
 
   constructor(
@@ -174,6 +149,7 @@ export class RemoveConstraintColumnCommand implements ErdCommand {
       seqNo: number;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -182,21 +158,13 @@ export class RemoveConstraintColumnCommand implements ErdCommand {
       seqNo: this.params.seqNo,
     });
     this.restoredConstraintColumnId = result.data.id;
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
     if (!this.restoredConstraintColumnId) return;
     const result = await removeConstraintColumn(this.restoredConstraintColumnId);
     this.restoredConstraintColumnId = null;
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }

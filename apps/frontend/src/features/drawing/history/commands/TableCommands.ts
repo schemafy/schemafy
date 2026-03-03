@@ -29,14 +29,14 @@ import {
 } from '../../api';
 import { erdKeys } from '../../hooks/query-keys';
 import type { ErdCommand } from '../ErdCommand';
-import { removeTableFromCache, updateAffectedTablesInCache, } from '../erdCacheHelpers';
+import { BaseErdCommand, removeTableFromCache } from '../erdCacheHelpers';
 
 interface TableCommandBase {
   schemaId: string;
   queryClient: QueryClient;
 }
 
-export class CreateTableCommand implements ErdCommand {
+export class CreateTableCommand extends BaseErdCommand {
   private currentTableId: string;
 
   constructor(
@@ -46,6 +46,7 @@ export class CreateTableCommand implements ErdCommand {
       originalExtra: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
     this.currentTableId = params.tableId;
   }
 
@@ -53,16 +54,12 @@ export class CreateTableCommand implements ErdCommand {
     const result = await deleteTable(this.currentTableId);
 
     removeTableFromCache(
-      this.params.queryClient,
-      this.params.schemaId,
+      this.queryClient,
+      this.schemaId,
       this.currentTableId,
     );
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -74,15 +71,11 @@ export class CreateTableCommand implements ErdCommand {
     const result = await createTable(createTableData);
     this.currentTableId = result.data.id;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class DeleteTableCommand implements ErdCommand {
+export class DeleteTableCommand extends BaseErdCommand {
   private restoredTableId: string | null = null;
 
   constructor(
@@ -91,14 +84,15 @@ export class DeleteTableCommand implements ErdCommand {
       snapshot: TableSnapshotResponse;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
-    const {schemaId, queryClient, snapshot} = this.params
+    const {snapshot} = this.params;
     const {table, columns, constraints, indexes, relationships} = snapshot;
 
     const createTableData: CreateTableRequest = {
-      schemaId,
+      schemaId: this.schemaId,
       name: table.name,
       charset: table.charset,
       collation: table.collation,
@@ -147,7 +141,7 @@ export class DeleteTableCommand implements ErdCommand {
         const addConstraintColumnData: AddConstraintColumnRequest = {
           columnId: newColumnId,
           seqNo: cc.seqNo,
-        }
+        };
 
         await addConstraintColumn(constraintResult.data.id, addConstraintColumnData);
       }
@@ -177,8 +171,8 @@ export class DeleteTableCommand implements ErdCommand {
     }
 
     const currentSnapshots =
-      queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
-        erdKeys.schemaSnapshots(schemaId),
+      this.queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
+        erdKeys.schemaSnapshots(this.schemaId),
       );
 
     const affectedIds = new Set<string>([newTableId]);
@@ -231,11 +225,7 @@ export class DeleteTableCommand implements ErdCommand {
       affectedIds.add(otherTableId);
     }
 
-    await updateAffectedTablesInCache(
-      queryClient,
-      schemaId,
-      Array.from(affectedIds),
-    );
+    await this.updateCache(Array.from(affectedIds));
   }
 
   async redo(): Promise<void> {
@@ -244,21 +234,17 @@ export class DeleteTableCommand implements ErdCommand {
     const result = await deleteTable(this.restoredTableId);
 
     removeTableFromCache(
-      this.params.queryClient,
-      this.params.schemaId,
+      this.queryClient,
+      this.schemaId,
       this.restoredTableId,
     );
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
     this.restoredTableId = null;
   }
 }
 
-export class ChangeTableNameCommand implements ErdCommand {
+export class ChangeTableNameCommand extends BaseErdCommand {
   constructor(
     private params: TableCommandBase & {
       tableId: string;
@@ -266,6 +252,7 @@ export class ChangeTableNameCommand implements ErdCommand {
       newName: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -275,11 +262,7 @@ export class ChangeTableNameCommand implements ErdCommand {
 
     const result = await changeTableName(this.params.tableId, changeTableNameData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -289,15 +272,11 @@ export class ChangeTableNameCommand implements ErdCommand {
 
     const result = await changeTableName(this.params.tableId, changeTableNameData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class MoveTableCommand implements ErdCommand {
+export class MoveTableCommand extends BaseErdCommand {
   constructor(
     private params: TableCommandBase & {
       tableId: string;
@@ -305,6 +284,7 @@ export class MoveTableCommand implements ErdCommand {
       newExtra: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -314,11 +294,7 @@ export class MoveTableCommand implements ErdCommand {
 
     const result = await changeTableExtra(this.params.tableId, changeTableExtraData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -327,12 +303,8 @@ export class MoveTableCommand implements ErdCommand {
     };
 
     const result = await changeTableExtra(this.params.tableId, changeTableExtraData);
-    
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+
+    await this.updateCache(result.affectedTableIds);
   }
 
   merge(other: ErdCommand): ErdCommand | null {

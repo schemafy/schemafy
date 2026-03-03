@@ -18,14 +18,14 @@ import {
   deleteRelationship,
 } from '../../api';
 import type { ErdCommand } from '../ErdCommand';
-import { updateAffectedTablesInCache } from '../erdCacheHelpers';
+import { BaseErdCommand } from '../erdCacheHelpers';
 
 interface RelationshipCommandBase {
   schemaId: string;
   queryClient: QueryClient;
 }
 
-export class CreateRelationshipCommand implements ErdCommand {
+export class CreateRelationshipCommand extends BaseErdCommand {
   private currentRelationshipId: string;
 
   constructor(
@@ -35,16 +35,13 @@ export class CreateRelationshipCommand implements ErdCommand {
       extra: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
     this.currentRelationshipId = params.relationshipId;
   }
 
   async undo(): Promise<void> {
     const result = await deleteRelationship(this.currentRelationshipId);
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -56,15 +53,11 @@ export class CreateRelationshipCommand implements ErdCommand {
     const result = await createRelationship(createRelationshipData);
     this.currentRelationshipId = result.data.id;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class DeleteRelationshipCommand implements ErdCommand {
+export class DeleteRelationshipCommand extends BaseErdCommand {
   private restoredRelationshipId: string | null = null;
 
   constructor(
@@ -72,6 +65,7 @@ export class DeleteRelationshipCommand implements ErdCommand {
       snapshot: RelationshipSnapshotResponse;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -98,11 +92,7 @@ export class DeleteRelationshipCommand implements ErdCommand {
       await addRelationshipColumn(result.data.id, addRelationshipColumnData);
     }
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -111,15 +101,11 @@ export class DeleteRelationshipCommand implements ErdCommand {
     const result = await deleteRelationship(this.restoredRelationshipId);
     this.restoredRelationshipId = null;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeRelationshipNameCommand implements ErdCommand {
+export class ChangeRelationshipNameCommand extends BaseErdCommand {
   constructor(
     private params: RelationshipCommandBase & {
       relationshipId: string;
@@ -127,6 +113,7 @@ export class ChangeRelationshipNameCommand implements ErdCommand {
       newName: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -136,11 +123,7 @@ export class ChangeRelationshipNameCommand implements ErdCommand {
 
     const result = await changeRelationshipName(this.params.relationshipId, changeRelationshipNameData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -150,15 +133,11 @@ export class ChangeRelationshipNameCommand implements ErdCommand {
 
     const result = await changeRelationshipName(this.params.relationshipId, changeRelationshipNameData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeRelationshipKindCommand implements ErdCommand {
+export class ChangeRelationshipKindCommand extends BaseErdCommand {
   constructor(
     private params: RelationshipCommandBase & {
       relationshipId: string;
@@ -166,6 +145,7 @@ export class ChangeRelationshipKindCommand implements ErdCommand {
       newKind: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -175,11 +155,7 @@ export class ChangeRelationshipKindCommand implements ErdCommand {
 
     const result = await changeRelationshipKind(this.params.relationshipId, changeRelationshipKindData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -189,15 +165,11 @@ export class ChangeRelationshipKindCommand implements ErdCommand {
 
     const result = await changeRelationshipKind(this.params.relationshipId, changeRelationshipKindData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeRelationshipCardinalityCommand implements ErdCommand {
+export class ChangeRelationshipCardinalityCommand extends BaseErdCommand {
   constructor(
     private params: RelationshipCommandBase & {
       relationshipId: string;
@@ -205,6 +177,7 @@ export class ChangeRelationshipCardinalityCommand implements ErdCommand {
       newCardinality: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -217,11 +190,7 @@ export class ChangeRelationshipCardinalityCommand implements ErdCommand {
       changeRelationshipCardinalityData,
     );
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -233,15 +202,11 @@ export class ChangeRelationshipCardinalityCommand implements ErdCommand {
       this.params.relationshipId,
       changeRelationshipCardinalityData,
     );
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeRelationshipExtraCommand implements ErdCommand {
+export class ChangeRelationshipExtraCommand extends BaseErdCommand {
   constructor(
     private params: RelationshipCommandBase & {
       relationshipId: string;
@@ -249,6 +214,7 @@ export class ChangeRelationshipExtraCommand implements ErdCommand {
       newExtra: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -258,11 +224,7 @@ export class ChangeRelationshipExtraCommand implements ErdCommand {
 
     const result = await changeRelationshipExtra(this.params.relationshipId, changeRelationshipExtraData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -272,18 +234,14 @@ export class ChangeRelationshipExtraCommand implements ErdCommand {
 
     const result = await changeRelationshipExtra(this.params.relationshipId, changeRelationshipExtraData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   merge(other: ErdCommand): ErdCommand | null {
     if (!(other instanceof ChangeRelationshipExtraCommand)) return null;
 
     if (other.params.relationshipId !== this.params.relationshipId) return null;
-    
+
     return new ChangeRelationshipExtraCommand({
       ...this.params,
       newExtra: other.params.newExtra,

@@ -16,15 +16,14 @@ import {
   deleteIndex,
   removeIndexColumn,
 } from '../../api';
-import type { ErdCommand } from '../ErdCommand';
-import { updateAffectedTablesInCache } from '../erdCacheHelpers';
+import { BaseErdCommand } from '../erdCacheHelpers';
 
 interface IndexCommandBase {
   schemaId: string;
   queryClient: QueryClient;
 }
 
-export class CreateIndexCommand implements ErdCommand {
+export class CreateIndexCommand extends BaseErdCommand {
   private currentIndexId: string;
 
   constructor(
@@ -33,32 +32,25 @@ export class CreateIndexCommand implements ErdCommand {
       originalRequest: CreateIndexRequest;
     },
   ) {
+    super(params.schemaId, params.queryClient);
     this.currentIndexId = params.indexId;
   }
 
   async undo(): Promise<void> {
     const result = await deleteIndex(this.currentIndexId);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
     const result = await createIndex(this.params.originalRequest);
 
     this.currentIndexId = result.data.id;
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class DeleteIndexCommand implements ErdCommand {
+export class DeleteIndexCommand extends BaseErdCommand {
   private restoredIndexId: string | null = null;
 
   constructor(
@@ -66,10 +58,11 @@ export class DeleteIndexCommand implements ErdCommand {
       snapshot: IndexSnapshotResponse;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
-    const {snapshot, schemaId, queryClient} = this.params;
+    const {snapshot} = this.params;
     const {index, columns} = snapshot;
 
     const newIndexData: CreateIndexRequest = {
@@ -89,7 +82,7 @@ export class DeleteIndexCommand implements ErdCommand {
       });
     }
 
-    await updateAffectedTablesInCache(queryClient, schemaId, result.affectedTableIds);
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -98,15 +91,11 @@ export class DeleteIndexCommand implements ErdCommand {
     const result = await deleteIndex(this.restoredIndexId);
     this.restoredIndexId = null;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeIndexNameCommand implements ErdCommand {
+export class ChangeIndexNameCommand extends BaseErdCommand {
   constructor(
     private params: IndexCommandBase & {
       indexId: string;
@@ -114,6 +103,7 @@ export class ChangeIndexNameCommand implements ErdCommand {
       newName: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -123,11 +113,7 @@ export class ChangeIndexNameCommand implements ErdCommand {
 
     const result = await changeIndexName(this.params.indexId, changeIndexNameData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -137,15 +123,11 @@ export class ChangeIndexNameCommand implements ErdCommand {
 
     const result = await changeIndexName(this.params.indexId, changeIndexNameData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeIndexTypeCommand implements ErdCommand {
+export class ChangeIndexTypeCommand extends BaseErdCommand {
   constructor(
     private params: IndexCommandBase & {
       indexId: string;
@@ -153,6 +135,7 @@ export class ChangeIndexTypeCommand implements ErdCommand {
       newType: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -162,11 +145,7 @@ export class ChangeIndexTypeCommand implements ErdCommand {
 
     const result = await changeIndexType(this.params.indexId, changeIndexTypeData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -176,15 +155,11 @@ export class ChangeIndexTypeCommand implements ErdCommand {
 
     const result = await changeIndexType(this.params.indexId, changeIndexTypeData);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class AddIndexColumnCommand implements ErdCommand {
+export class AddIndexColumnCommand extends BaseErdCommand {
   private currentIndexColumnId: string;
 
   constructor(
@@ -196,17 +171,14 @@ export class AddIndexColumnCommand implements ErdCommand {
       sortDirection: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
     this.currentIndexColumnId = params.indexColumnId;
   }
 
   async undo(): Promise<void> {
     const result = await removeIndexColumn(this.currentIndexColumnId);
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -219,15 +191,11 @@ export class AddIndexColumnCommand implements ErdCommand {
     const result = await addIndexColumn(this.params.indexId, newIndexColumnData);
     this.currentIndexColumnId = result.data.id;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class RemoveIndexColumnCommand implements ErdCommand {
+export class RemoveIndexColumnCommand extends BaseErdCommand {
   private restoredIndexColumnId: string | null = null;
 
   constructor(
@@ -238,6 +206,7 @@ export class RemoveIndexColumnCommand implements ErdCommand {
       sortDirection: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -250,11 +219,7 @@ export class RemoveIndexColumnCommand implements ErdCommand {
     const result = await addIndexColumn(this.params.indexId, addIndexColumnData);
     this.restoredIndexColumnId = result.data.id;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -263,15 +228,11 @@ export class RemoveIndexColumnCommand implements ErdCommand {
     const result = await removeIndexColumn(this.restoredIndexColumnId);
     this.restoredIndexColumnId = null;
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }
 
-export class ChangeIndexColumnSortDirectionCommand implements ErdCommand {
+export class ChangeIndexColumnSortDirectionCommand extends BaseErdCommand {
   constructor(
     private params: IndexCommandBase & {
       indexColumnId: string;
@@ -279,6 +240,7 @@ export class ChangeIndexColumnSortDirectionCommand implements ErdCommand {
       newSortDirection: string;
     },
   ) {
+    super(params.schemaId, params.queryClient);
   }
 
   async undo(): Promise<void> {
@@ -291,11 +253,7 @@ export class ChangeIndexColumnSortDirectionCommand implements ErdCommand {
       changeIndexColumnSortDirectionData,
     );
 
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 
   async redo(): Promise<void> {
@@ -307,10 +265,6 @@ export class ChangeIndexColumnSortDirectionCommand implements ErdCommand {
       this.params.indexColumnId,
       changeIndexColumnSortDirectionData,
     );
-    await updateAffectedTablesInCache(
-      this.params.queryClient,
-      this.params.schemaId,
-      result.affectedTableIds,
-    );
+    await this.updateCache(result.affectedTableIds);
   }
 }

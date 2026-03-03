@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { TableSnapshotResponse } from '../api';
 import { getTableSnapshots } from '../api';
 import { erdKeys } from '../hooks/query-keys';
+import type { ErdCommand } from './ErdCommand';
 
 export const updateAffectedTablesInCache = async (
   queryClient: QueryClient,
@@ -22,6 +23,24 @@ export const updateAffectedTablesInCache = async (
     });
   }
 };
+
+export abstract class BaseErdCommand implements ErdCommand {
+  constructor(
+    protected readonly schemaId: string,
+    protected readonly queryClient: QueryClient,
+  ) {}
+
+  protected async updateCache(affectedTableIds: string[]): Promise<void> {
+    await updateAffectedTablesInCache(
+      this.queryClient,
+      this.schemaId,
+      affectedTableIds,
+    );
+  }
+
+  abstract undo(): Promise<void>;
+  abstract redo(): Promise<void>;
+}
 
 export const removeTableFromCache = (
   queryClient: QueryClient,
