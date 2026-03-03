@@ -710,8 +710,7 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponse()))
         .jsonPath("$.projectId").isEqualTo(project.getId())
-        .jsonPath("$.code").exists()
-        .jsonPath("$.shareUrl").exists()
+        .jsonPath("$.url").exists()
         .jsonPath("$.isRevoked").isEqualTo(false)
         .jsonPath("$.accessCount").isEqualTo(0);
   }
@@ -775,7 +774,6 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponse()))
         .jsonPath("$.id").isEqualTo(shareLink.getId())
-        .jsonPath("$.code").isEqualTo(shareLinkCode)
         .jsonPath("$.isRevoked").isEqualTo(false);
   }
 

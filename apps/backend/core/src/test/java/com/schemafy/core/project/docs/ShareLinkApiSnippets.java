@@ -23,9 +23,7 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
           .description("공유 링크 ID"),
       fieldWithPath("projectId").type(JsonFieldType.STRING)
           .description("프로젝트 ID"),
-      fieldWithPath("code").type(JsonFieldType.STRING)
-          .description("공유 링크 코드"),
-      fieldWithPath("shareUrl").type(JsonFieldType.STRING)
+      fieldWithPath("url").type(JsonFieldType.STRING)
           .description("공유 링크 URL"),
       fieldWithPath("expiresAt").type(JsonFieldType.STRING)
           .description("만료 시각").optional(),
@@ -47,9 +45,7 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
           .description("공유 링크 ID"),
       fieldWithPath(prefix + "projectId").type(JsonFieldType.STRING)
           .description("프로젝트 ID"),
-      fieldWithPath(prefix + "code").type(JsonFieldType.STRING)
-          .description("공유 링크 코드"),
-      fieldWithPath(prefix + "shareUrl").type(JsonFieldType.STRING)
+      fieldWithPath(prefix + "url").type(JsonFieldType.STRING)
           .description("공유 링크 URL"),
       fieldWithPath(prefix + "expiresAt").type(JsonFieldType.STRING)
           .description("만료 시각").optional(),

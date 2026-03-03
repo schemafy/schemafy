@@ -7,8 +7,7 @@ import com.schemafy.core.project.repository.entity.ShareLink;
 public record ShareLinkResponse(
     String id,
     String projectId,
-    String code,
-    String shareUrl,
+    String url,
     Instant expiresAt,
     Boolean isRevoked,
     Instant lastAccessedAt,
@@ -19,7 +18,6 @@ public record ShareLinkResponse(
     return new ShareLinkResponse(
         shareLink.getId(),
         shareLink.getProjectId(),
-        shareLink.getCode(),
         baseUrl + "/share/" + shareLink.getCode(),
         shareLink.getExpiresAt(),
         shareLink.getIsRevoked(),
