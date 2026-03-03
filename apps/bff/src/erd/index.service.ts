@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { BackendClientService } from '../common/backend-client/backend-client.service';
-import { ApiResponse } from '../common/types/api-response.types';
 import type {
   AddIndexColumnRequest,
   AddIndexColumnResponse,
@@ -21,20 +20,15 @@ export class IndexService {
   async createIndex(
     data: CreateIndexRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse<IndexResponse>>> {
+  ): Promise<MutationResponse<IndexResponse>> {
     const response = await this.backendClient.client.post<
-      ApiResponse<MutationResponse<IndexResponse>>
+      MutationResponse<IndexResponse>
     >('/api/v1.0/indexes', data, this.backendClient.getAuthConfig(authHeader));
     return response.data;
   }
 
-  async getIndex(
-    indexId: string,
-    authHeader: string,
-  ): Promise<ApiResponse<IndexResponse>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<IndexResponse>
-    >(
+  async getIndex(indexId: string, authHeader: string): Promise<IndexResponse> {
+    const response = await this.backendClient.client.get<IndexResponse>(
       `/api/v1.0/indexes/${indexId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -44,10 +38,8 @@ export class IndexService {
   async getIndexesByTableId(
     tableId: string,
     authHeader: string,
-  ): Promise<ApiResponse<IndexResponse[]>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<IndexResponse[]>
-    >(
+  ): Promise<IndexResponse[]> {
+    const response = await this.backendClient.client.get<IndexResponse[]>(
       `/api/v1.0/tables/${tableId}/indexes`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -58,10 +50,8 @@ export class IndexService {
     indexId: string,
     data: ChangeIndexNameRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/indexes/${indexId}/name`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -73,10 +63,8 @@ export class IndexService {
     indexId: string,
     data: ChangeIndexTypeRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/indexes/${indexId}/type`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -87,10 +75,8 @@ export class IndexService {
   async deleteIndex(
     indexId: string,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.delete<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/indexes/${indexId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -100,10 +86,8 @@ export class IndexService {
   async getIndexColumns(
     indexId: string,
     authHeader: string,
-  ): Promise<ApiResponse<IndexColumnResponse[]>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<IndexColumnResponse[]>
-    >(
+  ): Promise<IndexColumnResponse[]> {
+    const response = await this.backendClient.client.get<IndexColumnResponse[]>(
       `/api/v1.0/indexes/${indexId}/columns`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -114,9 +98,9 @@ export class IndexService {
     indexId: string,
     data: AddIndexColumnRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse<AddIndexColumnResponse>>> {
+  ): Promise<MutationResponse<AddIndexColumnResponse>> {
     const response = await this.backendClient.client.post<
-      ApiResponse<MutationResponse<AddIndexColumnResponse>>
+      MutationResponse<AddIndexColumnResponse>
     >(
       `/api/v1.0/indexes/${indexId}/columns`,
       data,
@@ -128,10 +112,8 @@ export class IndexService {
   async removeIndexColumn(
     indexColumnId: string,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.delete<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/index-columns/${indexColumnId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -141,10 +123,8 @@ export class IndexService {
   async getIndexColumn(
     indexColumnId: string,
     authHeader: string,
-  ): Promise<ApiResponse<IndexColumnResponse>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<IndexColumnResponse>
-    >(
+  ): Promise<IndexColumnResponse> {
+    const response = await this.backendClient.client.get<IndexColumnResponse>(
       `/api/v1.0/index-columns/${indexColumnId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -155,10 +135,8 @@ export class IndexService {
     indexColumnId: string,
     data: ChangeIndexColumnPositionRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/index-columns/${indexColumnId}/position`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -170,10 +148,8 @@ export class IndexService {
     indexColumnId: string,
     data: ChangeIndexColumnSortDirectionRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/index-columns/${indexColumnId}/sort-direction`,
       data,
       this.backendClient.getAuthConfig(authHeader),

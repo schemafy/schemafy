@@ -29,13 +29,13 @@ public class PublicShareLinkApiSnippets extends RestDocsSnippets {
   public static Snippet accessByCodeResponse() {
     return createResponseFieldsSnippet(
         successResponseFields(
-            fieldWithPath("result.projectId")
+            fieldWithPath("projectId")
                 .type(JsonFieldType.STRING)
                 .description("프로젝트 ID"),
-            fieldWithPath("result.projectName")
+            fieldWithPath("projectName")
                 .type(JsonFieldType.STRING)
                 .description("프로젝트 이름"),
-            fieldWithPath("result.description")
+            fieldWithPath("description")
                 .type(JsonFieldType.STRING)
                 .description("프로젝트 설명").optional()));
   }

@@ -19,23 +19,23 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
   /** ShareLink 응답 필드 (상세 정보) */
   private static FieldDescriptor[] shareLinkResponseFields() {
     return new FieldDescriptor[] {
-      fieldWithPath("result.id").type(JsonFieldType.STRING)
+      fieldWithPath("id").type(JsonFieldType.STRING)
           .description("공유 링크 ID"),
-      fieldWithPath("result.projectId").type(JsonFieldType.STRING)
+      fieldWithPath("projectId").type(JsonFieldType.STRING)
           .description("프로젝트 ID"),
-      fieldWithPath("result.code").type(JsonFieldType.STRING)
+      fieldWithPath("code").type(JsonFieldType.STRING)
           .description("공유 링크 코드"),
-      fieldWithPath("result.shareUrl").type(JsonFieldType.STRING)
+      fieldWithPath("shareUrl").type(JsonFieldType.STRING)
           .description("공유 링크 URL"),
-      fieldWithPath("result.expiresAt").type(JsonFieldType.STRING)
+      fieldWithPath("expiresAt").type(JsonFieldType.STRING)
           .description("만료 시각").optional(),
-      fieldWithPath("result.isRevoked").type(JsonFieldType.BOOLEAN)
+      fieldWithPath("isRevoked").type(JsonFieldType.BOOLEAN)
           .description("비활성화 여부"),
-      fieldWithPath("result.lastAccessedAt").type(JsonFieldType.STRING)
+      fieldWithPath("lastAccessedAt").type(JsonFieldType.STRING)
           .description("마지막 접근 시각").optional(),
-      fieldWithPath("result.accessCount").type(JsonFieldType.NUMBER)
+      fieldWithPath("accessCount").type(JsonFieldType.NUMBER)
           .description("접근 횟수"),
-      fieldWithPath("result.createdAt").type(JsonFieldType.STRING)
+      fieldWithPath("createdAt").type(JsonFieldType.STRING)
           .description("생성 시각")
     };
   }
@@ -120,23 +120,23 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
     return createResponseFieldsSnippet(
         successResponseFields(concat(
             new FieldDescriptor[] {
-              fieldWithPath("result.content[]")
+              fieldWithPath("content[]")
                   .type(JsonFieldType.ARRAY)
                   .description("공유 링크 목록"),
-              fieldWithPath("result.page")
+              fieldWithPath("page")
                   .type(JsonFieldType.NUMBER)
                   .description("현재 페이지 번호 (0부터 시작)"),
-              fieldWithPath("result.size")
+              fieldWithPath("size")
                   .type(JsonFieldType.NUMBER)
                   .description("페이지 크기"),
-              fieldWithPath("result.totalElements")
+              fieldWithPath("totalElements")
                   .type(JsonFieldType.NUMBER)
                   .description("전체 공유 링크 개수"),
-              fieldWithPath("result.totalPages")
+              fieldWithPath("totalPages")
                   .type(JsonFieldType.NUMBER)
                   .description("전체 페이지 수")
             },
-            shareLinkSummaryFields("result.content[]."))));
+            shareLinkSummaryFields("content[]."))));
   }
 
   // ========== GET /api/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 상세 조회

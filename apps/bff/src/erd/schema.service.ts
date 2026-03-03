@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { BackendClientService } from '../common/backend-client/backend-client.service';
-import { ApiResponse } from '../common/types/api-response.types';
 import type {
   ChangeSchemaNameRequest,
   CreateSchemaRequest,
@@ -15,20 +14,29 @@ export class SchemaService {
   async createSchema(
     data: CreateSchemaRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse<SchemaResponse>>> {
+  ): Promise<MutationResponse<SchemaResponse>> {
     const response = await this.backendClient.client.post<
-      ApiResponse<MutationResponse<SchemaResponse>>
+      MutationResponse<SchemaResponse>
     >('/api/v1.0/schemas', data, this.backendClient.getAuthConfig(authHeader));
+    return response.data;
+  }
+
+  async getSchemasByProjectId(
+    projectId: string,
+    authHeader: string,
+  ): Promise<SchemaResponse[]> {
+    const response = await this.backendClient.client.get<SchemaResponse[]>(
+      `/api/v1.0/projects/${projectId}/schemas`,
+      this.backendClient.getAuthConfig(authHeader),
+    );
     return response.data;
   }
 
   async getSchema(
     schemaId: string,
     authHeader: string,
-  ): Promise<ApiResponse<SchemaResponse>> {
-    const response = await this.backendClient.client.get<
-      ApiResponse<SchemaResponse>
-    >(
+  ): Promise<SchemaResponse> {
+    const response = await this.backendClient.client.get<SchemaResponse>(
       `/api/v1.0/schemas/${schemaId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
@@ -39,10 +47,8 @@ export class SchemaService {
     schemaId: string,
     data: ChangeSchemaNameRequest,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.patch<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/schemas/${schemaId}/name`,
       data,
       this.backendClient.getAuthConfig(authHeader),
@@ -53,10 +59,8 @@ export class SchemaService {
   async deleteSchema(
     schemaId: string,
     authHeader: string,
-  ): Promise<ApiResponse<MutationResponse>> {
-    const response = await this.backendClient.client.delete<
-      ApiResponse<MutationResponse>
-    >(
+  ): Promise<MutationResponse> {
+    const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/schemas/${schemaId}`,
       this.backendClient.getAuthConfig(authHeader),
     );

@@ -5,14 +5,15 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.project.exception.ProjectErrorCode;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.ShareLink;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ public class ShareLinkService {
     String user = userId != null ? userId : "anonymous";
 
     return shareLinkRepository.findByCodeAndNotDeleted(code)
-        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.SHARE_LINK_INVALID)))
+        .switchIfEmpty(Mono.error(new DomainException(ShareLinkErrorCode.NOT_FOUND)))
         .flatMap(this::validateShareLinkAccessible)
         .doOnNext(shareLink -> log.info(
             "ShareLink access success - code: {}, projectId: {}, userId: {}, ip: {}, userAgent: {}",
@@ -44,14 +45,14 @@ public class ShareLinkService {
               return Mono.empty();
             })
             .then(projectRepository.findByIdAndNotDeleted(shareLink.getProjectId()))
-            .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_NOT_FOUND))))
+            .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND))))
         .doOnError(ex -> log.info("ShareLink access failed - code: {}, userId: {}, ip: {}, userAgent: {}, reason: {}",
             maskCode(code), user, ipAddress, userAgent, ex.getMessage()));
   }
 
   private Mono<ShareLink> validateShareLinkAccessible(ShareLink shareLink) {
     if (Boolean.TRUE.equals(shareLink.getIsRevoked()) || shareLink.isExpired()) {
-      return Mono.error(new BusinessException(ErrorCode.SHARE_LINK_INVALID));
+      return Mono.error(new DomainException(ShareLinkErrorCode.INVALID_LINK));
     }
 
     return Mono.just(shareLink);
@@ -92,7 +93,7 @@ public class ShareLinkService {
         .then(findShareLinkById(shareLinkId, projectId))
         .flatMap(shareLink -> {
           if (shareLink.getIsRevoked()) {
-            return Mono.error(new BusinessException(ErrorCode.SHARE_LINK_REVOKED));
+            return Mono.error(new DomainException(ShareLinkErrorCode.NOT_FOUND));
           }
           shareLink.revoke();
           return shareLinkRepository.save(shareLink);
@@ -113,12 +114,12 @@ public class ShareLinkService {
 
   private Mono<ShareLink> findShareLinkById(String shareLinkId, String projectId) {
     return shareLinkRepository.findByIdAndProjectIdAndNotDeleted(shareLinkId, projectId)
-        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.SHARE_LINK_NOT_FOUND)));
+        .switchIfEmpty(Mono.error(new DomainException(ShareLinkErrorCode.NOT_FOUND)));
   }
 
   private Mono<Project> findProjectById(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
-        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
+        .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
 
   private String maskCode(String code) {
@@ -130,9 +131,9 @@ public class ShareLinkService {
   private Mono<Void> validateAdminAccess(String projectId, String userId) {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+        .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.ACCESS_DENIED)))
         .filter(ProjectMember::isAdmin)
-        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.PROJECT_ADMIN_REQUIRED)))
+        .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.ADMIN_REQUIRED)))
         .then();
   }
 

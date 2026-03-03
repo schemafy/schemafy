@@ -4,10 +4,10 @@ import java.time.Instant;
 
 import org.springframework.data.relational.core.mapping.Table;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseEntity;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
 import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -38,10 +38,10 @@ public class ShareLink extends BaseEntity {
   /** 커스텀 만료일 지정 */
   public static ShareLink create(String projectId, String code, Instant expiresAt) {
     if (projectId == null || projectId.isBlank()) {
-      throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_PROJECT_ID);
+      throw new DomainException(ShareLinkErrorCode.INVALID_PROJECT_ID);
     }
     if (code == null || code.isBlank()) {
-      throw new BusinessException(ErrorCode.SHARE_LINK_INVALID_CODE);
+      throw new DomainException(ShareLinkErrorCode.INVALID_LINK);
     }
 
     ShareLink shareLink = new ShareLink(projectId, code, expiresAt, false, null, 0L);

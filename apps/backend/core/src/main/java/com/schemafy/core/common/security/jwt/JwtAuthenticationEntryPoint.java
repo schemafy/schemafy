@@ -5,7 +5,8 @@ import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
+import com.schemafy.domain.common.exception.DomainErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -20,12 +21,9 @@ public class JwtAuthenticationEntryPoint
   @Override
   public Mono<Void> commence(ServerWebExchange exchange,
       AuthenticationException ex) {
-    ErrorCode errorCode = ErrorCode.AUTHENTICATION_REQUIRED;
-    return errorResponseWriter.writeErrorResponse(
-        exchange,
-        errorCode.getStatus(),
-        errorCode.getCode(),
-        errorCode.getMessage());
+    DomainErrorCode errorCode = AuthErrorCode.AUTHENTICATION_REQUIRED;
+    return errorResponseWriter.writeErrorResponse(exchange, errorCode,
+        errorCode.code());
   }
 
 }

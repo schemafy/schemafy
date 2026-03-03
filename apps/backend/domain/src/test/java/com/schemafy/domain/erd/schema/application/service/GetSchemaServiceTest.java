@@ -8,9 +8,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
 
 import reactor.core.publisher.Mono;
@@ -73,7 +74,7 @@ class GetSchemaServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.getSchema(query))
-            .expectError(SchemaNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NOT_FOUND))
             .verify();
 
         then(getSchemaByIdPort).should().findSchemaById(query.schemaId());

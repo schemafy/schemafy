@@ -13,11 +13,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.DeleteColumnUseCase;
-import com.schemafy.domain.erd.column.domain.exception.ForeignKeyColumnProtectedException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.domain.erd.constraint.application.port.in.CreateConstraintUseCase;
@@ -33,7 +34,7 @@ import com.schemafy.domain.erd.relationship.application.port.in.GetRelationships
 import com.schemafy.domain.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.RemoveRelationshipColumnUseCase;
 import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
 import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
@@ -151,7 +152,7 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       StepVerifier.create(getRelationshipUseCase.getRelationship(
           new GetRelationshipQuery(relationship.relationshipId())))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -166,7 +167,7 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       StepVerifier.create(getRelationshipUseCase.getRelationship(
           new GetRelationshipQuery(relationship.relationshipId())))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -212,7 +213,7 @@ class RelationshipCascadeDeleteIntegrationTest {
 
       // FK 컬럼 직접 삭제 시 예외 발생
       StepVerifier.create(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnToDelete)))
-          .expectError(ForeignKeyColumnProtectedException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.FK_PROTECTED))
           .verify();
     }
 
@@ -272,7 +273,7 @@ class RelationshipCascadeDeleteIntegrationTest {
       // 관계도 삭제되어야 함
       StepVerifier.create(getRelationshipUseCase.getRelationship(
           new GetRelationshipQuery(relationship.relationshipId())))
-          .expectError(RelationshipNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NOT_FOUND))
           .verify();
     }
 

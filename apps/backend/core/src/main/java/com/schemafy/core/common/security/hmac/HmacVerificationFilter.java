@@ -2,21 +2,20 @@ package com.schemafy.core.common.security.hmac;
 
 import javax.crypto.SecretKey;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.HmacErrorCode;
 import com.schemafy.core.common.security.hmac.HmacProperties.EnforcementMode;
 import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
+import com.schemafy.domain.common.exception.DomainErrorCode;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -24,8 +23,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Component
-@ConditionalOnProperty(prefix = "hmac", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class HmacVerificationFilter implements WebFilter {
 
   static final String HEADER_SIGNATURE = "X-Hmac-Signature";
@@ -75,18 +72,18 @@ public class HmacVerificationFilter implements WebFilter {
 
     if (signature == null || timestamp == null || nonce == null) {
       return handleFailure(exchange, chain,
-          ErrorCode.HMAC_SIGNATURE_MISSING);
+          HmacErrorCode.SIGNATURE_MISSING);
     }
 
     if (!isTimestampValid(timestamp)) {
       return handleFailure(exchange, chain,
-          ErrorCode.HMAC_TIMESTAMP_EXPIRED);
+          HmacErrorCode.TIMESTAMP_EXPIRED);
     }
 
     return nonceCache.isDuplicate(nonce).flatMap(duplicate -> {
       if (duplicate) {
         return handleFailure(exchange, chain,
-            ErrorCode.HMAC_NONCE_DUPLICATE);
+            HmacErrorCode.NONCE_DUPLICATE);
       }
       return DataBufferUtils.join(request.getBody())
           .defaultIfEmpty(
@@ -137,7 +134,7 @@ public class HmacVerificationFilter implements WebFilter {
 
             if (!valid) {
               return handleFailure(mutated, chain,
-                  ErrorCode.HMAC_SIGNATURE_INVALID);
+                  HmacErrorCode.SIGNATURE_INVALID);
             }
 
             return chain.filter(mutated);
@@ -158,16 +155,15 @@ public class HmacVerificationFilter implements WebFilter {
   }
 
   private Mono<Void> handleFailure(ServerWebExchange exchange,
-      WebFilterChain chain, ErrorCode errorCode) {
+      WebFilterChain chain, DomainErrorCode errorCode) {
     if (hmacProperties
         .getEnforcementMode() == EnforcementMode.LOG_ONLY) {
       log.warn("[HMAC] Verification failed (LOG_ONLY mode): {}",
-          errorCode.getCode());
+          errorCode.code());
       return chain.filter(exchange);
     }
-    return errorWriter.writeErrorResponse(exchange,
-        errorCode.getStatus(), errorCode.getCode(),
-        errorCode.getMessage());
+    return errorWriter.writeErrorResponse(exchange, errorCode,
+        errorCode.code());
   }
 
 }

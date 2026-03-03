@@ -8,7 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceInvitationRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceInvitationCreateResponse;
@@ -29,20 +28,19 @@ public class WorkspaceInvitationController {
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/workspaces/{workspaceId}/invitations")
   @ResponseStatus(HttpStatus.CREATED)
-  public Mono<BaseResponse<WorkspaceInvitationCreateResponse>> createInvitation(
+  public Mono<WorkspaceInvitationCreateResponse> createInvitation(
       @PathVariable String workspaceId,
       @Valid @RequestBody CreateWorkspaceInvitationRequest request,
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.createInvitation(
         workspaceId, request.email(), request.role(), currentUserId)
-        .map(WorkspaceInvitationCreateResponse::of)
-        .map(BaseResponse::success);
+        .map(WorkspaceInvitationCreateResponse::of);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/workspaces/{workspaceId}/invitations")
-  public Mono<BaseResponse<PageResponse<WorkspaceInvitationResponse>>> getInvitations(
+  public Mono<PageResponse<WorkspaceInvitationResponse>> getInvitations(
       @PathVariable String workspaceId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size,
@@ -50,29 +48,26 @@ public class WorkspaceInvitationController {
     String currentUserId = auth.getName();
     return invitationService.listInvitations(
         workspaceId, currentUserId, page, size)
-        .map(result -> result.map(WorkspaceInvitationResponse::of))
-        .map(BaseResponse::success);
+        .map(result -> result.map(WorkspaceInvitationResponse::of));
   }
 
   @GetMapping("/users/me/invitations/workspaces")
-  public Mono<BaseResponse<PageResponse<WorkspaceInvitationResponse>>> getMyInvitations(
+  public Mono<PageResponse<WorkspaceInvitationResponse>> getMyInvitations(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size,
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.listMyInvitations(currentUserId, page, size)
-        .map(result -> result.map(WorkspaceInvitationResponse::of))
-        .map(BaseResponse::success);
+        .map(result -> result.map(WorkspaceInvitationResponse::of));
   }
 
   @PatchMapping("/workspaces/invitations/{invitationId}/accept")
-  public Mono<BaseResponse<WorkspaceMemberResponse>> acceptInvitation(
+  public Mono<WorkspaceMemberResponse> acceptInvitation(
       @PathVariable String invitationId,
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.acceptInvitation(invitationId, currentUserId)
-        .map(WorkspaceMemberResponse::from)
-        .map(BaseResponse::success);
+        .map(WorkspaceMemberResponse::from);
   }
 
   @PatchMapping("/workspaces/invitations/{invitationId}/reject")

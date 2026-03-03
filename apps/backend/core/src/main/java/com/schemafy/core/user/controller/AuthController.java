@@ -7,14 +7,13 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.AuthErrorCode;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.service.UserService;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,40 +30,40 @@ public class AuthController {
 
   /** 회원가입 API 새로운 사용자를 등록하고 JWT 토큰을 발급합니다. */
   @PostMapping("/users/signup")
-  public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> signUp(
+  public Mono<ResponseEntity<UserInfoResponse>> signUp(
       @Valid @RequestBody SignUpRequest request) {
     return userService.signUp(request.toCommand())
         .map(user -> ResponseEntity.ok()
             .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
-            .body(BaseResponse.success(UserInfoResponse.from(user))));
+            .body(UserInfoResponse.from(user)));
   }
 
   /** 사용자 인증 후 JWT 토큰을 발급합니다. */
   @PostMapping("/users/login")
-  public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> login(
+  public Mono<ResponseEntity<UserInfoResponse>> login(
       @Valid @RequestBody LoginRequest request) {
     return userService.login(request.toCommand())
         .map(user -> ResponseEntity.ok()
             .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
-            .body(BaseResponse.success(UserInfoResponse.from(user))));
+            .body(UserInfoResponse.from(user)));
   }
 
   /** Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급합니다. */
   @PostMapping("/users/refresh")
-  public Mono<ResponseEntity<BaseResponse<Void>>> refresh(
+  public Mono<ResponseEntity<Void>> refresh(
       ServerHttpRequest request) {
     return Mono.fromCallable(() -> extractRefreshTokenFromCookie(request))
         .flatMap(userService::getUserFromRefreshToken)
         .map(user -> ResponseEntity.ok()
             .headers(jwtTokenIssuer.issueTokens(user.getId(), user.getName()))
-            .body(BaseResponse.success(null)));
+            .build());
   }
 
   /** HTTP 요청의 쿠키에서 Refresh Token을 추출합니다. */
   private String extractRefreshTokenFromCookie(ServerHttpRequest request) {
     var refreshTokenCookie = request.getCookies().getFirst("refreshToken");
     if (refreshTokenCookie == null) {
-      throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
+      throw new DomainException(AuthErrorCode.MISSING_REFRESH_TOKEN);
     }
     return refreshTokenCookie.getValue();
   }

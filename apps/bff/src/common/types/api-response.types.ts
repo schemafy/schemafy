@@ -9,15 +9,8 @@ export type ErrorCategoryType =
 
 export type ApiError = {
   code: string;
-  message: string;
   category: ErrorCategoryType;
   details?: Record<string, unknown>;
-};
-
-export type ApiResponse<T = unknown> = {
-  success: boolean;
-  result: T | null;
-  error: ApiError | null;
 };
 
 export const ErrorCode = {

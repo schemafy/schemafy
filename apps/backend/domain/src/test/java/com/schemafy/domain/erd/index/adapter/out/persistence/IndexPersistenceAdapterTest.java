@@ -10,8 +10,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.config.R2dbcTestConfiguration;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
 
@@ -207,7 +208,7 @@ class IndexPersistenceAdapterTest {
     @DisplayName("존재하지 않는 인덱스면 예외가 발생한다")
     void throwsWhenIndexNotExists() {
       StepVerifier.create(sut.changeIndexName("non-existent-id", "new_name"))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
     }
 
@@ -235,7 +236,7 @@ class IndexPersistenceAdapterTest {
     @DisplayName("존재하지 않는 인덱스면 예외가 발생한다")
     void throwsWhenIndexNotExists() {
       StepVerifier.create(sut.changeIndexType("non-existent-id", IndexType.HASH))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
     }
 

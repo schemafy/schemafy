@@ -6,8 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
+import com.schemafy.domain.common.exception.DomainException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -38,36 +38,36 @@ class ShareLinkTest {
     @DisplayName("projectId가 null이면 예외가 발생한다")
     void nullProjectId_throwsException() {
       assertThatThrownBy(() -> ShareLink.create(null, VALID_CODE))
-          .isInstanceOf(BusinessException.class)
-          .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
-              .isEqualTo(ErrorCode.SHARE_LINK_INVALID_PROJECT_ID));
+          .isInstanceOf(DomainException.class)
+          .satisfies(ex -> assertThat(((DomainException) ex).getErrorCode())
+              .isEqualTo(ShareLinkErrorCode.INVALID_PROJECT_ID));
     }
 
     @Test
     @DisplayName("projectId가 blank이면 예외가 발생한다")
     void blankProjectId_throwsException() {
       assertThatThrownBy(() -> ShareLink.create("  ", VALID_CODE))
-          .isInstanceOf(BusinessException.class)
-          .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
-              .isEqualTo(ErrorCode.SHARE_LINK_INVALID_PROJECT_ID));
+          .isInstanceOf(DomainException.class)
+          .satisfies(ex -> assertThat(((DomainException) ex).getErrorCode())
+              .isEqualTo(ShareLinkErrorCode.INVALID_PROJECT_ID));
     }
 
     @Test
     @DisplayName("code가 null이면 예외가 발생한다")
     void nullCode_throwsException() {
       assertThatThrownBy(() -> ShareLink.create(VALID_PROJECT_ID, null))
-          .isInstanceOf(BusinessException.class)
-          .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
-              .isEqualTo(ErrorCode.SHARE_LINK_INVALID_CODE));
+          .isInstanceOf(DomainException.class)
+          .satisfies(ex -> assertThat(((DomainException) ex).getErrorCode())
+              .isEqualTo(ShareLinkErrorCode.INVALID_LINK));
     }
 
     @Test
     @DisplayName("code가 blank이면 예외가 발생한다")
     void blankCode_throwsException() {
       assertThatThrownBy(() -> ShareLink.create(VALID_PROJECT_ID, "  "))
-          .isInstanceOf(BusinessException.class)
-          .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
-              .isEqualTo(ErrorCode.SHARE_LINK_INVALID_CODE));
+          .isInstanceOf(DomainException.class)
+          .satisfies(ex -> assertThat(((DomainException) ex).getErrorCode())
+              .isEqualTo(ShareLinkErrorCode.INVALID_LINK));
     }
 
     @Test

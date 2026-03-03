@@ -150,9 +150,8 @@ class ProjectControllerTest {
             ProjectApiSnippets.createProjectRequest(),
             ProjectApiSnippets.createProjectResponseHeaders(),
             ProjectApiSnippets.createProjectResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.name").isEqualTo("My Project")
-        .jsonPath("$.result.workspaceId").isEqualTo(testWorkspaceId);
+        .jsonPath("$.name").isEqualTo("My Project")
+        .jsonPath("$.workspaceId").isEqualTo(testWorkspaceId);
 
     projectMemberRepository.findRolesByWorkspaceIdAndUserIdWithPaging(testWorkspaceId, testUserId, 100, 0)
         .collectList().block().forEach(role -> assertThat(role).isEqualTo(ProjectRole.ADMIN.name()));
@@ -207,10 +206,8 @@ class ProjectControllerTest {
             ProjectApiSnippets.getProjectsQueryParameters(),
             ProjectApiSnippets.getProjectsResponseHeaders(),
             ProjectApiSnippets.getProjectsResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.content[0].name")
-        .isEqualTo("Test Project").jsonPath("$.result.totalElements")
-        .isEqualTo(1);
+        .jsonPath("$.content[0].name").isEqualTo("Test Project")
+        .jsonPath("$.totalElements").isEqualTo(1);
   }
 
   @Test
@@ -232,9 +229,8 @@ class ProjectControllerTest {
             ProjectApiSnippets.getProjectRequestHeaders(),
             ProjectApiSnippets.getProjectResponseHeaders(),
             ProjectApiSnippets.getProjectResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.id")
-        .isEqualTo(project.getId()).jsonPath("$.result.name")
+        .jsonPath("$.id")
+        .isEqualTo(project.getId()).jsonPath("$.name")
         .isEqualTo("Test Project");
   }
 
@@ -278,8 +274,7 @@ class ProjectControllerTest {
             ProjectApiSnippets.updateProjectRequest(),
             ProjectApiSnippets.updateProjectResponseHeaders(),
             ProjectApiSnippets.updateProjectResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.name").isEqualTo("Updated Project");
+        .jsonPath("$.name").isEqualTo("Updated Project");
   }
 
   @Test
@@ -371,8 +366,7 @@ class ProjectControllerTest {
             ProjectApiSnippets.getProjectMembersQueryParameters(),
             ProjectApiSnippets.getProjectMembersResponseHeaders(),
             ProjectApiSnippets.getProjectMembersResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.totalElements")
+        .jsonPath("$.totalElements")
         .isEqualTo(1);
   }
 
@@ -406,8 +400,7 @@ class ProjectControllerTest {
             ProjectApiSnippets.updateMemberRoleRequest(),
             ProjectApiSnippets.updateMemberRoleResponseHeaders(),
             ProjectApiSnippets.updateMemberRoleResponse()))
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.role")
-        .isEqualTo("EDITOR");
+        .jsonPath("$..role").isEqualTo("EDITOR");
 
     ProjectMember updatedMember = projectMemberRepository
         .findById(targetMember.getId()).block();
@@ -440,8 +433,7 @@ class ProjectControllerTest {
         .bodyValue(request).exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.role")
+        .jsonPath("$.role")
         .isEqualTo(ProjectRole.ADMIN.name());
 
     ProjectMember updatedMember = projectMemberRepository
@@ -717,12 +709,11 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkRequestHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.projectId").isEqualTo(project.getId())
-        .jsonPath("$.result.code").exists()
-        .jsonPath("$.result.shareUrl").exists()
-        .jsonPath("$.result.isRevoked").isEqualTo(false)
-        .jsonPath("$.result.accessCount").isEqualTo(0);
+        .jsonPath("$.projectId").isEqualTo(project.getId())
+        .jsonPath("$.code").exists()
+        .jsonPath("$.shareUrl").exists()
+        .jsonPath("$.isRevoked").isEqualTo(false)
+        .jsonPath("$.accessCount").isEqualTo(0);
   }
 
   @Test
@@ -752,9 +743,8 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksQueryParameters(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.content").isArray()
-        .jsonPath("$.result.totalElements").isEqualTo(1);
+        .jsonPath("$.content").isArray()
+        .jsonPath("$.totalElements").isEqualTo(1);
   }
 
   @Test
@@ -784,10 +774,9 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkRequestHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(shareLink.getId())
-        .jsonPath("$.result.code").isEqualTo(shareLinkCode)
-        .jsonPath("$.result.isRevoked").isEqualTo(false);
+        .jsonPath("$.id").isEqualTo(shareLink.getId())
+        .jsonPath("$.code").isEqualTo(shareLinkCode)
+        .jsonPath("$.isRevoked").isEqualTo(false);
   }
 
   @Test
@@ -816,9 +805,8 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkRequestHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(shareLink.getId())
-        .jsonPath("$.result.isRevoked").isEqualTo(true);
+        .jsonPath("$.id").isEqualTo(shareLink.getId())
+        .jsonPath("$.isRevoked").isEqualTo(true);
   }
 
   @Test
@@ -1094,13 +1082,12 @@ class ProjectControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.content").isArray()
-        .jsonPath("$.result.content.length()").isEqualTo(3)
-        .jsonPath("$.result.page").isEqualTo(0)
-        .jsonPath("$.result.size").isEqualTo(3)
-        .jsonPath("$.result.totalElements").isEqualTo(5)
-        .jsonPath("$.result.totalPages").isEqualTo(2);
+        .jsonPath("$.content").isArray()
+        .jsonPath("$.content.length()").isEqualTo(3)
+        .jsonPath("$.page").isEqualTo(0)
+        .jsonPath("$.size").isEqualTo(3)
+        .jsonPath("$.totalElements").isEqualTo(5)
+        .jsonPath("$.totalPages").isEqualTo(2);
 
     // second page
     webTestClient.get()
@@ -1111,11 +1098,10 @@ class ProjectControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.content").isArray()
-        .jsonPath("$.result.content.length()").isEqualTo(2)
-        .jsonPath("$.result.page").isEqualTo(1)
-        .jsonPath("$.result.totalElements").isEqualTo(5);
+        .jsonPath("$.content").isArray()
+        .jsonPath("$.content.length()").isEqualTo(2)
+        .jsonPath("$.page").isEqualTo(1)
+        .jsonPath("$.totalElements").isEqualTo(5);
   }
 
   @Test
@@ -1144,9 +1130,8 @@ class ProjectControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.content").isArray()
-        .jsonPath("$.result.totalElements").isEqualTo(2);
+        .jsonPath("$.content").isArray()
+        .jsonPath("$.totalElements").isEqualTo(2);
   }
 
   @Test
@@ -1191,10 +1176,9 @@ class ProjectControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.content").isArray()
-        .jsonPath("$.result.content").isEmpty()
-        .jsonPath("$.result.totalElements").isEqualTo(0);
+        .jsonPath("$.content").isArray()
+        .jsonPath("$.content").isEmpty()
+        .jsonPath("$.totalElements").isEqualTo(0);
   }
 
 }

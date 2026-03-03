@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProperties;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.user.oauth.GitHubOAuthProperties;
@@ -67,22 +65,17 @@ public class OAuthController {
       ServerHttpRequest request) {
     String cookieState = extractStateCookie(request);
     if (!StringUtils.hasText(state) || !state.equals(cookieState)) {
-      return Mono.error(
-          new BusinessException(ErrorCode.OAUTH_STATE_MISMATCH));
+      return Mono.just(redirectToFrontendWithError("state_mismatch", null));
     }
 
     if (StringUtils.hasText(error)) {
-      return Mono.just(ResponseEntity.status(HttpStatus.FOUND)
-          .header(HttpHeaders.SET_COOKIE,
-              expireStateCookie().toString())
-          .location(buildFrontendCallbackUri(error,
-              errorDescription))
-          .build());
+      return Mono.just(
+          redirectToFrontendWithError(error, errorDescription));
     }
 
     if (!StringUtils.hasText(code)) {
-      return Mono.error(
-          new BusinessException(ErrorCode.COMMON_INVALID_PARAMETER));
+      return Mono.just(
+          redirectToFrontendWithError("invalid_request", "code is missing"));
     }
 
     return gitHubOAuthService.exchangeCodeForToken(code)
@@ -113,14 +106,8 @@ public class OAuthController {
               .<Void>build();
         })
         .onErrorResume(e -> {
-          ResponseEntity<Void> errorResponse = ResponseEntity
-              .status(HttpStatus.FOUND)
-              .header(HttpHeaders.SET_COOKIE,
-                  expireStateCookie().toString())
-              .location(
-                  buildFrontendCallbackUri("server_error", null))
-              .build();
-          return Mono.just(errorResponse);
+          return Mono.just(
+              redirectToFrontendWithError("server_error", null));
         });
   }
 
@@ -150,9 +137,9 @@ public class OAuthController {
 
     if (StringUtils.hasText(error)) {
       builder.queryParam("provider", "github")
-          .queryParam("oauth_error", error);
+          .queryParam("error", error);
       if (StringUtils.hasText(errorDescription)) {
-        builder.queryParam("oauth_error_description",
+        builder.queryParam("error_description",
             errorDescription);
       }
     }
@@ -160,6 +147,14 @@ public class OAuthController {
     return builder.build()
         .encode()
         .toUri();
+  }
+
+  private ResponseEntity<Void> redirectToFrontendWithError(String error,
+      String errorDescription) {
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .header(HttpHeaders.SET_COOKIE, expireStateCookie().toString())
+        .location(buildFrontendCallbackUri(error, errorDescription))
+        .build();
   }
 
 }

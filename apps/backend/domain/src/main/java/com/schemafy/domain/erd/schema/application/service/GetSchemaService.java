@@ -2,11 +2,12 @@ package com.schemafy.domain.erd.schema.application.service;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.domain.erd.schema.application.port.in.GetSchemaUseCase;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
-import com.schemafy.domain.erd.schema.domain.exception.SchemaNotExistException;
+import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -21,7 +22,7 @@ public class GetSchemaService implements GetSchemaUseCase {
   public Mono<Schema> getSchema(GetSchemaQuery query) {
     return getSchemaByIdPort.findSchemaById(query.schemaId())
         .switchIfEmpty(Mono.error(
-            new SchemaNotExistException("Schema not found: " + query.schemaId())));
+            new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + query.schemaId())));
   }
 
 }

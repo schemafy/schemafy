@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.AddConstraintColumnCommand;
@@ -32,7 +33,7 @@ import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintQuery
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNotExistException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.domain.erd.schema.application.port.in.CreateSchemaUseCase;
@@ -330,7 +331,7 @@ class ConstraintCreateIntegrationTest {
 
       StepVerifier.create(getConstraintUseCase.getConstraint(
           new GetConstraintQuery(result.constraintId())))
-          .expectError(ConstraintNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
 
       StepVerifier.create(getConstraintColumnsByConstraintIdUseCase

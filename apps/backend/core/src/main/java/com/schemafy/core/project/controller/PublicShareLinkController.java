@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.project.controller.dto.response.ShareLinkAccessResponse;
 import com.schemafy.core.project.service.ShareLinkService;
 
@@ -26,7 +25,7 @@ public class PublicShareLinkController {
   private final ShareLinkService shareLinkService;
 
   @GetMapping("/share/{code}")
-  public Mono<BaseResponse<ShareLinkAccessResponse>> accessByCode(
+  public Mono<ShareLinkAccessResponse> accessByCode(
       @PathVariable String code, ServerHttpRequest request,
       @Nullable Authentication authentication) {
     String userId = (authentication != null) ? authentication.getName()
@@ -36,8 +35,7 @@ public class PublicShareLinkController {
 
     return shareLinkService
         .accessByCode(code, userId, ipAddress, userAgent)
-        .map(ShareLinkAccessResponse::of)
-        .map(BaseResponse::success);
+        .map(ShareLinkAccessResponse::of);
   }
 
   private String extractIpAddress(ServerHttpRequest request) {

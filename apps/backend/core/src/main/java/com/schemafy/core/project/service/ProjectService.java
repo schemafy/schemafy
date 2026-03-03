@@ -7,21 +7,21 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
+import com.schemafy.core.project.exception.ProjectErrorCode;
+import com.schemafy.core.project.exception.WorkspaceErrorCode;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
-import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.ProjectDetail;
 import com.schemafy.core.project.service.dto.ProjectMemberDetail;
 import com.schemafy.core.project.service.dto.ProjectSummaryDetail;
 import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -122,8 +122,8 @@ public class ProjectService {
         .then(findProjectById(projectId))
         .flatMap(project -> {
           if (project.isDeleted()) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_ALREADY_DELETED));
+            return Mono.error(new DomainException(
+                ProjectErrorCode.ALREADY_DELETED));
           }
           project.delete();
           return projectRepository.save(project)
@@ -180,18 +180,18 @@ public class ProjectService {
 
     // 요청자가 본인의 역할을 변경하려는지
     if (target.getUserId().equals(requester.getUserId())) {
-      throw new BusinessException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
+      throw new DomainException(ProjectErrorCode.CANNOT_CHANGE_OWN_ROLE);
     }
 
     // 요청자가 부여하려는 역할 이상의 권한을 가지고 있는지
     if (!requesterRole.isHigherOrEqualThan(newRole)) {
-      throw new BusinessException(ErrorCode.CANNOT_ASSIGN_HIGHER_ROLE);
+      throw new DomainException(ProjectErrorCode.CANNOT_ASSIGN_HIGHER_ROLE);
     }
 
     // 요청자가 대상의 현재 역할 이상의 권한을 가지고 있는지
     if (!requesterRole.isHigherOrEqualThan(targetCurrentRole)) {
-      throw new BusinessException(
-          ErrorCode.CANNOT_MODIFY_HIGHER_ROLE_MEMBER);
+      throw new DomainException(
+          ProjectErrorCode.CANNOT_MODIFY_HIGHER_ROLE_MEMBER);
     }
   }
 
@@ -231,7 +231,7 @@ public class ProjectService {
   private Mono<Project> findProjectById(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
+            new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
 
   private Mono<ProjectDetail> buildProjectDetail(Project project,
@@ -239,7 +239,7 @@ public class ProjectService {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(project.getId(), userId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_MEMBER_NOT_FOUND)))
+            new DomainException(ProjectErrorCode.MEMBER_NOT_FOUND)))
         .map(member -> new ProjectDetail(project, member.getRole()));
   }
 
@@ -252,8 +252,8 @@ public class ProjectService {
       String userId, String projectId) {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.PROJECT_MEMBER_NOT_FOUND)));
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.MEMBER_NOT_FOUND)));
   }
 
   private Mono<Void> softDeleteMember(ProjectMember member) {
@@ -265,11 +265,8 @@ public class ProjectService {
       String userId) {
     return workspaceMemberRepository
         .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.WORKSPACE_ACCESS_DENIED)))
-        .filter(WorkspaceMember::isAdmin)
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.WORKSPACE_ADMIN_REQUIRED)))
+        .switchIfEmpty(Mono.error(new DomainException(
+            WorkspaceErrorCode.ACCESS_DENIED)))
         .then();
   }
 
@@ -278,7 +275,7 @@ public class ProjectService {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
         .then();
   }
 
@@ -286,10 +283,10 @@ public class ProjectService {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
         .filter(ProjectMember::isAdmin)
-        .switchIfEmpty(Mono.error(new BusinessException(
-            ErrorCode.PROJECT_ADMIN_REQUIRED)))
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.ADMIN_REQUIRED)))
         .then();
   }
 

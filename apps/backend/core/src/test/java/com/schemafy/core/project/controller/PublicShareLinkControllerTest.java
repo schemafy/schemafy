@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.RestDocsConfiguration;
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.project.exception.ProjectErrorCode;
+import com.schemafy.core.project.exception.ShareLinkErrorCode;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
@@ -79,14 +81,12 @@ class PublicShareLinkControllerTest {
 
   @BeforeEach
   void setUp() {
-    // Clean up in order of dependencies
     Mono.when(shareLinkRepository.deleteAll(),
         projectRepository.deleteAll(),
         workspaceMemberRepository.deleteAll(),
         workspaceRepository.deleteAll(), userRepository.deleteAll())
         .block();
 
-    // Create test user
     testUser = User
         .signUp(new UserInfo("admin@example.com", "Admin",
             "password"), new BCryptPasswordEncoder())
@@ -94,17 +94,14 @@ class PublicShareLinkControllerTest {
 
     accessToken = generateAccessToken(testUser.getId());
 
-    // Create workspace
     testWorkspace = Workspace.create("Test Workspace",
         "Description");
     testWorkspace = workspaceRepository.save(testWorkspace).block();
 
-    // Add workspace member
     WorkspaceMember member = WorkspaceMember.create(testWorkspace.getId(),
         testUser.getId(), WorkspaceRole.ADMIN);
     workspaceMemberRepository.save(member).block();
 
-    // Create project created by testUser
     testProject = Project.create(testWorkspace.getId(), "Test Project", "Description");
     testProject = projectRepository.save(testProject).block();
   }
@@ -135,9 +132,8 @@ class PublicShareLinkControllerTest {
             accessByCodePathParameters(),
             accessByCodeResponseHeaders(),
             accessByCodeResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.projectId").isEqualTo(testProject.getId())
-        .jsonPath("$.result.projectName").isEqualTo("Test Project");
+        .jsonPath("$.projectId").isEqualTo(testProject.getId())
+        .jsonPath("$.projectName").isEqualTo("Test Project");
   }
 
   @Test
@@ -148,18 +144,18 @@ class PublicShareLinkControllerTest {
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code)
         .header("Authorization", "Bearer " + accessToken).exchange()
-        .expectStatus().isOk().expectBody().jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.projectId")
-        .isEqualTo(testProject.getId());
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.projectId").isEqualTo(testProject.getId());
   }
 
   @Test
   @DisplayName("유효하지 않은 코드로 접근하면 실패한다")
   void accessByCode_InvalidCode() {
     webTestClient.get().uri(PUBLIC_API_PATH + "/invalid-code").exchange()
-        .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .expectStatus().isNotFound().expectBody()
+        .jsonPath("$.status").isEqualTo(404).jsonPath("$.reason")
+        .isEqualTo(ShareLinkErrorCode.NOT_FOUND.code());
   }
 
   @Test
@@ -171,9 +167,9 @@ class PublicShareLinkControllerTest {
     shareLinkRepository.save(shareLink).block();
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
-        .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .expectStatus().isBadRequest().expectBody()
+        .jsonPath("$.status").isEqualTo(400).jsonPath("$.reason")
+        .isEqualTo(ShareLinkErrorCode.INVALID_LINK.code());
   }
 
   @Test
@@ -184,9 +180,9 @@ class PublicShareLinkControllerTest {
     ShareLink shareLink = createShareLink(code, pastDate);
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
-        .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .expectStatus().isBadRequest().expectBody()
+        .jsonPath("$.status").isEqualTo(400).jsonPath("$.reason")
+        .isEqualTo(ShareLinkErrorCode.INVALID_LINK.code());
   }
 
   @Test
@@ -198,9 +194,9 @@ class PublicShareLinkControllerTest {
     shareLinkRepository.save(shareLink).block();
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
-        .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .expectStatus().isNotFound().expectBody()
+        .jsonPath("$.status").isEqualTo(404)
+        .jsonPath("$.reason").isEqualTo(ShareLinkErrorCode.NOT_FOUND.code());
   }
 
   @Test
@@ -209,14 +205,13 @@ class PublicShareLinkControllerTest {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
 
-    // Delete project
     testProject.delete();
     projectRepository.save(testProject).block();
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
         .expectStatus().isNotFound().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("P001");
+        .jsonPath("$.status").isEqualTo(404)
+        .jsonPath("$.reason").isEqualTo(ProjectErrorCode.NOT_FOUND.code());
   }
 
   @Test
@@ -225,12 +220,10 @@ class PublicShareLinkControllerTest {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
 
-    // Initial access count should be 0
     ShareLink initial = shareLinkRepository.findById(shareLink.getId()).block();
     assertThat(initial).isNotNull();
     assertThat(initial.getAccessCount()).isZero();
 
-    // Access the share link
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
         .expectStatus().isOk();
 
@@ -246,13 +239,11 @@ class PublicShareLinkControllerTest {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
 
-    // Access 3 times
     for (int i = 0; i < 3; i++) {
       webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
           .expectStatus().isOk();
     }
 
-    // Check access count is 3 (no need to wait - then() blocks until complete)
     ShareLink updated = shareLinkRepository.findById(shareLink.getId()).block();
     assertThat(updated).isNotNull();
     assertThat(updated.getAccessCount()).isEqualTo(3L);
@@ -273,9 +264,9 @@ class PublicShareLinkControllerTest {
     }
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
-        .expectStatus().isUnauthorized().expectBody()
-        .jsonPath("$.success").isEqualTo(false).jsonPath("$.error.code")
-        .isEqualTo("S004");
+        .expectStatus().isBadRequest().expectBody()
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason").isEqualTo(ShareLinkErrorCode.INVALID_LINK.code());
   }
 
   @Test
@@ -287,20 +278,17 @@ class PublicShareLinkControllerTest {
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
         .expectStatus().isOk().expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.projectId").isEqualTo(testProject.getId());
+        .jsonPath("$.projectId").isEqualTo(testProject.getId());
   }
 
   private ShareLink createShareLink(String code, Instant expiresAt) {
     ShareLink shareLink;
 
     if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
-      // Create with future date first, then change to past
       shareLink = ShareLink.create(testProject.getId(), code,
           Instant.now().plus(1, ChronoUnit.DAYS));
       shareLinkRepository.save(shareLink).block();
 
-      // Change expiresAt to past using reflection
       try {
         var field = ShareLink.class.getDeclaredField("expiresAt");
         field.setAccessible(true);

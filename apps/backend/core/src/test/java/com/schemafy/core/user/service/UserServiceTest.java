@@ -10,17 +10,17 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.TestFixture;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.dto.LoginCommand;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -87,9 +87,9 @@ class UserServiceTest {
 
     StepVerifier.create(result)
         .expectErrorMatches(
-            throwable -> throwable instanceof BusinessException &&
-                ((BusinessException) throwable)
-                    .getErrorCode() == ErrorCode.USER_ALREADY_EXISTS)
+            throwable -> throwable instanceof DomainException &&
+                ((DomainException) throwable)
+                    .getErrorCode() == UserErrorCode.ALREADY_EXISTS)
         .verify();
   }
 
@@ -121,9 +121,9 @@ class UserServiceTest {
 
     StepVerifier.create(result)
         .expectErrorMatches(
-            throwable -> throwable instanceof BusinessException &&
-                ((BusinessException) throwable)
-                    .getErrorCode() == ErrorCode.USER_NOT_FOUND)
+            throwable -> throwable instanceof DomainException &&
+                ((DomainException) throwable)
+                    .getErrorCode() == UserErrorCode.NOT_FOUND)
         .verify();
   }
 
@@ -156,9 +156,9 @@ class UserServiceTest {
 
     StepVerifier.create(result)
         .expectErrorMatches(
-            throwable -> throwable instanceof BusinessException &&
-                ((BusinessException) throwable)
-                    .getErrorCode() == ErrorCode.USER_NOT_FOUND)
+            throwable -> throwable instanceof DomainException &&
+                ((DomainException) throwable)
+                    .getErrorCode() == UserErrorCode.NOT_FOUND)
         .verify();
   }
 
@@ -176,9 +176,9 @@ class UserServiceTest {
 
     StepVerifier.create(result)
         .expectErrorMatches(
-            throwable -> throwable instanceof BusinessException &&
-                ((BusinessException) throwable)
-                    .getErrorCode() == ErrorCode.LOGIN_FAILED)
+            throwable -> throwable instanceof DomainException &&
+                ((DomainException) throwable)
+                    .getErrorCode() == UserErrorCode.LOGIN_FAILED)
         .verify();
   }
 
@@ -197,7 +197,7 @@ class UserServiceTest {
     Mono<User> result = userService.signUp(request.toCommand());
 
     StepVerifier.create(result)
-        .expectError(BusinessException.class)
+        .expectError(DomainException.class)
         .verify();
 
     // User가 중복 생성되지 않았는지 검증

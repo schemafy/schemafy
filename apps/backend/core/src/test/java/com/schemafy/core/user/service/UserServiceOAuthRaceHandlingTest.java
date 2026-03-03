@@ -12,14 +12,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.schemafy.core.common.TestFixture;
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.entity.UserAuthProvider;
 import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -110,10 +110,10 @@ class UserServiceOAuthRaceHandlingTest {
 
     StepVerifier.create(userService.loginOrSignUpOAuth(command))
         .expectErrorSatisfies(error -> {
-          assertThat(error).isInstanceOf(BusinessException.class);
-          BusinessException businessException = (BusinessException) error;
-          assertThat(businessException.getErrorCode())
-              .isEqualTo(ErrorCode.USER_ALREADY_EXISTS);
+          assertThat(error).isInstanceOf(DomainException.class);
+          DomainException domainException = (DomainException) error;
+          assertThat(domainException.getErrorCode())
+              .isEqualTo(UserErrorCode.ALREADY_EXISTS);
         })
         .verify();
   }

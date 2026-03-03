@@ -13,9 +13,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.CreateProjectInvitationRequest;
+import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
@@ -29,9 +28,11 @@ import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -177,9 +178,9 @@ class ProjectInvitationServiceTest {
               request.role(),
               workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.PROJECT_ADMIN_REQUIRED);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.ADMIN_REQUIRED);
           })
           .verify();
     }
@@ -197,9 +198,9 @@ class ProjectInvitationServiceTest {
               request.role(),
               workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.PROJECT_ACCESS_DENIED);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.ACCESS_DENIED);
           })
           .verify();
     }
@@ -217,9 +218,9 @@ class ProjectInvitationServiceTest {
           invitationService.createInvitation(
               testProject.getId(), request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_ALREADY_EXISTS);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_ALREADY_EXISTS);
           })
           .verify();
     }
@@ -252,9 +253,9 @@ class ProjectInvitationServiceTest {
           invitationService.createInvitation(
               "nonexistent-project-id", request.email(), request.role(), adminUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.PROJECT_ACCESS_DENIED);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.ACCESS_DENIED);
           })
           .verify();
     }
@@ -343,9 +344,9 @@ class ProjectInvitationServiceTest {
               0,
               10))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.PROJECT_ADMIN_REQUIRED);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.ADMIN_REQUIRED);
           })
           .verify();
     }
@@ -496,9 +497,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.getMyInvitations("nonexistent-user-id", 0, 20))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(UserErrorCode.NOT_FOUND);
           })
           .verify();
     }
@@ -571,9 +572,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation("nonexistent-id", workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_NOT_FOUND);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_NOT_FOUND);
           })
           .verify();
     }
@@ -592,9 +593,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_EMAIL_MISMATCH);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_EMAIL_MISMATCH);
           })
           .verify();
     }
@@ -617,10 +618,10 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
             assertThat(be.getErrorCode())
-                .isEqualTo(ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT);
+                .isEqualTo(ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT);
           })
           .verify();
     }
@@ -642,9 +643,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_EXPIRED);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_EXPIRED);
           })
           .verify();
     }
@@ -665,9 +666,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT);
           })
           .verify();
     }
@@ -688,9 +689,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED);
           })
           .verify();
     }
@@ -709,9 +710,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitation.getId(), "nonexistent-user-id"))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(UserErrorCode.NOT_FOUND);
           })
           .verify();
     }
@@ -819,9 +820,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.rejectInvitation("nonexistent-id", workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_NOT_FOUND);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_NOT_FOUND);
           })
           .verify();
     }
@@ -840,9 +841,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.rejectInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_EMAIL_MISMATCH);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_EMAIL_MISMATCH);
           })
           .verify();
     }
@@ -863,9 +864,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.rejectInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED);
           })
           .verify();
     }
@@ -886,9 +887,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.rejectInvitation(invitation.getId(), workspaceUser.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED);
           })
           .verify();
     }
@@ -907,9 +908,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.rejectInvitation(invitation.getId(), "nonexistent-user-id"))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(UserErrorCode.NOT_FOUND);
           })
           .verify();
     }
@@ -935,9 +936,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.acceptInvitation(invitationId, outsider.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_TYPE_MISMATCH);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_TYPE_MISMATCH);
           })
           .verify();
     }
@@ -957,9 +958,9 @@ class ProjectInvitationServiceTest {
       StepVerifier.create(
           invitationService.rejectInvitation(invitationId, outsider.getId()))
           .expectErrorSatisfies(error -> {
-            assertThat(error).isInstanceOf(BusinessException.class);
-            BusinessException be = (BusinessException) error;
-            assertThat(be.getErrorCode()).isEqualTo(ErrorCode.INVITATION_TYPE_MISMATCH);
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_TYPE_MISMATCH);
           })
           .verify();
     }

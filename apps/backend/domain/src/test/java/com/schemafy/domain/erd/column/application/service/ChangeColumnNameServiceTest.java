@@ -13,13 +13,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.ChangeColumnNamePort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameDuplicateException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameInvalidException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNameReservedException;
-import com.schemafy.domain.erd.column.domain.exception.ColumnNotExistException;
+import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.fixture.SchemaFixture;
@@ -115,7 +113,7 @@ class ChangeColumnNameServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnName(command))
-            .expectError(ColumnNotExistException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
             .verify();
 
         then(changeColumnNamePort).shouldHaveNoInteractions();
@@ -148,7 +146,7 @@ class ChangeColumnNameServiceTest {
             .willReturn(Mono.just(columns));
 
         StepVerifier.create(sut.changeColumnName(command))
-            .expectError(ColumnNameDuplicateException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_DUPLICATE))
             .verify();
 
         then(changeColumnNamePort).shouldHaveNoInteractions();
@@ -178,7 +176,7 @@ class ChangeColumnNameServiceTest {
             .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnName(command))
-            .expectError(ColumnNameReservedException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_RESERVED))
             .verify();
 
         then(changeColumnNamePort).shouldHaveNoInteractions();
@@ -208,7 +206,7 @@ class ChangeColumnNameServiceTest {
             .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnName(command))
-            .expectError(ColumnNameInvalidException.class)
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
             .verify();
 
         then(changeColumnNamePort).shouldHaveNoInteractions();

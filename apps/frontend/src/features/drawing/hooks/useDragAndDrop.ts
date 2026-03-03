@@ -61,12 +61,6 @@ export const useDragAndDrop = ({ items, onReorder }: UseDragAndDropProps) => {
     setDragOverItem(null);
   };
 
-  const isDragging = draggedItem !== null;
-
-  const isDraggedItem = (itemId: string) => draggedItem === itemId;
-
-  const isDragOverItem = (itemId: string) => dragOverItem === itemId;
-
   return {
     draggedItem,
     dragOverItem,
@@ -75,8 +69,5 @@ export const useDragAndDrop = ({ items, onReorder }: UseDragAndDropProps) => {
     handleDragLeave,
     handleDrop,
     handleDragEnd,
-    isDragging,
-    isDraggedItem,
-    isDragOverItem,
   };
 };

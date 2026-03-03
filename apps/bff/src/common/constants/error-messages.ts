@@ -4,219 +4,238 @@ import {
 } from '../types/api-response.types.js';
 
 type ErrorInfo = {
-  message: string;
   category: ErrorCategoryType;
 };
 
 const SESSION_EXPIRED: ErrorInfo = {
-  message: 'Your session has expired. Please sign in again.',
   category: ErrorCategory.AUTO_HANDLE,
 };
 
 const SOMETHING_WENT_WRONG: ErrorInfo = {
-  message: 'Something went wrong. Please try again later.',
   category: ErrorCategory.USER_FEEDBACK,
 };
 
 const CHECK_INPUT: ErrorInfo = {
-  message: 'Please check your input and try again.',
   category: ErrorCategory.USER_FEEDBACK,
 };
 
-const notFound = (item: string): ErrorInfo => ({
-  message: `${item} not found. Please check and try again.`,
+const SETTINGS_TOO_LARGE: ErrorInfo = {
+  category: ErrorCategory.USER_FEEDBACK,
+};
+
+const notFound = (): ErrorInfo => ({
   category: ErrorCategory.USER_FEEDBACK,
 });
 
-export const ErrorMessages: Record<string, ErrorInfo> = {
-  C001: SOMETHING_WENT_WRONG,
-  C002: { message: 'Invalid parameter.', category: ErrorCategory.SILENT },
-  C003: { message: 'API version is missing.', category: ErrorCategory.SILENT },
-  C004: {
-    message: 'Invalid API version format. (e.g., v1.0, v2.1)',
+const ErrorMessages: Record<string, ErrorInfo> = {
+  COMMON_SYSTEM_ERROR: SOMETHING_WENT_WRONG,
+  COMMON_INVALID_PARAMETER: {
     category: ErrorCategory.SILENT,
   },
-  C005: CHECK_INPUT,
-  C006: {
-    message: "The requested item doesn't exist or may have been moved.",
+  COMMON_API_VERSION_MISSING: {
+    category: ErrorCategory.SILENT,
+  },
+  COMMON_API_VERSION_INVALID: {
+    category: ErrorCategory.SILENT,
+  },
+  COMMON_INVALID_INPUT_VALUE: CHECK_INPUT,
+  COMMON_NOT_FOUND: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  C007: SOMETHING_WENT_WRONG,
-  C008: {
-    message: 'This item has already been deleted.',
+  COMMON_INTERNAL_SERVER_ERROR: SOMETHING_WENT_WRONG,
+  COMMON_ALREADY_DELETED: {
     category: ErrorCategory.USER_FEEDBACK,
   },
 
-  A001: {
-    message: 'Please sign in to continue.',
+  AUTH_AUTHENTICATION_REQUIRED: {
     category: ErrorCategory.AUTO_HANDLE,
   },
-  A002: {
-    message: "You don't have permission to perform this action.",
+  AUTH_ACCESS_DENIED: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  A003: SESSION_EXPIRED,
-  A004: SESSION_EXPIRED,
-  A005: SESSION_EXPIRED,
-  A006: SESSION_EXPIRED,
-  A007: SESSION_EXPIRED,
-  A008: SESSION_EXPIRED,
-  A009: SESSION_EXPIRED,
-  A010: SESSION_EXPIRED,
+  AUTH_INVALID_REFRESH_TOKEN: SESSION_EXPIRED,
+  AUTH_INVALID_TOKEN_TYPE: SESSION_EXPIRED,
+  AUTH_MISSING_REFRESH_TOKEN: SESSION_EXPIRED,
+  AUTH_EXPIRED_TOKEN: SESSION_EXPIRED,
+  AUTH_INVALID_TOKEN: SESSION_EXPIRED,
+  AUTH_INVALID_ACCESS_TOKEN_TYPE: SESSION_EXPIRED,
+  AUTH_MALFORMED_TOKEN: SESSION_EXPIRED,
+  AUTH_TOKEN_VALIDATION_ERROR: SESSION_EXPIRED,
 
-  U001: {
-    message: 'User not found. Please check and try again.',
+  HMAC_SIGNATURE_MISSING: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  U002: {
-    message: 'This email is already registered.',
+  HMAC_SIGNATURE_INVALID: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  U003: {
-    message: 'Invalid email or password. Please try again.',
+  HMAC_TIMESTAMP_EXPIRED: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-
-  V001: CHECK_INPUT,
-  V002: {
-    message: 'Service is temporarily unavailable. Please try again later.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  V003: {
-    message: 'Request timed out. Please try again.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  V004: SOMETHING_WENT_WRONG,
-
-  E001: notFound('Schema'),
-  E002: notFound('Table'),
-  E003: notFound('Column'),
-  E004: notFound('Constraint'),
-  E005: notFound('Index'),
-  E006: notFound('Relationship'),
-  E007: notFound('Constraint column'),
-  E008: notFound('Index column'),
-  E009: notFound('Relationship column'),
-  E010: {
-    message: 'Unsupported database type.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  E011: notFound('Memo'),
-  E012: notFound('Comment'),
-
-  W001: notFound('Workspace'),
-  W002: {
-    message: "You don't have access to this workspace.",
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  W005: {
-    message: 'This workspace has been deleted.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  W006: {
-    message: 'Only admins can perform this action.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  W007: {
-    message: 'This user is already a member of this workspace.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  W008: {
-    message: 'Member not found in this workspace.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  W009: {
-    message: 'Workspace has reached the member limit (max 30).',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  W010: {
-    message:
-      'You are the last admin. Please assign another admin before leaving.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  W011: {
-    message:
-      "Cannot change the last admin's role. Please assign another admin first.",
+  HMAC_NONCE_DUPLICATE: {
     category: ErrorCategory.USER_FEEDBACK,
   },
 
-  P001: notFound('Project'),
-  P002: {
-    message: "You don't have access to this project.",
+  USER_NOT_FOUND: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  P003: {
-    message: 'Only project admins can perform this action.',
+  USER_ALREADY_EXISTS: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  P004: {
-    message: 'Only project admins can perform this action.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  P005: {
-    message: 'This project is not part of the current workspace.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  P007: {
-    message: 'This project has been deleted.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  P008: {
-    message: 'You cannot assign a role higher than your own.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
-  P009: {
-    message: 'You cannot modify members with higher roles than yours.',
+  USER_LOGIN_FAILED: {
     category: ErrorCategory.USER_FEEDBACK,
   },
 
-  PM001: {
-    message: 'You cannot change your own role.',
+  VALIDATION_FAILED: CHECK_INPUT,
+  VALIDATION_SERVICE_UNAVAILABLE: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  PM003: {
-    message: 'You must be a workspace member to access this project.',
+  VALIDATION_TIMEOUT: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  PM004: {
-    message: 'Project has reached the member limit (max 30).',
+  VALIDATION_ERROR: SOMETHING_WENT_WRONG,
+
+  SCHEMA_NOT_FOUND: notFound(),
+  TABLE_NOT_FOUND: notFound(),
+  COLUMN_NOT_FOUND: notFound(),
+  CONSTRAINT_NOT_FOUND: notFound(),
+  INDEX_NOT_FOUND: notFound(),
+  RELATIONSHIP_NOT_FOUND: notFound(),
+  CONSTRAINT_COLUMN_NOT_FOUND: notFound(),
+  INDEX_COLUMN_NOT_FOUND: notFound(),
+  RELATIONSHIP_COLUMN_NOT_FOUND: notFound(),
+  VENDOR_NOT_FOUND: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  PM005: {
-    message: 'Member not found in this project.',
+  MEMO_NOT_FOUND: notFound(),
+  MEMO_COMMENT_NOT_FOUND: notFound(),
+
+  WORKSPACE_NOT_FOUND: notFound(),
+  WORKSPACE_ACCESS_DENIED: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  PM006: {
-    message: 'This user is already a member of this project.',
+  WORKSPACE_SETTINGS_INVALID: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  WORKSPACE_SETTINGS_TOO_LARGE: SETTINGS_TOO_LARGE,
+  WORKSPACE_ALREADY_DELETED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  WORKSPACE_ADMIN_REQUIRED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  WORKSPACE_MEMBER_ALREADY_EXISTS: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  WORKSPACE_MEMBER_NOT_FOUND: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  WORKSPACE_MEMBER_LIMIT_EXCEEDED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  WORKSPACE_LAST_ADMIN_CANNOT_LEAVE: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  WORKSPACE_LAST_ADMIN_CANNOT_CHANGE_ROLE: {
     category: ErrorCategory.USER_FEEDBACK,
   },
 
-  S001: notFound('Share link'),
-  S002: {
-    message: 'This share link has expired. Please request a new one.',
+  PROJECT_NOT_FOUND: notFound(),
+  PROJECT_ACCESS_DENIED: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  S003: {
-    message: 'This share link has been deactivated.',
+  PROJECT_OWNER_ONLY: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  S004: {
-    message: 'Invalid share link. Please check and try again.',
+  PROJECT_ADMIN_REQUIRED: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  S005: { message: 'Invalid project ID.', category: ErrorCategory.SILENT },
-  S006: { message: 'Invalid token hash.', category: ErrorCategory.SILENT },
-  S007: { message: 'Invalid role.', category: ErrorCategory.SILENT },
-  S008: {
-    message: 'Expiration date must be in the future.',
+  PROJECT_WORKSPACE_MISMATCH: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_ALREADY_DELETED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_CANNOT_ASSIGN_HIGHER_ROLE: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_CANNOT_MODIFY_HIGHER_ROLE_MEMBER: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+
+  PROJECT_CANNOT_CHANGE_OWN_ROLE: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_LAST_OWNER_CANNOT_BE_REMOVED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_WORKSPACE_MEMBERSHIP_REQUIRED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_MEMBER_LIMIT_EXCEEDED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_MEMBER_NOT_FOUND: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_MEMBER_ALREADY_EXISTS: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_EMAIL_MISMATCH: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_NOT_FOUND: notFound(),
+  PROJECT_INVITATION_DUPLICATE_WORKSPACE_MEMBER: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_EXPIRED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_WORKSPACE_INVITATION_ALREADY_PROCESSED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_PROJECT_INVITATION_ALREADY_PROCESSED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_CONCURRENT_PROCESSED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_DUPLICATE_MEMBERSHIP_PROJECT: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_ALREADY_EXISTS: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_TYPE_MISMATCH: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+
+  SHARE_LINK_NOT_FOUND: notFound(),
+  SHARE_LINK_EXPIRED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  SHARE_LINK_REVOKED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  SHARE_LINK_INVALID: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  SHARE_LINK_INVALID_PROJECT_ID: {
+    category: ErrorCategory.SILENT,
+  },
+  SHARE_LINK_INVALID_TOKEN_HASH: {
+    category: ErrorCategory.SILENT,
+  },
+  SHARE_LINK_INVALID_ROLE: {
+    category: ErrorCategory.SILENT,
+  },
+  SHARE_LINK_INVALID_EXPIRATION: {
     category: ErrorCategory.USER_FEEDBACK,
   },
 };
 
-export function getErrorInfo(code: string, fallbackMessage: string): ErrorInfo {
+export function getErrorInfo(code: string): ErrorInfo {
   return (
     ErrorMessages[code] ?? {
-      message: fallbackMessage,
       category: ErrorCategory.SILENT,
     }
   );

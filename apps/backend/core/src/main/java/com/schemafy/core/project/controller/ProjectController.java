@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
@@ -38,50 +37,46 @@ public class ProjectController {
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/workspaces/{workspaceId}/projects")
   @ResponseStatus(HttpStatus.CREATED)
-  public Mono<BaseResponse<ProjectResponse>> createProject(
+  public Mono<ProjectResponse> createProject(
       @PathVariable String workspaceId,
       @Valid @RequestBody CreateProjectRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.createProject(workspaceId, request.name(), request.description(), userId)
-        .map(ProjectResponse::from)
-        .map(BaseResponse::success);
+        .map(ProjectResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/workspaces/{workspaceId}/projects")
-  public Mono<BaseResponse<PageResponse<ProjectSummaryResponse>>> getProjects(
+  public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
       @PathVariable String workspaceId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.getProjects(workspaceId, userId, page, size)
-        .map(result -> result.map(ProjectSummaryResponse::from))
-        .map(BaseResponse::success);
+        .map(result -> result.map(ProjectSummaryResponse::from));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/projects/{projectId}")
-  public Mono<BaseResponse<ProjectResponse>> getProject(
+  public Mono<ProjectResponse> getProject(
       @PathVariable String projectId,
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.getProject(projectId, userId)
-        .map(ProjectResponse::from)
-        .map(BaseResponse::success);
+        .map(ProjectResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PutMapping("/projects/{projectId}")
-  public Mono<BaseResponse<ProjectResponse>> updateProject(
+  public Mono<ProjectResponse> updateProject(
       @PathVariable String projectId,
       @Valid @RequestBody UpdateProjectRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.updateProject(projectId, request.name(), request.description(), userId)
-        .map(ProjectResponse::from)
-        .map(BaseResponse::success);
+        .map(ProjectResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
@@ -95,20 +90,19 @@ public class ProjectController {
 
   @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/projects/{projectId}/members")
-  public Mono<BaseResponse<PageResponse<ProjectMemberResponse>>> getMembers(
+  public Mono<PageResponse<ProjectMemberResponse>> getMembers(
       @PathVariable String projectId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String userId = authentication.getName();
     return projectService.getMembers(projectId, userId, page, size)
-        .map(result -> result.map(ProjectMemberResponse::from))
-        .map(BaseResponse::success);
+        .map(result -> result.map(ProjectMemberResponse::from));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PatchMapping("/projects/{projectId}/members/{userId}/role")
-  public Mono<BaseResponse<ProjectMemberResponse>> updateMemberRole(
+  public Mono<ProjectMemberResponse> updateMemberRole(
       @PathVariable String projectId,
       @PathVariable String userId,
       @Valid @RequestBody UpdateProjectMemberRoleRequest request,
@@ -116,8 +110,7 @@ public class ProjectController {
     String requesterId = authentication.getName();
     return projectService
         .updateMemberRole(projectId, userId, request.role(), requesterId)
-        .map(ProjectMemberResponse::from)
-        .map(BaseResponse::success);
+        .map(ProjectMemberResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
@@ -144,18 +137,17 @@ public class ProjectController {
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/projects/{projectId}/share-links")
   @ResponseStatus(HttpStatus.CREATED)
-  public Mono<BaseResponse<ShareLinkResponse>> createShareLink(
+  public Mono<ShareLinkResponse> createShareLink(
       @PathVariable String projectId,
       Authentication authentication) {
     String userId = authentication.getName();
     return shareLinkService.createShareLink(projectId, userId)
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl))
-        .map(BaseResponse::success);
+        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/projects/{projectId}/share-links")
-  public Mono<BaseResponse<PageResponse<ShareLinkResponse>>> getShareLinks(
+  public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
       @PathVariable String projectId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size,
@@ -166,32 +158,29 @@ public class ProjectController {
         .flatMap(total -> shareLinkService.getShareLinks(projectId, userId, size, offset)
             .map(link -> ShareLinkResponse.of(link, baseUrl))
             .collectList()
-            .map(result -> PageResponse.of(result, page, size, total)))
-        .map(BaseResponse::success);
+            .map(result -> PageResponse.of(result, page, size, total)));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/projects/{projectId}/share-links/{shareLinkId}")
-  public Mono<BaseResponse<ShareLinkResponse>> getShareLink(
+  public Mono<ShareLinkResponse> getShareLink(
       @PathVariable String projectId,
       @PathVariable String shareLinkId,
       Authentication authentication) {
     String userId = authentication.getName();
     return shareLinkService.getShareLink(projectId, shareLinkId, userId)
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl))
-        .map(BaseResponse::success);
+        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PatchMapping("/projects/{projectId}/share-links/{shareLinkId}/revoke")
-  public Mono<BaseResponse<ShareLinkResponse>> revokeShareLink(
+  public Mono<ShareLinkResponse> revokeShareLink(
       @PathVariable String projectId,
       @PathVariable String shareLinkId,
       Authentication authentication) {
     String userId = authentication.getName();
     return shareLinkService.revokeShareLink(projectId, shareLinkId, userId)
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl))
-        .map(BaseResponse::success);
+        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")

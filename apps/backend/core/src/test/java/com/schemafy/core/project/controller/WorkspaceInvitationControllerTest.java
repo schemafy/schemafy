@@ -144,11 +144,10 @@ class WorkspaceInvitationControllerTest {
               WorkspaceInvitationApiSnippets.createInvitationRequest(),
               WorkspaceInvitationApiSnippets.createInvitationResponseHeaders(),
               WorkspaceInvitationApiSnippets.createInvitationResponse()))
-          .jsonPath("$.success").isEqualTo(true)
-          .jsonPath("$.result.workspaceId").isEqualTo(testWorkspace.getId())
-          .jsonPath("$.result.invitedEmail").isEqualTo("newuser@test.com")
-          .jsonPath("$.result.invitedRole").isEqualTo(WorkspaceRole.MEMBER.name())
-          .jsonPath("$.result.status").isEqualTo(InvitationStatus.PENDING.name());
+          .jsonPath("$.workspaceId").isEqualTo(testWorkspace.getId())
+          .jsonPath("$.invitedEmail").isEqualTo("newuser@test.com")
+          .jsonPath("$.invitedRole").isEqualTo(WorkspaceRole.MEMBER.name())
+          .jsonPath("$.status").isEqualTo(InvitationStatus.PENDING.name());
     }
 
     @Test
@@ -247,11 +246,10 @@ class WorkspaceInvitationControllerTest {
               WorkspaceInvitationApiSnippets.listInvitationsQueryParameters(),
               WorkspaceInvitationApiSnippets.listInvitationsResponseHeaders(),
               WorkspaceInvitationApiSnippets.listInvitationsResponse()))
-          .jsonPath("$.success").isEqualTo(true)
-          .jsonPath("$.result.content.length()").isEqualTo(2)
-          .jsonPath("$.result.totalElements").isEqualTo(2)
-          .jsonPath("$.result.page").isEqualTo(0)
-          .jsonPath("$.result.size").isEqualTo(10);
+          .jsonPath("$.content.length()").isEqualTo(2)
+          .jsonPath("$.totalElements").isEqualTo(2)
+          .jsonPath("$.page").isEqualTo(0)
+          .jsonPath("$.size").isEqualTo(10);
     }
 
     @Test
@@ -290,8 +288,8 @@ class WorkspaceInvitationControllerTest {
           .exchange()
           .expectStatus().isOk()
           .expectBody()
-          .jsonPath("$.result.content.length()").isEqualTo(2)
-          .jsonPath("$.result.totalElements").isEqualTo(5);
+          .jsonPath("$.content.length()").isEqualTo(2)
+          .jsonPath("$.totalElements").isEqualTo(5);
     }
 
   }
@@ -331,11 +329,10 @@ class WorkspaceInvitationControllerTest {
               WorkspaceInvitationApiSnippets.listMyInvitationsQueryParameters(),
               WorkspaceInvitationApiSnippets.listMyInvitationsResponseHeaders(),
               WorkspaceInvitationApiSnippets.listMyInvitationsResponse()))
-          .jsonPath("$.success").isEqualTo(true)
-          .jsonPath("$.result.content.length()").isEqualTo(2)
-          .jsonPath("$.result.totalElements").isEqualTo(2)
-          .jsonPath("$.result.content[0].invitedEmail").isEqualTo(invited.getEmail())
-          .jsonPath("$.result.content[1].invitedEmail").isEqualTo(invited.getEmail());
+          .jsonPath("$.content.length()").isEqualTo(2)
+          .jsonPath("$.totalElements").isEqualTo(2)
+          .jsonPath("$.content[0].invitedEmail").isEqualTo(invited.getEmail())
+          .jsonPath("$.content[1].invitedEmail").isEqualTo(invited.getEmail());
     }
 
     @Test
@@ -351,9 +348,8 @@ class WorkspaceInvitationControllerTest {
           .exchange()
           .expectStatus().isOk()
           .expectBody()
-          .jsonPath("$.success").isEqualTo(true)
-          .jsonPath("$.result.content.length()").isEqualTo(0)
-          .jsonPath("$.result.totalElements").isEqualTo(0);
+          .jsonPath("$.content.length()").isEqualTo(0)
+          .jsonPath("$.totalElements").isEqualTo(0);
     }
 
     @Test
@@ -379,8 +375,8 @@ class WorkspaceInvitationControllerTest {
           .exchange()
           .expectStatus().isOk()
           .expectBody()
-          .jsonPath("$.result.content.length()").isEqualTo(2)
-          .jsonPath("$.result.totalElements").isEqualTo(5);
+          .jsonPath("$.content.length()").isEqualTo(2)
+          .jsonPath("$.totalElements").isEqualTo(5);
     }
 
     @Test
@@ -412,8 +408,8 @@ class WorkspaceInvitationControllerTest {
           .exchange()
           .expectStatus().isOk()
           .expectBody()
-          .jsonPath("$.result.content.length()").isEqualTo(1)
-          .jsonPath("$.result.content[0].id").isEqualTo(pending.getId());
+          .jsonPath("$.content.length()").isEqualTo(1)
+          .jsonPath("$.content[0].id").isEqualTo(pending.getId());
     }
 
     @Test
@@ -458,10 +454,9 @@ class WorkspaceInvitationControllerTest {
               WorkspaceInvitationApiSnippets.acceptInvitationPathParameters(),
               WorkspaceInvitationApiSnippets.acceptInvitationResponseHeaders(),
               WorkspaceInvitationApiSnippets.acceptInvitationResponse()))
-          .jsonPath("$.success").isEqualTo(true)
-          .jsonPath("$.result.userId").isEqualTo(invitedUserId)
-          .jsonPath("$.result.workspaceId").isEqualTo(testWorkspace.getId())
-          .jsonPath("$.result.role").isEqualTo(WorkspaceRole.MEMBER.name());
+          .jsonPath("$.userId").isEqualTo(invitedUserId)
+          .jsonPath("$.workspaceId").isEqualTo(testWorkspace.getId())
+          .jsonPath("$.role").isEqualTo(WorkspaceRole.MEMBER.name());
 
       Invitation updated = invitationRepository.findById(invitation.getId()).block();
       assertThat(updated.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
@@ -473,7 +468,7 @@ class WorkspaceInvitationControllerTest {
     }
 
     @Test
-    @DisplayName("다른 사용자가 초대를 수락하면 403 Forbidden을 반환한다")
+    @DisplayName("다른 사용자가 초대를 수락하면 400 Bad Request를 반환한다")
     void acceptInvitation_WrongUser_Forbidden() {
       User invited = userRepository.findById(invitedUserId).block();
       Invitation invitation = Invitation.createWorkspaceInvitation(
@@ -488,7 +483,7 @@ class WorkspaceInvitationControllerTest {
               invitation.getId())
           .header("Authorization", "Bearer " + memberToken)
           .exchange()
-          .expectStatus().isForbidden();
+          .expectStatus().isBadRequest();
     }
 
     @Test
@@ -561,7 +556,7 @@ class WorkspaceInvitationControllerTest {
     }
 
     @Test
-    @DisplayName("다른 사용자가 초대를 거절하면 403 Forbidden을 반환한다")
+    @DisplayName("다른 사용자가 초대를 거절하면 400 Bad Request를 반환한다")
     void rejectInvitation_WrongUser_Forbidden() {
       User invited = userRepository.findById(invitedUserId).block();
       Invitation invitation = Invitation.createWorkspaceInvitation(
@@ -576,7 +571,7 @@ class WorkspaceInvitationControllerTest {
               invitation.getId())
           .header("Authorization", "Bearer " + memberToken)
           .exchange()
-          .expectStatus().isForbidden();
+          .expectStatus().isBadRequest();
     }
 
     @Test

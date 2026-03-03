@@ -5,6 +5,7 @@ export type ColumnType = {
   name: string;
   type: string;
   isPrimaryKey: boolean;
+  isForeignKey: boolean;
   isNotNull: boolean;
   isUnique: boolean;
 };
@@ -53,6 +54,7 @@ export interface DragHandleProps {
 
 export interface TypeSelectorProps {
   value: string;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }
 

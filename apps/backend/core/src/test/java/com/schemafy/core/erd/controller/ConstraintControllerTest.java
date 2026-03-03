@@ -17,7 +17,7 @@ import org.openapitools.jackson.nullable.JsonNullable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.core.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
@@ -56,6 +56,7 @@ import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintCo
 import com.schemafy.domain.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 
 import reactor.core.publisher.Mono;
@@ -151,8 +152,8 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.data.id").isEqualTo(constraintId)
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.data.id").isEqualTo(constraintId)
         .consumeWith(document("constraint-create",
             ConstraintApiSnippets.createConstraintRequestHeaders(),
             ConstraintApiSnippets.createConstraintRequest(),
@@ -178,9 +179,9 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
+        .isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
 
     then(createConstraintUseCase).shouldHaveNoInteractions();
   }
@@ -208,8 +209,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(constraintId)
+        .jsonPath("$.id").isEqualTo(constraintId)
         .consumeWith(document("constraint-get",
             ConstraintApiSnippets.getConstraintPathParameters(),
             ConstraintApiSnippets.getConstraintRequestHeaders(),
@@ -238,9 +238,8 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].id").isEqualTo(constraintId1)
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].id").isEqualTo(constraintId1)
         .consumeWith(document("constraint-list-by-table",
             ConstraintApiSnippets.getConstraintsByTableIdPathParameters(),
             ConstraintApiSnippets.getConstraintsByTableIdRequestHeaders(),
@@ -267,8 +266,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("constraint-change-check-expr",
             ConstraintApiSnippets.changeConstraintCheckExprPathParameters(),
             ConstraintApiSnippets.changeConstraintCheckExprRequestHeaders(),
@@ -298,7 +296,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true);
+        .jsonPath("$.affectedTableIds").isArray();
   }
 
   @Test
@@ -322,7 +320,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true);
+        .jsonPath("$.affectedTableIds").isArray();
   }
 
   @Test
@@ -338,9 +336,9 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
+        .isEqualTo(ConstraintErrorCode.INVALID_VALUE.code());
 
     then(changeConstraintCheckExprUseCase).shouldHaveNoInteractions();
   }
@@ -364,8 +362,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("constraint-change-default-expr",
             ConstraintApiSnippets.changeConstraintDefaultExprPathParameters(),
             ConstraintApiSnippets.changeConstraintDefaultExprRequestHeaders(),
@@ -395,7 +392,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true);
+        .jsonPath("$.affectedTableIds").isArray();
   }
 
   @Test
@@ -419,7 +416,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true);
+        .jsonPath("$.affectedTableIds").isArray();
   }
 
   @Test
@@ -435,9 +432,9 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.COMMON_INVALID_PARAMETER.getCode());
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason")
+        .isEqualTo(ConstraintErrorCode.INVALID_VALUE.code());
 
     then(changeConstraintDefaultExprUseCase).shouldHaveNoInteractions();
   }
@@ -461,8 +458,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("constraint-change-name",
             ConstraintApiSnippets.changeConstraintNamePathParameters(),
             ConstraintApiSnippets.changeConstraintNameRequestHeaders(),
@@ -487,8 +483,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("constraint-delete",
             ConstraintApiSnippets.deleteConstraintPathParameters(),
             ConstraintApiSnippets.deleteConstraintRequestHeaders(),
@@ -520,9 +515,8 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result").isArray()
-        .jsonPath("$.result[0].id").isEqualTo(constraintColumnId1)
+        .jsonPath("$").isArray()
+        .jsonPath("$[0].id").isEqualTo(constraintColumnId1)
         .consumeWith(document("constraint-columns-list",
             ConstraintApiSnippets.getConstraintColumnsPathParameters(),
             ConstraintApiSnippets.getConstraintColumnsRequestHeaders(),
@@ -558,8 +552,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.data.id").isEqualTo(constraintColumnId)
+        .jsonPath("$.data.id").isEqualTo(constraintColumnId)
         .consumeWith(document("constraint-column-add",
             ConstraintApiSnippets.addConstraintColumnPathParameters(),
             ConstraintApiSnippets.addConstraintColumnRequestHeaders(),
@@ -583,8 +576,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("constraint-column-remove",
             ConstraintApiSnippets.removeConstraintColumnPathParameters(),
             ConstraintApiSnippets.removeConstraintColumnRequestHeaders(),
@@ -611,8 +603,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(constraintColumnId)
+        .jsonPath("$.id").isEqualTo(constraintColumnId)
         .consumeWith(document("constraint-column-get",
             ConstraintApiSnippets.getConstraintColumnPathParameters(),
             ConstraintApiSnippets.getConstraintColumnRequestHeaders(),
@@ -640,8 +631,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.affectedTableIds").isArray()
+        .jsonPath("$.affectedTableIds").isArray()
         .consumeWith(document("constraint-column-change-position",
             ConstraintApiSnippets.changeConstraintColumnPositionPathParameters(),
             ConstraintApiSnippets.changeConstraintColumnPositionRequestHeaders(),

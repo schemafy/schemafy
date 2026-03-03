@@ -14,7 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.domain.common.exception.InvalidValueException;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
@@ -27,18 +27,12 @@ import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintColu
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
 import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnCountInvalidException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintColumnNotExistException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintDefinitionDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.ConstraintNameDuplicateException;
-import com.schemafy.domain.erd.constraint.domain.exception.MultiplePrimaryKeyConstraintException;
-import com.schemafy.domain.erd.constraint.domain.exception.UniqueSameAsPrimaryKeyException;
+import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.domain.erd.constraint.fixture.ConstraintFixture;
 import com.schemafy.domain.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.domain.erd.table.domain.Table;
-import com.schemafy.domain.erd.table.domain.exception.TableNotExistException;
+import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -316,7 +310,7 @@ class CreateConstraintServiceTest {
       given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.empty());
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(TableNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -333,7 +327,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(true));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintNameDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NAME_DUPLICATE))
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -356,7 +350,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintColumnNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_NOT_FOUND))
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -381,7 +375,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintColumnDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_DUPLICATE))
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -408,7 +402,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(MultiplePrimaryKeyConstraintException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.MULTIPLE_PRIMARY_KEY))
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -437,7 +431,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(existingColumnMapping.get("existing-uq")));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintDefinitionDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.DEFINITION_DUPLICATE))
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -465,7 +459,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(pkColumnMapping.get("existing-pk")));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(UniqueSameAsPrimaryKeyException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.UNIQUE_SAME_AS_PRIMARY_KEY))
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -487,7 +481,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(InvalidValueException.class)
+          .expectError(DomainException.class)
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();
@@ -601,7 +595,7 @@ class CreateConstraintServiceTest {
           .willReturn(Mono.just(List.of()));
 
       StepVerifier.create(sut.createConstraint(command))
-          .expectError(ConstraintColumnCountInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.COLUMN_COUNT_INVALID))
           .verify();
 
       then(createConstraintPort).shouldHaveNoInteractions();

@@ -20,10 +20,10 @@ import org.junit.jupiter.api.Test;
 
 import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 
@@ -94,9 +94,8 @@ class UserControllerTest {
             getUserRequestHeaders(),
             getUserResponseHeaders(),
             getUserResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(userId)
-        .jsonPath("$.result.email").isEqualTo("test@example.com");
+        .jsonPath("$.id").isEqualTo(userId)
+        .jsonPath("$.email").isEqualTo("test@example.com");
   }
 
   @Test
@@ -111,9 +110,9 @@ class UserControllerTest {
         .exchange()
         .expectStatus().isNotFound()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(false)
-        .jsonPath("$.error.code")
-        .isEqualTo(ErrorCode.USER_NOT_FOUND.getCode());
+        .jsonPath("$.status").isEqualTo(404)
+        .jsonPath("$.reason")
+        .isEqualTo(UserErrorCode.NOT_FOUND.code());
   }
 
   @Test
@@ -148,9 +147,8 @@ class UserControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(userBId)
-        .jsonPath("$.result.email").isEqualTo("userB@example.com");
+        .jsonPath("$.id").isEqualTo(userBId)
+        .jsonPath("$.email").isEqualTo("userB@example.com");
   }
 
   @Test
@@ -186,7 +184,7 @@ class UserControllerTest {
         .expectBody(byte[].class).returnResult();
 
     String responseBody = new String(result.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.result.id");
+    String userId = JsonPath.read(responseBody, "$.id");
     String accessToken = generateAccessToken(userId);
 
     webTestClient.get().uri(API_BASE_PATH + "/users")
@@ -198,9 +196,8 @@ class UserControllerTest {
             getUserRequestHeaders(),
             getUserResponseHeaders(),
             getUserResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(userId)
-        .jsonPath("$.result.email").isEqualTo(signUpRequest.email());
+        .jsonPath("$.id").isEqualTo(userId)
+        .jsonPath("$.email").isEqualTo(signUpRequest.email());
   }
 
   @Test
@@ -227,9 +224,7 @@ class UserControllerTest {
         .expectBody()
         .consumeWith(document("user-logout",
             logoutRequestHeaders(),
-            logoutResponseHeaders(),
-            logoutResponse()))
-        .jsonPath("$.success").isEqualTo(true)
+            logoutResponseHeaders()))
         .consumeWith(result -> {
           var cookies = result.getResponseHeaders().get("Set-Cookie");
           Assertions.assertNotNull(cookies);
@@ -291,9 +286,8 @@ class UserControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(userBId)
-        .jsonPath("$.result.email").isEqualTo("userB@example.com");
+        .jsonPath("$.id").isEqualTo(userBId)
+        .jsonPath("$.email").isEqualTo("userB@example.com");
 
     // 사용자 B는 다른 API도 정상적으로 사용 가능
     webTestClient
@@ -304,8 +298,7 @@ class UserControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.id").isEqualTo(userBId);
+        .jsonPath("$.id").isEqualTo(userBId);
   }
 
 }

@@ -82,23 +82,23 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
     return createResponseFieldsSnippet(
         successResponseFields(concat(
             new FieldDescriptor[] {
-              fieldWithPath("result.content[]")
+              fieldWithPath("content[]")
                   .type(JsonFieldType.ARRAY)
                   .description("초대 목록"),
-              fieldWithPath("result.page")
+              fieldWithPath("page")
                   .type(JsonFieldType.NUMBER)
                   .description("현재 페이지 번호 (0부터 시작)"),
-              fieldWithPath("result.size")
+              fieldWithPath("size")
                   .type(JsonFieldType.NUMBER)
                   .description("페이지 크기"),
-              fieldWithPath("result.totalElements")
+              fieldWithPath("totalElements")
                   .type(JsonFieldType.NUMBER)
                   .description("전체 초대 개수"),
-              fieldWithPath("result.totalPages")
+              fieldWithPath("totalPages")
                   .type(JsonFieldType.NUMBER)
                   .description("전체 페이지 수")
             },
-            invitationResponseFields("result.content[]."))));
+            invitationResponseFields("content[]."))));
   }
 
   /** 내 초대 목록 조회 응답 헤더 */
@@ -129,7 +129,7 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
   /** 초대 생성 응답 본문 */
   public static Snippet createInvitationResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(invitationCreateResponseFields("result.")));
+        successResponseFields(invitationCreateResponseFields("")));
   }
 
   /** 초대 생성 응답 헤더 */
@@ -162,23 +162,23 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
     return createResponseFieldsSnippet(
         successResponseFields(concat(
             new FieldDescriptor[] {
-              fieldWithPath("result.content[]")
+              fieldWithPath("content[]")
                   .type(JsonFieldType.ARRAY)
                   .description("초대 목록"),
-              fieldWithPath("result.page")
+              fieldWithPath("page")
                   .type(JsonFieldType.NUMBER)
                   .description("현재 페이지 번호 (0부터 시작)"),
-              fieldWithPath("result.size")
+              fieldWithPath("size")
                   .type(JsonFieldType.NUMBER)
                   .description("페이지 크기"),
-              fieldWithPath("result.totalElements")
+              fieldWithPath("totalElements")
                   .type(JsonFieldType.NUMBER)
                   .description("전체 초대 개수"),
-              fieldWithPath("result.totalPages")
+              fieldWithPath("totalPages")
                   .type(JsonFieldType.NUMBER)
                   .description("전체 페이지 수")
             },
-            invitationResponseFields("result.content[]."))));
+            invitationResponseFields("content[]."))));
   }
 
   /** 초대 목록 조회 응답 헤더 */
@@ -203,12 +203,12 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
   public static Snippet acceptInvitationResponse() {
     return createResponseFieldsSnippet(
         successResponseFields(new FieldDescriptor[] {
-          fieldWithPath("result.workspaceId").type(JsonFieldType.STRING).description("워크스페이스 ID"),
-          fieldWithPath("result.userId").type(JsonFieldType.STRING).description("사용자 ID"),
-          fieldWithPath("result.userName").type(JsonFieldType.STRING).description("사용자 이름"),
-          fieldWithPath("result.userEmail").type(JsonFieldType.STRING).description("사용자 이메일"),
-          fieldWithPath("result.role").type(JsonFieldType.STRING).description("워크스페이스 역할"),
-          fieldWithPath("result.joinedAt").type(JsonFieldType.STRING).description("멤버 가입 시각")
+          fieldWithPath("workspaceId").type(JsonFieldType.STRING).description("워크스페이스 ID"),
+          fieldWithPath("userId").type(JsonFieldType.STRING).description("사용자 ID"),
+          fieldWithPath("userName").type(JsonFieldType.STRING).description("사용자 이름"),
+          fieldWithPath("userEmail").type(JsonFieldType.STRING).description("사용자 이메일"),
+          fieldWithPath("role").type(JsonFieldType.STRING).description("워크스페이스 역할"),
+          fieldWithPath("joinedAt").type(JsonFieldType.STRING).description("멤버 가입 시각")
         }));
   }
 

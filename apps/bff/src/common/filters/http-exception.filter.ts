@@ -4,8 +4,10 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Injectable,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import axios, { AxiosError } from 'axios';
 import {
@@ -15,15 +17,28 @@ import {
   ErrorCategoryType,
 } from '../types/api-response.types.js';
 import { getErrorInfo } from '../constants/error-messages.js';
-import {
-  getErrorCodeFromStatus,
-  getMessageFromStatus,
-} from '../constants/http-status-maps.js';
+import { getErrorCodeFromStatus } from '../constants/http-status-maps.js';
 
+type BackendProblemDetails = {
+  type?: string;
+  title?: string;
+  status?: number;
+  detail?: string;
+  instance?: string;
+  reason?: string;
+  [key: string]: unknown;
+};
+
+@Injectable()
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
-  private readonly isProduction = process.env.NODE_ENV === 'production';
+  private readonly isProduction: boolean;
+
+  constructor(private readonly configService: ConfigService) {
+    this.isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+  }
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -60,32 +75,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
       `${context} - Backend error: ${status} - ${JSON.stringify(rawData)}`,
     );
 
-    if (this.isValidBackendResponse(rawData)) {
-      const { code, message, details } = rawData.error;
-      const errorCode = code ?? getErrorCodeFromStatus(status);
-      const errorInfo = getErrorInfo(
-        errorCode,
-        message ?? getMessageFromStatus(status),
-      );
-
-      const mergedDetails = this.mergeDetails(details, message);
+    if (this.isProblemDetailsResponse(rawData)) {
+      const reason =
+        typeof rawData.reason === 'string' ? rawData.reason : undefined;
+      const errorCode = reason ?? getErrorCodeFromStatus(status);
+      const errorInfo = getErrorInfo(errorCode);
 
       return {
         status,
         errorResponse: this.createErrorResponse(
           errorCode,
-          errorInfo.message,
           errorInfo.category,
-          mergedDetails,
+          this.extractProblemDetails(rawData),
         ),
       };
     }
 
-    return this.buildErrorResult(
-      status,
-      getErrorCodeFromStatus(status),
-      getMessageFromStatus(status),
-    );
+    return this.buildErrorResult(status, getErrorCodeFromStatus(status));
   }
 
   private handleNetworkError(error: AxiosError, context: string) {
@@ -94,7 +100,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return this.buildErrorResult(
         HttpStatus.SERVICE_UNAVAILABLE,
         ErrorCode.BACKEND_UNREACHABLE,
-        'Service is temporarily unavailable. Please try again later.',
         ErrorCategory.USER_FEEDBACK,
       );
     }
@@ -104,7 +109,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return this.buildErrorResult(
         HttpStatus.GATEWAY_TIMEOUT,
         ErrorCode.BACKEND_TIMEOUT,
-        'Request timed out. Please try again.',
         ErrorCategory.USER_FEEDBACK,
       );
     }
@@ -113,7 +117,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return this.buildErrorResult(
       HttpStatus.INTERNAL_SERVER_ERROR,
       ErrorCode.INTERNAL_SERVER_ERROR,
-      'Something went wrong. Please try again later.',
       ErrorCategory.USER_FEEDBACK,
     );
   }
@@ -125,18 +128,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       `${context} - HttpException: ${status} - ${exception.message}`,
     );
 
-    const { message, details } = this.extractValidationInfo(
-      exception.message,
-      exception.getResponse(),
-    );
-
     return {
       status,
       errorResponse: this.createErrorResponse(
         getErrorCodeFromStatus(status),
-        message,
         ErrorCategory.USER_FEEDBACK,
-        details,
       ),
     };
   }
@@ -153,9 +149,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
     return this.buildErrorResult(
       HttpStatus.INTERNAL_SERVER_ERROR,
       ErrorCode.INTERNAL_SERVER_ERROR,
-      this.isProduction
-        ? 'Something went wrong. Please try again later.'
-        : errorMessage,
       ErrorCategory.USER_FEEDBACK,
     );
   }
@@ -163,76 +156,67 @@ export class HttpExceptionFilter implements ExceptionFilter {
   private buildErrorResult(
     status: number,
     code: string,
-    message: string,
     category: ErrorCategoryType = ErrorCategory.SILENT,
   ) {
     return {
       status,
-      errorResponse: this.createErrorResponse(code, message, category),
+      errorResponse: this.createErrorResponse(code, category),
     };
   }
 
   private createErrorResponse(
     code: string,
-    message: string,
     category: ErrorCategoryType,
     details?: Record<string, unknown>,
   ) {
-    const error: ApiError = { code, message, category };
+    const error: ApiError = { code, category };
     if (!this.isProduction && details) {
       error.details = details;
     }
-    return { success: false, result: null, error };
+    return error;
   }
 
-  private isValidBackendResponse(data: unknown): data is {
-    error: {
-      code?: string;
-      message?: string;
-      details?: Record<string, unknown>;
-    };
-  } {
+  private isProblemDetailsResponse(
+    data: unknown,
+  ): data is BackendProblemDetails {
+    if (typeof data !== 'object' || data === null) {
+      return false;
+    }
+
+    const problem = data as Record<string, unknown>;
     return (
-      typeof data === 'object' &&
-      data !== null &&
-      'error' in data &&
-      typeof (data as { error: unknown }).error === 'object' &&
-      (data as { error: unknown }).error !== null
+      'reason' in problem ||
+      'type' in problem ||
+      ('title' in problem && 'status' in problem)
     );
   }
 
-  private extractValidationInfo(defaultMessage: string, response: unknown) {
-    if (
-      typeof response !== 'object' ||
-      response === null ||
-      !('message' in response)
-    ) {
-      return { message: defaultMessage };
-    }
-
-    const responseMessage = (response as { message: unknown }).message;
-
-    if (Array.isArray(responseMessage)) {
-      return {
-        message: responseMessage.join(', '),
-        details: { validationErrors: responseMessage },
-      };
-    }
-
-    return { message: String(responseMessage) };
-  }
-
-  private mergeDetails(
-    details?: Record<string, unknown>,
-    originalMessage?: string,
+  private extractProblemDetails(
+    problem: BackendProblemDetails,
   ): Record<string, unknown> | undefined {
-    if (!originalMessage && !details) {
-      return undefined;
+    const details: Record<string, unknown> = {};
+
+    if (typeof problem.type === 'string') {
+      details.type = problem.type;
+    }
+    if (typeof problem.instance === 'string') {
+      details.instance = problem.instance;
+    }
+    if (typeof problem.detail === 'string') {
+      details.originalDetail = problem.detail;
     }
 
-    return {
-      ...details,
-      ...(originalMessage && { originalMessage }),
-    };
+    const extensionEntries = Object.entries(problem).filter(
+      ([key]) =>
+        !['type', 'title', 'status', 'detail', 'instance', 'reason'].includes(
+          key,
+        ),
+    );
+
+    if (extensionEntries.length > 0) {
+      details.extensions = Object.fromEntries(extensionEntries);
+    }
+
+    return Object.keys(details).length > 0 ? details : undefined;
   }
 }

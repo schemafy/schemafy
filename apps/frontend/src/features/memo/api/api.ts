@@ -1,5 +1,4 @@
-import { bffClient } from '@/lib/api/bff-client';
-import type { ApiResponse } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import type {
   Memo,
   MemoComment,
@@ -9,31 +8,25 @@ import type {
   UpdateMemoCommentRequest,
 } from './types';
 
-export const createMemo = async (
-  data: CreateMemoRequest,
-): Promise<ApiResponse<Memo>> => {
-  const response = await bffClient.post<ApiResponse<Memo>>('/memos', data);
+export const createMemo = async (data: CreateMemoRequest): Promise<Memo> => {
+  const response = await apiClient.post<Memo>('/memos', data);
   return response.data;
 };
 
-export const getMemo = async (memoId: string): Promise<ApiResponse<Memo>> => {
-  const response = await bffClient.get<ApiResponse<Memo>>(`/memos/${memoId}`);
+export const getMemo = async (memoId: string): Promise<Memo> => {
+  const response = await apiClient.get<Memo>(`/memos/${memoId}`);
   return response.data;
 };
 
-export const getSchemaMemos = async (
-  schemaId: string,
-): Promise<ApiResponse<Memo[]>> => {
-  const response = await bffClient.get<ApiResponse<Memo[]>>(
-    `/schemas/${schemaId}/memos`,
-  );
+export const getSchemaMemos = async (schemaId: string): Promise<Memo[]> => {
+  const response = await apiClient.get<Memo[]>(`/schemas/${schemaId}/memos`);
   return response.data;
 };
 
 export const getSchemaMemosWithComments = async (
   schemaId: string,
-): Promise<ApiResponse<Memo[]>> => {
-  const response = await bffClient.get<ApiResponse<Memo[]>>(
+): Promise<Memo[]> => {
+  const response = await apiClient.get<Memo[]>(
     `/schemas/${schemaId}/memos-with-comments`,
   );
   return response.data;
@@ -42,28 +35,21 @@ export const getSchemaMemosWithComments = async (
 export const updateMemo = async (
   memoId: string,
   data: UpdateMemoRequest,
-): Promise<ApiResponse<Memo>> => {
-  const response = await bffClient.put<ApiResponse<Memo>>(
-    `/memos/${memoId}`,
-    data,
-  );
+): Promise<Memo> => {
+  const response = await apiClient.put<Memo>(`/memos/${memoId}`, data);
   return response.data;
 };
 
-export const deleteMemo = async (
-  memoId: string,
-): Promise<ApiResponse<null>> => {
-  const response = await bffClient.delete<ApiResponse<null>>(
-    `/memos/${memoId}`,
-  );
+export const deleteMemo = async (memoId: string): Promise<null> => {
+  const response = await apiClient.delete<null>(`/memos/${memoId}`);
   return response.data;
 };
 
 export const createMemoComment = async (
   memoId: string,
   data: CreateMemoCommentRequest,
-): Promise<ApiResponse<MemoComment>> => {
-  const response = await bffClient.post<ApiResponse<MemoComment>>(
+): Promise<MemoComment> => {
+  const response = await apiClient.post<MemoComment>(
     `/memos/${memoId}/comments`,
     data,
   );
@@ -72,8 +58,8 @@ export const createMemoComment = async (
 
 export const getMemoComments = async (
   memoId: string,
-): Promise<ApiResponse<MemoComment[]>> => {
-  const response = await bffClient.get<ApiResponse<MemoComment[]>>(
+): Promise<MemoComment[]> => {
+  const response = await apiClient.get<MemoComment[]>(
     `/memos/${memoId}/comments`,
   );
   return response.data;
@@ -83,8 +69,8 @@ export const updateMemoComment = async (
   memoId: string,
   commentId: string,
   data: UpdateMemoCommentRequest,
-): Promise<ApiResponse<MemoComment>> => {
-  const response = await bffClient.put<ApiResponse<MemoComment>>(
+): Promise<MemoComment> => {
+  const response = await apiClient.put<MemoComment>(
     `/memos/${memoId}/comments/${commentId}`,
     data,
   );
@@ -94,8 +80,8 @@ export const updateMemoComment = async (
 export const deleteMemoComment = async (
   memoId: string,
   commentId: string,
-): Promise<ApiResponse<null>> => {
-  const response = await bffClient.delete<ApiResponse<null>>(
+): Promise<null> => {
+  const response = await apiClient.delete<null>(
     `/memos/${memoId}/comments/${commentId}`,
   );
   return response.data;

@@ -3,7 +3,6 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import { Logger } from '@nestjs/common';
 
 import { AppModule } from './app.module.js';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 
 async function bootstrap() {
@@ -18,7 +17,6 @@ async function bootstrap() {
   });
 
   app.useGlobalInterceptors(new LoggingInterceptor());
-  app.useGlobalFilters(new HttpExceptionFilter());
 
   await app.listen(4000);
   logger.log('BFF is running on port 4000');

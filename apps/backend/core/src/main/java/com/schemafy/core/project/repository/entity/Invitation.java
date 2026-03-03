@@ -6,14 +6,14 @@ import java.time.temporal.ChronoUnit;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Table;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.BaseEntity;
+import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -98,34 +98,34 @@ public class Invitation extends BaseEntity {
 
   public String getProjectId() {
     if (!getTargetTypeAsEnum().isProject()) {
-      throw new BusinessException(ErrorCode.INVITATION_TYPE_MISMATCH);
+      throw new DomainException(ProjectErrorCode.INVITATION_TYPE_MISMATCH);
     }
     return this.targetId;
   }
 
   public WorkspaceRole getWorkspaceRole() {
     if (!getTargetTypeAsEnum().isWorkspace()) {
-      throw new BusinessException(ErrorCode.INVITATION_TYPE_MISMATCH);
+      throw new DomainException(ProjectErrorCode.INVITATION_TYPE_MISMATCH);
     }
     return WorkspaceRole.fromString(this.invitedRole);
   }
 
   public ProjectRole getProjectRole() {
     if (!getTargetTypeAsEnum().isProject()) {
-      throw new BusinessException(ErrorCode.INVITATION_TYPE_MISMATCH);
+      throw new DomainException(ProjectErrorCode.INVITATION_TYPE_MISMATCH);
     }
     return ProjectRole.fromString(this.invitedRole);
   }
 
   public void accept() {
     if (!getStatusAsEnum().isPending()) {
-      ErrorCode errorCode = getTargetTypeAsEnum().isWorkspace()
-          ? ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
-          : ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED;
-      throw new BusinessException(errorCode);
+      ProjectErrorCode errorCode = getTargetTypeAsEnum().isWorkspace()
+          ? ProjectErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
+          : ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED;
+      throw new DomainException(errorCode);
     }
     if (isExpired()) {
-      throw new BusinessException(ErrorCode.INVITATION_EXPIRED);
+      throw new DomainException(ProjectErrorCode.INVITATION_EXPIRED);
     }
     this.status = InvitationStatus.ACCEPTED.name();
     this.resolvedAt = Instant.now();
@@ -133,10 +133,10 @@ public class Invitation extends BaseEntity {
 
   public void reject() {
     if (!getStatusAsEnum().isPending()) {
-      ErrorCode errorCode = getTargetTypeAsEnum().isWorkspace()
-          ? ErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
-          : ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED;
-      throw new BusinessException(errorCode);
+      ProjectErrorCode errorCode = getTargetTypeAsEnum().isWorkspace()
+          ? ProjectErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
+          : ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED;
+      throw new DomainException(errorCode);
     }
     this.status = InvitationStatus.REJECTED.name();
     this.resolvedAt = Instant.now();
@@ -144,7 +144,7 @@ public class Invitation extends BaseEntity {
 
   public void validateInvitedEmailMatches(String email) {
     if (!this.invitedEmail.equals(email.toLowerCase())) {
-      throw new BusinessException(ErrorCode.INVITATION_EMAIL_MISMATCH);
+      throw new DomainException(ProjectErrorCode.INVITATION_EMAIL_MISMATCH);
     }
   }
 

@@ -8,9 +8,8 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.common.type.PageResponse;
+import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
@@ -21,7 +20,9 @@ import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.service.dto.ProjectMemberDetail;
+import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -91,7 +92,7 @@ public class ProjectInvitationService {
       int page,
       int size) {
     return userRepository.findById(currentUserId)
-        .switchIfEmpty(Mono.error(new BusinessException(ErrorCode.USER_NOT_FOUND)))
+        .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> {
           String email = user.getEmail();
           String targetType = InvitationType.PROJECT.name();
@@ -119,12 +120,11 @@ public class ProjectInvitationService {
       String currentUserId) {
     return userRepository.findById(currentUserId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.USER_NOT_FOUND)))
+            new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> findInvitationOrThrow(invitationId)
             .flatMap(invitation -> {
               if (!invitation.getTargetTypeAsEnum().isProject()) {
-                return Mono.error(new BusinessException(
-                    ErrorCode.INVITATION_TYPE_MISMATCH));
+                return Mono.error(new DomainException(ProjectErrorCode.INVITATION_TYPE_MISMATCH));
               }
 
               invitation.validateInvitedEmailMatches(user.getEmail());
@@ -144,8 +144,8 @@ public class ProjectInvitationService {
                             .getProjectRole()))
                         .onErrorResume(DataIntegrityViolationException.class, e -> {
                           log.warn("Concurrent member creation on invitation accept: invitationId={}", invitationId);
-                          return Mono.error(new BusinessException(
-                              ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
+                          return Mono.error(new DomainException(
+                              ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
                         })
                         .flatMap(this::buildMemberDetail);
                   }));
@@ -155,8 +155,8 @@ public class ProjectInvitationService {
             .filter(OptimisticLockingFailureException.class::isInstance)
             .doBeforeRetry(signal -> log.warn(
                 "Retrying due to concurrent modification: invitationId={}", invitationId)))
-        .onErrorMap(OptimisticLockingFailureException.class, e -> new BusinessException(
-            ErrorCode.INVITATION_CONCURRENT_PROCESSED));
+        .onErrorMap(OptimisticLockingFailureException.class, e -> new DomainException(
+            ProjectErrorCode.INVITATION_CONCURRENT_PROCESSED));
   }
 
   public Mono<Void> rejectInvitation(
@@ -165,12 +165,11 @@ public class ProjectInvitationService {
 
     return userRepository.findById(currentUserId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.USER_NOT_FOUND)))
+            new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> findInvitationOrThrow(invitationId)
             .flatMap(invitation -> {
               if (!invitation.getTargetTypeAsEnum().isProject()) {
-                return Mono.error(new BusinessException(
-                    ErrorCode.INVITATION_TYPE_MISMATCH));
+                return Mono.error(new DomainException(ProjectErrorCode.INVITATION_TYPE_MISMATCH));
               }
 
               invitation.validateInvitedEmailMatches(user.getEmail());
@@ -183,20 +182,20 @@ public class ProjectInvitationService {
             .filter(OptimisticLockingFailureException.class::isInstance)
             .doBeforeRetry(signal -> log.warn(
                 "Retrying due to concurrent modification: invitationId={}", invitationId)))
-        .onErrorMap(OptimisticLockingFailureException.class, error -> new BusinessException(
-            ErrorCode.INVITATION_CONCURRENT_PROCESSED));
+        .onErrorMap(OptimisticLockingFailureException.class, error -> new DomainException(
+            ProjectErrorCode.INVITATION_CONCURRENT_PROCESSED));
   }
 
   private Mono<Invitation> findInvitationOrThrow(String invitationId) {
     return invitationRepository.findByIdAndNotDeleted(invitationId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.INVITATION_NOT_FOUND)));
+            new DomainException(ProjectErrorCode.INVITATION_NOT_FOUND)));
   }
 
   private Mono<Project> findProjectOrThrow(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_NOT_FOUND)));
+            new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
 
   private Mono<Void> validateProjectAdmin(
@@ -205,11 +204,10 @@ public class ProjectInvitationService {
     return projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
         .switchIfEmpty(Mono.error(
-            new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED)))
+            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
         .flatMap(member -> {
           if (!member.isAdmin()) {
-            return Mono.error(new BusinessException(
-                ErrorCode.PROJECT_ADMIN_REQUIRED));
+            return Mono.error(new DomainException(ProjectErrorCode.ADMIN_REQUIRED));
           }
           return Mono.empty();
         });
@@ -228,8 +226,7 @@ public class ProjectInvitationService {
           if (count > 0) {
             log.warn("Duplicate pending invitation: project={}, email={}",
                 projectId, email);
-            return Mono.error(new BusinessException(
-                ErrorCode.INVITATION_ALREADY_EXISTS));
+            return Mono.error(new DomainException(ProjectErrorCode.INVITATION_ALREADY_EXISTS));
           }
           return Mono.empty();
         });
@@ -242,8 +239,7 @@ public class ProjectInvitationService {
         .existsByProjectIdAndUserIdAndNotDeleted(projectId, userId)
         .flatMap(exists -> {
           if (exists) {
-            return Mono.error(new BusinessException(
-                ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
+            return Mono.error(new DomainException(ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
           }
           return Mono.empty();
         });
@@ -257,8 +253,7 @@ public class ProjectInvitationService {
             .existsByProjectIdAndUserIdAndNotDeleted(projectId, user.getId())
             .flatMap(exists -> {
               if (exists) {
-                return Mono.error(new BusinessException(
-                    ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
+                return Mono.error(new DomainException(ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
               }
               return Mono.empty();
             }))
@@ -272,8 +267,7 @@ public class ProjectInvitationService {
     return projectMemberRepository.findLatestByProjectIdAndUserId(projectId, userId)
         .flatMap(existing -> {
           if (!existing.isDeleted()) {
-            return Mono.error(new BusinessException(
-                ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
+            return Mono.error(new DomainException(ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
           }
           existing.restore();
           existing.updateRole(role);

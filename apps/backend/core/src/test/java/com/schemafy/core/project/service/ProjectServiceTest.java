@@ -10,9 +10,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
+import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.repository.*;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
@@ -24,6 +23,7 @@ import com.schemafy.core.project.service.dto.ProjectMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -135,9 +135,9 @@ class ProjectServiceTest {
               adminUser.getId(),
               request.role(),
               adminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.CANNOT_CHANGE_OWN_ROLE)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.CANNOT_CHANGE_OWN_ROLE)
           .verify();
     }
 
@@ -174,9 +174,9 @@ class ProjectServiceTest {
               primaryAdminUser.getId(),
               request.role(),
               primaryAdminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.CANNOT_CHANGE_OWN_ROLE)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.CANNOT_CHANGE_OWN_ROLE)
           .verify();
     }
 
@@ -221,9 +221,9 @@ class ProjectServiceTest {
               request.role(),
               viewerUser.getId() // VIEWER has no admin rights
           ))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.ADMIN_REQUIRED)
           .verify();
     }
 
@@ -258,8 +258,8 @@ class ProjectServiceTest {
       StepVerifier.create(
           projectService.updateMemberRole(
               testProject.getId(), secondAdmin.getId(), request.role(), primaryAdminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e).getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e).getErrorCode() == ProjectErrorCode.ADMIN_REQUIRED)
           .verify();
     }
 
@@ -319,9 +319,9 @@ class ProjectServiceTest {
               adminUser.getId(),
               viewerUser.getId() // VIEWER has no admin rights
           ))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.PROJECT_ADMIN_REQUIRED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == ProjectErrorCode.ADMIN_REQUIRED)
           .verify();
     }
 

@@ -12,8 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
+import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
@@ -30,6 +29,7 @@ import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -134,11 +134,11 @@ class ProjectInvitationRaceConditionTest {
           invitationService.acceptInvitation(invitationId, userId)
               .block();
           successCount.incrementAndGet();
-        } catch (BusinessException e) {
-          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_PROCESSED ||
-              e.getErrorCode() == ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED
+        } catch (DomainException e) {
+          if (e.getErrorCode() == ProjectErrorCode.INVITATION_CONCURRENT_PROCESSED ||
+              e.getErrorCode() == ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED
               ||
-              e.getErrorCode() == ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT) {
+              e.getErrorCode() == ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT) {
             failureCount.incrementAndGet();
           } else {
             throw e;
@@ -188,9 +188,9 @@ class ProjectInvitationRaceConditionTest {
           invitationService.rejectInvitation(invitationId, userId)
               .block();
           successCount.incrementAndGet();
-        } catch (BusinessException e) {
-          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_PROCESSED ||
-              e.getErrorCode() == ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED) {
+        } catch (DomainException e) {
+          if (e.getErrorCode() == ProjectErrorCode.INVITATION_CONCURRENT_PROCESSED ||
+              e.getErrorCode() == ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED) {
             failureCount.incrementAndGet();
           } else {
             throw e;
@@ -242,11 +242,11 @@ class ProjectInvitationRaceConditionTest {
             invitationService.rejectInvitation(invitationId, userId).block();
             rejectSuccessCount.incrementAndGet();
           }
-        } catch (BusinessException e) {
-          if (e.getErrorCode() == ErrorCode.INVITATION_CONCURRENT_PROCESSED ||
-              e.getErrorCode() == ErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED
+        } catch (DomainException e) {
+          if (e.getErrorCode() == ProjectErrorCode.INVITATION_CONCURRENT_PROCESSED ||
+              e.getErrorCode() == ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED
               ||
-              e.getErrorCode() == ErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT) {
+              e.getErrorCode() == ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT) {
             failureCount.incrementAndGet();
           } else {
             throw e;

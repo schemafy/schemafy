@@ -1,9 +1,10 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { authStore } from '../../store/auth.store';
 import { refreshToken } from '@/features/auth/api';
+import { handleApiError } from './error-handler';
 
 const API_BASE_URL: string =
-  import.meta.env.VITE_BASE_URL || 'http://localhost:8080/api/v1.0';
+  import.meta.env.VITE_BASE_URL || 'http://localhost:4000/api/v1.0';
 
 const PUBLIC_BASE_URL: string =
   import.meta.env.VITE_PUBLIC_BASE_URL ||
@@ -15,6 +16,17 @@ const commonConfig = {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+  paramsSerializer: (params: Record<string, unknown>) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item) => searchParams.append(key, String(item)));
+      } else if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+    return searchParams.toString();
+  },
 };
 
 export const apiClient = axios.create({
@@ -73,3 +85,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+apiClient.interceptors.response.use((response) => response, handleApiError);

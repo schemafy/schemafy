@@ -45,7 +45,7 @@ export function EditableRowBase<T extends BaseItem>({
   );
 }
 
-export interface EditableNameInputProps {
+interface EditableNameInputProps {
   name: string;
   placeholder: string;
   onNameChange: (newName: string) => void;
@@ -78,7 +78,7 @@ export const EditableNameInput = ({
   );
 };
 
-export interface DeleteButtonProps {
+interface DeleteButtonProps {
   onDelete: () => void;
   title: string;
 }
@@ -95,7 +95,7 @@ export const DeleteButton = ({ onDelete, title }: DeleteButtonProps) => {
   );
 };
 
-export interface ColumnItemProps {
+interface ColumnItemProps {
   columnName: string;
   onRemove: () => void;
   additionalControls?: ReactNode;
@@ -121,7 +121,7 @@ export const ColumnItem = ({
   );
 };
 
-export interface AddColumnSelectorProps {
+interface AddColumnSelectorProps {
   availableColumns: Array<{ id: string; name: string }>;
   onAddColumn: (columnId: string) => void;
 }

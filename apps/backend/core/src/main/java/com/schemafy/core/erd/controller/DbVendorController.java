@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.erd.controller.dto.response.DbVendorDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.DbVendorSummaryResponse;
 import com.schemafy.domain.erd.vendor.application.port.in.GetDbVendorQuery;
@@ -29,21 +28,19 @@ public class DbVendorController {
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/vendors")
-  public Mono<BaseResponse<List<DbVendorSummaryResponse>>> listVendors() {
+  public Mono<List<DbVendorSummaryResponse>> listVendors() {
     return listDbVendorsUseCase.listDbVendors()
         .map(DbVendorSummaryResponse::from)
-        .collectList()
-        .map(BaseResponse::success);
+        .collectList();
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/vendors/{displayName}")
-  public Mono<BaseResponse<DbVendorDetailResponse>> getVendor(
+  public Mono<DbVendorDetailResponse> getVendor(
       @PathVariable String displayName) {
     GetDbVendorQuery query = new GetDbVendorQuery(displayName);
     return getDbVendorUseCase.getDbVendor(query)
-        .map(DbVendorDetailResponse::from)
-        .map(BaseResponse::success);
+        .map(DbVendorDetailResponse::from);
   }
 
 }

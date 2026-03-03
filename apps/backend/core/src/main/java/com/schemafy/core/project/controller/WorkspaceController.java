@@ -8,7 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
@@ -31,47 +30,43 @@ public class WorkspaceController {
 
   @PostMapping("/workspaces")
   @ResponseStatus(HttpStatus.CREATED)
-  public Mono<BaseResponse<WorkspaceResponse>> createWorkspace(
+  public Mono<WorkspaceResponse> createWorkspace(
       @Valid @RequestBody CreateWorkspaceRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.createWorkspace(request.name(), request.description(), requesterId)
-        .map(WorkspaceResponse::from)
-        .map(BaseResponse::success);
+        .map(WorkspaceResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
   @GetMapping("/workspaces")
-  public Mono<BaseResponse<PageResponse<WorkspaceSummaryResponse>>> getWorkspaces(
+  public Mono<PageResponse<WorkspaceSummaryResponse>> getWorkspaces(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.getWorkspaces(requesterId, page, size)
-        .map(result -> result.map(WorkspaceSummaryResponse::of))
-        .map(BaseResponse::success);
+        .map(result -> result.map(WorkspaceSummaryResponse::of));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
   @GetMapping("/workspaces/{id}")
-  public Mono<BaseResponse<WorkspaceResponse>> getWorkspace(
+  public Mono<WorkspaceResponse> getWorkspace(
       @PathVariable String id, Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.getWorkspace(id, requesterId)
-        .map(WorkspaceResponse::from)
-        .map(BaseResponse::success);
+        .map(WorkspaceResponse::from);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PutMapping("/workspaces/{id}")
-  public Mono<BaseResponse<WorkspaceResponse>> updateWorkspace(
+  public Mono<WorkspaceResponse> updateWorkspace(
       @PathVariable String id,
       @Valid @RequestBody UpdateWorkspaceRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.updateWorkspace(id, request.name(), request.description(), requesterId)
-        .map(WorkspaceResponse::from)
-        .map(BaseResponse::success);
+        .map(WorkspaceResponse::from);
   }
 
   @PreAuthorize("hasRole('ADMIN')")
@@ -85,27 +80,25 @@ public class WorkspaceController {
 
   @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
   @GetMapping("/workspaces/{id}/members")
-  public Mono<BaseResponse<PageResponse<WorkspaceMemberResponse>>> getMembers(
+  public Mono<PageResponse<WorkspaceMemberResponse>> getMembers(
       @PathVariable String id, @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.getMembers(id, requesterId, page, size)
-        .map(result -> result.map(WorkspaceMemberResponse::from))
-        .map(BaseResponse::success);
+        .map(result -> result.map(WorkspaceMemberResponse::from));
   }
 
   @PreAuthorize("hasRole('ADMIN')")
   @PostMapping("/workspaces/{workspaceId}/members")
   @ResponseStatus(HttpStatus.CREATED)
-  public Mono<BaseResponse<WorkspaceMemberResponse>> addMember(
+  public Mono<WorkspaceMemberResponse> addMember(
       @PathVariable String workspaceId,
       @Valid @RequestBody AddWorkspaceMemberRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceService.addMember(workspaceId, request.email(), request.role(), requesterId)
-        .map(WorkspaceMemberResponse::from)
-        .map(BaseResponse::success);
+        .map(WorkspaceMemberResponse::from);
   }
 
   @PreAuthorize("hasRole('ADMIN')")
@@ -132,7 +125,7 @@ public class WorkspaceController {
 
   @PreAuthorize("hasRole('ADMIN')")
   @PatchMapping("/workspaces/{workspaceId}/members/{userId}/role")
-  public Mono<BaseResponse<WorkspaceMemberResponse>> updateMemberRole(
+  public Mono<WorkspaceMemberResponse> updateMemberRole(
       @PathVariable String workspaceId,
       @PathVariable String userId,
       @Valid @RequestBody UpdateMemberRoleRequest request,
@@ -140,8 +133,7 @@ public class WorkspaceController {
     String requesterId = authentication.getName();
     return workspaceService
         .updateMemberRole(workspaceId, userId, request.role(), requesterId)
-        .map(WorkspaceMemberResponse::from)
-        .map(BaseResponse::success);
+        .map(WorkspaceMemberResponse::from);
   }
 
 }

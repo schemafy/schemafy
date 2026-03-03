@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.service.UserService;
 
@@ -29,29 +28,28 @@ public class UserController {
   private final JwtTokenIssuer jwtTokenIssuer;
 
   @GetMapping("/users")
-  public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getMyInfo(
+  public Mono<ResponseEntity<UserInfoResponse>> getMyInfo(
       @AuthenticationPrincipal AuthenticatedUser user) {
     return userService.getUserById(user.userId())
-        .map(BaseResponse::success)
         .map(ResponseEntity::ok);
   }
 
   /** 사용자 정보를 조회합니다. 인증된 사용자는 타 사용자의 프로필도 조회할 수 있습니다. */
   @GetMapping("/users/{userId}")
-  public Mono<ResponseEntity<BaseResponse<UserInfoResponse>>> getUser(
+  public Mono<ResponseEntity<UserInfoResponse>> getUser(
       @PathVariable String userId) {
-    return userService.getUserById(userId).map(BaseResponse::success)
+    return userService.getUserById(userId)
         .map(ResponseEntity::ok);
   }
 
   /** 로그아웃 API - 인증된 사용자만 호출 가능하며, 쿠키에 저장된 토큰을 만료시킵니다. */
   @PostMapping("/users/logout")
-  public Mono<ResponseEntity<BaseResponse<Void>>> logout(
+  public Mono<ResponseEntity<Void>> logout(
       @AuthenticationPrincipal AuthenticatedUser user) {
     log.info("User logout: userId={}", user.userId());
     return Mono.just(ResponseEntity.ok()
         .headers(jwtTokenIssuer.expireTokens())
-        .body(BaseResponse.success(null)));
+        .build());
   }
 
 }

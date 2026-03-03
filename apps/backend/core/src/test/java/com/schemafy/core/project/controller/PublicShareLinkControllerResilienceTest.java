@@ -120,9 +120,8 @@ class PublicShareLinkControllerResilienceTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.projectId").isEqualTo(testProject.getId())
-        .jsonPath("$.result.projectName").isEqualTo("Test Project");
+        .jsonPath("$.projectId").isEqualTo(testProject.getId())
+        .jsonPath("$.projectName").isEqualTo("Test Project");
   }
 
 }

@@ -8,6 +8,7 @@ import java.util.Objects;
 import org.springframework.lang.NonNull;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnPositionPort;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnSortDirectionPort;
 import com.schemafy.domain.erd.index.application.port.out.CreateIndexColumnPort;
@@ -18,7 +19,7 @@ import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnByIdPort
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByColumnIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 
 import lombok.RequiredArgsConstructor;
@@ -118,7 +119,7 @@ class IndexColumnPersistenceAdapter implements
   private Mono<IndexColumnEntity> findIndexColumnOrError(String indexColumnId) {
     return indexColumnRepository.findById(indexColumnId)
         .switchIfEmpty(Mono.error(
-            new IndexColumnNotExistException("Index column not found: " + indexColumnId)));
+            new DomainException(IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found: " + indexColumnId)));
   }
 
 }

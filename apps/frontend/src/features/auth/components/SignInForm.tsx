@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
+import { gitHubLogin } from '@/features/auth/lib/oauth.ts';
 
 const formFields = [
   {
@@ -41,18 +42,24 @@ const validationRules: ValidationRules<SignInFormValues> = {
   },
 };
 
-export const SignInForm = () => {
+interface SignInFormProps {
+  oauthError: string | null;
+}
+
+export const SignInForm = ({ oauthError }: SignInFormProps) => {
   const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
     initialForm,
     validationRules,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string>('');
   const navigate = useNavigate();
+
+  const handleGithubLogin = () => {
+    gitHubLogin();
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitError('');
     const hasErrors = Object.keys(errors).length > 0;
     if (hasErrors) {
       return;
@@ -61,24 +68,15 @@ export const SignInForm = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await signIn({
+      const user = await signIn({
         email: form.email,
         password: form.password,
       });
 
-      if (response.success) {
-        if (response.result) {
-          authStore.setUser(response.result);
-        }
-        resetForm();
-        navigate('/');
-      } else {
-        setSubmitError(response.error?.message || '로그인에 실패했습니다.');
-      }
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : '로그인에 실패했습니다.',
-      );
+      authStore.setUser(user);
+      resetForm();
+      navigate('/');
+    } catch {
     } finally {
       setIsSubmitting(false);
     }
@@ -115,15 +113,18 @@ export const SignInForm = () => {
         <Button type="submit" disabled={isSubmitting} round fullWidth>
           {isSubmitting ? 'Sign In...' : 'Sign In'}
         </Button>
-        {submitError && (
-          <p className="text-red-600 text-sm mt-2 mb-2">{submitError}</p>
+        {oauthError && (
+          <p className="text-red-600 text-sm mt-2 mb-2">{oauthError}</p>
         )}
         <div className="flex flex-col w-full gap-2">
-          <Button variant={'secondary'} round fullWidth>
+          <Button
+            type="button"
+            variant={'secondary'}
+            round
+            fullWidth
+            onClick={handleGithubLogin}
+          >
             Continue with GitHub
-          </Button>
-          <Button variant={'secondary'} round fullWidth>
-            Continue with Google
           </Button>
         </div>
       </div>

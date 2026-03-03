@@ -13,14 +13,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.index.application.port.out.ChangeIndexColumnSortDirectionPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.domain.erd.index.application.port.out.GetIndexesByTableIdPort;
-import com.schemafy.domain.erd.index.domain.exception.IndexColumnSortDirectionInvalidException;
-import com.schemafy.domain.erd.index.domain.exception.IndexDefinitionDuplicateException;
-import com.schemafy.domain.erd.index.domain.exception.IndexNotExistException;
+import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.domain.erd.index.domain.type.IndexType;
 import com.schemafy.domain.erd.index.domain.type.SortDirection;
 import com.schemafy.domain.erd.index.fixture.IndexFixture;
@@ -156,7 +155,7 @@ class ChangeIndexColumnSortDirectionServiceTest {
       var command = IndexFixture.changeSortDirectionCommand("ic1", null);
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
-          .expectError(IndexColumnSortDirectionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.COLUMN_SORT_DIRECTION_INVALID))
           .verify();
 
       then(changeIndexColumnSortDirectionPort).shouldHaveNoInteractions();
@@ -171,7 +170,7 @@ class ChangeIndexColumnSortDirectionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
-          .expectError(IndexColumnSortDirectionInvalidException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.COLUMN_NOT_FOUND))
           .verify();
 
       then(changeIndexColumnSortDirectionPort).shouldHaveNoInteractions();
@@ -189,7 +188,7 @@ class ChangeIndexColumnSortDirectionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
-          .expectError(IndexNotExistException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
 
       then(changeIndexColumnSortDirectionPort).shouldHaveNoInteractions();
@@ -218,7 +217,7 @@ class ChangeIndexColumnSortDirectionServiceTest {
           .willReturn(Mono.just(List.of(index1, index2)));
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
-          .expectError(IndexDefinitionDuplicateException.class)
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.DEFINITION_DUPLICATE))
           .verify();
 
       then(changeIndexColumnSortDirectionPort).shouldHaveNoInteractions();

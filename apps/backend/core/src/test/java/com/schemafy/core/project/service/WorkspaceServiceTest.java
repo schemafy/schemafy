@@ -11,11 +11,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.common.exception.BusinessException;
-import com.schemafy.core.common.exception.ErrorCode;
 import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
+import com.schemafy.core.project.exception.WorkspaceErrorCode;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
@@ -31,6 +30,7 @@ import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
 import com.schemafy.core.user.repository.vo.UserInfo;
+import com.schemafy.domain.common.exception.DomainException;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -203,9 +203,9 @@ class WorkspaceServiceTest {
       // 추후 WORKSPACE_NOT_FOUND로 변경 검토
       StepVerifier.create(workspaceService.deleteWorkspace(
           newWorkspace.getId(), adminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_NOT_FOUND)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == WorkspaceErrorCode.MEMBER_NOT_FOUND)
           .verify();
     }
 
@@ -214,9 +214,9 @@ class WorkspaceServiceTest {
     void deleteWorkspace_NonAdmin_Rejected() {
       StepVerifier.create(workspaceService.deleteWorkspace(
           testWorkspace.getId(), memberUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.WORKSPACE_ADMIN_REQUIRED)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == WorkspaceErrorCode.ADMIN_REQUIRED)
           .verify();
     }
 
@@ -235,9 +235,9 @@ class WorkspaceServiceTest {
       StepVerifier.create(workspaceService.removeMember(
           testWorkspace.getId(), adminUser.getId(),
           adminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_LEAVE)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE)
           .verify();
     }
 
@@ -250,9 +250,9 @@ class WorkspaceServiceTest {
       StepVerifier.create(workspaceService.updateMemberRole(
           testWorkspace.getId(), adminUser.getId(), request.role(),
           adminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_LEAVE)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE)
           .verify();
     }
 
@@ -315,9 +315,9 @@ class WorkspaceServiceTest {
                   return Mono.just(0); // 중복 에러는 '성공 횟수 0'으로 처리 (정상적인 방어)
                 }
 
-                if (e instanceof BusinessException &&
-                    ((BusinessException) e)
-                        .getErrorCode() == ErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS) {
+                if (e instanceof DomainException &&
+                    ((DomainException) e)
+                        .getErrorCode() == WorkspaceErrorCode.MEMBER_ALREADY_EXISTS) {
                   return Mono.just(0);
                 }
 
@@ -746,9 +746,9 @@ class WorkspaceServiceTest {
     void leaveMember_LastAdmin_Prevented() {
       StepVerifier.create(workspaceService.leaveMember(
           testWorkspace.getId(), adminUser.getId()))
-          .expectErrorMatches(e -> e instanceof BusinessException &&
-              ((BusinessException) e)
-                  .getErrorCode() == ErrorCode.LAST_ADMIN_CANNOT_LEAVE)
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e)
+                  .getErrorCode() == WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE)
           .verify();
     }
 

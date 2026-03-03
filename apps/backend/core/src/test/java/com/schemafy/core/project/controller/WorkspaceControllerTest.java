@@ -112,8 +112,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.createWorkspaceRequest(),
             WorkspaceApiSnippets.createWorkspaceResponseHeaders(),
             WorkspaceApiSnippets.createWorkspaceResponse()))
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.name")
-        .isEqualTo("My Workspace");
+        .jsonPath("$.name").isEqualTo("My Workspace");
 
     workspaceMemberRepository.findByUserIdAndNotDeleted(testUserId)
         .collectList().block().forEach(member -> {
@@ -136,7 +135,6 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 목록 조회에 성공한다")
   void getWorkspacesSuccess() {
-    // given
     Workspace workspace = Workspace.create("Test Workspace",
         "Description");
     workspace = workspaceRepository.save(workspace).block();
@@ -145,7 +143,6 @@ class WorkspaceControllerTest {
         testUserId, WorkspaceRole.ADMIN);
     workspaceMemberRepository.save(member).block();
 
-    // when & then
     webTestClient.get().uri(API_BASE_PATH + "?page=0&size=10")
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isOk().expectBody()
@@ -154,9 +151,8 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.getWorkspacesQueryParameters(),
             WorkspaceApiSnippets.getWorkspacesResponseHeaders(),
             WorkspaceApiSnippets.getWorkspacesResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.content[0].name")
-        .isEqualTo("Test Workspace").jsonPath("$.result.totalElements")
+        .jsonPath("$.content[0].name")
+        .isEqualTo("Test Workspace").jsonPath("$.totalElements")
         .isEqualTo(1);
   }
 
@@ -181,10 +177,8 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.getWorkspaceRequestHeaders(),
             WorkspaceApiSnippets.getWorkspaceResponseHeaders(),
             WorkspaceApiSnippets.getWorkspaceResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.id")
-        .isEqualTo(workspace.getId()).jsonPath("$.result.name")
-        .isEqualTo("Test Workspace");
+        .jsonPath("$.id").isEqualTo(workspace.getId())
+        .jsonPath("$.name").isEqualTo("Test Workspace");
   }
 
   @Test
@@ -229,8 +223,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.updateWorkspaceRequest(),
             WorkspaceApiSnippets.updateWorkspaceResponseHeaders(),
             WorkspaceApiSnippets.updateWorkspaceResponse()))
-        .jsonPath("$.success").isEqualTo(true).jsonPath("$.result.name")
-        .isEqualTo("Updated Workspace");
+        .jsonPath("$.name").isEqualTo("Updated Workspace");
   }
 
   @Test
@@ -330,8 +323,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets
                 .getWorkspaceMembersResponseHeaders(),
             WorkspaceApiSnippets.getWorkspaceMembersResponse()))
-        .jsonPath("$.success")
-        .isEqualTo(true).jsonPath("$.result.totalElements")
+        .jsonPath("$.totalElements")
         .isEqualTo(1);
   }
 
@@ -383,9 +375,8 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.addMemberRequest(),
             WorkspaceApiSnippets.addMemberResponseHeaders(),
             WorkspaceApiSnippets.addMemberResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.userId").isEqualTo(testUser2Id)
-        .jsonPath("$.result.role")
+        .jsonPath("$.userId").isEqualTo(testUser2Id)
+        .jsonPath("$.role")
         .isEqualTo(WorkspaceRole.MEMBER.name());
   }
 
@@ -494,7 +485,6 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버 역할 변경에 성공한다")
   void updateMemberRoleSuccess() {
-    // given
     Workspace workspace = Workspace.create("Test Workspace", "Description");
     workspace = workspaceRepository.save(workspace).block();
 
@@ -509,7 +499,6 @@ class WorkspaceControllerTest {
     UpdateMemberRoleRequest request = new UpdateMemberRoleRequest(
         WorkspaceRole.ADMIN);
 
-    // when & then
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/workspaces/{workspaceId}/members/{userId}/role",
@@ -523,8 +512,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.updateMemberRoleRequest(),
             WorkspaceApiSnippets.updateMemberRoleResponseHeaders(),
             WorkspaceApiSnippets.updateMemberRoleResponse()))
-        .jsonPath("$.success").isEqualTo(true)
-        .jsonPath("$.result.role")
+        .jsonPath("$.role")
         .isEqualTo(WorkspaceRole.ADMIN.name());
   }
 

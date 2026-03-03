@@ -6,13 +6,13 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.MutationResult;
+import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipNameCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.ChangeRelationshipNameUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.ChangeRelationshipNamePort;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.domain.erd.relationship.application.port.out.RelationshipExistsPort;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNameDuplicateException;
-import com.schemafy.domain.erd.relationship.domain.exception.RelationshipNotExistException;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.relationship.domain.validator.RelationshipValidator;
 
 import lombok.RequiredArgsConstructor;
@@ -32,14 +32,14 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
       String normalizedName = normalizeName(command.newName());
       RelationshipValidator.validateName(normalizedName);
       return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-          .switchIfEmpty(Mono.error(new RelationshipNotExistException("Relationship not found")))
+          .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
           .flatMap(relationship -> relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
               relationship.fkTableId(),
               normalizedName,
               relationship.id())
               .flatMap(exists -> {
                 if (exists) {
-                  return Mono.error(new RelationshipNameDuplicateException(
+                  return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,
                       "Relationship name '%s' already exists in table".formatted(normalizedName)));
                 }
                 Set<String> affectedTableIds = new HashSet<>();

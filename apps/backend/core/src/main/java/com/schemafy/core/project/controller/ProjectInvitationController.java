@@ -8,7 +8,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.type.BaseResponse;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.controller.dto.request.CreateProjectInvitationRequest;
 import com.schemafy.core.project.controller.dto.response.ProjectInvitationCreateResponse;
@@ -29,20 +28,19 @@ public class ProjectInvitationController {
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/projects/{projectId}/invitations")
   @ResponseStatus(HttpStatus.CREATED)
-  public Mono<BaseResponse<ProjectInvitationCreateResponse>> createInvitation(
+  public Mono<ProjectInvitationCreateResponse> createInvitation(
       @PathVariable String projectId,
       @Valid @RequestBody CreateProjectInvitationRequest request,
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.createInvitation(
         projectId, request.email(), request.role(), currentUserId)
-        .map(ProjectInvitationCreateResponse::of)
-        .map(BaseResponse::success);
+        .map(ProjectInvitationCreateResponse::of);
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/projects/{projectId}/invitations")
-  public Mono<BaseResponse<PageResponse<ProjectInvitationResponse>>> listInvitations(
+  public Mono<PageResponse<ProjectInvitationResponse>> listInvitations(
       @PathVariable String projectId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size,
@@ -50,29 +48,26 @@ public class ProjectInvitationController {
     String currentUserId = auth.getName();
     return invitationService.getInvitations(
         projectId, currentUserId, page, size)
-        .map(result -> result.map(ProjectInvitationResponse::of))
-        .map(BaseResponse::success);
+        .map(result -> result.map(ProjectInvitationResponse::of));
   }
 
   @GetMapping("/users/me/invitations/projects")
-  public Mono<BaseResponse<PageResponse<ProjectInvitationResponse>>> listMyInvitations(
+  public Mono<PageResponse<ProjectInvitationResponse>> listMyInvitations(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size,
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.getMyInvitations(currentUserId, page, size)
-        .map(result -> result.map(ProjectInvitationResponse::of))
-        .map(BaseResponse::success);
+        .map(result -> result.map(ProjectInvitationResponse::of));
   }
 
   @PatchMapping("/projects/invitations/{invitationId}/accept")
-  public Mono<BaseResponse<ProjectMemberResponse>> acceptInvitation(
+  public Mono<ProjectMemberResponse> acceptInvitation(
       @PathVariable String invitationId,
       Authentication auth) {
     String currentUserId = auth.getName();
     return invitationService.acceptInvitation(invitationId, currentUserId)
-        .map(ProjectMemberResponse::from)
-        .map(BaseResponse::success);
+        .map(ProjectMemberResponse::from);
   }
 
   @PatchMapping("/projects/invitations/{invitationId}/reject")
