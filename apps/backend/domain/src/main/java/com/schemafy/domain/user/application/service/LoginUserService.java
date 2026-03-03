@@ -36,4 +36,3 @@ class LoginUserService implements LoginUserUseCase {
   }
 
 }
-

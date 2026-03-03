@@ -9,4 +9,3 @@ public interface CreateUserAuthProviderPort {
   Mono<UserAuthProvider> createUserAuthProvider(UserAuthProvider userAuthProvider);
 
 }
-

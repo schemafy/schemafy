@@ -6,11 +6,9 @@ import com.schemafy.core.user.repository.entity.UserAuthProvider;
 
 import reactor.core.publisher.Mono;
 
-/**
- * Transitional read repository.
+/** Transitional read repository.
  * <p>
- * User auth-provider write paths are owned by domain user adapters in this phase.
- */
+ * User auth-provider write paths are owned by domain user adapters in this phase. */
 @Deprecated(forRemoval = false)
 public interface UserAuthProviderRepository
     extends ReactiveCrudRepository<UserAuthProvider, String> {

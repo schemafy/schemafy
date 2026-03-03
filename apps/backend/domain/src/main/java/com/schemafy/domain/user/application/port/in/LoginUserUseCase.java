@@ -9,4 +9,3 @@ public interface LoginUserUseCase {
   Mono<User> loginUser(LoginUserCommand command);
 
 }
-

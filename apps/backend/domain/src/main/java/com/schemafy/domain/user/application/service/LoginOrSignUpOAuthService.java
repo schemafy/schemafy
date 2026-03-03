@@ -8,11 +8,11 @@ import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthCommand;
 import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthResult;
 import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthUseCase;
+import com.schemafy.domain.user.application.port.out.CreateUserAuthProviderPort;
+import com.schemafy.domain.user.application.port.out.CreateUserPort;
 import com.schemafy.domain.user.application.port.out.FindUserAuthProviderPort;
 import com.schemafy.domain.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.domain.user.application.port.out.FindUserByIdPort;
-import com.schemafy.domain.user.application.port.out.CreateUserAuthProviderPort;
-import com.schemafy.domain.user.application.port.out.CreateUserPort;
 import com.schemafy.domain.user.domain.User;
 import com.schemafy.domain.user.domain.UserAuthProvider;
 import com.schemafy.domain.user.domain.exception.UserErrorCode;
@@ -35,7 +35,7 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
   public Mono<LoginOrSignUpOAuthResult> loginOrSignUpOAuth(
       LoginOrSignUpOAuthCommand command) {
     return findUserAuthProviderPort.findUserAuthProvider(
-            command.provider(), command.providerUserId())
+        command.provider(), command.providerUserId())
         .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
         .map(user -> new LoginOrSignUpOAuthResult(user, false))
         .switchIfEmpty(linkOrCreateOAuthUser(command));
@@ -53,7 +53,7 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
       User existingUser,
       LoginOrSignUpOAuthCommand command) {
     return createUserAuthProviderPort.createUserAuthProvider(
-            newUserAuthProvider(existingUser.id(), command))
+        newUserAuthProvider(existingUser.id(), command))
         .thenReturn(existingUser)
         .onErrorResume(DuplicateKeyException.class,
             e -> resolveLinkedUserForDuplicateProvider(command));
@@ -62,7 +62,7 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
   private Mono<User> resolveLinkedUserForDuplicateProvider(
       LoginOrSignUpOAuthCommand command) {
     return findUserAuthProviderPort.findUserAuthProvider(
-            command.provider(), command.providerUserId())
+        command.provider(), command.providerUserId())
         .switchIfEmpty(Mono.error(new DomainException(
             UserErrorCode.OAUTH_LINK_INCONSISTENT)))
         .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))

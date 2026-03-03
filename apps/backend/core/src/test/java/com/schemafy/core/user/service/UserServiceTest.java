@@ -16,7 +16,6 @@ import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
-import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.service.dto.LoginCommand;
@@ -24,6 +23,7 @@ import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.user.domain.AuthProvider;
 import com.schemafy.domain.user.domain.User;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

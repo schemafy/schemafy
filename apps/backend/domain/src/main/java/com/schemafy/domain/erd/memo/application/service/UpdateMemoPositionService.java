@@ -3,9 +3,9 @@ package com.schemafy.domain.erd.memo.application.service;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.domain.common.exception.DomainException;
-import com.schemafy.domain.erd.memo.application.port.out.ChangeMemoPositionPort;
 import com.schemafy.domain.erd.memo.application.port.in.UpdateMemoPositionCommand;
 import com.schemafy.domain.erd.memo.application.port.in.UpdateMemoPositionUseCase;
+import com.schemafy.domain.erd.memo.application.port.out.ChangeMemoPositionPort;
 import com.schemafy.domain.erd.memo.application.port.out.GetMemoByIdPort;
 import com.schemafy.domain.erd.memo.domain.Memo;
 import com.schemafy.domain.erd.memo.domain.exception.MemoErrorCode;

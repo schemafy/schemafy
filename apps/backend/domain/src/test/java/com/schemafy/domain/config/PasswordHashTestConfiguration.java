@@ -15,6 +15,7 @@ public class PasswordHashTestConfiguration {
   @Bean
   public PasswordHashPort passwordHashPort() {
     return new PasswordHashPort() {
+
       @Override
       public Mono<String> hash(String rawPassword) {
         return Mono.just(TEST_PREFIX + rawPassword);
@@ -24,6 +25,7 @@ public class PasswordHashTestConfiguration {
       public Mono<Boolean> matches(String rawPassword, String encodedPassword) {
         return Mono.just((TEST_PREFIX + rawPassword).equals(encodedPassword));
       }
+
     };
   }
 

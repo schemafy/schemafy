@@ -9,4 +9,3 @@ public interface CreateUserPort {
   Mono<User> createUser(User user);
 
 }
-

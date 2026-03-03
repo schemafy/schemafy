@@ -9,4 +9,3 @@ public interface FindUserByIdPort {
   Mono<User> findUserById(String userId);
 
 }
-

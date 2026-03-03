@@ -3,11 +3,11 @@ package com.schemafy.domain.user.adapter.out.persistence;
 import java.util.Set;
 
 import com.schemafy.domain.common.PersistenceAdapter;
+import com.schemafy.domain.user.application.port.out.CreateUserPort;
 import com.schemafy.domain.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.domain.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.domain.user.application.port.out.FindUserByIdPort;
 import com.schemafy.domain.user.application.port.out.FindUsersByIdsPort;
-import com.schemafy.domain.user.application.port.out.CreateUserPort;
 import com.schemafy.domain.user.domain.User;
 
 import lombok.RequiredArgsConstructor;

@@ -26,11 +26,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @Import({
-    UserPersistenceAdapter.class,
-    UserAuthProviderPersistenceAdapter.class,
-    UserMapper.class,
-    UserAuthProviderMapper.class,
-    R2dbcTestConfiguration.class })
+  UserPersistenceAdapter.class,
+  UserAuthProviderPersistenceAdapter.class,
+  UserMapper.class,
+  UserAuthProviderMapper.class,
+  R2dbcTestConfiguration.class })
 @DisplayName("UserPersistenceAdapter")
 class UserPersistenceAdapterTest {
 
@@ -238,8 +238,8 @@ class UserPersistenceAdapterTest {
           .verifyComplete();
 
       StepVerifier.create(
-              userAuthProviderPersistenceAdapter.findUserAuthProvider(
-                  AuthProvider.GITHUB, "github-user-1"))
+          userAuthProviderPersistenceAdapter.findUserAuthProvider(
+              AuthProvider.GITHUB, "github-user-1"))
           .assertNext(found -> {
             assertThat(found.userId()).isEqualTo(user.id());
             assertThat(found.provider()).isEqualTo(AuthProvider.GITHUB);

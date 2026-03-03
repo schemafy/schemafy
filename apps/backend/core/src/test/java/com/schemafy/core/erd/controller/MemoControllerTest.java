@@ -23,9 +23,9 @@ import com.schemafy.core.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoResponse;
 import com.schemafy.core.erd.service.MemoOrchestrator;
+import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommand;
 import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentCommand;
 import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentUseCase;
-import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommand;
 import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoUseCase;
 
 import reactor.core.publisher.Flux;

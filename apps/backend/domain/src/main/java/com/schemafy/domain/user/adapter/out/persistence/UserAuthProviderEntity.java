@@ -65,4 +65,3 @@ class UserAuthProviderEntity implements Persistable<String> {
   public boolean isNew() { return this.createdAt == null; }
 
 }
-

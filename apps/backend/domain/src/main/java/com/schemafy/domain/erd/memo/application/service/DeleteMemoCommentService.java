@@ -2,18 +2,18 @@ package com.schemafy.domain.erd.memo.application.service;
 
 import java.time.Instant;
 
-import com.schemafy.domain.erd.memo.domain.MemoComment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.exception.DomainException;
-import com.schemafy.domain.erd.memo.application.port.out.SoftDeleteMemoCommentPort;
 import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentCommand;
 import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentUseCase;
 import com.schemafy.domain.erd.memo.application.port.out.GetMemoByIdPort;
 import com.schemafy.domain.erd.memo.application.port.out.GetMemoCommentByIdPort;
 import com.schemafy.domain.erd.memo.application.port.out.GetMemoCommentsByMemoIdPort;
+import com.schemafy.domain.erd.memo.application.port.out.SoftDeleteMemoCommentPort;
 import com.schemafy.domain.erd.memo.application.port.out.SoftDeleteMemoPort;
+import com.schemafy.domain.erd.memo.domain.MemoComment;
 import com.schemafy.domain.erd.memo.domain.exception.MemoErrorCode;
 
 import lombok.RequiredArgsConstructor;

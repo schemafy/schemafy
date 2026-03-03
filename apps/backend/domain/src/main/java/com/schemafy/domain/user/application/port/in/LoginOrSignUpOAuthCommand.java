@@ -8,4 +8,3 @@ public record LoginOrSignUpOAuthCommand(
     AuthProvider provider,
     String providerUserId) {
 }
-

@@ -9,4 +9,3 @@ public interface PasswordHashPort {
   Mono<Boolean> matches(String rawPassword, String encodedPassword);
 
 }
-

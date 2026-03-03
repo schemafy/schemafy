@@ -7,4 +7,3 @@ public interface LoginOrSignUpOAuthUseCase {
   Mono<LoginOrSignUpOAuthResult> loginOrSignUpOAuth(LoginOrSignUpOAuthCommand command);
 
 }
-

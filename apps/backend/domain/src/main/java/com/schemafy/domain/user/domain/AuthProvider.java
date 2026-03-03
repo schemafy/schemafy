@@ -5,4 +5,3 @@ public enum AuthProvider {
   GITHUB
 
 }
-

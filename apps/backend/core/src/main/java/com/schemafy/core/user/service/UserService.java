@@ -7,12 +7,12 @@ import com.schemafy.core.common.exception.AuthErrorCode;
 import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
-import com.schemafy.core.user.service.user.UserApiCommandMapper;
-import com.schemafy.core.user.service.user.UserApiResponseMapper;
-import com.schemafy.core.user.service.user.UserWorkspaceProvisioner;
 import com.schemafy.core.user.service.dto.LoginCommand;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 import com.schemafy.core.user.service.dto.SignUpCommand;
+import com.schemafy.core.user.service.user.UserApiCommandMapper;
+import com.schemafy.core.user.service.user.UserApiResponseMapper;
+import com.schemafy.core.user.service.user.UserWorkspaceProvisioner;
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.user.application.port.in.GetUserByIdUseCase;
 import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthUseCase;
@@ -40,14 +40,14 @@ public class UserService {
 
   public Mono<User> signUp(SignUpCommand request) {
     return signUpUserUseCase.signUpUser(
-            commandMapper.toSignUpUserCommand(request))
+        commandMapper.toSignUpUserCommand(request))
         .flatMap(workspaceProvisioner::createDefaultWorkspace)
         .as(transactionalOperator::transactional);
   }
 
   public Mono<User> loginOrSignUpOAuth(OAuthLoginCommand command) {
     return loginOrSignUpOAuthUseCase.loginOrSignUpOAuth(
-            commandMapper.toLoginOrSignUpOAuthCommand(command))
+        commandMapper.toLoginOrSignUpOAuthCommand(command))
         .flatMap(result -> result.newUser()
             ? workspaceProvisioner.createDefaultWorkspace(result.user())
             : Mono.just(result.user()))
@@ -66,19 +66,19 @@ public class UserService {
 
   public Mono<User> getUserFromRefreshToken(String refreshToken) {
     return Mono.fromCallable(() -> {
-          String userId = jwtProvider.extractUserId(refreshToken);
-          String tokenType = jwtProvider.getTokenType(refreshToken);
+      String userId = jwtProvider.extractUserId(refreshToken);
+      String tokenType = jwtProvider.getTokenType(refreshToken);
 
-          if (!JwtProvider.REFRESH_TOKEN.equals(tokenType)) {
-            throw new DomainException(AuthErrorCode.INVALID_TOKEN_TYPE);
-          }
+      if (!JwtProvider.REFRESH_TOKEN.equals(tokenType)) {
+        throw new DomainException(AuthErrorCode.INVALID_TOKEN_TYPE);
+      }
 
-          if (!jwtProvider.validateToken(refreshToken, userId)) {
-            throw new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN);
-          }
+      if (!jwtProvider.validateToken(refreshToken, userId)) {
+        throw new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+      }
 
-          return userId;
-        })
+      return userId;
+    })
         .flatMap(userId -> getUserByIdUseCase
             .getUserById(commandMapper.toGetUserByIdQuery(userId)))
         .onErrorMap(e -> !(e instanceof DomainException),

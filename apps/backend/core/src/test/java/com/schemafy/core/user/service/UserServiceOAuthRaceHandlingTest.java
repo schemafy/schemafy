@@ -15,6 +15,7 @@ import com.schemafy.core.user.repository.UserAuthProviderRepository;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
 import com.schemafy.domain.user.domain.AuthProvider;
+
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,4 +76,5 @@ class UserServiceOAuthRaceHandlingTest {
         .assertNext(provider -> assertThat(provider.getUserId()).isEqualTo(existingUser.getId()))
         .verifyComplete();
   }
+
 }

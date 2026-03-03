@@ -9,4 +9,3 @@ public interface SignUpUserUseCase {
   Mono<User> signUpUser(SignUpUserCommand command);
 
 }
-

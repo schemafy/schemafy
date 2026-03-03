@@ -19,4 +19,3 @@ public enum UserErrorCode implements DomainErrorCode {
   private final HttpStatus status;
 
 }
-
