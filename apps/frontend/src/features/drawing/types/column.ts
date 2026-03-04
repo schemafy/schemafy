@@ -30,6 +30,7 @@ export interface ColumnRowProps {
     value: string | boolean,
   ) => void;
   onRemoveColumn: (columnId: string) => void;
+  onPendingChange?: (columnId: string, isPending: boolean) => void;
 }
 
 export interface EditModeColumnProps {
@@ -44,6 +45,7 @@ export interface EditModeColumnProps {
     value: string | boolean,
   ) => void;
   onRemoveColumn: (columnId: string) => void;
+  onPendingChange?: (isPending: boolean) => void;
 }
 
 export interface ViewModeColumnProps {
@@ -62,6 +64,7 @@ export interface TypeSelectorProps {
   vendorTypes: VendorDatatype[];
   disabled?: boolean;
   onChange: (dataType: string, lengthScale: string) => void;
+  onPendingChange?: (isPending: boolean) => void;
 }
 
 export interface ColumnConstraintsProps {

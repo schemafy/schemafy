@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import type { TableProps } from '../../types';
 import { ColumnRow } from '../Column';
 import { TableHeader } from '../TableHeader';
@@ -21,6 +22,21 @@ import { ConnectionHandles } from './ConnectionHandles';
 
 const TableNodeComponent = ({ data, id }: TableProps) => {
   const [isColumnEditMode, setIsColumnEditMode] = useState(false);
+  const [pendingTypeColumns, setPendingTypeColumns] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const handleColumnPendingChange = useCallback(
+    (columnId: string, isPending: boolean) => {
+      setPendingTypeColumns((prev) => {
+        const next = new Set(prev);
+        if (isPending) next.add(columnId);
+        else next.delete(columnId);
+        return next;
+      });
+    },
+    [],
+  );
 
   const { projectId } = useSelectedSchema();
   const { data: schemas } = useSchemas(projectId);
@@ -29,9 +45,8 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const { data: vendorsData } = useVendors();
   const vendorDisplayName =
     schema && vendorsData
-      ? (vendorsData.find(
-          (v) => v.name === schema.dbVendorName.toLowerCase(),
-        )?.displayName ?? '')
+      ? (vendorsData.find((v) => v.name === schema.dbVendorName.toLowerCase())
+          ?.displayName ?? '')
       : '';
 
   const { data: vendorData } = useVendor(vendorDisplayName);
@@ -86,6 +101,21 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   };
 
   const handleSaveAllPendingChanges = () => {
+    if (pendingTypeColumns.size > 0) {
+      toast.error('Please fill in the required type parameters.', {
+        action: {
+          label: 'Discard',
+          onClick: () => {
+            setPendingTypeColumns(new Set());
+            saveColumnAllPendingChanges();
+            indexActions.saveAllPendingChanges();
+            constraintActions.saveAllPendingChanges();
+            setIsColumnEditMode(false);
+          },
+        },
+      });
+      return;
+    }
     saveColumnAllPendingChanges();
     indexActions.saveAllPendingChanges();
     constraintActions.saveAllPendingChanges();
@@ -127,6 +157,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
             onDragEnd={dragAndDrop.handleDragEnd}
             onUpdateColumn={updateColumn}
             onRemoveColumn={columnActions.removeColumn}
+            onPendingChange={handleColumnPendingChange}
           />
         ))}
       </div>
