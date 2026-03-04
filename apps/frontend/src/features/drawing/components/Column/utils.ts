@@ -1,6 +1,6 @@
 export const parseLengthScale = (
   lengthScale: string,
-): Record<string, number | null> => {
+): Record<string, number | string[] | null> => {
   try {
     return JSON.parse(lengthScale || '{}') ?? {};
   } catch {

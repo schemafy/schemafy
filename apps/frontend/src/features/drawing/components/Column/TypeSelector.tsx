@@ -41,7 +41,7 @@ export const TypeSelector = ({
   const parsed = parseLengthScale(lengthScale);
   const [pendingType, setPendingType] = useState<string | null>(null);
   const [pendingParams, setPendingParams] = useState<
-    Record<string, number | null>
+    Record<string, number | string[] | null>
   >({});
 
   const currentTypeConfig = vendorTypes.find((t) => t.sqlType === value);
@@ -71,9 +71,7 @@ export const TypeSelector = ({
   const handleTypeSelect = (newType: string) => {
     const newTypeConfig = vendorTypes.find((t) => t.sqlType === newType);
     const hasRequiredParams =
-      newTypeConfig?.parameters.some(
-        (p) => p.required && p.valueType !== 'string_array',
-      ) ?? false;
+      newTypeConfig?.parameters.some((p) => p.required) ?? false;
 
     if (!hasRequiredParams) {
       setPendingType(null);
@@ -92,17 +90,34 @@ export const TypeSelector = ({
     }
   };
 
-  const handleParamBlur = (paramName: string, paramValue: string) => {
+  const parseParamValue = (paramValue: string, valueType: string) => {
     const trimmed = paramValue.trim();
+    if (!trimmed) return null;
+
+    if (valueType === 'string_array') {
+      return trimmed
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+
     const num = Number(trimmed);
-    const paramVal = trimmed && !isNaN(num) ? num : null;
+    return !isNaN(num) ? num : null;
+  };
+
+  const handleParamBlur = (
+    paramName: string,
+    paramValue: string,
+    valueType: string,
+  ) => {
+    const paramVal = parseParamValue(paramValue, valueType);
 
     if (pendingType) {
       const updated = { ...pendingParams, [paramName]: paramVal };
       setPendingParams(updated);
 
       const allRequiredFilled = params
-        .filter((p) => p.required && p.valueType !== 'string_array')
+        .filter((p) => p.required)
         .every((p) => updated[p.name] != null);
 
       if (allRequiredFilled) {
@@ -144,38 +159,50 @@ export const TypeSelector = ({
         >
           <span className="flex items-center gap-0.5 whitespace-nowrap">
             <span>{displayType || 'Type'}</span>
-            {params.filter((p) => p.valueType !== 'string_array').length >
-              0 && (
+            {params.length > 0 && (
               <>
                 <span>(</span>
                 {[...params]
-                  .filter((p) => p.valueType !== 'string_array')
                   .sort((a, b) => a.order - b.order)
-                  .map((param, i) => (
-                    <Fragment key={param.name}>
-                      {i > 0 && <span>,</span>}
-                      <input
-                        key={`${displayType}-${param.name}`}
-                        type="number"
-                        defaultValue={displayParams[param.name] ?? ''}
-                        placeholder={param.label}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                        }}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          if (e.key === 'Enter') e.currentTarget.blur();
-                        }}
-                        onBlur={(e) =>
-                          handleParamBlur(param.name, e.target.value)
-                        }
-                        className="w-8 text-center bg-transparent border-b border-schemafy-dark-gray focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                    </Fragment>
-                  ))}
+                  .map((param, i) => {
+                    const isStringArray = param.valueType === 'string_array';
+                    const defaultVal = displayParams[param.name];
+                    const displayVal = isStringArray
+                      ? Array.isArray(defaultVal)
+                        ? defaultVal.join(', ')
+                        : ''
+                      : (defaultVal ?? '');
+
+                    return (
+                      <Fragment key={param.name}>
+                        {i > 0 && <span>,</span>}
+                        <input
+                          key={`${displayType}-${param.name}`}
+                          type={isStringArray ? 'text' : 'number'}
+                          defaultValue={displayVal}
+                          placeholder={param.label}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === 'Enter') e.currentTarget.blur();
+                          }}
+                          onBlur={(e) =>
+                            handleParamBlur(
+                              param.name,
+                              e.target.value,
+                              param.valueType,
+                            )
+                          }
+                          className={`${isStringArray ? 'w-24' : 'w-8'} text-center bg-transparent border-b border-schemafy-dark-gray focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                        />
+                      </Fragment>
+                    );
+                  })}
                 <span>)</span>
               </>
             )}
