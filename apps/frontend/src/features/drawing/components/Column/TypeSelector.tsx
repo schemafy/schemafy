@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Fragment } from 'react';
+import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import type { TypeSelectorProps } from '../../types';
 import type { VendorDatatype, DatatypeParameter } from '../../api';
 import {
@@ -44,16 +44,24 @@ export const TypeSelector = ({
     Record<string, number | null>
   >({});
 
+  const currentTypeConfig = vendorTypes.find((t) => t.sqlType === value);
+  const prevCategory = getCategoryGroup(currentTypeConfig?.category ?? '');
+
   const displayType = pendingType ?? value;
   const displayTypeConfig = vendorTypes.find((t) => t.sqlType === displayType);
   const params: DatatypeParameter[] = displayTypeConfig?.parameters ?? [];
   const displayParams = pendingType ? pendingParams : parsed;
 
+  const pendingTypeRef = useRef(pendingType);
+  pendingTypeRef.current = pendingType;
+  const onPendingChangeRef = useRef(onPendingChange);
+  onPendingChangeRef.current = onPendingChange;
+
   useEffect(() => {
     return () => {
-      if (pendingType) onPendingChange?.(false);
+      if (pendingTypeRef.current) onPendingChangeRef.current?.(false);
     };
-  }, [pendingType, onPendingChange]);
+  }, []);
 
   const grouped = useMemo(
     () => groupTypesByCategory(vendorTypes),
@@ -63,13 +71,20 @@ export const TypeSelector = ({
   const handleTypeSelect = (newType: string) => {
     const newTypeConfig = vendorTypes.find((t) => t.sqlType === newType);
     const hasRequiredParams =
-      newTypeConfig?.parameters.some((p) => p.required) ?? false;
+      newTypeConfig?.parameters.some(
+        (p) => p.required && p.valueType !== 'string_array',
+      ) ?? false;
 
     if (!hasRequiredParams) {
       setPendingType(null);
       setPendingParams({});
       onPendingChange?.(false);
-      onChange(newType, '{}');
+      onChange(
+        newType,
+        '{}',
+        getCategoryGroup(newTypeConfig?.category ?? ''),
+        prevCategory,
+      );
     } else {
       setPendingType(newType);
       setPendingParams({});
@@ -87,18 +102,28 @@ export const TypeSelector = ({
       setPendingParams(updated);
 
       const allRequiredFilled = params
-        .filter((p) => p.required)
+        .filter((p) => p.required && p.valueType !== 'string_array')
         .every((p) => updated[p.name] != null);
 
       if (allRequiredFilled) {
         setPendingType(null);
         setPendingParams({});
         onPendingChange?.(false);
-        onChange(pendingType, JSON.stringify(updated));
+        onChange(
+          pendingType,
+          JSON.stringify(updated),
+          getCategoryGroup(displayTypeConfig?.category ?? ''),
+          prevCategory,
+        );
       }
     } else {
       const updated = { ...parsed, [paramName]: paramVal };
-      onChange(value, JSON.stringify(updated));
+      onChange(
+        value,
+        JSON.stringify(updated),
+        getCategoryGroup(displayTypeConfig?.category ?? ''),
+        prevCategory,
+      );
     }
   };
 
@@ -119,10 +144,12 @@ export const TypeSelector = ({
         >
           <span className="flex items-center gap-0.5 whitespace-nowrap">
             <span>{displayType || 'Type'}</span>
-            {params.length > 0 && (
+            {params.filter((p) => p.valueType !== 'string_array').length >
+              0 && (
               <>
                 <span>(</span>
                 {[...params]
+                  .filter((p) => p.valueType !== 'string_array')
                   .sort((a, b) => a.order - b.order)
                   .map((param, i) => (
                     <Fragment key={param.name}>

@@ -1,6 +1,7 @@
 import { type ColumnType, CONSTRAINT_PREFIX_MAP } from '../types';
 import type { Constraint } from '@/types';
 import { useChangeColumnName, useChangeColumnType } from './useColumnMutations';
+import { changeColumnMeta } from '../api';
 import {
   useCreateConstraint,
   useDeleteConstraint,
@@ -32,16 +33,15 @@ export const useColumn = (
     });
   };
 
-  const saveColumnType = (columnId: string, typeData: string) => {
-    const { dataType, lengthScale } = JSON.parse(typeData) as {
-      dataType: string;
-      lengthScale: string;
-    };
+  const saveColumnType = async (columnId: string, typeData: string) => {
+    const { dataType, lengthScale, category, prevCategory } =
+      JSON.parse(typeData);
     const params = JSON.parse(lengthScale || '{}') as Record<
       string,
       number | null
     >;
-    changeColumnTypeMutation.mutate({
+
+    const typePayload = {
       columnId,
       data: {
         dataType,
@@ -49,7 +49,29 @@ export const useColumn = (
         precision: params.precision ?? null,
         scale: params.scale ?? null,
       },
-    });
+    };
+
+    const isTextToNonText = prevCategory === 'string' && category !== 'string';
+    const isNonTextToText = prevCategory !== 'string' && category === 'string';
+
+    if (isTextToNonText) {
+      try {
+        await changeColumnMeta(columnId, { charset: '', collation: '' });
+      } catch {
+        return;
+      }
+      changeColumnTypeMutation.mutate(typePayload);
+    } else if (isNonTextToText) {
+      try {
+        await changeColumnTypeMutation.mutateAsync(typePayload);
+        await changeColumnMeta(columnId, {
+          charset: 'utf8mb4',
+          collation: 'utf8mb4_general_ci',
+        });
+      } catch {}
+    } else {
+      changeColumnTypeMutation.mutate(typePayload);
+    }
   };
 
   const saveColumnConstraint = (
