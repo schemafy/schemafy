@@ -10,7 +10,10 @@ import {
   Spline,
   MousePointer2,
   Hand,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
+import { useErdHistory } from '../history';
 
 interface ToolbarProps {
   setActiveTool: (toolId: string) => void;
@@ -67,6 +70,7 @@ export const Toolbar = ({
   onRelationshipConfigChange,
 }: ToolbarProps) => {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+  const { undo, redo, canUndo, canRedo } = useErdHistory();
 
   const handleToolClick = (toolId: string) => {
     if (toolId === 'search') {
@@ -88,6 +92,40 @@ export const Toolbar = ({
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
         }}
       >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={undo}
+              disabled={!canUndo}
+              variant={'none'}
+              size={'none'}
+              className="p-2 rounded-md transition-colors duration-200 hover:bg-schemafy-secondary disabled:opacity-30"
+            >
+              <Undo2 size={16} color="var(--color-schemafy-tools)" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Undo</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={redo}
+              disabled={!canRedo}
+              variant={'none'}
+              size={'none'}
+              className="p-2 rounded-md transition-colors duration-200 hover:bg-schemafy-secondary disabled:opacity-30"
+            >
+              <Redo2 size={16} color="var(--color-schemafy-tools)" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Redo</p>
+          </TooltipContent>
+        </Tooltip>
+
         {TOOLS.map((tool) => (
           <Tool
             key={tool.id}

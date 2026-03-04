@@ -10,6 +10,7 @@ import { useSelectedSchema } from '../contexts';
 import { useSchemas } from './useSchemas';
 import type { RelationshipConfig, Point } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
+import { useErdHistory } from '../history';
 
 const CURSOR_THROTTLE_MS = 100;
 
@@ -34,12 +35,41 @@ export const useCanvasController = () => {
     null,
   );
 
+  const { undo, redo } = useErdHistory();
+
   useEffect(() => {
     collaborationStore.connect(projectId);
     return () => {
       collaborationStore.disconnect();
     };
   }, [projectId]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (modKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (modKey && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
 
   useCanvasKeyboard({
     chatInputPosition,
