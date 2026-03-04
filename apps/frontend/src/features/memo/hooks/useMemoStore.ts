@@ -1,34 +1,35 @@
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useState,
-  createContext,
-  useContext,
 } from 'react';
-import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
+import { applyNodeChanges, type Node, type NodeChange } from '@xyflow/react';
 import * as memoApi from '../api/api';
 import type { Memo } from '../api/types';
 import {
+  type MemoData,
   stringifyPosition,
   transformApiMemoToNode,
-  type MemoData,
 } from './memo.helper';
-
-const SCHEMA_ID = '06DJEMTB2H3BE7JS6S0789B2FW';
+import { useSelectedSchema } from '@/features';
 
 export const useMemoStore = () => {
   const [storedMemos, setStoredMemos] = useState<Memo[]>([]);
   const [memos, setMemos] = useState<Node<MemoData>[]>([]);
+
+  const { selectedSchemaId } = useSelectedSchema();
 
   useEffect(() => {
     setMemos(storedMemos.map(transformApiMemoToNode));
   }, [storedMemos]);
 
   useEffect(() => {
-    if (!SCHEMA_ID) return;
+    if (!selectedSchemaId) return;
 
     memoApi
-      .getSchemaMemosWithComments(SCHEMA_ID)
+      .getSchemaMemosWithComments(selectedSchemaId)
       .then((memos) => {
         setStoredMemos(memos);
       })
@@ -43,7 +44,7 @@ export const useMemoStore = () => {
   ) => {
     try {
       const memo = await memoApi.createMemo({
-        schemaId: SCHEMA_ID,
+        schemaId: selectedSchemaId,
         positions: stringifyPosition(position),
         body: content,
       });
@@ -71,7 +72,7 @@ export const useMemoStore = () => {
 
   const onMemosChange = useCallback(
     (changes: NodeChange[]) => {
-      if (!SCHEMA_ID) return;
+      if (!selectedSchemaId) return;
 
       setMemos((nds) => applyNodeChanges(changes, nds) as Node<MemoData>[]);
 
