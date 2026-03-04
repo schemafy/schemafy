@@ -22,7 +22,7 @@ export class VendorService {
   ): Promise<DbVendorDetailResponse> {
     const response =
       await this.backendClient.client.get<DbVendorDetailResponse>(
-        `/api/v1.0/vendors/${displayName}`,
+        `/api/v1.0/vendors/${encodeURIComponent(displayName)}`,
         this.backendClient.getAuthConfig(authHeader),
       );
     return response.data;

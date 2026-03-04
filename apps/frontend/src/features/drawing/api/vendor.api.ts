@@ -10,7 +10,7 @@ export const getVendor = async (
   displayName: string,
 ): Promise<DbVendorDetail> => {
   const response = await apiClient.get<DbVendorDetail>(
-    `/vendors/${displayName}`,
+    `/vendors/${encodeURIComponent(displayName)}`,
   );
   return response.data;
 };
