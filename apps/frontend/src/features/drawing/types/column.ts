@@ -63,7 +63,12 @@ export interface TypeSelectorProps {
   lengthScale: string;
   vendorTypes: VendorDatatype[];
   disabled?: boolean;
-  onChange: (dataType: string, lengthScale: string, category: string, prevCategory: string) => void;
+  onChange: (
+    dataType: string,
+    lengthScale: string,
+    category: string,
+    prevCategory: string,
+  ) => void;
   onPendingChange?: (isPending: boolean) => void;
 }
 

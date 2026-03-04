@@ -9,9 +9,7 @@ import type {
 export class VendorService {
   constructor(private readonly backendClient: BackendClientService) {}
 
-  async listVendors(
-    authHeader: string,
-  ): Promise<DbVendorSummaryResponse[]> {
+  async listVendors(authHeader: string): Promise<DbVendorSummaryResponse[]> {
     const response = await this.backendClient.client.get<
       DbVendorSummaryResponse[]
     >('/api/v1.0/vendors', this.backendClient.getAuthConfig(authHeader));
@@ -22,12 +20,11 @@ export class VendorService {
     displayName: string,
     authHeader: string,
   ): Promise<DbVendorDetailResponse> {
-    const response = await this.backendClient.client.get<
-      DbVendorDetailResponse
-    >(
-      `/api/v1.0/vendors/${displayName}`,
-      this.backendClient.getAuthConfig(authHeader),
-    );
+    const response =
+      await this.backendClient.client.get<DbVendorDetailResponse>(
+        `/api/v1.0/vendors/${displayName}`,
+        this.backendClient.getAuthConfig(authHeader),
+      );
     return response.data;
   }
 }
