@@ -18,7 +18,7 @@ export const updateAffectedTablesInCache = async (
       (old) => (old ? {...old, ...snapshots} : snapshots),
     );
   } catch {
-    await queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       queryKey: erdKeys.schemaSnapshots(schemaId),
     });
   }

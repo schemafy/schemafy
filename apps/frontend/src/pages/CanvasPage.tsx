@@ -21,6 +21,7 @@ import {
   TempMemoPreview,
   useCanvasController,
   SelectedSchemaProvider,
+  ErdHistoryProvider,
 } from '@/features/drawing';
 import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
@@ -185,10 +186,12 @@ export const CanvasPage = () => {
   const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
 
   return (
-    <SelectedSchemaProvider projectId={projectId}>
-      <MemoProvider>
-        <CanvasContent />
-      </MemoProvider>
-    </SelectedSchemaProvider>
+    <ErdHistoryProvider>
+      <SelectedSchemaProvider projectId={projectId}>
+        <MemoProvider>
+          <CanvasContent />
+        </MemoProvider>
+      </SelectedSchemaProvider>
+    </ErdHistoryProvider>
   );
 };

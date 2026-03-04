@@ -26,7 +26,7 @@ export const ErdHistoryProvider = ({children}: { children: ReactNode }) => {
   const push = useCallback((command: ErdCommand) => {
     setUndoStack((prev) => {
       const last = prev[prev.length - 1];
-      if (last.merge) {
+      if (last?.merge) {
         const merged = last.merge(command);
         if (merged) {
           return [...prev.slice(0, -1), merged];

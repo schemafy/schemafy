@@ -12,6 +12,7 @@ import { ErrorBoundary } from '@/components';
 import { SelectedSchemaContext } from './useSelectedSchema';
 import { useSchemas } from '../hooks/useSchemas';
 import { useCreateSchema } from '../hooks/useSchemaMutations';
+import { useErdHistory } from '../history';
 
 const getStorageKey = (projectId: string) => `selectedSchemaId_${projectId}`;
 
@@ -73,17 +74,19 @@ export const SelectedSchemaProvider = ({
   } = useSchemas(projectId);
   const { mutate: createSchema, isError: isCreateSchemaError } =
     useCreateSchema(projectId);
+  const { clear: clearHistory } = useErdHistory();
 
   const setSelectedSchemaId = useCallback(
     (schemaId: string | null) => {
       setSelectedSchemaIdState(schemaId);
+      clearHistory();
       if (schemaId) {
         localStorage.setItem(storageKey, schemaId);
       } else {
         localStorage.removeItem(storageKey);
       }
     },
-    [storageKey],
+    [storageKey, clearHistory],
   );
 
   const createInitialSchema = useCallback(() => {
