@@ -95,6 +95,7 @@ export const useMemoStore = (schemaId: string) => {
   const deleteMemo = useCallback(
     async (id: string) => {
       try {
+        delete previousPositionsRef.current[id];
         const memo = storedMemosRef.current.find((m) => m.id === id);
         await memoApi.deleteMemo(id);
         setStoredMemos((prev) => prev.filter((m) => m.id !== id));
