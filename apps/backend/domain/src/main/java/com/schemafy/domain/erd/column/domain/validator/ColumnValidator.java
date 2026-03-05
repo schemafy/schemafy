@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 
 public final class ColumnValidator {
@@ -62,6 +62,7 @@ public final class ColumnValidator {
 
   private static final Set<String> LENGTH_REQUIRED_TYPES = Set.of("VARCHAR", "CHAR");
   private static final Set<String> PRECISION_REQUIRED_TYPES = Set.of("DECIMAL", "NUMERIC");
+  private static final Set<String> VALUES_REQUIRED_TYPES = Set.of("ENUM", "SET");
   private static final Set<String> INTEGER_TYPES = Set.of(
       "TINYINT",
       "SMALLINT",
@@ -131,15 +132,33 @@ public final class ColumnValidator {
     }
   }
 
-  public static void validateLengthScale(String dataType, ColumnLengthScale lengthScale) {
+  public static void validateTypeArguments(String dataType, ColumnTypeArguments typeArguments) {
     String normalized = normalizeDataType(dataType);
+    boolean hasValues = typeArguments != null && typeArguments.hasValues();
+
+    if (VALUES_REQUIRED_TYPES.contains(normalized)) {
+      if (!hasValues) {
+        throw new DomainException(ColumnErrorCode.INVALID_VALUE, "Values are required for data type: " + normalized);
+      }
+      if (typeArguments.length() != null || typeArguments.precision() != null || typeArguments.scale() != null) {
+        throw new DomainException(
+            ColumnErrorCode.INVALID_VALUE,
+            "length/precision/scale cannot be combined with values for data type: " + normalized);
+      }
+      return;
+    }
+
+    if (hasValues) {
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "Values are only allowed for ENUM/SET data types");
+    }
+
     if (LENGTH_REQUIRED_TYPES.contains(normalized)) {
-      if (lengthScale == null || lengthScale.length() == null) {
+      if (typeArguments == null || typeArguments.length() == null) {
         throw new DomainException(ColumnErrorCode.LENGTH_REQUIRED, "Length is required for data type: " + normalized);
       }
     }
     if (PRECISION_REQUIRED_TYPES.contains(normalized)) {
-      if (lengthScale == null || lengthScale.precision() == null || lengthScale.scale() == null) {
+      if (typeArguments == null || typeArguments.precision() == null || typeArguments.scale() == null) {
         throw new DomainException(ColumnErrorCode.PRECISION_REQUIRED,
             "Precision and scale are required for data type: " + normalized);
       }

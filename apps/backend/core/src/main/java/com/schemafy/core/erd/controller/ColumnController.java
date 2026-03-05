@@ -77,7 +77,8 @@ public class ColumnController {
         request.autoIncrement(),
         request.charset(),
         request.collation(),
-        request.comment());
+        request.comment(),
+        request.values());
     return createColumnUseCase.createColumn(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
@@ -130,7 +131,8 @@ public class ColumnController {
         request.dataType(),
         request.length(),
         request.precision(),
-        request.scale());
+        request.scale(),
+        request.values());
     return changeColumnTypeUseCase.changeColumnType(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))

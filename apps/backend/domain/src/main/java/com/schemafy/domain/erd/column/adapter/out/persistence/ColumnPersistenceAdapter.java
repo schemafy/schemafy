@@ -19,7 +19,7 @@ import com.schemafy.domain.erd.column.application.port.out.DeleteColumnsByTableI
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -75,11 +75,11 @@ class ColumnPersistenceAdapter implements
   public Mono<Void> changeColumnType(
       String columnId,
       String dataType,
-      ColumnLengthScale lengthScale) {
+      ColumnTypeArguments typeArguments) {
     return findColumnOrError(columnId)
         .flatMap((@NonNull ColumnEntity columnEntity) -> {
           columnEntity.setDataType(dataType);
-          columnEntity.setLengthScale(columnMapper.toLengthScaleJson(lengthScale));
+          columnEntity.setTypeArguments(columnMapper.toTypeArgumentsJson(typeArguments));
           return columnRepository.save(columnEntity);
         })
         .then();

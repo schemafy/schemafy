@@ -27,15 +27,19 @@ public class ColumnApiSnippets extends RestDocsSnippets {
           .description("컬럼 이름"),
       fieldWithPath(prefix + "dataType").type(JsonFieldType.STRING)
           .description("데이터 타입"),
-      fieldWithPath(prefix + "lengthScale").type(JsonFieldType.OBJECT)
+      fieldWithPath(prefix + "typeArguments").type(JsonFieldType.OBJECT)
           .description("길이/스케일 정보").optional(),
-      fieldWithPath(prefix + "lengthScale.length").type(JsonFieldType.NUMBER)
+      fieldWithPath(prefix + "typeArguments.length").type(JsonFieldType.NUMBER)
           .description("길이").optional(),
-      fieldWithPath(prefix + "lengthScale.precision").type(JsonFieldType.NUMBER)
+      fieldWithPath(prefix + "typeArguments.precision").type(JsonFieldType.NUMBER)
           .description("정밀도").optional(),
-      fieldWithPath(prefix + "lengthScale.scale").type(JsonFieldType.NUMBER)
+      fieldWithPath(prefix + "typeArguments.scale").type(JsonFieldType.NUMBER)
           .description("스케일").optional(),
-      fieldWithPath(prefix + "lengthScale.empty").type(JsonFieldType.BOOLEAN)
+      fieldWithPath(prefix + "typeArguments.values").type(JsonFieldType.ARRAY)
+          .description("ENUM/SET 값 목록").optional(),
+      fieldWithPath(prefix + "typeArguments.values[]").type(JsonFieldType.STRING)
+          .description("ENUM/SET 값").optional(),
+      fieldWithPath(prefix + "typeArguments.empty").type(JsonFieldType.BOOLEAN)
           .description("길이/스케일 비어있음 여부").optional(),
       fieldWithPath(prefix + "seqNo").type(JsonFieldType.NUMBER)
           .description("순서 번호"),
@@ -72,6 +76,10 @@ public class ColumnApiSnippets extends RestDocsSnippets {
             .description("정밀도 (DECIMAL 등에 사용)").optional(),
         fieldWithPath("scale").type(JsonFieldType.NUMBER)
             .description("스케일 (DECIMAL 등에 사용)").optional(),
+        fieldWithPath("values").type(JsonFieldType.ARRAY)
+            .description("ENUM/SET 값 목록").optional(),
+        fieldWithPath("values[]").type(JsonFieldType.STRING)
+            .description("ENUM/SET 값").optional(),
         fieldWithPath("autoIncrement").type(JsonFieldType.BOOLEAN)
             .description("자동 증가 여부 (미입력 시 false)").optional(),
         fieldWithPath("charset").type(JsonFieldType.STRING)
@@ -198,7 +206,11 @@ public class ColumnApiSnippets extends RestDocsSnippets {
         fieldWithPath("precision").type(JsonFieldType.NUMBER)
             .description("정밀도").optional(),
         fieldWithPath("scale").type(JsonFieldType.NUMBER)
-            .description("스케일").optional());
+            .description("스케일").optional(),
+        fieldWithPath("values").type(JsonFieldType.ARRAY)
+            .description("ENUM/SET 값 목록").optional(),
+        fieldWithPath("values[]").type(JsonFieldType.STRING)
+            .description("ENUM/SET 값").optional());
   }
 
   /** 컬럼 타입 변경 응답 헤더 */

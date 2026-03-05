@@ -66,7 +66,7 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
           column.tableId(),
           column.name(),
           column.dataType(),
-          column.lengthScale(),
+          column.typeArguments(),
           index,
           column.autoIncrement(),
           column.charset(),

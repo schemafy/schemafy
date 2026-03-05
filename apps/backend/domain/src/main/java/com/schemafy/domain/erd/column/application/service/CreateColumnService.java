@@ -13,7 +13,7 @@ import com.schemafy.domain.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.domain.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.domain.erd.schema.domain.Schema;
@@ -40,15 +40,16 @@ public class CreateColumnService implements CreateColumnUseCase {
 
   @Override
   public Mono<MutationResult<CreateColumnResult>> createColumn(CreateColumnCommand command) {
-    ColumnLengthScale lengthScale = ColumnLengthScale.from(
+    ColumnTypeArguments typeArguments = ColumnTypeArguments.from(
         command.length(),
         command.precision(),
-        command.scale());
+        command.scale(),
+        command.values());
 
     return getTableByIdPort.findTableById(command.tableId())
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
         .flatMap(table -> fetchSchemaAndColumns(table)
-            .flatMap(tuple -> createColumn(table, tuple, command, lengthScale))
+            .flatMap(tuple -> createColumn(table, tuple, command, typeArguments))
             .map(result -> MutationResult.of(result, table.id())))
         .as(transactionalOperator::transactional);
   }
@@ -65,7 +66,7 @@ public class CreateColumnService implements CreateColumnUseCase {
       Table table,
       Tuple2<Schema, List<Column>> tuple,
       CreateColumnCommand command,
-      ColumnLengthScale lengthScale) {
+      ColumnTypeArguments typeArguments) {
     Schema schema = tuple.getT1();
     List<Column> existingColumns = tuple.getT2();
     String normalizedName = normalizeName(command.name());
@@ -78,7 +79,7 @@ public class CreateColumnService implements CreateColumnUseCase {
     ColumnValidator.validateReservedKeyword(schema.dbVendorName(), normalizedName);
     ColumnValidator.validateNameUniqueness(existingColumns, normalizedName, null);
     ColumnValidator.validateDataType(normalizedDataType);
-    ColumnValidator.validateLengthScale(normalizedDataType, lengthScale);
+    ColumnValidator.validateTypeArguments(normalizedDataType, typeArguments);
     ColumnValidator.validateAutoIncrement(
         normalizedDataType,
         command.autoIncrement(),
@@ -95,7 +96,7 @@ public class CreateColumnService implements CreateColumnUseCase {
               table.id(),
               normalizedName,
               normalizedDataType,
-              lengthScale,
+              typeArguments,
               resolvedSeqNo,
               command.autoIncrement(),
               charset,
@@ -107,7 +108,7 @@ public class CreateColumnService implements CreateColumnUseCase {
                   savedColumn.id(),
                   savedColumn.name(),
                   savedColumn.dataType(),
-                  savedColumn.lengthScale(),
+                  savedColumn.typeArguments(),
                   savedColumn.seqNo(),
                   savedColumn.autoIncrement(),
                   savedColumn.charset(),

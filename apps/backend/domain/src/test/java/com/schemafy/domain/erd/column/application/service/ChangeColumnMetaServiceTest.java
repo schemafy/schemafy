@@ -19,7 +19,7 @@ import com.schemafy.domain.erd.column.application.port.out.ChangeColumnMetaPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
@@ -394,11 +394,11 @@ class ChangeColumnMetaServiceTest {
             PatchField.of("utf8mb4_unicode_ci"), PatchField.absent());
 
         var colA = new Column(colAId, "table-a", "pk_a", "VARCHAR",
-            new ColumnLengthScale(255, null, null), 0, false, null, null, null);
+            new ColumnTypeArguments(255, null, null), 0, false, null, null, null);
         var colB = new Column("col-b", "table-b", "fk_b", "VARCHAR",
-            new ColumnLengthScale(255, null, null), 0, false, null, null, null);
+            new ColumnTypeArguments(255, null, null), 0, false, null, null, null);
         var colC = new Column("col-c", "table-c", "fk_c", "VARCHAR",
-            new ColumnLengthScale(255, null, null), 0, false, null, null, null);
+            new ColumnTypeArguments(255, null, null), 0, false, null, null, null);
 
         var ccA = new ConstraintColumn("cc-a", "cst-a", colAId, 0);
         var cstA = new Constraint("cst-a", "table-a", "pk_a",

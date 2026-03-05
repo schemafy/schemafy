@@ -19,7 +19,7 @@ import com.schemafy.domain.erd.column.application.port.out.ChangeColumnTypePort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
@@ -148,6 +148,35 @@ class ChangeColumnTypeServiceTest {
             .changeColumnType(eq(command.columnId()), eq("TEXT"), any());
       }
 
+      @Test
+      @DisplayName("VARCHAR에서 ENUM(values)으로 변경한다")
+      void changesVarcharToEnumWithValues() {
+        var command = new com.schemafy.domain.erd.column.application.port.in.ChangeColumnTypeCommand(
+            ColumnFixture.DEFAULT_ID,
+            "ENUM",
+            null,
+            null,
+            null,
+            List.of("ACTIVE", "INACTIVE"));
+        var column = ColumnFixture.defaultColumn();
+
+        given(getColumnByIdPort.findColumnById(any()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(column)));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
+            .willReturn(Mono.just(List.of()));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(changeColumnTypePort).should()
+            .changeColumnType(eq(command.columnId()), eq("ENUM"), any());
+      }
+
     }
 
     @Nested
@@ -196,6 +225,30 @@ class ChangeColumnTypeServiceTest {
     }
 
     @Nested
+    @DisplayName("ENUM으로 변경할 때 values가 없으면")
+    class WhenEnumWithoutValues {
+
+      @Test
+      @DisplayName("INVALID_VALUE 예외가 발생한다")
+      void throwsInvalidValueException() {
+        var command = ColumnFixture.changeTypeCommand("ENUM", null, null, null);
+        var column = ColumnFixture.defaultColumn();
+
+        given(getColumnByIdPort.findColumnById(any()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(column)));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
+            .verify();
+
+        then(changeColumnTypePort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
     @DisplayName("autoIncrement 컬럼을 VARCHAR로 변경하면")
     class WhenAutoIncrementToVarchar {
 
@@ -232,7 +285,7 @@ class ChangeColumnTypeServiceTest {
             ColumnFixture.DEFAULT_TABLE_ID,
             ColumnFixture.DEFAULT_NAME,
             "VARCHAR",
-            new ColumnLengthScale(255, null, null),
+            new ColumnTypeArguments(255, null, null),
             ColumnFixture.DEFAULT_SEQ_NO,
             false,
             "utf8mb4",
