@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   createContext,
   useContext,
@@ -13,75 +14,126 @@ import {
   transformApiMemoToNode,
   type MemoData,
 } from './memo.helper';
+import { useErdHistory } from '@/features/drawing/history';
+import {
+  CreateMemoCommand,
+  DeleteMemoCommand,
+  MoveMemoCommand,
+  CreateCommentCommand,
+  DeleteCommentCommand,
+  UpdateCommentCommand,
+} from '../history/MemoCommands';
 
-const SCHEMA_ID = '06DJEMTB2H3BE7JS6S0789B2FW';
-
-export const useMemoStore = () => {
+export const useMemoStore = (schemaId: string) => {
+  const { push } = useErdHistory();
   const [storedMemos, setStoredMemos] = useState<Memo[]>([]);
   const [memos, setMemos] = useState<Node<MemoData>[]>([]);
+
+  const storedMemosRef = useRef(storedMemos);
+  storedMemosRef.current = storedMemos;
+
+  const previousPositionsRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     setMemos(storedMemos.map(transformApiMemoToNode));
   }, [storedMemos]);
 
   useEffect(() => {
-    if (!SCHEMA_ID) return;
-
+    if (!schemaId) return;
     memoApi
-      .getSchemaMemosWithComments(SCHEMA_ID)
-      .then((memos) => {
-        setStoredMemos(memos);
-      })
-      .catch((error) => {
-        console.error('Failed to fetch memos:', error);
-      });
-  }, []);
+      .getSchemaMemosWithComments(schemaId)
+      .then(setStoredMemos)
+      .catch(console.error);
+  }, [schemaId]);
 
   const createMemo = async (
     position: { x: number; y: number },
     content: string,
   ) => {
     try {
-      const memo = await memoApi.createMemo({
-        schemaId: SCHEMA_ID,
+      const originalRequest = {
+        schemaId,
         positions: stringifyPosition(position),
         body: content,
-      });
+      };
+      const memo = await memoApi.createMemo(originalRequest);
       setStoredMemos((prev) => [memo, ...prev]);
+      push(
+        new CreateMemoCommand({
+          memoId: memo.id,
+          originalRequest,
+          setStoredMemos,
+        }),
+      );
     } catch {}
   };
 
-  const updateMemo = useCallback(async (id: string, positions: string) => {
-    try {
-      const updated = await memoApi.updateMemo(id, { positions });
-      setStoredMemos((prev) =>
-        prev.map((m) =>
-          m.id === id ? { ...updated, comments: m.comments } : m,
-        ),
-      );
-    } catch {}
-  }, []);
+  const updateMemo = useCallback(
+    async (id: string, positions: string, previousPositions?: string) => {
+      try {
+        const updated = await memoApi.updateMemo(id, { positions });
+        setStoredMemos((prev) =>
+          prev.map((m) =>
+            m.id === id ? { ...updated, comments: m.comments } : m,
+          ),
+        );
+        if (previousPositions !== undefined && previousPositions !== positions) {
+          push(
+            new MoveMemoCommand({
+              memoId: id,
+              previousPositions,
+              newPositions: positions,
+              setStoredMemos,
+            }),
+          );
+        }
+      } catch {}
+    },
+    [push],
+  );
 
-  const deleteMemo = useCallback(async (id: string) => {
-    try {
-      await memoApi.deleteMemo(id);
-      setStoredMemos((prev) => prev.filter((m) => m.id !== id));
-    } catch {}
-  }, []);
+  const deleteMemo = useCallback(
+    async (id: string) => {
+      try {
+        const memo = storedMemosRef.current.find((m) => m.id === id);
+        await memoApi.deleteMemo(id);
+        setStoredMemos((prev) => prev.filter((m) => m.id !== id));
+        if (memo) {
+          push(new DeleteMemoCommand({ memo, setStoredMemos }));
+        }
+      } catch {}
+    },
+    [push],
+  );
 
   const onMemosChange = useCallback(
     (changes: NodeChange[]) => {
-      if (!SCHEMA_ID) return;
-
       setMemos((nds) => applyNodeChanges(changes, nds) as Node<MemoData>[]);
 
       changes.forEach((change) => {
-        if (change.type === 'position' && !change.dragging && change.position) {
-          updateMemo(change.id, stringifyPosition(change.position));
+        if (change.type === 'position') {
+          if (change.dragging) {
+            if (!previousPositionsRef.current[change.id]) {
+              const memo = storedMemosRef.current.find(
+                (m) => m.id === change.id,
+              );
+              if (memo) {
+                previousPositionsRef.current[change.id] = memo.positions;
+              }
+            }
+          } else if (change.position) {
+            const previousPositions = previousPositionsRef.current[change.id];
+            delete previousPositionsRef.current[change.id];
+            void updateMemo(
+              change.id,
+              stringifyPosition(change.position),
+              previousPositions,
+            );
+          }
         }
 
         if (change.type === 'remove') {
-          deleteMemo(change.id);
+          void deleteMemo(change.id);
         }
       });
     },
@@ -96,6 +148,14 @@ export const useMemoStore = () => {
           m.id === memoId ? { ...m, comments: [...m.comments, comment] } : m,
         ),
       );
+      push(
+        new CreateCommentCommand({
+          memoId,
+          commentId: comment.id,
+          originalBody: body,
+          setStoredMemos,
+        }),
+      );
     } catch {}
   };
 
@@ -105,6 +165,10 @@ export const useMemoStore = () => {
     body: string,
   ) => {
     try {
+      const previousBody =
+        storedMemosRef.current
+          .find((m) => m.id === memoId)
+          ?.comments.find((c) => c.id === commentId)?.body ?? '';
       const updated = await memoApi.updateMemoComment(memoId, commentId, {
         body,
       });
@@ -120,20 +184,34 @@ export const useMemoStore = () => {
             : m,
         ),
       );
+      push(
+        new UpdateCommentCommand({
+          memoId,
+          commentId,
+          previousBody,
+          newBody: body,
+          setStoredMemos,
+        }),
+      );
     } catch {}
   };
 
   const deleteComment = async (memoId: string, commentId: string) => {
     try {
+      const comment = storedMemosRef.current
+        .find((m) => m.id === memoId)
+        ?.comments.find((c) => c.id === commentId);
       await memoApi.deleteMemoComment(memoId, commentId);
-      setStoredMemos((prev) => {
-        const updated = prev.map((m) =>
+      setStoredMemos((prev) =>
+        prev.map((m) =>
           m.id === memoId
             ? { ...m, comments: m.comments.filter((c) => c.id !== commentId) }
             : m,
-        );
-        return updated.filter((m) => m.id !== memoId || m.comments.length > 0);
-      });
+        ),
+      );
+      if (comment) {
+        push(new DeleteCommentCommand({ memoId, comment, setStoredMemos }));
+      }
     } catch {}
   };
 
