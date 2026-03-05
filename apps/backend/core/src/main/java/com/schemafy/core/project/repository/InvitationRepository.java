@@ -52,6 +52,7 @@ public interface InvitationRepository
         AND invited_email = :email
         AND status = :status
         AND deleted_at IS NULL
+        AND expires_at > NOW()
       """)
   Mono<Long> countByTargetAndEmailAndStatus(
       String targetType,
@@ -65,6 +66,7 @@ public interface InvitationRepository
         AND invited_email = :email
         AND status = :status
         AND deleted_at IS NULL
+        AND expires_at > NOW()
       ORDER BY created_at DESC
       LIMIT :limit OFFSET :offset
       """)
@@ -81,6 +83,7 @@ public interface InvitationRepository
         AND invited_email = :email
         AND status = :status
         AND deleted_at IS NULL
+        AND expires_at > NOW()
       """)
   Mono<Long> countByEmailAndTypeAndStatus(
       String email,
@@ -95,6 +98,7 @@ public interface InvitationRepository
         AND target_id = :targetId
         AND invited_email = :email
         AND status = :currentStatus
+        AND expires_at > NOW()
         AND deleted_at IS NULL
         AND id != :excludeId
       """)

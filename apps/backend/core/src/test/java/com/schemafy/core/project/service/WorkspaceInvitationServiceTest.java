@@ -219,6 +219,32 @@ class WorkspaceInvitationServiceTest {
     }
 
     @Test
+    @DisplayName("만료된 pending 초대는 중복 체크에서 제외된다")
+    void createInvitation_ExpiredPending_DoesNotBlock() {
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
+          WorkspaceRole.MEMBER);
+
+      Invitation expiredInvitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(),
+          request.email(),
+          request.role(),
+          adminUser.getId());
+      expiredInvitation = invitationRepository.save(expiredInvitation).block();
+      ReflectionTestUtils.setField(expiredInvitation, "expiresAt", Instant.now().minusSeconds(3600));
+      invitationRepository.save(expiredInvitation).block();
+      final String expiredInvitationId = expiredInvitation.getId();
+
+      StepVerifier.create(
+          invitationService.createInvitation(
+              testWorkspace.getId(), request.email(), request.role(), adminUser.getId()))
+          .assertNext(response -> {
+            assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.name());
+            assertThat(response.getId()).isNotEqualTo(expiredInvitationId);
+          })
+          .verifyComplete();
+    }
+
+    @Test
     @DisplayName("존재하지 않는 워크스페이스에 초대하면 실패한다")
     void createInvitation_WorkspaceNotFound_Fails() {
       CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
@@ -428,6 +454,32 @@ class WorkspaceInvitationServiceTest {
             assertThat(page.content()).hasSize(1);
             assertThat(page.totalElements()).isEqualTo(1);
             assertThat(page.content().get(0).getId()).isEqualTo(pendingId);
+          })
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("만료된 pending 초대는 목록에 포함되지 않는다")
+    void listMyInvitations_ExcludesExpiredPending() {
+      Invitation activePending = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(), invitedUser.getEmail(), WorkspaceRole.MEMBER, adminUser.getId());
+      activePending = invitationRepository.save(activePending).block();
+      final String activePendingId = activePending.getId();
+
+      Workspace workspace2 = Workspace.create("Workspace 2", "Description 2");
+      workspace2 = workspaceRepository.save(workspace2).block();
+      Invitation expiredPending = Invitation.createWorkspaceInvitation(
+          workspace2.getId(), invitedUser.getEmail(), WorkspaceRole.ADMIN, adminUser.getId());
+      expiredPending = invitationRepository.save(expiredPending).block();
+      ReflectionTestUtils.setField(expiredPending, "expiresAt", Instant.now().minusSeconds(3600));
+      invitationRepository.save(expiredPending).block();
+
+      StepVerifier.create(
+          invitationService.listMyInvitations(invitedUser.getId(), 0, 10))
+          .assertNext(page -> {
+            assertThat(page.content()).hasSize(1);
+            assertThat(page.totalElements()).isEqualTo(1);
+            assertThat(page.content().get(0).getId()).isEqualTo(activePendingId);
           })
           .verifyComplete();
     }
@@ -673,6 +725,35 @@ class WorkspaceInvitationServiceTest {
       Invitation other = invitationRepository.findById(otherPendingId).block();
       assertThat(other.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
       assertThat(other.getResolvedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("초대 수락 시 만료된 pending 초대는 cancelled 되지 않는다")
+    void acceptInvitation_DoesNotCancelExpiredPendingInvitations() {
+      Invitation invitation1 = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          WorkspaceRole.MEMBER,
+          adminUser.getId());
+      invitation1 = invitationRepository.save(invitation1).block();
+
+      Invitation expiredPending = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          WorkspaceRole.ADMIN,
+          adminUser.getId());
+      expiredPending = invitationRepository.save(expiredPending).block();
+      ReflectionTestUtils.setField(expiredPending, "expiresAt", Instant.now().minusSeconds(3600));
+      invitationRepository.save(expiredPending).block();
+
+      invitationService.acceptInvitation(invitation1.getId(), invitedUser.getId()).block();
+
+      Invitation accepted = invitationRepository.findById(invitation1.getId()).block();
+      assertThat(accepted.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
+
+      Invitation expiredOther = invitationRepository.findById(expiredPending.getId()).block();
+      assertThat(expiredOther.getStatusAsEnum()).isEqualTo(InvitationStatus.PENDING);
+      assertThat(expiredOther.getResolvedAt()).isNull();
     }
 
     @Test
