@@ -1,9 +1,11 @@
 import type { DragEvent } from 'react';
+import type { VendorDatatype } from '../api';
 
 export type ColumnType = {
   id: string;
   name: string;
   type: string;
+  lengthScale: string;
   isPrimaryKey: boolean;
   isForeignKey: boolean;
   isNotNull: boolean;
@@ -14,6 +16,7 @@ export interface ColumnRowProps {
   column: ColumnType;
   isEditMode: boolean;
   isLastColumn: boolean;
+  vendorTypes: VendorDatatype[];
   draggedItem: string | null;
   dragOverItem: string | null;
   onDragStart: (e: DragEvent, columnId: string) => void;
@@ -27,11 +30,13 @@ export interface ColumnRowProps {
     value: string | boolean,
   ) => void;
   onRemoveColumn: (columnId: string) => void;
+  onPendingChange?: (columnId: string, isPending: boolean) => void;
 }
 
 export interface EditModeColumnProps {
   column: ColumnType;
   isLastColumn: boolean;
+  vendorTypes: VendorDatatype[];
   onDragStart: (e: DragEvent, columnId: string) => void;
   onDragEnd: () => void;
   onUpdateColumn: (
@@ -40,6 +45,7 @@ export interface EditModeColumnProps {
     value: string | boolean,
   ) => void;
   onRemoveColumn: (columnId: string) => void;
+  onPendingChange?: (isPending: boolean) => void;
 }
 
 export interface ViewModeColumnProps {
@@ -54,8 +60,16 @@ export interface DragHandleProps {
 
 export interface TypeSelectorProps {
   value: string;
+  lengthScale: string;
+  vendorTypes: VendorDatatype[];
   disabled?: boolean;
-  onChange: (value: string) => void;
+  onChange: (
+    dataType: string,
+    lengthScale: string,
+    category: string,
+    prevCategory: string,
+  ) => void;
+  onPendingChange?: (isPending: boolean) => void;
 }
 
 export interface ColumnConstraintsProps {
@@ -70,28 +84,6 @@ export interface ColumnConstraintsProps {
 export interface ColumnBadgesProps {
   column: ColumnType;
 }
-
-// TODO: 데이터 타입은 백엔드에서 length_scale이랑 같이 제공
-export const DATA_TYPES = [
-  'VARCHAR',
-  'CHAR',
-  'TEXT',
-  'LONGTEXT',
-  'INT',
-  'BIGINT',
-  'SMALLINT',
-  'TINYINT',
-  'DECIMAL',
-  'FLOAT',
-  'DOUBLE',
-  'DATETIME',
-  'DATE',
-  'TIME',
-  'TIMESTAMP',
-  'BOOLEAN',
-  'JSON',
-  'UUID',
-];
 
 export const CONSTRAINTS = [
   {
