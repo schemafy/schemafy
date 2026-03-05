@@ -1,10 +1,11 @@
 import { type ColumnType, CONSTRAINT_PREFIX_MAP } from '../types';
 import type { Constraint } from '@/types';
 import { useChangeColumnName, useChangeColumnType } from './useColumnMutations';
+import { changeColumnMeta } from '../api';
 import {
-  useAddConstraintColumn,
   useCreateConstraint,
   useDeleteConstraint,
+  useAddConstraintColumn,
   useRemoveConstraintColumn,
 } from './useConstraintMutations';
 import { useDebouncedMutation } from './useDebouncedMutation';
@@ -17,7 +18,7 @@ export const useColumn = (
 ) => {
   const changeColumnNameMutation = useChangeColumnName(schemaId);
   const debouncedChangeColumnName = useDebouncedMutation(
-    changeColumnNameMutation
+    changeColumnNameMutation,
   );
   const changeColumnTypeMutation = useChangeColumnType(schemaId);
   const createConstraintMutation = useCreateConstraint(schemaId);
@@ -28,15 +29,49 @@ export const useColumn = (
   const saveColumnName = (columnId: string, name: string) => {
     debouncedChangeColumnName.mutate({
       columnId,
-      data: {newName: name},
+      data: { newName: name },
     });
   };
 
-  const saveColumnType = (columnId: string, dataType: string) => {
-    changeColumnTypeMutation.mutate({
+  const saveColumnType = async (columnId: string, typeData: string) => {
+    const { dataType, lengthScale, category, prevCategory } =
+      JSON.parse(typeData);
+    const params = JSON.parse(lengthScale || '{}') as Record<
+      string,
+      number | null
+    >;
+
+    const typePayload = {
       columnId,
-      data: {dataType},
-    });
+      data: {
+        dataType,
+        length: params.length ?? null,
+        precision: params.precision ?? null,
+        scale: params.scale ?? null,
+      },
+    };
+
+    const isTextToNonText = prevCategory === 'string' && category !== 'string';
+    const isNonTextToText = prevCategory !== 'string' && category === 'string';
+
+    if (isTextToNonText) {
+      try {
+        await changeColumnMeta(columnId, { charset: '', collation: '' });
+      } catch {
+        return;
+      }
+      changeColumnTypeMutation.mutate(typePayload);
+    } else if (isNonTextToText) {
+      try {
+        await changeColumnTypeMutation.mutateAsync(typePayload);
+        await changeColumnMeta(columnId, {
+          charset: 'utf8mb4',
+          collation: 'utf8mb4_general_ci',
+        });
+      } catch {}
+    } else {
+      changeColumnTypeMutation.mutate(typePayload);
+    }
   };
 
   const saveColumnConstraint = (
@@ -69,7 +104,7 @@ export const useColumn = (
             tableId,
             name: `pk_${tableName}`,
             kind: 'PRIMARY_KEY',
-            columns: [{columnId, seqNo: 0}],
+            columns: [{ columnId, seqNo: 0 }],
           });
         }
       } else {
@@ -78,7 +113,7 @@ export const useColumn = (
           tableId,
           name: `${prefix}_${columnId}`,
           kind: constraintKind,
-          columns: [{columnId, seqNo: 0}],
+          columns: [{ columnId, seqNo: 0 }],
         });
       }
     } else if (!enabled && existingConstraint) {
