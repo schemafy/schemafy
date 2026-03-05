@@ -166,7 +166,7 @@ public class PkCascadeHelper {
                         fkTableId,
                         fkColumnName,
                         pkColumn.dataType(),
-                        pkColumn.lengthScale(),
+                        pkColumn.typeArguments(),
                         fkColumns.size(),
                         false,
                         pkColumn.charset(),

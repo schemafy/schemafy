@@ -11,7 +11,7 @@ import com.schemafy.domain.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnQuery;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 
 public class ColumnFixture {
 
@@ -28,7 +28,7 @@ public class ColumnFixture {
         DEFAULT_TABLE_ID,
         DEFAULT_NAME,
         DEFAULT_DATA_TYPE,
-        new ColumnLengthScale(DEFAULT_LENGTH, null, null),
+        new ColumnTypeArguments(DEFAULT_LENGTH, null, null),
         DEFAULT_SEQ_NO,
         false,
         null,
@@ -42,7 +42,7 @@ public class ColumnFixture {
         DEFAULT_TABLE_ID,
         DEFAULT_NAME,
         DEFAULT_DATA_TYPE,
-        new ColumnLengthScale(DEFAULT_LENGTH, null, null),
+        new ColumnTypeArguments(DEFAULT_LENGTH, null, null),
         DEFAULT_SEQ_NO,
         false,
         null,
@@ -56,7 +56,7 @@ public class ColumnFixture {
         DEFAULT_TABLE_ID,
         name,
         DEFAULT_DATA_TYPE,
-        new ColumnLengthScale(DEFAULT_LENGTH, null, null),
+        new ColumnTypeArguments(DEFAULT_LENGTH, null, null),
         DEFAULT_SEQ_NO,
         false,
         null,
@@ -70,7 +70,7 @@ public class ColumnFixture {
         DEFAULT_TABLE_ID,
         name,
         DEFAULT_DATA_TYPE,
-        new ColumnLengthScale(DEFAULT_LENGTH, null, null),
+        new ColumnTypeArguments(DEFAULT_LENGTH, null, null),
         DEFAULT_SEQ_NO,
         false,
         null,
@@ -78,13 +78,13 @@ public class ColumnFixture {
         null);
   }
 
-  public static Column columnWithDataType(String dataType, ColumnLengthScale lengthScale) {
+  public static Column columnWithDataType(String dataType, ColumnTypeArguments typeArguments) {
     return new Column(
         DEFAULT_ID,
         DEFAULT_TABLE_ID,
         DEFAULT_NAME,
         dataType,
-        lengthScale,
+        typeArguments,
         DEFAULT_SEQ_NO,
         false,
         null,
@@ -140,7 +140,7 @@ public class ColumnFixture {
         DEFAULT_TABLE_ID,
         DEFAULT_NAME,
         "DECIMAL",
-        new ColumnLengthScale(null, 10, 2),
+        new ColumnTypeArguments(null, 10, 2),
         DEFAULT_SEQ_NO,
         false,
         null,
@@ -154,7 +154,7 @@ public class ColumnFixture {
         DEFAULT_TABLE_ID,
         DEFAULT_NAME,
         DEFAULT_DATA_TYPE,
-        new ColumnLengthScale(DEFAULT_LENGTH, null, null),
+        new ColumnTypeArguments(DEFAULT_LENGTH, null, null),
         DEFAULT_SEQ_NO,
         false,
         charset,
@@ -168,7 +168,7 @@ public class ColumnFixture {
         DEFAULT_TABLE_ID,
         DEFAULT_NAME,
         DEFAULT_DATA_TYPE,
-        new ColumnLengthScale(DEFAULT_LENGTH, null, null),
+        new ColumnTypeArguments(DEFAULT_LENGTH, null, null),
         DEFAULT_SEQ_NO,
         false,
         charset,
@@ -323,7 +323,7 @@ public class ColumnFixture {
         DEFAULT_ID,
         DEFAULT_NAME,
         DEFAULT_DATA_TYPE,
-        new ColumnLengthScale(DEFAULT_LENGTH, null, null),
+        new ColumnTypeArguments(DEFAULT_LENGTH, null, null),
         DEFAULT_SEQ_NO,
         false,
         null,
@@ -336,7 +336,7 @@ public class ColumnFixture {
         column.id(),
         column.name(),
         column.dataType(),
-        column.lengthScale(),
+        column.typeArguments(),
         column.seqNo(),
         column.autoIncrement(),
         column.charset(),

@@ -3,7 +3,7 @@ package com.schemafy.domain.erd.column.adapter.out.persistence;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 
 @Component
 class ColumnMapper {
@@ -14,7 +14,7 @@ class ColumnMapper {
         column.tableId(),
         column.name(),
         column.dataType(),
-        toLengthScaleJson(column.lengthScale()),
+        toTypeArgumentsJson(column.typeArguments()),
         column.seqNo(),
         column.autoIncrement(),
         column.charset(),
@@ -28,7 +28,7 @@ class ColumnMapper {
         entity.getTableId(),
         entity.getName(),
         entity.getDataType(),
-        ColumnLengthScale.fromJson(entity.getLengthScale()),
+        ColumnTypeArguments.fromJson(entity.getTypeArguments()),
         entity.getSeqNo(),
         Boolean.TRUE.equals(entity.getAutoIncrement()),
         entity.getCharset(),
@@ -36,11 +36,11 @@ class ColumnMapper {
         entity.getComment());
   }
 
-  String toLengthScaleJson(ColumnLengthScale lengthScale) {
-    if (lengthScale == null) {
+  String toTypeArgumentsJson(ColumnTypeArguments typeArguments) {
+    if (typeArguments == null) {
       return null;
     }
-    return lengthScale.toJson();
+    return typeArguments.toJson();
   }
 
 }

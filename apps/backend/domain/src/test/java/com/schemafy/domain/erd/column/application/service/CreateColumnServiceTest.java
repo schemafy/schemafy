@@ -101,7 +101,7 @@ class CreateColumnServiceTest {
               assertThat(payload.columnId()).isEqualTo(ColumnFixture.DEFAULT_ID);
               assertThat(payload.name()).isEqualTo(command.name());
               assertThat(payload.dataType()).isEqualTo("VARCHAR");
-              assertThat(payload.lengthScale().length()).isEqualTo(command.length());
+              assertThat(payload.typeArguments().length()).isEqualTo(command.length());
             })
             .verifyComplete();
 
@@ -130,7 +130,7 @@ class CreateColumnServiceTest {
             .assertNext(result -> {
               var payload = result.result();
               assertThat(payload.dataType()).isEqualTo("INT");
-              assertThat(payload.lengthScale()).isNull();
+              assertThat(payload.typeArguments()).isNull();
             })
             .verifyComplete();
       }
@@ -157,8 +157,46 @@ class CreateColumnServiceTest {
             .assertNext(result -> {
               var payload = result.result();
               assertThat(payload.dataType()).isEqualTo("DECIMAL");
-              assertThat(payload.lengthScale().precision()).isEqualTo(10);
-              assertThat(payload.lengthScale().scale()).isEqualTo(2);
+              assertThat(payload.typeArguments().precision()).isEqualTo(10);
+              assertThat(payload.typeArguments().scale()).isEqualTo(2);
+            })
+            .verifyComplete();
+      }
+
+      @Test
+      @DisplayName("ENUM 컬럼을 values와 함께 생성한다")
+      void createsEnumColumnWithValues() {
+        var command = new com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand(
+            ColumnFixture.DEFAULT_TABLE_ID,
+            "status",
+            "ENUM",
+            null,
+            null,
+            null,
+            false,
+            null,
+            null,
+            null,
+            List.of("ACTIVE", "INACTIVE"));
+        var table = createTable();
+        var schema = createSchema();
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(ulidGeneratorPort.generate())
+            .willReturn(ColumnFixture.DEFAULT_ID);
+        given(createColumnPort.createColumn(any(Column.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createColumn(command))
+            .assertNext(result -> {
+              var payload = result.result();
+              assertThat(payload.dataType()).isEqualTo("ENUM");
+              assertThat(payload.typeArguments().values()).containsExactly("ACTIVE", "INACTIVE");
             })
             .verifyComplete();
       }
@@ -197,6 +235,43 @@ class CreateColumnServiceTest {
         StepVerifier.create(sut.createColumn(command))
             .assertNext(result -> assertThat(result.result().seqNo()).isEqualTo(2))
             .verifyComplete();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("ENUM에 values가 없으면")
+    class WhenEnumWithoutValues {
+
+      @Test
+      @DisplayName("INVALID_VALUE 예외가 발생한다")
+      void throwsInvalidValueException() {
+        var command = new com.schemafy.domain.erd.column.application.port.in.CreateColumnCommand(
+            ColumnFixture.DEFAULT_TABLE_ID,
+            "status",
+            "ENUM",
+            null,
+            null,
+            null,
+            false,
+            null,
+            null,
+            null);
+        var table = createTable();
+        var schema = createSchema();
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+
+        StepVerifier.create(sut.createColumn(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
+            .verify();
+
+        then(createColumnPort).shouldHaveNoInteractions();
       }
 
     }

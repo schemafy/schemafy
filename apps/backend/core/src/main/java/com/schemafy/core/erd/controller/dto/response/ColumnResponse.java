@@ -2,14 +2,14 @@ package com.schemafy.core.erd.controller.dto.response;
 
 import com.schemafy.domain.erd.column.application.port.in.CreateColumnResult;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 
 public record ColumnResponse(
     String id,
     String tableId,
     String name,
     String dataType,
-    ColumnLengthScale lengthScale,
+    ColumnTypeArguments typeArguments,
     int seqNo,
     boolean autoIncrement,
     String charset,
@@ -22,7 +22,7 @@ public record ColumnResponse(
         tableId,
         result.name(),
         result.dataType(),
-        result.lengthScale(),
+        result.typeArguments(),
         result.seqNo(),
         result.autoIncrement(),
         result.charset(),
@@ -36,7 +36,7 @@ public record ColumnResponse(
         column.tableId(),
         column.name(),
         column.dataType(),
-        column.lengthScale(),
+        column.typeArguments(),
         column.seqNo(),
         column.autoIncrement(),
         column.charset(),

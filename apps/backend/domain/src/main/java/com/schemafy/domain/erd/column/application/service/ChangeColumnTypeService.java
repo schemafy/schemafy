@@ -17,7 +17,7 @@ import com.schemafy.domain.erd.column.application.port.out.ChangeColumnTypePort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.domain.erd.constraint.application.port.out.GetConstraintByIdPort;
@@ -48,10 +48,11 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
 
   @Override
   public Mono<MutationResult<Void>> changeColumnType(ChangeColumnTypeCommand command) {
-    ColumnLengthScale lengthScale = ColumnLengthScale.from(
+    ColumnTypeArguments typeArguments = ColumnTypeArguments.from(
         command.length(),
         command.precision(),
-        command.scale());
+        command.scale(),
+        command.values());
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
 
     return rejectIfForeignKeyColumn(command.columnId())
@@ -65,7 +66,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                   column,
                   columns,
                   command.dataType(),
-                  lengthScale,
+                  typeArguments,
                   affectedTableIds));
         })
         .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
@@ -89,11 +90,11 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
       Column column,
       List<Column> columns,
       String dataType,
-      ColumnLengthScale lengthScale,
+      ColumnTypeArguments typeArguments,
       Set<String> affectedTableIds) {
     String normalizedDataType = ColumnValidator.normalizeDataType(dataType);
     ColumnValidator.validateDataType(normalizedDataType);
-    ColumnValidator.validateLengthScale(normalizedDataType, lengthScale);
+    ColumnValidator.validateTypeArguments(normalizedDataType, typeArguments);
     ColumnValidator.validateAutoIncrement(
         normalizedDataType,
         column.autoIncrement(),
@@ -104,11 +105,11 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         column.charset(),
         column.collation());
 
-    return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, lengthScale)
+    return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, typeArguments)
         .then(cascadeTypeToFkColumns(
             column,
             normalizedDataType,
-            lengthScale,
+            typeArguments,
             new HashSet<>(),
             affectedTableIds));
   }
@@ -116,7 +117,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
   private Mono<Void> cascadeTypeToFkColumns(
       Column pkColumn,
       String dataType,
-      ColumnLengthScale lengthScale,
+      ColumnTypeArguments typeArguments,
       Set<String> visited,
       Set<String> affectedTableIds) {
     if (!visited.add(pkColumn.id())) {
@@ -131,7 +132,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
             .flatMap(pk -> propagateTypeToFkColumns(
                 pkColumn,
                 dataType,
-                lengthScale,
+                typeArguments,
                 visited,
                 affectedTableIds)));
   }
@@ -139,7 +140,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
   private Mono<Void> propagateTypeToFkColumns(
       Column pkColumn,
       String dataType,
-      ColumnLengthScale lengthScale,
+      ColumnTypeArguments typeArguments,
       Set<String> visited,
       Set<String> affectedTableIds) {
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId())
@@ -154,7 +155,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
               .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
               .flatMap(rc -> {
                 Mono<Void> changeType = changeColumnTypePort.changeColumnType(
-                    rc.fkColumnId(), dataType, lengthScale);
+                    rc.fkColumnId(), dataType, typeArguments);
                 Mono<Void> clearCharsetCollation = ColumnValidator.isTextType(dataType)
                     ? Mono.empty()
                     : changeColumnMetaPort.changeColumnMeta(
@@ -170,7 +171,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                         .flatMap(fkCol -> cascadeTypeToFkColumns(
                             fkCol,
                             dataType,
-                            lengthScale,
+                            typeArguments,
                             visited,
                             affectedTableIds)));
               });

@@ -24,8 +24,8 @@ class ColumnTest {
       assertThat(column.tableId()).isEqualTo(ColumnFixture.DEFAULT_TABLE_ID);
       assertThat(column.name()).isEqualTo(ColumnFixture.DEFAULT_NAME);
       assertThat(column.dataType()).isEqualTo(ColumnFixture.DEFAULT_DATA_TYPE);
-      assertThat(column.lengthScale()).isNotNull();
-      assertThat(column.lengthScale().length()).isEqualTo(ColumnFixture.DEFAULT_LENGTH);
+      assertThat(column.typeArguments()).isNotNull();
+      assertThat(column.typeArguments().length()).isEqualTo(ColumnFixture.DEFAULT_LENGTH);
       assertThat(column.seqNo()).isEqualTo(ColumnFixture.DEFAULT_SEQ_NO);
       assertThat(column.autoIncrement()).isFalse();
       assertThat(column.charset()).isNull();
@@ -36,13 +36,13 @@ class ColumnTest {
     @Test
     @DisplayName("모든 필드가 저장된다")
     void storesAllFields() {
-      var lengthScale = new ColumnLengthScale(255, null, null);
+      var typeArguments = new ColumnTypeArguments(255, null, null);
       var column = new Column(
           "col-id",
           "tbl-id",
           "test_column",
           "VARCHAR",
-          lengthScale,
+          typeArguments,
           5,
           false,
           "utf8mb4",
@@ -53,7 +53,7 @@ class ColumnTest {
       assertThat(column.tableId()).isEqualTo("tbl-id");
       assertThat(column.name()).isEqualTo("test_column");
       assertThat(column.dataType()).isEqualTo("VARCHAR");
-      assertThat(column.lengthScale()).isEqualTo(lengthScale);
+      assertThat(column.typeArguments()).isEqualTo(typeArguments);
       assertThat(column.seqNo()).isEqualTo(5);
       assertThat(column.autoIncrement()).isFalse();
       assertThat(column.charset()).isEqualTo("utf8mb4");
@@ -62,12 +62,12 @@ class ColumnTest {
     }
 
     @Test
-    @DisplayName("INT 컬럼은 lengthScale 없이 생성된다")
-    void createsIntColumnWithoutLengthScale() {
+    @DisplayName("INT 컬럼은 typeArguments 없이 생성된다")
+    void createsIntColumnWithoutTypeArguments() {
       var column = ColumnFixture.intColumn();
 
       assertThat(column.dataType()).isEqualTo("INT");
-      assertThat(column.lengthScale()).isNull();
+      assertThat(column.typeArguments()).isNull();
     }
 
     @Test
@@ -85,9 +85,9 @@ class ColumnTest {
       var column = ColumnFixture.decimalColumn();
 
       assertThat(column.dataType()).isEqualTo("DECIMAL");
-      assertThat(column.lengthScale()).isNotNull();
-      assertThat(column.lengthScale().precision()).isEqualTo(10);
-      assertThat(column.lengthScale().scale()).isEqualTo(2);
+      assertThat(column.typeArguments()).isNotNull();
+      assertThat(column.typeArguments().precision()).isEqualTo(10);
+      assertThat(column.typeArguments().scale()).isEqualTo(2);
     }
 
     @Test

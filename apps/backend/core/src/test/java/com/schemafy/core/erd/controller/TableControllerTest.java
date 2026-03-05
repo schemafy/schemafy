@@ -24,7 +24,7 @@ import com.schemafy.domain.common.MutationResult;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdQuery;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
@@ -227,7 +227,7 @@ class TableControllerTest {
         "utf8mb4_general_ci",
         "{\"position\":{\"x\":30,\"y\":40}}");
     Column column = new Column(columnId, tableId, "id", "BIGINT",
-        new ColumnLengthScale(20, null, null), 1, true, null, null, "Primary key");
+        new ColumnTypeArguments(20, null, null), 1, true, null, null, "Primary key");
     Constraint constraint = new Constraint(constraintId, tableId, "pk_users",
         ConstraintKind.PRIMARY_KEY, null, null);
     ConstraintColumn constraintColumn = new ConstraintColumn(

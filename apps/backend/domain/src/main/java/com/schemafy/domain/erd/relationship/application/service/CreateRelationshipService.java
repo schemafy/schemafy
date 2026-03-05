@@ -198,7 +198,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                     fkTable.id(),
                     fkColumnName,
                     pkColumn.dataType(),
-                    pkColumn.lengthScale(),
+                    pkColumn.typeArguments(),
                     baseSeqNo + seqNo,
                     false,
                     pkColumn.charset(),

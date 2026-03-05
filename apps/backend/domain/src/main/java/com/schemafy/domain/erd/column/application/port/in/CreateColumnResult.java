@@ -1,12 +1,12 @@
 package com.schemafy.domain.erd.column.application.port.in;
 
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 
 public record CreateColumnResult(
     String columnId,
     String name,
     String dataType,
-    ColumnLengthScale lengthScale,
+    ColumnTypeArguments typeArguments,
     int seqNo,
     boolean autoIncrement,
     String charset,

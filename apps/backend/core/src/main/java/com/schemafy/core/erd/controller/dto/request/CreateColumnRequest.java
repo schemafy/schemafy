@@ -1,5 +1,7 @@
 package com.schemafy.core.erd.controller.dto.request;
 
+import java.util.List;
+
 import jakarta.validation.constraints.NotBlank;
 
 public record CreateColumnRequest(
@@ -9,6 +11,7 @@ public record CreateColumnRequest(
     Integer length,
     Integer precision,
     Integer scale,
+    List<String> values,
     boolean autoIncrement,
     String charset,
     String collation,

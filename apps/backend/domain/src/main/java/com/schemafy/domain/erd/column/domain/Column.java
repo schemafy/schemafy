@@ -5,7 +5,7 @@ public record Column(
     String tableId,
     String name,
     String dataType,
-    ColumnLengthScale lengthScale,
+    ColumnTypeArguments typeArguments,
     int seqNo,
     boolean autoIncrement,
     String charset,

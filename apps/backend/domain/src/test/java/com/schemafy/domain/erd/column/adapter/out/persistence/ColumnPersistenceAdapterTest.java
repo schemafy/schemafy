@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.config.R2dbcTestConfiguration;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 
@@ -59,7 +59,7 @@ class ColumnPersistenceAdapterTest {
             assertThat(saved.tableId()).isEqualTo(column.tableId());
             assertThat(saved.name()).isEqualTo(column.name());
             assertThat(saved.dataType()).isEqualTo(column.dataType());
-            assertThat(saved.lengthScale().length()).isEqualTo(ColumnFixture.DEFAULT_LENGTH);
+            assertThat(saved.typeArguments().length()).isEqualTo(ColumnFixture.DEFAULT_LENGTH);
             assertThat(saved.seqNo()).isEqualTo(column.seqNo());
             assertThat(saved.autoIncrement()).isEqualTo(column.autoIncrement());
           })
@@ -74,8 +74,8 @@ class ColumnPersistenceAdapterTest {
       StepVerifier.create(sut.createColumn(column))
           .assertNext(saved -> {
             assertThat(saved.dataType()).isEqualTo("DECIMAL");
-            assertThat(saved.lengthScale().precision()).isEqualTo(10);
-            assertThat(saved.lengthScale().scale()).isEqualTo(2);
+            assertThat(saved.typeArguments().precision()).isEqualTo(10);
+            assertThat(saved.typeArguments().scale()).isEqualTo(2);
           })
           .verifyComplete();
     }
@@ -88,7 +88,7 @@ class ColumnPersistenceAdapterTest {
       StepVerifier.create(sut.createColumn(column))
           .assertNext(saved -> {
             assertThat(saved.dataType()).isEqualTo("INT");
-            assertThat(saved.lengthScale()).isNull();
+            assertThat(saved.typeArguments()).isNull();
           })
           .verifyComplete();
     }
@@ -134,7 +134,7 @@ class ColumnPersistenceAdapterTest {
           ColumnFixture.DEFAULT_TABLE_ID,
           "column_a",
           "VARCHAR",
-          new ColumnLengthScale(255, null, null),
+          new ColumnTypeArguments(255, null, null),
           2,
           false,
           null,
@@ -252,7 +252,7 @@ class ColumnPersistenceAdapterTest {
       StepVerifier.create(sut.findColumnById(column.id()))
           .assertNext(found -> {
             assertThat(found.dataType()).isEqualTo(newType);
-            assertThat(found.lengthScale()).isNull();
+            assertThat(found.typeArguments()).isNull();
           })
           .verifyComplete();
     }
@@ -343,7 +343,7 @@ class ColumnPersistenceAdapterTest {
           ColumnFixture.DEFAULT_TABLE_ID,
           "column_a",
           "VARCHAR",
-          new ColumnLengthScale(255, null, null),
+          new ColumnTypeArguments(255, null, null),
           0,
           false,
           null,
@@ -354,7 +354,7 @@ class ColumnPersistenceAdapterTest {
           ColumnFixture.DEFAULT_TABLE_ID,
           "column_b",
           "VARCHAR",
-          new ColumnLengthScale(255, null, null),
+          new ColumnTypeArguments(255, null, null),
           1,
           false,
           null,
@@ -365,7 +365,7 @@ class ColumnPersistenceAdapterTest {
           ColumnFixture.DEFAULT_TABLE_ID,
           "column_c",
           "VARCHAR",
-          new ColumnLengthScale(255, null, null),
+          new ColumnTypeArguments(255, null, null),
           2,
           false,
           null,
@@ -381,7 +381,7 @@ class ColumnPersistenceAdapterTest {
               column3.tableId(),
               column3.name(),
               column3.dataType(),
-              column3.lengthScale(),
+              column3.typeArguments(),
               0,
               column3.autoIncrement(),
               column3.charset(),
@@ -392,7 +392,7 @@ class ColumnPersistenceAdapterTest {
               column1.tableId(),
               column1.name(),
               column1.dataType(),
-              column1.lengthScale(),
+              column1.typeArguments(),
               1,
               column1.autoIncrement(),
               column1.charset(),
@@ -403,7 +403,7 @@ class ColumnPersistenceAdapterTest {
               column2.tableId(),
               column2.name(),
               column2.dataType(),
-              column2.lengthScale(),
+              column2.typeArguments(),
               2,
               column2.autoIncrement(),
               column2.charset(),
@@ -450,7 +450,7 @@ class ColumnPersistenceAdapterTest {
               targetColumn.tableId(),
               targetColumn.name(),
               targetColumn.dataType(),
-              targetColumn.lengthScale(),
+              targetColumn.typeArguments(),
               0,
               targetColumn.autoIncrement(),
               targetColumn.charset(),

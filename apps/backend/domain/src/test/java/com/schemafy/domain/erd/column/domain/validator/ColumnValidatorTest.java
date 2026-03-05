@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.column.fixture.ColumnFixture;
 
@@ -228,19 +228,19 @@ class ColumnValidatorTest {
   }
 
   @Nested
-  @DisplayName("validateLengthScale 메서드는")
-  class ValidateLengthScale {
+  @DisplayName("validateTypeArguments 메서드는")
+  class ValidateTypeArguments {
 
     @ParameterizedTest
     @ValueSource(strings = { "VARCHAR", "CHAR" })
     @DisplayName("VARCHAR/CHAR는 length가 필수이다")
     void requiresLengthForVarcharAndChar(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateLengthScale(dataType, null))
+      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, null))
           .matches(DomainException.hasErrorCode(ColumnErrorCode.LENGTH_REQUIRED))
           .hasMessageContaining("Length is required");
 
-      var noLength = new ColumnLengthScale(null, 10, 2);
-      assertThatThrownBy(() -> ColumnValidator.validateLengthScale(dataType, noLength))
+      var noLength = new ColumnTypeArguments(null, 10, 2);
+      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, noLength))
           .matches(DomainException.hasErrorCode(ColumnErrorCode.LENGTH_REQUIRED));
     }
 
@@ -248,9 +248,9 @@ class ColumnValidatorTest {
     @ValueSource(strings = { "VARCHAR", "CHAR" })
     @DisplayName("VARCHAR/CHAR에 length가 있으면 통과한다")
     void passesWhenLengthProvidedForVarcharAndChar(String dataType) {
-      var withLength = new ColumnLengthScale(255, null, null);
+      var withLength = new ColumnTypeArguments(255, null, null);
 
-      assertThatCode(() -> ColumnValidator.validateLengthScale(dataType, withLength))
+      assertThatCode(() -> ColumnValidator.validateTypeArguments(dataType, withLength))
           .doesNotThrowAnyException();
     }
 
@@ -258,12 +258,12 @@ class ColumnValidatorTest {
     @ValueSource(strings = { "DECIMAL", "NUMERIC" })
     @DisplayName("DECIMAL/NUMERIC은 precision/scale이 필수이다")
     void requiresPrecisionScaleForDecimalAndNumeric(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateLengthScale(dataType, null))
+      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, null))
           .matches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
           .hasMessageContaining("Precision and scale are required");
 
-      var noScale = new ColumnLengthScale(255, null, null);
-      assertThatThrownBy(() -> ColumnValidator.validateLengthScale(dataType, noScale))
+      var noScale = new ColumnTypeArguments(255, null, null);
+      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, noScale))
           .matches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED));
     }
 
@@ -271,9 +271,9 @@ class ColumnValidatorTest {
     @ValueSource(strings = { "DECIMAL", "NUMERIC" })
     @DisplayName("DECIMAL/NUMERIC에 precision/scale이 있으면 통과한다")
     void passesWhenPrecisionScaleProvidedForDecimalAndNumeric(String dataType) {
-      var withPrecisionScale = new ColumnLengthScale(null, 10, 2);
+      var withPrecisionScale = new ColumnTypeArguments(null, 10, 2);
 
-      assertThatCode(() -> ColumnValidator.validateLengthScale(dataType, withPrecisionScale))
+      assertThatCode(() -> ColumnValidator.validateTypeArguments(dataType, withPrecisionScale))
           .doesNotThrowAnyException();
     }
 
@@ -281,8 +281,38 @@ class ColumnValidatorTest {
     @ValueSource(strings = { "INT", "TEXT", "DATE", "BOOLEAN" })
     @DisplayName("다른 타입은 length/precision 없어도 통과한다")
     void passesWithoutLengthForOtherTypes(String dataType) {
-      assertThatCode(() -> ColumnValidator.validateLengthScale(dataType, null))
+      assertThatCode(() -> ColumnValidator.validateTypeArguments(dataType, null))
           .doesNotThrowAnyException();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "ENUM", "SET" })
+    @DisplayName("ENUM/SET은 values가 필수이다")
+    void requiresValuesForEnumAndSet(String dataType) {
+      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, null))
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
+          .hasMessageContaining("Values are required");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "ENUM", "SET" })
+    @DisplayName("ENUM/SET에 values가 있으면 통과한다")
+    void passesWhenValuesProvidedForEnumAndSet(String dataType) {
+      var withValues = new ColumnTypeArguments(null, null, null, List.of("A", "B"));
+
+      assertThatCode(() -> ColumnValidator.validateTypeArguments(dataType, withValues))
+          .doesNotThrowAnyException();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "INT", "VARCHAR", "DECIMAL", "TEXT" })
+    @DisplayName("ENUM/SET 외 타입에 values가 있으면 예외가 발생한다")
+    void throwsWhenValuesProvidedForNonEnumSet(String dataType) {
+      var withValues = new ColumnTypeArguments(null, null, null, List.of("A", "B"));
+
+      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, withValues))
+          .matches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
+          .hasMessageContaining("only allowed");
     }
 
   }

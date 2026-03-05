@@ -41,7 +41,7 @@ import com.schemafy.domain.erd.column.application.port.in.GetColumnUseCase;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 
 import reactor.core.publisher.Mono;
 
@@ -103,6 +103,7 @@ class ColumnControllerTest {
         20,
         null,
         null,
+        null,
         true,
         null,
         null,
@@ -112,7 +113,7 @@ class ColumnControllerTest {
         columnId,
         "user_id",
         "BIGINT",
-        new ColumnLengthScale(20, null, null),
+        new ColumnTypeArguments(20, null, null),
         1,
         true,
         null,
@@ -150,7 +151,7 @@ class ColumnControllerTest {
         tableId,
         "user_id",
         "BIGINT",
-        new ColumnLengthScale(20, null, null),
+        new ColumnTypeArguments(20, null, null),
         1,
         true,
         null,
@@ -182,9 +183,9 @@ class ColumnControllerTest {
     String columnId2 = "06D6W3DAHD51T5NJPK29Q6BCRB";
 
     Column column1 = new Column(columnId1, tableId, "id", "BIGINT",
-        new ColumnLengthScale(20, null, null), 1, true, null, null, "PK");
+        new ColumnTypeArguments(20, null, null), 1, true, null, null, "PK");
     Column column2 = new Column(columnId2, tableId, "name", "VARCHAR",
-        new ColumnLengthScale(255, null, null), 2, false, "utf8mb4", "utf8mb4_general_ci", "이름");
+        new ColumnTypeArguments(255, null, null), 2, false, "utf8mb4", "utf8mb4_general_ci", "이름");
 
     given(getColumnsByTableIdUseCase.getColumnsByTableId(any(GetColumnsByTableIdQuery.class)))
         .willReturn(Mono.just(List.of(column1, column2)));
@@ -238,7 +239,7 @@ class ColumnControllerTest {
     String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
-    ChangeColumnTypeRequest request = new ChangeColumnTypeRequest("VARCHAR", 100, null, null);
+    ChangeColumnTypeRequest request = new ChangeColumnTypeRequest("VARCHAR", 100, null, null, null);
 
     given(changeColumnTypeUseCase.changeColumnType(any(ChangeColumnTypeCommand.class)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));

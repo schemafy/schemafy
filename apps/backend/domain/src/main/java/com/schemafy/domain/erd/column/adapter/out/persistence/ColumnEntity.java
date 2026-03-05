@@ -33,8 +33,8 @@ public class ColumnEntity implements Persistable<String> {
   @Column("data_type")
   private String dataType;
 
-  @Column("length_scale")
-  private String lengthScale;
+  @Column("type_arguments")
+  private String typeArguments;
 
   @Column("seq_no")
   private int seqNo;
@@ -61,13 +61,13 @@ public class ColumnEntity implements Persistable<String> {
   private Long version;
 
   ColumnEntity(String id, String tableId, String name, String dataType,
-      String lengthScale, int seqNo, Boolean autoIncrement, String charset,
+      String typeArguments, int seqNo, Boolean autoIncrement, String charset,
       String collation, String comment) {
     this.id = id;
     this.tableId = tableId;
     this.name = name;
     this.dataType = dataType;
-    this.lengthScale = lengthScale;
+    this.typeArguments = typeArguments;
     this.seqNo = seqNo;
     this.autoIncrement = autoIncrement;
     this.charset = charset;
