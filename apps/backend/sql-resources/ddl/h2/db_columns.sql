@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS db_columns (
     table_id       CHAR(26)     NOT NULL,
     name           VARCHAR(255) NOT NULL,
     data_type      VARCHAR(64)  NOT NULL,
-    length_scale   JSON         NULL,
+    type_arguments JSON         NULL,
     seq_no         INT          NOT NULL,
     auto_increment BOOLEAN      NULL,
     charset        VARCHAR(64)  NULL,
@@ -19,3 +19,6 @@ CREATE TABLE IF NOT EXISTS db_columns (
 
 ALTER TABLE db_columns
     ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+
+ALTER TABLE db_columns
+    ALTER COLUMN IF EXISTS length_scale RENAME TO type_arguments;
