@@ -1,6 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type {
-  AddRelationshipColumnRequest,
   ChangeRelationshipCardinalityRequest,
   ChangeRelationshipExtraRequest,
   ChangeRelationshipKindRequest,
@@ -9,7 +8,6 @@ import type {
   RelationshipSnapshotResponse,
 } from '../../api';
 import {
-  addRelationshipColumn,
   changeRelationshipCardinality,
   changeRelationshipExtra,
   changeRelationshipKind,
@@ -69,7 +67,7 @@ export class DeleteRelationshipCommand extends BaseErdCommand {
   }
 
   async undo(): Promise<void> {
-    const {relationship, columns} = this.params.snapshot;
+    const {relationship} = this.params.snapshot;
 
     const createRelationshipData: CreateRelationshipRequest = {
       fkTableId: relationship.fkTableId,
@@ -81,16 +79,6 @@ export class DeleteRelationshipCommand extends BaseErdCommand {
 
     const result = await createRelationship(createRelationshipData);
     this.restoredRelationshipId = result.data.id;
-
-    for (const col of columns) {
-      const addRelationshipColumnData: AddRelationshipColumnRequest = {
-        fkColumnId: col.fkColumnId,
-        pkColumnId: col.pkColumnId,
-        seqNo: col.seqNo,
-      };
-
-      await addRelationshipColumn(result.data.id, addRelationshipColumnData);
-    }
 
     await this.updateCache(result.affectedTableIds);
   }
@@ -225,7 +213,7 @@ export class ReconnectRelationshipCommand extends BaseErdCommand {
   async undo(): Promise<void> {
     const deleteResult = await deleteRelationship(this.currentNewId);
 
-    const { relationship, columns } = this.params.oldSnapshot;
+    const { relationship } = this.params.oldSnapshot;
     const createResult = await createRelationship({
       fkTableId: relationship.fkTableId,
       pkTableId: relationship.pkTableId,
@@ -234,14 +222,6 @@ export class ReconnectRelationshipCommand extends BaseErdCommand {
       extra: relationship.extra ?? undefined,
     });
     this.restoredOldId = createResult.data.id;
-
-    for (const col of columns) {
-      await addRelationshipColumn(createResult.data.id, {
-        fkColumnId: col.fkColumnId,
-        pkColumnId: col.pkColumnId,
-        seqNo: col.seqNo,
-      });
-    }
 
     await this.updateCache([
       ...deleteResult.affectedTableIds,

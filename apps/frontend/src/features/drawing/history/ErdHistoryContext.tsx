@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { ErdCommand } from './ErdCommand';
 
@@ -22,6 +22,7 @@ export const ErdHistoryProvider = ({children}: { children: ReactNode }) => {
   const [undoStack, setUndoStack] = useState<ErdCommand[]>([]);
   const [redoStack, setRedoStack] = useState<ErdCommand[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const isExecutingRef = useRef(false);
 
   const push = useCallback((command: ErdCommand) => {
     setUndoStack((prev) => {
@@ -38,8 +39,9 @@ export const ErdHistoryProvider = ({children}: { children: ReactNode }) => {
   }, []);
 
   const undo = useCallback(async () => {
-    if (isProcessing || undoStack.length === 0) return;
+    if (isExecutingRef.current || undoStack.length === 0) return;
     const command = undoStack[undoStack.length - 1];
+    isExecutingRef.current = true;
     setIsProcessing(true);
     try {
       await command.undo();
@@ -48,13 +50,15 @@ export const ErdHistoryProvider = ({children}: { children: ReactNode }) => {
     } catch {
       toast.error('실행 취소 중 오류가 발생했습니다.');
     } finally {
+      isExecutingRef.current = false;
       setIsProcessing(false);
     }
-  }, [undoStack, isProcessing]);
+  }, [undoStack]);
 
   const redo = useCallback(async () => {
-    if (isProcessing || redoStack.length === 0) return;
+    if (isExecutingRef.current || redoStack.length === 0) return;
     const command = redoStack[redoStack.length - 1];
+    isExecutingRef.current = true;
     setIsProcessing(true);
     try {
       await command.redo();
@@ -63,9 +67,10 @@ export const ErdHistoryProvider = ({children}: { children: ReactNode }) => {
     } catch {
       toast.error('다시 실행 중 오류가 발생했습니다.');
     } finally {
+      isExecutingRef.current = false;
       setIsProcessing(false);
     }
-  }, [redoStack, isProcessing]);
+  }, [redoStack]);
 
   const clear = useCallback(() => {
     setUndoStack([]);

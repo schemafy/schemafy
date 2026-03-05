@@ -25,7 +25,10 @@ import {
   createIndex,
   createRelationship,
   createTable,
+  deleteColumn,
   deleteTable,
+  getRelationshipColumns,
+  removeRelationshipColumn,
 } from '../../api';
 import { erdKeys } from '../../hooks/query-keys';
 import type { ErdCommand } from '../ErdCommand';
@@ -202,24 +205,26 @@ export class DeleteTableCommand extends BaseErdCommand {
 
       const relResult = await createRelationship(createRelationshipData);
 
-      for (const rc of relColumns) {
-        const fkTableColumnId = columnIdMap.get(rc.fkColumnId) ?? rc.fkColumnId;
-        const fkColumnId = isFkTable
-          ? fkTableColumnId
-          : rc.fkColumnId;
+      if (isFkTable) {
+        const autoRelCols = await getRelationshipColumns(relResult.data.id);
+        const autoFkColumnIds = [...new Set(autoRelCols.map((c) => c.fkColumnId))];
 
-        const pkTableColumnId = columnIdMap.get(rc.pkColumnId) ?? rc.pkColumnId;
-        const pkColumnId = isFkTable
-          ? rc.pkColumnId
-          : pkTableColumnId;
+        for (const arc of autoRelCols) {
+          await removeRelationshipColumn(arc.id);
+        }
+        for (const colId of autoFkColumnIds) {
+          await deleteColumn(colId);
+        }
 
-        const addRelationshipColumnData: AddRelationshipColumnRequest = {
-          fkColumnId,
-          pkColumnId,
-          seqNo: rc.seqNo,
-        };
-
-        await addRelationshipColumn(relResult.data.id, addRelationshipColumnData);
+        for (const rc of relColumns) {
+          const fkColumnId = columnIdMap.get(rc.fkColumnId) ?? rc.fkColumnId;
+          const addRelationshipColumnData: AddRelationshipColumnRequest = {
+            fkColumnId,
+            pkColumnId: rc.pkColumnId,
+            seqNo: rc.seqNo,
+          };
+          await addRelationshipColumn(relResult.data.id, addRelationshipColumnData);
+        }
       }
 
       affectedIds.add(otherTableId);
