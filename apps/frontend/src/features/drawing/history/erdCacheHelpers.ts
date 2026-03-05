@@ -3,6 +3,7 @@ import type { TableSnapshotResponse } from '../api';
 import { getTableSnapshots } from '../api';
 import { erdKeys } from '../hooks/query-keys';
 import type { ErdCommand } from './ErdCommand';
+import { toast } from "sonner";
 
 export const updateAffectedTablesInCache = async (
   queryClient: QueryClient,
@@ -10,7 +11,7 @@ export const updateAffectedTablesInCache = async (
   affectedTableIds: string[],
 ): Promise<void> => {
   if (affectedTableIds.length === 0) return;
-  
+
   try {
     const snapshots = await getTableSnapshots(affectedTableIds);
     queryClient.setQueryData<Record<string, TableSnapshotResponse>>(
@@ -21,6 +22,8 @@ export const updateAffectedTablesInCache = async (
     void queryClient.invalidateQueries({
       queryKey: erdKeys.schemaSnapshots(schemaId),
     });
+
+    toast.error("데이터 동기화 중 오류가 발생했습니다");
   }
 };
 
@@ -28,7 +31,12 @@ export abstract class BaseErdCommand implements ErdCommand {
   constructor(
     protected readonly schemaId: string,
     protected readonly queryClient: QueryClient,
-  ) {}
+  ) {
+  }
+
+  abstract undo(): Promise<void>;
+
+  abstract redo(): Promise<void>;
 
   protected async updateCache(affectedTableIds: string[]): Promise<void> {
     await updateAffectedTablesInCache(
@@ -37,9 +45,6 @@ export abstract class BaseErdCommand implements ErdCommand {
       affectedTableIds,
     );
   }
-
-  abstract undo(): Promise<void>;
-  abstract redo(): Promise<void>;
 }
 
 export const removeTableFromCache = (
