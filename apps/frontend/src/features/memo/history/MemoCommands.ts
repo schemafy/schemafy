@@ -85,11 +85,11 @@ export class DeleteMemoCommand implements ErdCommand {
     const created = await memoApi.createMemo({
       schemaId: memo.schemaId,
       positions: memo.positions,
-      body: '',
+      body: memo.comments[0]?.body ?? ' ',
     });
 
-    const restoredComments: MemoComment[] = [];
-    for (const comment of memo.comments) {
+    const restoredComments: MemoComment[] = [...(created.comments ?? [])];
+    for (const comment of memo.comments.slice(1)) {
       const newComment = await memoApi.createMemoComment(created.id, {
         body: comment.body,
       });

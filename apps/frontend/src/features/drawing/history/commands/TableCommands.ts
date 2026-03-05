@@ -225,7 +225,9 @@ export class DeleteTableCommand extends BaseErdCommand {
       affectedIds.add(otherTableId);
     }
 
-    await this.updateCache(Array.from(affectedIds));
+    void this.queryClient.invalidateQueries({
+      queryKey: erdKeys.schemaSnapshots(this.schemaId),
+    });
   }
 
   async redo(): Promise<void> {
