@@ -10,6 +10,7 @@ import {
   useChangeRelationshipCardinality,
   useChangeRelationshipExtra,
   useDeleteRelationship,
+  useReconnectRelationship,
 } from './useRelationshipMutations';
 import {
   convertSnapshotsToEdges,
@@ -35,6 +36,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const changeRelationshipCardinalityMutation =
     useChangeRelationshipCardinality(selectedSchemaId);
   const deleteRelationshipMutation = useDeleteRelationship(selectedSchemaId);
+  const reconnectRelationshipMutation = useReconnectRelationship(selectedSchemaId);
 
   const [selectedRelationship, setSelectedRelationship] = useState<
     string | null
@@ -93,37 +95,36 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     }));
   }, [snapshotsData]);
 
-  const createRelationshipFromValidation = (
-    validation: {
-      fkTableId: string;
-      pkTableId: string;
-    },
+  const buildCreateRequest = (
+    validation: { fkTableId: string; pkTableId: string },
     connection: Connection,
   ) => {
     const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
-    const kind = relationshipConfig.isNonIdentifying
-      ? 'NON_IDENTIFYING'
-      : 'IDENTIFYING';
-
+    const kind = relationshipConfig.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
     const isSameDirection = connection.source === validation.fkTableId;
     const extra: RelationshipExtra = {
       fkHandle:
-        (isSameDirection ? connection.sourceHandle : connection.targetHandle) ??
-        undefined,
+        (isSameDirection ? connection.sourceHandle : connection.targetHandle) ?? undefined,
       pkHandle:
-        (isSameDirection ? connection.targetHandle : connection.sourceHandle) ??
-        undefined,
+        (isSameDirection ? connection.targetHandle : connection.sourceHandle) ?? undefined,
     };
-
-    const createRequest = {
-      fkTableId: validation.fkTableId,
-      pkTableId: validation.pkTableId,
-      kind,
-      cardinality: typeConfig.cardinality,
+    return {
+      createRequest: {
+        fkTableId: validation.fkTableId,
+        pkTableId: validation.pkTableId,
+        kind,
+        cardinality: typeConfig.cardinality,
+      },
+      extra: JSON.stringify(extra),
     };
-    const extraString = JSON.stringify(extra);
+  };
 
-    createRelationshipWithExtraMutation.mutate({ request: createRequest, extra: extraString });
+  const createRelationshipFromValidation = (
+    validation: { fkTableId: string; pkTableId: string },
+    connection: Connection,
+  ) => {
+    const { createRequest, extra } = buildCreateRequest(validation, connection);
+    createRelationshipWithExtraMutation.mutate({ request: createRequest, extra });
   };
 
   const onConnect = (params: Connection) => {
@@ -198,10 +199,11 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         true,
       );
     } else {
-      deleteRelationshipMutation.mutate(oldRelationship.id, {
-        onSuccess: () => {
-          createRelationshipFromValidation(validation, newConnection);
-        },
+      const { createRequest, extra } = buildCreateRequest(validation, newConnection);
+      reconnectRelationshipMutation.mutate({
+        oldRelationshipId: oldRelationship.id,
+        createRequest,
+        extra,
       });
     }
   };

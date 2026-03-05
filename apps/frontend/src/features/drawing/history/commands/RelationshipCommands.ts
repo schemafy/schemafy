@@ -206,6 +206,68 @@ export class ChangeRelationshipCardinalityCommand extends BaseErdCommand {
   }
 }
 
+export class ReconnectRelationshipCommand extends BaseErdCommand {
+  private restoredOldId: string | null = null;
+  private currentNewId: string;
+
+  constructor(
+    private params: RelationshipCommandBase & {
+      oldSnapshot: RelationshipSnapshotResponse;
+      newRelationshipId: string;
+      newCreateRequest: CreateRelationshipRequest;
+      newExtra: string;
+    },
+  ) {
+    super(params.schemaId, params.queryClient);
+    this.currentNewId = params.newRelationshipId;
+  }
+
+  async undo(): Promise<void> {
+    const deleteResult = await deleteRelationship(this.currentNewId);
+
+    const { relationship, columns } = this.params.oldSnapshot;
+    const createResult = await createRelationship({
+      fkTableId: relationship.fkTableId,
+      pkTableId: relationship.pkTableId,
+      kind: relationship.kind,
+      cardinality: relationship.cardinality,
+      extra: relationship.extra ?? undefined,
+    });
+    this.restoredOldId = createResult.data.id;
+
+    for (const col of columns) {
+      await addRelationshipColumn(createResult.data.id, {
+        fkColumnId: col.fkColumnId,
+        pkColumnId: col.pkColumnId,
+        seqNo: col.seqNo,
+      });
+    }
+
+    await this.updateCache([
+      ...deleteResult.affectedTableIds,
+      ...createResult.affectedTableIds,
+    ]);
+  }
+
+  async redo(): Promise<void> {
+    if (!this.restoredOldId) return;
+
+    const deleteResult = await deleteRelationship(this.restoredOldId);
+    this.restoredOldId = null;
+
+    const createResult = await createRelationship({
+      ...this.params.newCreateRequest,
+      extra: this.params.newExtra,
+    });
+    this.currentNewId = createResult.data.id;
+
+    await this.updateCache([
+      ...deleteResult.affectedTableIds,
+      ...createResult.affectedTableIds,
+    ]);
+  }
+}
+
 export class ChangeRelationshipExtraCommand extends BaseErdCommand {
   constructor(
     private params: RelationshipCommandBase & {

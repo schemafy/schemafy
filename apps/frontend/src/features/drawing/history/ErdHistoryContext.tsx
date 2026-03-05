@@ -47,7 +47,6 @@ export const ErdHistoryProvider = ({children}: { children: ReactNode }) => {
       setRedoStack((prev) => [...prev, command]);
     } catch {
       toast.error('실행 취소 중 오류가 발생했습니다.');
-      setUndoStack((prev) => prev.slice(0, -1));
     } finally {
       setIsProcessing(false);
     }
@@ -63,7 +62,6 @@ export const ErdHistoryProvider = ({children}: { children: ReactNode }) => {
       setUndoStack((prev) => [...prev, command]);
     } catch {
       toast.error('다시 실행 중 오류가 발생했습니다.');
-      setRedoStack((prev) => prev.slice(0, -1));
     } finally {
       setIsProcessing(false);
     }

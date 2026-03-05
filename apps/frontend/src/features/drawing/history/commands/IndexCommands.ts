@@ -140,7 +140,7 @@ export class ChangeIndexTypeCommand extends BaseErdCommand {
 
   async undo(): Promise<void> {
     const changeIndexTypeData: ChangeIndexTypeRequest = {
-      type: this.params.newType
+      type: this.params.previousType
     };
 
     const result = await changeIndexType(this.params.indexId, changeIndexTypeData);

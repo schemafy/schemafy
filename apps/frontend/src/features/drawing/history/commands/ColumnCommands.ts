@@ -99,7 +99,7 @@ export class ChangeColumnNameCommand extends BaseErdCommand {
 
   async undo(): Promise<void> {
     const newNameData: ChangeColumnNameRequest = {
-      newName: this.params.newName,
+      newName: this.params.previousName,
     };
 
     const result = await changeColumnName(this.params.columnId, newNameData);

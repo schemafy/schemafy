@@ -26,6 +26,7 @@ import { useErdHistory } from '../history';
 import {
   CreateRelationshipCommand,
   DeleteRelationshipCommand,
+  ReconnectRelationshipCommand,
   ChangeRelationshipNameCommand,
   ChangeRelationshipKindCommand,
   ChangeRelationshipCardinalityCommand,
@@ -209,14 +210,15 @@ export const useDeleteRelationship = (schemaId: string) => {
   const history = useErdHistory();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (relationshipId: string) => deleteRelationship(relationshipId),
+    mutationFn: (relationshipId: string) =>
+      deleteRelationship(relationshipId),
     onMutate: (relationshipId) => {
       const snapshots = queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
         erdKeys.schemaSnapshots(schemaId),
       );
       return { snapshot: findRelationshipSnapshot(snapshots, relationshipId) };
     },
-    onSuccess: (result, _relationshipId, context) => {
+    onSuccess: (result, _variables, context) => {
       updateAffectedTables(result.affectedTableIds);
       if (context?.snapshot) {
         history.push(
@@ -224,6 +226,49 @@ export const useDeleteRelationship = (schemaId: string) => {
             schemaId,
             queryClient,
             snapshot: context.snapshot,
+          }),
+        );
+      }
+    },
+  });
+};
+
+type ReconnectRelationshipVars = {
+  oldRelationshipId: string;
+  createRequest: CreateRelationshipRequest;
+  extra: string;
+};
+
+export const useReconnectRelationship = (schemaId: string) => {
+  const { updateAffectedTables } = useErdCache(schemaId);
+  const history = useErdHistory();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ oldRelationshipId, createRequest, extra }: ReconnectRelationshipVars) => {
+      const deleteResult = await deleteRelationship(oldRelationshipId);
+      const createResult = await createRelationship({ ...createRequest, extra });
+      return { deleteResult, createResult };
+    },
+    onMutate: ({ oldRelationshipId }) => {
+      const snapshots = queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
+        erdKeys.schemaSnapshots(schemaId),
+      );
+      return { oldSnapshot: findRelationshipSnapshot(snapshots, oldRelationshipId) };
+    },
+    onSuccess: (result, variables, context) => {
+      updateAffectedTables([
+        ...result.deleteResult.affectedTableIds,
+        ...result.createResult.affectedTableIds,
+      ]);
+      if (context?.oldSnapshot) {
+        history.push(
+          new ReconnectRelationshipCommand({
+            schemaId,
+            queryClient,
+            oldSnapshot: context.oldSnapshot,
+            newRelationshipId: result.createResult.data.id,
+            newCreateRequest: variables.createRequest,
+            newExtra: variables.extra,
           }),
         );
       }
