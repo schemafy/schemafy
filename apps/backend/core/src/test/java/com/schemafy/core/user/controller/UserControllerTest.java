@@ -26,9 +26,9 @@ import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 
 import reactor.test.StepVerifier;
 

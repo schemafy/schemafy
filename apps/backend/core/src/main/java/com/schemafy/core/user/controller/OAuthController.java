@@ -18,9 +18,9 @@ import com.schemafy.core.common.security.jwt.JwtProperties;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.user.oauth.GitHubOAuthProperties;
 import com.schemafy.core.user.oauth.GitHubOAuthService;
-import com.schemafy.core.user.repository.vo.AuthProvider;
 import com.schemafy.core.user.service.UserService;
 import com.schemafy.core.user.service.dto.OAuthLoginCommand;
+import com.schemafy.domain.user.domain.AuthProvider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -99,7 +99,7 @@ public class OAuthController {
           return ResponseEntity
               .status(HttpStatus.FOUND)
               .headers(jwtTokenIssuer.issueTokens(
-                  user.getId(), user.getName()))
+                  user.id(), user.name()))
               .header(HttpHeaders.SET_COOKIE,
                   expireStateCookie().toString())
               .location(buildFrontendCallbackUri(null, null))

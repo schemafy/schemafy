@@ -25,10 +25,11 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.AuthErrorCode;
 import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
+import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 
 import reactor.test.StepVerifier;
 
@@ -293,6 +294,35 @@ class AuthControllerTest {
         .jsonPath("$.status").isEqualTo(401)
         .jsonPath("$.reason")
         .isEqualTo(AuthErrorCode.MISSING_REFRESH_TOKEN.code());
+  }
+
+  @Test
+  @DisplayName("유효하지 않은 리프레시 토큰이면 갱신 시 실패한다")
+  void refreshTokenFailWithInvalidRefreshToken() {
+    webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
+        .cookie("refreshToken", "invalid-refresh-token")
+        .exchange()
+        .expectStatus().isUnauthorized()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(401)
+        .jsonPath("$.reason")
+        .isEqualTo(AuthErrorCode.INVALID_REFRESH_TOKEN.code());
+  }
+
+  @Test
+  @DisplayName("토큰의 사용자 정보가 없으면 갱신 시 실패한다")
+  void refreshTokenFailWhenUserNotFound() {
+    String unknownUserId = UlidGenerator.generate();
+    String refreshToken = generateRefreshToken(unknownUserId);
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
+        .cookie("refreshToken", refreshToken)
+        .exchange()
+        .expectStatus().isNotFound()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(404)
+        .jsonPath("$.reason")
+        .isEqualTo(UserErrorCode.NOT_FOUND.code());
   }
 
 }

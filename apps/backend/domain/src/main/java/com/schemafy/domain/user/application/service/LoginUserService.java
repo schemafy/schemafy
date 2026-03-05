@@ -1,0 +1,38 @@
+package com.schemafy.domain.user.application.service;
+
+import org.springframework.stereotype.Service;
+
+import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.user.application.port.in.LoginUserCommand;
+import com.schemafy.domain.user.application.port.in.LoginUserUseCase;
+import com.schemafy.domain.user.application.port.out.FindUserByEmailPort;
+import com.schemafy.domain.user.application.port.out.PasswordHashPort;
+import com.schemafy.domain.user.domain.User;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
+
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+
+@Service
+@RequiredArgsConstructor
+class LoginUserService implements LoginUserUseCase {
+
+  private final FindUserByEmailPort findUserByEmailPort;
+  private final PasswordHashPort passwordHashPort;
+
+  @Override
+  public Mono<User> loginUser(LoginUserCommand command) {
+    return findUserByEmailPort.findUserByEmail(command.email())
+        .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
+        .flatMap(user -> {
+          if (user.password() == null) {
+            return Mono.error(new DomainException(UserErrorCode.LOGIN_FAILED));
+          }
+          return passwordHashPort.matches(command.password(), user.password())
+              .filter(Boolean::booleanValue)
+              .map(matches -> user)
+              .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.LOGIN_FAILED)));
+        });
+  }
+
+}

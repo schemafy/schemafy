@@ -1,6 +1,6 @@
 package com.schemafy.core.user.service.dto;
 
-import com.schemafy.core.user.repository.vo.AuthProvider;
+import com.schemafy.domain.user.domain.AuthProvider;
 
 public record OAuthLoginCommand(
     String email,

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
-import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.core.erd.controller.dto.request.UpdateMemoCommentRequest;
@@ -23,7 +22,11 @@ import com.schemafy.core.erd.controller.dto.request.UpdateMemoRequest;
 import com.schemafy.core.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoResponse;
-import com.schemafy.core.erd.service.MemoService;
+import com.schemafy.core.erd.service.MemoOrchestrator;
+import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommand;
+import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentCommand;
+import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentUseCase;
+import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoUseCase;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -59,7 +62,13 @@ class MemoControllerTest {
   private WebTestClient webTestClient;
 
   @MockitoBean
-  private MemoService memoService;
+  private MemoOrchestrator memoOrchestrator;
+
+  @MockitoBean
+  private DeleteMemoUseCase deleteMemoUseCase;
+
+  @MockitoBean
+  private DeleteMemoCommentUseCase deleteMemoCommentUseCase;
 
   @Test
   @DisplayName("메모 생성 API 문서화")
@@ -97,7 +106,7 @@ class MemoControllerTest {
             }
             """), MemoDetailResponse.class);
 
-    given(memoService.createMemo(any(CreateMemoRequest.class), any()))
+    given(memoOrchestrator.createMemo(any(CreateMemoRequest.class), any()))
         .willReturn(Mono.just(response));
 
     webTestClient.post()
@@ -195,7 +204,7 @@ class MemoControllerTest {
             }
             """), MemoDetailResponse.class);
 
-    given(memoService.getMemo(memoId))
+    given(memoOrchestrator.getMemo(memoId))
         .willReturn(Mono.just(response));
 
     webTestClient.get()
@@ -273,7 +282,7 @@ class MemoControllerTest {
             }
             """), MemoResponse.class);
 
-    given(memoService.getMemosBySchemaId(schemaId))
+    given(memoOrchestrator.getMemosBySchemaId(schemaId))
         .willReturn(Flux.just(response));
 
     webTestClient.get()
@@ -307,7 +316,7 @@ class MemoControllerTest {
             }
             """), MemoResponse.class);
 
-    given(memoService.updateMemo(eq(memoId), any(UpdateMemoRequest.class),
+    given(memoOrchestrator.updateMemo(eq(memoId), any(UpdateMemoRequest.class),
         any()))
         .willReturn(Mono.just(response));
 
@@ -360,7 +369,7 @@ class MemoControllerTest {
   void deleteMemo() throws Exception {
     String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
 
-    given(memoService.deleteMemo(eq(memoId), any(AuthenticatedUser.class)))
+    given(deleteMemoUseCase.deleteMemo(any(DeleteMemoCommand.class)))
         .willReturn(Mono.empty());
 
     webTestClient.delete()
@@ -401,7 +410,7 @@ class MemoControllerTest {
             }
             """), MemoCommentResponse.class);
 
-    given(memoService.createComment(eq(memoId),
+    given(memoOrchestrator.createComment(eq(memoId),
         any(CreateMemoCommentRequest.class), any()))
         .willReturn(Mono.just(response));
 
@@ -467,7 +476,7 @@ class MemoControllerTest {
             }
             """), MemoCommentResponse.class);
 
-    given(memoService.getComments(memoId))
+    given(memoOrchestrator.getComments(memoId))
         .willReturn(Flux.just(response));
 
     webTestClient.get()
@@ -509,7 +518,6 @@ class MemoControllerTest {
   @Test
   @DisplayName("메모 댓글 수정 API 문서화")
   void updateMemoComment() throws Exception {
-    String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
     String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
     UpdateMemoCommentRequest request = new UpdateMemoCommentRequest(
         "수정된 내용");
@@ -529,13 +537,13 @@ class MemoControllerTest {
             }
             """), MemoCommentResponse.class);
 
-    given(memoService.updateComment(eq(memoId), eq(commentId),
+    given(memoOrchestrator.updateComment(eq(commentId),
         any(UpdateMemoCommentRequest.class), any()))
         .willReturn(Mono.just(response));
 
     webTestClient.put()
-        .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",
-            memoId, commentId)
+        .uri(API_BASE_PATH + "/memo-comments/{commentId}",
+            commentId)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(objectMapper.writeValueAsString(request))
         .header("Accept", "application/json")
@@ -544,8 +552,6 @@ class MemoControllerTest {
         .expectBody()
         .consumeWith(document("memo-comment-update",
             pathParameters(
-                parameterWithName("memoId")
-                    .description("메모 ID"),
                 parameterWithName("commentId")
                     .description("댓글 ID")),
             requestHeaders(
@@ -582,24 +588,21 @@ class MemoControllerTest {
   @Test
   @DisplayName("메모 댓글 삭제 API 문서화")
   void deleteMemoComment() throws Exception {
-    String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
     String commentId = "06D6WCH677C3FCC2Q9SD5M1Y5W";
 
-    given(memoService.deleteComment(eq(memoId), eq(commentId),
-        any(AuthenticatedUser.class)))
+    given(deleteMemoCommentUseCase.deleteMemoComment(
+        any(DeleteMemoCommentCommand.class)))
         .willReturn(Mono.empty());
 
     webTestClient.delete()
-        .uri(API_BASE_PATH + "/memos/{memoId}/comments/{commentId}",
-            memoId, commentId)
+        .uri(API_BASE_PATH + "/memo-comments/{commentId}",
+            commentId)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
         .consumeWith(document("memo-comment-delete",
             pathParameters(
-                parameterWithName("memoId")
-                    .description("메모 ID"),
                 parameterWithName("commentId")
                     .description("삭제할 댓글 ID")),
             requestHeaders(

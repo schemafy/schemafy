@@ -3,6 +3,7 @@ package com.schemafy.domain.config;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
 import org.springframework.r2dbc.connection.init.CompositeDatabasePopulator;
 import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
 import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
@@ -10,6 +11,7 @@ import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 import io.r2dbc.spi.ConnectionFactory;
 
 @TestConfiguration
+@EnableR2dbcAuditing
 public class R2dbcTestConfiguration {
 
   @Bean

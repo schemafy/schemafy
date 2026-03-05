@@ -16,10 +16,15 @@ import lombok.NoArgsConstructor;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+/** Transitional legacy entity for read compatibility in core module.
+ * <p>
+ * User business write/read ownership is moving to domain user adapters.
+ * Keep this entity for compatibility only until project/workspace tracks are migrated. */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("users")
+@Deprecated(forRemoval = false)
 public class User extends BaseEntity {
 
   private String email;

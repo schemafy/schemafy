@@ -24,7 +24,10 @@ import com.schemafy.core.erd.controller.dto.request.UpdateMemoRequest;
 import com.schemafy.core.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoDetailResponse;
 import com.schemafy.core.erd.controller.dto.response.MemoResponse;
-import com.schemafy.core.erd.service.MemoService;
+import com.schemafy.core.erd.service.MemoOrchestrator;
+import com.schemafy.core.erd.service.memo.MemoApiCommandMapper;
+import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoCommentUseCase;
+import com.schemafy.domain.erd.memo.application.port.in.DeleteMemoUseCase;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -34,28 +37,31 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class MemoController {
 
-  private final MemoService memoService;
+  private final MemoOrchestrator memoOrchestrator;
+  private final DeleteMemoUseCase deleteMemoUseCase;
+  private final DeleteMemoCommentUseCase deleteMemoCommentUseCase;
+  private final MemoApiCommandMapper commandMapper;
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PostMapping("/memos")
   public Mono<MemoDetailResponse> createMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
       @Valid @RequestBody CreateMemoRequest request) {
-    return memoService.createMemo(request, user);
+    return memoOrchestrator.createMemo(request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/memos/{memoId}")
   public Mono<MemoDetailResponse> getMemo(
       @PathVariable String memoId) {
-    return memoService.getMemo(memoId);
+    return memoOrchestrator.getMemo(memoId);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}/memos")
   public Mono<List<MemoResponse>> getMemosBySchemaId(
       @PathVariable String schemaId) {
-    return memoService.getMemosBySchemaId(schemaId)
+    return memoOrchestrator.getMemosBySchemaId(schemaId)
         .collectList();
   }
 
@@ -65,7 +71,7 @@ public class MemoController {
       @AuthenticationPrincipal AuthenticatedUser user,
       @PathVariable String memoId,
       @Valid @RequestBody UpdateMemoRequest request) {
-    return memoService.updateMemo(memoId, request, user);
+    return memoOrchestrator.updateMemo(memoId, request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
@@ -73,7 +79,8 @@ public class MemoController {
   public Mono<Void> deleteMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
       @PathVariable String memoId) {
-    return memoService.deleteMemo(memoId, user)
+    return deleteMemoUseCase.deleteMemo(
+        commandMapper.toDeleteMemoCommand(memoId, user))
         .then();
   }
 
@@ -83,34 +90,33 @@ public class MemoController {
       @AuthenticationPrincipal AuthenticatedUser user,
       @PathVariable String memoId,
       @Valid @RequestBody CreateMemoCommentRequest request) {
-    return memoService.createComment(memoId, request, user);
+    return memoOrchestrator.createComment(memoId, request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/memos/{memoId}/comments")
   public Mono<List<MemoCommentResponse>> getMemoComments(
       @PathVariable String memoId) {
-    return memoService.getComments(memoId)
+    return memoOrchestrator.getComments(memoId)
         .collectList();
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
-  @PutMapping("/memos/{memoId}/comments/{commentId}")
+  @PutMapping("/memo-comments/{commentId}")
   public Mono<MemoCommentResponse> updateMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
-      @PathVariable String memoId,
       @PathVariable String commentId,
       @Valid @RequestBody UpdateMemoCommentRequest request) {
-    return memoService.updateComment(memoId, commentId, request, user);
+    return memoOrchestrator.updateComment(commentId, request, user);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
-  @DeleteMapping("/memos/{memoId}/comments/{commentId}")
+  @DeleteMapping("/memo-comments/{commentId}")
   public Mono<Void> deleteMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
-      @PathVariable String memoId,
       @PathVariable String commentId) {
-    return memoService.deleteComment(memoId, commentId, user)
+    return deleteMemoCommentUseCase.deleteMemoComment(
+        commandMapper.toDeleteMemoCommentCommand(commentId, user))
         .then();
   }
 

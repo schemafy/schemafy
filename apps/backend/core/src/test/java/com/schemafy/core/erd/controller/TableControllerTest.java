@@ -1,6 +1,6 @@
 package com.schemafy.core.erd.controller;
 
-import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
@@ -19,35 +19,10 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.WithMockCustomUser;
 import com.schemafy.core.erd.controller.dto.request.ChangeTableNameRequest;
 import com.schemafy.core.erd.controller.dto.request.CreateTableRequest;
+import com.schemafy.core.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.core.erd.docs.TableApiSnippets;
+import com.schemafy.core.erd.service.TableSnapshotOrchestrator;
 import com.schemafy.domain.common.MutationResult;
-import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdQuery;
-import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdUseCase;
-import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
-import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdQuery;
-import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdUseCase;
-import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
-import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
-import com.schemafy.domain.erd.constraint.domain.Constraint;
-import com.schemafy.domain.erd.constraint.domain.ConstraintColumn;
-import com.schemafy.domain.erd.constraint.domain.type.ConstraintKind;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdQuery;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexColumnsByIndexIdUseCase;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdQuery;
-import com.schemafy.domain.erd.index.application.port.in.GetIndexesByTableIdUseCase;
-import com.schemafy.domain.erd.index.domain.Index;
-import com.schemafy.domain.erd.index.domain.IndexColumn;
-import com.schemafy.domain.erd.index.domain.type.IndexType;
-import com.schemafy.domain.erd.index.domain.type.SortDirection;
-import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdQuery;
-import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipColumnsByRelationshipIdUseCase;
-import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
-import com.schemafy.domain.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
-import com.schemafy.domain.erd.relationship.domain.Relationship;
-import com.schemafy.domain.erd.relationship.domain.RelationshipColumn;
-import com.schemafy.domain.erd.relationship.domain.type.Cardinality;
-import com.schemafy.domain.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableExtraUseCase;
 import com.schemafy.domain.erd.table.application.port.in.ChangeTableMetaCommand;
@@ -69,6 +44,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -100,25 +76,7 @@ class TableControllerTest {
   private GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
 
   @MockitoBean
-  private GetColumnsByTableIdUseCase getColumnsByTableIdUseCase;
-
-  @MockitoBean
-  private GetConstraintsByTableIdUseCase getConstraintsByTableIdUseCase;
-
-  @MockitoBean
-  private GetConstraintColumnsByConstraintIdUseCase getConstraintColumnsByConstraintIdUseCase;
-
-  @MockitoBean
-  private GetRelationshipsByTableIdUseCase getRelationshipsByTableIdUseCase;
-
-  @MockitoBean
-  private GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
-
-  @MockitoBean
-  private GetIndexesByTableIdUseCase getIndexesByTableIdUseCase;
-
-  @MockitoBean
-  private GetIndexColumnsByIndexIdUseCase getIndexColumnsByIndexIdUseCase;
+  private TableSnapshotOrchestrator tableSnapshotOrchestrator;
 
   @MockitoBean
   private ChangeTableNameUseCase changeTableNameUseCase;
@@ -206,60 +164,103 @@ class TableControllerTest {
 
   @Test
   @DisplayName("테이블 스냅샷 조회 API 문서화")
-  void getTableSnapshot() {
+  void getTableSnapshot() throws Exception {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
-    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
     String columnId = "06D6W3CAHD51T5NJPK29Q6BCRA";
     String constraintId = "06D6W4DAHD51T5NJPK29Q6BCRB";
-    String constraintColumnId = "06D6W5EAHD51T5NJPK29Q6BCRC";
     String relationshipId = "06D6W6FAHD51T5NJPK29Q6BCRD";
-    String relationshipColumnId = "06D6W7GAHD51T5NJPK29Q6BCRE";
-    String pkTableId = "06D6W8HAHD51T5NJPK29Q6BCRF";
-    String pkColumnId = "06D6W9IAHD51T5NJPK29Q6BCRG";
     String indexId = "06D6W9JAHD51T5NJPK29Q6BCRH";
-    String indexColumnId = "06D6W9KAHD51T5NJPK29Q6BCRI";
 
-    Table table = new Table(
-        tableId,
-        schemaId,
-        "users",
-        "utf8mb4",
-        "utf8mb4_general_ci",
-        "{\"position\":{\"x\":30,\"y\":40}}");
-    Column column = new Column(columnId, tableId, "id", "BIGINT",
-        new ColumnLengthScale(20, null, null), 1, true, null, null, "Primary key");
-    Constraint constraint = new Constraint(constraintId, tableId, "pk_users",
-        ConstraintKind.PRIMARY_KEY, null, null);
-    ConstraintColumn constraintColumn = new ConstraintColumn(
-        constraintColumnId, constraintId, columnId, 1);
-    Relationship relationship = new Relationship(relationshipId, tableId, pkTableId,
-        "fk_users_orders", RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
-    RelationshipColumn relationshipColumn = new RelationshipColumn(
-        relationshipColumnId, relationshipId, pkColumnId, columnId, 1);
-    Index index = new Index(indexId, tableId, "idx_users_id", IndexType.BTREE);
-    IndexColumn indexColumn = new IndexColumn(indexColumnId, indexId, columnId, 0, SortDirection.ASC);
-
-    given(getTableUseCase.getTable(any(GetTableQuery.class)))
-        .willReturn(Mono.just(table));
-    given(getColumnsByTableIdUseCase.getColumnsByTableId(any(GetColumnsByTableIdQuery.class)))
-        .willReturn(Mono.just(List.of(column)));
-    given(getConstraintsByTableIdUseCase.getConstraintsByTableId(
-        any(GetConstraintsByTableIdQuery.class)))
-        .willReturn(Mono.just(List.of(constraint)));
-    given(getConstraintColumnsByConstraintIdUseCase.getConstraintColumnsByConstraintId(
-        any(GetConstraintColumnsByConstraintIdQuery.class)))
-        .willReturn(Mono.just(List.of(constraintColumn)));
-    given(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
-        any(GetRelationshipsByTableIdQuery.class)))
-        .willReturn(Mono.just(List.of(relationship)));
-    given(getRelationshipColumnsByRelationshipIdUseCase.getRelationshipColumnsByRelationshipId(
-        any(GetRelationshipColumnsByRelationshipIdQuery.class)))
-        .willReturn(Mono.just(List.of(relationshipColumn)));
-    given(getIndexesByTableIdUseCase.getIndexesByTableId(any(GetIndexesByTableIdQuery.class)))
-        .willReturn(Mono.just(List.of(index)));
-    given(getIndexColumnsByIndexIdUseCase.getIndexColumnsByIndexId(
-        any(GetIndexColumnsByIndexIdQuery.class)))
-        .willReturn(Mono.just(List.of(indexColumn)));
+    TableSnapshotResponse response = objectMapper.treeToValue(
+        objectMapper.readTree("""
+            {
+              "table": {
+                "id": "06D6W2BAHD51T5NJPK29Q6BCR9",
+                "schemaId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                "name": "users",
+                "charset": "utf8mb4",
+                "collation": "utf8mb4_general_ci",
+                "extra": "{\\"position\\":{\\"x\\":30,\\"y\\":40}}"
+              },
+              "columns": [
+                {
+                  "id": "06D6W3CAHD51T5NJPK29Q6BCRA",
+                  "tableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+                  "name": "id",
+                  "dataType": "BIGINT",
+                  "lengthScale": {"length": 20, "precision": null, "scale": null},
+                  "seqNo": 1,
+                  "autoIncrement": true,
+                  "charset": null,
+                  "collation": null,
+                  "comment": "Primary key"
+                }
+              ],
+              "constraints": [
+                {
+                  "constraint": {
+                    "id": "06D6W4DAHD51T5NJPK29Q6BCRB",
+                    "tableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+                    "name": "pk_users",
+                    "kind": "PRIMARY_KEY",
+                    "checkExpr": null,
+                    "defaultExpr": null
+                  },
+                  "columns": [
+                    {
+                      "id": "06D6W5EAHD51T5NJPK29Q6BCRC",
+                      "constraintId": "06D6W4DAHD51T5NJPK29Q6BCRB",
+                      "columnId": "06D6W3CAHD51T5NJPK29Q6BCRA",
+                      "seqNo": 1
+                    }
+                  ]
+                }
+              ],
+              "relationships": [
+                {
+                  "relationship": {
+                    "id": "06D6W6FAHD51T5NJPK29Q6BCRD",
+                    "fkTableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+                    "pkTableId": "06D6W8HAHD51T5NJPK29Q6BCRF",
+                    "name": "fk_users_orders",
+                    "kind": "NON_IDENTIFYING",
+                    "cardinality": "ONE_TO_MANY",
+                    "extra": null
+                  },
+                  "columns": [
+                    {
+                      "id": "06D6W7GAHD51T5NJPK29Q6BCRE",
+                      "relationshipId": "06D6W6FAHD51T5NJPK29Q6BCRD",
+                      "pkColumnId": "06D6W9IAHD51T5NJPK29Q6BCRG",
+                      "fkColumnId": "06D6W3CAHD51T5NJPK29Q6BCRA",
+                      "seqNo": 1
+                    }
+                  ]
+                }
+              ],
+              "indexes": [
+                {
+                  "index": {
+                    "id": "06D6W9JAHD51T5NJPK29Q6BCRH",
+                    "tableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+                    "name": "idx_users_id",
+                    "type": "BTREE"
+                  },
+                  "columns": [
+                    {
+                      "id": "06D6W9KAHD51T5NJPK29Q6BCRI",
+                      "indexId": "06D6W9JAHD51T5NJPK29Q6BCRH",
+                      "columnId": "06D6W3CAHD51T5NJPK29Q6BCRA",
+                      "seqNo": 0,
+                      "sortDirection": "ASC"
+                    }
+                  ]
+                }
+              ]
+            }
+            """), TableSnapshotResponse.class);
+    given(tableSnapshotOrchestrator.getTableSnapshot(tableId))
+        .willReturn(Mono.just(response));
 
     webTestClient.get()
         .uri(API_BASE_PATH + "/tables/{tableId}/snapshot", tableId)
@@ -283,33 +284,45 @@ class TableControllerTest {
 
   @Test
   @DisplayName("배치 테이블 스냅샷 조회 API 문서화")
-  void getTableSnapshots() {
+  void getTableSnapshots() throws Exception {
     String tableId1 = "06D6W2BAHD51T5NJPK29Q6BCR9";
     String tableId2 = "06D6W2CAHD51T5NJPK29Q6BCRX";
-    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
-
-    Table table1 = new Table(tableId1, schemaId, "users", "utf8mb4", "utf8mb4_general_ci");
-    Table table2 = new Table(tableId2, schemaId, "orders", "utf8mb4", "utf8mb4_general_ci");
-
-    given(getTableUseCase.getTable(any(GetTableQuery.class)))
-        .willAnswer(invocation -> {
-          GetTableQuery query = invocation.getArgument(0);
-          if (query.tableId().equals(tableId1)) {
-            return Mono.just(table1);
-          } else {
-            return Mono.just(table2);
-          }
-        });
-    given(getColumnsByTableIdUseCase.getColumnsByTableId(any(GetColumnsByTableIdQuery.class)))
-        .willReturn(Mono.just(List.of()));
-    given(getConstraintsByTableIdUseCase.getConstraintsByTableId(
-        any(GetConstraintsByTableIdQuery.class)))
-        .willReturn(Mono.just(List.of()));
-    given(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
-        any(GetRelationshipsByTableIdQuery.class)))
-        .willReturn(Mono.just(List.of()));
-    given(getIndexesByTableIdUseCase.getIndexesByTableId(any(GetIndexesByTableIdQuery.class)))
-        .willReturn(Mono.just(List.of()));
+    TableSnapshotResponse snapshot1 = objectMapper.treeToValue(
+        objectMapper.readTree("""
+            {
+              "table": {
+                "id": "06D6W2BAHD51T5NJPK29Q6BCR9",
+                "schemaId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                "name": "users",
+                "charset": "utf8mb4",
+                "collation": "utf8mb4_general_ci",
+                "extra": null
+              },
+              "columns": [],
+              "constraints": [],
+              "relationships": [],
+              "indexes": []
+            }
+            """), TableSnapshotResponse.class);
+    TableSnapshotResponse snapshot2 = objectMapper.treeToValue(
+        objectMapper.readTree("""
+            {
+              "table": {
+                "id": "06D6W2CAHD51T5NJPK29Q6BCRX",
+                "schemaId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+                "name": "orders",
+                "charset": "utf8mb4",
+                "collation": "utf8mb4_general_ci",
+                "extra": null
+              },
+              "columns": [],
+              "constraints": [],
+              "relationships": [],
+              "indexes": []
+            }
+            """), TableSnapshotResponse.class);
+    given(tableSnapshotOrchestrator.getTableSnapshots(anyList()))
+        .willReturn(Mono.just(Map.of(tableId1, snapshot1, tableId2, snapshot2)));
 
     webTestClient.get()
         .uri(uriBuilder -> uriBuilder

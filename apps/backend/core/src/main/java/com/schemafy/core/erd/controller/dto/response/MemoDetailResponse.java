@@ -3,7 +3,6 @@ package com.schemafy.core.erd.controller.dto.response;
 import java.time.Instant;
 import java.util.List;
 
-import com.schemafy.core.erd.repository.entity.Memo;
 import com.schemafy.core.user.controller.dto.response.UserSummaryResponse;
 
 import lombok.AccessLevel;
@@ -23,18 +22,5 @@ public class MemoDetailResponse {
   private Instant createdAt;
   private Instant updatedAt;
   private List<MemoCommentResponse> comments;
-
-  public static MemoDetailResponse from(Memo memo,
-      List<MemoCommentResponse> comments, UserSummaryResponse author) {
-    return MemoDetailResponse.builder()
-        .id(memo.getId())
-        .schemaId(memo.getSchemaId())
-        .author(author)
-        .positions(memo.getPositions())
-        .createdAt(memo.getCreatedAt())
-        .updatedAt(memo.getUpdatedAt())
-        .comments(comments)
-        .build();
-  }
 
 }
