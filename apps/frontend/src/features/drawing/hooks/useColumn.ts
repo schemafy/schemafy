@@ -2,9 +2,9 @@ import { type ColumnType, CONSTRAINT_PREFIX_MAP } from '../types';
 import type { Constraint } from '@/types';
 import { useChangeColumnName, useChangeColumnType } from './useColumnMutations';
 import {
+  useAddConstraintColumn,
   useCreateConstraint,
   useDeleteConstraint,
-  useAddConstraintColumn,
   useRemoveConstraintColumn,
 } from './useConstraintMutations';
 import { useDebouncedMutation } from './useDebouncedMutation';
@@ -17,7 +17,7 @@ export const useColumn = (
 ) => {
   const changeColumnNameMutation = useChangeColumnName(schemaId);
   const debouncedChangeColumnName = useDebouncedMutation(
-    changeColumnNameMutation,
+    changeColumnNameMutation
   );
   const changeColumnTypeMutation = useChangeColumnType(schemaId);
   const createConstraintMutation = useCreateConstraint(schemaId);
@@ -28,14 +28,14 @@ export const useColumn = (
   const saveColumnName = (columnId: string, name: string) => {
     debouncedChangeColumnName.mutate({
       columnId,
-      data: { newName: name },
+      data: {newName: name},
     });
   };
 
   const saveColumnType = (columnId: string, dataType: string) => {
     changeColumnTypeMutation.mutate({
       columnId,
-      data: { dataType },
+      data: {dataType},
     });
   };
 
@@ -69,7 +69,7 @@ export const useColumn = (
             tableId,
             name: `pk_${tableName}`,
             kind: 'PRIMARY_KEY',
-            columns: [{ columnId, seqNo: 0 }],
+            columns: [{columnId, seqNo: 0}],
           });
         }
       } else {
@@ -78,7 +78,7 @@ export const useColumn = (
           tableId,
           name: `${prefix}_${columnId}`,
           kind: constraintKind,
-          columns: [{ columnId, seqNo: 0 }],
+          columns: [{columnId, seqNo: 0}],
         });
       }
     } else if (!enabled && existingConstraint) {

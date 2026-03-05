@@ -45,14 +45,18 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const updateExtra = (
     relationshipId: string,
     updater: (extra: RelationshipExtra) => RelationshipExtra,
+    skipHistory = false,
   ) => {
     const snapshot = findRelationshipById(snapshotsData, relationshipId);
     if (!snapshot) return;
 
     const currentExtra = parseRelationshipExtra(snapshot.relationship.extra);
+    const newExtraString = JSON.stringify(updater(currentExtra));
+
     changeRelationshipExtraMutation.mutate({
       relationshipId,
-      data: { extra: JSON.stringify(updater(currentExtra)) },
+      data: { extra: newExtraString },
+      skipHistory,
     });
   };
 
@@ -111,15 +115,15 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         undefined,
     };
 
-    createRelationshipWithExtraMutation.mutate({
-      request: {
-        fkTableId: validation.fkTableId,
-        pkTableId: validation.pkTableId,
-        kind,
-        cardinality: typeConfig.cardinality,
-      },
-      extra: JSON.stringify(extra),
-    });
+    const createRequest = {
+      fkTableId: validation.fkTableId,
+      pkTableId: validation.pkTableId,
+      kind,
+      cardinality: typeConfig.cardinality,
+    };
+    const extraString = JSON.stringify(extra);
+
+    createRelationshipWithExtraMutation.mutate({ request: createRequest, extra: extraString });
   };
 
   const onConnect = (params: Connection) => {
@@ -178,17 +182,21 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     if (isSameTablePair) {
       const isSameDirection = newConnection.source === validation.fkTableId;
 
-      updateExtra(oldRelationship.id, (extra) => ({
-        ...extra,
-        fkHandle:
-          (isSameDirection
-            ? newConnection.sourceHandle
-            : newConnection.targetHandle) ?? undefined,
-        pkHandle:
-          (isSameDirection
-            ? newConnection.targetHandle
-            : newConnection.sourceHandle) ?? undefined,
-      }));
+      updateExtra(
+        oldRelationship.id,
+        (extra) => ({
+          ...extra,
+          fkHandle:
+            (isSameDirection
+              ? newConnection.sourceHandle
+              : newConnection.targetHandle) ?? undefined,
+          pkHandle:
+            (isSameDirection
+              ? newConnection.targetHandle
+              : newConnection.sourceHandle) ?? undefined,
+        }),
+        true,
+      );
     } else {
       deleteRelationshipMutation.mutate(oldRelationship.id, {
         onSuccess: () => {
@@ -255,10 +263,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   };
 
   const updateRelationshipName = (relationshipId: string, newName: string) => {
-    changeRelationshipNameMutation.mutate({
-      relationshipId,
-      data: { newName },
-    });
+    changeRelationshipNameMutation.mutate({ relationshipId, data: { newName } });
   };
 
   return {
