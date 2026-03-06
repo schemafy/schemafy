@@ -37,12 +37,6 @@ public final class ChatEvent {
       return CollaborationEventType.CHAT;
     }
 
-    @Override
-    public Outbound withoutSessionId() {
-      return new Outbound(null, messageId, userId, userName, content,
-          timestamp);
-    }
-
   }
 
 }

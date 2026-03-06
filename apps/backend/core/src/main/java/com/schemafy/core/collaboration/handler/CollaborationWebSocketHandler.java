@@ -15,6 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.schemafy.core.collaboration.security.ProjectAccessValidator;
 import com.schemafy.core.collaboration.security.WebSocketAuthInfo;
+import com.schemafy.core.collaboration.service.CollaborationDirectMessageSender;
 import com.schemafy.core.collaboration.service.CollaborationService;
 import com.schemafy.core.collaboration.service.SessionRegistry;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
@@ -31,6 +32,7 @@ import reactor.core.publisher.Mono;
 @ConditionalOnRedisEnabled
 public class CollaborationWebSocketHandler implements WebSocketHandler {
 
+  private final CollaborationDirectMessageSender directMessageSender;
   private final CollaborationService collaborationService;
   private final SessionRegistry sessionRegistry;
   private final ProjectAccessValidator projectAccessValidator;
@@ -117,6 +119,12 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     SessionEntry entry = sessionRegistry.addSession(projectId, sessionId,
         session, authInfo);
 
+    Mono<Void> sessionReady = directMessageSender
+        .sendSessionReady(entry, sessionId)
+        .doOnError(e -> log.warn(
+            "[CollaborationWebSocketHandler] Failed to send session ready: sessionId={}, error={}",
+            sessionId, e.getMessage()));
+
     Mono<Void> notifyJoin = collaborationService
         .notifyJoin(projectId, sessionId, userId, userName)
         .doOnError(e -> log.warn(
@@ -152,7 +160,8 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
             sessionId, error))
         .then();
 
-    return notifyJoin
+    return sessionReady
+        .then(notifyJoin)
         .then(Mono.zip(inbound, outbound, cursorPipeline).then())
         .doFinally(signalType -> {
           log.info(

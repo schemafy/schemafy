@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum CollaborationEventType {
 
+  SESSION_READY("SESSION_READY", true),
   JOIN("JOIN", false),
   LEAVE("LEAVE", false),
   CURSOR("CURSOR", false),

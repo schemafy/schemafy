@@ -3,26 +3,22 @@ package com.schemafy.core.collaboration.dto.event;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.schemafy.core.collaboration.dto.CollaborationEventType;
 
-public final class JoinEvent {
+public final class SessionReadyEvent {
 
-  private JoinEvent() {}
+  private SessionReadyEvent() {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Outbound(
       String sessionId,
-      String userId,
-      String userName,
       long timestamp) implements CollaborationOutbound {
 
-    public static Outbound of(String sessionId, String userId,
-        String userName) {
-      return new Outbound(sessionId, userId, userName,
-          System.currentTimeMillis());
+    public static Outbound of(String sessionId) {
+      return new Outbound(sessionId, System.currentTimeMillis());
     }
 
     @Override
     public CollaborationEventType type() {
-      return CollaborationEventType.JOIN;
+      return CollaborationEventType.SESSION_READY;
     }
 
   }

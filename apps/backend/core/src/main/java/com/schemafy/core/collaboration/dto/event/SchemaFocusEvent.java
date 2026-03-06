@@ -36,11 +36,6 @@ public final class SchemaFocusEvent {
       return CollaborationEventType.SCHEMA_FOCUS;
     }
 
-    @Override
-    public Outbound withoutSessionId() {
-      return new Outbound(null, userId, userName, schemaId, timestamp);
-    }
-
   }
 
 }

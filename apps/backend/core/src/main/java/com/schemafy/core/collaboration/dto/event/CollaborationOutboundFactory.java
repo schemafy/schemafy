@@ -8,6 +8,10 @@ public final class CollaborationOutboundFactory {
 
   private CollaborationOutboundFactory() {}
 
+  public static SessionReadyEvent.Outbound sessionReady(String sessionId) {
+    return SessionReadyEvent.Outbound.of(sessionId);
+  }
+
   public static JoinEvent.Outbound join(String sessionId, String userId,
       String userName) {
     return JoinEvent.Outbound.of(sessionId, userId, userName);
