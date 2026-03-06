@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useRef, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { ErdCommand } from './ErdCommand';
 
@@ -12,9 +12,17 @@ interface ErdHistoryContextValue {
   isProcessing: boolean;
 }
 
-export const ErdHistoryContext = createContext<ErdHistoryContextValue | null>(
+const ErdHistoryContext = createContext<ErdHistoryContextValue | null>(
   null,
 );
+
+export const useErdHistory = () => {
+  const context = useContext(ErdHistoryContext);
+  if (!context) {
+    throw new Error('useErdHistory must be used within ErdHistoryProvider');
+  }
+  return context;
+};
 
 const MAX_HISTORY_SIZE = 100;
 

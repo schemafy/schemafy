@@ -6,6 +6,7 @@ import type {
   ChangeRelationshipNameRequest,
   CreateRelationshipRequest,
   RelationshipSnapshotResponse,
+  TableSnapshotResponse,
 } from '../../api';
 import {
   changeRelationshipCardinality,
@@ -17,6 +18,8 @@ import {
 } from '../../api';
 import type { ErdCommand } from '../ErdCommand';
 import { BaseErdCommand } from '../erdCacheHelpers';
+import { restoreCascadeRelationships } from '../cascadeHelpers';
+import { erdKeys } from '../../hooks/query-keys';
 
 interface RelationshipCommandBase {
   schemaId: string;
@@ -61,6 +64,7 @@ export class DeleteRelationshipCommand extends BaseErdCommand {
   constructor(
     private params: RelationshipCommandBase & {
       snapshot: RelationshipSnapshotResponse;
+      cascadeSnapshots: Record<string, TableSnapshotResponse>;
     },
   ) {
     super(params.schemaId, params.queryClient);
@@ -80,7 +84,27 @@ export class DeleteRelationshipCommand extends BaseErdCommand {
     const result = await createRelationship(createRelationshipData);
     this.restoredRelationshipId = result.data.id;
 
-    await this.updateCache(result.affectedTableIds);
+    const allAffectedTableIds = new Set<string>(result.affectedTableIds);
+
+    if (
+      relationship.kind === 'IDENTIFYING' &&
+      Object.keys(this.params.cascadeSnapshots).length > 0
+    ) {
+      const currentSnapshots =
+        this.queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
+          erdKeys.schemaSnapshots(this.schemaId),
+        );
+
+      await restoreCascadeRelationships(
+        relationship.fkTableId,
+        this.params.cascadeSnapshots,
+        currentSnapshots,
+        allAffectedTableIds,
+        createRelationship
+      );
+    }
+
+    await this.updateCache([...allAffectedTableIds]);
   }
 
   async redo(): Promise<void> {
@@ -131,6 +155,8 @@ export class ChangeRelationshipKindCommand extends BaseErdCommand {
       relationshipId: string;
       previousKind: string;
       newKind: string;
+      cascadeSnapshots: Record<string, TableSnapshotResponse>;
+      fkTableId: string;
     },
   ) {
     super(params.schemaId, params.queryClient);
@@ -143,7 +169,27 @@ export class ChangeRelationshipKindCommand extends BaseErdCommand {
 
     const result = await changeRelationshipKind(this.params.relationshipId, changeRelationshipKindData);
 
-    await this.updateCache(result.affectedTableIds);
+    const allAffectedTableIds = new Set<string>(result.affectedTableIds);
+
+    if (
+      this.params.previousKind === 'IDENTIFYING' &&
+      Object.keys(this.params.cascadeSnapshots).length > 0
+    ) {
+      const currentSnapshots =
+        this.queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
+          erdKeys.schemaSnapshots(this.schemaId),
+        );
+
+      await restoreCascadeRelationships(
+        this.params.fkTableId,
+        this.params.cascadeSnapshots,
+        currentSnapshots,
+        allAffectedTableIds,
+        createRelationship
+      );
+    }
+
+    await this.updateCache([...allAffectedTableIds]);
   }
 
   async redo(): Promise<void> {
@@ -213,7 +259,7 @@ export class ReconnectRelationshipCommand extends BaseErdCommand {
   async undo(): Promise<void> {
     const deleteResult = await deleteRelationship(this.currentNewId);
 
-    const { relationship } = this.params.oldSnapshot;
+    const {relationship} = this.params.oldSnapshot;
     const createResult = await createRelationship({
       fkTableId: relationship.fkTableId,
       pkTableId: relationship.pkTableId,

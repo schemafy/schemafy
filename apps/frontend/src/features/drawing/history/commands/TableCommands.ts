@@ -29,6 +29,7 @@ import {
 import { erdKeys } from '../../hooks/query-keys';
 import type { ErdCommand } from '../ErdCommand';
 import { BaseErdCommand, removeTableFromCache } from '../erdCacheHelpers';
+import { restoreCascadeRelationships } from '../cascadeHelpers';
 
 interface TableCommandBase {
   schemaId: string;
@@ -81,6 +82,7 @@ export class DeleteTableCommand extends BaseErdCommand {
     private params: TableCommandBase & {
       tableId: string;
       snapshot: TableSnapshotResponse;
+      cascadeSnapshots: Record<string, TableSnapshotResponse>;
     },
   ) {
     super(params.schemaId, params.queryClient);
@@ -236,6 +238,16 @@ export class DeleteTableCommand extends BaseErdCommand {
             columnIdMap.set(originRelCol.fkColumnId, arc.fkColumnId);
           }
         }
+      }
+
+      if (!isFkTable && relationship.kind === 'IDENTIFYING') {
+        await restoreCascadeRelationships(
+          fkTableId,
+          this.params.cascadeSnapshots,
+          currentSnapshots,
+          allAffectedTableIds,
+          createRelationship
+        );
       }
     }
 

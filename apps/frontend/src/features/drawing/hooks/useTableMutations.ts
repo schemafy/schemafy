@@ -22,6 +22,7 @@ import {
   ChangeTableNameCommand,
   MoveTableCommand,
 } from '../history';
+import { collectCascadeSnapshots } from '../history/cascadeHelpers';
 
 export const useCreateTableWithExtra = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
@@ -137,7 +138,11 @@ export const useDeleteTable = (schemaId: string) => {
       const snapshots = queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
         erdKeys.schemaSnapshots(schemaId),
       );
-      return { snapshot: snapshots?.[tableId] };
+      const cascadeSnapshots: Record<string, TableSnapshotResponse> = {};
+      if (snapshots) {
+        collectCascadeSnapshots(tableId, snapshots, cascadeSnapshots);
+      }
+      return { snapshot: snapshots?.[tableId], cascadeSnapshots };
     },
     onSuccess: (result, tableId, context) => {
       removeAndUpdate(tableId, result.affectedTableIds);
@@ -148,6 +153,7 @@ export const useDeleteTable = (schemaId: string) => {
             queryClient,
             tableId,
             snapshot: context.snapshot,
+            cascadeSnapshots: context.cascadeSnapshots ?? {},
           }),
         );
       }

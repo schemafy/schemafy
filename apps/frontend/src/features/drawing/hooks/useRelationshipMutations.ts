@@ -32,6 +32,7 @@ import {
   ChangeRelationshipCardinalityCommand,
   ChangeRelationshipExtraCommand,
 } from '../history';
+import { collectCascadeSnapshots } from '../history/cascadeHelpers';
 
 type ChangeRelationshipExtraVars = {
   relationshipId: string;
@@ -118,12 +119,22 @@ export const useChangeRelationshipKind = (schemaId: string) => {
       relationshipId: string;
       data: ChangeRelationshipKindRequest;
     }) => changeRelationshipKind(relationshipId, data),
-    onMutate: ({ relationshipId }) => {
+    onMutate: ({ relationshipId, data }) => {
       const snapshots = queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
         erdKeys.schemaSnapshots(schemaId),
       );
       const rel = findRelationshipSnapshot(snapshots, relationshipId);
-      return { previousKind: rel?.relationship.kind ?? '' };
+      const previousKind = rel?.relationship.kind ?? '';
+      const cascadeSnapshots: Record<string, TableSnapshotResponse> = {};
+      if (previousKind === 'IDENTIFYING' && data.kind !== 'IDENTIFYING' && snapshots && rel) {
+        const fkTableId = rel.relationship.fkTableId;
+        const fkSnapshot = snapshots[fkTableId];
+        if (fkSnapshot) {
+          cascadeSnapshots[fkTableId] = fkSnapshot;
+        }
+        collectCascadeSnapshots(fkTableId, snapshots, cascadeSnapshots);
+      }
+      return { previousKind, cascadeSnapshots, fkTableId: rel?.relationship.fkTableId ?? '' };
     },
     onSuccess: (result, variables, context) => {
       updateAffectedTables(result.affectedTableIds);
@@ -134,6 +145,8 @@ export const useChangeRelationshipKind = (schemaId: string) => {
           relationshipId: variables.relationshipId,
           previousKind: context?.previousKind ?? '',
           newKind: variables.data.kind,
+          cascadeSnapshots: context?.cascadeSnapshots ?? {},
+          fkTableId: context?.fkTableId ?? '',
         }),
       );
     },
@@ -216,7 +229,17 @@ export const useDeleteRelationship = (schemaId: string) => {
       const snapshots = queryClient.getQueryData<Record<string, TableSnapshotResponse>>(
         erdKeys.schemaSnapshots(schemaId),
       );
-      return { snapshot: findRelationshipSnapshot(snapshots, relationshipId) };
+      const snapshot = findRelationshipSnapshot(snapshots, relationshipId);
+      const cascadeSnapshots: Record<string, TableSnapshotResponse> = {};
+      if (snapshot?.relationship.kind === 'IDENTIFYING' && snapshots) {
+        const fkTableId = snapshot.relationship.fkTableId;
+        const fkSnapshot = snapshots[fkTableId];
+        if (fkSnapshot) {
+          cascadeSnapshots[fkTableId] = fkSnapshot;
+        }
+        collectCascadeSnapshots(fkTableId, snapshots, cascadeSnapshots);
+      }
+      return { snapshot, cascadeSnapshots };
     },
     onSuccess: (result, _variables, context) => {
       updateAffectedTables(result.affectedTableIds);
@@ -226,6 +249,7 @@ export const useDeleteRelationship = (schemaId: string) => {
             schemaId,
             queryClient,
             snapshot: context.snapshot,
+            cascadeSnapshots: context.cascadeSnapshots ?? {},
           }),
         );
       }
