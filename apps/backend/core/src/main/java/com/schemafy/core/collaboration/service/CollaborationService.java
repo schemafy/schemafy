@@ -34,6 +34,7 @@ public class CollaborationService {
 
   private final SessionRegistry sessionRegistry;
   private final CollaborationEventPublisher eventPublisher;
+  private final CollaborationPayloadSerializer payloadSerializer;
   private final ObjectMapper objectMapper;
   private final Map<CollaborationEventType, InboundMessageHandler> handlers;
   private final Map<String, CursorPosition> cursorDedupeCache = new ConcurrentHashMap<>();
@@ -41,10 +42,12 @@ public class CollaborationService {
   public CollaborationService(
       SessionRegistry sessionRegistry,
       CollaborationEventPublisher eventPublisher,
+      CollaborationPayloadSerializer payloadSerializer,
       ObjectMapper objectMapper,
       List<InboundMessageHandler> handlerList) {
     this.sessionRegistry = sessionRegistry;
     this.eventPublisher = eventPublisher;
+    this.payloadSerializer = payloadSerializer;
     this.objectMapper = objectMapper;
     this.handlers = handlerList.stream()
         .collect(Collectors.toMap(
@@ -146,13 +149,24 @@ public class CollaborationService {
   /** handle redis message */
   public Mono<Void> handleRedisMessage(String projectId, String message) {
     return deserializeFromJson(message, CollaborationOutbound.class)
-        .flatMap(event -> serializeToJson(event.withoutSessionId())
-            .doOnNext(json -> broadcastEvent(
-                projectId,
-                event.sessionId(),
-                event.type(),
-                json))
-            .then());
+        .flatMap(event -> {
+          // SESSION_READY는 연결된 세션에 직접 전송된다.
+          // 혹시 Redis 경로로 유입되더라도 브로드캐스트하지 않도록 방어적으로 무시한다.
+          if (event.type() == CollaborationEventType.SESSION_READY) {
+            log.warn(
+                "[CollaborationService] Ignoring SESSION_READY from Redis: projectId={}",
+                projectId);
+            return Mono.empty();
+          }
+
+          return payloadSerializer.serializeForBroadcast(event)
+              .doOnNext(json -> broadcastEvent(
+                  projectId,
+                  event.sessionId(),
+                  event.type(),
+                  json))
+              .then();
+        });
   }
 
   private void broadcastEvent(String projectId, String excludeSessionId,
@@ -169,14 +183,6 @@ public class CollaborationService {
         : excludeSessionId;
     sessionRegistry
         .broadcast(BroadcastMessage.of(projectId, exclude, json));
-  }
-
-  private <T> Mono<String> serializeToJson(T object) {
-    return Mono.fromCallable(() -> objectMapper.writeValueAsString(object))
-        .onErrorMap(JsonProcessingException.class,
-            e -> new RuntimeException(
-                "[CollaborationService] failed to serialize JSON",
-                e));
   }
 
   private <T> Mono<T> deserializeFromJson(String json, Class<T> clazz) {

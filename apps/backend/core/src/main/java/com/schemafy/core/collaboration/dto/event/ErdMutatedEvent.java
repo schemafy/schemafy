@@ -32,11 +32,6 @@ public final class ErdMutatedEvent {
       return CollaborationEventType.ERD_MUTATED;
     }
 
-    @Override
-    public Outbound withoutSessionId() {
-      return new Outbound(null, schemaId, affectedTableIds, timestamp);
-    }
-
   }
 
 }

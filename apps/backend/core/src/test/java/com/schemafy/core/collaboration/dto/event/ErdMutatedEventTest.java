@@ -59,19 +59,15 @@ class ErdMutatedEventTest {
   }
 
   @Test
-  @DisplayName("withoutSessionId는 sessionId가 null인 새 인스턴스를 반환한다")
-  void withoutSessionId_returns_new_instance_without_session() {
+  @DisplayName("sessionId가 있는 이벤트는 직렬화 시 sessionId를 포함한다")
+  void serialize_with_session_id_includes_session_id() throws Exception {
     ErdMutatedEvent.Outbound event = ErdMutatedEvent.Outbound.of(
         "session-1", "schema-1", Set.of("table-1"));
 
-    ErdMutatedEvent.Outbound stripped = (ErdMutatedEvent.Outbound) event
-        .withoutSessionId();
+    String json = objectMapper.writeValueAsString(event);
 
-    assertThat(stripped).isNotSameAs(event);
-    assertThat(stripped.sessionId()).isNull();
-    assertThat(stripped.schemaId()).isEqualTo("schema-1");
-    assertThat(stripped.affectedTableIds()).containsExactly("table-1");
-    assertThat(stripped.timestamp()).isEqualTo(event.timestamp());
+    assertThat(json).contains("\"sessionId\":\"session-1\"");
+    assertThat(json).contains("\"schemaId\":\"schema-1\"");
   }
 
   @Test

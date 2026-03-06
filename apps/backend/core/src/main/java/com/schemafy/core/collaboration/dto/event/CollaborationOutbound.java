@@ -8,6 +8,7 @@ import com.schemafy.core.collaboration.dto.CollaborationEventType;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(value = SessionReadyEvent.Outbound.class, name = "SESSION_READY"),
   @JsonSubTypes.Type(value = JoinEvent.Outbound.class, name = "JOIN"),
   @JsonSubTypes.Type(value = LeaveEvent.Outbound.class, name = "LEAVE"),
   @JsonSubTypes.Type(value = CursorEvent.Outbound.class, name = "CURSOR"),
@@ -16,16 +17,14 @@ import com.schemafy.core.collaboration.dto.CollaborationEventType;
   @JsonSubTypes.Type(value = ErdMutatedEvent.Outbound.class, name = "ERD_MUTATED")
 })
 public sealed interface CollaborationOutbound
-    permits JoinEvent.Outbound, LeaveEvent.Outbound, CursorEvent.Outbound,
-    SchemaFocusEvent.Outbound, ChatEvent.Outbound,
-    ErdMutatedEvent.Outbound {
+    permits SessionReadyEvent.Outbound, JoinEvent.Outbound,
+    LeaveEvent.Outbound, CursorEvent.Outbound,
+    SchemaFocusEvent.Outbound, ChatEvent.Outbound, ErdMutatedEvent.Outbound {
 
   CollaborationEventType type();
 
   String sessionId();
 
   long timestamp();
-
-  CollaborationOutbound withoutSessionId();
 
 }

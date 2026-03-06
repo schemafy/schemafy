@@ -40,11 +40,6 @@ public final class CursorEvent {
       return CollaborationEventType.CURSOR;
     }
 
-    @Override
-    public Outbound withoutSessionId() {
-      return new Outbound(null, userInfo, cursor, timestamp);
-    }
-
   }
 
 }
