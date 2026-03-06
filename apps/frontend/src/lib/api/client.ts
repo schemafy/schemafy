@@ -3,6 +3,11 @@ import { authStore } from '../../store/auth.store';
 import { refreshToken } from '@/features/auth/api';
 import { handleApiError } from './error-handler';
 
+let sessionIdGetter: (() => string | null) | null = null;
+export const registerSessionIdGetter = (getter: () => string | null) => {
+  sessionIdGetter = getter;
+};
+
 const API_BASE_URL: string =
   import.meta.env.VITE_BASE_URL || 'http://localhost:4000/api/v1.0';
 
@@ -45,6 +50,12 @@ type RequestConfigWithMeta = InternalAxiosRequestConfig & {
 };
 
 apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
+  const sessionId = sessionIdGetter?.();
+  if (sessionId) {
+    config.headers = config.headers ?? {};
+    (config.headers as Record<string, string>)['X-Session-Id'] = sessionId;
+  }
+
   const currentToken = authStore.accessToken;
   if (currentToken) {
     config.headers = config.headers ?? {};

@@ -12,6 +12,7 @@ import type {
 } from '@/features/collaboration/api';
 import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { authStore } from './auth.store';
+import { registerSessionIdGetter } from '@/lib/api';
 
 const SHARED_WORKER_ENABLE = typeof SharedWorker !== 'undefined';
 
@@ -21,6 +22,7 @@ export class CollaborationStore {
 
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
+  sessionId: string | null = null;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
   private erdMutatedListeners: Set<(message: ReceiveErdMutated) => void> =
     new Set();
@@ -62,6 +64,14 @@ export class CollaborationStore {
         }, 3000);
       } else if (type === 'WS_ERROR') {
         console.error('WebSocket error from Worker:', event.data.error);
+      } else if (type === 'SESSION_READY') {
+        const { sessionId } = event.data as Extract<
+          typeof event.data,
+          { type: 'SESSION_READY' }
+        >;
+        runInAction(() => {
+          this.sessionId = sessionId;
+        });
       } else if (type === 'INITIAL_STATE') {
         const { cursors } = event.data;
 
@@ -187,6 +197,7 @@ export class CollaborationStore {
       runInAction(() => {
         this.projectId = null;
         this.cursors.clear();
+        this.sessionId = null;
       });
     } else {
       console.error('Worker or port is not ready');
@@ -337,3 +348,5 @@ export class CollaborationStore {
 }
 
 export const collaborationStore = new CollaborationStore();
+
+registerSessionIdGetter(() => collaborationStore.sessionId);

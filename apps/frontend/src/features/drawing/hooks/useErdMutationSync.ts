@@ -22,10 +22,6 @@ export const useErdMutationSync = (schemaId: string, projectId: string) => {
       pendingSchemaChange.current = false;
       timerRef.current = null;
 
-      if (tableIds.length > 0) {
-        updateAffectedTables(tableIds);
-      }
-
       if (hasSchemaChange) {
         queryClient.invalidateQueries({
           queryKey: erdKeys.schemas(projectId),
@@ -33,6 +29,8 @@ export const useErdMutationSync = (schemaId: string, projectId: string) => {
         queryClient.invalidateQueries({
           queryKey: erdKeys.schemaSnapshots(schemaId),
         });
+      } else if (tableIds.length > 0) {
+        updateAffectedTables(tableIds);
       }
     };
 

@@ -14,10 +14,11 @@ export class SchemaService {
   async createSchema(
     data: CreateSchemaRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse<SchemaResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<SchemaResponse>
-    >('/api/v1.0/schemas', data, this.backendClient.getAuthConfig(authHeader));
+    >('/api/v1.0/schemas', data, this.backendClient.getAuthConfig(authHeader, sessionId));
     return response.data;
   }
 
@@ -47,11 +48,12 @@ export class SchemaService {
     schemaId: string,
     data: ChangeSchemaNameRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/schemas/${schemaId}/name`,
       data,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
@@ -59,10 +61,11 @@ export class SchemaService {
   async deleteSchema(
     schemaId: string,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/schemas/${schemaId}`,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }

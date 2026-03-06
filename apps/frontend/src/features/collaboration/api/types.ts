@@ -32,7 +32,6 @@ export type ReceiveLeave = {
 
 export type ReceiveCursor = {
   type: 'CURSOR';
-  sessionId: string;
   userInfo: {
     userId: string;
     userName: string;
@@ -69,7 +68,14 @@ export type ReceiveErdMutated = {
   timestamp: number;
 };
 
+export type ReceiveSessionReady = {
+  type: 'SESSION_READY';
+  sessionId: string;
+  timestamp: number;
+};
+
 export type WebSocketMessage =
+  | ReceiveSessionReady
   | ReceiveJoin
   | ReceiveLeave
   | ReceiveCursor
