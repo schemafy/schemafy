@@ -25,11 +25,6 @@ public final class LeaveEvent {
       return CollaborationEventType.LEAVE;
     }
 
-    @Override
-    public Outbound withoutSessionId() {
-      return new Outbound(null, userId, userName, timestamp);
-    }
-
   }
 
 }
