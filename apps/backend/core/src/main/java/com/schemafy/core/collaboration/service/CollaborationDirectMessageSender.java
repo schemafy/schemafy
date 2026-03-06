@@ -7,19 +7,16 @@ import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 @Component
+@RequiredArgsConstructor
 @ConditionalOnRedisEnabled
 public class CollaborationDirectMessageSender {
 
   private final CollaborationPayloadSerializer payloadSerializer;
-
-  public CollaborationDirectMessageSender(
-      CollaborationPayloadSerializer payloadSerializer) {
-    this.payloadSerializer = payloadSerializer;
-  }
 
   public Mono<Void> sendSessionReady(SessionEntry entry, String sessionId) {
     return send(entry, CollaborationOutboundFactory.sessionReady(sessionId));

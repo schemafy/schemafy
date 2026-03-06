@@ -8,19 +8,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Component
+@RequiredArgsConstructor
 @ConditionalOnRedisEnabled
 public class CollaborationPayloadSerializer {
 
   private static final String SESSION_ID_FIELD = "sessionId";
 
   private final ObjectMapper objectMapper;
-
-  public CollaborationPayloadSerializer(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
 
   public Mono<String> serialize(CollaborationOutbound event) {
     return Mono.fromCallable(() -> objectMapper.writeValueAsString(event))
