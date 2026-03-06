@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import type {
   AddConstraintColumnRequest,
   AddIndexColumnRequest,
-  AddRelationshipColumnRequest,
   ChangeTableExtraRequest,
   ChangeTableNameRequest,
   ColumnResponse,
@@ -17,7 +16,6 @@ import type {
 import {
   addConstraintColumn,
   addIndexColumn,
-  addRelationshipColumn,
   changeTableExtra,
   changeTableName,
   createColumn,
@@ -25,10 +23,8 @@ import {
   createIndex,
   createRelationship,
   createTable,
-  deleteColumn,
   deleteTable,
   getRelationshipColumns,
-  removeRelationshipColumn,
 } from '../../api';
 import { erdKeys } from '../../hooks/query-keys';
 import type { ErdCommand } from '../ErdCommand';
@@ -94,6 +90,19 @@ export class DeleteTableCommand extends BaseErdCommand {
     const {snapshot} = this.params;
     const {table, columns, constraints, indexes, relationships} = snapshot;
 
+    const fkColumnIds = new Set<string>();
+    const identifyingFkColumnIds = new Set<string>();
+    for (const relSnapshot of relationships) {
+      if (relSnapshot.relationship.fkTableId === snapshot.table.id) {
+        for (const rc of relSnapshot.columns) {
+          fkColumnIds.add(rc.fkColumnId);
+          if (relSnapshot.relationship.kind === 'IDENTIFYING') {
+            identifyingFkColumnIds.add(rc.fkColumnId);
+          }
+        }
+      }
+    }
+
     const createTableData: CreateTableRequest = {
       schemaId: this.schemaId,
       name: table.name,
@@ -106,8 +115,12 @@ export class DeleteTableCommand extends BaseErdCommand {
     const newTableId = tableResult.data.id;
     this.restoredTableId = newTableId;
 
+    const allAffectedTableIds = new Set<string>(tableResult.affectedTableIds);
+
     const columnIdMap = new Map<string, string>();
     for (const col of columns) {
+      if (fkColumnIds.has(col.id)) continue;
+
       const createColumnData: CreateColumnRequest = {
         tableId: newTableId,
         name: col.name,
@@ -125,6 +138,7 @@ export class DeleteTableCommand extends BaseErdCommand {
       columnIdMap.set(col.id, colResult.data.id);
     }
 
+    const constraintIdMap = new Map<string, string>();
     for (const constraintSnapshot of constraints) {
       const {constraint, columns: constraintColumns} = constraintSnapshot;
 
@@ -138,20 +152,24 @@ export class DeleteTableCommand extends BaseErdCommand {
 
       const constraintResult = await createConstraint(createConstraintData);
 
+      constraintIdMap.set(constraint.id, constraintResult.data.id);
+
       for (const cc of constraintColumns) {
+        if (fkColumnIds.has(cc.columnId)) continue;
         const newColumnId = columnIdMap.get(cc.columnId) ?? cc.columnId;
 
         const addConstraintColumnData: AddConstraintColumnRequest = {
           columnId: newColumnId,
           seqNo: cc.seqNo,
         };
-
         await addConstraintColumn(constraintResult.data.id, addConstraintColumnData);
       }
     }
 
+    const indexIdMap = new Map<string, string>();
     for (const indexSnapshot of indexes) {
       const {index, columns: indexColumns} = indexSnapshot;
+
       const createIndexData: CreateIndexRequest = {
         tableId: newTableId,
         name: index.name,
@@ -159,8 +177,11 @@ export class DeleteTableCommand extends BaseErdCommand {
       };
 
       const indexResult = await createIndex(createIndexData);
+      indexIdMap.set(index.id, indexResult.data.id);
 
       for (const ic of indexColumns) {
+        if (fkColumnIds.has(ic.columnId)) continue;
+
         const newColumnId = columnIdMap.get(ic.columnId) ?? ic.columnId;
 
         const addIndexColumnData: AddIndexColumnRequest = {
@@ -168,7 +189,6 @@ export class DeleteTableCommand extends BaseErdCommand {
           seqNo: ic.seqNo,
           sortDirection: ic.sortDirection,
         };
-
         await addIndexColumn(indexResult.data.id, addIndexColumnData);
       }
     }
@@ -178,14 +198,10 @@ export class DeleteTableCommand extends BaseErdCommand {
         erdKeys.schemaSnapshots(this.schemaId),
       );
 
-    const affectedIds = new Set<string>([newTableId]);
-
     for (const relSnapshot of relationships) {
       const {relationship, columns: relColumns} = relSnapshot;
       const isFkTable = relationship.fkTableId === snapshot.table.id;
-      const otherTableId = isFkTable
-        ? relationship.pkTableId
-        : relationship.fkTableId;
+      const otherTableId = isFkTable ? relationship.pkTableId : relationship.fkTableId;
 
       if (!currentSnapshots || !currentSnapshots[otherTableId]) {
         toast.info('반대쪽 테이블이 없어 일부 관계를 복원하지 못했습니다.');
@@ -195,44 +211,62 @@ export class DeleteTableCommand extends BaseErdCommand {
       const fkTableId = isFkTable ? newTableId : relationship.fkTableId;
       const pkTableId = isFkTable ? relationship.pkTableId : newTableId;
 
+      const extra = relationship.extra
+        ? relationship.extra.replaceAll(snapshot.table.id, newTableId)
+        : undefined;
+
       const createRelationshipData: CreateRelationshipRequest = {
         fkTableId,
         pkTableId,
         kind: relationship.kind,
         cardinality: relationship.cardinality,
-        extra: relationship.extra ?? undefined,
+        extra,
       };
 
       const relResult = await createRelationship(createRelationshipData);
+      for (const id of relResult.affectedTableIds) {
+        allAffectedTableIds.add(id);
+      }
 
       if (isFkTable) {
         const autoRelCols = await getRelationshipColumns(relResult.data.id);
-        const autoFkColumnIds = [...new Set(autoRelCols.map((c) => c.fkColumnId))];
-
         for (const arc of autoRelCols) {
-          await removeRelationshipColumn(arc.id);
-        }
-        for (const colId of autoFkColumnIds) {
-          await deleteColumn(colId);
-        }
-
-        for (const rc of relColumns) {
-          const fkColumnId = columnIdMap.get(rc.fkColumnId) ?? rc.fkColumnId;
-          const addRelationshipColumnData: AddRelationshipColumnRequest = {
-            fkColumnId,
-            pkColumnId: rc.pkColumnId,
-            seqNo: rc.seqNo,
-          };
-          await addRelationshipColumn(relResult.data.id, addRelationshipColumnData);
+          const originRelCol = relColumns.find((rc) => rc.pkColumnId === arc.pkColumnId);
+          if (originRelCol) {
+            columnIdMap.set(originRelCol.fkColumnId, arc.fkColumnId);
+          }
         }
       }
-
-      affectedIds.add(otherTableId);
     }
 
-    void this.queryClient.invalidateQueries({
-      queryKey: erdKeys.schemaSnapshots(this.schemaId),
-    });
+    for (const constraintSnapshot of constraints) {
+      const {constraint, columns: constraintColumns} = constraintSnapshot;
+      const newConstraintId = constraintIdMap.get(constraint.id);
+      if (!newConstraintId) continue;
+
+      for (const cc of constraintColumns) {
+        if (!fkColumnIds.has(cc.columnId)) continue;
+        if (identifyingFkColumnIds.has(cc.columnId) && constraint.kind === 'PRIMARY_KEY') continue;
+        const newColumnId = columnIdMap.get(cc.columnId);
+        if (!newColumnId) continue;
+        await addConstraintColumn(newConstraintId, {columnId: newColumnId, seqNo: cc.seqNo});
+      }
+    }
+
+    for (const indexSnapshot of indexes) {
+      const {index, columns: indexColumns} = indexSnapshot;
+      const newIndexId = indexIdMap.get(index.id);
+      if (!newIndexId) continue;
+
+      for (const ic of indexColumns) {
+        if (!fkColumnIds.has(ic.columnId)) continue;
+        const newColumnId = columnIdMap.get(ic.columnId);
+        if (!newColumnId) continue;
+        await addIndexColumn(newIndexId, {columnId: newColumnId, seqNo: ic.seqNo, sortDirection: ic.sortDirection});
+      }
+    }
+
+    await this.updateCache([...allAffectedTableIds]);
   }
 
   async redo(): Promise<void> {
