@@ -62,12 +62,20 @@ export type ReceiveChat = {
   position?: { x: number; y: number };
 };
 
+export type ReceiveErdMutated = {
+  type: 'ERD_MUTATED';
+  schemaId: string;
+  affectedTableIds: string[];
+  timestamp: number;
+};
+
 export type WebSocketMessage =
   | ReceiveJoin
   | ReceiveLeave
   | ReceiveCursor
   | ReceiveSchemaFocus
-  | ReceiveChat;
+  | ReceiveChat
+  | ReceiveErdMutated;
 
 export type ChatMessage = {
   messageId: string;

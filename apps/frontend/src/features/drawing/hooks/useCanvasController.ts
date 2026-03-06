@@ -8,14 +8,16 @@ import { useCanvasNodes } from './useCanvasNodes';
 import { useMemoContext } from '../../memo/hooks/useMemoStore';
 import { useSelectedSchema } from '../contexts';
 import { useSchemas } from './useSchemas';
+import { useErdMutationSync } from './useErdMutationSync';
 import type { RelationshipConfig, Point } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 
 const CURSOR_THROTTLE_MS = 100;
 
 export const useCanvasController = () => {
-  const { projectId } = useSelectedSchema();
+  const { projectId, selectedSchemaId } = useSelectedSchema();
   const { data: schemas } = useSchemas(projectId);
+  useErdMutationSync(selectedSchemaId, projectId);
   const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
 

@@ -25,3 +25,4 @@ export * from './useConstraintMutations';
 export * from './useRelationshipMutations';
 export * from './useControlPointDrag';
 export * from './useVendors';
+export * from './useErdMutationSync';

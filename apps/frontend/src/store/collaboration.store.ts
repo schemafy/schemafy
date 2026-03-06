@@ -6,6 +6,7 @@ import type {
   PostCursor,
   ReceiveChat,
   ReceiveCursor,
+  ReceiveErdMutated,
   ReceiveLeave,
   WebSocketMessage,
 } from '@/features/collaboration/api';
@@ -21,6 +22,8 @@ export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
+  private erdMutatedListeners: Set<(message: ReceiveErdMutated) => void> =
+    new Set();
 
   constructor() {
     makeAutoObservable(this);
@@ -198,6 +201,14 @@ export class CollaborationStore {
     };
   }
 
+  onErdMutated(listener: (message: ReceiveErdMutated) => void) {
+    this.erdMutatedListeners.add(listener);
+
+    return () => {
+      this.erdMutatedListeners.delete(listener);
+    };
+  }
+
   sendMessage(content: string) {
     const message: PostChat = {
       type: 'CHAT',
@@ -282,7 +293,14 @@ export class CollaborationStore {
         break;
       case 'SCHEMA_FOCUS':
         break;
+      case 'ERD_MUTATED':
+        this.handleErdMutatedMessage(message);
+        break;
     }
+  }
+
+  private handleErdMutatedMessage(message: ReceiveErdMutated) {
+    this.erdMutatedListeners.forEach((listener) => listener(message));
   }
 
   private handleChatMessage(message: ReceiveChat) {
