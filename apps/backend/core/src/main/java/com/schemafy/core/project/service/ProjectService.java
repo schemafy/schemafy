@@ -64,7 +64,7 @@ public class ProjectService {
 
   public Mono<PageResponse<ProjectSummaryDetail>> getProjects(
       String workspaceId, String userId, int page, int size) {
-    return Mono.defer(() -> {
+    return validateWorkspaceMember(workspaceId, userId).then(Mono.defer(() -> {
       int offset = page * size;
       return projectMemberRepository
           .countByWorkspaceIdAndUserId(workspaceId, userId)
@@ -93,7 +93,16 @@ public class ProjectService {
                         content, page, size,
                         totalElements));
               }));
-    });
+    }));
+  }
+
+  private Mono<Void> validateWorkspaceMember(String workspaceId,
+      String userId) {
+    return workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
+        .switchIfEmpty(Mono.error(new DomainException(
+            WorkspaceErrorCode.ACCESS_DENIED)))
+        .then();
   }
 
   public Mono<ProjectDetail> getProject(

@@ -211,6 +211,29 @@ class ProjectControllerTest {
   }
 
   @Test
+  @DisplayName("워크스페이스 멤버가 아니면 워크스페이스 내의 프로젝트 목록 조회에 실패한다")
+  void getProjectsFailWhenNotWorkspaceMember() {
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
+    project = projectRepository.save(project).block();
+
+    ProjectMember member = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.VIEWER);
+    projectMemberRepository.save(member).block();
+
+    workspaceMemberRepository.findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .flatMap(workspaceMemberRepository::delete)
+        .block();
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/projects?page=0&size=10",
+            testWorkspaceId)
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
   @DisplayName("프로젝트 상세 조회에 성공한다")
   void getProjectSuccess() {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");
