@@ -15,6 +15,7 @@ import com.schemafy.domain.erd.column.application.port.out.GetColumnsByTableIdPo
 import com.schemafy.domain.erd.relationship.application.port.in.DeleteRelationshipCommand;
 import com.schemafy.domain.erd.relationship.application.port.in.DeleteRelationshipUseCase;
 import com.schemafy.domain.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
+import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.domain.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.domain.erd.table.application.port.out.DeleteTablePort;
@@ -49,10 +50,8 @@ public class DeleteTableService implements DeleteTableUseCase {
         .then(getRelationshipsByTableIdPort.findRelationshipsByTableId(tableId)
             .defaultIfEmpty(List.of())
             .flatMapMany(Flux::fromIterable)
-            .concatMap(relationship -> deleteRelationshipUseCase.deleteRelationship(
-                new DeleteRelationshipCommand(relationship.id()))
-                .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
-                .then())
+            // Identifying cascade can remove later relationships from the initial snapshot.
+            .concatMap(relationship -> deleteRelationshipIgnoringAlreadyDeleted(relationship.id(), affectedTableIds))
             .then(Mono.defer(() -> getColumnsByTableIdPort.findColumnsByTableId(tableId)))
             .flatMapMany(Flux::fromIterable)
             .concatMap(column -> deleteColumnUseCase.deleteColumn(
@@ -60,8 +59,19 @@ public class DeleteTableService implements DeleteTableUseCase {
                 .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                 .then())
             .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
-            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<Void> deleteRelationshipIgnoringAlreadyDeleted(
+      String relationshipId,
+      Set<String> affectedTableIds) {
+    return deleteRelationshipUseCase.deleteRelationship(new DeleteRelationshipCommand(relationshipId))
+        .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+        .then()
+        .onErrorResume(DomainException.class, ex -> ex.getErrorCode() == RelationshipErrorCode.NOT_FOUND
+            ? Mono.empty()
+            : Mono.error(ex));
   }
 
 }

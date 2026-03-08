@@ -1,6 +1,7 @@
 package com.schemafy.domain.erd.table.integration;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -192,6 +193,149 @@ class DeleteTableIntegrationTest {
 
     }
 
+    @Nested
+    @DisplayName("다이아몬드 IDENTIFYING 관계가 있을 때")
+    class WithDiamondIdentifyingGraph {
+
+      private String parentTableId;
+      private String targetTableId;
+      private String childATableId;
+      private String childBTableId;
+      private String grandchildTableId;
+
+      @BeforeEach
+      void setUp() {
+        String schemaId = createSchema("table_delete_diamond");
+
+        parentTableId = createTable(schemaId, "parent_table");
+        targetTableId = createTable(schemaId, "target_table");
+        childATableId = createTable(schemaId, "child_a_table");
+        childBTableId = createTable(schemaId, "child_b_table");
+        grandchildTableId = createTable(schemaId, "grandchild_table");
+
+        String parentPkId = createColumn(parentTableId, "parent_id", "INT");
+        createPrimaryKey(parentTableId, "pk_parent_table", List.of(
+            new CreateConstraintColumnCommand(parentPkId, 0)));
+
+        String childAPkId = createColumn(childATableId, "child_a_id", "INT");
+        createPrimaryKey(childATableId, "pk_child_a_table", List.of(
+            new CreateConstraintColumnCommand(childAPkId, 0)));
+
+        String childBPkId = createColumn(childBTableId, "child_b_id", "INT");
+        createPrimaryKey(childBTableId, "pk_child_b_table", List.of(
+            new CreateConstraintColumnCommand(childBPkId, 0)));
+
+        String grandchildPkId = createColumn(grandchildTableId, "grandchild_id", "INT");
+        createPrimaryKey(grandchildTableId, "pk_grandchild_table", List.of(
+            new CreateConstraintColumnCommand(grandchildPkId, 0)));
+
+        createRelationship(targetTableId, parentTableId, RelationshipKind.IDENTIFYING);
+        createRelationship(childATableId, targetTableId, RelationshipKind.IDENTIFYING);
+        createRelationship(childBTableId, targetTableId, RelationshipKind.IDENTIFYING);
+        createRelationship(grandchildTableId, childATableId, RelationshipKind.IDENTIFYING);
+        createRelationship(grandchildTableId, childBTableId, RelationshipKind.IDENTIFYING);
+      }
+
+      @Test
+      @DisplayName("대상 테이블 삭제 시 이미 cascade 삭제된 관계가 있어도 완료된다")
+      void deletesTargetTableWhenRelationshipSnapshotBecomesStale() {
+        StepVerifier.create(deleteTableUseCase.deleteTable(new DeleteTableCommand(targetTableId)))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        StepVerifier.create(getTableUseCase.getTable(new GetTableQuery(targetTableId)))
+            .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
+            .verify();
+
+        StepVerifier.create(getTableUseCase.getTable(new GetTableQuery(parentTableId)))
+            .assertNext(table -> assertThat(table.id()).isEqualTo(parentTableId))
+            .verifyComplete();
+
+        StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
+            new GetRelationshipsByTableIdQuery(parentTableId)))
+            .assertNext(relationships -> assertThat(relationships).isEmpty())
+            .verifyComplete();
+
+        StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
+            new GetRelationshipsByTableIdQuery(childATableId)))
+            .assertNext(relationships -> assertThat(relationships)
+                .allMatch(relationship -> !relationship.fkTableId().equals(targetTableId)
+                    && !relationship.pkTableId().equals(targetTableId)))
+            .verifyComplete();
+
+        StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
+            new GetRelationshipsByTableIdQuery(childBTableId)))
+            .assertNext(relationships -> assertThat(relationships)
+                .allMatch(relationship -> !relationship.fkTableId().equals(targetTableId)
+                    && !relationship.pkTableId().equals(targetTableId)))
+            .verifyComplete();
+
+        StepVerifier.create(getColumnsByTableIdUseCase.getColumnsByTableId(
+            new GetColumnsByTableIdQuery(childATableId)))
+            .assertNext(columns -> assertThat(columns.stream().map(column -> column.name()).toList())
+                .contains("child_a_id")
+                .doesNotContain("parent_id"))
+            .verifyComplete();
+
+        StepVerifier.create(getColumnsByTableIdUseCase.getColumnsByTableId(
+            new GetColumnsByTableIdQuery(childBTableId)))
+            .assertNext(columns -> assertThat(columns.stream().map(column -> column.name()).toList())
+                .contains("child_b_id")
+                .doesNotContain("parent_id"))
+            .verifyComplete();
+
+        StepVerifier.create(getColumnsByTableIdUseCase.getColumnsByTableId(
+            new GetColumnsByTableIdQuery(grandchildTableId)))
+            .assertNext(columns -> assertThat(columns.stream().map(column -> column.name()).toList())
+                .contains("grandchild_id", "child_a_id", "child_b_id")
+                .doesNotContain("parent_id", "parent_id_1"))
+            .verifyComplete();
+      }
+
+    }
+
+  }
+
+  private String createSchema(String prefix) {
+    String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+    var createSchemaCommand = new CreateSchemaCommand(
+        PROJECT_ID, "MySQL", prefix + "_" + uniqueSuffix,
+        "utf8mb4", "utf8mb4_general_ci");
+    var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
+    return schemaResult.id();
+  }
+
+  private String createTable(String schemaId, String name) {
+    var createTableCommand = new CreateTableCommand(
+        schemaId, name, "utf8mb4", "utf8mb4_general_ci", null);
+    var tableResult = createTableUseCase.createTable(createTableCommand).block().result();
+    return tableResult.tableId();
+  }
+
+  private String createColumn(String tableId, String name, String dataType) {
+    var createColumnCommand = new CreateColumnCommand(
+        tableId, name, dataType, null, null, null, false, null, null, null);
+    var columnResult = createColumnUseCase.createColumn(createColumnCommand).block().result();
+    return columnResult.columnId();
+  }
+
+  private void createPrimaryKey(
+      String tableId,
+      String name,
+      List<CreateConstraintColumnCommand> columns) {
+    var createConstraintCommand = new CreateConstraintCommand(
+        tableId, name, ConstraintKind.PRIMARY_KEY, null, null, columns);
+    createConstraintUseCase.createConstraint(createConstraintCommand).block();
+  }
+
+  private void createRelationship(String fkTableId, String pkTableId, RelationshipKind kind) {
+    var createRelationshipCommand = new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        kind,
+        Cardinality.ONE_TO_MANY,
+        null);
+    createRelationshipUseCase.createRelationship(createRelationshipCommand).block();
   }
 
 }
