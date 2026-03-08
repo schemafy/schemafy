@@ -1,25 +1,23 @@
 package com.schemafy.core.project.service;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.schemafy.core.common.type.PageResponse;
-import com.schemafy.core.project.controller.dto.request.CreateShareLinkRequest;
-import com.schemafy.core.project.controller.dto.response.ShareLinkAccessResponse;
-import com.schemafy.core.project.controller.dto.response.ShareLinkResponse;
 import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.exception.ShareLinkErrorCode;
-import com.schemafy.core.project.exception.WorkspaceErrorCode;
-import com.schemafy.core.project.repository.*;
+import com.schemafy.core.project.repository.ProjectMemberRepository;
+import com.schemafy.core.project.repository.ProjectRepository;
+import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.ShareLink;
-import com.schemafy.core.project.repository.entity.ShareLinkAccessLog;
-import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.domain.common.exception.DomainException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -27,180 +25,115 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ShareLinkService {
 
-  private final TransactionalOperator transactionalOperator;
   private final ShareLinkRepository shareLinkRepository;
-  private final ShareLinkAccessLogRepository accessLogRepository;
   private final ProjectRepository projectRepository;
-  private final WorkspaceMemberRepository workspaceMemberRepository;
   private final ProjectMemberRepository projectMemberRepository;
-  private final ShareLinkTokenService tokenService;
+  private final TransactionalOperator transactionalOperator;
 
-  public Mono<ShareLinkResponse> createShareLink(String workspaceId,
-      String projectId, CreateShareLinkRequest request, String userId) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(validateProjectAdmin(workspaceId, projectId,
-            userId))
-        .then(Mono.defer(() -> {
-          String token = tokenService.generateToken();
-          byte[] tokenHash = tokenService.hashToken(token);
+  public Mono<Project> accessByCode(String code, String userId, String ipAddress, String userAgent) {
+    String user = userId != null ? userId : "anonymous";
 
-          ShareLinkRole role = ShareLinkRole
-              .fromString(request.role());
+    return shareLinkRepository.findByCodeAndNotDeleted(code)
+        .switchIfEmpty(Mono.error(new DomainException(ShareLinkErrorCode.NOT_FOUND)))
+        .flatMap(this::validateShareLinkAccessible)
+        .doOnNext(shareLink -> log.info(
+            "ShareLink access success - code: {}, projectId: {}, userId: {}, ip: {}, userAgent: {}",
+            maskCode(code), shareLink.getProjectId(), user, ipAddress, userAgent))
+        .flatMap(shareLink -> shareLinkRepository.incrementAccessCount(shareLink.getId())
+            .onErrorResume(e -> {
+              log.error("Failed to increment access count for ShareLink InvitationId: {}", shareLink.getId(), e);
+              return Mono.empty();
+            })
+            .then(projectRepository.findByIdAndNotDeleted(shareLink.getProjectId()))
+            .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND))))
+        .doOnError(ex -> log.info("ShareLink access failed - code: {}, userId: {}, ip: {}, userAgent: {}, reason: {}",
+            maskCode(code), user, ipAddress, userAgent, ex.getMessage()));
+  }
 
-          ShareLink shareLink = ShareLink.create(projectId, tokenHash,
-              role, request.expiresAt());
+  private Mono<ShareLink> validateShareLinkAccessible(ShareLink shareLink) {
+    if (Boolean.TRUE.equals(shareLink.getIsRevoked()) || shareLink.isExpired()) {
+      return Mono.error(new DomainException(ShareLinkErrorCode.INVALID_LINK));
+    }
 
-          return shareLinkRepository.save(shareLink)
-              .map(saved -> ShareLinkResponse.of(saved, token));
-        }))
+    return Mono.just(shareLink);
+  }
+
+  public Mono<ShareLink> createShareLink(String projectId, String userId) {
+    return validateAdminAccess(projectId, userId)
+        .then(findProjectById(projectId))
+        .flatMap(project -> {
+          String code = UUID.randomUUID().toString().replace("-", "");
+          ShareLink shareLink = ShareLink.create(projectId, code);
+
+          return shareLinkRepository.save(shareLink);
+        })
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
-      String workspaceId,
-      String projectId, String userId, int page, int size) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(validateProjectAdmin(workspaceId, projectId,
-            userId))
-        .then(shareLinkRepository
-            .countByProjectIdAndNotDeleted(projectId))
-        .flatMap(total -> shareLinkRepository
-            .findByProjectIdAndNotDeleted(projectId, size,
-                page * size)
-            .map(ShareLinkResponse::from)
-            .collectList()
-            .map(list -> PageResponse.of(list, page, size,
-                total)));
+  public Mono<Long> countShareLinks(String projectId, String userId) {
+    return validateAdminAccess(projectId, userId)
+        .then(shareLinkRepository.countByProjectIdAndNotDeleted(projectId));
   }
 
-  public Mono<ShareLinkResponse> getShareLink(String workspaceId,
+  public Flux<ShareLink> getShareLinks(
+      String projectId, String userId, int size, int offset) {
+    return validateAdminAccess(projectId, userId)
+        .thenMany(shareLinkRepository.findByProjectIdAndNotDeleted(projectId, size, offset));
+  }
+
+  public Mono<ShareLink> getShareLink(
       String projectId, String shareLinkId, String userId) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
-        .switchIfEmpty(Mono.error(
-            new DomainException(ShareLinkErrorCode.NOT_FOUND)))
-        .flatMap(shareLink -> {
-          if (!shareLink.getProjectId().equals(projectId)) {
-            return Mono.error(new DomainException(
-                ProjectErrorCode.WORKSPACE_MISMATCH));
-          }
-          return validateProjectAdmin(workspaceId,
-              shareLink.getProjectId(), userId)
-              .thenReturn(ShareLinkResponse.from(shareLink));
-        });
+    return validateAdminAccess(projectId, userId)
+        .then(findShareLinkById(shareLinkId, projectId));
   }
 
-  public Mono<Void> revokeShareLink(String workspaceId, String projectId,
-      String shareLinkId, String userId) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
-        .switchIfEmpty(Mono.error(
-            new DomainException(ShareLinkErrorCode.NOT_FOUND)))
+  public Mono<ShareLink> revokeShareLink(
+      String projectId, String shareLinkId, String userId) {
+    return validateAdminAccess(projectId, userId)
+        .then(findShareLinkById(shareLinkId, projectId))
         .flatMap(shareLink -> {
-          if (!shareLink.getProjectId().equals(projectId)) {
-            return Mono.error(new DomainException(
-                ProjectErrorCode.WORKSPACE_MISMATCH));
+          if (shareLink.getIsRevoked()) {
+            return Mono.error(new DomainException(ShareLinkErrorCode.NOT_FOUND));
           }
-          return validateProjectAdmin(workspaceId,
-              shareLink.getProjectId(), userId)
-              .then(Mono.defer(() -> {
-                shareLink.revoke();
-                return shareLinkRepository.save(shareLink)
-                    .then();
-              }));
+          shareLink.revoke();
+          return shareLinkRepository.save(shareLink);
         })
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<Void> deleteShareLink(String workspaceId, String projectId,
-      String shareLinkId, String userId) {
-    return validateWorkspaceMember(workspaceId, userId)
-        .then(shareLinkRepository.findByIdAndNotDeleted(shareLinkId))
-        .switchIfEmpty(Mono.error(
-            new DomainException(ShareLinkErrorCode.NOT_FOUND)))
-        .flatMap(shareLink -> {
-          if (!shareLink.getProjectId().equals(projectId)) {
-            return Mono.error(new DomainException(
-                ProjectErrorCode.WORKSPACE_MISMATCH));
-          }
-          return validateProjectAdmin(workspaceId,
-              shareLink.getProjectId(), userId)
-              .then(Mono.defer(() -> {
-                shareLink.delete();
-                return shareLinkRepository.save(shareLink)
-                    .then();
-              }));
+  public Mono<Void> deleteShareLink(
+      String projectId, String shareLinkId, String userId) {
+    return validateAdminAccess(projectId, userId)
+        .then(findShareLinkById(shareLinkId, projectId))
+        .flatMap(link -> {
+          link.delete();
+          return shareLinkRepository.save(link).then();
         })
         .as(transactionalOperator::transactional);
   }
 
-  public Mono<ShareLinkAccessResponse> accessByToken(String token,
-      String userId, String ipAddress, String userAgent) {
-    byte[] tokenHash = tokenService.hashToken(token);
-
-    return shareLinkRepository.findValidByTokenHash(tokenHash)
-        .switchIfEmpty(Mono.error(
-            new DomainException(ShareLinkErrorCode.INVALID)))
-        .flatMap(shareLink -> {
-          ShareLinkAccessLog accessLog = ShareLinkAccessLog.create(
-              shareLink.getId(), userId, ipAddress, userAgent);
-
-          Mono<Project> fetchProject = projectRepository
-              .findByIdAndNotDeleted(shareLink.getProjectId())
-              .switchIfEmpty(Mono.error(
-                  new DomainException(
-                      ProjectErrorCode.NOT_FOUND)));
-
-          Mono<Void> recordAccess = Mono.when(
-              accessLogRepository.save(accessLog),
-              shareLinkRepository
-                  .incrementAccessCount(shareLink.getId()))
-              .doOnError(
-                  e -> log.error("Failed to log access: {}",
-                      shareLink.getId(), e))
-              .onErrorResume(e -> Mono.empty());
-
-          return fetchProject
-              .delayUntil(project -> recordAccess)
-              .map(project -> {
-                ShareLinkRole effectiveRole = (userId == null)
-                    ? ShareLinkRole.VIEWER
-                    : shareLink.getRoleAsEnum();
-                return ShareLinkAccessResponse.of(project,
-                    effectiveRole);
-              });
-        });
+  private Mono<ShareLink> findShareLinkById(String shareLinkId, String projectId) {
+    return shareLinkRepository.findByIdAndProjectIdAndNotDeleted(shareLinkId, projectId)
+        .switchIfEmpty(Mono.error(new DomainException(ShareLinkErrorCode.NOT_FOUND)));
   }
 
-  private Mono<Boolean> validateWorkspaceMember(String workspaceId,
-      String userId) {
-    return workspaceMemberRepository
-        .existsByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
-        .flatMap(exists -> {
-          if (!exists) {
-            return Mono.error(new DomainException(
-                WorkspaceErrorCode.ACCESS_DENIED));
-          }
-          return Mono.empty();
-        });
-  }
-
-  private Mono<Void> validateProjectAdmin(String workspaceId,
-      String projectId, String userId) {
+  private Mono<Project> findProjectById(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
-        .switchIfEmpty(Mono.error(
-            new DomainException(ProjectErrorCode.NOT_FOUND)))
-        .filter(project -> project.belongsToWorkspace(workspaceId))
-        .switchIfEmpty(Mono.error(new DomainException(
-            ProjectErrorCode.WORKSPACE_MISMATCH)))
-        .flatMap(project -> projectMemberRepository
-            .findByProjectIdAndUserIdAndNotDeleted(projectId,
-                userId))
-        .switchIfEmpty(Mono.error(
-            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
+        .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND)));
+  }
+
+  private String maskCode(String code) {
+    if (code == null || code.length() <= 4)
+      return "***";
+    return code.substring(0, Math.min(8, code.length())) + "***";
+  }
+
+  private Mono<Void> validateAdminAccess(String projectId, String userId) {
+    return projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
+        .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.ACCESS_DENIED)))
         .filter(ProjectMember::isAdmin)
-        .switchIfEmpty(Mono.error(new DomainException(
-            ProjectErrorCode.ADMIN_REQUIRED)))
+        .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.ADMIN_REQUIRED)))
         .then();
   }
 

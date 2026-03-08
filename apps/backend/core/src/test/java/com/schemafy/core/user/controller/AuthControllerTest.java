@@ -219,11 +219,10 @@ class AuthControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(loginRequest)
         .exchange()
-        .expectStatus().isUnauthorized()
+        .expectStatus().isBadRequest()
         .expectBody()
-        .jsonPath("$.status").isEqualTo(401)
-        .jsonPath("$.reason")
-        .isEqualTo(UserErrorCode.LOGIN_FAILED.code());
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason").isEqualTo(UserErrorCode.LOGIN_FAILED.code());
   }
 
   @Test

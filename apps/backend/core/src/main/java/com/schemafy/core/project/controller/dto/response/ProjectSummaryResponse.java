@@ -4,22 +4,25 @@ import java.time.Instant;
 
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.vo.ProjectRole;
+import com.schemafy.core.project.service.dto.ProjectSummaryDetail;
 
 public record ProjectSummaryResponse(String id, String workspaceId, String name,
     String description, String myRole,
-    Instant createdAt, Instant updatedAt, Long memberCount) {
+    Instant createdAt, Instant updatedAt) {
 
-  public static ProjectSummaryResponse of(Project project, ProjectRole myRole,
-      Long memberCount) {
+  public static ProjectSummaryResponse of(Project project, ProjectRole myRole) {
     return new ProjectSummaryResponse(
         project.getId(),
         project.getWorkspaceId(),
         project.getName(),
         project.getDescription(),
-        myRole.getValue(),
+        myRole.name(),
         project.getCreatedAt(),
-        project.getUpdatedAt(),
-        memberCount);
+        project.getUpdatedAt());
+  }
+
+  public static ProjectSummaryResponse from(ProjectSummaryDetail detail) {
+    return of(detail.project(), detail.role());
   }
 
 }

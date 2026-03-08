@@ -8,12 +8,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.core.common.exception.AuthErrorCode;
 import com.schemafy.core.common.exception.CommonErrorCode;
 import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.entity.WorkspaceMember;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.project.repository.vo.WorkspaceSettings;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.exception.UserErrorCode;
 import com.schemafy.core.user.repository.UserAuthProviderRepository;
@@ -39,13 +33,10 @@ public class UserService {
   private final UserAuthProviderRepository userAuthProviderRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtProvider jwtProvider;
-  private final WorkspaceRepository workspaceRepository;
-  private final WorkspaceMemberRepository workspaceMemberRepository;
 
   public Mono<User> signUp(SignUpCommand request) {
     return checkEmailUniqueness(request.email())
         .then(createNewUser(request))
-        .flatMap(this::createDefaultWorkspace)
         .as(transactionalOperator::transactional);
   }
 
@@ -63,35 +54,6 @@ public class UserService {
         .onErrorMap(DuplicateKeyException.class,
             e -> new DomainException(
                 UserErrorCode.ALREADY_EXISTS));
-  }
-
-  private Mono<User> createDefaultWorkspace(User user) {
-    String workspaceName = user.getName() + "'s Workspace";
-    String workspaceDescription = "Personal workspace for "
-        + user.getName();
-    WorkspaceSettings defaultSettings = WorkspaceSettings.defaultSettings();
-
-    Workspace workspace = Workspace.create(
-        user.getId(),
-        workspaceName,
-        workspaceDescription,
-        defaultSettings);
-
-    WorkspaceMember adminMember = WorkspaceMember.create(
-        workspace.getId(),
-        user.getId(),
-        WorkspaceRole.ADMIN);
-
-    return workspaceRepository.save(workspace)
-        .flatMap(savedWorkspace -> workspaceMemberRepository
-            .save(adminMember)
-            .thenReturn(user))
-        .doOnSuccess(
-            u -> log.info("Created default workspace for user: {}",
-                user.getId()))
-        .doOnError(e -> log.error(
-            "Failed to create default workspace for user: {}",
-            user.getId(), e));
   }
 
   public Mono<User> loginOrSignUpOAuth(OAuthLoginCommand command) {
@@ -148,7 +110,7 @@ public class UserService {
             e -> new DomainException(
                 UserErrorCode.ALREADY_EXISTS))
         .flatMap(savedUser -> saveAuthProvider(savedUser, command)
-            .then(createDefaultWorkspace(savedUser)));
+            .thenReturn(savedUser));
   }
 
   private Mono<UserAuthProvider> saveAuthProvider(User user,

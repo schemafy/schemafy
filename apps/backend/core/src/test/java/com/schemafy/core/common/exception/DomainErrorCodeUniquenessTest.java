@@ -28,6 +28,7 @@ class DomainErrorCodeUniquenessTest {
   private static final List<Class<? extends Enum<?>>> ERROR_CODE_ENUMS = List.of(
       CommonErrorCode.class,
       AuthErrorCode.class,
+      OAuthErrorCode.class,
       ValidationErrorCode.class,
       HmacErrorCode.class,
       UserErrorCode.class,

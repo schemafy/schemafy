@@ -58,7 +58,7 @@ oauth:
     frontend-callback-url: ${GITHUB_FRONTEND_CALLBACK_URL:}
 
 sharelink:
-  pepper: ${SHARELINK_PEPPER:default-pepper-change-me}
+  pepper: ${SHARELINK_PEPPER:default-pepper}
 
 management:
   endpoints:

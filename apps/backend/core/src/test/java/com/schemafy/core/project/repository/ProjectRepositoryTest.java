@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.config.R2dbcConfig;
 import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 
 import reactor.test.StepVerifier;
 
@@ -31,9 +30,7 @@ class ProjectRepositoryTest {
   void setUp() {
     projectRepository.deleteAll().block();
 
-    testProject = Project.create(testWorkspaceId,
-        "Test Project", "Test Description",
-        ProjectSettings.defaultSettings());
+    testProject = Project.create(testWorkspaceId, "Test Project", "Test Description");
   }
 
   @Test
@@ -96,8 +93,7 @@ class ProjectRepositoryTest {
   void updateProject() {
     Project saved = projectRepository.save(testProject).block();
 
-    saved.update("Updated Name", "Updated Description",
-        ProjectSettings.defaultSettings());
+    saved.update("Updated Name", "Updated Description");
     Project updated = projectRepository.save(saved).block();
 
     StepVerifier.create(projectRepository.findById(updated.getId()))
@@ -113,9 +109,7 @@ class ProjectRepositoryTest {
   void countByWorkspaceIdAndNotDeleted() {
     projectRepository.save(testProject).block();
 
-    Project anotherProject = Project.create(testWorkspaceId,
-        "Another Project", "Description",
-        ProjectSettings.defaultSettings());
+    Project anotherProject = Project.create(testWorkspaceId, "Another Project", "Description");
     projectRepository.save(anotherProject).block();
 
     StepVerifier

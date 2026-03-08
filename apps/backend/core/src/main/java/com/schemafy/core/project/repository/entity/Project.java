@@ -3,7 +3,6 @@ package com.schemafy.core.project.repository.entity;
 import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.common.type.BaseEntity;
-import com.schemafy.core.project.repository.vo.ProjectSettings;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 
 import lombok.AccessLevel;
@@ -18,32 +17,19 @@ import lombok.NoArgsConstructor;
 public class Project extends BaseEntity {
 
   private String workspaceId;
-
   private String name;
-
   private String description;
 
-  private String settings;
-
   public static Project create(String workspaceId,
-      String name, String description, ProjectSettings settings) {
-    Project project = new Project(workspaceId, name, description,
-        settings.toJson());
+      String name, String description) {
+    Project project = new Project(workspaceId, name, description);
     project.setId(UlidGenerator.generate());
     return project;
   }
 
-  public void update(String name, String description,
-      ProjectSettings settings) {
+  public void update(String name, String description) {
     this.name = name;
     this.description = description;
-    this.settings = settings.toJson();
-  }
-
-  public ProjectSettings getSettingsAsVo() { return ProjectSettings.fromJson(this.settings); }
-
-  public boolean belongsToWorkspace(String workspaceId) {
-    return this.workspaceId.equals(workspaceId);
   }
 
 }
