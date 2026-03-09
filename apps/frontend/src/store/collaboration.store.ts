@@ -45,6 +45,7 @@ export class CollaborationStore {
     this.startHeartbeat();
 
     this.port.onmessage = (event: MessageEvent<WorkerResponse>) => {
+      if (!this.port) return;
       const { type } = event.data;
 
       if (type === 'WS_MESSAGE') {
