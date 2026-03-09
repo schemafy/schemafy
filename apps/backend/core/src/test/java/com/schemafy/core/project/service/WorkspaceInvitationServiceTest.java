@@ -110,9 +110,9 @@ class WorkspaceInvitationServiceTest {
   class CreateInvitationTests {
 
     @Test
-    @DisplayName("관리자가 새로운 사용자를 초대하면 성공한다")
+    @DisplayName("관리자가 가입된 비멤버 사용자를 초대하면 성공한다")
     void createInvitation_Success() {
-      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest(invitedUser.getEmail(),
           WorkspaceRole.MEMBER);
 
       StepVerifier.create(
@@ -120,7 +120,7 @@ class WorkspaceInvitationServiceTest {
               testWorkspace.getId(), request.email(), request.role(), adminUser.getId()))
           .assertNext(response -> {
             assertThat(response.getWorkspaceId()).isEqualTo(testWorkspace.getId());
-            assertThat(response.getInvitedEmail()).isEqualTo("newuser@test.com");
+            assertThat(response.getInvitedEmail()).isEqualTo(invitedUser.getEmail());
             assertThat(response.getInvitedRole()).isEqualTo(WorkspaceRole.MEMBER.name());
             assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.name());
             assertThat(response.getInvitedBy()).isEqualTo(adminUser.getId());
@@ -131,14 +131,15 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("이메일이 대문자여도 소문자로 저장된다")
     void createInvitation_EmailLowerCase() {
-      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("NewUser@Test.COM",
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest(
+          invitedUser.getEmail().toUpperCase(),
           WorkspaceRole.MEMBER);
 
       StepVerifier.create(
           invitationService.createInvitation(
               testWorkspace.getId(), request.email(), request.role(), adminUser.getId()))
           .assertNext(response -> {
-            assertThat(response.getInvitedEmail()).isEqualTo("newuser@test.com");
+            assertThat(response.getInvitedEmail()).isEqualTo(invitedUser.getEmail());
           })
           .verifyComplete();
     }
@@ -201,7 +202,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("동일한 이메일에 대한 대기 중인 초대가 있으면 실패한다")
     void createInvitation_DuplicatePending_Fails() {
-      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest(invitedUser.getEmail(),
           WorkspaceRole.MEMBER);
 
       invitationService.createInvitation(
@@ -221,7 +222,7 @@ class WorkspaceInvitationServiceTest {
     @Test
     @DisplayName("만료된 pending 초대는 중복 체크에서 제외된다")
     void createInvitation_ExpiredPending_DoesNotBlock() {
-      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest(invitedUser.getEmail(),
           WorkspaceRole.MEMBER);
 
       Invitation expiredInvitation = Invitation.createWorkspaceInvitation(
@@ -242,6 +243,19 @@ class WorkspaceInvitationServiceTest {
             assertThat(response.getId()).isNotEqualTo(expiredInvitationId);
           })
           .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("가입하지 않은 이메일로 초대하면 실패한다")
+    void createInvitation_UnregisteredEmail_NotFound() {
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("notyet@test.com",
+          WorkspaceRole.MEMBER);
+
+      StepVerifier.create(
+          invitationService.createInvitation(
+              testWorkspace.getId(), request.email(), request.role(), adminUser.getId()))
+          .expectErrorMatches(DomainException.hasErrorCode(UserErrorCode.NOT_FOUND))
+          .verify();
     }
 
     @Test
@@ -1165,35 +1179,6 @@ class WorkspaceInvitationServiceTest {
       assertThat(restoredPm).isNotNull();
       assertThat(restoredPm.getId()).isEqualTo(originalProjectMemberId);
       assertThat(restoredPm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
-    }
-
-    @Test
-    @DisplayName("미가입 이메일로 워크스페이스를 초대하면 가입 후 수락할 수 있다")
-    void reInvite_UnregisteredEmail_SucceedsAfterSignUp() {
-      String unregisteredEmail = "future-ws@test.com";
-
-      // 미가입 이메일로 초대 생성
-      Invitation invitation = Invitation.createWorkspaceInvitation(
-          testWorkspace.getId(), unregisteredEmail, WorkspaceRole.MEMBER, adminUser.getId());
-      invitation = invitationRepository.save(invitation).block();
-
-      // 해당 이메일로 가입 후 수락
-      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-      User newUser = User.signUp(
-          new UserInfo(unregisteredEmail, "Future User", "password"),
-          encoder).flatMap(userRepository::save).block();
-
-      StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), newUser.getId()))
-          .assertNext(member -> {
-            assertThat(member.member().getUserId()).isEqualTo(newUser.getId());
-            assertThat(member.member().getRole()).isEqualTo(WorkspaceRole.MEMBER.name());
-          })
-          .verifyComplete();
-
-      WorkspaceMember created = memberRepository
-          .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspace.getId(), newUser.getId()).block();
-      assertThat(created).isNotNull();
     }
 
     @Test

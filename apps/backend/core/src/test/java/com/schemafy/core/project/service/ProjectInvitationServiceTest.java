@@ -206,6 +206,26 @@ class ProjectInvitationServiceTest {
     }
 
     @Test
+    @DisplayName("이미 프로젝트 멤버인 사용자를 초대하면 실패한다")
+    void createInvitation_AlreadyMember_Fails() {
+      CreateProjectInvitationRequest request = new CreateProjectInvitationRequest(
+          adminUser.getEmail(), ProjectRole.VIEWER);
+
+      StepVerifier.create(
+          invitationService.createInvitation(
+              testProject.getId(),
+              request.email(),
+              request.role(),
+              adminUser.getId()))
+          .expectErrorSatisfies(error -> {
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT);
+          })
+          .verify();
+    }
+
+    @Test
     @DisplayName("동일한 이메일에 대한 대기 중인 초대가 있으면 실패한다")
     void createInvitation_DuplicatePending_Fails() {
       CreateProjectInvitationRequest request = new CreateProjectInvitationRequest(
@@ -253,8 +273,8 @@ class ProjectInvitationServiceTest {
     }
 
     @Test
-    @DisplayName("가입하지 않은 이메일로 초대해도 성공한다")
-    void createInvitation_UnregisteredEmail_Success() {
+    @DisplayName("가입하지 않은 이메일로 초대하면 실패한다")
+    void createInvitation_UnregisteredEmail_NotFound() {
       String unregisteredEmail = "notyet@test.com";
 
       StepVerifier.create(
@@ -263,11 +283,8 @@ class ProjectInvitationServiceTest {
               unregisteredEmail,
               ProjectRole.VIEWER,
               adminUser.getId()))
-          .assertNext(response -> {
-            assertThat(response.getInvitedEmail()).isEqualTo(unregisteredEmail);
-            assertThat(response.getStatus()).isEqualTo(InvitationStatus.PENDING.name());
-          })
-          .verifyComplete();
+          .expectErrorMatches(DomainException.hasErrorCode(UserErrorCode.NOT_FOUND))
+          .verify();
     }
 
     @Test
@@ -570,36 +587,6 @@ class ProjectInvitationServiceTest {
   @Nested
   @DisplayName("초대 수락 (acceptInvitation)")
   class AcceptInvitationTests {
-
-    @Test
-    @DisplayName("미가입 이메일로 초대 후 해당 이메일로 가입한 유저가 초대를 수락하면 성공한다")
-    void acceptInvitation_AfterSignUp_Success() {
-      String unregisteredEmail = "future@test.com";
-
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          unregisteredEmail,
-          ProjectRole.EDITOR,
-          adminUser.getId());
-      invitation = invitationRepository.save(invitation).block();
-
-      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-      User newUser = User.signUp(
-          new UserInfo(unregisteredEmail, "Future User", "password"),
-          encoder).flatMap(userRepository::save).block();
-
-      StepVerifier.create(
-          invitationService.acceptInvitation(invitation.getId(), newUser.getId()))
-          .assertNext(member -> {
-            assertThat(member.member().getUserId()).isEqualTo(newUser.getId());
-            assertThat(member.member().getRole()).isEqualTo(ProjectRole.EDITOR.name());
-          })
-          .verifyComplete();
-
-      Invitation updated = invitationRepository.findById(invitation.getId()).block();
-      assertThat(updated.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
-    }
 
     @Test
     @DisplayName("워크스페이스 멤버가 프로젝트 초대를 수락하면 프로젝트 멤버가 생성된다")

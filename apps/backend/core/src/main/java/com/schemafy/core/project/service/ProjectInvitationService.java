@@ -14,7 +14,6 @@ import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.entity.Invitation;
-import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.InvitationType;
@@ -46,7 +45,8 @@ public class ProjectInvitationService {
       ProjectRole role,
       String currentUserId) {
     return validateProjectAdmin(projectId, currentUserId)
-        .then(findProjectOrThrow(projectId))
+        .then(projectRepository.findByIdAndNotDeleted(projectId)
+            .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND))))
         .flatMap(project -> checkNotAlreadyProjectMemberByEmail(
             projectId, email)
             .then(checkDuplicatePendingInvitation(
@@ -192,12 +192,6 @@ public class ProjectInvitationService {
             new DomainException(ProjectErrorCode.INVITATION_NOT_FOUND)));
   }
 
-  private Mono<Project> findProjectOrThrow(String projectId) {
-    return projectRepository.findByIdAndNotDeleted(projectId)
-        .switchIfEmpty(Mono.error(
-            new DomainException(ProjectErrorCode.NOT_FOUND)));
-  }
-
   private Mono<Void> validateProjectAdmin(
       String projectId,
       String userId) {
@@ -249,6 +243,7 @@ public class ProjectInvitationService {
       String projectId,
       String email) {
     return userRepository.findByEmail(email.toLowerCase())
+        .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> projectMemberRepository
             .existsByProjectIdAndUserIdAndNotDeleted(projectId, user.getId())
             .flatMap(exists -> {

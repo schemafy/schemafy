@@ -249,6 +249,7 @@ public class WorkspaceInvitationService {
       String workspaceId,
       String email) {
     return userRepository.findByEmail(email.toLowerCase())
+        .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> memberRepository
             .existsByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, user.getId())
             .flatMap(exists -> {
