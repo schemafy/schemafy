@@ -12,7 +12,7 @@ import type {
 } from '@/features/collaboration/api';
 import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { authStore } from './auth.store';
-import { registerSessionIdGetter } from '@/lib/api';
+import { apiClient } from '@/lib/api/client';
 
 const SHARED_WORKER_ENABLE = typeof SharedWorker !== 'undefined';
 
@@ -72,6 +72,7 @@ export class CollaborationStore {
         runInAction(() => {
           this.sessionId = sessionId;
         });
+        apiClient.defaults.headers.common['X-Session-Id'] = sessionId;
       } else if (type === 'INITIAL_STATE') {
         const { cursors } = event.data;
 
@@ -194,6 +195,7 @@ export class CollaborationStore {
       this.worker = null;
       this.port = null;
 
+      delete apiClient.defaults.headers.common['X-Session-Id'];
       runInAction(() => {
         this.projectId = null;
         this.cursors.clear();
@@ -348,5 +350,3 @@ export class CollaborationStore {
 }
 
 export const collaborationStore = new CollaborationStore();
-
-registerSessionIdGetter(() => collaborationStore.sessionId);
