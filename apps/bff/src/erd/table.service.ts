@@ -17,10 +17,15 @@ export class TableService {
   async createTable(
     data: CreateTableRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse<TableResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<TableResponse>
-    >('/api/v1.0/tables', data, this.backendClient.getAuthConfig(authHeader));
+    >(
+      '/api/v1.0/tables',
+      data,
+      this.backendClient.getAuthConfig(authHeader, sessionId),
+    );
     return response.data;
   }
 
@@ -71,11 +76,12 @@ export class TableService {
     tableId: string,
     data: ChangeTableNameRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/tables/${tableId}/name`,
       data,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
@@ -84,11 +90,12 @@ export class TableService {
     tableId: string,
     data: ChangeTableMetaRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/tables/${tableId}/meta`,
       data,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
@@ -97,11 +104,12 @@ export class TableService {
     tableId: string,
     data: ChangeTableExtraRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/tables/${tableId}/extra`,
       data,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
@@ -109,10 +117,11 @@ export class TableService {
   async deleteTable(
     tableId: string,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/tables/${tableId}`,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }

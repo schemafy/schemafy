@@ -16,6 +16,7 @@ const sockets = new Map<string, WebSocket>();
 const subscribers = new Map<string, WorkerPort[]>();
 const portUserInfos = new Map<WorkerPort, UserInfo>();
 const portHeartbeats = new Map<WorkerPort, number>();
+const sessionIds = new Map<string, string>();
 
 type ProjectState = {
   cursors: Map<string, CursorPosition>;
@@ -57,6 +58,7 @@ function closePort(port: WorkerPort) {
 
       subscribers.delete(projectId);
       projectStates.delete(projectId);
+      sessionIds.delete(projectId);
     }
   });
 }
@@ -158,6 +160,18 @@ function handleConnect(projectId: string, port: WorkerPort) {
     ws.onmessage = (event) => {
       try {
         const payload: WebSocketMessage = JSON.parse(event.data);
+
+        if (payload.type === 'SESSION_READY') {
+          sessionIds.set(projectId, payload.sessionId);
+          const message: WorkerResponse = {
+            type: 'SESSION_READY',
+            projectId,
+            sessionId: payload.sessionId,
+          };
+          broadcast(projectId, message);
+          return;
+        }
+
         const state = projectStates.get(projectId);
 
         if (state) {
@@ -241,6 +255,16 @@ function handleConnect(projectId: string, port: WorkerPort) {
       };
 
       port.postMessage(openMessage);
+
+      const cachedSessionId = sessionIds.get(projectId);
+      if (cachedSessionId) {
+        const sessionMessage: WorkerResponse = {
+          type: 'SESSION_READY',
+          projectId,
+          sessionId: cachedSessionId,
+        };
+        port.postMessage(sessionMessage);
+      }
 
       const state = projectStates.get(projectId);
 

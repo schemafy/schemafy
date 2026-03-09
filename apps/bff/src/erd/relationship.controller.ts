@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { RelationshipService } from './relationship.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
+import { SessionId } from '../common/decorators/session-id.decorator';
 import type {
   AddRelationshipColumnRequest,
   ChangeRelationshipCardinalityRequest,
@@ -27,8 +28,13 @@ export class RelationshipController {
   async createRelationship(
     @Body() data: CreateRelationshipRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.relationshipService.createRelationship(data, authHeader);
+    return this.relationshipService.createRelationship(
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Get('relationships/:relationshipId')
@@ -55,11 +61,13 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipNameRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.relationshipService.changeRelationshipName(
       relationshipId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -68,11 +76,13 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipKindRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.relationshipService.changeRelationshipKind(
       relationshipId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -81,11 +91,13 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipCardinalityRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.relationshipService.changeRelationshipCardinality(
       relationshipId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -94,11 +106,13 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipExtraRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.relationshipService.changeRelationshipExtra(
       relationshipId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -106,10 +120,12 @@ export class RelationshipController {
   async deleteRelationship(
     @Param('relationshipId') relationshipId: string,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.relationshipService.deleteRelationship(
       relationshipId,
       authHeader,
+      sessionId,
     );
   }
 
@@ -129,11 +145,13 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: AddRelationshipColumnRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.relationshipService.addRelationshipColumn(
       relationshipId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -141,10 +159,12 @@ export class RelationshipController {
   async removeRelationshipColumn(
     @Param('relationshipColumnId') relationshipColumnId: string,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.relationshipService.removeRelationshipColumn(
       relationshipColumnId,
       authHeader,
+      sessionId,
     );
   }
 
@@ -164,11 +184,13 @@ export class RelationshipController {
     @Param('relationshipColumnId') relationshipColumnId: string,
     @Body() data: ChangeRelationshipColumnPositionRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.relationshipService.changeRelationshipColumnPosition(
       relationshipColumnId,
       data,
       authHeader,
+      sessionId,
     );
   }
 }

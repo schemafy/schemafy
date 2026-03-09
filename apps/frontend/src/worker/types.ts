@@ -33,4 +33,9 @@ export type WorkerResponse =
       projectId: string;
       cursors: CursorPosition[];
       users: UserInfo[];
+    }
+  | {
+      type: 'SESSION_READY';
+      projectId: string;
+      sessionId: string;
     };

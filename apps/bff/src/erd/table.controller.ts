@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { TableService } from './table.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
+import { SessionId } from '../common/decorators/session-id.decorator';
 import type {
   ChangeTableExtraRequest,
   ChangeTableMetaRequest,
@@ -25,8 +26,9 @@ export class TableController {
   async createTable(
     @Body() data: CreateTableRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.tableService.createTable(data, authHeader);
+    return this.tableService.createTable(data, authHeader, sessionId);
   }
 
   @Get('tables/snapshots')
@@ -66,8 +68,14 @@ export class TableController {
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableNameRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.tableService.changeTableName(tableId, data, authHeader);
+    return this.tableService.changeTableName(
+      tableId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('tables/:tableId/meta')
@@ -75,8 +83,14 @@ export class TableController {
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableMetaRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.tableService.changeTableMeta(tableId, data, authHeader);
+    return this.tableService.changeTableMeta(
+      tableId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('tables/:tableId/extra')
@@ -84,15 +98,22 @@ export class TableController {
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableExtraRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.tableService.changeTableExtra(tableId, data, authHeader);
+    return this.tableService.changeTableExtra(
+      tableId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('tables/:tableId')
   async deleteTable(
     @Param('tableId') tableId: string,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.tableService.deleteTable(tableId, authHeader);
+    return this.tableService.deleteTable(tableId, authHeader, sessionId);
   }
 }

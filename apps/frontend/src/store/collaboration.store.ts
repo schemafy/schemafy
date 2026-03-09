@@ -6,11 +6,13 @@ import type {
   PostCursor,
   ReceiveChat,
   ReceiveCursor,
+  ReceiveErdMutated,
   ReceiveLeave,
   WebSocketMessage,
 } from '@/features/collaboration/api';
 import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { authStore } from './auth.store';
+import { apiClient } from '@/lib/api/client';
 
 const SHARED_WORKER_ENABLE = typeof SharedWorker !== 'undefined';
 
@@ -20,7 +22,10 @@ export class CollaborationStore {
 
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
+  sessionId: string | null = null;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
+  private erdMutatedListeners: Set<(message: ReceiveErdMutated) => void> =
+    new Set();
 
   constructor() {
     makeAutoObservable(this);
@@ -40,6 +45,7 @@ export class CollaborationStore {
     this.startHeartbeat();
 
     this.port.onmessage = (event: MessageEvent<WorkerResponse>) => {
+      if (!this.port) return;
       const { type } = event.data;
 
       if (type === 'WS_MESSAGE') {
@@ -59,6 +65,15 @@ export class CollaborationStore {
         }, 3000);
       } else if (type === 'WS_ERROR') {
         console.error('WebSocket error from Worker:', event.data.error);
+      } else if (type === 'SESSION_READY') {
+        const { sessionId } = event.data as Extract<
+          typeof event.data,
+          { type: 'SESSION_READY' }
+        >;
+        runInAction(() => {
+          this.sessionId = sessionId;
+        });
+        apiClient.defaults.headers.common['X-Session-Id'] = sessionId;
       } else if (type === 'INITIAL_STATE') {
         const { cursors } = event.data;
 
@@ -181,9 +196,11 @@ export class CollaborationStore {
       this.worker = null;
       this.port = null;
 
+      delete apiClient.defaults.headers.common['X-Session-Id'];
       runInAction(() => {
         this.projectId = null;
         this.cursors.clear();
+        this.sessionId = null;
       });
     } else {
       console.error('Worker or port is not ready');
@@ -195,6 +212,14 @@ export class CollaborationStore {
 
     return () => {
       this.chatMessageListeners.delete(listener);
+    };
+  }
+
+  onErdMutated(listener: (message: ReceiveErdMutated) => void) {
+    this.erdMutatedListeners.add(listener);
+
+    return () => {
+      this.erdMutatedListeners.delete(listener);
     };
   }
 
@@ -282,7 +307,14 @@ export class CollaborationStore {
         break;
       case 'SCHEMA_FOCUS':
         break;
+      case 'ERD_MUTATED':
+        this.handleErdMutatedMessage(message);
+        break;
     }
+  }
+
+  private handleErdMutatedMessage(message: ReceiveErdMutated) {
+    this.erdMutatedListeners.forEach((listener) => listener(message));
   }
 
   private handleChatMessage(message: ReceiveChat) {

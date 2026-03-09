@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConstraintService } from './constraint.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
+import { SessionId } from '../common/decorators/session-id.decorator';
 import type {
   AddConstraintColumnRequest,
   ChangeConstraintCheckExprRequest,
@@ -26,8 +27,9 @@ export class ConstraintController {
   async createConstraint(
     @Body() data: CreateConstraintRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.constraintService.createConstraint(data, authHeader);
+    return this.constraintService.createConstraint(data, authHeader, sessionId);
   }
 
   @Get('constraints/:constraintId')
@@ -51,11 +53,13 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintNameRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.constraintService.changeConstraintName(
       constraintId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -64,11 +68,13 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintCheckExprRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.constraintService.changeConstraintCheckExpr(
       constraintId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -77,11 +83,13 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintDefaultExprRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.constraintService.changeConstraintDefaultExpr(
       constraintId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -89,8 +97,13 @@ export class ConstraintController {
   async deleteConstraint(
     @Param('constraintId') constraintId: string,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.constraintService.deleteConstraint(constraintId, authHeader);
+    return this.constraintService.deleteConstraint(
+      constraintId,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Get('constraints/:constraintId/columns')
@@ -109,11 +122,13 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Body() data: AddConstraintColumnRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.constraintService.addConstraintColumn(
       constraintId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -121,10 +136,12 @@ export class ConstraintController {
   async removeConstraintColumn(
     @Param('constraintColumnId') constraintColumnId: string,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.constraintService.removeConstraintColumn(
       constraintColumnId,
       authHeader,
+      sessionId,
     );
   }
 
@@ -144,11 +161,13 @@ export class ConstraintController {
     @Param('constraintColumnId') constraintColumnId: string,
     @Body() data: ChangeConstraintColumnPositionRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.constraintService.changeConstraintColumnPosition(
       constraintColumnId,
       data,
       authHeader,
+      sessionId,
     );
   }
 }

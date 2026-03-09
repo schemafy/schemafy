@@ -32,7 +32,6 @@ export type ReceiveLeave = {
 
 export type ReceiveCursor = {
   type: 'CURSOR';
-  sessionId: string;
   userInfo: {
     userId: string;
     userName: string;
@@ -62,12 +61,27 @@ export type ReceiveChat = {
   position?: { x: number; y: number };
 };
 
+export type ReceiveErdMutated = {
+  type: 'ERD_MUTATED';
+  schemaId: string;
+  affectedTableIds: string[];
+  timestamp: number;
+};
+
+export type ReceiveSessionReady = {
+  type: 'SESSION_READY';
+  sessionId: string;
+  timestamp: number;
+};
+
 export type WebSocketMessage =
+  | ReceiveSessionReady
   | ReceiveJoin
   | ReceiveLeave
   | ReceiveCursor
   | ReceiveSchemaFocus
-  | ReceiveChat;
+  | ReceiveChat
+  | ReceiveErdMutated;
 
 export type ChatMessage = {
   messageId: string;

@@ -10,6 +10,7 @@ import {
 import { SchemaService } from './schema.service';
 import { TableService } from './table.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
+import { SessionId } from '../common/decorators/session-id.decorator';
 import type { ChangeSchemaNameRequest, CreateSchemaRequest } from './erd.types';
 
 @Controller('api/v1.0')
@@ -23,8 +24,9 @@ export class SchemaController {
   async createSchema(
     @Body() data: CreateSchemaRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.schemaService.createSchema(data, authHeader);
+    return this.schemaService.createSchema(data, authHeader, sessionId);
   }
 
   @Get('projects/:projectId/schemas')
@@ -48,16 +50,23 @@ export class SchemaController {
     @Param('schemaId') schemaId: string,
     @Body() data: ChangeSchemaNameRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.schemaService.changeSchemaName(schemaId, data, authHeader);
+    return this.schemaService.changeSchemaName(
+      schemaId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('schemas/:schemaId')
   async deleteSchema(
     @Param('schemaId') schemaId: string,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.schemaService.deleteSchema(schemaId, authHeader);
+    return this.schemaService.deleteSchema(schemaId, authHeader, sessionId);
   }
 
   @Get('schemas/:schemaId/snapshots')

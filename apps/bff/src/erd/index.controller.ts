@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { IndexService } from './index.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
+import { SessionId } from '../common/decorators/session-id.decorator';
 import type {
   AddIndexColumnRequest,
   ChangeIndexColumnPositionRequest,
@@ -26,8 +27,9 @@ export class IndexController {
   async createIndex(
     @Body() data: CreateIndexRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.indexService.createIndex(data, authHeader);
+    return this.indexService.createIndex(data, authHeader, sessionId);
   }
 
   @Get('indexes/:indexId')
@@ -51,8 +53,14 @@ export class IndexController {
     @Param('indexId') indexId: string,
     @Body() data: ChangeIndexNameRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.indexService.changeIndexName(indexId, data, authHeader);
+    return this.indexService.changeIndexName(
+      indexId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('indexes/:indexId/type')
@@ -60,16 +68,23 @@ export class IndexController {
     @Param('indexId') indexId: string,
     @Body() data: ChangeIndexTypeRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.indexService.changeIndexType(indexId, data, authHeader);
+    return this.indexService.changeIndexType(
+      indexId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('indexes/:indexId')
   async deleteIndex(
     @Param('indexId') indexId: string,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.indexService.deleteIndex(indexId, authHeader);
+    return this.indexService.deleteIndex(indexId, authHeader, sessionId);
   }
 
   @Get('indexes/:indexId/columns')
@@ -85,16 +100,27 @@ export class IndexController {
     @Param('indexId') indexId: string,
     @Body() data: AddIndexColumnRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.indexService.addIndexColumn(indexId, data, authHeader);
+    return this.indexService.addIndexColumn(
+      indexId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('index-columns/:indexColumnId')
   async removeIndexColumn(
     @Param('indexColumnId') indexColumnId: string,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
-    return this.indexService.removeIndexColumn(indexColumnId, authHeader);
+    return this.indexService.removeIndexColumn(
+      indexColumnId,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Get('index-columns/:indexColumnId')
@@ -110,11 +136,13 @@ export class IndexController {
     @Param('indexColumnId') indexColumnId: string,
     @Body() data: ChangeIndexColumnPositionRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.indexService.changeIndexColumnPosition(
       indexColumnId,
       data,
       authHeader,
+      sessionId,
     );
   }
 
@@ -123,11 +151,13 @@ export class IndexController {
     @Param('indexColumnId') indexColumnId: string,
     @Body() data: ChangeIndexColumnSortDirectionRequest,
     @AuthHeader() authHeader: string,
+    @SessionId() sessionId?: string,
   ) {
     return this.indexService.changeIndexColumnSortDirection(
       indexColumnId,
       data,
       authHeader,
+      sessionId,
     );
   }
 }

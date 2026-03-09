@@ -51,9 +51,11 @@ export class BackendClientService {
     });
   }
 
-  getAuthConfig(authHeader: string) {
-    return {
-      headers: { Authorization: authHeader },
-    };
+  getAuthConfig(authHeader: string, sessionId?: string) {
+    const headers: Record<string, string> = { Authorization: authHeader };
+    if (sessionId) {
+      headers['X-Session-Id'] = sessionId;
+    }
+    return { headers };
   }
 }

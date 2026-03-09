@@ -17,10 +17,15 @@ export class ColumnService {
   async createColumn(
     data: CreateColumnRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse<ColumnResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<ColumnResponse>
-    >('/api/v1.0/columns', data, this.backendClient.getAuthConfig(authHeader));
+    >(
+      '/api/v1.0/columns',
+      data,
+      this.backendClient.getAuthConfig(authHeader, sessionId),
+    );
     return response.data;
   }
 
@@ -50,11 +55,12 @@ export class ColumnService {
     columnId: string,
     data: ChangeColumnNameRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/columns/${columnId}/name`,
       data,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
@@ -63,11 +69,12 @@ export class ColumnService {
     columnId: string,
     data: ChangeColumnTypeRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/columns/${columnId}/type`,
       data,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
@@ -76,11 +83,12 @@ export class ColumnService {
     columnId: string,
     data: ChangeColumnMetaRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/columns/${columnId}/meta`,
       data,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
@@ -89,11 +97,12 @@ export class ColumnService {
     columnId: string,
     data: ChangeColumnPositionRequest,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/columns/${columnId}/position`,
       data,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
@@ -101,10 +110,11 @@ export class ColumnService {
   async deleteColumn(
     columnId: string,
     authHeader: string,
+    sessionId?: string,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/columns/${columnId}`,
-      this.backendClient.getAuthConfig(authHeader),
+      this.backendClient.getAuthConfig(authHeader, sessionId),
     );
     return response.data;
   }
