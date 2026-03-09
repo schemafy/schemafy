@@ -127,7 +127,7 @@ class WorkspaceInvitationControllerTest {
     @Test
     @DisplayName("관리자가 새로운 사용자를 초대하면 201 Created를 반환한다")
     void createInvitation_Success() {
-      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("invited@test.com",
           WorkspaceRole.MEMBER);
 
       webTestClient.post()
@@ -145,7 +145,7 @@ class WorkspaceInvitationControllerTest {
               WorkspaceInvitationApiSnippets.createInvitationResponseHeaders(),
               WorkspaceInvitationApiSnippets.createInvitationResponse()))
           .jsonPath("$.workspaceId").isEqualTo(testWorkspace.getId())
-          .jsonPath("$.invitedEmail").isEqualTo("newuser@test.com")
+          .jsonPath("$.invitedEmail").isEqualTo("invited@test.com")
           .jsonPath("$.invitedRole").isEqualTo(WorkspaceRole.MEMBER.name())
           .jsonPath("$.status").isEqualTo(InvitationStatus.PENDING.name());
     }
@@ -153,7 +153,7 @@ class WorkspaceInvitationControllerTest {
     @Test
     @DisplayName("일반 멤버가 초대하면 403 Forbidden을 반환한다")
     void createInvitation_NotAdmin_Forbidden() {
-      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("invited@test.com",
           WorkspaceRole.MEMBER);
 
       webTestClient.post()
@@ -183,7 +183,7 @@ class WorkspaceInvitationControllerTest {
     @Test
     @DisplayName("인증 토큰 없이 요청하면 401 Unauthorized를 반환한다")
     void createInvitation_NoAuth_Unauthorized() {
-      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("invited@test.com",
           WorkspaceRole.MEMBER);
 
       webTestClient.post()
@@ -197,7 +197,7 @@ class WorkspaceInvitationControllerTest {
     @Test
     @DisplayName("중복 초대 시 409 Conflict를 반환한다")
     void createInvitation_Duplicate_Conflict() {
-      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("newuser@test.com",
+      CreateWorkspaceInvitationRequest request = new CreateWorkspaceInvitationRequest("invited@test.com",
           WorkspaceRole.MEMBER);
 
       webTestClient.post()
