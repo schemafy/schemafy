@@ -17,6 +17,7 @@ import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
+import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
@@ -283,6 +284,7 @@ public class ProjectService {
       String userId) {
     return workspaceMemberRepository
         .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
+        .filter(WorkspaceMember::isAdmin)
         .switchIfEmpty(Mono.error(new DomainException(
             WorkspaceErrorCode.ACCESS_DENIED)))
         .then();
@@ -357,6 +359,7 @@ public class ProjectService {
       return false;
     }
 
+    // 기존에 프로젝트에 EDITOR로 있었다면 VIEWER로 덮어쓰지 않는다.
     if (currentRole == ProjectRole.EDITOR && targetRole == ProjectRole.VIEWER) {
       return false;
     }
