@@ -54,7 +54,12 @@ export class ColumnController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.columnService.changeColumnName(columnId, data, authHeader, sessionId);
+    return this.columnService.changeColumnName(
+      columnId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('columns/:columnId/type')
@@ -64,7 +69,12 @@ export class ColumnController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.columnService.changeColumnType(columnId, data, authHeader, sessionId);
+    return this.columnService.changeColumnType(
+      columnId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('columns/:columnId/meta')
@@ -74,7 +84,12 @@ export class ColumnController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.columnService.changeColumnMeta(columnId, data, authHeader, sessionId);
+    return this.columnService.changeColumnMeta(
+      columnId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('columns/:columnId/position')
@@ -84,7 +99,12 @@ export class ColumnController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.columnService.changeColumnPosition(columnId, data, authHeader, sessionId);
+    return this.columnService.changeColumnPosition(
+      columnId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('columns/:columnId')

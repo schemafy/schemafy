@@ -21,7 +21,11 @@ export class ColumnService {
   ): Promise<MutationResponse<ColumnResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<ColumnResponse>
-    >('/api/v1.0/columns', data, this.backendClient.getAuthConfig(authHeader, sessionId));
+    >(
+      '/api/v1.0/columns',
+      data,
+      this.backendClient.getAuthConfig(authHeader, sessionId),
+    );
     return response.data;
   }
 

@@ -70,7 +70,12 @@ export class TableController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.tableService.changeTableName(tableId, data, authHeader, sessionId);
+    return this.tableService.changeTableName(
+      tableId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('tables/:tableId/meta')
@@ -80,7 +85,12 @@ export class TableController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.tableService.changeTableMeta(tableId, data, authHeader, sessionId);
+    return this.tableService.changeTableMeta(
+      tableId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('tables/:tableId/extra')
@@ -90,7 +100,12 @@ export class TableController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.tableService.changeTableExtra(tableId, data, authHeader, sessionId);
+    return this.tableService.changeTableExtra(
+      tableId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('tables/:tableId')

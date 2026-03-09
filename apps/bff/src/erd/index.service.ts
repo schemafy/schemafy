@@ -24,7 +24,11 @@ export class IndexService {
   ): Promise<MutationResponse<IndexResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<IndexResponse>
-    >('/api/v1.0/indexes', data, this.backendClient.getAuthConfig(authHeader, sessionId));
+    >(
+      '/api/v1.0/indexes',
+      data,
+      this.backendClient.getAuthConfig(authHeader, sessionId),
+    );
     return response.data;
   }
 

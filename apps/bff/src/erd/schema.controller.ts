@@ -52,7 +52,12 @@ export class SchemaController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.schemaService.changeSchemaName(schemaId, data, authHeader, sessionId);
+    return this.schemaService.changeSchemaName(
+      schemaId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('schemas/:schemaId')

@@ -55,7 +55,12 @@ export class IndexController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.indexService.changeIndexName(indexId, data, authHeader, sessionId);
+    return this.indexService.changeIndexName(
+      indexId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Patch('indexes/:indexId/type')
@@ -65,7 +70,12 @@ export class IndexController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.indexService.changeIndexType(indexId, data, authHeader, sessionId);
+    return this.indexService.changeIndexType(
+      indexId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('indexes/:indexId')
@@ -92,7 +102,12 @@ export class IndexController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.indexService.addIndexColumn(indexId, data, authHeader, sessionId);
+    return this.indexService.addIndexColumn(
+      indexId,
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Delete('index-columns/:indexColumnId')
@@ -101,7 +116,11 @@ export class IndexController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.indexService.removeIndexColumn(indexColumnId, authHeader, sessionId);
+    return this.indexService.removeIndexColumn(
+      indexColumnId,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Get('index-columns/:indexColumnId')

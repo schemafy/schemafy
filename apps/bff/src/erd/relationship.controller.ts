@@ -30,7 +30,11 @@ export class RelationshipController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.relationshipService.createRelationship(data, authHeader, sessionId);
+    return this.relationshipService.createRelationship(
+      data,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Get('relationships/:relationshipId')

@@ -18,7 +18,11 @@ export class SchemaService {
   ): Promise<MutationResponse<SchemaResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<SchemaResponse>
-    >('/api/v1.0/schemas', data, this.backendClient.getAuthConfig(authHeader, sessionId));
+    >(
+      '/api/v1.0/schemas',
+      data,
+      this.backendClient.getAuthConfig(authHeader, sessionId),
+    );
     return response.data;
   }
 

@@ -99,7 +99,11 @@ export class ConstraintController {
     @AuthHeader() authHeader: string,
     @SessionId() sessionId?: string,
   ) {
-    return this.constraintService.deleteConstraint(constraintId, authHeader, sessionId);
+    return this.constraintService.deleteConstraint(
+      constraintId,
+      authHeader,
+      sessionId,
+    );
   }
 
   @Get('constraints/:constraintId/columns')

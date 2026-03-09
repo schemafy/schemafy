@@ -21,7 +21,11 @@ export class TableService {
   ): Promise<MutationResponse<TableResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<TableResponse>
-    >('/api/v1.0/tables', data, this.backendClient.getAuthConfig(authHeader, sessionId));
+    >(
+      '/api/v1.0/tables',
+      data,
+      this.backendClient.getAuthConfig(authHeader, sessionId),
+    );
     return response.data;
   }
 
