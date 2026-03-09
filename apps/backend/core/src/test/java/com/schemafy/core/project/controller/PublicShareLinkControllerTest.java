@@ -119,7 +119,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("유효한 코드로 프로젝트에 접근할 수 있다")
-  void accessByCode_Success() {
+  void accessByLink_Success() {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
 
@@ -129,16 +129,16 @@ class PublicShareLinkControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .consumeWith(document("share-link-public-access",
-            accessByCodePathParameters(),
-            accessByCodeResponseHeaders(),
-            accessByCodeResponse()))
+            accessByLinkPathParameters(),
+            accessByLinkResponseHeaders(),
+            accessByLinkResponse()))
         .jsonPath("$.projectId").isEqualTo(testProject.getId())
         .jsonPath("$.projectName").isEqualTo("Test Project");
   }
 
   @Test
   @DisplayName("로그인 사용자도 공유 링크로 접근할 수 있다")
-  void accessByCode_Authenticated() {
+  void accessByLink_Authenticated() {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
 
@@ -151,7 +151,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("유효하지 않은 코드로 접근하면 실패한다")
-  void accessByCode_InvalidCode() {
+  void accessByLink_InvalidCode() {
     webTestClient.get().uri(PUBLIC_API_PATH + "/invalid-code").exchange()
         .expectStatus().isNotFound().expectBody()
         .jsonPath("$.status").isEqualTo(404).jsonPath("$.reason")
@@ -160,7 +160,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("비활성화된 공유 링크로 접근하면 실패한다")
-  void accessByCode_RevokedLink() {
+  void accessByLink_RevokedLink() {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
     shareLink.revoke();
@@ -174,7 +174,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("만료된 공유 링크로 접근하면 실패한다")
-  void accessByCode_ExpiredLink() {
+  void accessByLink_ExpiredLink() {
     String code = generateLinkCode();
     Instant pastDate = Instant.now().minus(1, ChronoUnit.DAYS);
     ShareLink shareLink = createShareLink(code, pastDate);
@@ -187,7 +187,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("삭제된 공유 링크로 접근하면 실패한다")
-  void accessByCode_DeletedLink() {
+  void accessByLink_DeletedLink() {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
     shareLink.delete();
@@ -201,7 +201,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("프로젝트가 삭제된 경우 접근하면 실패한다")
-  void accessByCode_DeletedProject() {
+  void accessByLink_DeletedProject() {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
 
@@ -216,7 +216,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("공유 링크 접근 시 accessCount가 증가한다")
-  void accessByCode_IncrementAccessCount() {
+  void accessByLink_IncrementAccessCount() {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
 
@@ -235,7 +235,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("공유 링크를 여러 번 접근하면 accessCount가 누적된다")
-  void accessByCode_MultipleAccessIncrements() {
+  void accessByLink_MultipleAccessIncrements() {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
 
@@ -251,7 +251,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("만료 시간 경계값 - 정확히 만료 시간에는 접근할 수 없다")
-  void accessByCode_ExactExpirationTime() {
+  void accessByLink_ExactExpirationTime() {
     String code = generateLinkCode();
     Instant expiryTime = Instant.now().plusSeconds(1);
     ShareLink shareLink = createShareLink(code, expiryTime);
@@ -271,7 +271,7 @@ class PublicShareLinkControllerTest {
 
   @Test
   @DisplayName("만료되지 않은 링크는 접근할 수 있다")
-  void accessByCode_NotExpiredYet() {
+  void accessByLink_NotExpiredYet() {
     String code = generateLinkCode();
     Instant futureExpiry = Instant.now().plus(1, ChronoUnit.HOURS);
     ShareLink shareLink = createShareLink(code, futureExpiry);

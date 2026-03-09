@@ -105,7 +105,7 @@ class PublicShareLinkControllerResilienceTest {
 
   @Test
   @DisplayName("incrementAccessCount가 실패해도 프로젝트 조회는 성공한다")
-  void accessByCode_IncrementAccessCountFailure_StillSucceeds() {
+  void accessByLink_IncrementAccessCountFailure_StillSucceeds() {
     String code = generateLinkCode();
     createShareLink(code);
 

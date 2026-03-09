@@ -15,18 +15,18 @@ public class PublicShareLinkApiSnippets extends RestDocsSnippets {
   // ========== GET /public/api/v1.0/share/{code} - 공유 링크로 프로젝트 접근 ==========
 
   /** 공유 링크 접근 경로 파라미터 */
-  public static Snippet accessByCodePathParameters() {
+  public static Snippet accessByLinkPathParameters() {
     return pathParameters(
         parameterWithName("code").description("공유 링크 코드"));
   }
 
   /** 공유 링크 접근 응답 헤더 */
-  public static Snippet accessByCodeResponseHeaders() {
+  public static Snippet accessByLinkResponseHeaders() {
     return createResponseHeadersSnippet(commonResponseHeaders());
   }
 
   /** 공유 링크 접근 응답 */
-  public static Snippet accessByCodeResponse() {
+  public static Snippet accessByLinkResponse() {
     return createResponseFieldsSnippet(
         successResponseFields(
             fieldWithPath("projectId")

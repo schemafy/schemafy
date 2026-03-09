@@ -25,7 +25,7 @@ public class PublicShareLinkController {
   private final ShareLinkService shareLinkService;
 
   @GetMapping("/share/{code}")
-  public Mono<ShareLinkAccessResponse> accessByCode(
+  public Mono<ShareLinkAccessResponse> accessByLink(
       @PathVariable String code, ServerHttpRequest request,
       @Nullable Authentication authentication) {
     String userId = (authentication != null) ? authentication.getName()

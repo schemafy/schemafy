@@ -42,6 +42,8 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @DisplayName("ProjectController 통합 테스트")
 class ProjectControllerTest {
 
+  private static final String PUBLIC_API_PREFIX = ApiPath.PUBLIC_API.replace("{version}", "v1.0");
+
   @Autowired
   private WebTestClient webTestClient;
 
@@ -760,7 +762,7 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponse()))
         .jsonPath("$.projectId").isEqualTo(project.getId())
-        .jsonPath("$.url").exists()
+        .jsonPath("$.url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.isRevoked").isEqualTo(false)
         .jsonPath("$.accessCount").isEqualTo(0);
   }
@@ -793,6 +795,7 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksResponse()))
         .jsonPath("$.content").isArray()
+        .jsonPath("$.content[0].url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.totalElements").isEqualTo(1);
   }
 
@@ -824,6 +827,7 @@ class ProjectControllerTest {
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponseHeaders(),
             com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponse()))
         .jsonPath("$.id").isEqualTo(shareLink.getId())
+        .jsonPath("$.url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.isRevoked").isEqualTo(false);
   }
 

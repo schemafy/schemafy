@@ -138,16 +138,18 @@ public class ProjectController {
   @PostMapping("/projects/{projectId}/share-links")
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<ShareLinkResponse> createShareLink(
+      @PathVariable String version,
       @PathVariable String projectId,
       Authentication authentication) {
     String userId = authentication.getName();
     return shareLinkService.createShareLink(projectId, userId)
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl));
+        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/projects/{projectId}/share-links")
   public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
+      @PathVariable String version,
       @PathVariable String projectId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size,
@@ -156,7 +158,7 @@ public class ProjectController {
     int offset = page * size;
     return shareLinkService.countShareLinks(projectId, userId)
         .flatMap(total -> shareLinkService.getShareLinks(projectId, userId, size, offset)
-            .map(link -> ShareLinkResponse.of(link, baseUrl))
+            .map(link -> ShareLinkResponse.of(link, baseUrl, version))
             .collectList()
             .map(result -> PageResponse.of(result, page, size, total)));
   }
@@ -164,23 +166,25 @@ public class ProjectController {
   @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/projects/{projectId}/share-links/{shareLinkId}")
   public Mono<ShareLinkResponse> getShareLink(
+      @PathVariable String version,
       @PathVariable String projectId,
       @PathVariable String shareLinkId,
       Authentication authentication) {
     String userId = authentication.getName();
     return shareLinkService.getShareLink(projectId, shareLinkId, userId)
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl));
+        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PatchMapping("/projects/{projectId}/share-links/{shareLinkId}/revoke")
   public Mono<ShareLinkResponse> revokeShareLink(
+      @PathVariable String version,
       @PathVariable String projectId,
       @PathVariable String shareLinkId,
       Authentication authentication) {
     String userId = authentication.getName();
     return shareLinkService.revokeShareLink(projectId, shareLinkId, userId)
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl));
+        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
