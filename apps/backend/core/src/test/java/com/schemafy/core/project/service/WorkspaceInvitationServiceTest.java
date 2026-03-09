@@ -576,6 +576,29 @@ class WorkspaceInvitationServiceTest {
     }
 
     @Test
+    @DisplayName("삭제된 워크스페이스의 초대는 수락할 수 없다")
+    void acceptInvitation_DeletedWorkspace_Fails() {
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          WorkspaceRole.MEMBER,
+          adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      testWorkspace.delete();
+      workspaceRepository.save(testWorkspace).block();
+
+      StepVerifier.create(
+          invitationService.acceptInvitation(invitation.getId(), invitedUser.getId()))
+          .expectErrorSatisfies(error -> {
+            assertThat(error).isInstanceOf(DomainException.class);
+            DomainException be = (DomainException) error;
+            assertThat(be.getErrorCode()).isEqualTo(WorkspaceErrorCode.NOT_FOUND);
+          })
+          .verify();
+    }
+
+    @Test
     @DisplayName("초대 이메일과 사용자 이메일이 다르면 실패한다")
     void acceptInvitation_EmailMismatch_Fails() {
       Invitation invitation = Invitation.createWorkspaceInvitation(
@@ -838,6 +861,28 @@ class WorkspaceInvitationServiceTest {
             assertThat(be.getErrorCode()).isEqualTo(ProjectErrorCode.INVITATION_NOT_FOUND);
           })
           .verify();
+    }
+
+    @Test
+    @DisplayName("삭제된 워크스페이스의 초대도 거절할 수 있다")
+    void rejectInvitation_DeletedWorkspace_Succeeds() {
+      Invitation invitation = Invitation.createWorkspaceInvitation(
+          testWorkspace.getId(),
+          invitedUser.getEmail(),
+          WorkspaceRole.MEMBER,
+          adminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      testWorkspace.delete();
+      workspaceRepository.save(testWorkspace).block();
+
+      StepVerifier.create(
+          invitationService.rejectInvitation(invitation.getId(), invitedUser.getId()))
+          .verifyComplete();
+
+      Invitation updated = invitationRepository.findById(invitation.getId()).block();
+      assertThat(updated.getStatusAsEnum()).isEqualTo(InvitationStatus.REJECTED);
+      assertThat(updated.getResolvedAt()).isNotNull();
     }
 
     @Test

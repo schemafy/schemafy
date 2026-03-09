@@ -11,12 +11,13 @@ import org.slf4j.LoggerFactory;
 
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.exception.WorkspaceErrorCode;
-import com.schemafy.core.project.repository.ProjectMemberRepository;
+import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.WorkspaceDetail;
 import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
@@ -39,7 +40,7 @@ public class WorkspaceService {
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final ProjectRepository projectRepository;
-  private final ProjectMemberRepository projectMemberRepository;
+  private final InvitationRepository invitationRepository;
   private final ProjectService projectService;
   private final UserRepository userRepository;
 
@@ -99,23 +100,25 @@ public class WorkspaceService {
   private Mono<Void> doDeleteWorkspace(String workspaceId) {
     return findWorkspaceOrThrow(workspaceId)
         .flatMap(workspace -> {
-          if (workspace.isDeleted()) {
-            return Mono.error(new DomainException(
-                WorkspaceErrorCode.ALREADY_DELETED));
-          }
           workspace.delete();
           return workspaceRepository.save(workspace)
-              .then(projectRepository.findByWorkspaceIdAndNotDeleted(workspaceId)
-                  .concatMap(project -> projectMemberRepository
-                      .softDeleteByProjectId(project.getId())
-                      .then(Mono.defer(() -> {
-                        project.delete();
-                        return projectRepository.save(project);
-                      }))
-                      .then())
-                  .then(workspaceMemberRepository
-                      .softDeleteByWorkspaceId(workspaceId)));
+              .then(softDeleteWorkspaceCascade(workspaceId));
         });
+  }
+
+  private Mono<Void> softDeleteWorkspaceCascade(String workspaceId) {
+    return softDeleteWorkspaceProjects(workspaceId)
+        .then(workspaceMemberRepository.softDeleteByWorkspaceId(workspaceId))
+        .then(invitationRepository.softDeleteByTarget(
+            InvitationType.WORKSPACE.name(),
+            workspaceId))
+        .then();
+  }
+
+  private Mono<Void> softDeleteWorkspaceProjects(String workspaceId) {
+    return projectRepository.findByWorkspaceId(workspaceId)
+        .concatMap(projectService::softDeleteProjectCascade)
+        .then();
   }
 
   public Mono<PageResponse<WorkspaceMemberDetail>> getMembers(

@@ -131,7 +131,8 @@ public class WorkspaceInvitationService {
               }
 
               invitation.validateInvitedEmailMatches(user.getEmail());
-              return checkNotAlreadyMember(invitation.getWorkspaceId(), currentUserId)
+              return findWorkspaceOrThrow(invitation.getWorkspaceId())
+                  .then(checkNotAlreadyMember(invitation.getWorkspaceId(), currentUserId))
                   .then(Mono.defer(() -> {
                     invitation.accept();
 

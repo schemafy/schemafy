@@ -10,11 +10,14 @@ import org.slf4j.LoggerFactory;
 import com.schemafy.core.common.type.PageResponse;
 import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.exception.WorkspaceErrorCode;
+import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
+import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
+import com.schemafy.core.project.repository.vo.InvitationType;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.ProjectDetail;
@@ -37,6 +40,8 @@ public class ProjectService {
   private final ProjectRepository projectRepository;
   private final ProjectMemberRepository projectMemberRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final InvitationRepository invitationRepository;
+  private final ShareLinkRepository shareLinkRepository;
   private final UserRepository userRepository;
 
   public Mono<ProjectDetail> createProject(String workspaceId,
@@ -129,16 +134,7 @@ public class ProjectService {
       String userId) {
     return validateProjectAdmin(projectId, userId)
         .then(findProjectById(projectId))
-        .flatMap(project -> {
-          if (project.isDeleted()) {
-            return Mono.error(new DomainException(
-                ProjectErrorCode.ALREADY_DELETED));
-          }
-          project.delete();
-          return projectRepository.save(project)
-              .then(projectMemberRepository
-                  .softDeleteByProjectId(projectId));
-        })
+        .flatMap(this::softDeleteProjectCascade)
         .as(transactionalOperator::transactional);
   }
 
@@ -221,20 +217,33 @@ public class ProjectService {
             .countByProjectIdAndNotDeleted(projectId)
             .flatMap(memberCount -> {
               if (memberCount <= 1) {
-                return softDeleteMember(member)
-                    .then(projectRepository
-                        .findByIdAndNotDeleted(
-                            projectId)
-                        .flatMap(project -> {
-                          project.delete();
-                          return projectRepository
-                              .save(project)
-                              .then();
-                        }));
+                return projectRepository
+                    .findById(projectId)
+                    .flatMap(this::softDeleteProjectCascade)
+                    .switchIfEmpty(softDeleteMember(member))
+                    .then();
               }
               return softDeleteMember(member);
             }))
         .as(transactionalOperator::transactional);
+  }
+
+  Mono<Void> softDeleteProjectCascade(Project project) {
+    String projectId = project.getId();
+    Mono<Void> softDeleteProject = project.isDeleted()
+        ? Mono.empty()
+        : Mono.defer(() -> {
+          project.delete();
+          return projectRepository.save(project).then();
+        });
+
+    return softDeleteProject
+        .then(projectMemberRepository.softDeleteByProjectId(projectId))
+        .then(invitationRepository.softDeleteByTarget(
+            InvitationType.PROJECT.name(),
+            projectId))
+        .then(shareLinkRepository.softDeleteByProjectId(projectId))
+        .then();
   }
 
   private Mono<Project> findProjectById(String projectId) {

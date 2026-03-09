@@ -110,4 +110,14 @@ public interface InvitationRepository
       String currentStatus,
       String excludeId);
 
+  @Modifying
+  @Query("""
+      UPDATE invitations
+      SET deleted_at = NOW(), updated_at = NOW(), version = version + 1
+      WHERE target_type = :targetType
+        AND target_id = :targetId
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> softDeleteByTarget(String targetType, String targetId);
+
 }

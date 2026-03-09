@@ -28,4 +28,12 @@ public interface ShareLinkRepository
   @Query("SELECT * FROM share_links WHERE id = :id AND project_id = :projectId AND deleted_at IS NULL")
   Mono<ShareLink> findByIdAndProjectIdAndNotDeleted(String id, String projectId);
 
+  @Query("""
+      UPDATE share_links
+      SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE project_id = :projectId
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> softDeleteByProjectId(String projectId);
+
 }

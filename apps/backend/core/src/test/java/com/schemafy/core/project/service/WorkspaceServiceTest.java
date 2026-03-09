@@ -15,12 +15,16 @@ import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberReques
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.exception.WorkspaceErrorCode;
+import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
+import com.schemafy.core.project.repository.ShareLinkRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
+import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 import com.schemafy.core.project.repository.vo.ProjectRole;
@@ -62,6 +66,12 @@ class WorkspaceServiceTest {
   @Autowired
   private ProjectMemberRepository projectMemberRepository;
 
+  @Autowired
+  private InvitationRepository invitationRepository;
+
+  @Autowired
+  private ShareLinkRepository shareLinkRepository;
+
   private User adminUser;
   private User memberUser;
   private User outsiderUser;
@@ -72,6 +82,8 @@ class WorkspaceServiceTest {
   @BeforeEach
   void setUp() {
     Mono.when(
+        shareLinkRepository.deleteAll(),
+        invitationRepository.deleteAll(),
         projectMemberRepository.deleteAll(),
         projectRepository.deleteAll(),
         workspaceMemberRepository.deleteAll(),
@@ -199,8 +211,6 @@ class WorkspaceServiceTest {
       workspaceService.deleteWorkspace(newWorkspace.getId(),
           adminUser.getId()).block();
 
-      // 현재는 검증 로직에 의해 WORKSPACE_MEMBER_NOT_FOUND 발생
-      // 추후 WORKSPACE_NOT_FOUND로 변경 검토
       StepVerifier.create(workspaceService.deleteWorkspace(
           newWorkspace.getId(), adminUser.getId()))
           .expectErrorMatches(e -> e instanceof DomainException &&
@@ -896,7 +906,7 @@ class WorkspaceServiceTest {
   class DeleteWorkspaceCascade {
 
     @Test
-    @DisplayName("워크스페이스 삭제 시 프로젝트와 프로젝트 멤버십도 cascade soft-delete 된다")
+    @DisplayName("워크스페이스 삭제 시 프로젝트/멤버십/초대/공유링크가 cascade soft-delete 된다")
     void deleteWorkspace_cascadesProjectsAndMembers() {
       Workspace newWorkspace = workspaceRepository.save(
           Workspace.create("Cascade Workspace", "Desc")).block();
@@ -907,6 +917,10 @@ class WorkspaceServiceTest {
           Project.create(newWorkspace.getId(), "Project A", "Desc")).block();
       Project project2 = projectRepository.save(
           Project.create(newWorkspace.getId(), "Project B", "Desc")).block();
+      Project preDeletedProject = projectRepository.save(
+          Project.create(newWorkspace.getId(), "Project C", "Desc")).block();
+      preDeletedProject.delete();
+      preDeletedProject = projectRepository.save(preDeletedProject).block();
 
       projectMemberRepository.save(
           ProjectMember.create(project1.getId(), adminUser.getId(), ProjectRole.ADMIN)).block();
@@ -917,16 +931,49 @@ class WorkspaceServiceTest {
       projectMemberRepository.save(
           ProjectMember.create(project2.getId(), memberUser.getId(), ProjectRole.VIEWER)).block();
 
+      Invitation workspaceInvitation = Invitation.createWorkspaceInvitation(
+          newWorkspace.getId(),
+          outsiderUser.getEmail(),
+          WorkspaceRole.MEMBER,
+          adminUser.getId());
+      workspaceInvitation = invitationRepository.save(workspaceInvitation).block();
+
+      Invitation projectInvitation = Invitation.createProjectInvitation(
+          project1.getId(),
+          newWorkspace.getId(),
+          outsiderUser.getEmail(),
+          ProjectRole.VIEWER,
+          adminUser.getId());
+      projectInvitation = invitationRepository.save(projectInvitation).block();
+
+      Invitation preDeletedProjectInvitation = Invitation.createProjectInvitation(
+          preDeletedProject.getId(),
+          newWorkspace.getId(),
+          outsiderUser.getEmail(),
+          ProjectRole.VIEWER,
+          adminUser.getId());
+      preDeletedProjectInvitation = invitationRepository.save(preDeletedProjectInvitation).block();
+
+      ShareLink shareLink = ShareLink.create(project1.getId(), "ws-cascade-" + System.nanoTime());
+      shareLink = shareLinkRepository.save(shareLink).block();
+      ShareLink preDeletedShareLink = ShareLink.create(
+          preDeletedProject.getId(),
+          "ws-predeleted-" + System.nanoTime());
+      preDeletedShareLink = shareLinkRepository.save(preDeletedShareLink).block();
+
       String workspaceId = newWorkspace.getId();
       String project1Id = project1.getId();
       String project2Id = project2.getId();
+      String preDeletedProjectId = preDeletedProject.getId();
 
       workspaceService.deleteWorkspace(workspaceId, adminUser.getId()).block();
 
       Project deletedProject1 = projectRepository.findById(project1Id).block();
       Project deletedProject2 = projectRepository.findById(project2Id).block();
+      Project deletedProject3 = projectRepository.findById(preDeletedProjectId).block();
       assertThat(deletedProject1.isDeleted()).isTrue();
       assertThat(deletedProject2.isDeleted()).isTrue();
+      assertThat(deletedProject3.isDeleted()).isTrue();
 
       StepVerifier.create(projectMemberRepository
           .findByProjectIdAndNotDeleted(project1Id, 100, 0).collectList())
@@ -937,6 +984,28 @@ class WorkspaceServiceTest {
           .findByProjectIdAndNotDeleted(project2Id, 100, 0).collectList())
           .assertNext(members -> assertThat(members).isEmpty())
           .verifyComplete();
+
+      Invitation deletedWorkspaceInvitation = invitationRepository.findById(workspaceInvitation.getId()).block();
+      assertThat(deletedWorkspaceInvitation).isNotNull();
+      assertThat(deletedWorkspaceInvitation.isDeleted()).isTrue();
+
+      Invitation deletedProjectInvitation = invitationRepository.findById(projectInvitation.getId()).block();
+      assertThat(deletedProjectInvitation).isNotNull();
+      assertThat(deletedProjectInvitation.isDeleted()).isTrue();
+      Invitation deletedPreDeletedProjectInvitation = invitationRepository
+          .findById(preDeletedProjectInvitation.getId())
+          .block();
+      assertThat(deletedPreDeletedProjectInvitation).isNotNull();
+      assertThat(deletedPreDeletedProjectInvitation.isDeleted()).isTrue();
+
+      ShareLink deletedShareLink = shareLinkRepository.findById(shareLink.getId()).block();
+      assertThat(deletedShareLink).isNotNull();
+      assertThat(deletedShareLink.isDeleted()).isTrue();
+      ShareLink deletedPreDeletedShareLink = shareLinkRepository
+          .findById(preDeletedShareLink.getId())
+          .block();
+      assertThat(deletedPreDeletedShareLink).isNotNull();
+      assertThat(deletedPreDeletedShareLink.isDeleted()).isTrue();
     }
 
   }

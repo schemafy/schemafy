@@ -13,10 +13,13 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.exception.ProjectErrorCode;
 import com.schemafy.core.project.repository.*;
+import com.schemafy.core.project.repository.entity.Invitation;
 import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
+import com.schemafy.core.project.repository.entity.ShareLink;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.project.service.dto.ProjectMemberDetail;
@@ -53,6 +56,12 @@ class ProjectServiceTest {
   @Autowired
   private UserRepository userRepository;
 
+  @Autowired
+  private InvitationRepository invitationRepository;
+
+  @Autowired
+  private ShareLinkRepository shareLinkRepository;
+
   private User primaryAdminUser;
   private User adminUser;
   private User viewerUser;
@@ -65,6 +74,8 @@ class ProjectServiceTest {
   @BeforeEach
   void setUp() {
     Mono.when(
+        shareLinkRepository.deleteAll(),
+        invitationRepository.deleteAll(),
         projectMemberRepository.deleteAll(),
         projectRepository.deleteAll(),
         workspaceMemberRepository.deleteAll(),
@@ -376,6 +387,17 @@ class ProjectServiceTest {
       projectMemberRepository.deleteById(primaryAdminMember.getId()).block();
       projectMemberRepository.deleteById(adminMember.getId()).block();
 
+      Invitation invitation = Invitation.createProjectInvitation(
+          testProject.getId(),
+          testWorkspace.getId(),
+          viewerUser.getEmail(),
+          ProjectRole.VIEWER,
+          primaryAdminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      ShareLink shareLink = ShareLink.create(testProject.getId(), "leave-last-" + System.nanoTime());
+      shareLink = shareLinkRepository.save(shareLink).block();
+
       Long memberCount = projectMemberRepository
           .countByProjectIdAndNotDeleted(testProject.getId()).block();
       assertThat(memberCount).isEqualTo(1L);
@@ -393,6 +415,14 @@ class ProjectServiceTest {
       Project deletedProject = projectRepository
           .findById(testProject.getId()).block();
       assertThat(deletedProject.isDeleted()).isTrue();
+
+      Invitation deletedInvitation = invitationRepository.findById(invitation.getId()).block();
+      assertThat(deletedInvitation).isNotNull();
+      assertThat(deletedInvitation.isDeleted()).isTrue();
+
+      ShareLink deletedShareLink = shareLinkRepository.findById(shareLink.getId()).block();
+      assertThat(deletedShareLink).isNotNull();
+      assertThat(deletedShareLink.isDeleted()).isTrue();
     }
 
     @Test
@@ -420,6 +450,76 @@ class ProjectServiceTest {
       Long afterCount = projectMemberRepository
           .countByProjectIdAndNotDeleted(testProject.getId()).block();
       assertThat(afterCount).isEqualTo(beforeCount - 1);
+    }
+
+    @Test
+    @DisplayName("마지막 멤버 탈퇴 시 프로젝트 row가 없어도 멤버는 정상 탈퇴된다")
+    void lastMemberLeave_ProjectMissing_SoftDeletesMember() {
+      projectMemberRepository.deleteById(primaryAdminMember.getId()).block();
+      projectMemberRepository.deleteById(adminMember.getId()).block();
+      projectRepository.deleteById(testProject.getId()).block();
+
+      StepVerifier.create(projectService.leaveProject(testProject.getId(), viewerUser.getId()))
+          .verifyComplete();
+
+      ProjectMember deletedMember = projectMemberRepository
+          .findById(viewerMember.getId()).block();
+      assertThat(deletedMember).isNotNull();
+      assertThat(deletedMember.isDeleted()).isTrue();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("프로젝트 삭제 cascade")
+  class DeleteProjectCascade {
+
+    @Test
+    @DisplayName("프로젝트 삭제 시 멤버, 초대, 공유 링크가 cascade soft-delete 된다")
+    void deleteProject_cascadesMembersInvitationsAndShareLinks() {
+      Invitation invitation = Invitation.createProjectInvitation(
+          testProject.getId(),
+          testWorkspace.getId(),
+          viewerUser.getEmail(),
+          ProjectRole.VIEWER,
+          primaryAdminUser.getId());
+      invitation = invitationRepository.save(invitation).block();
+
+      ShareLink shareLink = ShareLink.create(testProject.getId(), "code-" + System.nanoTime());
+      shareLink = shareLinkRepository.save(shareLink).block();
+
+      StepVerifier.create(projectService.deleteProject(testProject.getId(), primaryAdminUser.getId()))
+          .verifyComplete();
+
+      Project deletedProject = projectRepository.findById(testProject.getId()).block();
+      assertThat(deletedProject).isNotNull();
+      assertThat(deletedProject.isDeleted()).isTrue();
+
+      StepVerifier.create(projectMemberRepository
+          .findByProjectIdAndNotDeleted(testProject.getId(), 100, 0)
+          .collectList())
+          .assertNext(members -> assertThat(members).isEmpty())
+          .verifyComplete();
+
+      Invitation deletedInvitation = invitationRepository.findById(invitation.getId()).block();
+      assertThat(deletedInvitation).isNotNull();
+      assertThat(deletedInvitation.isDeleted()).isTrue();
+      assertThat(deletedInvitation.getStatusAsEnum()).isEqualTo(InvitationStatus.PENDING);
+
+      ShareLink deletedShareLink = shareLinkRepository.findById(shareLink.getId()).block();
+      assertThat(deletedShareLink).isNotNull();
+      assertThat(deletedShareLink.isDeleted()).isTrue();
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 프로젝트를 다시 삭제하면 ACCESS_DENIED를 반환한다")
+    void deleteProject_DeletedProject_FailsWithAccessDenied() {
+      projectService.deleteProject(testProject.getId(), primaryAdminUser.getId()).block();
+
+      StepVerifier.create(projectService.deleteProject(testProject.getId(), primaryAdminUser.getId()))
+          .expectErrorMatches(e -> e instanceof DomainException &&
+              ((DomainException) e).getErrorCode() == ProjectErrorCode.ACCESS_DENIED)
+          .verify();
     }
 
   }

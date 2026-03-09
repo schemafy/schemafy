@@ -14,6 +14,7 @@ import com.schemafy.core.project.repository.InvitationRepository;
 import com.schemafy.core.project.repository.ProjectMemberRepository;
 import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.entity.Invitation;
+import com.schemafy.core.project.repository.entity.Project;
 import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.vo.InvitationStatus;
 import com.schemafy.core.project.repository.vo.InvitationType;
@@ -45,8 +46,7 @@ public class ProjectInvitationService {
       ProjectRole role,
       String currentUserId) {
     return validateProjectAdmin(projectId, currentUserId)
-        .then(projectRepository.findByIdAndNotDeleted(projectId)
-            .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND))))
+        .then(findProjectOrThrow(projectId))
         .flatMap(project -> checkNotAlreadyProjectMemberByEmail(
             projectId, email)
             .then(checkDuplicatePendingInvitation(
@@ -128,7 +128,8 @@ public class ProjectInvitationService {
               }
 
               invitation.validateInvitedEmailMatches(user.getEmail());
-              return checkNotAlreadyProjectMember(invitation.getProjectId(), currentUserId)
+              return findProjectOrThrow(invitation.getProjectId())
+                  .then(checkNotAlreadyProjectMember(invitation.getProjectId(), currentUserId))
                   .then(Mono.defer(() -> {
                     invitation.accept();
 
@@ -190,6 +191,11 @@ public class ProjectInvitationService {
     return invitationRepository.findByIdAndNotDeleted(invitationId)
         .switchIfEmpty(Mono.error(
             new DomainException(ProjectErrorCode.INVITATION_NOT_FOUND)));
+  }
+
+  private Mono<Project> findProjectOrThrow(String projectId) {
+    return projectRepository.findByIdAndNotDeleted(projectId)
+        .switchIfEmpty(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
 
   private Mono<Void> validateProjectAdmin(
