@@ -271,6 +271,22 @@ class WorkspaceServiceTest {
     }
 
     @Test
+    @DisplayName("ADMIN이 다른 ADMIN을 제거할 수 있다 (다른 ADMIN이 남는 경우)")
+    void removeMember_AdminRemovesAnotherAdmin_Success() {
+      normalMember.updateRole(WorkspaceRole.ADMIN);
+      normalMember = workspaceMemberRepository.save(normalMember).block();
+
+      StepVerifier.create(workspaceService.removeMember(
+          testWorkspace.getId(), memberUser.getId(), adminUser.getId()))
+          .verifyComplete();
+
+      WorkspaceMember deleted = workspaceMemberRepository
+          .findById(normalMember.getId()).block();
+      assertThat(deleted).isNotNull();
+      assertThat(deleted.isDeleted()).isTrue();
+    }
+
+    @Test
     @DisplayName("역할 변경 성공 (멀티 ADMIN 상황)")
     void updateMemberRole_MultipleAdmins_Success() {
       // 기존 normalMember를 ADMIN으로 승격
@@ -708,6 +724,38 @@ class WorkspaceServiceTest {
       assertThat(pm.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
     }
 
+    @Test
+    @DisplayName("직접 추가 시 soft-delete된 프로젝트 멤버십은 기존 row를 복원하고 역할을 갱신한다")
+    void addMember_restoresSoftDeletedProjectMembership() {
+      Project project = projectRepository.save(
+          Project.create(testWorkspace.getId(), "Restore Project", "Desc")).block();
+
+      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+      User restoredUser = User.signUp(
+          new UserInfo("restore-project-member@test.com", "Restore Project Member", "password"),
+          encoder).flatMap(userRepository::save).block();
+
+      ProjectMember deletedProjectMember = ProjectMember.create(
+          project.getId(), restoredUser.getId(), ProjectRole.EDITOR);
+      deletedProjectMember = projectMemberRepository.save(deletedProjectMember).block();
+      deletedProjectMember.delete();
+      projectMemberRepository.save(deletedProjectMember).block();
+      String originalProjectMemberId = deletedProjectMember.getId();
+
+      AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
+          restoredUser.getEmail(), WorkspaceRole.MEMBER);
+
+      workspaceService.addMember(
+          testWorkspace.getId(), request.email(), request.role(), adminUser.getId()).block();
+
+      ProjectMember restoredProjectMember = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), restoredUser.getId()).block();
+      assertThat(restoredProjectMember).isNotNull();
+      assertThat(restoredProjectMember.getId()).isEqualTo(originalProjectMemberId);
+      assertThat(restoredProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+      assertThat(restoredProjectMember.isDeleted()).isFalse();
+    }
+
   }
 
   @Nested
@@ -813,6 +861,32 @@ class WorkspaceServiceTest {
       ProjectMember pm = projectMemberRepository
           .findByProjectIdAndUserIdAndNotDeleted(projectId, memberUser.getId()).block();
       assertThat(pm).isNull();
+    }
+
+    @Test
+    @DisplayName("워크스페이스 비멤버 프로젝트 멤버가 있어도 마지막 워크스페이스 멤버 탈퇴 시 워크스페이스가 삭제된다")
+    void leaveMember_lastWorkspaceMember_withProjectOnlyMember_deletesWorkspace() {
+      workspaceMemberRepository.deleteById(normalMember.getId()).block();
+
+      Project project = projectRepository.save(
+          Project.create(testWorkspace.getId(), "Project With ProjectOnly Member", "Desc")).block();
+      projectMemberRepository.save(
+          ProjectMember.create(project.getId(), outsiderUser.getId(), ProjectRole.VIEWER)).block();
+
+      StepVerifier.create(workspaceService.leaveMember(testWorkspace.getId(), adminUser.getId()))
+          .verifyComplete();
+
+      Workspace deletedWorkspace = workspaceRepository.findById(testWorkspace.getId()).block();
+      assertThat(deletedWorkspace).isNotNull();
+      assertThat(deletedWorkspace.isDeleted()).isTrue();
+
+      Project deletedProject = projectRepository.findById(project.getId()).block();
+      assertThat(deletedProject).isNotNull();
+      assertThat(deletedProject.isDeleted()).isTrue();
+
+      ProjectMember outsiderProjectMember = projectMemberRepository
+          .findByProjectIdAndUserIdAndNotDeleted(project.getId(), outsiderUser.getId()).block();
+      assertThat(outsiderProjectMember).isNull();
     }
 
   }

@@ -22,10 +22,15 @@ import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.docs.WorkspaceApiSnippets;
+import com.schemafy.core.project.repository.ProjectMemberRepository;
+import com.schemafy.core.project.repository.ProjectRepository;
 import com.schemafy.core.project.repository.WorkspaceMemberRepository;
 import com.schemafy.core.project.repository.WorkspaceRepository;
+import com.schemafy.core.project.repository.entity.Project;
+import com.schemafy.core.project.repository.entity.ProjectMember;
 import com.schemafy.core.project.repository.entity.Workspace;
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
+import com.schemafy.core.project.repository.vo.ProjectRole;
 import com.schemafy.core.project.repository.vo.WorkspaceRole;
 import com.schemafy.core.user.repository.UserRepository;
 import com.schemafy.core.user.repository.entity.User;
@@ -54,6 +59,12 @@ class WorkspaceControllerTest {
   private WorkspaceRepository workspaceRepository;
 
   @Autowired
+  private ProjectRepository projectRepository;
+
+  @Autowired
+  private ProjectMemberRepository projectMemberRepository;
+
+  @Autowired
   private WorkspaceMemberRepository workspaceMemberRepository;
 
   @Autowired
@@ -69,7 +80,8 @@ class WorkspaceControllerTest {
 
   @BeforeEach
   void setUp() {
-    Mono<Void> cleanup = Mono.when(workspaceMemberRepository.deleteAll(),
+    Mono<Void> cleanup = Mono.when(projectMemberRepository.deleteAll(),
+        projectRepository.deleteAll(), workspaceMemberRepository.deleteAll(),
         workspaceRepository.deleteAll(), userRepository.deleteAll());
 
     Mono<Tuple2<User, User>> createUsers = Mono.zip(User.signUp(
@@ -432,6 +444,33 @@ class WorkspaceControllerTest {
   }
 
   @Test
+  @DisplayName("ADMIN은 다른 ADMIN을 추방할 수 있다")
+  void removeMember_AdminRemovesAnotherAdmin_Success() {
+    Workspace workspace = Workspace.create("Test Workspace",
+        "Description");
+    workspace = workspaceRepository.save(workspace).block();
+
+    WorkspaceMember admin1 = WorkspaceMember.create(workspace.getId(),
+        testUserId, WorkspaceRole.ADMIN);
+    workspaceMemberRepository.save(admin1).block();
+
+    WorkspaceMember admin2 = WorkspaceMember.create(workspace.getId(),
+        testUser2Id, WorkspaceRole.ADMIN);
+    admin2 = workspaceMemberRepository.save(admin2).block();
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/members/{userId}",
+            workspace.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken).exchange()
+        .expectStatus().isNoContent();
+
+    WorkspaceMember deleted = workspaceMemberRepository.findById(admin2.getId()).block();
+    assertThat(deleted).isNotNull();
+    assertThat(deleted.isDeleted()).isTrue();
+  }
+
+  @Test
   @DisplayName("Admin이 아닌 사용자는 멤버 추방에 실패한다")
   void removeMemberFailWhenNotAdmin() {
     Workspace workspace = Workspace.create("Test Workspace",
@@ -448,7 +487,7 @@ class WorkspaceControllerTest {
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/" + workspace.getId() + "/members/"
-            + member2.getId())
+            + testUser2Id)
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isForbidden();
   }
@@ -480,6 +519,45 @@ class WorkspaceControllerTest {
 
     assertThat(workspaceMemberRepository.findById(member2.getId()).block()
         .isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 멤버가 1명이고 워크스페이스 비멤버 프로젝트 멤버가 있어도 탈퇴 시 워크스페이스가 삭제된다")
+  void leaveMember_LastWorkspaceMember_WithProjectOnlyMember_DeletesWorkspace() {
+    Workspace workspace = Workspace.create("Single Admin Workspace",
+        "Description");
+    workspace = workspaceRepository.save(workspace).block();
+
+    WorkspaceMember admin = WorkspaceMember.create(workspace.getId(),
+        testUserId, WorkspaceRole.ADMIN);
+    workspaceMemberRepository.save(admin).block();
+
+    Project project = Project.create(workspace.getId(), "Project", "Desc");
+    project = projectRepository.save(project).block();
+
+    ProjectMember outsiderProjectMember = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.VIEWER);
+    projectMemberRepository.save(outsiderProjectMember).block();
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/members/me",
+            workspace.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isNoContent();
+
+    Workspace deletedWorkspace = workspaceRepository
+        .findByIdAndNotDeleted(workspace.getId()).block();
+    assertThat(deletedWorkspace).isNull();
+
+    Project deletedProject = projectRepository
+        .findByIdAndNotDeleted(project.getId()).block();
+    assertThat(deletedProject).isNull();
+
+    ProjectMember activeProjectMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUser2Id).block();
+    assertThat(activeProjectMember).isNull();
   }
 
   @Test

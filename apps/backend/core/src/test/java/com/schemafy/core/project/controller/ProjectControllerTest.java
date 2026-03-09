@@ -565,6 +565,33 @@ class ProjectControllerTest {
   }
 
   @Test
+  @DisplayName("프로젝트 ADMIN은 다른 ADMIN을 제거할 수 있다")
+  void removeMember_AdminRemovesAnotherAdmin_Success() {
+    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
+    project = projectRepository.save(project).block();
+
+    ProjectMember adminMember1 = ProjectMember.create(project.getId(),
+        testUserId, ProjectRole.ADMIN);
+    projectMemberRepository.save(adminMember1).block();
+
+    ProjectMember adminMember2 = ProjectMember.create(project.getId(),
+        testUser2Id, ProjectRole.ADMIN);
+    adminMember2 = projectMemberRepository.save(adminMember2).block();
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/{userId}",
+            project.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken).exchange()
+        .expectStatus().isNoContent();
+
+    ProjectMember deletedMember = projectMemberRepository
+        .findById(adminMember2.getId()).block();
+    assertThat(deletedMember).isNotNull();
+    assertThat(deletedMember.isDeleted()).isTrue();
+  }
+
+  @Test
   @DisplayName("ADMIN 권한 없이 멤버 제거할 수 없다")
   void removeMember_NoAdminAccess_Forbidden() {
     Project project = Project.create(testWorkspaceId, "Test Project", "Description");

@@ -311,6 +311,22 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("ADMIN이 다른 ADMIN을 제거할 수 있다")
+    void adminRemovesAnotherAdmin_success() {
+      StepVerifier.create(
+          projectService.removeMember(
+              testProject.getId(),
+              adminUser.getId(),
+              primaryAdminUser.getId()))
+          .verifyComplete();
+
+      ProjectMember deleted = projectMemberRepository
+          .findById(adminMember.getId()).block();
+      assertThat(deleted).isNotNull();
+      assertThat(deleted.isDeleted()).isTrue();
+    }
+
+    @Test
     @DisplayName("관리자 권한이 없으면 거부된다")
     void nonAdmin_rejected() {
       StepVerifier.create(
