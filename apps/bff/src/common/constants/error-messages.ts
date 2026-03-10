@@ -152,7 +152,6 @@ const ErrorMessages: Record<string, ErrorInfo> = {
   PROJECT_WORKSPACE_MISMATCH: {
     category: ErrorCategory.USER_FEEDBACK,
   },
-  PROJECT_SETTINGS_TOO_LARGE: SETTINGS_TOO_LARGE,
   PROJECT_ALREADY_DELETED: {
     category: ErrorCategory.USER_FEEDBACK,
   },
@@ -179,6 +178,34 @@ const ErrorMessages: Record<string, ErrorInfo> = {
     category: ErrorCategory.USER_FEEDBACK,
   },
   PROJECT_MEMBER_ALREADY_EXISTS: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_EMAIL_MISMATCH: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_NOT_FOUND: notFound(),
+  PROJECT_INVITATION_DUPLICATE_WORKSPACE_MEMBER: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_EXPIRED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_WORKSPACE_INVITATION_ALREADY_PROCESSED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_PROJECT_INVITATION_ALREADY_PROCESSED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_CONCURRENT_PROCESSED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_DUPLICATE_MEMBERSHIP_PROJECT: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_ALREADY_EXISTS: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_TYPE_MISMATCH: {
     category: ErrorCategory.USER_FEEDBACK,
   },
 

@@ -42,6 +42,10 @@ public abstract class BaseEntity implements Persistable<String> {
     this.deletedAt = Instant.now();
   }
 
+  public void restore() {
+    this.deletedAt = null;
+  }
+
   @JsonIgnore
   public boolean isDeleted() { return deletedAt != null; }
 

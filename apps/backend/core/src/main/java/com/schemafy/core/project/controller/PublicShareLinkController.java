@@ -24,9 +24,9 @@ public class PublicShareLinkController {
 
   private final ShareLinkService shareLinkService;
 
-  @GetMapping("/share/{token}")
-  public Mono<ShareLinkAccessResponse> accessByToken(
-      @PathVariable String token, ServerHttpRequest request,
+  @GetMapping("/share/{code}")
+  public Mono<ShareLinkAccessResponse> accessByLink(
+      @PathVariable String code, ServerHttpRequest request,
       @Nullable Authentication authentication) {
     String userId = (authentication != null) ? authentication.getName()
         : null;
@@ -34,7 +34,8 @@ public class PublicShareLinkController {
     String userAgent = request.getHeaders().getFirst("User-Agent");
 
     return shareLinkService
-        .accessByToken(token, userId, ipAddress, userAgent);
+        .accessByCode(code, userId, ipAddress, userAgent)
+        .map(ShareLinkAccessResponse::of);
   }
 
   private String extractIpAddress(ServerHttpRequest request) {

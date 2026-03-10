@@ -6,7 +6,6 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.common.type.BaseEntity;
 import com.schemafy.core.project.exception.ShareLinkErrorCode;
-import com.schemafy.core.project.repository.vo.ShareLinkRole;
 import com.schemafy.core.ulid.generator.UlidGenerator;
 import com.schemafy.domain.common.exception.DomainException;
 
@@ -22,50 +21,33 @@ import lombok.NoArgsConstructor;
 public class ShareLink extends BaseEntity {
 
   private String projectId;
-
-  private byte[] tokenHash;
-
-  private String role;
-
+  private String code;
   private Instant expiresAt;
-
   private Boolean isRevoked;
-
   private Instant lastAccessedAt;
-
   private Long accessCount;
 
-  public static ShareLink create(String projectId, byte[] tokenHash,
-      ShareLinkRole role, Instant expiresAt) {
+  private static final int DEFAULT_DURATION_DAYS = 14;
+
+  /** 기본 만료 정책(14일) 적용 */
+  public static ShareLink create(String projectId, String code) {
+    Instant expiresAt = Instant.now().plus(java.time.Duration.ofDays(DEFAULT_DURATION_DAYS));
+    return create(projectId, code, expiresAt);
+  }
+
+  /** 커스텀 만료일 지정 */
+  public static ShareLink create(String projectId, String code, Instant expiresAt) {
     if (projectId == null || projectId.isBlank()) {
-      throw new DomainException(
-          ShareLinkErrorCode.INVALID_PROJECT_ID);
+      throw new DomainException(ShareLinkErrorCode.INVALID_PROJECT_ID);
     }
-    if (tokenHash == null || tokenHash.length != 32) {
-      throw new DomainException(
-          ShareLinkErrorCode.INVALID_TOKEN_HASH);
-    }
-    if (role == null) {
-      throw new DomainException(ShareLinkErrorCode.INVALID_ROLE);
-    }
-    if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
-      throw new DomainException(
-          ShareLinkErrorCode.INVALID_EXPIRATION);
+    if (code == null || code.isBlank()) {
+      throw new DomainException(ShareLinkErrorCode.INVALID_LINK);
     }
 
-    ShareLink shareLink = new ShareLink(
-        projectId,
-        tokenHash,
-        role.getValue(),
-        expiresAt,
-        false,
-        null,
-        0L);
+    ShareLink shareLink = new ShareLink(projectId, code, expiresAt, false, null, 0L);
     shareLink.setId(UlidGenerator.generate());
     return shareLink;
   }
-
-  public ShareLinkRole getRoleAsEnum() { return ShareLinkRole.fromString(this.role); }
 
   public void revoke() {
     this.isRevoked = true;

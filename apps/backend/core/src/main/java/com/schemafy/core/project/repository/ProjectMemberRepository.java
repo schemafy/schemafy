@@ -17,16 +17,9 @@ public interface ProjectMemberRepository
   Mono<ProjectMember> findByProjectIdAndUserIdAndNotDeleted(String projectId,
       String userId);
 
-  @Query("SELECT * FROM project_members WHERE project_id = :projectId AND id = :memberId AND deleted_at IS NULL")
-  Mono<ProjectMember> findByProjectIdAndMemberIdAndNotDeleted(
-      String projectId, String memberId);
-
   @Query("SELECT * FROM project_members WHERE project_id = :projectId AND deleted_at IS NULL ORDER BY joined_at LIMIT :limit OFFSET :offset")
   Flux<ProjectMember> findByProjectIdAndNotDeleted(String projectId,
       int limit, int offset);
-
-  @Query("SELECT * FROM project_members WHERE user_id = :userId AND deleted_at IS NULL")
-  Flux<ProjectMember> findByUserIdAndNotDeleted(String userId);
 
   @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND deleted_at IS NULL")
   Mono<Long> countByProjectIdAndNotDeleted(String projectId);
@@ -35,15 +28,15 @@ public interface ProjectMemberRepository
   Mono<Boolean> existsByProjectIdAndUserIdAndNotDeleted(String projectId,
       String userId);
 
-  @Query("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP WHERE project_id = :projectId AND deleted_at IS NULL")
+  @Query("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE project_id = :projectId AND deleted_at IS NULL")
   Mono<Void> softDeleteByProjectId(String projectId);
 
   @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND role = :role AND deleted_at IS NULL")
   Mono<Long> countByProjectIdAndRoleAndNotDeleted(String projectId,
       String role);
 
-  @Query("SELECT * FROM project_members WHERE id = :id AND deleted_at IS NULL")
-  Mono<ProjectMember> findByIdAndNotDeleted(String id);
+  @Query("SELECT * FROM project_members WHERE project_id = :projectId AND user_id = :userId ORDER BY created_at DESC LIMIT 1")
+  Mono<ProjectMember> findLatestByProjectIdAndUserId(String projectId, String userId);
 
   @Query("""
       SELECT pm.role FROM project_members pm
@@ -67,5 +60,26 @@ public interface ProjectMemberRepository
         AND p.deleted_at IS NULL
       """)
   Mono<Long> countByWorkspaceIdAndUserId(String workspaceId, String userId);
+
+  @Query("""
+      UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = :userId
+        AND project_id IN (
+          SELECT id FROM projects
+          WHERE workspace_id = :workspaceId AND deleted_at IS NULL
+        )
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> softDeleteByWorkspaceIdAndUserId(String workspaceId, String userId);
+
+  @Query("""
+      SELECT pm.* FROM project_members pm
+      INNER JOIN projects p ON pm.project_id = p.id
+      WHERE p.workspace_id = :workspaceId
+        AND pm.user_id = :userId
+        AND pm.deleted_at IS NULL
+        AND p.deleted_at IS NULL
+      """)
+  Flux<ProjectMember> findByWorkspaceIdAndUserId(String workspaceId, String userId);
 
 }

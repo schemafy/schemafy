@@ -7,7 +7,6 @@ import org.springframework.restdocs.snippet.Snippet;
 import com.schemafy.core.common.docs.RestDocsSnippets;
 
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
@@ -21,71 +20,57 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
   private static FieldDescriptor[] shareLinkResponseFields() {
     return new FieldDescriptor[] {
       fieldWithPath("id").type(JsonFieldType.STRING)
-          .description("공유 링크 고유 ID (ULID)"),
+          .description("공유 링크 ID"),
       fieldWithPath("projectId").type(JsonFieldType.STRING)
-          .description("대상 프로젝트 ID (ULID)"),
-      fieldWithPath("token").type(JsonFieldType.STRING)
-          .description("공유 토큰 (암호화된 접근 키)").optional(),
-      fieldWithPath("role").type(JsonFieldType.STRING)
-          .description("부여할 역할 (viewer, commenter, editor)"),
+          .description("프로젝트 ID"),
+      fieldWithPath("url").type(JsonFieldType.STRING)
+          .description("공유 링크 URL"),
       fieldWithPath("expiresAt").type(JsonFieldType.STRING)
-          .description("만료 시각 (ISO 8601)").optional(),
+          .description("만료 시각").optional(),
       fieldWithPath("isRevoked").type(JsonFieldType.BOOLEAN)
           .description("비활성화 여부"),
       fieldWithPath("lastAccessedAt").type(JsonFieldType.STRING)
-          .description("마지막 접근 시각 (ISO 8601)").optional(),
+          .description("마지막 접근 시각").optional(),
       fieldWithPath("accessCount").type(JsonFieldType.NUMBER)
-          .description("총 접근 횟수"),
+          .description("접근 횟수"),
       fieldWithPath("createdAt").type(JsonFieldType.STRING)
-          .description("생성 시각 (ISO 8601)")
+          .description("생성 시각")
     };
   }
 
-  /** ShareLink 목록 응답 필드 (token 제외) */
+  /** ShareLink 목록 응답 필드 */
   private static FieldDescriptor[] shareLinkSummaryFields(String prefix) {
     return new FieldDescriptor[] {
       fieldWithPath(prefix + "id").type(JsonFieldType.STRING)
-          .description("공유 링크 고유 ID (ULID)"),
+          .description("공유 링크 ID"),
       fieldWithPath(prefix + "projectId").type(JsonFieldType.STRING)
-          .description("대상 프로젝트 ID (ULID)"),
-      fieldWithPath(prefix + "role").type(JsonFieldType.STRING)
-          .description("부여할 역할 (viewer, commenter, editor)"),
+          .description("프로젝트 ID"),
+      fieldWithPath(prefix + "url").type(JsonFieldType.STRING)
+          .description("공유 링크 URL"),
       fieldWithPath(prefix + "expiresAt").type(JsonFieldType.STRING)
-          .description("만료 시각 (ISO 8601)").optional(),
+          .description("만료 시각").optional(),
       fieldWithPath(prefix + "isRevoked").type(JsonFieldType.BOOLEAN)
           .description("비활성화 여부"),
       fieldWithPath(prefix + "lastAccessedAt").type(JsonFieldType.STRING)
-          .description("마지막 접근 시각 (ISO 8601)").optional(),
+          .description("마지막 접근 시각").optional(),
       fieldWithPath(prefix + "accessCount").type(JsonFieldType.NUMBER)
-          .description("총 접근 횟수"),
+          .description("접근 횟수"),
       fieldWithPath(prefix + "createdAt").type(JsonFieldType.STRING)
-          .description("생성 시각 (ISO 8601)")
+          .description("생성 시각")
     };
   }
 
-  // ========== POST /api/workspaces/{workspaceId}/projects/{projectId}/share-links - 공유 링크 생성 ==========
+  // ========== POST /api/projects/{projectId}/share-links - 공유 링크 생성 ==========
 
   /** 공유 링크 생성 경로 파라미터 */
   public static Snippet createShareLinkPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("projectId").description("프로젝트 ID (ULID)"));
+        parameterWithName("projectId").description("프로젝트 ID"));
   }
 
   /** 공유 링크 생성 요청 헤더 */
   public static Snippet createShareLinkRequestHeaders() {
     return createRequestHeadersSnippet(authorizationHeader());
-  }
-
-  /** 공유 링크 생성 요청 바디 */
-  public static Snippet createShareLinkRequest() {
-    return requestFields(
-        fieldWithPath("role").type(JsonFieldType.STRING)
-            .description(
-                "부여할 역할 (viewer, commenter, editor 중 하나, 필수)"),
-        fieldWithPath("expiresAt").type(JsonFieldType.STRING)
-            .description("만료 시각 (ISO 8601 형식, 선택 사항)").optional());
   }
 
   /** 공유 링크 생성 응답 헤더 */
@@ -99,14 +84,12 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         successResponseFields(shareLinkResponseFields()));
   }
 
-  // ========== GET /api/workspaces/{workspaceId}/projects/{projectId}/share-links - 공유 링크 목록 조회 ==========
+  // ========== GET /api/projects/{projectId}/share-links - 공유 링크 목록 조회 ==========
 
   /** 공유 링크 목록 조회 경로 파라미터 */
   public static Snippet getShareLinksPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("projectId").description("프로젝트 ID (ULID)"));
+        parameterWithName("projectId").description("프로젝트 ID"));
   }
 
   /** 공유 링크 목록 조회 요청 헤더 */
@@ -120,7 +103,7 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)")
             .optional(),
         parameterWithName("size")
-            .description("페이지 크기 (기본값: 20, 최대: 100)").optional());
+            .description("페이지 크기 (기본값: 10)").optional());
   }
 
   /** 공유 링크 목록 조회 응답 헤더 */
@@ -152,17 +135,13 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
             shareLinkSummaryFields("content[]."))));
   }
 
-  // ========== GET /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 상세 조회
-  // ==========
+  // ========== GET /api/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 상세 조회
 
   /** 공유 링크 상세 조회 경로 파라미터 */
   public static Snippet getShareLinkPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("projectId").description("프로젝트 ID (ULID)"),
-        parameterWithName("shareLinkId")
-            .description("공유 링크 ID (ULID)"));
+        parameterWithName("projectId").description("프로젝트 ID"),
+        parameterWithName("shareLinkId").description("공유 링크 ID"));
   }
 
   /** 공유 링크 상세 조회 요청 헤더 */
@@ -181,17 +160,13 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         successResponseFields(shareLinkResponseFields()));
   }
 
-  // ========== PATCH /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId}/revoke - 공유 링크 비활성화
-  // ==========
+  // ========== PATCH /api/projects/{projectId}/share-links/{shareLinkId}/revoke - 공유 링크 비활성화
 
   /** 공유 링크 비활성화 경로 파라미터 */
   public static Snippet revokeShareLinkPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("projectId").description("프로젝트 ID (ULID)"),
-        parameterWithName("shareLinkId")
-            .description("공유 링크 ID (ULID)"));
+        parameterWithName("projectId").description("프로젝트 ID"),
+        parameterWithName("shareLinkId").description("공유 링크 ID"));
   }
 
   /** 공유 링크 비활성화 요청 헤더 */
@@ -210,28 +185,18 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         successResponseFields(shareLinkResponseFields()));
   }
 
-  // ========== DELETE /api/workspaces/{workspaceId}/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 삭제
-  // ==========
+  // ========== DELETE /api/projects/{projectId}/share-links/{shareLinkId} - 공유 링크 삭제
 
   /** 공유 링크 삭제 경로 파라미터 */
   public static Snippet deleteShareLinkPathParameters() {
     return pathParameters(
-        parameterWithName("workspaceId")
-            .description("워크스페이스 ID (ULID)"),
-        parameterWithName("projectId").description("프로젝트 ID (ULID)"),
-        parameterWithName("shareLinkId")
-            .description("공유 링크 ID (ULID)"));
+        parameterWithName("projectId").description("프로젝트 ID"),
+        parameterWithName("shareLinkId").description("공유 링크 ID"));
   }
 
   /** 공유 링크 삭제 요청 헤더 */
   public static Snippet deleteShareLinkRequestHeaders() {
     return createRequestHeadersSnippet(authorizationHeader());
-  }
-
-  /** 공유 링크 삭제 응답 */
-  public static Snippet deleteShareLinkResponse() {
-    return createResponseFieldsSnippet(
-        successResponseFieldsWithNullResult());
   }
 
 }

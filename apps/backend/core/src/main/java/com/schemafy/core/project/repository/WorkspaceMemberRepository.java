@@ -2,12 +2,14 @@ package com.schemafy.core.project.repository;
 
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
 
 import com.schemafy.core.project.repository.entity.WorkspaceMember;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Repository
 public interface WorkspaceMemberRepository
     extends ReactiveCrudRepository<WorkspaceMember, String> {
 
@@ -39,6 +41,14 @@ public interface WorkspaceMemberRepository
       int limit, int offset);
 
   @Query("""
+      SELECT * FROM workspace_members
+      WHERE workspace_id = :workspaceId
+        AND deleted_at IS NULL
+      ORDER BY created_at ASC
+      """)
+  Flux<WorkspaceMember> findAllByWorkspaceIdAndNotDeleted(String workspaceId);
+
+  @Query("""
       SELECT COUNT(*) FROM workspace_members
       WHERE workspace_id = :workspaceId
         AND deleted_at IS NULL
@@ -47,8 +57,9 @@ public interface WorkspaceMemberRepository
 
   @Query("""
       UPDATE workspace_members
-      SET deleted_at = CURRENT_TIMESTAMP
+      SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
       WHERE workspace_id = :workspaceId
+        AND deleted_at IS NULL
       """)
   Mono<Void> softDeleteByWorkspaceId(String workspaceId);
 
@@ -74,15 +85,6 @@ public interface WorkspaceMemberRepository
 
   @Query("""
       SELECT * FROM workspace_members
-      WHERE id = :memberId
-        AND workspace_id = :workspaceId
-        AND deleted_at IS NULL
-      """)
-  Mono<WorkspaceMember> findByIdAndWorkspaceIdAndNotDeleted(String memberId,
-      String workspaceId);
-
-  @Query("""
-      SELECT * FROM workspace_members
       WHERE workspace_id = :workspaceId
         AND user_id = :userId
       ORDER BY created_at DESC
@@ -90,14 +92,5 @@ public interface WorkspaceMemberRepository
       """)
   Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(String workspaceId,
       String userId);
-
-  @Query("""
-      UPDATE workspace_members
-      SET deleted_at = NULL,
-          role = :role,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = :memberId
-      """)
-  Mono<Void> reactivateMember(String memberId, String role);
 
 }

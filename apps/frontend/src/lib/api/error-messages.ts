@@ -224,6 +224,43 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'This user is already a member of this project.',
     category: ErrorCategory.USER_FEEDBACK,
   },
+  PROJECT_INVITATION_EMAIL_MISMATCH: {
+    message: 'This invitation is for a different user.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_NOT_FOUND: notFound('Invitation'),
+  PROJECT_INVITATION_DUPLICATE_WORKSPACE_MEMBER: {
+    message: 'This user is already a workspace member.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_EXPIRED: {
+    message: 'This invitation has expired.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_WORKSPACE_INVITATION_ALREADY_PROCESSED: {
+    message: 'This workspace invitation has already been processed.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_PROJECT_INVITATION_ALREADY_PROCESSED: {
+    message: 'This project invitation has already been processed.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_CONCURRENT_PROCESSED: {
+    message: 'This invitation was processed concurrently. Please try again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_DUPLICATE_MEMBERSHIP_PROJECT: {
+    message: 'This user is already a member of this project.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_ALREADY_EXISTS: {
+    message: 'A pending invitation already exists.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  PROJECT_INVITATION_TYPE_MISMATCH: {
+    message: 'Invitation type mismatch.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
 
   SHARE_LINK_NOT_FOUND: notFound('Share link'),
   SHARE_LINK_EXPIRED: {
