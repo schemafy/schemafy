@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { cn } from '@/lib';
 import { Button } from '@/components';
-import type { WorkspaceItem } from '@/components/Workspace';
-import { WorkspaceMembersTab, WorkspaceProjectsTab, WorkspaceSidebar, } from '@/components/Workspace';
+import type { WorkspaceItem } from '@/features/workspace/components';
+import { WorkspaceMembersTab, WorkspaceProjectsTab, WorkspaceSidebar, } from '@/features/workspace/components';
 
 type TabType = 'projects' | 'members';
 
@@ -115,7 +115,8 @@ export const WorkspacePage = () => {
           </div>
 
           {selectedWorkspace?.role === 'admin' ? (
-            <div className="border border-schemafy-destructive/30 bg-schemafy-destructive/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
+            <div
+              className="border border-schemafy-destructive/30 bg-schemafy-destructive/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
               <div className="flex flex-col gap-1">
                 <span className="font-heading-xs text-schemafy-destructive">Delete Workspace</span>
                 <span className="font-body-sm text-schemafy-dark-gray">
@@ -127,7 +128,8 @@ export const WorkspacePage = () => {
               </Button>
             </div>
           ) : (
-            <div className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
+            <div
+              className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
               <div className="flex flex-col gap-1">
                 <span className="font-heading-xs text-schemafy-yellow">Leave Workspace</span>
                 <span className="font-body-sm text-schemafy-dark-gray">
