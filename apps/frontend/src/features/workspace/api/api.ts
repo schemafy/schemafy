@@ -1,14 +1,15 @@
 import { apiClient } from '@/lib/api';
 import type {
-  WorkspaceResponse,
-  WorkspaceMemberResponse,
-  WorkspaceInvitationResponse,
-  WorkspaceInvitationCreateResponse,
-  PageResponse,
-  CreateWorkspaceRequest,
-  UpdateWorkspaceRequest,
-  UpdateMemberRoleRequest,
   CreateWorkspaceInvitationRequest,
+  CreateWorkspaceRequest,
+  PageResponse,
+  UpdateMemberRoleRequest,
+  UpdateWorkspaceRequest,
+  WorkspaceInvitationCreateResponse,
+  WorkspaceInvitationResponse,
+  WorkspaceMemberResponse,
+  WorkspaceResponse,
+  WorkspaceSummaryResponse,
 } from './types';
 
 export const createWorkspace = async (
@@ -21,10 +22,10 @@ export const createWorkspace = async (
 export const getWorkspaces = async (
   page = 0,
   size = 5,
-): Promise<PageResponse<WorkspaceResponse>> => {
+): Promise<PageResponse<WorkspaceSummaryResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceResponse>>(
     '/workspaces',
-    { params: { page, size } },
+    {params: {page, size}},
   );
   return response.data;
 };
@@ -59,7 +60,7 @@ export const getMembers = async (
 ): Promise<PageResponse<WorkspaceMemberResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceMemberResponse>>(
     `/workspaces/${workspaceId}/members`,
-    { params: { page, size } },
+    {params: {page, size}},
   );
   return response.data;
 };
@@ -111,7 +112,7 @@ export const getInvitations = async (
 ): Promise<PageResponse<WorkspaceInvitationResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceInvitationResponse>>(
     `/workspaces/${workspaceId}/invitations`,
-    { params: { page, size } },
+    {params: {page, size}},
   );
   return response.data;
 };
@@ -122,7 +123,7 @@ export const getMyInvitations = async (
 ): Promise<PageResponse<WorkspaceInvitationResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceInvitationResponse>>(
     '/users/me/invitations/workspaces',
-    { params: { page, size } },
+    {params: {page, size}},
   );
   return response.data;
 };
