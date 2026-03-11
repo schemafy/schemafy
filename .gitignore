@@ -6,13 +6,9 @@ logs/
 ._.DS_Store
 **/.DS_Store
 **/._.DS_Store
-.claude/
-.gemini/
-.codex/
-skills
-agent-log
 playwright-report
 test-results
+performance
 
 HELP.md
 .gradle
@@ -55,11 +51,6 @@ out/
 
 **/dist/
 
-### Cursor ###
-.cursor/
-
-### Antigravity ###
-.agent/
-
-### Cladue ###
-CLAUDE.md
+### AI Agent ###
+CLAUDE.local.md
+agent-log
