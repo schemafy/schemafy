@@ -91,6 +91,7 @@ export const Toolbar = ({
         {TOOLS.map((tool) => (
           <Tool
             key={tool.id}
+            id={tool.id}
             onClick={() => handleToolClick(tool.id)}
             Icon={tool.icon}
             name={tool.name}
@@ -120,11 +121,13 @@ export const Toolbar = ({
 const Tool = ({
   onClick,
   Icon,
+  id,
   name,
   isActive,
 }: {
   onClick: () => void;
   Icon: ComponentType<{ size: number; color: string }>;
+  id: string;
   name: string;
   isActive: boolean;
 }) => {
@@ -139,6 +142,7 @@ const Tool = ({
           onClick={onClick}
           variant={'none'}
           size={'none'}
+          data-testid={`toolbar-${id}`}
           className={`
         p-2 rounded-md transition-colors duration-200
         hover:bg-schemafy-secondary
