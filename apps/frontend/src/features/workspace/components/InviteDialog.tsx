@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components';
 import { useCreateInvitation } from '../hooks/useWorkspaces';
-import { availableRoles } from "@/features/workspace/utils/role.ts";
+import { availableRoles } from "@/features/workspace/utils/role";
 
 interface InviteDialogProps {
   open: boolean;

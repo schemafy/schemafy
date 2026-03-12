@@ -4,7 +4,7 @@ import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Paginat
 import { ChangeRoleDialog } from './ChangeRoleDialog';
 import { useGetMembers, useRemoveMember, useUpdateMemberRole } from '../hooks/useWorkspaces';
 import { formatDateWithTime } from "@/lib";
-import { availableRoles } from "@/features/workspace/utils/role.ts";
+import { availableRoles } from "@/features/workspace/utils/role";
 import type { WorkspaceMemberResponse } from "@/features/workspace/api";
 
 interface WorkspaceMembersTabProps {
