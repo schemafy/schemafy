@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib';
 import { Button } from '@/components';
 import {
+  ConfirmDialog,
   InviteDialog,
   WorkspaceFormDialog,
   WorkspaceMembersTab,
@@ -23,6 +24,7 @@ export const WorkspacePage = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
 
   const { data: workspacesData } = useGetWorkspaces();
   const { data: selectedWorkspace } = useGetWorkspace(selectedWorkspaceId);
@@ -139,7 +141,7 @@ export const WorkspacePage = () => {
                   variant="none"
                   size="sm"
                   className="shrink-0 bg-schemafy-yellow text-white"
-                  onClick={() => leaveWorkspace(selectedWorkspaceId)}
+                  onClick={() => setIsLeaveConfirmOpen(true)}
                 >
                   Leave
                 </Button>
@@ -168,6 +170,15 @@ export const WorkspacePage = () => {
         onOpenChange={setIsInviteDialogOpen}
         workspaceId={selectedWorkspaceId}
         currentUserRole={currentUserRole}
+      />
+
+      <ConfirmDialog
+        open={isLeaveConfirmOpen}
+        onOpenChange={setIsLeaveConfirmOpen}
+        title="Leave Workspace"
+        description="워크스페이스를 나가면 모든 프로젝트와 리소스에 대한 접근 권한을 잃게 됩니다. 정말로 나가시겠습니까?"
+        confirmLabel="Leave"
+        onConfirm={() => leaveWorkspace(selectedWorkspaceId)}
       />
     </div>
   );

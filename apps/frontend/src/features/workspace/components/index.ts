@@ -4,3 +4,4 @@ export * from './WorkspaceMembersTab';
 export * from './WorkspaceFormDialog';
 export * from './InviteDialog';
 export * from './ChangeRoleDialog';
+export * from './ConfirmDialog';

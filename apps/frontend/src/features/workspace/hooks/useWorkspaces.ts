@@ -126,7 +126,7 @@ export const useUpdateMemberRole = (workspaceId: string) => {
 
 export const useGetInvitations = (workspaceId: string, page = 0, size = 10) => {
   return useQuery({
-    queryKey: workspaceKeys.invitations(workspaceId),
+    queryKey: workspaceKeys.invitations(workspaceId, page, size),
     queryFn: () => getInvitations(workspaceId, page, size),
     enabled: !!workspaceId,
   });
@@ -140,7 +140,7 @@ export const useCreateInvitation = (workspaceId: string) => {
       createInvitation(workspaceId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: workspaceKeys.invitations(workspaceId),
+        queryKey: workspaceKeys.invitationsAll(workspaceId),
       });
     },
   });
@@ -148,7 +148,7 @@ export const useCreateInvitation = (workspaceId: string) => {
 
 export const useGetMyInvitations = (page = 0, size = 10) => {
   return useQuery({
-    queryKey: workspaceKeys.myInvitations(),
+    queryKey: workspaceKeys.myInvitations(page, size),
     queryFn: () => getMyInvitations(page, size),
   });
 };
@@ -160,7 +160,7 @@ export const useAcceptInvitation = () => {
     mutationFn: (invitationId: string) => acceptInvitation(invitationId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: workspaceKeys.myInvitations(),
+        queryKey: workspaceKeys.myInvitationsAll(),
       });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
@@ -174,7 +174,7 @@ export const useRejectInvitation = () => {
     mutationFn: (invitationId: string) => rejectInvitation(invitationId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: workspaceKeys.myInvitations(),
+        queryKey: workspaceKeys.myInvitationsAll(),
       });
     },
   });

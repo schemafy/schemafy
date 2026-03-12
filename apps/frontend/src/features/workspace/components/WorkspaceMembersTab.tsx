@@ -8,6 +8,7 @@ import {
   Pagination,
 } from '@/components';
 import { ChangeRoleDialog } from './ChangeRoleDialog';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   useGetMembers,
   useRemoveMember,
@@ -184,6 +185,8 @@ const MemberOptions = ({
   removeMember: (userId: string) => void;
   member: WorkspaceMemberResponse;
 }) => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   return (
     <td className="px-6 py-4">
       <DropdownMenu>
@@ -211,14 +214,21 @@ const MemberOptions = ({
             variant="none"
             size="none"
             className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap text-left"
-            onClick={() => {
-              removeMember(member.userId);
-            }}
+            onClick={() => setConfirmOpen(true)}
           >
             Delete
           </Button>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Remove Member"
+        description={`${member.userName}(${member.userEmail})을 워크스페이스에서 제거하시겠습니까?`}
+        confirmLabel="Remove"
+        onConfirm={() => removeMember(member.userId)}
+      />
     </td>
   );
 };

@@ -8,7 +8,11 @@ export const workspaceKeys = {
     [...workspaceKeys.all, 'members', workspaceId] as const,
   members: (workspaceId: string, page: number, size: number) =>
     [...workspaceKeys.all, 'members', workspaceId, { page, size }] as const,
-  invitations: (workspaceId: string) =>
+  invitationsAll: (workspaceId: string) =>
     [...workspaceKeys.all, 'invitations', workspaceId] as const,
-  myInvitations: () => [...workspaceKeys.all, 'myInvitations'] as const,
+  invitations: (workspaceId: string, page: number, size: number) =>
+    [...workspaceKeys.all, 'invitations', workspaceId, { page, size }] as const,
+  myInvitationsAll: () => [...workspaceKeys.all, 'myInvitations'] as const,
+  myInvitations: (page: number, size: number) =>
+    [...workspaceKeys.all, 'myInvitations', { page, size }] as const,
 };
