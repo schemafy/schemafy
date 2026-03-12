@@ -16,7 +16,9 @@ public enum ProjectRole {
 
   public boolean isAdmin() { return this.level >= ADMIN.level; }
 
-  public boolean canEdit() { return this.level >= EDITOR.level; }
+  public boolean canEdit() {
+    return this.level >= EDITOR.level;
+  }
 
   public String asAuthority() {
     return "ROLE_" + this.name();

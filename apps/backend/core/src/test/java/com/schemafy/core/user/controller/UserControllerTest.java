@@ -19,9 +19,9 @@ import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.testsupport.user.UserHttpTestSupport;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
-import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.domain.ulid.application.service.UlidGenerator;
 import com.schemafy.domain.user.domain.User;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 
 import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;

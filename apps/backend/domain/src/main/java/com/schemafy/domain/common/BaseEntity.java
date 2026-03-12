@@ -34,9 +34,7 @@ public abstract class BaseEntity implements Persistable<String> {
   @Override
   public boolean isNew() { return this.createdAt == null; }
 
-  protected void setId(String id) {
-    this.id = id;
-  }
+  protected void setId(String id) { this.id = id; }
 
   public void delete() {
     this.deletedAt = Instant.now();

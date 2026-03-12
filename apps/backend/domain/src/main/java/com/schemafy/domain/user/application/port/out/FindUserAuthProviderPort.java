@@ -10,4 +10,3 @@ public interface FindUserAuthProviderPort {
   Mono<UserAuthProvider> findUserAuthProvider(AuthProvider provider, String providerUserId);
 
 }
-

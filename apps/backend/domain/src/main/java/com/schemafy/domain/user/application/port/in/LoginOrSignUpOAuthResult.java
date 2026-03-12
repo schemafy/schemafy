@@ -4,4 +4,3 @@ import com.schemafy.domain.user.domain.User;
 
 public record LoginOrSignUpOAuthResult(User user, boolean newUser) {
 }
-

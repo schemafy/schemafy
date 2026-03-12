@@ -19,13 +19,13 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.RestDocsConfiguration;
 import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
-import com.schemafy.domain.user.domain.User;
 import com.schemafy.domain.project.domain.Project;
 import com.schemafy.domain.project.domain.ShareLink;
 import com.schemafy.domain.project.domain.Workspace;
 import com.schemafy.domain.project.domain.WorkspaceRole;
 import com.schemafy.domain.project.domain.exception.ProjectErrorCode;
 import com.schemafy.domain.project.domain.exception.ShareLinkErrorCode;
+import com.schemafy.domain.user.domain.User;
 
 import static com.schemafy.core.project.docs.PublicShareLinkApiSnippets.*;
 import static org.assertj.core.api.Assertions.assertThat;

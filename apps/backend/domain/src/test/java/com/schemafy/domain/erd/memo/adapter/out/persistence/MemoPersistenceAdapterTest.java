@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @Import({
-    MemoPersistenceAdapter.class,
-    MemoCommentPersistenceAdapter.class,
-    MemoMapper.class,
-    MemoCommentMapper.class,
-    R2dbcTestConfiguration.class })
+  MemoPersistenceAdapter.class,
+  MemoCommentPersistenceAdapter.class,
+  MemoMapper.class,
+  MemoCommentMapper.class,
+  R2dbcTestConfiguration.class })
 @DisplayName("MemoPersistenceAdapter")
 class MemoPersistenceAdapterTest {
 

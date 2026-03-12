@@ -49,4 +49,3 @@ public record User(String id, String email, String name, String password, UserSt
   }
 
 }
-

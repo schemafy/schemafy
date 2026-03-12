@@ -57,12 +57,8 @@ public class ShareLink extends BaseEntity {
     this.isRevoked = true;
   }
 
-  public boolean isExpired() {
-    return expiresAt != null && Instant.now().isAfter(expiresAt);
-  }
+  public boolean isExpired() { return expiresAt != null && Instant.now().isAfter(expiresAt); }
 
-  public boolean isActive() {
-    return !Boolean.TRUE.equals(isRevoked) && !isExpired() && !isDeleted();
-  }
+  public boolean isActive() { return !Boolean.TRUE.equals(isRevoked) && !isExpired() && !isDeleted(); }
 
 }

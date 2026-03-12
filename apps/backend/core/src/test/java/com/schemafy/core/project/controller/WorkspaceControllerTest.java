@@ -19,13 +19,13 @@ import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.docs.WorkspaceApiSnippets;
 import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
-import com.schemafy.domain.user.domain.User;
 import com.schemafy.domain.project.domain.Project;
 import com.schemafy.domain.project.domain.ProjectMember;
 import com.schemafy.domain.project.domain.ProjectRole;
 import com.schemafy.domain.project.domain.Workspace;
 import com.schemafy.domain.project.domain.WorkspaceMember;
 import com.schemafy.domain.project.domain.WorkspaceRole;
+import com.schemafy.domain.user.domain.User;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;

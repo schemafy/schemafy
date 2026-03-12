@@ -79,19 +79,19 @@ public class AuthController {
   private Mono<User> getUserFromRefreshToken(
       String refreshToken) {
     return Mono.fromCallable(() -> {
-          String userId = jwtProvider.extractUserId(refreshToken);
-          String tokenType = jwtProvider.getTokenType(refreshToken);
+      String userId = jwtProvider.extractUserId(refreshToken);
+      String tokenType = jwtProvider.getTokenType(refreshToken);
 
-          if (!JwtProvider.REFRESH_TOKEN.equals(tokenType)) {
-            throw new DomainException(AuthErrorCode.INVALID_TOKEN_TYPE);
-          }
+      if (!JwtProvider.REFRESH_TOKEN.equals(tokenType)) {
+        throw new DomainException(AuthErrorCode.INVALID_TOKEN_TYPE);
+      }
 
-          if (!jwtProvider.validateToken(refreshToken, userId)) {
-            throw new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN);
-          }
+      if (!jwtProvider.validateToken(refreshToken, userId)) {
+        throw new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+      }
 
-          return userId;
-        })
+      return userId;
+    })
         .flatMap(userId -> getUserByIdUseCase.getUserById(new GetUserByIdQuery(userId)))
         .onErrorMap(error -> !(error instanceof DomainException),
             error -> new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN));

@@ -9,4 +9,3 @@ public interface GetUserByIdUseCase {
   Mono<User> getUserById(GetUserByIdQuery query);
 
 }
-

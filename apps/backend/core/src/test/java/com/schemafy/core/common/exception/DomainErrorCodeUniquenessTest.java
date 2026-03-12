@@ -6,12 +6,11 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.domain.user.domain.exception.UserErrorCode;
 import com.schemafy.domain.common.exception.DomainErrorCode;
-import com.schemafy.domain.erd.memo.domain.exception.MemoErrorCode;
 import com.schemafy.domain.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.domain.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.domain.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.domain.erd.memo.domain.exception.MemoErrorCode;
 import com.schemafy.domain.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.domain.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.domain.erd.table.domain.exception.TableErrorCode;
@@ -20,6 +19,7 @@ import com.schemafy.domain.project.domain.exception.ProjectErrorCode;
 import com.schemafy.domain.project.domain.exception.ShareLinkErrorCode;
 import com.schemafy.domain.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.domain.ulid.exception.UlidErrorCode;
+import com.schemafy.domain.user.domain.exception.UserErrorCode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

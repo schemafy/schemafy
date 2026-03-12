@@ -17,13 +17,13 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.project.controller.dto.request.CreateProjectInvitationRequest;
 import com.schemafy.core.project.docs.ProjectInvitationApiSnippets;
 import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
-import com.schemafy.domain.user.domain.User;
 import com.schemafy.domain.project.domain.Invitation;
 import com.schemafy.domain.project.domain.InvitationStatus;
 import com.schemafy.domain.project.domain.Project;
 import com.schemafy.domain.project.domain.ProjectRole;
 import com.schemafy.domain.project.domain.Workspace;
 import com.schemafy.domain.project.domain.WorkspaceRole;
+import com.schemafy.domain.user.domain.User;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;

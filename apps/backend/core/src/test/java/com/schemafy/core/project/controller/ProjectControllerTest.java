@@ -21,13 +21,13 @@ import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
 import com.schemafy.core.project.docs.ProjectApiSnippets;
 import com.schemafy.core.project.docs.ShareLinkApiSnippets;
 import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
-import com.schemafy.domain.user.domain.User;
 import com.schemafy.domain.project.domain.Project;
 import com.schemafy.domain.project.domain.ProjectMember;
 import com.schemafy.domain.project.domain.ProjectRole;
 import com.schemafy.domain.project.domain.ShareLink;
 import com.schemafy.domain.project.domain.Workspace;
 import com.schemafy.domain.project.domain.WorkspaceRole;
+import com.schemafy.domain.user.domain.User;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;

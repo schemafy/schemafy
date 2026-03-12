@@ -120,12 +120,12 @@ class TableSnapshotOrchestratorTest {
         .thenReturn(Mono.just(List.of(constraint)));
     when(getConstraintColumnsByConstraintIdUseCase
         .getConstraintColumnsByConstraintId(any()))
-            .thenReturn(Mono.just(List.of(cc2, cc1)));
+        .thenReturn(Mono.just(List.of(cc2, cc1)));
     when(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(any()))
         .thenReturn(Mono.just(List.of(relationship)));
     when(getRelationshipColumnsByRelationshipIdUseCase
         .getRelationshipColumnsByRelationshipId(any()))
-            .thenReturn(Mono.just(List.of(rc2, rc1)));
+        .thenReturn(Mono.just(List.of(rc2, rc1)));
     when(getIndexesByTableIdUseCase.getIndexesByTableId(any()))
         .thenReturn(Mono.just(List.of(index)));
     when(getIndexColumnsByIndexIdUseCase.getIndexColumnsByIndexId(any()))

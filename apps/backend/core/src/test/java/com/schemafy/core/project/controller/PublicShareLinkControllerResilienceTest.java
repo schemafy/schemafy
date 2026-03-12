@@ -14,13 +14,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.domain.user.domain.User;
 import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
 import com.schemafy.domain.project.adapter.out.persistence.DomainShareLinkRepository;
 import com.schemafy.domain.project.domain.Project;
 import com.schemafy.domain.project.domain.ShareLink;
 import com.schemafy.domain.project.domain.Workspace;
 import com.schemafy.domain.project.domain.WorkspaceRole;
+import com.schemafy.domain.user.domain.User;
 
 import reactor.core.publisher.Mono;
 

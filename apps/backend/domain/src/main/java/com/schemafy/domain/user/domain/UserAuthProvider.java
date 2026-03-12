@@ -21,4 +21,3 @@ public record UserAuthProvider(String id, String userId, AuthProvider provider, 
   }
 
 }
-
