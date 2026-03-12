@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.github.spotbugs' version '6.0.26'
     id 'com.diffplug.spotless' version '6.25.0'
 }
 
@@ -43,6 +44,9 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'io.r2dbc:r2dbc-h2'
     testRuntimeOnly 'com.h2database:h2'
+
+    spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -68,6 +72,47 @@ spotless {
         trimTrailingWhitespace()
         endWithNewline()
     }
+}
+
+spotbugs {
+    toolVersion = '4.8.6'
+    effort = 'max'
+    reportLevel = 'medium'
+    ignoreFailures = false
+    omitVisitors = ['FindReturnRef']
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
+    enabled = true
+    classes = classes.filter {
+        !it.path.contains('/lombok/') && !it.path.contains('/grpc/')
+    }
+
+    jvmArgs = [
+        '-Dspotbugs.sf.comment=true',
+        '-Dfindbugs.verbose=true'
+    ]
+    maxHeapSize = '1024m'
+
+    reports {
+        html {
+            required = true
+            outputLocation = layout.buildDirectory.file('reports/spotbugs/main.html')
+            stylesheet = 'fancy-hist.xsl'
+        }
+        xml {
+            required = true
+            outputLocation = layout.buildDirectory.file('reports/spotbugs/main.xml')
+        }
+        sarif {
+            required = true
+            outputLocation = layout.buildDirectory.file('reports/spotbugs/main.sarif')
+        }
+    }
+}
+
+tasks.named('spotbugsTest') {
+    enabled = false
 }
 
 test {

@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/backend/core/**'
+      - 'apps/backend/**'
       - '.github/workflows/spotbugs.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'apps/backend/core/**'
+      - 'apps/backend/**'
       - '.github/workflows/spotbugs.yml'
 
 permissions:
@@ -20,6 +20,14 @@ permissions:
 jobs:
   spotbugs:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - name: api
+            path: apps/backend/api
+          - name: core
+            path: apps/backend/core
 
     steps:
       - uses: actions/checkout@v4
@@ -39,55 +47,112 @@ jobs:
       - name: Run SpotBugs analysis
         id: run_spotbugs
         continue-on-error: true
-        run: ./gradlew :core:spotbugsMain --no-daemon --console=plain
+        run: ./gradlew :${{ matrix.module.name }}:spotbugsMain --no-daemon --console=plain
 
       - name: Upload SARIF to GitHub
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: apps/backend/core/build/reports/spotbugs/main.sarif
-          category: spotbugs
+          sarif_file: ${{ matrix.module.path }}/build/reports/spotbugs/main.sarif
+          category: spotbugs-${{ matrix.module.name }}
+
+      - name: Prepare SpotBugs artifact
+        if: always()
+        run: |
+          ARTIFACT_DIR="spotbugs-artifacts/${{ matrix.module.name }}"
+          mkdir -p "$ARTIFACT_DIR"
+          echo "${{ matrix.module.name }}" > "$ARTIFACT_DIR/module-name.txt"
+
+          if [ -f "${{ matrix.module.path }}/build/reports/spotbugs/main.xml" ]; then
+            cp "${{ matrix.module.path }}/build/reports/spotbugs/main.xml" "$ARTIFACT_DIR/main.xml"
+          fi
+
+          if [ -f "${{ matrix.module.path }}/build/reports/spotbugs/main.sarif" ]; then
+            cp "${{ matrix.module.path }}/build/reports/spotbugs/main.sarif" "$ARTIFACT_DIR/main.sarif"
+          fi
+
+      - name: Upload SpotBugs artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spotbugs-${{ matrix.module.name }}
+          path: spotbugs-artifacts/${{ matrix.module.name }}
+          if-no-files-found: error
+
+  analyze:
+    runs-on: ubuntu-latest
+    needs: spotbugs
+    if: always()
+
+    steps:
+      - name: Download SpotBugs artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: spotbugs-*
+          path: spotbugs-results
 
       - name: Analyze SpotBugs results
-        if: always()
         id: analyze
         run: |
-          cd apps/backend/core
-          if [ -f build/reports/spotbugs/main.xml ]; then
-            HIGH_BUGS=$(grep -o 'priority="1"' build/reports/spotbugs/main.xml | wc -l || echo "0")
-            MEDIUM_BUGS=$(grep -o 'priority="2"' build/reports/spotbugs/main.xml | wc -l || echo "0")
-            LOW_BUGS=$(grep -o 'priority="3"' build/reports/spotbugs/main.xml | wc -l || echo "0")
+          TOTAL_HIGH=0
+          TOTAL_MEDIUM=0
+          TOTAL_LOW=0
+          HAS_REPORT=true
 
-            echo "high_bugs=$HIGH_BUGS" >> $GITHUB_OUTPUT
-            echo "medium_bugs=$MEDIUM_BUGS" >> $GITHUB_OUTPUT
-            echo "low_bugs=$LOW_BUGS" >> $GITHUB_OUTPUT
-            echo "has_report=true" >> $GITHUB_OUTPUT
-
-            echo "### 🔍 SpotBugs Analysis Results" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Priority | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| 🔴 High   | $HIGH_BUGS |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟡 Medium | $MEDIUM_BUGS |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟢 Low    | $LOW_BUGS |" >> $GITHUB_STEP_SUMMARY
-
-            if [ "$HIGH_BUGS" -gt "0" ] || [ "$MEDIUM_BUGS" -gt "0" ]; then
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "⚠️ **Action Required**: Please review and fix the high/medium priority bugs." >> $GITHUB_STEP_SUMMARY
-              echo "::error::SpotBugs found $HIGH_BUGS high and $MEDIUM_BUGS medium priority bugs"
-              exit 1
-            else
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "✅ **No critical bugs found!**" >> $GITHUB_STEP_SUMMARY
-            fi
-          else
-            echo "::error::SpotBugs report not found. The build might have failed before generating the report."
+          if ! find spotbugs-results -name module-name.txt -print -quit | grep -q .; then
+            echo "::error::No SpotBugs artifacts were downloaded."
             echo "has_report=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
+          echo "### 🔍 SpotBugs Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Module | High | Medium | Low |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|--------|-----|" >> $GITHUB_STEP_SUMMARY
+
+          while IFS= read -r MODULE_FILE; do
+            MODULE_DIR="$(dirname "$MODULE_FILE")"
+            MODULE="$(cat "$MODULE_FILE")"
+            REPORT="$MODULE_DIR/main.xml"
+
+            if [ -f "$REPORT" ]; then
+              HIGH_BUGS=$(grep -o 'priority=\"1\"' "$REPORT" | wc -l || echo "0")
+              MEDIUM_BUGS=$(grep -o 'priority=\"2\"' "$REPORT" | wc -l || echo "0")
+              LOW_BUGS=$(grep -o 'priority=\"3\"' "$REPORT" | wc -l || echo "0")
+
+              TOTAL_HIGH=$((TOTAL_HIGH + HIGH_BUGS))
+              TOTAL_MEDIUM=$((TOTAL_MEDIUM + MEDIUM_BUGS))
+              TOTAL_LOW=$((TOTAL_LOW + LOW_BUGS))
+
+              echo "| $MODULE | $HIGH_BUGS | $MEDIUM_BUGS | $LOW_BUGS |" >> $GITHUB_STEP_SUMMARY
+            else
+              HAS_REPORT=false
+              echo "| $MODULE | missing | missing | missing |" >> $GITHUB_STEP_SUMMARY
+              echo "::error::SpotBugs report not found for $MODULE at $REPORT"
+            fi
+          done < <(find spotbugs-results -name module-name.txt | sort)
+
+          echo "high_bugs=$TOTAL_HIGH" >> $GITHUB_OUTPUT
+          echo "medium_bugs=$TOTAL_MEDIUM" >> $GITHUB_OUTPUT
+          echo "low_bugs=$TOTAL_LOW" >> $GITHUB_OUTPUT
+          echo "has_report=$HAS_REPORT" >> $GITHUB_OUTPUT
+
+          if [ "$HAS_REPORT" != "true" ]; then
+            exit 1
+          fi
+
+          if [ "$TOTAL_HIGH" -gt "0" ] || [ "$TOTAL_MEDIUM" -gt "0" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Action Required**: Please review and fix the high/medium priority bugs." >> $GITHUB_STEP_SUMMARY
+            echo "::error::SpotBugs found $TOTAL_HIGH high and $TOTAL_MEDIUM medium priority bugs"
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **No critical bugs found!**" >> $GITHUB_STEP_SUMMARY
+
       - name: Comment PR with results
-        if: always() && github.event_name == 'pull_request' && steps.analyze.outputs.has_report == 'true'
+        if: github.event_name == 'pull_request' && steps.analyze.outputs.has_report == 'true'
         uses: actions/github-script@v7
         with:
           script: |
