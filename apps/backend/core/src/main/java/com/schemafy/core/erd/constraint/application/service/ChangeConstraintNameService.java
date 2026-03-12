@@ -1,0 +1,58 @@
+package com.schemafy.core.erd.constraint.application.service;
+
+import org.springframework.stereotype.Service;
+
+import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameCommand;
+import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
+import com.schemafy.core.erd.constraint.application.port.out.ChangeConstraintNamePort;
+import com.schemafy.core.erd.constraint.application.port.out.ConstraintExistsPort;
+import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
+import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
+import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+
+@Service
+@RequiredArgsConstructor
+public class ChangeConstraintNameService implements ChangeConstraintNameUseCase {
+
+  private final ChangeConstraintNamePort changeConstraintNamePort;
+  private final ConstraintExistsPort constraintExistsPort;
+  private final GetConstraintByIdPort getConstraintByIdPort;
+  private final GetTableByIdPort getTableByIdPort;
+
+  @Override
+  public Mono<MutationResult<Void>> changeConstraintName(ChangeConstraintNameCommand command) {
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.newName());
+      ConstraintValidator.validateName(normalizedName);
+      return getConstraintByIdPort.findConstraintById(command.constraintId())
+          .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
+          .flatMap(constraint -> getTableByIdPort.findTableById(constraint.tableId())
+              .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+              .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
+                  table.schemaId(),
+                  normalizedName,
+                  constraint.id())
+                  .flatMap(exists -> {
+                    if (exists) {
+                      return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,
+                          "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                    }
+                    return changeConstraintNamePort
+                        .changeConstraintName(constraint.id(), normalizedName)
+                        .thenReturn(MutationResult.<Void>of(null, constraint.tableId()));
+                  })));
+    });
+  }
+
+  private static String normalizeName(String name) {
+    return name == null ? null : name.trim();
+  }
+
+}

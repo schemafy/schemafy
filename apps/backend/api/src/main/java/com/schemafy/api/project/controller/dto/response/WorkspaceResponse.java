@@ -1,0 +1,21 @@
+package com.schemafy.api.project.controller.dto.response;
+
+import java.time.Instant;
+
+import com.schemafy.core.project.application.port.in.WorkspaceDetail;
+import com.schemafy.core.project.domain.Workspace;
+
+public record WorkspaceResponse(String id, String name, String description,
+    Instant createdAt, Instant updatedAt,
+    Long projectCount, String currentUserRole) {
+
+  public static WorkspaceResponse from(WorkspaceDetail detail) {
+    Workspace workspace = detail.workspace();
+    return new WorkspaceResponse(workspace.getId(), workspace.getName(),
+        workspace.getDescription(),
+        workspace.getCreatedAt(), workspace.getUpdatedAt(),
+        detail.projectCount(),
+        detail.currentUserRole());
+  }
+
+}
