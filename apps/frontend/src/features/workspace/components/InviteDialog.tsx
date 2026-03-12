@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components';
 import { useCreateInvitation } from '../hooks/useWorkspaces';
-import { availableRoles } from "@/features/workspace/utils/role";
+import { availableRoles } from '@/features/workspace/utils/role';
 
 interface InviteDialogProps {
   open: boolean;
@@ -23,22 +23,23 @@ interface InviteDialogProps {
 }
 
 export const InviteDialog = ({
-                               open,
-                               onOpenChange,
-                               workspaceId,
-                               currentUserRole,
-                             }: InviteDialogProps) => {
+  open,
+  onOpenChange,
+  workspaceId,
+  currentUserRole,
+}: InviteDialogProps) => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<string>('MEMBER');
 
-  const {mutate: createInvitation, isPending} = useCreateInvitation(workspaceId);
+  const { mutate: createInvitation, isPending } =
+    useCreateInvitation(workspaceId);
 
   const roles = availableRoles(currentUserRole);
 
   const handleSubmit = () => {
     if (!email.trim()) return;
     createInvitation(
-      {email, role},
+      { email, role },
       {
         onSuccess: () => {
           setEmail('');
@@ -57,7 +58,9 @@ export const InviteDialog = ({
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
           <div className="flex flex-col gap-1.5">
-            <label className="font-overline-xs text-schemafy-dark-gray">Email</label>
+            <label className="font-overline-xs text-schemafy-dark-gray">
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -67,10 +70,12 @@ export const InviteDialog = ({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="font-overline-xs text-schemafy-dark-gray">Role</label>
+            <label className="font-overline-xs text-schemafy-dark-gray">
+              Role
+            </label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger className="px-4 py-3 rounded-[12px] font-body-sm">
-                <SelectValue/>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {roles.map((r) => (
@@ -83,10 +88,18 @@ export const InviteDialog = ({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={!email.trim() || isPending}>
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!email.trim() || isPending}
+          >
             Invite
           </Button>
         </DialogFooter>

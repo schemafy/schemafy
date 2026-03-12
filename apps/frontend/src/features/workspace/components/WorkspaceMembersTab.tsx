@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import { MoreHorizontal, Search } from 'lucide-react';
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Pagination, } from '@/components';
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  Pagination,
+} from '@/components';
 import { ChangeRoleDialog } from './ChangeRoleDialog';
-import { useGetMembers, useRemoveMember, useUpdateMemberRole } from '../hooks/useWorkspaces';
-import { formatDateWithTime } from "@/lib";
-import { availableRoles } from "@/features/workspace/utils/role";
-import type { WorkspaceMemberResponse } from "@/features/workspace/api";
+import {
+  useGetMembers,
+  useRemoveMember,
+  useUpdateMemberRole,
+} from '../hooks/useWorkspaces';
+import { formatDateWithTime } from '@/lib';
+import { availableRoles } from '@/features/workspace/utils/role';
+import type { WorkspaceMemberResponse } from '@/features/workspace/api';
 
 interface WorkspaceMembersTabProps {
   workspaceId: string;
@@ -13,9 +23,9 @@ interface WorkspaceMembersTabProps {
 }
 
 export const WorkspaceMembersTab = ({
-                                      workspaceId,
-                                      currentUserRole,
-                                    }: WorkspaceMembersTabProps) => {
+  workspaceId,
+  currentUserRole,
+}: WorkspaceMembersTabProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [roleChangeTarget, setRoleChangeTarget] = useState<{
@@ -24,9 +34,10 @@ export const WorkspaceMembersTab = ({
   } | null>(null);
   const [selectedRole, setSelectedRole] = useState('');
 
-  const {data, isLoading} = useGetMembers(workspaceId, currentPage - 1);
-  const {mutate: removeMember} = useRemoveMember(workspaceId);
-  const {mutate: updateMemberRole, isPending: isUpdatingRole} = useUpdateMemberRole(workspaceId);
+  const { data, isLoading } = useGetMembers(workspaceId, currentPage - 1);
+  const { mutate: removeMember } = useRemoveMember(workspaceId);
+  const { mutate: updateMemberRole, isPending: isUpdatingRole } =
+    useUpdateMemberRole(workspaceId);
 
   const members = (data?.content ?? []).filter(
     (m) =>
@@ -38,7 +49,7 @@ export const WorkspaceMembersTab = ({
   const roles = availableRoles(currentUserRole);
 
   const handleOpenRoleChange = (userId: string, currentRole: string) => {
-    setRoleChangeTarget({userId, currentRole});
+    setRoleChangeTarget({ userId, currentRole });
     setSelectedRole(currentRole);
   };
 
@@ -48,20 +59,17 @@ export const WorkspaceMembersTab = ({
     const variableData = {
       userId: roleChangeTarget.userId,
       data: {
-        role: selectedRole
-      }
+        role: selectedRole,
+      },
     };
 
     const successAction = {
       onSuccess: () => {
         setRoleChangeTarget(null);
-      }
-    }
+      },
+    };
 
-    updateMemberRole(
-      variableData,
-      successAction,
-    );
+    updateMemberRole(variableData, successAction);
   };
 
   return (
@@ -83,70 +91,73 @@ export const WorkspaceMembersTab = ({
       <div className="border border-schemafy-light-gray rounded-[12px] overflow-hidden">
         <table className="w-full">
           <thead>
-          <tr className="border-b border-schemafy-light-gray">
-            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[35%]">
-              Name
-            </th>
-            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
-              Email
-            </th>
-            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
-              Role
-            </th>
-            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
-              Joined
-            </th>
-            {currentUserRole === 'ADMIN' && <th className="px-6 py-4 w-10"/>}
-          </tr>
+            <tr className="border-b border-schemafy-light-gray">
+              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[35%]">
+                Name
+              </th>
+              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+                Email
+              </th>
+              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+                Role
+              </th>
+              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+                Joined
+              </th>
+              {currentUserRole === 'ADMIN' && <th className="px-6 py-4 w-10" />}
+            </tr>
           </thead>
           <tbody>
-          {isLoading ? (
-            <tr>
-              <td
-                colSpan={5}
-                className="px-6 py-8 text-center font-body-sm text-schemafy-dark-gray"
-              >
-                Loading...
-              </td>
-            </tr>
-          ) : (
-            members.map((member) => (
-              <tr
-                key={member.userId}
-                className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors"
-              >
-                <td className="px-6 py-4 font-body-sm text-schemafy-text">
-                  {member.userName}
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-6 py-8 text-center font-body-sm text-schemafy-dark-gray"
+                >
+                  Loading...
                 </td>
-                <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
-                  {member.userEmail}
-                </td>
-                <td className="px-6 py-4">
-                    <span
-                      className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-caption-md rounded-full">
+              </tr>
+            ) : (
+              members.map((member) => (
+                <tr
+                  key={member.userId}
+                  className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors"
+                >
+                  <td className="px-6 py-4 font-body-sm text-schemafy-text">
+                    {member.userName}
+                  </td>
+                  <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
+                    {member.userEmail}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-caption-md rounded-full">
                       {member.role}
                     </span>
-                </td>
-                <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray text-nowrap">
-                  {formatDateWithTime(new Date(member.joinedAt))}
-                </td>
-                {currentUserRole === 'ADMIN' &&
-                  <MemberOptions handleOpenRoleChange={handleOpenRoleChange} removeMember={removeMember}
-                                 member={member}/>}
-              </tr>
-            ))
-          )}
-          <tr>
-            <td colSpan={5} className="py-2">
-              <div className="flex justify-center">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
-              </div>
-            </td>
-          </tr>
+                  </td>
+                  <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray text-nowrap">
+                    {formatDateWithTime(new Date(member.joinedAt))}
+                  </td>
+                  {currentUserRole === 'ADMIN' && (
+                    <MemberOptions
+                      handleOpenRoleChange={handleOpenRoleChange}
+                      removeMember={removeMember}
+                      member={member}
+                    />
+                  )}
+                </tr>
+              ))
+            )}
+            <tr>
+              <td colSpan={5} className="py-2">
+                <div className="flex justify-center">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -164,46 +175,50 @@ export const WorkspaceMembersTab = ({
   );
 };
 
-const MemberOptions = ({handleOpenRoleChange, removeMember, member}: {
-  handleOpenRoleChange: (userId: string, currentRole: string) => void,
-  removeMember: (userId: string) => void,
-  member: WorkspaceMemberResponse
+const MemberOptions = ({
+  handleOpenRoleChange,
+  removeMember,
+  member,
+}: {
+  handleOpenRoleChange: (userId: string, currentRole: string) => void;
+  removeMember: (userId: string) => void;
+  member: WorkspaceMemberResponse;
 }) => {
-  return <td className="px-6 py-4">
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
+  return (
+    <td className="px-6 py-4">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors">
+            <MoreHorizontal size={16} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          sideOffset={4}
+          align="end"
+          className="!p-1.5 !min-w-0 flex flex-col gap-0.5"
         >
-          <MoreHorizontal size={16}/>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        sideOffset={4}
-        align="end"
-        className="!p-1.5 !min-w-0 flex flex-col gap-0.5"
-      >
-        <Button
-          variant="none"
-          size="none"
-          className="font-caption-md px-2 py-1 whitespace-nowrap text-left"
-          onClick={() => {
-            handleOpenRoleChange(member.userId, member.role);
-          }}
-        >
-          Change Role
-        </Button>
-        <Button
-          variant="none"
-          size="none"
-          className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap text-left"
-          onClick={() => {
-            removeMember(member.userId);
-          }}
-        >
-          Delete
-        </Button>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  </td>;
-}
+          <Button
+            variant="none"
+            size="none"
+            className="font-caption-md px-2 py-1 whitespace-nowrap text-left"
+            onClick={() => {
+              handleOpenRoleChange(member.userId, member.role);
+            }}
+          >
+            Change Role
+          </Button>
+          <Button
+            variant="none"
+            size="none"
+            className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap text-left"
+            onClick={() => {
+              removeMember(member.userId);
+            }}
+          >
+            Delete
+          </Button>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </td>
+  );
+};

@@ -44,7 +44,7 @@ export const useCreateWorkspace = () => {
   return useMutation({
     mutationFn: (data: CreateWorkspaceRequest) => createWorkspace(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });
 };
@@ -55,8 +55,8 @@ export const useUpdateWorkspace = (id: string) => {
   return useMutation({
     mutationFn: (data: UpdateWorkspaceRequest) => updateWorkspace(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: workspaceKeys.detail(id)});
-      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });
 };
@@ -67,8 +67,8 @@ export const useDeleteWorkspace = () => {
   return useMutation({
     mutationFn: (id: string) => deleteWorkspace(id),
     onSuccess: (_, id) => {
-      queryClient.removeQueries({queryKey: workspaceKeys.detail(id)});
-      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
+      queryClient.removeQueries({ queryKey: workspaceKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });
 };
@@ -87,7 +87,7 @@ export const useLeaveWorkspace = () => {
   return useMutation({
     mutationFn: (workspaceId: string) => leaveWorkspace(workspaceId),
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });
 };
@@ -109,8 +109,13 @@ export const useUpdateMemberRole = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({userId, data}: { userId: string; data: UpdateMemberRoleRequest }) =>
-      updateMemberRole(workspaceId, userId, data),
+    mutationFn: ({
+      userId,
+      data,
+    }: {
+      userId: string;
+      data: UpdateMemberRoleRequest;
+    }) => updateMemberRole(workspaceId, userId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: workspaceKeys.membersAll(workspaceId),
@@ -154,8 +159,10 @@ export const useAcceptInvitation = () => {
   return useMutation({
     mutationFn: (invitationId: string) => acceptInvitation(invitationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: workspaceKeys.myInvitations()});
-      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
+      queryClient.invalidateQueries({
+        queryKey: workspaceKeys.myInvitations(),
+      });
+      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });
 };
@@ -166,7 +173,9 @@ export const useRejectInvitation = () => {
   return useMutation({
     mutationFn: (invitationId: string) => rejectInvitation(invitationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: workspaceKeys.myInvitations()});
+      queryClient.invalidateQueries({
+        queryKey: workspaceKeys.myInvitations(),
+      });
     },
   });
 };

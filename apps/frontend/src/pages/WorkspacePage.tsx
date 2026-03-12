@@ -8,7 +8,11 @@ import {
   WorkspaceProjectsTab,
   WorkspaceSidebar,
 } from '@/features/workspace/components';
-import { useGetWorkspace, useGetWorkspaces, useLeaveWorkspace, } from '@/features/workspace/hooks/useWorkspaces';
+import {
+  useGetWorkspace,
+  useGetWorkspaces,
+  useLeaveWorkspace,
+} from '@/features/workspace/hooks/useWorkspaces';
 
 type TabType = 'projects' | 'members';
 
@@ -20,12 +24,13 @@ export const WorkspacePage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
-  const {data: workspacesData} = useGetWorkspaces();
-  const {data: selectedWorkspace} = useGetWorkspace(selectedWorkspaceId);
-  const {mutate: leaveWorkspace} = useLeaveWorkspace();
+  const { data: workspacesData } = useGetWorkspaces();
+  const { data: selectedWorkspace } = useGetWorkspace(selectedWorkspaceId);
+  const { mutate: leaveWorkspace } = useLeaveWorkspace();
 
   const workspaces = workspacesData?.content ?? [];
-  const currentUserRole = selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
+  const currentUserRole =
+    selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
 
   useEffect(() => {
     if (workspaces.length > 0 && !selectedWorkspaceId) {
@@ -38,9 +43,9 @@ export const WorkspacePage = () => {
     setActiveTab('projects');
   };
 
-  const tabs: { key: TabType; label: string; }[] = [
-    {key: 'projects', label: 'Projects'},
-    {key: 'members', label: 'Members'},
+  const tabs: { key: TabType; label: string }[] = [
+    { key: 'projects', label: 'Projects' },
+    { key: 'members', label: 'Members' },
   ];
 
   return (
@@ -54,10 +59,11 @@ export const WorkspacePage = () => {
         onToggle={() => setIsSidebarOpen((prev) => !prev)}
       />
 
-      {workspacesData?.totalElements === 0 ?
+      {workspacesData?.totalElements === 0 ? (
         <div className="flex w-full min-h-full justify-center items-center">
           워크스페이스를 추가해 주세요
-        </div> :
+        </div>
+      ) : (
         <div className="flex-1 flex justify-center py-6 px-8 overflow-hidden">
           <div
             className={cn(
@@ -70,14 +76,17 @@ export const WorkspacePage = () => {
                 <h1 className="font-heading-xl text-schemafy-text">
                   {selectedWorkspace?.name}
                 </h1>
-                <span
-                  className="px-3 py-1 bg-schemafy-button-bg text-schemafy-button-text font-caption-md rounded-full">
-                {currentUserRole}
-              </span>
+                <span className="px-3 py-1 bg-schemafy-button-bg text-schemafy-button-text font-caption-md rounded-full">
+                  {currentUserRole}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 {currentUserRole === 'ADMIN' && (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditDialogOpen(true)}
+                  >
                     Edit
                   </Button>
                 )}
@@ -106,7 +115,7 @@ export const WorkspacePage = () => {
 
             <div className="flex-1">
               {activeTab === 'projects' ? (
-                <WorkspaceProjectsTab/>
+                <WorkspaceProjectsTab />
               ) : (
                 <WorkspaceMembersTab
                   workspaceId={selectedWorkspaceId}
@@ -116,15 +125,15 @@ export const WorkspacePage = () => {
             </div>
 
             {currentUserRole && (
-              <div
-                className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
+              <div className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
                 <div className="flex flex-col gap-1">
-                <span className="font-heading-xs text-schemafy-yellow">
-                  Leave Workspace
-                </span>
+                  <span className="font-heading-xs text-schemafy-yellow">
+                    Leave Workspace
+                  </span>
                   <span className="font-body-sm text-schemafy-dark-gray">
-                  워크스페이스를 나가면 모든 프로젝트와 리소스에 대한 접근 권한을 잃게 됩니다.
-                </span>
+                    워크스페이스를 나가면 모든 프로젝트와 리소스에 대한 접근
+                    권한을 잃게 됩니다.
+                  </span>
                 </div>
                 <Button
                   variant="none"
@@ -138,7 +147,7 @@ export const WorkspacePage = () => {
             )}
           </div>
         </div>
-      }
+      )}
       <WorkspaceFormDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}

@@ -5,14 +5,14 @@ import { Header } from './Header';
 import { Footer } from './Footer';
 import { Toaster } from './Toaster';
 
-export const Layout = ({children}: PropsWithChildren) => {
+export const Layout = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const isCanvasPage = location.pathname === '/canvas';
   const isWorkspacePage = location.pathname.startsWith('/workspace');
 
   return (
     <div className="layout flex flex-col min-h-screen bg-schemafy-bg w-full items-center">
-      <Header isCanvasPage={isCanvasPage}/>
+      <Header isCanvasPage={isCanvasPage} />
       <main
         className={cn(
           'flex-grow w-full flex',
@@ -21,8 +21,8 @@ export const Layout = ({children}: PropsWithChildren) => {
       >
         {children}
       </main>
-      {!isCanvasPage && !isWorkspacePage && <Footer/>}
-      <Toaster/>
+      {!isCanvasPage && !isWorkspacePage && <Footer />}
+      <Toaster />
     </div>
   );
 };

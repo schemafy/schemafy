@@ -25,14 +25,12 @@ export const getWorkspaces = async (
 ): Promise<PageResponse<WorkspaceSummaryResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceSummaryResponse>>(
     '/workspaces',
-    {params: {page, size}},
+    { params: { page, size } },
   );
   return response.data;
 };
 
-export const getWorkspace = async (
-  id: string,
-): Promise<WorkspaceResponse> => {
+export const getWorkspace = async (id: string): Promise<WorkspaceResponse> => {
   const response = await apiClient.get<WorkspaceResponse>(`/workspaces/${id}`);
   return response.data;
 };
@@ -60,7 +58,7 @@ export const getMembers = async (
 ): Promise<PageResponse<WorkspaceMemberResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceMemberResponse>>(
     `/workspaces/${workspaceId}/members`,
-    {params: {page, size}},
+    { params: { page, size } },
   );
   return response.data;
 };
@@ -110,10 +108,9 @@ export const getInvitations = async (
   page = 0,
   size = 10,
 ): Promise<PageResponse<WorkspaceInvitationResponse>> => {
-  const response = await apiClient.get<PageResponse<WorkspaceInvitationResponse>>(
-    `/workspaces/${workspaceId}/invitations`,
-    {params: {page, size}},
-  );
+  const response = await apiClient.get<
+    PageResponse<WorkspaceInvitationResponse>
+  >(`/workspaces/${workspaceId}/invitations`, { params: { page, size } });
   return response.data;
 };
 
@@ -121,25 +118,20 @@ export const getMyInvitations = async (
   page = 0,
   size = 10,
 ): Promise<PageResponse<WorkspaceInvitationResponse>> => {
-  const response = await apiClient.get<PageResponse<WorkspaceInvitationResponse>>(
-    '/users/me/invitations/workspaces',
-    {params: {page, size}},
-  );
+  const response = await apiClient.get<
+    PageResponse<WorkspaceInvitationResponse>
+  >('/users/me/invitations/workspaces', { params: { page, size } });
   return response.data;
 };
 
-export const acceptInvitation = async (
-  invitationId: string,
-): Promise<null> => {
+export const acceptInvitation = async (invitationId: string): Promise<null> => {
   const response = await apiClient.patch<null>(
     `/workspaces/invitations/${invitationId}/accept`,
   );
   return response.data;
 };
 
-export const rejectInvitation = async (
-  invitationId: string,
-): Promise<null> => {
+export const rejectInvitation = async (invitationId: string): Promise<null> => {
   const response = await apiClient.patch<null>(
     `/workspaces/invitations/${invitationId}/reject`,
   );

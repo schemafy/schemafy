@@ -23,7 +23,7 @@ export const DashboardHeader = () => {
         <Button variant={'none'} size={'none'}>
           Settings
         </Button>
-        <NotificationContents/>
+        <NotificationContents />
       </div>
       <div className="flex items-center gap-4">
         <div className="flex gap-2">
@@ -37,7 +37,7 @@ export const DashboardHeader = () => {
         <span className="flex items-center font-body-sm text-schemafy-dark-gray">
           {authStore.user?.name}
         </span>
-        <Avatar src="https://picsum.photos/200/300?random=1"/>
+        <Avatar src="https://picsum.photos/200/300?random=1" />
       </div>
     </div>
   );

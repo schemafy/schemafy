@@ -17,13 +17,13 @@ interface WorkspaceSidebarProps {
 }
 
 export const WorkspaceSidebar = ({
-                                   workspaces,
-                                   selectedId,
-                                   onSelect,
-                                   onAdd,
-                                   isOpen,
-                                   onToggle,
-                                 }: WorkspaceSidebarProps) => {
+  workspaces,
+  selectedId,
+  onSelect,
+  onAdd,
+  isOpen,
+  onToggle,
+}: WorkspaceSidebarProps) => {
   return (
     <aside
       className={cn(
@@ -48,14 +48,14 @@ export const WorkspaceSidebar = ({
               onClick={onAdd}
               className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
             >
-              <Plus size={14}/>
+              <Plus size={14} />
             </button>
           )}
           <button
             onClick={onToggle}
             className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
           >
-            {isOpen ? <ChevronLeft size={16}/> : <ChevronRight size={16}/>}
+            {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
       </div>

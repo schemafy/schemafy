@@ -7,10 +7,10 @@ interface PaginationProps {
 }
 
 export const Pagination = ({
-                             currentPage,
-                             totalPages,
-                             onPageChange,
-                           }: PaginationProps) => {
+  currentPage,
+  totalPages,
+  onPageChange,
+}: PaginationProps) => {
   return (
     <div className="flex items-center justify-center gap-1 py-2">
       <button
@@ -20,7 +20,7 @@ export const Pagination = ({
       >
         ‹
       </button>
-      {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
+      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
         <button
           key={page}
           onClick={() => onPageChange(page)}

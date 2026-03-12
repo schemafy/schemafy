@@ -1,6 +1,12 @@
 import { MoreHorizontal, Search } from 'lucide-react';
 import { useState } from 'react';
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Pagination, } from '@/components';
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  Pagination,
+} from '@/components';
 
 type Project = {
   id: string;
@@ -63,78 +69,79 @@ export const WorkspaceProjectsTab = () => {
       <div className="border border-schemafy-light-gray rounded-[12px] overflow-hidden">
         <table className="w-full">
           <thead>
-          <tr className="border-b border-schemafy-light-gray">
-            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[40%]">
-              Name
-            </th>
-            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text whitespace-nowrap">
-              Last Modified
-            </th>
-            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
-              Access
-            </th>
-            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
-              Members
-            </th>
-            <th className="px-6 py-4 w-10"/>
-          </tr>
+            <tr className="border-b border-schemafy-light-gray">
+              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[40%]">
+                Name
+              </th>
+              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text whitespace-nowrap">
+                Last Modified
+              </th>
+              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+                Access
+              </th>
+              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+                Members
+              </th>
+              <th className="px-6 py-4 w-10" />
+            </tr>
           </thead>
           <tbody>
-          {filtered.map((project) => (
-            <tr
-              key={project.id}
-              className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors"
-            >
-              <td className="px-6 py-4 font-body-sm text-schemafy-text">
-                {project.name}
-              </td>
-              <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
-                {project.lastModified}
-              </td>
-              <td className="px-6 py-4">
+            {filtered.map((project) => (
+              <tr
+                key={project.id}
+                className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors"
+              >
+                <td className="px-6 py-4 font-body-sm text-schemafy-text">
+                  {project.name}
+                </td>
+                <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
+                  {project.lastModified}
+                </td>
+                <td className="px-6 py-4">
                   <span className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-body-sm rounded-full">
                     {project.access}
                   </span>
-              </td>
-              <td className="px-6 py-4">
-                <div
-                  className="w-6 h-6 rounded-full bg-schemafy-secondary flex items-center justify-center font-overline-xs text-schemafy-dark-gray">
-                  {project.memberCount}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="w-6 h-6 rounded-full bg-schemafy-secondary flex items-center justify-center font-overline-xs text-schemafy-dark-gray">
+                    {project.memberCount}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors">
+                        <MoreHorizontal size={16} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      sideOffset={4}
+                      align="end"
+                      className="!p-1.5 !min-w-0"
+                    >
+                      <Button
+                        variant="none"
+                        size="none"
+                        className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap"
+                      >
+                        Delete
+                      </Button>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </td>
+              </tr>
+            ))}
+            <tr>
+              <td colSpan={5} className="py-2">
+                <div className="flex justify-center">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={TOTAL_PAGES}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
               </td>
-              <td className="px-6 py-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
-                    >
-                      <MoreHorizontal size={16}/>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent sideOffset={4} align="end" className="!p-1.5 !min-w-0">
-                    <Button
-                      variant="none"
-                      size="none"
-                      className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap"
-                    >
-                      Delete
-                    </Button>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </td>
             </tr>
-          ))}
-          <tr>
-            <td colSpan={5} className="py-2">
-              <div className="flex justify-center">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={TOTAL_PAGES}
-                  onPageChange={setCurrentPage}
-                />
-              </div>
-            </td>
-          </tr>
           </tbody>
         </table>
       </div>

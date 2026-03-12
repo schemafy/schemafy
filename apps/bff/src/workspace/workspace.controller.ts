@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
@@ -10,8 +20,7 @@ import type {
 
 @Controller('api/v1.0')
 export class WorkspaceController {
-  constructor(private readonly workspaceService: WorkspaceService) {
-  }
+  constructor(private readonly workspaceService: WorkspaceService) {}
 
   @Post('workspaces')
   async createWorkspace(
@@ -103,7 +112,11 @@ export class WorkspaceController {
     @Body() data: CreateWorkspaceInvitationRequest,
     @AuthHeader() authHeader: string,
   ) {
-    return this.workspaceService.createInvitation(workspaceId, data, authHeader);
+    return this.workspaceService.createInvitation(
+      workspaceId,
+      data,
+      authHeader,
+    );
   }
 
   @Get('workspaces/:workspaceId/invitations')

@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, } from '@/components';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components';
 import { useCreateWorkspace, useUpdateWorkspace } from '../hooks/useWorkspaces';
 
 interface WorkspaceFormDialogProps {
@@ -12,18 +19,20 @@ interface WorkspaceFormDialogProps {
 }
 
 export const WorkspaceFormDialog = ({
-                                      open,
-                                      onOpenChange,
-                                      mode,
-                                      workspaceId = '',
-                                      initialName = '',
-                                      initialDescription = '',
-                                    }: WorkspaceFormDialogProps) => {
+  open,
+  onOpenChange,
+  mode,
+  workspaceId = '',
+  initialName = '',
+  initialDescription = '',
+}: WorkspaceFormDialogProps) => {
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
 
-  const {mutate: createWorkspace, isPending: isCreating} = useCreateWorkspace();
-  const {mutate: updateWorkspace, isPending: isUpdating} = useUpdateWorkspace(workspaceId);
+  const { mutate: createWorkspace, isPending: isCreating } =
+    useCreateWorkspace();
+  const { mutate: updateWorkspace, isPending: isUpdating } =
+    useUpdateWorkspace(workspaceId);
 
   useEffect(() => {
     if (open) {
@@ -34,11 +43,11 @@ export const WorkspaceFormDialog = ({
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    const data = {name, description: description || ''};
+    const data = { name, description: description || '' };
     if (mode === 'create') {
-      createWorkspace(data, {onSuccess: () => onOpenChange(false)});
+      createWorkspace(data, { onSuccess: () => onOpenChange(false) });
     } else {
-      updateWorkspace(data, {onSuccess: () => onOpenChange(false)});
+      updateWorkspace(data, { onSuccess: () => onOpenChange(false) });
     }
   };
 
@@ -52,7 +61,9 @@ export const WorkspaceFormDialog = ({
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
           <div className="flex flex-col gap-1.5">
-            <label className="font-overline-xs text-schemafy-dark-gray">Name</label>
+            <label className="font-overline-xs text-schemafy-dark-gray">
+              Name
+            </label>
             <input
               type="text"
               value={name}
@@ -62,7 +73,9 @@ export const WorkspaceFormDialog = ({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="font-overline-xs text-schemafy-dark-gray">Description</label>
+            <label className="font-overline-xs text-schemafy-dark-gray">
+              Description
+            </label>
             <input
               type="text"
               value={description}
@@ -73,7 +86,11 @@ export const WorkspaceFormDialog = ({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button

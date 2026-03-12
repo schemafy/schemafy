@@ -23,14 +23,14 @@ interface ChangeRoleDialogProps {
 }
 
 export const ChangeRoleDialog = ({
-                                   open,
-                                   onOpenChange,
-                                   selectedRole,
-                                   onSelectedRoleChange,
-                                   availableRoles,
-                                   onSave,
-                                   isPending,
-                                 }: ChangeRoleDialogProps) => {
+  open,
+  onOpenChange,
+  selectedRole,
+  onSelectedRoleChange,
+  availableRoles,
+  onSave,
+  isPending,
+}: ChangeRoleDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -38,10 +38,12 @@ export const ChangeRoleDialog = ({
           <DialogTitle>Change Role</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-1.5 py-2">
-          <label className="font-overline-xs text-schemafy-dark-gray">Role</label>
+          <label className="font-overline-xs text-schemafy-dark-gray">
+            Role
+          </label>
           <Select value={selectedRole} onValueChange={onSelectedRoleChange}>
             <SelectTrigger className="px-4 py-3 rounded-[12px] font-body-sm">
-              <SelectValue/>
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {availableRoles.map((r) => (
@@ -53,7 +55,11 @@ export const ChangeRoleDialog = ({
           </Select>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={onSave} disabled={isPending}>

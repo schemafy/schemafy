@@ -15,4 +15,4 @@ export const formatDateWithTime = (date: Date): string => {
   const minute = String(date.getMinutes()).padStart(2, '0');
 
   return `${year}-${month}-${day} ${hour}:${minute}`;
-}
+};
