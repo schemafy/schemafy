@@ -23,9 +23,15 @@ export const ConfirmDialog = ({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <p className="font-body-sm text-schemafy-dark-gray py-2">{description}</p>
+        <p className="font-body-sm text-schemafy-dark-gray py-2">
+          {description}
+        </p>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button
