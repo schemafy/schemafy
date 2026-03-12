@@ -14,7 +14,7 @@ import com.schemafy.core.common.config.TestSecurityConfig;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
-import com.schemafy.core.ulid.service.UlidService;
+import com.schemafy.domain.ulid.application.port.in.GenerateUlidUseCase;
 
 import reactor.core.publisher.Mono;
 
@@ -42,12 +42,12 @@ class UlidControllerTest {
   private WebTestClient webTestClient;
 
   @MockitoBean
-  private UlidService ulidService;
+  private GenerateUlidUseCase generateUlidUseCase;
 
   @Test
-  void generateTemporaryUlid() {
+  void generateUlid() {
     String mockUlid = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
-    when(ulidService.generateTemporaryUlid())
+    when(generateUlidUseCase.generateUlid())
         .thenReturn(Mono.just(mockUlid));
 
     webTestClient

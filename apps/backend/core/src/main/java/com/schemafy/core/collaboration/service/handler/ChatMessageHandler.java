@@ -10,7 +10,7 @@ import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.collaboration.service.SessionRegistry;
 import com.schemafy.core.collaboration.service.model.SessionEntry;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
-import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.domain.ulid.application.port.in.GenerateUlidUseCase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +24,7 @@ public class ChatMessageHandler implements InboundMessageHandler {
 
   private final SessionRegistry sessionRegistry;
   private final CollaborationEventPublisher eventPublisher;
+  private final GenerateUlidUseCase generateUlidUseCase;
 
   @Override
   public CollaborationEventType supportedType() {
@@ -59,14 +60,13 @@ public class ChatMessageHandler implements InboundMessageHandler {
 
     String authorId = entry.authInfo().getUserId();
     String authorName = entry.authInfo().getUserName();
-    String messageId = UlidGenerator.generate();
-
-    return eventPublisher.publish(context.projectId(),
-        CollaborationOutboundFactory.chat(context.sessionId(),
-            messageId, authorId, authorName, content))
-        .doOnSuccess(v -> log.debug(
-            "[ChatMessageHandler] Message published: messageId={}, projectId={}",
-            messageId, context.projectId()));
+    return generateUlidUseCase.generateUlid()
+        .flatMap(messageId -> eventPublisher.publish(context.projectId(),
+            CollaborationOutboundFactory.chat(context.sessionId(),
+                messageId, authorId, authorName, content))
+            .doOnSuccess(v -> log.debug(
+                "[ChatMessageHandler] Message published: messageId={}, projectId={}",
+                messageId, context.projectId())));
   }
 
 }

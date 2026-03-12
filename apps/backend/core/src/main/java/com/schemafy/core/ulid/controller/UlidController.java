@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import com.schemafy.core.common.annotation.ApiVersion;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.ulid.controller.dto.UlidResponse;
-import com.schemafy.core.ulid.service.UlidService;
+import com.schemafy.domain.ulid.application.port.in.GenerateUlidUseCase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,13 +18,13 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UlidController {
 
-  private final UlidService ulidService;
+  private final GenerateUlidUseCase generateUlidUseCase;
 
   @GetMapping("/ulid/generate")
-  public Mono<ResponseEntity<UlidResponse>> generateTemporaryUlid(
+  public Mono<ResponseEntity<UlidResponse>> generateUlid(
       @ApiVersion String version) {
-    return ulidService
-        .generateTemporaryUlid()
+    return generateUlidUseCase
+        .generateUlid()
         .map(UlidResponse::new)
         .map(ResponseEntity::ok);
   }
