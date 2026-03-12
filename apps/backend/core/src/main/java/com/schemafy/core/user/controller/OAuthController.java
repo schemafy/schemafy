@@ -18,8 +18,8 @@ import com.schemafy.core.common.security.jwt.JwtProperties;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.user.oauth.GitHubOAuthProperties;
 import com.schemafy.core.user.oauth.GitHubOAuthService;
-import com.schemafy.core.user.service.UserService;
-import com.schemafy.core.user.service.dto.OAuthLoginCommand;
+import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthCommand;
+import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthUseCase;
 import com.schemafy.domain.user.domain.AuthProvider;
 
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class OAuthController {
 
   private final GitHubOAuthService gitHubOAuthService;
   private final GitHubOAuthProperties gitHubOAuthProperties;
-  private final UserService userService;
+  private final LoginOrSignUpOAuthUseCase loginOrSignUpOAuthUseCase;
   private final JwtTokenIssuer jwtTokenIssuer;
   private final JwtProperties jwtProperties;
 
@@ -88,14 +88,15 @@ public class OAuthController {
                       .fetchGitHubUserEmail(
                           accessToken);
               return emailMono.map(
-                  email -> new OAuthLoginCommand(
+                  email -> new LoginOrSignUpOAuthCommand(
                       email,
                       userInfo.displayName(),
                       AuthProvider.GITHUB,
                       String.valueOf(userInfo.id())));
             }))
-        .flatMap(userService::loginOrSignUpOAuth)
-        .map(user -> {
+        .flatMap(loginOrSignUpOAuthUseCase::loginOrSignUpOAuth)
+        .map(result -> {
+          var user = result.user();
           return ResponseEntity
               .status(HttpStatus.FOUND)
               .headers(jwtTokenIssuer.issueTokens(

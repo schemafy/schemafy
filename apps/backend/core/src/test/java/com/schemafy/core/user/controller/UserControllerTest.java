@@ -1,13 +1,10 @@
 package com.schemafy.core.user.controller;
 
-import java.util.HashMap;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
@@ -20,12 +17,11 @@ import org.junit.jupiter.api.Test;
 
 import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.core.testsupport.user.UserHttpTestSupport;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.domain.user.domain.exception.UserErrorCode;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.domain.ulid.application.service.UlidGenerator;
+import com.schemafy.domain.user.domain.User;
 
 import static com.schemafy.core.user.docs.UserApiSnippets.*;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -36,7 +32,7 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("UserController 통합 테스트")
-class UserControllerTest {
+class UserControllerTest extends UserHttpTestSupport {
 
   private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
       "v1.0");
@@ -46,23 +42,9 @@ class UserControllerTest {
   @Autowired
   private WebTestClient webTestClient;
 
-  @Autowired
-  private UserRepository userRepository;
-
-  @Autowired
-  private JwtProvider jwtProvider;
-
-  @Autowired
-  private PasswordEncoder passwordEncoder;
-
   @BeforeEach
   void setUp() {
-    userRepository.deleteAll().block();
-  }
-
-  private String generateAccessToken(String userId) {
-    return jwtProvider.generateAccessToken(userId, new HashMap<>(),
-        System.currentTimeMillis());
+    cleanupUserFixtures().block();
   }
 
   @Test
@@ -71,15 +53,11 @@ class UserControllerTest {
   void getUserSuccess() {
     SignUpRequest request = new SignUpRequest("test@example.com",
         "Test User", "password");
-    User user = User
-        .signUp(request.toCommand().toUserInfo(), passwordEncoder)
-        .flatMap(userRepository::save)
-        .blockOptional()
-        .orElseThrow();
+    User user = createUser(request.email(), request.name(), request.password());
 
-    String userId = user.getId();
+    String userId = user.id();
     Assertions.assertNotNull(userId);
-    String accessToken = generateAccessToken(user.getId());
+    String accessToken = generateAccessToken(user.id());
 
     webTestClient
         .mutateWith(mockUser(userId))
@@ -120,22 +98,16 @@ class UserControllerTest {
   void getUserSuccessWhenAccessingOtherUser() {
     SignUpRequest userARequest = new SignUpRequest("userA@example.com",
         "User A", "password");
-    User userA = User
-        .signUp(userARequest.toCommand().toUserInfo(), passwordEncoder)
-        .flatMap(userRepository::save)
-        .blockOptional()
-        .orElseThrow();
+    User userA = createUser(userARequest.email(), userARequest.name(),
+        userARequest.password());
 
     SignUpRequest userBRequest = new SignUpRequest("userB@example.com",
         "User B", "password");
-    User userB = User
-        .signUp(userBRequest.toCommand().toUserInfo(), passwordEncoder)
-        .flatMap(userRepository::save)
-        .blockOptional()
-        .orElseThrow();
+    User userB = createUser(userBRequest.email(), userBRequest.name(),
+        userBRequest.password());
 
-    String userAId = userA.getId();
-    String userBId = userB.getId();
+    String userAId = userA.id();
+    String userBId = userB.id();
     String userAAccessToken = generateAccessToken(userAId);
 
     // userA로 인증하여 userB의 정보를 조회
@@ -156,15 +128,11 @@ class UserControllerTest {
   void getUserFailWhenNotAuthenticated() {
     SignUpRequest request = new SignUpRequest("test@example.com",
         "Test User", "password");
-    User user = User
-        .signUp(request.toCommand().toUserInfo(), passwordEncoder)
-        .flatMap(userRepository::save)
-        .blockOptional()
-        .orElseThrow();
+    User user = createUser(request.email(), request.name(), request.password());
 
     webTestClient
         .get()
-        .uri(API_BASE_PATH + "/users/{userId}", user.getId())
+        .uri(API_BASE_PATH + "/users/{userId}", user.id())
         .exchange()
         .expectStatus().isUnauthorized();
   }
@@ -205,13 +173,10 @@ class UserControllerTest {
   void logoutSuccess() {
     SignUpRequest signUpRequest = new SignUpRequest("logout-test@example.com",
         "Logout User", "password");
-    User user = User
-        .signUp(signUpRequest.toCommand().toUserInfo(), passwordEncoder)
-        .flatMap(userRepository::save)
-        .blockOptional()
-        .orElseThrow();
+    User user = createUser(signUpRequest.email(), signUpRequest.name(),
+        signUpRequest.password());
 
-    String userId = user.getId();
+    String userId = user.id();
     String accessToken = generateAccessToken(userId);
 
     webTestClient
@@ -249,22 +214,16 @@ class UserControllerTest {
   void logoutDoesNotAffectOtherUsers() {
     SignUpRequest userARequest = new SignUpRequest("userA@example.com",
         "UserA", "password");
-    User userA = User
-        .signUp(userARequest.toCommand().toUserInfo(), passwordEncoder)
-        .flatMap(userRepository::save)
-        .blockOptional()
-        .orElseThrow();
+    User userA = createUser(userARequest.email(), userARequest.name(),
+        userARequest.password());
 
     SignUpRequest userBRequest = new SignUpRequest("userB@example.com",
         "UserB", "password");
-    User userB = User
-        .signUp(userBRequest.toCommand().toUserInfo(), passwordEncoder)
-        .flatMap(userRepository::save)
-        .blockOptional()
-        .orElseThrow();
+    User userB = createUser(userBRequest.email(), userBRequest.name(),
+        userBRequest.password());
 
-    String userAId = userA.getId();
-    String userBId = userB.getId();
+    String userAId = userA.id();
+    String userBId = userB.id();
     String userAToken = generateAccessToken(userAId);
     String userBToken = generateAccessToken(userBId);
 

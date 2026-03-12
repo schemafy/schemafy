@@ -12,7 +12,8 @@ import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
-import com.schemafy.core.user.service.UserService;
+import com.schemafy.domain.user.application.port.in.GetUserByIdQuery;
+import com.schemafy.domain.user.application.port.in.GetUserByIdUseCase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,13 +25,14 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UserController {
 
-  private final UserService userService;
+  private final GetUserByIdUseCase getUserByIdUseCase;
   private final JwtTokenIssuer jwtTokenIssuer;
 
   @GetMapping("/users")
   public Mono<ResponseEntity<UserInfoResponse>> getMyInfo(
       @AuthenticationPrincipal AuthenticatedUser user) {
-    return userService.getUserById(user.userId())
+    return getUserByIdUseCase.getUserById(new GetUserByIdQuery(user.userId()))
+        .map(UserInfoResponse::from)
         .map(ResponseEntity::ok);
   }
 
@@ -38,7 +40,8 @@ public class UserController {
   @GetMapping("/users/{userId}")
   public Mono<ResponseEntity<UserInfoResponse>> getUser(
       @PathVariable String userId) {
-    return userService.getUserById(userId)
+    return getUserByIdUseCase.getUserById(new GetUserByIdQuery(userId))
+        .map(UserInfoResponse::from)
         .map(ResponseEntity::ok);
   }
 

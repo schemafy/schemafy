@@ -8,12 +8,17 @@ import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.AuthErrorCode;
+import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.user.controller.dto.response.UserInfoResponse;
-import com.schemafy.core.user.service.UserService;
 import com.schemafy.domain.common.exception.DomainException;
+import com.schemafy.domain.user.application.port.in.GetUserByIdQuery;
+import com.schemafy.domain.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.domain.user.application.port.in.LoginUserUseCase;
+import com.schemafy.domain.user.application.port.in.SignUpUserUseCase;
+import com.schemafy.domain.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,27 +30,30 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AuthController {
 
-  private final UserService userService;
+  private final SignUpUserUseCase signUpUserUseCase;
+  private final LoginUserUseCase loginUserUseCase;
+  private final GetUserByIdUseCase getUserByIdUseCase;
+  private final JwtProvider jwtProvider;
   private final JwtTokenIssuer jwtTokenIssuer;
 
   /** 회원가입 API 새로운 사용자를 등록하고 JWT 토큰을 발급합니다. */
   @PostMapping("/users/signup")
   public Mono<ResponseEntity<UserInfoResponse>> signUp(
       @Valid @RequestBody SignUpRequest request) {
-    return userService.signUp(request.toCommand())
+    return signUpUserUseCase.signUpUser(request.toCommand())
         .map(user -> ResponseEntity.ok()
             .headers(jwtTokenIssuer.issueTokens(user.id(), user.name()))
-            .body(new UserInfoResponse(user.id(), user.email(), user.name())));
+            .body(UserInfoResponse.from(user)));
   }
 
   /** 사용자 인증 후 JWT 토큰을 발급합니다. */
   @PostMapping("/users/login")
   public Mono<ResponseEntity<UserInfoResponse>> login(
       @Valid @RequestBody LoginRequest request) {
-    return userService.login(request.toCommand())
+    return loginUserUseCase.loginUser(request.toCommand())
         .map(user -> ResponseEntity.ok()
             .headers(jwtTokenIssuer.issueTokens(user.id(), user.name()))
-            .body(new UserInfoResponse(user.id(), user.email(), user.name())));
+            .body(UserInfoResponse.from(user)));
   }
 
   /** Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급합니다. */
@@ -53,7 +61,7 @@ public class AuthController {
   public Mono<ResponseEntity<Void>> refresh(
       ServerHttpRequest request) {
     return Mono.fromCallable(() -> extractRefreshTokenFromCookie(request))
-        .flatMap(userService::getUserFromRefreshToken)
+        .flatMap(this::getUserFromRefreshToken)
         .map(user -> ResponseEntity.ok()
             .headers(jwtTokenIssuer.issueTokens(user.id(), user.name()))
             .build());
@@ -66,6 +74,27 @@ public class AuthController {
       throw new DomainException(AuthErrorCode.MISSING_REFRESH_TOKEN);
     }
     return refreshTokenCookie.getValue();
+  }
+
+  private Mono<User> getUserFromRefreshToken(
+      String refreshToken) {
+    return Mono.fromCallable(() -> {
+          String userId = jwtProvider.extractUserId(refreshToken);
+          String tokenType = jwtProvider.getTokenType(refreshToken);
+
+          if (!JwtProvider.REFRESH_TOKEN.equals(tokenType)) {
+            throw new DomainException(AuthErrorCode.INVALID_TOKEN_TYPE);
+          }
+
+          if (!jwtProvider.validateToken(refreshToken, userId)) {
+            throw new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+          }
+
+          return userId;
+        })
+        .flatMap(userId -> getUserByIdUseCase.getUserById(new GetUserByIdQuery(userId)))
+        .onErrorMap(error -> !(error instanceof DomainException),
+            error -> new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN));
   }
 
 }

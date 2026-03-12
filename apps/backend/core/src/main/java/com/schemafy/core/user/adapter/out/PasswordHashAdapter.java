@@ -1,4 +1,4 @@
-package com.schemafy.core.user.service.user;
+package com.schemafy.core.user.adapter.out;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -23,9 +23,9 @@ public class PasswordHashAdapter implements PasswordHashPort {
 
   @Override
   public Mono<Boolean> matches(String rawPassword, String encodedPassword) {
-    return Mono.fromCallable(() -> passwordEncoder.matches(rawPassword, encodedPassword))
+    return Mono.fromCallable(
+        () -> passwordEncoder.matches(rawPassword, encodedPassword))
         .subscribeOn(Schedulers.boundedElastic());
   }
 
 }
-

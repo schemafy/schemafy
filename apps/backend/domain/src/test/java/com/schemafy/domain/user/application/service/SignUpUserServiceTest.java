@@ -1,7 +1,9 @@
 package com.schemafy.domain.user.application.service;
 
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,8 +43,17 @@ class SignUpUserServiceTest {
   @Mock
   UlidGeneratorPort ulidGeneratorPort;
 
+  @Mock
+  TransactionalOperator transactionalOperator;
+
   @InjectMocks
   SignUpUserService sut;
+
+  @BeforeEach
+  void setUp() {
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Test
   @DisplayName("signUpUser: 신규 유저를 생성한다")

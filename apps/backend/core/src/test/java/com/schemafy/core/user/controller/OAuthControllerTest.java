@@ -23,7 +23,8 @@ import com.schemafy.core.common.security.jwt.WebExchangeErrorWriter;
 import com.schemafy.core.user.oauth.GitHubOAuthProperties;
 import com.schemafy.core.user.oauth.GitHubOAuthService;
 import com.schemafy.core.user.oauth.GitHubUserInfo;
-import com.schemafy.core.user.service.UserService;
+import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthResult;
+import com.schemafy.domain.user.application.port.in.LoginOrSignUpOAuthUseCase;
 import com.schemafy.domain.user.domain.User;
 
 import reactor.core.publisher.Mono;
@@ -54,7 +55,7 @@ class OAuthControllerTest {
   private GitHubOAuthProperties gitHubOAuthProperties;
 
   @MockitoBean
-  private UserService userService;
+  private LoginOrSignUpOAuthUseCase loginOrSignUpOAuthUseCase;
 
   @MockitoBean
   private JwtTokenIssuer jwtTokenIssuer;
@@ -169,10 +170,10 @@ class OAuthControllerTest {
           .willReturn(Mono.just("gho_test_token"));
       given(gitHubOAuthService.fetchGitHubUser("gho_test_token"))
           .willReturn(Mono.just(userInfo));
-      given(userService.loginOrSignUpOAuth(any()))
-          .willReturn(Mono.just(
-              createTestUser("user-id", "test@example.com",
-                  "Test User")));
+      given(loginOrSignUpOAuthUseCase.loginOrSignUpOAuth(any()))
+          .willReturn(Mono.just(new LoginOrSignUpOAuthResult(
+              createTestUser("user-id", "test@example.com", "Test User"),
+              false)));
 
       HttpHeaders jwtHeaders = new HttpHeaders();
       jwtHeaders.set("Authorization", "Bearer test-access-token");
@@ -221,7 +222,7 @@ class OAuthControllerTest {
           .exchangeCodeForToken(anyString());
       verify(gitHubOAuthService, never())
           .fetchGitHubUser(anyString());
-      verify(userService, never()).loginOrSignUpOAuth(any());
+      verify(loginOrSignUpOAuthUseCase, never()).loginOrSignUpOAuth(any());
       verify(jwtTokenIssuer, never())
           .issueTokens(anyString(), anyString());
     }
@@ -298,10 +299,10 @@ class OAuthControllerTest {
       given(gitHubOAuthService
           .fetchGitHubUserEmail("gho_test_token"))
           .willReturn(Mono.just("fetched@example.com"));
-      given(userService.loginOrSignUpOAuth(any()))
-          .willReturn(Mono.just(
-              createTestUser("user-id", "fetched@example.com",
-                  "Test User")));
+      given(loginOrSignUpOAuthUseCase.loginOrSignUpOAuth(any()))
+          .willReturn(Mono.just(new LoginOrSignUpOAuthResult(
+              createTestUser("user-id", "fetched@example.com", "Test User"),
+              false)));
 
       HttpHeaders jwtHeaders = new HttpHeaders();
       jwtHeaders.set("Authorization", "Bearer test-access-token");

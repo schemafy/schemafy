@@ -2,6 +2,7 @@ package com.schemafy.domain.user.application.service;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
@@ -20,6 +21,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class SignUpUserService implements SignUpUserUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final ExistsUserByEmailPort existsUserByEmailPort;
   private final PasswordHashPort passwordHashPort;
   private final CreateUserPort createUserPort;
@@ -32,7 +34,8 @@ class SignUpUserService implements SignUpUserUseCase {
             ? Mono.error(new DomainException(UserErrorCode.ALREADY_EXISTS))
             : createNewUser(command))
         .onErrorMap(DuplicateKeyException.class,
-            e -> new DomainException(UserErrorCode.ALREADY_EXISTS));
+            e -> new DomainException(UserErrorCode.ALREADY_EXISTS))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<User> createNewUser(SignUpUserCommand command) {

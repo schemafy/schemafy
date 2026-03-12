@@ -1,6 +1,4 @@
 package com.schemafy.core.user.controller;
-
-import java.util.HashMap;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +6,6 @@ import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDoc
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -24,13 +21,13 @@ import com.jayway.jsonpath.JsonPath;
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.common.exception.AuthErrorCode;
 import com.schemafy.core.common.exception.CommonErrorCode;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.ulid.generator.UlidGenerator;
+import com.schemafy.core.testsupport.user.UserHttpTestSupport;
 import com.schemafy.core.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.user.controller.dto.request.SignUpRequest;
 import com.schemafy.domain.user.domain.exception.UserErrorCode;
-import com.schemafy.core.user.repository.UserRepository;
+import com.schemafy.domain.ulid.application.service.UlidGenerator;
 
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static com.schemafy.core.user.docs.UserApiSnippets.*;
@@ -42,7 +39,7 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("AuthController 통합 테스트")
-class AuthControllerTest {
+class AuthControllerTest extends UserHttpTestSupport {
 
   private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
       "{version}",
@@ -51,27 +48,9 @@ class AuthControllerTest {
   @Autowired
   private WebTestClient webTestClient;
 
-  @Autowired
-  private UserRepository userRepository;
-
-  @Autowired
-  private JwtProvider jwtProvider;
-
-  @Autowired
-  private PasswordEncoder passwordEncoder;
-
   @BeforeEach
   void setUp() {
-    userRepository.deleteAll().block();
-  }
-
-  private String generateAccessToken(String userId) {
-    return jwtProvider.generateAccessToken(userId, new HashMap<>(),
-        System.currentTimeMillis());
-  }
-
-  private String generateRefreshToken(String userId) {
-    return jwtProvider.generateRefreshToken(userId);
+    cleanupUserFixtures().block();
   }
 
   @Test
@@ -95,15 +74,15 @@ class AuthControllerTest {
         .jsonPath("$.id").isNotEmpty()
         .jsonPath("$.email").isEqualTo("test@example.com");
 
-    StepVerifier.create(userRepository.findByEmail("test@example.com"))
+    StepVerifier.create(Mono.justOrEmpty(getUserByEmail("test@example.com")))
         .as("user should be persisted with auditing columns")
         .assertNext(user -> {
-          assertThat(user.getEmail()).isEqualTo("test@example.com");
-          assertThat(user.getName()).isEqualTo("Test User");
-          assertThat(user.getId()).isNotNull();
-          assertThat(user.getCreatedAt()).isNotNull();
-          assertThat(user.getUpdatedAt()).isNotNull();
-          assertThat(user.getDeletedAt()).isNull();
+          assertThat(user.email()).isEqualTo("test@example.com");
+          assertThat(user.name()).isEqualTo("Test User");
+          assertThat(user.id()).isNotNull();
+          assertThat(user.createdAt()).isNotNull();
+          assertThat(user.updatedAt()).isNotNull();
+          assertThat(user.deletedAt()).isNull();
         })
         .verifyComplete();
   }

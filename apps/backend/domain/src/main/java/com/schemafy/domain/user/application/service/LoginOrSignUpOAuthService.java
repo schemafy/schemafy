@@ -2,6 +2,7 @@ package com.schemafy.domain.user.application.service;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.domain.common.exception.DomainException;
 import com.schemafy.domain.ulid.application.port.out.UlidGeneratorPort;
@@ -24,6 +25,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final FindUserAuthProviderPort findUserAuthProviderPort;
   private final FindUserByEmailPort findUserByEmailPort;
   private final FindUserByIdPort findUserByIdPort;
@@ -38,7 +40,8 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
             command.provider(), command.providerUserId())
         .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
         .map(user -> new LoginOrSignUpOAuthResult(user, false))
-        .switchIfEmpty(linkOrCreateOAuthUser(command));
+        .switchIfEmpty(linkOrCreateOAuthUser(command))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<LoginOrSignUpOAuthResult> linkOrCreateOAuthUser(
