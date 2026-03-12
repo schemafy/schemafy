@@ -7,10 +7,10 @@ interface PaginationProps {
 }
 
 export const Pagination = ({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: PaginationProps) => {
+                             currentPage,
+                             totalPages,
+                             onPageChange,
+                           }: PaginationProps) => {
   return (
     <div className="flex items-center justify-center gap-1 py-2">
       <button
@@ -20,7 +20,7 @@ export const Pagination = ({
       >
         ‹
       </button>
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+      {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
         <button
           key={page}
           onClick={() => onPageChange(page)}
@@ -36,7 +36,7 @@ export const Pagination = ({
       ))}
       <button
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
+        disabled={currentPage >= totalPages || totalPages === 0}
         className="w-8 h-8 flex items-center justify-center rounded-full font-body-md text-schemafy-dark-gray disabled:opacity-30 hover:bg-schemafy-secondary transition-colors"
       >
         ›

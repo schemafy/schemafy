@@ -1,16 +1,11 @@
 import { useState } from 'react';
 import { MoreHorizontal, Search } from 'lucide-react';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  Pagination,
-} from '@/components';
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Pagination, } from '@/components';
 import { ChangeRoleDialog } from './ChangeRoleDialog';
 import { useGetMembers, useRemoveMember, useUpdateMemberRole } from '../hooks/useWorkspaces';
 import { formatDateWithTime } from "@/lib";
 import { availableRoles } from "@/features/workspace/utils/role.ts";
+import type { WorkspaceMemberResponse } from "@/features/workspace/api";
 
 interface WorkspaceMembersTabProps {
   workspaceId: string;
@@ -101,7 +96,7 @@ export const WorkspaceMembersTab = ({
             <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
               Joined
             </th>
-            {currentUserRole === 'admin' && <th className="px-6 py-4 w-10"/>}
+            {currentUserRole === 'ADMIN' && <th className="px-6 py-4 w-10"/>}
           </tr>
           </thead>
           <tbody>
@@ -135,43 +130,9 @@ export const WorkspaceMembersTab = ({
                 <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray text-nowrap">
                   {formatDateWithTime(new Date(member.joinedAt))}
                 </td>
-                <td className="px-6 py-4">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
-                      >
-                        <MoreHorizontal size={16}/>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      sideOffset={4}
-                      align="end"
-                      className="!p-1.5 !min-w-0 flex flex-col gap-0.5"
-                    >
-                      <Button
-                        variant="none"
-                        size="none"
-                        className="font-caption-md px-2 py-1 whitespace-nowrap text-left"
-                        onClick={() => {
-                          handleOpenRoleChange(member.userId, member.role);
-                        }}
-                      >
-                        Change Role
-                      </Button>
-                      <Button
-                        variant="none"
-                        size="none"
-                        className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap text-left"
-                        onClick={() => {
-                          removeMember(member.userId);
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
+                {currentUserRole === 'ADMIN' &&
+                  <MemberOptions handleOpenRoleChange={handleOpenRoleChange} removeMember={removeMember}
+                                 member={member}/>}
               </tr>
             ))
           )}
@@ -202,3 +163,47 @@ export const WorkspaceMembersTab = ({
     </div>
   );
 };
+
+const MemberOptions = ({handleOpenRoleChange, removeMember, member}: {
+  handleOpenRoleChange: (userId: string, currentRole: string) => void,
+  removeMember: (userId: string) => void,
+  member: WorkspaceMemberResponse
+}) => {
+  return <td className="px-6 py-4">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
+        >
+          <MoreHorizontal size={16}/>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        sideOffset={4}
+        align="end"
+        className="!p-1.5 !min-w-0 flex flex-col gap-0.5"
+      >
+        <Button
+          variant="none"
+          size="none"
+          className="font-caption-md px-2 py-1 whitespace-nowrap text-left"
+          onClick={() => {
+            handleOpenRoleChange(member.userId, member.role);
+          }}
+        >
+          Change Role
+        </Button>
+        <Button
+          variant="none"
+          size="none"
+          className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap text-left"
+          onClick={() => {
+            removeMember(member.userId);
+          }}
+        >
+          Delete
+        </Button>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </td>;
+}

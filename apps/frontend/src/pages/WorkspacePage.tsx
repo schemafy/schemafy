@@ -8,12 +8,7 @@ import {
   WorkspaceProjectsTab,
   WorkspaceSidebar,
 } from '@/features/workspace/components';
-import {
-  useGetMembers,
-  useGetWorkspace,
-  useGetWorkspaces,
-  useLeaveWorkspace,
-} from '@/features/workspace/hooks/useWorkspaces';
+import { useGetWorkspace, useGetWorkspaces, useLeaveWorkspace, } from '@/features/workspace/hooks/useWorkspaces';
 
 type TabType = 'projects' | 'members';
 
@@ -27,10 +22,7 @@ export const WorkspacePage = () => {
 
   const {data: workspacesData} = useGetWorkspaces();
   const {data: selectedWorkspace} = useGetWorkspace(selectedWorkspaceId);
-  // const {mutate: deleteWorkspace} = useDeleteWorkspace();
   const {mutate: leaveWorkspace} = useLeaveWorkspace();
-
-  const {data: membersData} = useGetMembers(selectedWorkspaceId, 0);
 
   const workspaces = workspacesData?.content ?? [];
   const currentUserRole = selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
@@ -46,9 +38,9 @@ export const WorkspacePage = () => {
     setActiveTab('projects');
   };
 
-  const tabs: { key: TabType; label: string; count?: number }[] = [
-    {key: 'projects', label: 'Projects', count: 0},
-    {key: 'members', label: 'Members', count: membersData?.totalElements},
+  const tabs: { key: TabType; label: string; }[] = [
+    {key: 'projects', label: 'Projects'},
+    {key: 'members', label: 'Members'},
   ];
 
   return (
@@ -84,9 +76,11 @@ export const WorkspacePage = () => {
               </span>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
-                  Edit
-                </Button>
+                {currentUserRole === 'ADMIN' && (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                    Edit
+                  </Button>
+                )}
                 <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
                   Invite
                 </Button>
@@ -106,7 +100,6 @@ export const WorkspacePage = () => {
                   )}
                 >
                   {tab.label}
-                  <span>{tab.count}</span>
                 </button>
               ))}
             </div>
@@ -122,25 +115,6 @@ export const WorkspacePage = () => {
               )}
             </div>
 
-            {/*<div*/}
-            {/*  className="border border-schemafy-destructive/30 bg-schemafy-destructive/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">*/}
-            {/*  <div className="flex flex-col gap-1">*/}
-            {/*    <span className="font-heading-xs text-schemafy-destructive">*/}
-            {/*      Delete Workspace*/}
-            {/*    </span>*/}
-            {/*    <span className="font-body-sm text-schemafy-dark-gray">*/}
-            {/*      워크스페이스를 삭제하면 모든 프로젝트와 멤버 데이터가 영구적으로 제거됩니다. 이 작업은 되돌릴 수 없습니다.*/}
-            {/*    </span>*/}
-            {/*  </div>*/}
-            {/*  <Button*/}
-            {/*    variant="destructive"*/}
-            {/*    size="sm"*/}
-            {/*    className="shrink-0"*/}
-            {/*    onClick={() => deleteWorkspace(selectedWorkspaceId)}*/}
-            {/*  >*/}
-            {/*    Delete*/}
-            {/*  </Button>*/}
-            {/*</div>*/}
             {currentUserRole && (
               <div
                 className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">

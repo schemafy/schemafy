@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
