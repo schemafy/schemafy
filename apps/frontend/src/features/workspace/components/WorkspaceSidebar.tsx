@@ -4,8 +4,7 @@ import { cn } from '@/lib';
 export type WorkspaceItem = {
   id: string;
   name: string;
-  memberCount: number;
-  role: string;
+  description?: string;
 };
 
 interface WorkspaceSidebarProps {
@@ -18,13 +17,13 @@ interface WorkspaceSidebarProps {
 }
 
 export const WorkspaceSidebar = ({
-  workspaces,
-  selectedId,
-  onSelect,
-  onAdd,
-  isOpen,
-  onToggle,
-}: WorkspaceSidebarProps) => {
+                                   workspaces,
+                                   selectedId,
+                                   onSelect,
+                                   onAdd,
+                                   isOpen,
+                                   onToggle,
+                                 }: WorkspaceSidebarProps) => {
   return (
     <aside
       className={cn(
@@ -49,14 +48,14 @@ export const WorkspaceSidebar = ({
               onClick={onAdd}
               className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
             >
-              <Plus size={14} />
+              <Plus size={14}/>
             </button>
           )}
           <button
             onClick={onToggle}
             className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
           >
-            {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+            {isOpen ? <ChevronLeft size={16}/> : <ChevronRight size={16}/>}
           </button>
         </div>
       </div>
@@ -81,9 +80,11 @@ export const WorkspaceSidebar = ({
               <p className="font-overline-sm text-schemafy-text">
                 {workspace.name}
               </p>
-              <p className="font-caption-sm text-schemafy-dark-gray mt-0.5">
-                {workspace.memberCount} members · {workspace.role}
-              </p>
+              {workspace.description && (
+                <p className="font-caption-sm text-schemafy-dark-gray mt-0.5 truncate">
+                  {workspace.description}
+                </p>
+              )}
             </button>
           </li>
         ))}

@@ -107,7 +107,6 @@ export const WorkspaceProjectsTab = () => {
                   <DropdownMenuTrigger asChild>
                     <button
                       className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors"
-                      onClick={(e) => e.stopPropagation()}
                     >
                       <MoreHorizontal size={16}/>
                     </button>
@@ -117,7 +116,6 @@ export const WorkspaceProjectsTab = () => {
                       variant="none"
                       size="none"
                       className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap"
-                      onClick={(e) => e.stopPropagation()}
                     >
                       Delete
                     </Button>
