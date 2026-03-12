@@ -11,7 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.domain.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.domain.erd.column.domain.Column;
-import com.schemafy.domain.erd.column.domain.ColumnLengthScale;
+import com.schemafy.domain.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdUseCase;
 import com.schemafy.domain.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
 import com.schemafy.domain.erd.constraint.domain.Constraint;
@@ -91,9 +91,9 @@ class TableSnapshotOrchestratorTest {
         "utf8mb4_general_ci", "{\"x\":10}");
 
     Column column2 = new Column("c2", tableId, "name", "VARCHAR",
-        new ColumnLengthScale(30, null, null), 2, false, null, null, null);
+        new ColumnTypeArguments(30, null, null), 2, false, null, null, null);
     Column column1 = new Column("c1", tableId, "id", "BIGINT",
-        new ColumnLengthScale(20, null, null), 1, true, null, null, "pk");
+        new ColumnTypeArguments(20, null, null), 1, true, null, null, "pk");
 
     Constraint constraint = new Constraint("ct1", tableId, "pk_users",
         ConstraintKind.PRIMARY_KEY, null, null);

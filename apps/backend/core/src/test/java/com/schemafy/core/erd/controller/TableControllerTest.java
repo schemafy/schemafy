@@ -188,7 +188,7 @@ class TableControllerTest {
                   "tableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
                   "name": "id",
                   "dataType": "BIGINT",
-                  "lengthScale": {"length": 20, "precision": null, "scale": null},
+                  "typeArguments": {"length": 20, "precision": null, "scale": null, "values": null},
                   "seqNo": 1,
                   "autoIncrement": true,
                   "charset": null,
