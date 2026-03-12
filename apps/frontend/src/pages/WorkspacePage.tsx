@@ -35,8 +35,11 @@ export const WorkspacePage = () => {
     selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
 
   useEffect(() => {
-    if (workspaces.length > 0 && !selectedWorkspaceId) {
-      setSelectedWorkspaceId(workspaces[0].id);
+    if (workspaces.length > 0) {
+      const isInList = workspaces.some((w) => w.id === selectedWorkspaceId);
+      if (!selectedWorkspaceId || !isInList) {
+        setSelectedWorkspaceId(workspaces[0].id);
+      }
     }
   }, [workspaces, selectedWorkspaceId]);
 
