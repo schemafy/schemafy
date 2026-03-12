@@ -2,7 +2,7 @@ package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.repository.entity.Workspace;
+import com.schemafy.domain.project.domain.Workspace;
 
 public record WorkspaceSummaryResponse(String id, String name,
     String description, Instant createdAt, Instant updatedAt) {

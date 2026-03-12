@@ -1,6 +1,5 @@
 package com.schemafy.core.project.controller;
 
-import java.util.HashMap;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +7,6 @@ import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDoc
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -17,20 +15,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateProjectRequest;
 import com.schemafy.core.project.docs.ProjectApiSnippets;
-import com.schemafy.core.project.repository.*;
-import com.schemafy.core.project.repository.entity.*;
-import com.schemafy.core.project.repository.vo.*;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.user.repository.vo.UserInfo;
-
-import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
+import com.schemafy.core.project.docs.ShareLinkApiSnippets;
+import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
+import com.schemafy.domain.user.domain.User;
+import com.schemafy.domain.project.domain.Project;
+import com.schemafy.domain.project.domain.ProjectMember;
+import com.schemafy.domain.project.domain.ProjectRole;
+import com.schemafy.domain.project.domain.ShareLink;
+import com.schemafy.domain.project.domain.Workspace;
+import com.schemafy.domain.project.domain.WorkspaceRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -40,33 +37,12 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("ProjectController 통합 테스트")
-class ProjectControllerTest {
+class ProjectControllerTest extends ProjectHttpTestSupport {
 
   private static final String PUBLIC_API_PREFIX = ApiPath.PUBLIC_API.replace("{version}", "v1.0");
 
   @Autowired
   private WebTestClient webTestClient;
-
-  @Autowired
-  private ProjectRepository projectRepository;
-
-  @Autowired
-  private ProjectMemberRepository projectMemberRepository;
-
-  @Autowired
-  private WorkspaceRepository workspaceRepository;
-
-  @Autowired
-  private WorkspaceMemberRepository workspaceMemberRepository;
-
-  @Autowired
-  private UserRepository userRepository;
-
-  @Autowired
-  private ShareLinkRepository shareLinkRepository;
-
-  @Autowired
-  private JwtProvider jwtProvider;
 
   private String testUserId;
   private String testUser2Id;
@@ -78,56 +54,27 @@ class ProjectControllerTest {
 
   @BeforeEach
   void setUp() {
-    Mono<Void> cleanup = Mono.when(
-        shareLinkRepository.deleteAll(),
-        projectMemberRepository.deleteAll(),
-        projectRepository.deleteAll(),
-        workspaceMemberRepository.deleteAll(),
-        workspaceRepository.deleteAll(), userRepository.deleteAll());
+    cleanupProjectFixtures().block();
 
-    Mono<Tuple2<User, User>> createUsers = Mono.zip(
-        User.signUp(new UserInfo("test@example.com", "Test User",
-            "password"), new BCryptPasswordEncoder())
-            .flatMap(userRepository::save),
-        User.signUp(new UserInfo("test2@example.com", "Test User 2",
-            "password"), new BCryptPasswordEncoder())
-            .flatMap(userRepository::save));
+    User testUser = createUser("test@example.com", "Test User");
+    User testUser2 = createUser("test2@example.com", "Test User 2");
 
-    Tuple2<User, User> users = cleanup.then(createUsers).blockOptional()
-        .orElseThrow();
-
-    User testUser = users.getT1();
-    User testUser2 = users.getT2();
-
-    testUserId = testUser.getId();
-    testUser2Id = testUser2.getId();
+    testUserId = testUser.id();
+    testUser2Id = testUser2.id();
 
     accessToken = generateAccessToken(testUserId);
     accessToken2 = generateAccessToken(testUser2Id);
 
-    // Create workspace and add members
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
     testWorkspaceId = workspace.getId();
 
-    WorkspaceMember member1 = WorkspaceMember
-        .create(testWorkspaceId, testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member1).block();
-
-    WorkspaceMember member2 = WorkspaceMember
-        .create(testWorkspaceId, testUser2Id, WorkspaceRole.MEMBER);
-    workspaceMemberRepository.save(member2).block();
+    addWorkspaceMember(testWorkspaceId, testUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(testWorkspaceId, testUser2Id, WorkspaceRole.MEMBER);
 
     projectBasePath = ApiPath.API.replace("{version}", "v1.0")
         + "/projects";
     workspaceProjectBasePath = ApiPath.API.replace("{version}", "v1.0")
         + "/workspaces/" + testWorkspaceId + "/projects";
-  }
-
-  private String generateAccessToken(String userId) {
-    return jwtProvider.generateAccessToken(userId, new HashMap<>(),
-        System.currentTimeMillis());
   }
 
   private String generateShareLinkCode() {
@@ -189,12 +136,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 목록 조회에 성공한다")
   void getProjectsSuccess() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -215,12 +159,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("워크스페이스 멤버가 아니면 워크스페이스 내의 프로젝트 목록 조회에 실패한다")
   void getProjectsFailWhenNotWorkspaceMember() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     workspaceMemberRepository.findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
         .flatMap(workspaceMemberRepository::delete)
@@ -238,12 +179,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 상세 조회에 성공한다")
   void getProjectSuccess() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.get()
         .uri(projectBasePath + "/{projectId}", project.getId())
@@ -262,12 +200,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("멤버가 아닌 사용자는 프로젝트 조회에 실패한다")
   void getProjectFailWhenNotMember() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.get()
         .uri(projectBasePath + "/{projectId}", project.getId())
@@ -278,12 +213,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 수정에 성공한다")
   void updateProjectSuccess() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     UpdateProjectRequest request = new UpdateProjectRequest(
         "Updated Project", "Updated Description");
@@ -305,16 +237,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 프로젝트 수정에 실패한다")
   void updateProjectFailWhenNotAdmin() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member1 = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member1).block();
+    ProjectMember member1 = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember member2 = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(member2).block();
+    ProjectMember member2 = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     UpdateProjectRequest request = new UpdateProjectRequest(
         "Updated Project", "Updated Description");
@@ -329,12 +256,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 삭제에 성공한다")
   void deleteProjectSuccess() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.delete()
         .uri(projectBasePath + "/{projectId}", project.getId())
@@ -354,16 +278,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN이 아닌 사용자는 프로젝트 삭제에 실패한다")
   void deleteProjectFailWhenNotAdmin() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member1 = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.EDITOR);
-    projectMemberRepository.save(member1).block();
+    ProjectMember member1 = addProjectMember(project.getId(), testUserId, ProjectRole.EDITOR);
 
-    ProjectMember member2 = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.EDITOR);
-    projectMemberRepository.save(member2).block();
+    ProjectMember member2 = addProjectMember(project.getId(), testUser2Id, ProjectRole.EDITOR);
 
     webTestClient.delete()
         .uri(projectBasePath + "/{projectId}", project.getId())
@@ -374,12 +293,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("멤버 목록 조회에 성공한다")
   void getMembersSuccess() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.get()
         .uri(projectBasePath + "/{projectId}/members?page=0&size=20", project.getId())
@@ -398,19 +314,14 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN 멤버는 다른 멤버의 역할을 변경할 수 있다")
   void updateMemberRole_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember targetMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    targetMember = projectMemberRepository.save(targetMember).block();
+    ProjectMember targetMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
-    UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
-        ProjectRole.EDITOR);
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        "EDITOR");
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -435,19 +346,14 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN 멤버는 다른 멤버의 역할을 변경할 수 있다")
   void updateMemberRole_Success2() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember targetMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    targetMember = projectMemberRepository.save(targetMember).block();
+    ProjectMember targetMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
-    UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
-        ProjectRole.ADMIN);
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        "ADMIN");
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -470,15 +376,12 @@ class ProjectControllerTest {
   @Test
   @DisplayName("자기 자신의 역할은 변경할 수 없다")
   void updateMemberRole_SelfModification_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    adminMember = projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
-        ProjectRole.VIEWER);
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        "VIEWER");
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -492,19 +395,14 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN 권한 없이 역할 변경은 실패한다")
   void updateMemberRole_NoAdminAccess_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember viewerMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(viewerMember).block();
+    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
-    UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
-        ProjectRole.EDITOR);
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        "EDITOR");
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -518,15 +416,12 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 멤버 역할 변경 시도시 실패한다")
   void updateMemberRole_MemberNotFound() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    UpdateProjectMemberRoleRequest request = new UpdateProjectMemberRoleRequest(
-        ProjectRole.EDITOR);
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        "EDITOR");
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -540,16 +435,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("멤버 제거에 성공한다")
   void removeMember_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember targetMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    targetMember = projectMemberRepository.save(targetMember).block();
+    ProjectMember targetMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -569,16 +459,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 ADMIN은 다른 ADMIN을 제거할 수 있다")
   void removeMember_AdminRemovesAnotherAdmin_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember1 = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember1).block();
+    ProjectMember adminMember1 = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember adminMember2 = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.ADMIN);
-    adminMember2 = projectMemberRepository.save(adminMember2).block();
+    ProjectMember adminMember2 = addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -596,16 +481,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("ADMIN 권한 없이 멤버 제거할 수 없다")
   void removeMember_NoAdminAccess_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember viewerMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(viewerMember).block();
+    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -618,12 +498,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 멤버를 제거할 수 없다")
   void removeMember_MemberNotFound() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -636,16 +513,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("사용자는 프로젝트를 자발적으로 탈퇴할 수 있다")
   void leaveProject_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember viewerMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(viewerMember).block();
+    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -667,12 +539,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("마지막 멤버 탈퇴시 프로젝트도 삭제된다")
   void leaveProject_LastMember_ProjectDeleted() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.VIEWER);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -689,16 +558,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("마지막 ADMIN도 워크스페이스 내에 멤버가 존재하면 탈퇴할 수 있다")
   void leaveProject_LastAdmin_Allowed() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember viewerMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(viewerMember).block();
+    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -723,12 +587,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 멤버가 아닌 경우 탈퇴 시도시 실패한다")
   void leaveProject_NotMember_NotFound() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -741,12 +602,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 생성에 성공한다")
   void createShareLink_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -757,10 +615,10 @@ class ProjectControllerTest {
         .expectStatus().isCreated()
         .expectBody()
         .consumeWith(document("share-link-create",
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkPathParameters(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkRequestHeaders(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponseHeaders(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.createShareLinkResponse()))
+            ShareLinkApiSnippets.createShareLinkPathParameters(),
+            ShareLinkApiSnippets.createShareLinkRequestHeaders(),
+            ShareLinkApiSnippets.createShareLinkResponseHeaders(),
+            ShareLinkApiSnippets.createShareLinkResponse()))
         .jsonPath("$.projectId").isEqualTo(project.getId())
         .jsonPath("$.url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.isRevoked").isEqualTo(false)
@@ -770,15 +628,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 목록 조회에 성공한다")
   void getShareLinks_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    shareLinkRepository.save(shareLink).block();
+    ShareLink shareLink = saveShareLink(project.getId(), generateShareLinkCode());
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -789,11 +643,11 @@ class ProjectControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .consumeWith(document("share-link-list",
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksPathParameters(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksRequestHeaders(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksQueryParameters(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksResponseHeaders(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinksResponse()))
+            ShareLinkApiSnippets.getShareLinksPathParameters(),
+            ShareLinkApiSnippets.getShareLinksRequestHeaders(),
+            ShareLinkApiSnippets.getShareLinksQueryParameters(),
+            ShareLinkApiSnippets.getShareLinksResponseHeaders(),
+            ShareLinkApiSnippets.getShareLinksResponse()))
         .jsonPath("$.content").isArray()
         .jsonPath("$.content[0].url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.totalElements").isEqualTo(1);
@@ -802,16 +656,12 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 상세 조회에 성공한다")
   void getShareLink_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     String shareLinkCode = generateShareLinkCode();
-    ShareLink shareLink = ShareLink.create(project.getId(), shareLinkCode, null);
-    shareLink = shareLinkRepository.save(shareLink).block();
+    ShareLink shareLink = saveShareLink(project.getId(), shareLinkCode);
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -822,10 +672,10 @@ class ProjectControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .consumeWith(document("share-link-get",
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkPathParameters(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkRequestHeaders(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponseHeaders(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.getShareLinkResponse()))
+            ShareLinkApiSnippets.getShareLinkPathParameters(),
+            ShareLinkApiSnippets.getShareLinkRequestHeaders(),
+            ShareLinkApiSnippets.getShareLinkResponseHeaders(),
+            ShareLinkApiSnippets.getShareLinkResponse()))
         .jsonPath("$.id").isEqualTo(shareLink.getId())
         .jsonPath("$.url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.isRevoked").isEqualTo(false);
@@ -834,15 +684,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 비활성화에 성공한다")
   void revokeShareLink_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    shareLink = shareLinkRepository.save(shareLink).block();
+    ShareLink shareLink = saveShareLink(project.getId(), generateShareLinkCode());
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -853,10 +699,10 @@ class ProjectControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .consumeWith(document("share-link-revoke",
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkPathParameters(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkRequestHeaders(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkResponseHeaders(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.revokeShareLinkResponse()))
+            ShareLinkApiSnippets.revokeShareLinkPathParameters(),
+            ShareLinkApiSnippets.revokeShareLinkRequestHeaders(),
+            ShareLinkApiSnippets.revokeShareLinkResponseHeaders(),
+            ShareLinkApiSnippets.revokeShareLinkResponse()))
         .jsonPath("$.id").isEqualTo(shareLink.getId())
         .jsonPath("$.isRevoked").isEqualTo(true);
   }
@@ -864,15 +710,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 삭제에 성공한다")
   void deleteShareLink_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    shareLink = shareLinkRepository.save(shareLink).block();
+    ShareLink shareLink = saveShareLink(project.getId(), generateShareLinkCode());
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -883,19 +725,16 @@ class ProjectControllerTest {
         .expectStatus().isNoContent()
         .expectBody()
         .consumeWith(document("share-link-delete",
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.deleteShareLinkPathParameters(),
-            com.schemafy.core.project.docs.ShareLinkApiSnippets.deleteShareLinkRequestHeaders()));
+            ShareLinkApiSnippets.deleteShareLinkPathParameters(),
+            ShareLinkApiSnippets.deleteShareLinkRequestHeaders()));
   }
 
   @Test
   @DisplayName("EDITOR는 공유 링크를 생성할 수 없다")
   void createShareLink_EditorRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.EDITOR);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUser2Id, ProjectRole.EDITOR);
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -909,12 +748,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("VIEWER는 공유 링크를 생성할 수 없다")
   void createShareLink_ViewerRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -928,12 +764,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("프로젝트 멤버가 아닌 사용자는 공유 링크를 생성할 수 없다")
   void createShareLink_NotMember_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -947,12 +780,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("VIEWER는 공유 링크 목록을 조회할 수 없다")
   void getShareLinks_ViewerRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -966,19 +796,13 @@ class ProjectControllerTest {
   @Test
   @DisplayName("EDITOR는 공유 링크 상세를 조회할 수 없다")
   void getShareLink_EditorRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember editorMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.EDITOR);
-    projectMemberRepository.save(editorMember).block();
+    ProjectMember editorMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.EDITOR);
 
-    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    shareLink = shareLinkRepository.save(shareLink).block();
+    ShareLink shareLink = saveShareLink(project.getId(), generateShareLinkCode());
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -992,19 +816,13 @@ class ProjectControllerTest {
   @Test
   @DisplayName("VIEWER는 공유 링크를 비활성화할 수 없다")
   void revokeShareLink_ViewerRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember viewerMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(viewerMember).block();
+    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
-    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    shareLink = shareLinkRepository.save(shareLink).block();
+    ShareLink shareLink = saveShareLink(project.getId(), generateShareLinkCode());
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -1018,19 +836,13 @@ class ProjectControllerTest {
   @Test
   @DisplayName("EDITOR는 공유 링크를 삭제할 수 없다")
   void deleteShareLink_EditorRole_Forbidden() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminMember).block();
+    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ProjectMember editorMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.EDITOR);
-    projectMemberRepository.save(editorMember).block();
+    ProjectMember editorMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.EDITOR);
 
-    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    shareLink = shareLinkRepository.save(shareLink).block();
+    ShareLink shareLink = saveShareLink(project.getId(), generateShareLinkCode());
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -1044,12 +856,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 공유 링크 조회 시 실패한다")
   void getShareLink_NotFound() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -1063,12 +872,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 공유 링크 비활성화 시 실패한다")
   void revokeShareLink_NotFound() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -1082,12 +888,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("존재하지 않는 공유 링크 삭제 시 실패한다")
   void deleteShareLink_NotFound() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -1113,16 +916,12 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크 목록 조회 시 페이징이 정상 동작한다")
   void getShareLinks_Pagination_Success() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     for (int i = 0; i < 5; i++) {
-      ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-      shareLinkRepository.save(shareLink).block();
+      ShareLink shareLink = saveShareLink(project.getId(), generateShareLinkCode());
     }
 
     // first page
@@ -1159,18 +958,13 @@ class ProjectControllerTest {
   @Test
   @DisplayName("비활성화된 공유 링크도 목록에 포함된다")
   void getShareLinks_IncludesRevokedLinks() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ShareLink activeLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    shareLinkRepository.save(activeLink).block();
+    ShareLink activeLink = saveShareLink(project.getId(), generateShareLinkCode());
 
-    ShareLink revokedLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    revokedLink = shareLinkRepository.save(revokedLink).block();
+    ShareLink revokedLink = saveShareLink(project.getId(), generateShareLinkCode());
     revokedLink.revoke();
     shareLinkRepository.save(revokedLink).block();
 
@@ -1189,15 +983,11 @@ class ProjectControllerTest {
   @Test
   @DisplayName("이미 비활성화된 공유 링크를 다시 비활성화하려고 하면 실패한다")
   void revokeShareLink_AlreadyRevoked_Fail() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
-    ShareLink shareLink = ShareLink.create(project.getId(), generateShareLinkCode(), null);
-    shareLink = shareLinkRepository.save(shareLink).block();
+    ShareLink shareLink = saveShareLink(project.getId(), generateShareLinkCode());
     shareLink.revoke();
     shareLink = shareLinkRepository.save(shareLink).block();
 
@@ -1213,12 +1003,9 @@ class ProjectControllerTest {
   @Test
   @DisplayName("공유 링크가 없는 프로젝트의 목록 조회는 빈 배열을 반환한다")
   void getShareLinks_EmptyProject_ReturnsEmptyList() {
-    Project project = Project.create(testWorkspaceId, "Test Project", "Description");
-    project = projectRepository.save(project).block();
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = ProjectMember.create(project.getId(),
-        testUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(member).block();
+    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -1231,6 +1018,21 @@ class ProjectControllerTest {
         .jsonPath("$.content").isArray()
         .jsonPath("$.content").isEmpty()
         .jsonPath("$.totalElements").isEqualTo(0);
+  }
+
+  private UpdateProjectMemberRoleRequest updateProjectMemberRoleRequest(
+      String role) {
+    return new UpdateProjectMemberRoleRequest(
+        resolveRecordEnum(UpdateProjectMemberRoleRequest.class, 0, role));
+  }
+
+  @SuppressWarnings("unchecked")
+  private <E extends Enum<E>> E resolveRecordEnum(
+      Class<?> recordType,
+      int componentIndex,
+      String value) {
+    return Enum.valueOf((Class<E>) recordType.getRecordComponents()[componentIndex]
+        .getType(), value);
   }
 
 }

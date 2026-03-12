@@ -2,8 +2,8 @@ package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.service.dto.ProjectDetail;
+import com.schemafy.domain.project.application.port.in.ProjectDetail;
+import com.schemafy.domain.project.domain.Project;
 
 public record ProjectResponse(String id, String workspaceId,
     String name, String description,

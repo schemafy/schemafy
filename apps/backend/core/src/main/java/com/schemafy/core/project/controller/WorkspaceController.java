@@ -16,7 +16,24 @@ import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceSummaryResponse;
-import com.schemafy.core.project.service.WorkspaceService;
+import com.schemafy.core.project.orchestrator.WorkspaceMemberOrchestrator;
+import com.schemafy.domain.project.application.port.in.AddWorkspaceMemberCommand;
+import com.schemafy.domain.project.application.port.in.CreateWorkspaceCommand;
+import com.schemafy.domain.project.application.port.in.CreateWorkspaceUseCase;
+import com.schemafy.domain.project.application.port.in.DeleteWorkspaceCommand;
+import com.schemafy.domain.project.application.port.in.DeleteWorkspaceUseCase;
+import com.schemafy.domain.project.application.port.in.GetWorkspaceQuery;
+import com.schemafy.domain.project.application.port.in.GetWorkspaceUseCase;
+import com.schemafy.domain.project.application.port.in.GetWorkspaceMembersQuery;
+import com.schemafy.domain.project.application.port.in.GetWorkspacesQuery;
+import com.schemafy.domain.project.application.port.in.GetWorkspacesUseCase;
+import com.schemafy.domain.project.application.port.in.LeaveWorkspaceCommand;
+import com.schemafy.domain.project.application.port.in.LeaveWorkspaceUseCase;
+import com.schemafy.domain.project.application.port.in.RemoveWorkspaceMemberCommand;
+import com.schemafy.domain.project.application.port.in.RemoveWorkspaceMemberUseCase;
+import com.schemafy.domain.project.application.port.in.UpdateWorkspaceCommand;
+import com.schemafy.domain.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
+import com.schemafy.domain.project.application.port.in.UpdateWorkspaceUseCase;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -26,7 +43,14 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class WorkspaceController {
 
-  private final WorkspaceService workspaceService;
+  private final CreateWorkspaceUseCase createWorkspaceUseCase;
+  private final GetWorkspacesUseCase getWorkspacesUseCase;
+  private final GetWorkspaceUseCase getWorkspaceUseCase;
+  private final UpdateWorkspaceUseCase updateWorkspaceUseCase;
+  private final DeleteWorkspaceUseCase deleteWorkspaceUseCase;
+  private final RemoveWorkspaceMemberUseCase removeWorkspaceMemberUseCase;
+  private final LeaveWorkspaceUseCase leaveWorkspaceUseCase;
+  private final WorkspaceMemberOrchestrator workspaceMemberOrchestrator;
 
   @PostMapping("/workspaces")
   @ResponseStatus(HttpStatus.CREATED)
@@ -34,7 +58,10 @@ public class WorkspaceController {
       @Valid @RequestBody CreateWorkspaceRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.createWorkspace(request.name(), request.description(), requesterId)
+    return createWorkspaceUseCase.createWorkspace(new CreateWorkspaceCommand(
+        request.name(),
+        request.description(),
+        requesterId))
         .map(WorkspaceResponse::from);
   }
 
@@ -45,8 +72,15 @@ public class WorkspaceController {
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.getWorkspaces(requesterId, page, size)
-        .map(result -> result.map(WorkspaceSummaryResponse::of));
+    return getWorkspacesUseCase.getWorkspaces(new GetWorkspacesQuery(
+        requesterId,
+        page,
+        size))
+        .map(result -> PageResponse.of(
+            result.content().stream().map(WorkspaceSummaryResponse::of).toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
@@ -54,7 +88,8 @@ public class WorkspaceController {
   public Mono<WorkspaceResponse> getWorkspace(
       @PathVariable String id, Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.getWorkspace(id, requesterId)
+    return getWorkspaceUseCase.getWorkspace(new GetWorkspaceQuery(id,
+        requesterId))
         .map(WorkspaceResponse::from);
   }
 
@@ -65,7 +100,11 @@ public class WorkspaceController {
       @Valid @RequestBody UpdateWorkspaceRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.updateWorkspace(id, request.name(), request.description(), requesterId)
+    return updateWorkspaceUseCase.updateWorkspace(new UpdateWorkspaceCommand(
+        id,
+        request.name(),
+        request.description(),
+        requesterId))
         .map(WorkspaceResponse::from);
   }
 
@@ -75,7 +114,9 @@ public class WorkspaceController {
   public Mono<Void> deleteWorkspace(@PathVariable String id,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.deleteWorkspace(id, requesterId);
+    return deleteWorkspaceUseCase.deleteWorkspace(new DeleteWorkspaceCommand(
+        id,
+        requesterId));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
@@ -85,7 +126,11 @@ public class WorkspaceController {
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.getMembers(id, requesterId, page, size)
+    return workspaceMemberOrchestrator.getMembers(new GetWorkspaceMembersQuery(
+        id,
+        requesterId,
+        page,
+        size))
         .map(result -> result.map(WorkspaceMemberResponse::from));
   }
 
@@ -97,7 +142,11 @@ public class WorkspaceController {
       @Valid @RequestBody AddWorkspaceMemberRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.addMember(workspaceId, request.email(), request.role(), requesterId)
+    return workspaceMemberOrchestrator.addMember(new AddWorkspaceMemberCommand(
+        workspaceId,
+        request.email(),
+        request.role(),
+        requesterId))
         .map(WorkspaceMemberResponse::from);
   }
 
@@ -109,8 +158,11 @@ public class WorkspaceController {
       @PathVariable String userId,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.removeMember(workspaceId, userId,
-        requesterId);
+    return removeWorkspaceMemberUseCase.removeWorkspaceMember(
+        new RemoveWorkspaceMemberCommand(
+            workspaceId,
+            userId,
+            requesterId));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
@@ -120,7 +172,9 @@ public class WorkspaceController {
       @PathVariable String workspaceId,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService.leaveMember(workspaceId, requesterId);
+    return leaveWorkspaceUseCase.leaveWorkspace(new LeaveWorkspaceCommand(
+        workspaceId,
+        requesterId));
   }
 
   @PreAuthorize("hasRole('ADMIN')")
@@ -131,8 +185,12 @@ public class WorkspaceController {
       @Valid @RequestBody UpdateMemberRoleRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return workspaceService
-        .updateMemberRole(workspaceId, userId, request.role(), requesterId)
+    return workspaceMemberOrchestrator.updateMemberRole(
+        new UpdateWorkspaceMemberRoleCommand(
+            workspaceId,
+            userId,
+            request.role(),
+            requesterId))
         .map(WorkspaceMemberResponse::from);
   }
 

@@ -17,8 +17,33 @@ import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectSummaryResponse;
 import com.schemafy.core.project.controller.dto.response.ShareLinkResponse;
-import com.schemafy.core.project.service.ProjectService;
-import com.schemafy.core.project.service.ShareLinkService;
+import com.schemafy.core.project.orchestrator.ProjectMemberOrchestrator;
+import com.schemafy.domain.project.application.port.in.CreateProjectCommand;
+import com.schemafy.domain.project.application.port.in.CreateProjectUseCase;
+import com.schemafy.domain.project.application.port.in.CreateShareLinkCommand;
+import com.schemafy.domain.project.application.port.in.CreateShareLinkUseCase;
+import com.schemafy.domain.project.application.port.in.DeleteProjectCommand;
+import com.schemafy.domain.project.application.port.in.DeleteProjectUseCase;
+import com.schemafy.domain.project.application.port.in.DeleteShareLinkCommand;
+import com.schemafy.domain.project.application.port.in.DeleteShareLinkUseCase;
+import com.schemafy.domain.project.application.port.in.GetProjectQuery;
+import com.schemafy.domain.project.application.port.in.GetProjectUseCase;
+import com.schemafy.domain.project.application.port.in.GetProjectsQuery;
+import com.schemafy.domain.project.application.port.in.GetProjectsUseCase;
+import com.schemafy.domain.project.application.port.in.GetProjectMembersQuery;
+import com.schemafy.domain.project.application.port.in.GetShareLinkQuery;
+import com.schemafy.domain.project.application.port.in.GetShareLinkUseCase;
+import com.schemafy.domain.project.application.port.in.GetShareLinksQuery;
+import com.schemafy.domain.project.application.port.in.GetShareLinksUseCase;
+import com.schemafy.domain.project.application.port.in.LeaveProjectCommand;
+import com.schemafy.domain.project.application.port.in.LeaveProjectUseCase;
+import com.schemafy.domain.project.application.port.in.RemoveProjectMemberCommand;
+import com.schemafy.domain.project.application.port.in.RemoveProjectMemberUseCase;
+import com.schemafy.domain.project.application.port.in.RevokeShareLinkCommand;
+import com.schemafy.domain.project.application.port.in.RevokeShareLinkUseCase;
+import com.schemafy.domain.project.application.port.in.UpdateProjectCommand;
+import com.schemafy.domain.project.application.port.in.UpdateProjectMemberRoleCommand;
+import com.schemafy.domain.project.application.port.in.UpdateProjectUseCase;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -28,8 +53,19 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ProjectController {
 
-  private final ProjectService projectService;
-  private final ShareLinkService shareLinkService;
+  private final CreateProjectUseCase createProjectUseCase;
+  private final GetProjectsUseCase getProjectsUseCase;
+  private final GetProjectUseCase getProjectUseCase;
+  private final UpdateProjectUseCase updateProjectUseCase;
+  private final DeleteProjectUseCase deleteProjectUseCase;
+  private final RemoveProjectMemberUseCase removeProjectMemberUseCase;
+  private final LeaveProjectUseCase leaveProjectUseCase;
+  private final CreateShareLinkUseCase createShareLinkUseCase;
+  private final GetShareLinksUseCase getShareLinksUseCase;
+  private final GetShareLinkUseCase getShareLinkUseCase;
+  private final RevokeShareLinkUseCase revokeShareLinkUseCase;
+  private final DeleteShareLinkUseCase deleteShareLinkUseCase;
+  private final ProjectMemberOrchestrator projectMemberOrchestrator;
 
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
@@ -42,7 +78,11 @@ public class ProjectController {
       @Valid @RequestBody CreateProjectRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.createProject(workspaceId, request.name(), request.description(), userId)
+    return createProjectUseCase.createProject(new CreateProjectCommand(
+        workspaceId,
+        request.name(),
+        request.description(),
+        userId))
         .map(ProjectResponse::from);
   }
 
@@ -54,8 +94,16 @@ public class ProjectController {
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.getProjects(workspaceId, userId, page, size)
-        .map(result -> result.map(ProjectSummaryResponse::from));
+    return getProjectsUseCase.getProjects(new GetProjectsQuery(
+        workspaceId,
+        userId,
+        page,
+        size))
+        .map(result -> PageResponse.of(
+            result.content().stream().map(ProjectSummaryResponse::from).toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
@@ -64,7 +112,7 @@ public class ProjectController {
       @PathVariable String projectId,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.getProject(projectId, userId)
+    return getProjectUseCase.getProject(new GetProjectQuery(projectId, userId))
         .map(ProjectResponse::from);
   }
 
@@ -75,7 +123,11 @@ public class ProjectController {
       @Valid @RequestBody UpdateProjectRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.updateProject(projectId, request.name(), request.description(), userId)
+    return updateProjectUseCase.updateProject(new UpdateProjectCommand(
+        projectId,
+        request.name(),
+        request.description(),
+        userId))
         .map(ProjectResponse::from);
   }
 
@@ -85,7 +137,9 @@ public class ProjectController {
   public Mono<Void> deleteProject(@PathVariable String projectId,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.deleteProject(projectId, userId);
+    return deleteProjectUseCase.deleteProject(new DeleteProjectCommand(
+        projectId,
+        userId));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
@@ -96,7 +150,11 @@ public class ProjectController {
       @RequestParam(defaultValue = "5") int size,
       Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.getMembers(projectId, userId, page, size)
+    return projectMemberOrchestrator.getMembers(new GetProjectMembersQuery(
+        projectId,
+        userId,
+        page,
+        size))
         .map(result -> result.map(ProjectMemberResponse::from));
   }
 
@@ -108,8 +166,12 @@ public class ProjectController {
       @Valid @RequestBody UpdateProjectMemberRoleRequest request,
       Authentication authentication) {
     String requesterId = authentication.getName();
-    return projectService
-        .updateMemberRole(projectId, userId, request.role(), requesterId)
+    return projectMemberOrchestrator.updateMemberRole(
+        new UpdateProjectMemberRoleCommand(
+            projectId,
+            userId,
+            request.role(),
+            requesterId))
         .map(ProjectMemberResponse::from);
   }
 
@@ -119,8 +181,8 @@ public class ProjectController {
   public Mono<Void> removeMember(@PathVariable String projectId, @PathVariable String userId,
       Authentication authentication) {
     String requester = authentication.getName();
-    return projectService.removeMember(projectId, userId,
-        requester);
+    return removeProjectMemberUseCase.removeProjectMember(
+        new RemoveProjectMemberCommand(projectId, userId, requester));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
@@ -129,7 +191,9 @@ public class ProjectController {
   public Mono<Void> leaveProject(
       @PathVariable String projectId, Authentication authentication) {
     String userId = authentication.getName();
-    return projectService.leaveProject(projectId, userId);
+    return leaveProjectUseCase.leaveProject(new LeaveProjectCommand(
+        projectId,
+        userId));
   }
 
   // ========== ShareLink Management ==========
@@ -142,7 +206,9 @@ public class ProjectController {
       @PathVariable String projectId,
       Authentication authentication) {
     String userId = authentication.getName();
-    return shareLinkService.createShareLink(projectId, userId)
+    return createShareLinkUseCase.createShareLink(new CreateShareLinkCommand(
+        projectId,
+        userId))
         .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
@@ -155,12 +221,18 @@ public class ProjectController {
       @RequestParam(defaultValue = "10") int size,
       Authentication authentication) {
     String userId = authentication.getName();
-    int offset = page * size;
-    return shareLinkService.countShareLinks(projectId, userId)
-        .flatMap(total -> shareLinkService.getShareLinks(projectId, userId, size, offset)
-            .map(link -> ShareLinkResponse.of(link, baseUrl, version))
-            .collectList()
-            .map(result -> PageResponse.of(result, page, size, total)));
+    return getShareLinksUseCase.getShareLinks(new GetShareLinksQuery(
+        projectId,
+        userId,
+        page,
+        size))
+        .map(result -> PageResponse.of(
+            result.content().stream()
+                .map(link -> ShareLinkResponse.of(link, baseUrl, version))
+                .toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
@@ -171,7 +243,10 @@ public class ProjectController {
       @PathVariable String shareLinkId,
       Authentication authentication) {
     String userId = authentication.getName();
-    return shareLinkService.getShareLink(projectId, shareLinkId, userId)
+    return getShareLinkUseCase.getShareLink(new GetShareLinkQuery(
+        projectId,
+        shareLinkId,
+        userId))
         .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
@@ -183,7 +258,10 @@ public class ProjectController {
       @PathVariable String shareLinkId,
       Authentication authentication) {
     String userId = authentication.getName();
-    return shareLinkService.revokeShareLink(projectId, shareLinkId, userId)
+    return revokeShareLinkUseCase.revokeShareLink(new RevokeShareLinkCommand(
+        projectId,
+        shareLinkId,
+        userId))
         .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
@@ -195,7 +273,10 @@ public class ProjectController {
       @PathVariable String shareLinkId,
       Authentication authentication) {
     String userId = authentication.getName();
-    return shareLinkService.deleteShareLink(projectId, shareLinkId, userId);
+    return deleteShareLinkUseCase.deleteShareLink(new DeleteShareLinkCommand(
+        projectId,
+        shareLinkId,
+        userId));
   }
 
 }

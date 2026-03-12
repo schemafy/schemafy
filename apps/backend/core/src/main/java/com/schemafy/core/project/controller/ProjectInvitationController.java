@@ -13,7 +13,16 @@ import com.schemafy.core.project.controller.dto.request.CreateProjectInvitationR
 import com.schemafy.core.project.controller.dto.response.ProjectInvitationCreateResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectInvitationResponse;
 import com.schemafy.core.project.controller.dto.response.ProjectMemberResponse;
-import com.schemafy.core.project.service.ProjectInvitationService;
+import com.schemafy.core.project.orchestrator.ProjectMemberOrchestrator;
+import com.schemafy.domain.project.application.port.in.AcceptProjectInvitationCommand;
+import com.schemafy.domain.project.application.port.in.CreateProjectInvitationCommand;
+import com.schemafy.domain.project.application.port.in.CreateProjectInvitationUseCase;
+import com.schemafy.domain.project.application.port.in.GetMyProjectInvitationsQuery;
+import com.schemafy.domain.project.application.port.in.GetMyProjectInvitationsUseCase;
+import com.schemafy.domain.project.application.port.in.GetProjectInvitationsQuery;
+import com.schemafy.domain.project.application.port.in.GetProjectInvitationsUseCase;
+import com.schemafy.domain.project.application.port.in.RejectProjectInvitationCommand;
+import com.schemafy.domain.project.application.port.in.RejectProjectInvitationUseCase;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -23,7 +32,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ProjectInvitationController {
 
-  private final ProjectInvitationService invitationService;
+  private final CreateProjectInvitationUseCase createProjectInvitationUseCase;
+  private final GetProjectInvitationsUseCase getProjectInvitationsUseCase;
+  private final GetMyProjectInvitationsUseCase getMyProjectInvitationsUseCase;
+  private final RejectProjectInvitationUseCase rejectProjectInvitationUseCase;
+  private final ProjectMemberOrchestrator projectMemberOrchestrator;
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/projects/{projectId}/invitations")
@@ -33,8 +46,12 @@ public class ProjectInvitationController {
       @Valid @RequestBody CreateProjectInvitationRequest request,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.createInvitation(
-        projectId, request.email(), request.role(), currentUserId)
+    return createProjectInvitationUseCase.createProjectInvitation(
+        new CreateProjectInvitationCommand(
+            projectId,
+            request.email(),
+            request.role(),
+            currentUserId))
         .map(ProjectInvitationCreateResponse::of);
   }
 
@@ -46,9 +63,17 @@ public class ProjectInvitationController {
       @RequestParam(defaultValue = "10") int size,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.getInvitations(
-        projectId, currentUserId, page, size)
-        .map(result -> result.map(ProjectInvitationResponse::of));
+    return getProjectInvitationsUseCase.getProjectInvitations(
+        new GetProjectInvitationsQuery(
+            projectId,
+            currentUserId,
+            page,
+            size))
+        .map(result -> PageResponse.of(
+            result.content().stream().map(ProjectInvitationResponse::of).toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @GetMapping("/users/me/invitations/projects")
@@ -57,8 +82,13 @@ public class ProjectInvitationController {
       @RequestParam(defaultValue = "10") int size,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.getMyInvitations(currentUserId, page, size)
-        .map(result -> result.map(ProjectInvitationResponse::of));
+    return getMyProjectInvitationsUseCase.getMyProjectInvitations(
+        new GetMyProjectInvitationsQuery(currentUserId, page, size))
+        .map(result -> PageResponse.of(
+            result.content().stream().map(ProjectInvitationResponse::of).toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @PatchMapping("/projects/invitations/{invitationId}/accept")
@@ -66,7 +96,8 @@ public class ProjectInvitationController {
       @PathVariable String invitationId,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.acceptInvitation(invitationId, currentUserId)
+    return projectMemberOrchestrator.acceptInvitation(
+        new AcceptProjectInvitationCommand(invitationId, currentUserId))
         .map(ProjectMemberResponse::from);
   }
 
@@ -76,7 +107,8 @@ public class ProjectInvitationController {
       @PathVariable String invitationId,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.rejectInvitation(invitationId, currentUserId);
+    return rejectProjectInvitationUseCase.rejectProjectInvitation(
+        new RejectProjectInvitationCommand(invitationId, currentUserId));
   }
 
 }

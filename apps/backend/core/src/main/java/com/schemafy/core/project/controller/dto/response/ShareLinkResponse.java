@@ -3,7 +3,7 @@ package com.schemafy.core.project.controller.dto.response;
 import java.time.Instant;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.project.repository.entity.ShareLink;
+import com.schemafy.domain.project.domain.ShareLink;
 
 public record ShareLinkResponse(
     String id,

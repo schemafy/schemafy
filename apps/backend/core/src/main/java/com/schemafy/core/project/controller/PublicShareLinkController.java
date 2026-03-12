@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.core.common.constant.ApiPath;
 import com.schemafy.core.project.controller.dto.response.ShareLinkAccessResponse;
-import com.schemafy.core.project.service.ShareLinkService;
+import com.schemafy.domain.project.application.port.in.AccessShareLinkQuery;
+import com.schemafy.domain.project.application.port.in.AccessShareLinkUseCase;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -22,7 +23,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class PublicShareLinkController {
 
-  private final ShareLinkService shareLinkService;
+  private final AccessShareLinkUseCase accessShareLinkUseCase;
 
   @GetMapping("/share/{code}")
   public Mono<ShareLinkAccessResponse> accessByLink(
@@ -33,8 +34,8 @@ public class PublicShareLinkController {
     String ipAddress = extractIpAddress(request);
     String userAgent = request.getHeaders().getFirst("User-Agent");
 
-    return shareLinkService
-        .accessByCode(code, userId, ipAddress, userAgent)
+    return accessShareLinkUseCase.accessShareLink(
+        new AccessShareLinkQuery(code, userId, ipAddress, userAgent))
         .map(ShareLinkAccessResponse::of);
   }
 

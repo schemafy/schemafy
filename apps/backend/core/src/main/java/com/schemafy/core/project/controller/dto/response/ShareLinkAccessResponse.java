@@ -1,6 +1,6 @@
 package com.schemafy.core.project.controller.dto.response;
 
-import com.schemafy.core.project.repository.entity.Project;
+import com.schemafy.domain.project.domain.Project;
 
 public record ShareLinkAccessResponse(
     String projectId,

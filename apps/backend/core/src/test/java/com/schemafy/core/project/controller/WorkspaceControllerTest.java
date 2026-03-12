@@ -1,13 +1,10 @@
 package com.schemafy.core.project.controller;
 
-import java.util.HashMap;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -16,28 +13,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.AddWorkspaceMemberRequest;
 import com.schemafy.core.project.controller.dto.request.CreateWorkspaceRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateMemberRoleRequest;
 import com.schemafy.core.project.controller.dto.request.UpdateWorkspaceRequest;
 import com.schemafy.core.project.docs.WorkspaceApiSnippets;
-import com.schemafy.core.project.repository.ProjectMemberRepository;
-import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.entity.ProjectMember;
-import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.entity.WorkspaceMember;
-import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.user.repository.vo.UserInfo;
-
-import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
+import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
+import com.schemafy.domain.user.domain.User;
+import com.schemafy.domain.project.domain.Project;
+import com.schemafy.domain.project.domain.ProjectMember;
+import com.schemafy.domain.project.domain.ProjectRole;
+import com.schemafy.domain.project.domain.Workspace;
+import com.schemafy.domain.project.domain.WorkspaceMember;
+import com.schemafy.domain.project.domain.WorkspaceRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -47,31 +35,13 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("WorkspaceController 통합 테스트")
-class WorkspaceControllerTest {
+class WorkspaceControllerTest extends ProjectHttpTestSupport {
 
   private static final String API_BASE_PATH = ApiPath.API
       .replace("{version}", "v1.0") + "/workspaces";
 
   @Autowired
   private WebTestClient webTestClient;
-
-  @Autowired
-  private WorkspaceRepository workspaceRepository;
-
-  @Autowired
-  private ProjectRepository projectRepository;
-
-  @Autowired
-  private ProjectMemberRepository projectMemberRepository;
-
-  @Autowired
-  private WorkspaceMemberRepository workspaceMemberRepository;
-
-  @Autowired
-  private UserRepository userRepository;
-
-  @Autowired
-  private JwtProvider jwtProvider;
 
   private String testUserId;
   private String testUser2Id;
@@ -80,33 +50,16 @@ class WorkspaceControllerTest {
 
   @BeforeEach
   void setUp() {
-    Mono<Void> cleanup = Mono.when(projectMemberRepository.deleteAll(),
-        projectRepository.deleteAll(), workspaceMemberRepository.deleteAll(),
-        workspaceRepository.deleteAll(), userRepository.deleteAll());
+    cleanupProjectFixtures().block();
 
-    Mono<Tuple2<User, User>> createUsers = Mono.zip(User.signUp(
-        new UserInfo("test@example.com", "Test User", "password"),
-        new BCryptPasswordEncoder()).flatMap(userRepository::save),
-        User.signUp(new UserInfo("test2@example.com", "Test User 2",
-            "password"), new BCryptPasswordEncoder())
-            .flatMap(userRepository::save));
+    User testUser = createUser("test@example.com", "Test User");
+    User testUser2 = createUser("test2@example.com", "Test User 2");
 
-    Tuple2<User, User> users = cleanup.then(createUsers).blockOptional()
-        .orElseThrow();
-
-    User testUser = users.getT1();
-    User testUser2 = users.getT2();
-
-    testUserId = testUser.getId();
-    testUser2Id = testUser2.getId();
+    testUserId = testUser.id();
+    testUser2Id = testUser2.id();
 
     accessToken = generateAccessToken(testUserId);
     accessToken2 = generateAccessToken(testUser2Id);
-  }
-
-  private String generateAccessToken(String userId) {
-    return jwtProvider.generateAccessToken(userId, new HashMap<>(),
-        System.currentTimeMillis());
   }
 
   @Test
@@ -126,7 +79,7 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.createWorkspaceResponse()))
         .jsonPath("$.name").isEqualTo("My Workspace");
 
-    workspaceMemberRepository.findByUserIdAndNotDeleted(testUserId)
+    findActiveWorkspaceMembersByUserId(testUserId)
         .collectList().block().forEach(member -> {
           assertThat(member.getRole())
               .isEqualTo(WorkspaceRole.ADMIN.name());
@@ -147,13 +100,8 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 목록 조회에 성공한다")
   void getWorkspacesSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
 
     webTestClient.get().uri(API_BASE_PATH + "?page=0&size=10")
         .header("Authorization", "Bearer " + accessToken).exchange()
@@ -171,13 +119,8 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 상세 조회에 성공한다")
   void getWorkspaceSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -196,13 +139,8 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버가 아닌 사용자는 워크스페이스 조회에 실패한다")
   void getWorkspaceFailWhenNotMember() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
 
     webTestClient.get().uri(API_BASE_PATH + "/" + workspace.getId())
         .header("Authorization", "Bearer " + accessToken2).exchange()
@@ -212,13 +150,8 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 수정에 성공한다")
   void updateWorkspaceSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
 
     UpdateWorkspaceRequest request = new UpdateWorkspaceRequest(
         "Updated Workspace", "Updated Description");
@@ -241,17 +174,9 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 워크스페이스 수정에 실패한다")
   void updateWorkspaceFailWhenNotAdmin() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member1).block();
-
-    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.MEMBER);
-    workspaceMemberRepository.save(member2).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(workspace.getId(), testUser2Id, WorkspaceRole.MEMBER);
 
     UpdateWorkspaceRequest request = new UpdateWorkspaceRequest(
         "Updated Workspace", "Updated Description");
@@ -265,13 +190,8 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 삭제에 성공한다")
   void deleteWorkspaceSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -291,17 +211,9 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 워크스페이스 삭제에 실패한다")
   void deleteWorkspaceFailWhenNotAdmin() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member1).block();
-
-    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.MEMBER);
-    workspaceMemberRepository.save(member2).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(workspace.getId(), testUser2Id, WorkspaceRole.MEMBER);
 
     webTestClient.delete().uri(API_BASE_PATH + "/" + workspace.getId())
         .header("Authorization", "Bearer " + accessToken2).exchange()
@@ -311,13 +223,8 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버 목록 조회에 성공한다")
   void getMembersSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -342,17 +249,9 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("MEMBER도 멤버 목록을 조회할 수 있다")
   void getMembersSuccessWithMemberRole() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member1).block();
-
-    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.MEMBER);
-    workspaceMemberRepository.save(member2).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(workspace.getId(), testUser2Id, WorkspaceRole.MEMBER);
 
     webTestClient.get().uri(API_BASE_PATH + "/" + workspace.getId()
         + "/members?page=0&size=20")
@@ -363,16 +262,13 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버 추가에 성공한다")
   void addMemberSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
 
-    WorkspaceMember member = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
-
-    User user = userRepository.findById(testUser2Id).block();
-    AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(user.getEmail(), WorkspaceRole.MEMBER);
+    User user = getUser(testUser2Id);
+    AddWorkspaceMemberRequest request = addWorkspaceMemberRequest(
+        user.email(),
+        "MEMBER");
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -395,17 +291,13 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 멤버 추가에 실패한다")
   void addMemberFailWhenNotAdmin() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.MEMBER);
 
-    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.MEMBER);
-    workspaceMemberRepository.save(member1).block();
-
-    User testUser2 = userRepository.findById(testUser2Id).block();
-    AddWorkspaceMemberRequest request = new AddWorkspaceMemberRequest(
-        testUser2.getEmail(), WorkspaceRole.MEMBER);
+    User testUser2 = getUser(testUser2Id);
+    AddWorkspaceMemberRequest request = addWorkspaceMemberRequest(
+        testUser2.email(),
+        "MEMBER");
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/" + workspace.getId() + "/members")
@@ -417,17 +309,10 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("ADMIN은 멤버 추방을 할 수 있다")
   void removeMemberSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member1).block();
-
-    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.MEMBER);
-    member2 = workspaceMemberRepository.save(member2).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    var member2 = addWorkspaceMember(workspace.getId(), testUser2Id,
+        WorkspaceRole.MEMBER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -446,17 +331,10 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("ADMIN은 다른 ADMIN을 추방할 수 있다")
   void removeMember_AdminRemovesAnotherAdmin_Success() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember admin1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(admin1).block();
-
-    WorkspaceMember admin2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.ADMIN);
-    admin2 = workspaceMemberRepository.save(admin2).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    var admin2 = addWorkspaceMember(workspace.getId(), testUser2Id,
+        WorkspaceRole.ADMIN);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -473,17 +351,9 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("Admin이 아닌 사용자는 멤버 추방에 실패한다")
   void removeMemberFailWhenNotAdmin() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member1).block();
-
-    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.MEMBER);
-    member2 = workspaceMemberRepository.save(member2).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(workspace.getId(), testUser2Id, WorkspaceRole.MEMBER);
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/" + workspace.getId() + "/members/"
@@ -495,17 +365,10 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 탈퇴에 성공한다")
   void leaveMemberSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace",
-        "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member1).block();
-
-    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.MEMBER);
-    member2 = workspaceMemberRepository.save(member2).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    var member2 = addWorkspaceMember(workspace.getId(), testUser2Id,
+        WorkspaceRole.MEMBER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -524,20 +387,11 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("워크스페이스 멤버가 1명이고 워크스페이스 비멤버 프로젝트 멤버가 있어도 탈퇴 시 워크스페이스가 삭제된다")
   void leaveMember_LastWorkspaceMember_WithProjectOnlyMember_DeletesWorkspace() {
-    Workspace workspace = Workspace.create("Single Admin Workspace",
+    Workspace workspace = saveWorkspace("Single Admin Workspace",
         "Description");
-    workspace = workspaceRepository.save(workspace).block();
-
-    WorkspaceMember admin = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(admin).block();
-
-    Project project = Project.create(workspace.getId(), "Project", "Desc");
-    project = projectRepository.save(project).block();
-
-    ProjectMember outsiderProjectMember = ProjectMember.create(project.getId(),
-        testUser2Id, ProjectRole.VIEWER);
-    projectMemberRepository.save(outsiderProjectMember).block();
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    Project project = saveProject(workspace.getId(), "Project", "Desc");
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -563,19 +417,11 @@ class WorkspaceControllerTest {
   @Test
   @DisplayName("멤버 역할 변경에 성공한다")
   void updateMemberRoleSuccess() {
-    Workspace workspace = Workspace.create("Test Workspace", "Description");
-    workspace = workspaceRepository.save(workspace).block();
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(workspace.getId(), testUser2Id, WorkspaceRole.MEMBER);
 
-    WorkspaceMember member1 = WorkspaceMember.create(workspace.getId(),
-        testUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member1).block();
-
-    WorkspaceMember member2 = WorkspaceMember.create(workspace.getId(),
-        testUser2Id, WorkspaceRole.MEMBER);
-    member2 = workspaceMemberRepository.save(member2).block();
-
-    UpdateMemberRoleRequest request = new UpdateMemberRoleRequest(
-        WorkspaceRole.ADMIN);
+    UpdateMemberRoleRequest request = updateMemberRoleRequest("ADMIN");
 
     webTestClient.patch()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -592,6 +438,27 @@ class WorkspaceControllerTest {
             WorkspaceApiSnippets.updateMemberRoleResponse()))
         .jsonPath("$.role")
         .isEqualTo(WorkspaceRole.ADMIN.name());
+  }
+
+  private AddWorkspaceMemberRequest addWorkspaceMemberRequest(
+      String email,
+      String role) {
+    return new AddWorkspaceMemberRequest(email,
+        resolveRecordEnum(AddWorkspaceMemberRequest.class, 1, role));
+  }
+
+  private UpdateMemberRoleRequest updateMemberRoleRequest(String role) {
+    return new UpdateMemberRoleRequest(
+        resolveRecordEnum(UpdateMemberRoleRequest.class, 0, role));
+  }
+
+  @SuppressWarnings("unchecked")
+  private <E extends Enum<E>> E resolveRecordEnum(
+      Class<?> recordType,
+      int componentIndex,
+      String value) {
+    return Enum.valueOf((Class<E>) recordType.getRecordComponents()[componentIndex]
+        .getType(), value);
   }
 
 }

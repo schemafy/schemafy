@@ -2,9 +2,9 @@ package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.service.dto.ProjectSummaryDetail;
+import com.schemafy.domain.project.application.port.in.ProjectSummary;
+import com.schemafy.domain.project.domain.Project;
+import com.schemafy.domain.project.domain.ProjectRole;
 
 public record ProjectSummaryResponse(String id, String workspaceId, String name,
     String description, String myRole,
@@ -21,7 +21,7 @@ public record ProjectSummaryResponse(String id, String workspaceId, String name,
         project.getUpdatedAt());
   }
 
-  public static ProjectSummaryResponse from(ProjectSummaryDetail detail) {
+  public static ProjectSummaryResponse from(ProjectSummary detail) {
     return of(detail.project(), detail.role());
   }
 

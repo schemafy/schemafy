@@ -4,14 +4,12 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
-import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -20,23 +18,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.RestDocsConfiguration;
-import com.schemafy.core.common.security.jwt.JwtProvider;
-import com.schemafy.core.project.exception.ProjectErrorCode;
-import com.schemafy.core.project.exception.ShareLinkErrorCode;
-import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.ShareLinkRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.entity.ShareLink;
-import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.entity.WorkspaceMember;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.user.repository.vo.UserInfo;
-
-import reactor.core.publisher.Mono;
+import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
+import com.schemafy.domain.user.domain.User;
+import com.schemafy.domain.project.domain.Project;
+import com.schemafy.domain.project.domain.ShareLink;
+import com.schemafy.domain.project.domain.Workspace;
+import com.schemafy.domain.project.domain.WorkspaceRole;
+import com.schemafy.domain.project.domain.exception.ProjectErrorCode;
+import com.schemafy.domain.project.domain.exception.ShareLinkErrorCode;
 
 import static com.schemafy.core.project.docs.PublicShareLinkApiSnippets.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,31 +37,13 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureRestDocs
 @Import(RestDocsConfiguration.class)
 @DisplayName("PublicShareLinkController 통합 테스트")
-class PublicShareLinkControllerTest {
+class PublicShareLinkControllerTest extends ProjectHttpTestSupport {
 
   private static final String PUBLIC_API_PATH = "/public/api/v1.0/share";
   private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   @Autowired
   private WebTestClient webTestClient;
-
-  @Autowired
-  private ShareLinkRepository shareLinkRepository;
-
-  @Autowired
-  private ProjectRepository projectRepository;
-
-  @Autowired
-  private WorkspaceRepository workspaceRepository;
-
-  @Autowired
-  private WorkspaceMemberRepository workspaceMemberRepository;
-
-  @Autowired
-  private UserRepository userRepository;
-
-  @Autowired
-  private JwtProvider jwtProvider;
 
   private User testUser;
   private Workspace testWorkspace;
@@ -81,34 +52,15 @@ class PublicShareLinkControllerTest {
 
   @BeforeEach
   void setUp() {
-    Mono.when(shareLinkRepository.deleteAll(),
-        projectRepository.deleteAll(),
-        workspaceMemberRepository.deleteAll(),
-        workspaceRepository.deleteAll(), userRepository.deleteAll())
-        .block();
+    cleanupProjectFixtures().block();
 
-    testUser = User
-        .signUp(new UserInfo("admin@example.com", "Admin",
-            "password"), new BCryptPasswordEncoder())
-        .flatMap(userRepository::save).block();
-
-    accessToken = generateAccessToken(testUser.getId());
-
-    testWorkspace = Workspace.create("Test Workspace",
+    testUser = createUser("admin@example.com", "Admin");
+    accessToken = generateAccessToken(testUser.id());
+    testWorkspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(testWorkspace.getId(), testUser.id(),
+        WorkspaceRole.ADMIN);
+    testProject = saveProject(testWorkspace.getId(), "Test Project",
         "Description");
-    testWorkspace = workspaceRepository.save(testWorkspace).block();
-
-    WorkspaceMember member = WorkspaceMember.create(testWorkspace.getId(),
-        testUser.getId(), WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
-
-    testProject = Project.create(testWorkspace.getId(), "Test Project", "Description");
-    testProject = projectRepository.save(testProject).block();
-  }
-
-  private String generateAccessToken(String userId) {
-    return jwtProvider.generateAccessToken(userId, new HashMap<>(),
-        System.currentTimeMillis());
   }
 
   private String generateLinkCode() {
@@ -191,7 +143,7 @@ class PublicShareLinkControllerTest {
     String code = generateLinkCode();
     ShareLink shareLink = createShareLink(code, null);
     shareLink.delete();
-    shareLinkRepository.save(shareLink).block();
+    saveShareLink(shareLink);
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
         .expectStatus().isNotFound().expectBody()
@@ -206,7 +158,7 @@ class PublicShareLinkControllerTest {
     ShareLink shareLink = createShareLink(code, null);
 
     testProject.delete();
-    projectRepository.save(testProject).block();
+    saveProject(testProject);
 
     webTestClient.get().uri(PUBLIC_API_PATH + "/" + code).exchange()
         .expectStatus().isNotFound().expectBody()
@@ -282,24 +234,7 @@ class PublicShareLinkControllerTest {
   }
 
   private ShareLink createShareLink(String code, Instant expiresAt) {
-    ShareLink shareLink;
-
-    if (expiresAt != null && !Instant.now().isBefore(expiresAt)) {
-      shareLink = ShareLink.create(testProject.getId(), code,
-          Instant.now().plus(1, ChronoUnit.DAYS));
-      shareLinkRepository.save(shareLink).block();
-
-      try {
-        var field = ShareLink.class.getDeclaredField("expiresAt");
-        field.setAccessible(true);
-        field.set(shareLink, expiresAt);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    } else {
-      shareLink = ShareLink.create(testProject.getId(), code, expiresAt);
-    }
-    return shareLinkRepository.save(shareLink).block();
+    return saveShareLink(testProject.getId(), code, expiresAt);
   }
 
 }

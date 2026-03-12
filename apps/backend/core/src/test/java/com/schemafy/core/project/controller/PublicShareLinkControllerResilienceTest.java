@@ -6,7 +6,6 @@ import java.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -15,18 +14,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.ShareLinkRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.entity.ShareLink;
-import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.entity.WorkspaceMember;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.user.repository.vo.UserInfo;
+import com.schemafy.domain.user.domain.User;
+import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
+import com.schemafy.domain.project.adapter.out.persistence.DomainShareLinkRepository;
+import com.schemafy.domain.project.domain.Project;
+import com.schemafy.domain.project.domain.ShareLink;
+import com.schemafy.domain.project.domain.Workspace;
+import com.schemafy.domain.project.domain.WorkspaceRole;
 
 import reactor.core.publisher.Mono;
 
@@ -37,7 +31,7 @@ import static org.mockito.Mockito.doReturn;
 @SpringBootTest
 @AutoConfigureWebTestClient
 @DisplayName("PublicShareLinkController 복원력 테스트 (Resilience Test)")
-class PublicShareLinkControllerResilienceTest {
+class PublicShareLinkControllerResilienceTest extends ProjectHttpTestSupport {
 
   private static final String PUBLIC_API_PATH = "/public/api/v1.0/share";
   private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -46,19 +40,7 @@ class PublicShareLinkControllerResilienceTest {
   private WebTestClient webTestClient;
 
   @MockitoSpyBean
-  private ShareLinkRepository shareLinkRepository;
-
-  @Autowired
-  private ProjectRepository projectRepository;
-
-  @Autowired
-  private WorkspaceRepository workspaceRepository;
-
-  @Autowired
-  private WorkspaceMemberRepository workspaceMemberRepository;
-
-  @Autowired
-  private UserRepository userRepository;
+  private DomainShareLinkRepository shareLinkRepository;
 
   private User testUser;
   private Workspace testWorkspace;
@@ -66,30 +48,14 @@ class PublicShareLinkControllerResilienceTest {
 
   @BeforeEach
   void setUp() {
-    Mono.when(shareLinkRepository.deleteAll(),
-        projectRepository.deleteAll(),
-        workspaceMemberRepository.deleteAll(),
-        workspaceRepository.deleteAll(),
-        userRepository.deleteAll())
-        .block();
+    cleanupProjectFixtures().block();
 
-    testUser = User.signUp(
-        new UserInfo("admin@example.com", "Admin", "password"),
-        new BCryptPasswordEncoder())
-        .flatMap(userRepository::save)
-        .block();
-
-    testWorkspace = Workspace.create("Test Workspace", "Description");
-    testWorkspace = workspaceRepository.save(testWorkspace).block();
-
-    WorkspaceMember member = WorkspaceMember.create(
-        testWorkspace.getId(),
-        testUser.getId(),
+    testUser = createUser("admin@example.com", "Admin");
+    testWorkspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(testWorkspace.getId(), testUser.id(),
         WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(member).block();
-
-    testProject = Project.create(testWorkspace.getId(), "Test Project", "Description");
-    testProject = projectRepository.save(testProject).block();
+    testProject = saveProject(testWorkspace.getId(), "Test Project",
+        "Description");
   }
 
   private String generateLinkCode() {
@@ -99,8 +65,7 @@ class PublicShareLinkControllerResilienceTest {
   }
 
   private ShareLink createShareLink(String code) {
-    ShareLink shareLink = ShareLink.create(testProject.getId(), code);
-    return shareLinkRepository.save(shareLink).block();
+    return saveShareLink(testProject.getId(), code);
   }
 
   @Test

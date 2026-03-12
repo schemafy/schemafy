@@ -2,7 +2,7 @@ package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.repository.entity.Invitation;
+import com.schemafy.domain.project.domain.Invitation;
 
 public record WorkspaceInvitationCreateResponse(
     String id,

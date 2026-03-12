@@ -2,9 +2,9 @@ package com.schemafy.core.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.repository.entity.WorkspaceMember;
-import com.schemafy.core.project.service.dto.WorkspaceMemberDetail;
-import com.schemafy.core.user.repository.entity.User;
+import com.schemafy.core.project.orchestrator.dto.WorkspaceMemberView;
+import com.schemafy.domain.project.domain.WorkspaceMember;
+import com.schemafy.domain.user.domain.User;
 
 public record WorkspaceMemberResponse(String workspaceId, String userId,
     String userName, String userEmail, String role, Instant joinedAt) {
@@ -13,14 +13,14 @@ public record WorkspaceMemberResponse(String workspaceId, String userId,
       User user) {
     return new WorkspaceMemberResponse(
         member.getWorkspaceId(),
-        user.getId(),
-        user.getName(),
-        user.getEmail(),
+        user.id(),
+        user.name(),
+        user.email(),
         member.getRole(),
         member.getCreatedAt());
   }
 
-  public static WorkspaceMemberResponse from(WorkspaceMemberDetail detail) {
+  public static WorkspaceMemberResponse from(WorkspaceMemberView detail) {
     return of(detail.member(), detail.user());
   }
 

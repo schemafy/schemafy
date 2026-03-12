@@ -1,13 +1,10 @@
 package com.schemafy.core.project.controller;
 
-import java.util.HashMap;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
@@ -17,27 +14,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.constant.ApiPath;
-import com.schemafy.core.common.security.jwt.JwtProvider;
 import com.schemafy.core.project.controller.dto.request.CreateProjectInvitationRequest;
 import com.schemafy.core.project.docs.ProjectInvitationApiSnippets;
-import com.schemafy.core.project.repository.InvitationRepository;
-import com.schemafy.core.project.repository.ProjectMemberRepository;
-import com.schemafy.core.project.repository.ProjectRepository;
-import com.schemafy.core.project.repository.WorkspaceMemberRepository;
-import com.schemafy.core.project.repository.WorkspaceRepository;
-import com.schemafy.core.project.repository.entity.Invitation;
-import com.schemafy.core.project.repository.entity.Project;
-import com.schemafy.core.project.repository.entity.ProjectMember;
-import com.schemafy.core.project.repository.entity.Workspace;
-import com.schemafy.core.project.repository.entity.WorkspaceMember;
-import com.schemafy.core.project.repository.vo.InvitationStatus;
-import com.schemafy.core.project.repository.vo.ProjectRole;
-import com.schemafy.core.project.repository.vo.WorkspaceRole;
-import com.schemafy.core.user.repository.UserRepository;
-import com.schemafy.core.user.repository.entity.User;
-import com.schemafy.core.user.repository.vo.UserInfo;
-
-import reactor.core.publisher.Mono;
+import com.schemafy.core.testsupport.project.ProjectHttpTestSupport;
+import com.schemafy.domain.user.domain.User;
+import com.schemafy.domain.project.domain.Invitation;
+import com.schemafy.domain.project.domain.InvitationStatus;
+import com.schemafy.domain.project.domain.Project;
+import com.schemafy.domain.project.domain.ProjectRole;
+import com.schemafy.domain.project.domain.Workspace;
+import com.schemafy.domain.project.domain.WorkspaceRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -47,33 +33,12 @@ import static org.springframework.restdocs.webtestclient.WebTestClientRestDocume
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("ProjectInvitationController 통합 테스트")
-class ProjectInvitationControllerTest {
+class ProjectInvitationControllerTest extends ProjectHttpTestSupport {
 
   private static final String API_BASE = ApiPath.API.replace("{version}", "v1.0");
 
   @Autowired
   private WebTestClient webTestClient;
-
-  @Autowired
-  private ProjectRepository projectRepository;
-
-  @Autowired
-  private ProjectMemberRepository projectMemberRepository;
-
-  @Autowired
-  private InvitationRepository invitationRepository;
-
-  @Autowired
-  private WorkspaceRepository workspaceRepository;
-
-  @Autowired
-  private WorkspaceMemberRepository workspaceMemberRepository;
-
-  @Autowired
-  private UserRepository userRepository;
-
-  @Autowired
-  private JwtProvider jwtProvider;
 
   private String adminUserId;
   private String workspaceMemberId;
@@ -86,56 +51,43 @@ class ProjectInvitationControllerTest {
 
   @BeforeEach
   void setUp() {
-    Mono<Void> cleanup = Mono.when(
-        invitationRepository.deleteAll(),
-        projectMemberRepository.deleteAll(),
-        projectRepository.deleteAll(),
-        workspaceMemberRepository.deleteAll(),
-        workspaceRepository.deleteAll(),
-        userRepository.deleteAll());
+    cleanupProjectFixtures().block();
 
-    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    User admin = createUser("admin@test.com", "Admin");
+    User member = createUser("member@test.com", "Member");
+    User outsider = createUser("outsider@test.com", "Outsider");
 
-    cleanup.then(Mono.zip(
-        User.signUp(new UserInfo("admin@test.com", "Admin", "password"), encoder)
-            .flatMap(userRepository::save),
-        User.signUp(new UserInfo("member@test.com", "Member", "password"), encoder)
-            .flatMap(userRepository::save),
-        User.signUp(new UserInfo("outsider@test.com", "Outsider", "password"), encoder)
-            .flatMap(userRepository::save)))
-        .doOnNext(users -> {
-          adminUserId = users.getT1().getId();
-          workspaceMemberId = users.getT2().getId();
-          outsiderId = users.getT3().getId();
+    adminUserId = admin.id();
+    workspaceMemberId = member.id();
+    outsiderId = outsider.id();
 
-          adminToken = generateToken(adminUserId);
-          workspaceMemberToken = generateToken(workspaceMemberId);
-          outsiderToken = generateToken(outsiderId);
-        })
-        .block();
+    adminToken = generateAccessToken(adminUserId);
+    workspaceMemberToken = generateAccessToken(workspaceMemberId);
+    outsiderToken = generateAccessToken(outsiderId);
 
-    testWorkspace = Workspace.create("Test Workspace", "Test Description");
-    testWorkspace = workspaceRepository.save(testWorkspace).block();
-
-    WorkspaceMember adminWsMember = WorkspaceMember.create(
-        testWorkspace.getId(), adminUserId, WorkspaceRole.ADMIN);
-    workspaceMemberRepository.save(adminWsMember).block();
-
-    WorkspaceMember normalWsMember = WorkspaceMember.create(
-        testWorkspace.getId(), workspaceMemberId, WorkspaceRole.MEMBER);
-    workspaceMemberRepository.save(normalWsMember).block();
-
-    testProject = Project.create(testWorkspace.getId(), "Test Project", "Test Description");
-    testProject = projectRepository.save(testProject).block();
-
-    ProjectMember adminProjMember = ProjectMember.create(
-        testProject.getId(), adminUserId, ProjectRole.ADMIN);
-    projectMemberRepository.save(adminProjMember).block();
+    testWorkspace = saveWorkspace("Test Workspace", "Test Description");
+    addWorkspaceMember(testWorkspace.getId(), adminUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(testWorkspace.getId(), workspaceMemberId,
+        WorkspaceRole.MEMBER);
+    testProject = saveProject(testWorkspace.getId(), "Test Project",
+        "Test Description");
+    addProjectMember(testProject.getId(), adminUserId, ProjectRole.ADMIN);
   }
 
-  private String generateToken(String userId) {
-    return jwtProvider.generateAccessToken(userId, new HashMap<>(),
-        System.currentTimeMillis());
+  private CreateProjectInvitationRequest createProjectInvitationRequest(
+      String email,
+      String role) {
+    return new CreateProjectInvitationRequest(email,
+        resolveRecordEnum(CreateProjectInvitationRequest.class, 1, role));
+  }
+
+  @SuppressWarnings("unchecked")
+  private <E extends Enum<E>> E resolveRecordEnum(
+      Class<?> recordType,
+      int componentIndex,
+      String value) {
+    return Enum.valueOf((Class<E>) recordType.getRecordComponents()[componentIndex]
+        .getType(), value);
   }
 
   @Nested
@@ -145,9 +97,9 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("프로젝트 관리자가 워크스페이스 멤버를 초대하면 201 Created를 반환한다")
     void createInvitation_Success() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      CreateProjectInvitationRequest request = new CreateProjectInvitationRequest(workspaceMember.getEmail(),
-          ProjectRole.EDITOR);
+      User workspaceMember = getUser(workspaceMemberId);
+      CreateProjectInvitationRequest request = createProjectInvitationRequest(workspaceMember.email(),
+          "EDITOR");
 
       webTestClient.post()
           .uri(API_BASE + "/projects/{projectId}/invitations",
@@ -166,7 +118,7 @@ class ProjectInvitationControllerTest {
               ProjectInvitationApiSnippets.createInvitationResponse()))
           .jsonPath("$.projectId").isEqualTo(testProject.getId())
           .jsonPath("$.workspaceId").isEqualTo(testWorkspace.getId())
-          .jsonPath("$.invitedEmail").isEqualTo(workspaceMember.getEmail())
+          .jsonPath("$.invitedEmail").isEqualTo(workspaceMember.email())
           .jsonPath("$.invitedRole").isEqualTo(ProjectRole.EDITOR.name())
           .jsonPath("$.status").isEqualTo(InvitationStatus.PENDING.name());
     }
@@ -174,8 +126,8 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("프로젝트 관리자가 아니면 403 Forbidden을 반환한다")
     void createInvitation_NotAdmin_Forbidden() {
-      CreateProjectInvitationRequest request = new CreateProjectInvitationRequest("newuser@test.com",
-          ProjectRole.VIEWER);
+      CreateProjectInvitationRequest request = createProjectInvitationRequest("newuser@test.com",
+          "VIEWER");
 
       webTestClient.post()
           .uri(API_BASE + "/projects/{projectId}/invitations",
@@ -190,7 +142,8 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("유효하지 않은 이메일 형식이면 400 Bad Request를 반환한다")
     void createInvitation_InvalidEmail_BadRequest() {
-      CreateProjectInvitationRequest request = new CreateProjectInvitationRequest("invalid-email", ProjectRole.VIEWER);
+      CreateProjectInvitationRequest request = createProjectInvitationRequest("invalid-email",
+          "VIEWER");
 
       webTestClient.post()
           .uri(API_BASE + "/projects/{projectId}/invitations",
@@ -205,9 +158,9 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("중복 초대 시 409 Conflict를 반환한다")
     void createInvitation_Duplicate_Conflict() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      CreateProjectInvitationRequest request = new CreateProjectInvitationRequest(workspaceMember.getEmail(),
-          ProjectRole.EDITOR);
+      User workspaceMember = getUser(workspaceMemberId);
+      CreateProjectInvitationRequest request = createProjectInvitationRequest(workspaceMember.email(),
+          "EDITOR");
 
       webTestClient.post()
           .uri(API_BASE + "/projects/{projectId}/invitations",
@@ -237,20 +190,10 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("프로젝트 관리자가 초대 목록을 조회하면 200 OK를 반환한다")
     void listInvitations_Success() {
-      Invitation invitation1 = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          "user1@test.com",
-          ProjectRole.EDITOR,
-          adminUserId);
-      Invitation invitation2 = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          "user2@test.com",
-          ProjectRole.VIEWER,
-          adminUserId);
-      invitationRepository.save(invitation1).block();
-      invitationRepository.save(invitation2).block();
+      saveProjectInvitation(testProject.getId(), testWorkspace.getId(),
+          "user1@test.com", ProjectRole.EDITOR, adminUserId);
+      saveProjectInvitation(testProject.getId(), testWorkspace.getId(),
+          "user2@test.com", ProjectRole.VIEWER, adminUserId);
 
       webTestClient.get()
           .uri(API_BASE + "/projects/{projectId}/invitations?page=0&size=10",
@@ -289,13 +232,8 @@ class ProjectInvitationControllerTest {
     @DisplayName("페이지네이션 파라미터가 올바르게 동작한다")
     void listInvitations_Pagination() {
       for (int i = 0; i < 5; i++) {
-        Invitation invitation = Invitation.createProjectInvitation(
-            testProject.getId(),
-            testWorkspace.getId(),
-            "user" + i + "@test.com",
-            ProjectRole.VIEWER,
-            adminUserId);
-        invitationRepository.save(invitation).block();
+        saveProjectInvitation(testProject.getId(), testWorkspace.getId(),
+            "user" + i + "@test.com", ProjectRole.VIEWER, adminUserId);
       }
 
       webTestClient.get()
@@ -321,16 +259,14 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("인증된 사용자가 초대 목록을 조회하면 200 OK를 반환한다")
     void listMyInvitations_Success() {
-      User outsiderUser = userRepository.findById(outsiderId).block();
-      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2");
-      project2 = projectRepository.save(project2).block();
+      User outsiderUser = getUser(outsiderId);
+      Project project2 = saveProject(testWorkspace.getId(), "Project 2",
+          "Description 2");
 
-      Invitation invitation1 = Invitation.createProjectInvitation(
-          testProject.getId(), testWorkspace.getId(), outsiderUser.getEmail(), ProjectRole.EDITOR, adminUserId);
-      Invitation invitation2 = Invitation.createProjectInvitation(
-          project2.getId(), testWorkspace.getId(), outsiderUser.getEmail(), ProjectRole.VIEWER, adminUserId);
-      invitationRepository.save(invitation1).block();
-      invitationRepository.save(invitation2).block();
+      saveProjectInvitation(testProject.getId(), testWorkspace.getId(),
+          outsiderUser.email(), ProjectRole.EDITOR, adminUserId);
+      saveProjectInvitation(project2.getId(), testWorkspace.getId(),
+          outsiderUser.email(), ProjectRole.VIEWER, adminUserId);
 
       webTestClient.get()
           .uri(uriBuilder -> uriBuilder
@@ -349,8 +285,8 @@ class ProjectInvitationControllerTest {
               ProjectInvitationApiSnippets.listMyInvitationsResponse()))
           .jsonPath("$.content.length()").isEqualTo(2)
           .jsonPath("$.totalElements").isEqualTo(2)
-          .jsonPath("$.content[0].invitedEmail").isEqualTo(outsiderUser.getEmail())
-          .jsonPath("$.content[1].invitedEmail").isEqualTo(outsiderUser.getEmail());
+          .jsonPath("$.content[0].invitedEmail").isEqualTo(outsiderUser.email())
+          .jsonPath("$.content[1].invitedEmail").isEqualTo(outsiderUser.email());
     }
 
     @Test
@@ -373,14 +309,13 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("페이지네이션 파라미터가 올바르게 동작한다")
     void listMyInvitations_Pagination() {
-      User outsiderUser = userRepository.findById(outsiderId).block();
+      User outsiderUser = getUser(outsiderId);
 
       for (int i = 0; i < 5; i++) {
-        Project project = Project.create(testWorkspace.getId(), "Project " + i, "Description " + i);
-        project = projectRepository.save(project).block();
-        Invitation invitation = Invitation.createProjectInvitation(
-            project.getId(), testWorkspace.getId(), outsiderUser.getEmail(), ProjectRole.VIEWER, adminUserId);
-        invitationRepository.save(invitation).block();
+        Project project = saveProject(testWorkspace.getId(), "Project " + i,
+            "Description " + i);
+        saveProjectInvitation(project.getId(), testWorkspace.getId(),
+            outsiderUser.email(), ProjectRole.VIEWER, adminUserId);
       }
 
       webTestClient.get()
@@ -400,17 +335,17 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("PENDING 상태의 초대만 조회된다")
     void listMyInvitations_OnlyPending() {
-      User outsiderUser = userRepository.findById(outsiderId).block();
+      User outsiderUser = getUser(outsiderId);
 
-      Invitation pending = Invitation.createProjectInvitation(
-          testProject.getId(), testWorkspace.getId(), outsiderUser.getEmail(), ProjectRole.VIEWER, adminUserId);
-      pending = invitationRepository.save(pending).block();
+      Invitation pending = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), outsiderUser.email(), ProjectRole.VIEWER,
+          adminUserId);
 
-      Project project2 = Project.create(testWorkspace.getId(), "Project 2", "Description 2");
-      project2 = projectRepository.save(project2).block();
-      Invitation accepted = Invitation.createProjectInvitation(
-          project2.getId(), testWorkspace.getId(), outsiderUser.getEmail(), ProjectRole.VIEWER, adminUserId);
-      accepted = invitationRepository.save(accepted).block();
+      Project project2 = saveProject(testWorkspace.getId(), "Project 2",
+          "Description 2");
+      Invitation accepted = saveProjectInvitation(project2.getId(),
+          testWorkspace.getId(), outsiderUser.email(), ProjectRole.VIEWER,
+          adminUserId);
       accepted.accept();
       invitationRepository.save(accepted).block();
 
@@ -450,14 +385,10 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("워크스페이스 멤버가 프로젝트 초대를 수락하면 200 OK를 반환하고 프로젝트 멤버가 생성된다")
     void acceptInvitation_Success() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUserId);
-      invitation = invitationRepository.save(invitation).block();
+      User workspaceMember = getUser(workspaceMemberId);
+      Invitation invitation = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), workspaceMember.email(),
+          ProjectRole.EDITOR, adminUserId);
 
       webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
@@ -487,14 +418,10 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("다른 사용자가 초대를 수락하면 400 Bad Request를 반환한다")
     void acceptInvitation_WrongUser_Forbidden() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUserId);
-      invitation = invitationRepository.save(invitation).block();
+      User workspaceMember = getUser(workspaceMemberId);
+      Invitation invitation = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), workspaceMember.email(),
+          ProjectRole.EDITOR, adminUserId);
 
       webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
@@ -518,14 +445,10 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("이미 수락된 초대를 다시 수락하면 409 Conflict를 반환한다")
     void acceptInvitation_AlreadyAccepted_Conflict() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUserId);
-      invitation = invitationRepository.save(invitation).block();
+      User workspaceMember = getUser(workspaceMemberId);
+      Invitation invitation = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), workspaceMember.email(),
+          ProjectRole.EDITOR, adminUserId);
 
       webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
@@ -545,19 +468,14 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("이미 프로젝트 멤버인 경우 초대 수락에 실패하고 409 Conflict를 반환한다")
     void acceptInvitation_AlreadyProjectMember_Conflict() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
+      User workspaceMember = getUser(workspaceMemberId);
 
-      ProjectMember existingMember = ProjectMember.create(
-          testProject.getId(), workspaceMemberId, ProjectRole.VIEWER);
-      projectMemberRepository.save(existingMember).block();
+      addProjectMember(testProject.getId(), workspaceMemberId,
+          ProjectRole.VIEWER);
 
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUserId);
-      invitation = invitationRepository.save(invitation).block();
+      Invitation invitation = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), workspaceMember.email(),
+          ProjectRole.EDITOR, adminUserId);
 
       webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",
@@ -576,14 +494,10 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("초대받은 사용자가 초대를 거절하면 204 No Content를 반환한다")
     void rejectInvitation_Success() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUserId);
-      invitation = invitationRepository.save(invitation).block();
+      User workspaceMember = getUser(workspaceMemberId);
+      Invitation invitation = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), workspaceMember.email(),
+          ProjectRole.EDITOR, adminUserId);
 
       webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
@@ -603,14 +517,10 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("다른 사용자가 초대를 거절하면 400 Bad Request를 반환한다")
     void rejectInvitation_WrongUser_Forbidden() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUserId);
-      invitation = invitationRepository.save(invitation).block();
+      User workspaceMember = getUser(workspaceMemberId);
+      Invitation invitation = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), workspaceMember.email(),
+          ProjectRole.EDITOR, adminUserId);
 
       webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
@@ -634,14 +544,10 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("이미 거절된 초대를 다시 거절하면 409 Conflict를 반환한다")
     void rejectInvitation_AlreadyRejected_Conflict() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUserId);
-      invitation = invitationRepository.save(invitation).block();
+      User workspaceMember = getUser(workspaceMemberId);
+      Invitation invitation = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), workspaceMember.email(),
+          ProjectRole.EDITOR, adminUserId);
 
       webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/reject",
@@ -661,14 +567,10 @@ class ProjectInvitationControllerTest {
     @Test
     @DisplayName("이미 수락된 초대를 거절하면 409 Conflict를 반환한다")
     void rejectInvitation_AlreadyAccepted_Conflict() {
-      User workspaceMember = userRepository.findById(workspaceMemberId).block();
-      Invitation invitation = Invitation.createProjectInvitation(
-          testProject.getId(),
-          testWorkspace.getId(),
-          workspaceMember.getEmail(),
-          ProjectRole.EDITOR,
-          adminUserId);
-      invitation = invitationRepository.save(invitation).block();
+      User workspaceMember = getUser(workspaceMemberId);
+      Invitation invitation = saveProjectInvitation(testProject.getId(),
+          testWorkspace.getId(), workspaceMember.email(),
+          ProjectRole.EDITOR, adminUserId);
 
       webTestClient.patch()
           .uri(API_BASE + "/projects/invitations/{invitationId}/accept",

@@ -10,7 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 
 import com.schemafy.core.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.project.repository.vo.ProjectRole;
+import com.schemafy.domain.project.domain.ProjectRole;
 
 public class WithMockCustomUserSecurityContextFactory
     implements WithSecurityContextFactory<WithMockCustomUser> {

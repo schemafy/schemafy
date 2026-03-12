@@ -13,7 +13,16 @@ import com.schemafy.core.project.controller.dto.request.CreateWorkspaceInvitatio
 import com.schemafy.core.project.controller.dto.response.WorkspaceInvitationCreateResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceInvitationResponse;
 import com.schemafy.core.project.controller.dto.response.WorkspaceMemberResponse;
-import com.schemafy.core.project.service.WorkspaceInvitationService;
+import com.schemafy.core.project.orchestrator.WorkspaceMemberOrchestrator;
+import com.schemafy.domain.project.application.port.in.AcceptWorkspaceInvitationCommand;
+import com.schemafy.domain.project.application.port.in.CreateWorkspaceInvitationCommand;
+import com.schemafy.domain.project.application.port.in.CreateWorkspaceInvitationUseCase;
+import com.schemafy.domain.project.application.port.in.GetMyWorkspaceInvitationsQuery;
+import com.schemafy.domain.project.application.port.in.GetMyWorkspaceInvitationsUseCase;
+import com.schemafy.domain.project.application.port.in.GetWorkspaceInvitationsQuery;
+import com.schemafy.domain.project.application.port.in.GetWorkspaceInvitationsUseCase;
+import com.schemafy.domain.project.application.port.in.RejectWorkspaceInvitationCommand;
+import com.schemafy.domain.project.application.port.in.RejectWorkspaceInvitationUseCase;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -23,7 +32,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class WorkspaceInvitationController {
 
-  private final WorkspaceInvitationService invitationService;
+  private final CreateWorkspaceInvitationUseCase createWorkspaceInvitationUseCase;
+  private final GetWorkspaceInvitationsUseCase getWorkspaceInvitationsUseCase;
+  private final GetMyWorkspaceInvitationsUseCase getMyWorkspaceInvitationsUseCase;
+  private final RejectWorkspaceInvitationUseCase rejectWorkspaceInvitationUseCase;
+  private final WorkspaceMemberOrchestrator workspaceMemberOrchestrator;
 
   @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/workspaces/{workspaceId}/invitations")
@@ -33,8 +46,12 @@ public class WorkspaceInvitationController {
       @Valid @RequestBody CreateWorkspaceInvitationRequest request,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.createInvitation(
-        workspaceId, request.email(), request.role(), currentUserId)
+    return createWorkspaceInvitationUseCase.createWorkspaceInvitation(
+        new CreateWorkspaceInvitationCommand(
+            workspaceId,
+            request.email(),
+            request.role(),
+            currentUserId))
         .map(WorkspaceInvitationCreateResponse::of);
   }
 
@@ -46,9 +63,17 @@ public class WorkspaceInvitationController {
       @RequestParam(defaultValue = "10") int size,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.listInvitations(
-        workspaceId, currentUserId, page, size)
-        .map(result -> result.map(WorkspaceInvitationResponse::of));
+    return getWorkspaceInvitationsUseCase.getWorkspaceInvitations(
+        new GetWorkspaceInvitationsQuery(
+            workspaceId,
+            currentUserId,
+            page,
+            size))
+        .map(result -> PageResponse.of(
+            result.content().stream().map(WorkspaceInvitationResponse::of).toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @GetMapping("/users/me/invitations/workspaces")
@@ -57,8 +82,13 @@ public class WorkspaceInvitationController {
       @RequestParam(defaultValue = "10") int size,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.listMyInvitations(currentUserId, page, size)
-        .map(result -> result.map(WorkspaceInvitationResponse::of));
+    return getMyWorkspaceInvitationsUseCase.getMyWorkspaceInvitations(
+        new GetMyWorkspaceInvitationsQuery(currentUserId, page, size))
+        .map(result -> PageResponse.of(
+            result.content().stream().map(WorkspaceInvitationResponse::of).toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @PatchMapping("/workspaces/invitations/{invitationId}/accept")
@@ -66,7 +96,8 @@ public class WorkspaceInvitationController {
       @PathVariable String invitationId,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.acceptInvitation(invitationId, currentUserId)
+    return workspaceMemberOrchestrator.acceptInvitation(
+        new AcceptWorkspaceInvitationCommand(invitationId, currentUserId))
         .map(WorkspaceMemberResponse::from);
   }
 
@@ -76,7 +107,8 @@ public class WorkspaceInvitationController {
       @PathVariable String invitationId,
       Authentication auth) {
     String currentUserId = auth.getName();
-    return invitationService.rejectInvitation(invitationId, currentUserId);
+    return rejectWorkspaceInvitationUseCase.rejectWorkspaceInvitation(
+        new RejectWorkspaceInvitationCommand(invitationId, currentUserId));
   }
 
 }
