@@ -1,3 +1,1 @@
 rootProject.name = 'core'
-include ':domain'
-project(':domain').projectDir = file('../domain')

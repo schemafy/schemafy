@@ -1,0 +1,198 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.asciidoctor.jvm.convert' version '3.3.2'
+	id 'com.github.spotbugs' version '6.0.26'
+	id 'org.ec4j.editorconfig' version '0.1.0'
+	id 'com.diffplug.spotless' version '6.25.0'
+}
+
+group = 'com.schemafy'
+version = '0.0.1-SNAPSHOT'
+description = 'api module of the backend application'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+	withJavadocJar()
+	withSourcesJar()
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('snippetsDir', file("build/generated-snippets"))
+}
+
+dependencies {
+	implementation project(':core')
+
+	// webflux
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	// redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+
+	// db
+	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+	runtimeOnly "io.r2dbc:r2dbc-h2"
+	runtimeOnly 'org.mariadb:r2dbc-mariadb:1.4.0'
+
+	// security
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+	// test
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// actuator
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
+
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.springframework.restdocs:spring-restdocs-webtestclient'
+
+	testImplementation 'org.mockito:mockito-core:5.2.0'
+	testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
+
+	// validation
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	// lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+	// json
+	implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+
+	// doc
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-api:2.8.13'
+
+	// spotbugs
+	spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
+	spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs += ["-parameters"]
+}
+
+tasks.named('test') {
+	outputs.dir snippetsDir
+	useJUnitPlatform()
+}
+
+tasks.named('asciidoctor') {
+	inputs.dir snippetsDir
+	dependsOn test
+
+	attributes 'snippets': snippetsDir
+}
+
+// Production 빌드: DDL 포함 X
+tasks.named('bootJar') {
+	exclude('ddl/**')
+}
+
+spotbugs {
+	toolVersion = '4.8.6'
+	effort = 'max'
+	reportLevel = 'medium'  // high, medium, low
+	ignoreFailures = false  // CI에서 버그 발견 시 빌드 실패
+	excludeFilter = file("$projectDir/src/main/resources/spotbugs/spotbugs-exclude.xml")
+	omitVisitors = ['FindReturnRef']
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
+	enabled = true
+	classes = classes.filter {
+		!it.path.contains('/lombok/') && !it.path.contains('/grpc/')
+	}
+
+	// Missing classes 경고 무시
+	jvmArgs = [
+		'-Dspotbugs.sf.comment=true',
+		'-Dfindbugs.verbose=true'
+	]
+	maxHeapSize = '1024m'
+
+	reports {
+		html {
+			required = true
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.html')
+			stylesheet = 'fancy-hist.xsl'
+		}
+		xml {
+			required = true
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.xml')
+		}
+		sarif {
+			required = true
+			outputLocation = layout.buildDirectory.file('reports/spotbugs/main.sarif')
+		}
+	}
+}
+
+tasks.named('spotbugsTest') {
+	enabled = false
+}
+
+def formatterConfig = file("${projectDir}/../../../gradle/format/java-formatter.xml")
+
+spotless {
+	java {
+		target 'src/**/*.java'
+		eclipse().configFile(formatterConfig)
+		removeUnusedImports()
+		importOrder(
+				'java',
+				'jakarta',
+				'org.springframework',
+				'org',
+				'com',
+				'',
+				'\\#'
+		)
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+}
+
+tasks.named('check') {
+	dependsOn 'spotlessCheck'
+}
+
+sourceSets {
+	main {
+		resources {
+			srcDir 'src/main/resources'
+			srcDir '../sql-resources'
+		}
+	}
+}
+
+tasks.named('processResources') {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(Jar).configureEach {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
