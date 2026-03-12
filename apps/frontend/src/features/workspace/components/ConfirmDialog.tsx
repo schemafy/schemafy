@@ -1,29 +1,22 @@
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components';
+import { Button, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, } from '@/components';
 
 interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
-  confirmLabel?: string;
+  confirmLabel: string;
   onConfirm: () => void;
 }
 
 export const ConfirmDialog = ({
-  open,
-  onOpenChange,
-  title,
-  description,
-  confirmLabel = 'Confirm',
-  onConfirm,
-}: ConfirmDialogProps) => {
+                                open,
+                                onOpenChange,
+                                title,
+                                description,
+                                confirmLabel,
+                                onConfirm,
+                              }: ConfirmDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
