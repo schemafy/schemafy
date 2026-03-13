@@ -1,15 +1,16 @@
-import { ThemeProvider, queryClient } from '@/lib';
+import { queryClient, ThemeProvider } from '@/lib';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactFlowProvider } from '@xyflow/react';
 import { Layout } from './components';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { TooltipProvider } from '@/components';
 import {
+  CanvasPage,
   LandingPage,
+  OAuthCallbackPage,
   SignInPage,
   SignUpPage,
-  CanvasPage,
-  OAuthCallbackPage,
+  WorkspacePage,
 } from '@/pages';
 import { RequireAuth, useAuthBootstrap } from '@/features/auth';
 
@@ -36,6 +37,14 @@ function App() {
                     element={
                       <RequireAuth>
                         <CanvasPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/workspace"
+                    element={
+                      <RequireAuth>
+                        <WorkspacePage />
                       </RequireAuth>
                     }
                   />
