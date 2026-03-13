@@ -1,8 +1,7 @@
-import { apiClient } from '@/lib/api';
+import { apiClient, type PageResponse } from '@/lib/api';
 import type {
   CreateWorkspaceInvitationRequest,
   CreateWorkspaceRequest,
-  PageResponse,
   UpdateMemberRoleRequest,
   UpdateWorkspaceRequest,
   WorkspaceInvitationCreateResponse,
@@ -25,7 +24,7 @@ export const getWorkspaces = async (
 ): Promise<PageResponse<WorkspaceSummaryResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceSummaryResponse>>(
     '/workspaces',
-    { params: { page, size } },
+    {params: {page, size}},
   );
   return response.data;
 };
@@ -58,7 +57,7 @@ export const getMembers = async (
 ): Promise<PageResponse<WorkspaceMemberResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceMemberResponse>>(
     `/workspaces/${workspaceId}/members`,
-    { params: { page, size } },
+    {params: {page, size}},
   );
   return response.data;
 };
@@ -110,7 +109,7 @@ export const getInvitations = async (
 ): Promise<PageResponse<WorkspaceInvitationResponse>> => {
   const response = await apiClient.get<
     PageResponse<WorkspaceInvitationResponse>
-  >(`/workspaces/${workspaceId}/invitations`, { params: { page, size } });
+  >(`/workspaces/${workspaceId}/invitations`, {params: {page, size}});
   return response.data;
 };
 
@@ -120,7 +119,7 @@ export const getMyInvitations = async (
 ): Promise<PageResponse<WorkspaceInvitationResponse>> => {
   const response = await apiClient.get<
     PageResponse<WorkspaceInvitationResponse>
-  >('/users/me/invitations/workspaces', { params: { page, size } });
+  >('/users/me/invitations/workspaces', {params: {page, size}});
   return response.data;
 };
 
