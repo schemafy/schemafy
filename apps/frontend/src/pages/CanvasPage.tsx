@@ -13,7 +13,7 @@ import {
   Toolbar,
   RelationshipEditor,
   CustomControls,
-  CanvasPreviewLayer,
+  TablePreview,
   CustomSmoothStepEdge,
   CustomConnectionLine,
   FloatingButtons,
@@ -22,7 +22,7 @@ import {
   useCanvasController,
   SelectedSchemaProvider,
 } from '@/features/drawing';
-import { Memo } from '@/features/memo/components';
+import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
 import { ChatOverlay, ChatInput } from '@/components/Collaboration';
 
@@ -136,7 +136,8 @@ const CanvasContent = observer(() => {
               />
               <CustomControls />
               <Background variant={BackgroundVariant.Dots} />
-              <CanvasPreviewLayer activeTool={activeTool} />
+              {activeTool === 'table' && <TablePreview />}
+              {activeTool === 'memo' && <MemoPreview />}
             </ReactFlow>
           </div>
 
