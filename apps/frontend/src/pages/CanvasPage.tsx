@@ -13,7 +13,7 @@ import {
   Toolbar,
   RelationshipEditor,
   CustomControls,
-  TablePreview,
+  CanvasPreviewLayer,
   CustomSmoothStepEdge,
   CustomConnectionLine,
   FloatingButtons,
@@ -22,7 +22,7 @@ import {
   useCanvasController,
   SelectedSchemaProvider,
 } from '@/features/drawing';
-import { Memo, MemoPreview } from '@/features/memo/components';
+import { Memo } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
 import { ChatOverlay, ChatInput } from '@/components/Collaboration';
 
@@ -40,7 +40,6 @@ const CanvasContent = observer(() => {
     state: {
       relationshipConfig,
       activeTool,
-      mousePosition,
       tempMemoPosition,
       chatInputPosition,
       selectedRelationship,
@@ -137,13 +136,7 @@ const CanvasContent = observer(() => {
               />
               <CustomControls />
               <Background variant={BackgroundVariant.Dots} />
-
-              {activeTool === 'table' && (
-                <TablePreview mousePosition={mousePosition} />
-              )}
-              {activeTool === 'memo' && (
-                <MemoPreview mousePosition={mousePosition} />
-              )}
+              <CanvasPreviewLayer activeTool={activeTool} />
             </ReactFlow>
           </div>
 

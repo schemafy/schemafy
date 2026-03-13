@@ -14,3 +14,4 @@ export * from './ConstraintRow';
 export * from './ConstraintSection';
 export * from './TempMemoPreview';
 export * from './EditableRowBase';
+export * from './CanvasPreviewLayer';

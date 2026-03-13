@@ -27,7 +27,7 @@ export const useCanvasController = () => {
       isNonIdentifying: false,
     });
   const [activeTool, setActiveTool] = useState('pointer');
-  const [mousePosition, setMousePosition] = useState<Point | null>(null);
+  const mousePositionRef = useRef<Point | null>(null);
   const [tempMemoPosition, setTempMemoPosition] = useState<{
     flow: Point;
     screen: Point;
@@ -45,7 +45,7 @@ export const useCanvasController = () => {
 
   useCanvasKeyboard({
     chatInputPosition,
-    mousePosition,
+    mousePositionRef,
     activeTool,
     setChatInputPosition,
   });
@@ -117,7 +117,6 @@ export const useCanvasController = () => {
     if (activeTool === 'table') {
       addTable(flowPosition);
       setActiveTool('pointer');
-      setMousePosition(null);
     } else if (activeTool === 'memo') {
       const target = e.currentTarget as HTMLElement;
       const rect = target.getBoundingClientRect();
@@ -129,13 +128,13 @@ export const useCanvasController = () => {
         },
       });
       setActiveTool('pointer');
-      setMousePosition(null);
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const position = { x: e.clientX, y: e.clientY };
-    setMousePosition(position);
+
+    mousePositionRef.current = position;
 
     const now = Date.now();
     if (now - lastCursorSendTime.current >= CURSOR_THROTTLE_MS) {
@@ -152,7 +151,6 @@ export const useCanvasController = () => {
     state: {
       relationshipConfig,
       activeTool,
-      mousePosition,
       tempMemoPosition,
       chatInputPosition,
       selectedRelationship,
