@@ -9,11 +9,7 @@ import {
   WorkspaceProjectsTab,
   WorkspaceSidebar,
 } from '@/features/workspace/components';
-import {
-  useGetWorkspace,
-  useGetWorkspaces,
-  useLeaveWorkspace,
-} from '@/features/workspace/hooks/useWorkspaces';
+import { useGetWorkspace, useGetWorkspaces, useLeaveWorkspace, } from '@/features/workspace/hooks/useWorkspaces';
 
 type TabType = 'projects' | 'members';
 
@@ -26,9 +22,9 @@ export const WorkspacePage = () => {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
 
-  const { data: workspacesData } = useGetWorkspaces();
-  const { data: selectedWorkspace } = useGetWorkspace(selectedWorkspaceId);
-  const { mutate: leaveWorkspace } = useLeaveWorkspace();
+  const {data: workspacesData} = useGetWorkspaces();
+  const {data: selectedWorkspace} = useGetWorkspace(selectedWorkspaceId);
+  const {mutate: leaveWorkspace} = useLeaveWorkspace();
 
   const workspaces = workspacesData?.content ?? [];
   const currentUserRole =
@@ -49,8 +45,8 @@ export const WorkspacePage = () => {
   };
 
   const tabs: { key: TabType; label: string }[] = [
-    { key: 'projects', label: 'Projects' },
-    { key: 'members', label: 'Members' },
+    {key: 'projects', label: 'Projects'},
+    {key: 'members', label: 'Members'},
   ];
 
   return (
@@ -81,7 +77,8 @@ export const WorkspacePage = () => {
                 <h1 className="font-heading-xl text-schemafy-text">
                   {selectedWorkspace?.name}
                 </h1>
-                <span className="px-3 py-1 bg-schemafy-button-bg text-schemafy-button-text font-caption-md rounded-full">
+                <span
+                  className="px-3 py-1 bg-schemafy-button-bg text-schemafy-button-text font-caption-md rounded-full">
                   {currentUserRole}
                 </span>
               </div>
@@ -120,7 +117,7 @@ export const WorkspacePage = () => {
 
             <div className="flex-1">
               {activeTab === 'projects' ? (
-                <WorkspaceProjectsTab />
+                <WorkspaceProjectsTab workspaceId={selectedWorkspaceId}/>
               ) : (
                 <WorkspaceMembersTab
                   workspaceId={selectedWorkspaceId}
@@ -170,12 +167,13 @@ export const WorkspacePage = () => {
 };
 
 const LeaveWarningComponent = ({
-  setIsLeaveConfirmOpen,
-}: {
+                                 setIsLeaveConfirmOpen,
+                               }: {
   setIsLeaveConfirmOpen: (value: boolean) => void;
 }) => {
   return (
-    <div className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
+    <div
+      className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
       <div className="flex flex-col gap-1">
         <span className="font-heading-xs text-schemafy-yellow">
           Leave Workspace
