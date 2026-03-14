@@ -1,5 +1,6 @@
+import { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ReactFlow,
   MiniMap,
@@ -25,6 +26,7 @@ import {
 } from '@/features/drawing';
 import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
+import { useGetProject } from '@/features/project/hooks/useProjects';
 import { ChatOverlay, ChatInput } from '@/components/Collaboration';
 
 const NODE_TYPES = {
@@ -184,6 +186,14 @@ const CanvasContent = observer(() => {
 
 export const CanvasPage = () => {
   const { projectId = '' } = useParams();
+  const navigate = useNavigate();
+  const { isError, isLoading } = useGetProject(projectId);
+
+  useEffect(() => {
+    if (isError) navigate('/not-found', { replace: true });
+  }, [isError, navigate]);
+
+  if (isLoading || isError) return null;
 
   return (
     <SelectedSchemaProvider projectId={projectId}>
