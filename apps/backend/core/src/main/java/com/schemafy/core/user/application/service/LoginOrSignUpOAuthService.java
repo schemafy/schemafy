@@ -14,9 +14,9 @@ import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.FindUserAuthProviderPort;
 import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
+import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.UserAuthProvider;
-import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;

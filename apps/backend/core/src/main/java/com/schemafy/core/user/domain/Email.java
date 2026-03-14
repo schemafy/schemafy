@@ -12,7 +12,7 @@ public record Email(String address) {
     address = normalizeAddress(address);
 
     if (address == null
-        || !address.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+        || !address.matches("^[a-z0-9+_.-]+@[a-z0-9.-]+$")) {
       throw new IllegalArgumentException("Invalid email format");
     }
   }

@@ -1,6 +1,7 @@
 package com.schemafy.core.user.domain;
 
 import java.time.Instant;
+
 public record User(String id, String email, String name, String password, UserStatus status, Instant createdAt,
     Instant updatedAt, Instant deletedAt) {
 
