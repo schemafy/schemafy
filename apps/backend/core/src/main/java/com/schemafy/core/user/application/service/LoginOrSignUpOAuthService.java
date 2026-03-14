@@ -16,6 +16,7 @@ import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.UserAuthProvider;
+import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -36,17 +37,23 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
   @Override
   public Mono<LoginOrSignUpOAuthResult> loginOrSignUpOAuth(
       LoginOrSignUpOAuthCommand command) {
-    return findUserAuthProviderPort.findUserAuthProvider(
-        command.provider(), command.providerUserId())
-        .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
-        .map(user -> new LoginOrSignUpOAuthResult(user, false))
-        .switchIfEmpty(linkOrCreateOAuthUser(command))
+    return Mono.fromSupplier(() -> Email.from(command.email()))
+        .flatMap(email -> {
+          LoginOrSignUpOAuthCommand normalizedCommand = command.withEmail(
+              email.address());
+          return findUserAuthProviderPort.findUserAuthProvider(
+              normalizedCommand.provider(), normalizedCommand.providerUserId())
+              .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
+              .map(user -> new LoginOrSignUpOAuthResult(user, false))
+              .switchIfEmpty(linkOrCreateOAuthUser(normalizedCommand, email));
+        })
         .as(transactionalOperator::transactional);
   }
 
   private Mono<LoginOrSignUpOAuthResult> linkOrCreateOAuthUser(
-      LoginOrSignUpOAuthCommand command) {
-    return findUserByEmailPort.findUserByEmail(command.email())
+      LoginOrSignUpOAuthCommand command,
+      Email email) {
+    return findUserByEmailPort.findUserByEmail(email.address())
         .flatMap(existingUser -> linkExistingUserToOAuthIdempotent(existingUser, command)
             .map(linked -> new LoginOrSignUpOAuthResult(linked, false)))
         .switchIfEmpty(Mono.defer(() -> createOAuthUser(command)));

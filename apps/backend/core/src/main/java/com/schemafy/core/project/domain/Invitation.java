@@ -9,6 +9,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import com.schemafy.core.common.BaseEntity;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
+import com.schemafy.core.user.domain.Email;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -46,7 +47,7 @@ public class Invitation extends BaseEntity {
         InvitationType.WORKSPACE.name(),
         workspaceId,
         null,
-        invitedEmail.toLowerCase(),
+        Email.from(invitedEmail).address(),
         role.name(),
         invitedBy,
         InvitationStatus.PENDING.name(),
@@ -68,7 +69,7 @@ public class Invitation extends BaseEntity {
         InvitationType.PROJECT.name(),
         projectId,
         workspaceId,
-        invitedEmail.toLowerCase(),
+        Email.from(invitedEmail).address(),
         role.name(),
         invitedBy,
         InvitationStatus.PENDING.name(),
@@ -139,7 +140,7 @@ public class Invitation extends BaseEntity {
   }
 
   public void validateInvitedEmailMatches(String email) {
-    if (!this.invitedEmail.equals(email.toLowerCase())) {
+    if (!this.invitedEmail.equals(Email.from(email).address())) {
       throw new DomainException(ProjectErrorCode.INVITATION_EMAIL_MISMATCH);
     }
   }
