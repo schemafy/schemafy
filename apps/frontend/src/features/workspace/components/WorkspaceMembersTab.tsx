@@ -35,6 +35,7 @@ export const WorkspaceMembersTab = ({
     currentRole: string;
   } | null>(null);
   const [selectedRole, setSelectedRole] = useState('');
+  const [removeTarget, setRemoveTarget] = useState<WorkspaceMemberResponse | null>(null);
 
   const { data, isLoading } = useGetMembers(workspaceId, currentPage - 1);
   const { mutate: removeMember } = useRemoveMember(workspaceId);
@@ -145,7 +146,7 @@ export const WorkspaceMembersTab = ({
                     user?.id !== member.userId && (
                       <MemberOptions
                         handleOpenRoleChange={handleOpenRoleChange}
-                        removeMember={removeMember}
+                        onRemoveClick={setRemoveTarget}
                         member={member}
                       />
                     )}
@@ -176,21 +177,28 @@ export const WorkspaceMembersTab = ({
         onSave={handleRoleChange}
         isPending={isUpdatingRole}
       />
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        onOpenChange={(open) => !open && setRemoveTarget(null)}
+        title="Remove Member"
+        description={`Would you like to remove ${removeTarget?.userName}(${removeTarget?.userEmail}) from the workspace?`}
+        confirmLabel="Remove"
+        onConfirm={() => removeTarget && removeMember(removeTarget.userId)}
+      />
     </div>
   );
 };
 
 const MemberOptions = ({
   handleOpenRoleChange,
-  removeMember,
+  onRemoveClick,
   member,
 }: {
   handleOpenRoleChange: (userId: string, currentRole: string) => void;
-  removeMember: (userId: string) => void;
+  onRemoveClick: (member: WorkspaceMemberResponse) => void;
   member: WorkspaceMemberResponse;
 }) => {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
   return (
     <td className="px-6 py-4">
       <DropdownMenu>
@@ -218,21 +226,12 @@ const MemberOptions = ({
             variant="none"
             size="none"
             className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap text-left"
-            onClick={() => setConfirmOpen(true)}
+            onClick={() => onRemoveClick(member)}
           >
             Delete
           </Button>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Remove Member"
-        description={`Would you like to remove ${member.userName}(${member.userEmail}) from the workspace?`}
-        confirmLabel="Remove"
-        onConfirm={() => removeMember(member.userId)}
-      />
     </td>
   );
 };
