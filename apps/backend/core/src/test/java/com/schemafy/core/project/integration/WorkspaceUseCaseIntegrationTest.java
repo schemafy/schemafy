@@ -143,6 +143,23 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("addWorkspaceMember normalizes uppercase email input")
+  void addWorkspaceMember_normalizesUppercaseEmail() {
+    User admin = signUpUser("admin-upper@test.com", "Admin");
+    User target = signUpUser("target-upper@test.com", "Target");
+    Workspace workspace = saveWorkspace("Upper WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+
+    WorkspaceMember addedMember = addWorkspaceMemberUseCase.addWorkspaceMember(
+        new AddWorkspaceMemberCommand(workspace.getId(), "TARGET-UPPER@TEST.COM",
+            WorkspaceRole.MEMBER, admin.id()))
+        .block();
+
+    assertThat(addedMember).isNotNull();
+    assertThat(addedMember.getUserId()).isEqualTo(target.id());
+  }
+
+  @Test
   @DisplayName("updateWorkspaceMemberRole downgrades workspace role but preserves project editor role")
   void updateWorkspaceMemberRole_preservesEditorMembership() {
     User requester = signUpUser("requester-role@test.com", "Requester");

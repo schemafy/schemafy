@@ -59,6 +59,30 @@ class LoginUserServiceTest {
   }
 
   @Test
+  @DisplayName("loginUser: 대문자 이메일 입력도 로그인 성공")
+  void loginUser_success_caseInsensitiveEmail() {
+    LoginUserCommand command = new LoginUserCommand("TEST@EXAMPLE.COM", "raw");
+    User user = new User(
+        "user-1",
+        "test@example.com",
+        "Tester",
+        "encoded",
+        UserStatus.ACTIVE,
+        null,
+        null,
+        null);
+
+    given(findUserByEmailPort.findUserByEmail("test@example.com"))
+        .willReturn(Mono.just(user));
+    given(passwordHashPort.matches("raw", "encoded"))
+        .willReturn(Mono.just(true));
+
+    StepVerifier.create(sut.loginUser(command))
+        .assertNext(found -> assertThat(found.email()).isEqualTo("test@example.com"))
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("loginUser: 이메일이 없으면 NOT_FOUND")
   void loginUser_notFound() {
     LoginUserCommand command = new LoginUserCommand("none@example.com", "raw");
@@ -100,6 +124,16 @@ class LoginUserServiceTest {
           assertThat(((DomainException) error).getErrorCode())
               .isEqualTo(UserErrorCode.LOGIN_FAILED);
         })
+        .verify();
+  }
+
+  @Test
+  @DisplayName("loginUser: 잘못된 이메일 형식은 reactive error로 반환한다")
+  void loginUser_invalidEmailFormat_returnsReactiveError() {
+    LoginUserCommand command = new LoginUserCommand("invalid-email", "raw");
+
+    StepVerifier.create(sut.loginUser(command))
+        .expectError(IllegalArgumentException.class)
         .verify();
   }
 

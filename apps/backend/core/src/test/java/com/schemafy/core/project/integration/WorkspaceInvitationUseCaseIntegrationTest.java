@@ -92,6 +92,27 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
+  @DisplayName("createWorkspaceInvitation treats uppercase duplicate email as the same invitation")
+  void createWorkspaceInvitation_duplicatePending_caseInsensitive() {
+    User admin = signUpUser("admin-wi-case@test.com", "Admin");
+    User invitee = signUpUser("invitee-wi-case@test.com", "Invitee");
+    var workspace = saveWorkspace("Case WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+
+    createWorkspaceInvitationUseCase.createWorkspaceInvitation(
+        new CreateWorkspaceInvitationCommand(workspace.getId(), invitee.email(),
+            WorkspaceRole.MEMBER, admin.id()))
+        .block();
+
+    StepVerifier.create(createWorkspaceInvitationUseCase.createWorkspaceInvitation(
+        new CreateWorkspaceInvitationCommand(workspace.getId(), "INVITEE-WI-CASE@TEST.COM",
+            WorkspaceRole.MEMBER, admin.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_ALREADY_EXISTS))
+        .verify();
+  }
+
+  @Test
   @DisplayName("acceptWorkspaceInvitation restores soft-deleted workspace and project memberships")
   void acceptWorkspaceInvitation_restoresMemberships() {
     User admin = signUpUser("admin-wi-restore@test.com", "Admin");

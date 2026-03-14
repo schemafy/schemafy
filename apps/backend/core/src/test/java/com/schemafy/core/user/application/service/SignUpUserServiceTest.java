@@ -81,10 +81,50 @@ class SignUpUserServiceTest {
   }
 
   @Test
+  @DisplayName("signUpUser: 이메일을 소문자로 정규화해 저장한다")
+  void signUpUser_normalizesUppercaseEmail() {
+    SignUpUserCommand command = new SignUpUserCommand(
+        "TEST@EXAMPLE.COM",
+        "Tester",
+        "password");
+
+    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
+        .willReturn(Mono.just(false));
+    given(ulidGeneratorPort.generate()).willReturn("user-1");
+    given(passwordHashPort.hash("password")).willReturn(Mono.just("encoded"));
+    given(createUserPort.createUser(any(User.class)))
+        .willAnswer(invocation -> Mono.just(invocation.getArgument(0, User.class)));
+
+    StepVerifier.create(sut.signUpUser(command))
+        .assertNext(user -> assertThat(user.email()).isEqualTo("test@example.com"))
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("signUpUser: 이미 존재하는 이메일이면 ALREADY_EXISTS를 반환한다")
   void signUpUser_alreadyExists() {
     SignUpUserCommand command = new SignUpUserCommand(
         "test@example.com",
+        "Tester",
+        "password");
+
+    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
+        .willReturn(Mono.just(true));
+
+    StepVerifier.create(sut.signUpUser(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.ALREADY_EXISTS);
+        })
+        .verify();
+  }
+
+  @Test
+  @DisplayName("signUpUser: 대소문자가 달라도 중복 이메일로 처리한다")
+  void signUpUser_alreadyExists_caseInsensitive() {
+    SignUpUserCommand command = new SignUpUserCommand(
+        "TEST@EXAMPLE.COM",
         "Tester",
         "password");
 

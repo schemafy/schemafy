@@ -98,6 +98,30 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
+  @DisplayName("createProjectInvitation treats uppercase duplicate email as the same invitation")
+  void createProjectInvitation_duplicatePending_caseInsensitive() {
+    User admin = signUpUser("admin-pi-case@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-case@test.com", "Invitee");
+    var workspace = saveWorkspace("Case Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Case Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+
+    createProjectInvitationUseCase.createProjectInvitation(
+        new CreateProjectInvitationCommand(project.getId(), invitee.email(),
+            ProjectRole.EDITOR, admin.id()))
+        .block();
+
+    StepVerifier.create(createProjectInvitationUseCase.createProjectInvitation(
+        new CreateProjectInvitationCommand(project.getId(), "INVITEE-PI-CASE@TEST.COM",
+            ProjectRole.EDITOR, admin.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_ALREADY_EXISTS))
+        .verify();
+  }
+
+  @Test
   @DisplayName("acceptProjectInvitation restores soft-deleted membership and cancels siblings")
   void acceptProjectInvitation_restoresMembership() {
     User admin = signUpUser("admin-pi-restore@test.com", "Admin");
