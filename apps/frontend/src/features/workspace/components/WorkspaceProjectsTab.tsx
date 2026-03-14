@@ -1,5 +1,6 @@
 import { MoreHorizontal, Search } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Pagination, } from '@/components';
 import { useGetProjects, useLeaveProject } from "@/features/project/hooks/useProjects";
 import { ProjectFormDialog } from "@/features/project/components/ProjectFormDialog";
@@ -11,6 +12,7 @@ interface WorkspaceProjectsTabProps {
 }
 
 export const WorkspaceProjectsTab = ({workspaceId}: WorkspaceProjectsTabProps) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -67,7 +69,8 @@ export const WorkspaceProjectsTab = ({workspaceId}: WorkspaceProjectsTabProps) =
           {filtered && filtered.map((project) => (
             <tr
               key={project.id}
-              className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors"
+              className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors cursor-pointer"
+              onClick={() => navigate(`/canvas/${project.id}`)}
             >
               <td className="px-6 py-4 font-body-sm text-schemafy-text">
                 {project.name}
@@ -140,7 +143,7 @@ const ProjectOption = ({
   onEditClick: (project: ProjectSummaryResponse) => void;
   onLeaveClick: (project: ProjectSummaryResponse) => void;
 }) => {
-  return <td className="px-6 py-4">
+  return <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors">

@@ -33,7 +33,7 @@ function App() {
                     element={<OAuthCallbackPage />}
                   />
                   <Route
-                    path="/canvas"
+                    path="/canvas/:projectId"
                     element={
                       <RequireAuth>
                         <CanvasPage />

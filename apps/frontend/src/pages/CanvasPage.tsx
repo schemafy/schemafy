@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite';
+import { useParams } from 'react-router-dom';
 import {
   ReactFlow,
   MiniMap,
@@ -182,7 +183,7 @@ const CanvasContent = observer(() => {
 });
 
 export const CanvasPage = () => {
-  const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
+  const { projectId = '' } = useParams();
 
   return (
     <SelectedSchemaProvider projectId={projectId}>
