@@ -45,15 +45,14 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
               normalizedCommand.provider(), normalizedCommand.providerUserId())
               .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
               .map(user -> new LoginOrSignUpOAuthResult(user, false))
-              .switchIfEmpty(linkOrCreateOAuthUser(normalizedCommand, email));
+              .switchIfEmpty(linkOrCreateOAuthUser(normalizedCommand));
         })
         .as(transactionalOperator::transactional);
   }
 
   private Mono<LoginOrSignUpOAuthResult> linkOrCreateOAuthUser(
-      LoginOrSignUpOAuthCommand command,
-      Email email) {
-    return findUserByEmailPort.findUserByEmail(email.address())
+      LoginOrSignUpOAuthCommand command) {
+    return findUserByEmailPort.findUserByEmail(command.email())
         .flatMap(existingUser -> linkExistingUserToOAuthIdempotent(existingUser, command)
             .map(linked -> new LoginOrSignUpOAuthResult(linked, false)))
         .switchIfEmpty(Mono.defer(() -> createOAuthUser(command)));
