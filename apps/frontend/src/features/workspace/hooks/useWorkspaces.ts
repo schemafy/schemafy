@@ -44,7 +44,7 @@ export const useCreateWorkspace = () => {
   return useMutation({
     mutationFn: (data: CreateWorkspaceRequest) => createWorkspace(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
     },
   });
 };
@@ -55,8 +55,8 @@ export const useUpdateWorkspace = (id: string) => {
   return useMutation({
     mutationFn: (data: UpdateWorkspaceRequest) => updateWorkspace(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({queryKey: workspaceKeys.detail(id)});
+      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
     },
   });
 };
@@ -67,8 +67,8 @@ export const useDeleteWorkspace = () => {
   return useMutation({
     mutationFn: (id: string) => deleteWorkspace(id),
     onSuccess: (_, id) => {
-      queryClient.removeQueries({ queryKey: workspaceKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.removeQueries({queryKey: workspaceKeys.detail(id)});
+      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
     },
   });
 };
@@ -87,7 +87,7 @@ export const useLeaveWorkspace = () => {
   return useMutation({
     mutationFn: (workspaceId: string) => leaveWorkspace(workspaceId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
     },
   });
 };
@@ -110,9 +110,9 @@ export const useUpdateMemberRole = (workspaceId: string) => {
 
   return useMutation({
     mutationFn: ({
-      userId,
-      data,
-    }: {
+                   userId,
+                   data,
+                 }: {
       userId: string;
       data: UpdateMemberRoleRequest;
     }) => updateMemberRole(workspaceId, userId, data),
@@ -146,7 +146,7 @@ export const useCreateInvitation = (workspaceId: string) => {
   });
 };
 
-export const useGetMyInvitations = (page = 0, size = 10) => {
+export const useGetMyWorkspaceInvitations = (page = 0, size = 10) => {
   return useQuery({
     queryKey: workspaceKeys.myInvitations(page, size),
     queryFn: () => getMyInvitations(page, size),
@@ -162,7 +162,7 @@ export const useAcceptInvitation = () => {
       queryClient.invalidateQueries({
         queryKey: workspaceKeys.myInvitationsAll(),
       });
-      queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
+      queryClient.invalidateQueries({queryKey: workspaceKeys.lists()});
     },
   });
 };
