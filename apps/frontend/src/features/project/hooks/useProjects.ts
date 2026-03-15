@@ -163,7 +163,7 @@ export const useGetMyProjectInvitations = (page = 0, size = 10) => {
   });
 };
 
-export const useAcceptInvitation = () => {
+export const useAcceptProjectInvitation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -177,7 +177,7 @@ export const useAcceptInvitation = () => {
   });
 };
 
-export const useRejectInvitation = () => {
+export const useRejectProjectInvitation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({

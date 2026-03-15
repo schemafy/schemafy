@@ -153,7 +153,7 @@ export const useGetMyWorkspaceInvitations = (page = 0, size = 10) => {
   });
 };
 
-export const useAcceptInvitation = () => {
+export const useAcceptWorkspaceInvitation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -167,7 +167,7 @@ export const useAcceptInvitation = () => {
   });
 };
 
-export const useRejectInvitation = () => {
+export const useRejectWorkspaceInvitation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
