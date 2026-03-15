@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SignUpUserService")
+@DisplayName("회원가입 유저 서비스")
 class SignUpUserServiceTest {
 
   @Mock
@@ -56,7 +56,7 @@ class SignUpUserServiceTest {
   }
 
   @Test
-  @DisplayName("signUpUser: 신규 유저를 생성한다")
+  @DisplayName("회원가입 시 신규 유저를 생성한다")
   void signUpUser_success() {
     SignUpUserCommand command = new SignUpUserCommand(
         "test@example.com",
@@ -81,7 +81,7 @@ class SignUpUserServiceTest {
   }
 
   @Test
-  @DisplayName("signUpUser: 이메일을 소문자로 정규화해 저장한다")
+  @DisplayName("회원가입 시 이메일을 소문자로 정규화해 저장한다")
   void signUpUser_normalizesUppercaseEmail() {
     SignUpUserCommand command = new SignUpUserCommand(
         "TEST@EXAMPLE.COM",
@@ -101,7 +101,7 @@ class SignUpUserServiceTest {
   }
 
   @Test
-  @DisplayName("signUpUser: 이미 존재하는 이메일이면 ALREADY_EXISTS를 반환한다")
+  @DisplayName("회원가입 시 이미 존재하는 이메일이면 ALREADY_EXISTS를 반환한다")
   void signUpUser_alreadyExists() {
     SignUpUserCommand command = new SignUpUserCommand(
         "test@example.com",
@@ -121,7 +121,7 @@ class SignUpUserServiceTest {
   }
 
   @Test
-  @DisplayName("signUpUser: 대소문자가 달라도 중복 이메일로 처리한다")
+  @DisplayName("회원가입 시 대소문자가 달라도 중복 이메일로 처리한다")
   void signUpUser_alreadyExists_caseInsensitive() {
     SignUpUserCommand command = new SignUpUserCommand(
         "TEST@EXAMPLE.COM",
@@ -141,7 +141,7 @@ class SignUpUserServiceTest {
   }
 
   @Test
-  @DisplayName("signUpUser: 저장 시 unique 충돌이면 ALREADY_EXISTS로 매핑한다")
+  @DisplayName("회원가입 저장 시 unique 충돌이면 ALREADY_EXISTS로 매핑한다")
   void signUpUser_duplicateKey_mapsAlreadyExists() {
     SignUpUserCommand command = new SignUpUserCommand(
         "test@example.com",

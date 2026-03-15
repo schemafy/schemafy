@@ -31,7 +31,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Workspace invitation usecase integration")
+@DisplayName("워크스페이스 초대 유스케이스 통합 테스트")
 class WorkspaceInvitationUseCaseIntegrationTest
     extends ProjectDomainIntegrationSupport {
 
@@ -51,7 +51,7 @@ class WorkspaceInvitationUseCaseIntegrationTest
   private RejectWorkspaceInvitationUseCase rejectWorkspaceInvitationUseCase;
 
   @Test
-  @DisplayName("createWorkspaceInvitation is visible in target and my invitation lists")
+  @DisplayName("워크스페이스 초대 생성 후 대상 목록과 내 초대 목록에서 모두 조회된다")
   void createWorkspaceInvitation_listsForAdminAndInvitee() {
     User admin = signUpUser("admin-wi@test.com", "Admin");
     User invitee = signUpUser("invitee-wi@test.com", "Invitee");
@@ -78,7 +78,7 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
-  @DisplayName("createWorkspaceInvitation rejects unregistered emails")
+  @DisplayName("워크스페이스 초대 생성 시 미등록 이메일은 거부한다")
   void createWorkspaceInvitation_rejectsUnknownUser() {
     User admin = signUpUser("admin-wi-missing@test.com", "Admin");
     var workspace = saveWorkspace("Missing WS", "Description");
@@ -92,7 +92,7 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
-  @DisplayName("createWorkspaceInvitation treats uppercase duplicate email as the same invitation")
+  @DisplayName("워크스페이스 초대 생성 시 대문자 중복 이메일도 같은 초대로 처리한다")
   void createWorkspaceInvitation_duplicatePending_caseInsensitive() {
     User admin = signUpUser("admin-wi-case@test.com", "Admin");
     User invitee = signUpUser("invitee-wi-case@test.com", "Invitee");
@@ -113,7 +113,7 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
-  @DisplayName("acceptWorkspaceInvitation restores soft-deleted workspace and project memberships")
+  @DisplayName("워크스페이스 초대 수락 시 soft delete 된 워크스페이스와 프로젝트 멤버십을 복원한다")
   void acceptWorkspaceInvitation_restoresMemberships() {
     User admin = signUpUser("admin-wi-restore@test.com", "Admin");
     User invitee = signUpUser("invitee-wi-restore@test.com", "Invitee");
@@ -150,7 +150,7 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
-  @DisplayName("rejectWorkspaceInvitation marks invitation as rejected")
+  @DisplayName("워크스페이스 초대 거절 시 초대 상태를 rejected로 바꾼다")
   void rejectWorkspaceInvitation_marksResolved() {
     User admin = signUpUser("admin-wi-reject@test.com", "Admin");
     User invitee = signUpUser("invitee-wi-reject@test.com", "Invitee");
@@ -169,7 +169,7 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
-  @DisplayName("rejectWorkspaceInvitation rejects type-mismatched invitations")
+  @DisplayName("워크스페이스 초대 거절 시 타입이 다른 초대는 거부한다")
   void rejectWorkspaceInvitation_rejectsTypeMismatch() {
     User admin = signUpUser("admin-wi-type@test.com", "Admin");
     User invitee = signUpUser("invitee-wi-type@test.com", "Invitee");
