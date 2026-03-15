@@ -7,4 +7,9 @@ public record LoginOrSignUpOAuthCommand(
     String name,
     AuthProvider provider,
     String providerUserId) {
+
+  public LoginOrSignUpOAuthCommand withEmail(String email) {
+    return new LoginOrSignUpOAuthCommand(email, name, provider, providerUserId);
+  }
+
 }

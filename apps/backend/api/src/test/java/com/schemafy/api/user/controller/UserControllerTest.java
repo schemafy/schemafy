@@ -120,7 +120,7 @@ class UserControllerTest extends UserHttpTestSupport {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.id").isEqualTo(userBId)
-        .jsonPath("$.email").isEqualTo("userB@example.com");
+        .jsonPath("$.email").isEqualTo("userb@example.com");
   }
 
   @Test
@@ -140,7 +140,7 @@ class UserControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("내 정보 조회에 성공한다")
   void getMyInfoSuccess() {
-    SignUpRequest signUpRequest = new SignUpRequest("test-me@example.com",
+    SignUpRequest signUpRequest = new SignUpRequest("TEST-ME@EXAMPLE.COM",
         "Test User Me", "password");
 
     EntityExchangeResult<byte[]> result = webTestClient.post()
@@ -165,7 +165,7 @@ class UserControllerTest extends UserHttpTestSupport {
             getUserResponseHeaders(),
             getUserResponse()))
         .jsonPath("$.id").isEqualTo(userId)
-        .jsonPath("$.email").isEqualTo(signUpRequest.email());
+        .jsonPath("$.email").isEqualTo("test-me@example.com");
   }
 
   @Test
@@ -246,7 +246,7 @@ class UserControllerTest extends UserHttpTestSupport {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.id").isEqualTo(userBId)
-        .jsonPath("$.email").isEqualTo("userB@example.com");
+        .jsonPath("$.email").isEqualTo("userb@example.com");
 
     // 사용자 B는 다른 API도 정상적으로 사용 가능
     webTestClient

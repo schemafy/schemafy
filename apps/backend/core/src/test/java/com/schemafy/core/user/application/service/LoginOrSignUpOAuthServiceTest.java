@@ -33,7 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("LoginOrSignUpOAuthService")
+@DisplayName("OAuth 로그인 또는 회원가입 서비스")
 class LoginOrSignUpOAuthServiceTest {
 
   @Mock
@@ -67,7 +67,7 @@ class LoginOrSignUpOAuthServiceTest {
   }
 
   @Test
-  @DisplayName("loginOrSignUpOAuth: 신규 OAuth 유저를 생성한다")
+  @DisplayName("OAuth 로그인 또는 회원가입 시 신규 유저를 생성한다")
   void loginOrSignUpOAuth_newUser() {
     LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
         "oauth@example.com",
@@ -105,7 +105,7 @@ class LoginOrSignUpOAuthServiceTest {
   }
 
   @Test
-  @DisplayName("loginOrSignUpOAuth: 같은 이메일의 기존 유저를 자동 연동한다")
+  @DisplayName("OAuth 로그인 또는 회원가입 시 같은 이메일의 기존 유저를 자동 연동한다")
   void loginOrSignUpOAuth_linkExistingUser() {
     LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
         "existing@example.com",
@@ -141,7 +141,44 @@ class LoginOrSignUpOAuthServiceTest {
   }
 
   @Test
-  @DisplayName("loginOrSignUpOAuth: 자동 연동 중 provider 중복이면 재조회로 복구한다")
+  @DisplayName("OAuth 로그인 또는 회원가입 시 대문자 이메일도 기존 유저에 자동 연동한다")
+  void loginOrSignUpOAuth_linkExistingUser_caseInsensitiveEmail() {
+    LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
+        "EXISTING@EXAMPLE.COM",
+        "Existing User",
+        AuthProvider.GITHUB,
+        "github-case");
+
+    User existing = new User(
+        "user-1",
+        "existing@example.com",
+        "Existing User",
+        "encoded",
+        UserStatus.ACTIVE,
+        null,
+        null,
+        null);
+
+    given(findUserAuthProviderPort.findUserAuthProvider(AuthProvider.GITHUB, "github-case"))
+        .willReturn(Mono.<UserAuthProvider>empty());
+    given(findUserByEmailPort.findUserByEmail("existing@example.com"))
+        .willReturn(Mono.just(existing));
+    given(ulidGeneratorPort.generate()).willReturn("provider-case");
+    given(createUserAuthProviderPort.createUserAuthProvider(any(UserAuthProvider.class)))
+        .willAnswer(
+            invocation -> Mono.just(invocation.getArgument(0, UserAuthProvider.class)));
+
+    StepVerifier.create(sut.loginOrSignUpOAuth(command))
+        .assertNext(result -> {
+          assertThat(result.newUser()).isFalse();
+          assertThat(result.user().id()).isEqualTo("user-1");
+          assertThat(result.user().email()).isEqualTo("existing@example.com");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("OAuth 자동 연동 중 provider 중복이면 재조회로 복구한다")
   void loginOrSignUpOAuth_duplicateProviderDuringAutoLink_resolvesByReread() {
     LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
         "existing@example.com",
@@ -188,7 +225,7 @@ class LoginOrSignUpOAuthServiceTest {
   }
 
   @Test
-  @DisplayName("loginOrSignUpOAuth: OAuth 유저 생성 중 이메일 중복이면 ALREADY_EXISTS")
+  @DisplayName("OAuth 유저 생성 중 이메일이 중복이면 ALREADY_EXISTS를 반환한다")
   void loginOrSignUpOAuth_duplicateEmailDuringCreate_mapsAlreadyExists() {
     LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
         "oauth@example.com",

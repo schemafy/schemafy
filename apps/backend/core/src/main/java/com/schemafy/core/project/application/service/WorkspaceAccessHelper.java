@@ -14,6 +14,7 @@ import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
+import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
@@ -29,8 +30,8 @@ class WorkspaceAccessHelper {
   private final ProjectPort projectPort;
   private final FindUserByEmailPort findUserByEmailPort;
 
-  Mono<User> findUserByEmailOrThrow(String email) {
-    return findUserByEmailPort.findUserByEmail(email.toLowerCase())
+  Mono<User> findUserByEmailOrThrow(Email email) {
+    return findUserByEmailPort.findUserByEmail(email.address())
         .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)));
   }
 
