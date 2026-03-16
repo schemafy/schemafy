@@ -1,4 +1,10 @@
-import { makeObservable, observable, computed, action, runInAction } from 'mobx';
+import {
+  makeObservable,
+  observable,
+  computed,
+  action,
+  runInAction,
+} from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
