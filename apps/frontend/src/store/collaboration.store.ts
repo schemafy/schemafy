@@ -1,10 +1,4 @@
-import {
-  makeObservable,
-  observable,
-  computed,
-  action,
-  runInAction,
-} from 'mobx';
+import { action, computed, makeObservable, observable, runInAction, } from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
@@ -22,12 +16,17 @@ import { apiClient } from '@/lib/api/client';
 const WEBSOCKET_URL =
   import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
 
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY_MS = 3000;
+const MAX_RECONNECT_DELAY_MS = 60000;
+
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
   sessionId: string | null = null;
   private ws: WebSocket | null = null;
   private reconnectTimeoutId: number | null = null;
+  private reconnectAttempts = 0;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
   private erdMutatedListeners: Set<(message: ReceiveErdMutated) => void> =
     new Set();
@@ -50,7 +49,13 @@ export class CollaborationStore {
   }
 
   connect(projectId: string, isReconnect = false) {
-    if (!isReconnect && this.projectId === projectId && this.ws) return;
+    if (
+      !isReconnect &&
+      this.projectId === projectId &&
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING)
+    ) return;
 
     if (this.projectId && this.projectId !== projectId) {
       this.disconnect();
@@ -63,6 +68,7 @@ export class CollaborationStore {
       this.ws.onmessage = null;
       this.ws.onclose = null;
       this.ws.onerror = null;
+      this.ws.close();
       this.ws = null;
     }
 
@@ -71,6 +77,7 @@ export class CollaborationStore {
 
     this.ws.onopen = () => {
       console.log('WebSocket connected');
+      this.reconnectAttempts = 0;
     };
 
     this.ws.onmessage = (event) => {
@@ -94,12 +101,23 @@ export class CollaborationStore {
     this.ws.onclose = () => {
       if (!this.projectId || this.reconnectTimeoutId) return;
 
+      if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('[WebSocket] Max reconnect attempts reached');
+        return;
+      }
+
+      const delay = Math.min(
+        BASE_RECONNECT_DELAY_MS * Math.pow(2, this.reconnectAttempts),
+        MAX_RECONNECT_DELAY_MS,
+      );
+      this.reconnectAttempts++;
+
       this.reconnectTimeoutId = window.setTimeout(() => {
         if (!this.projectId) return;
 
         this.reconnectTimeoutId = null;
         this.connect(this.projectId, true);
-      }, 3000);
+      }, delay);
     };
 
     this.ws.onerror = (event) => {
@@ -122,6 +140,7 @@ export class CollaborationStore {
       this.ws = null;
     }
 
+    this.reconnectAttempts = 0;
     delete apiClient.defaults.headers.common['X-Session-Id'];
     runInAction(() => {
       this.projectId = null;
@@ -181,7 +200,7 @@ export class CollaborationStore {
 
     const message: PostCursor = {
       type: 'CURSOR',
-      cursor: { x, y },
+      cursor: {x, y},
     };
 
     this.send(message);
