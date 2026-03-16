@@ -10,19 +10,18 @@ import type {
   ReceiveLeave,
   WebSocketMessage,
 } from '@/features/collaboration/api';
-import type { UserInfo, WorkerMessage, WorkerResponse } from '@/worker/types';
 import { authStore } from './auth.store';
 import { apiClient } from '@/lib/api/client';
 
-const SHARED_WORKER_ENABLE = typeof SharedWorker !== 'undefined';
+const WEBSOCKET_URL =
+  import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
 
 export class CollaborationStore {
-  private worker: SharedWorker | Worker | null = null;
-  private port: MessagePort | Worker | null = null;
-
   cursors: Map<string, CursorPosition> = new Map();
   projectId: string | null = null;
   sessionId: string | null = null;
+  private ws: WebSocket | null = null;
+  private reconnectTimeoutId: number | null = null;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
   private erdMutatedListeners: Set<(message: ReceiveErdMutated) => void> =
     new Set();
@@ -31,89 +30,12 @@ export class CollaborationStore {
     makeAutoObservable(this);
   }
 
-  private reconnectTimeoutId: number | null = null;
-
   get currentUser() {
     return authStore.user;
   }
 
-  private heartbeatIntervalId: number | null = null;
-
-  private setupWorkerListeners() {
-    if (!this.port) return;
-
-    this.startHeartbeat();
-
-    this.port.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      if (!this.port) return;
-      const { type } = event.data;
-
-      if (type === 'WS_MESSAGE') {
-        const message = event.data.payload;
-
-        this.handleMessage(message);
-      } else if (type === 'WS_OPEN') {
-        console.log('WebSocket connected via Worker');
-      } else if (type === 'WS_CLOSE') {
-        if (!this.projectId || this.reconnectTimeoutId) return;
-
-        this.reconnectTimeoutId = window.setTimeout(() => {
-          if (!this.projectId) return;
-
-          this.reconnectTimeoutId = null;
-          this.connect(this.projectId, true);
-        }, 3000);
-      } else if (type === 'WS_ERROR') {
-        console.error('WebSocket error from Worker:', event.data.error);
-      } else if (type === 'SESSION_READY') {
-        const { sessionId } = event.data as Extract<
-          typeof event.data,
-          { type: 'SESSION_READY' }
-        >;
-        runInAction(() => {
-          this.sessionId = sessionId;
-        });
-        apiClient.defaults.headers.common['X-Session-Id'] = sessionId;
-      } else if (type === 'INITIAL_STATE') {
-        const { cursors } = event.data;
-
-        runInAction(() => {
-          cursors.forEach((cursor) => {
-            this.cursors.set(cursor.userId, cursor);
-          });
-        });
-      }
-    };
-
-    if (this.port instanceof MessagePort) {
-      this.port.start();
-    }
-  }
-
-  private startHeartbeat() {
-    if (this.heartbeatIntervalId) {
-      clearInterval(this.heartbeatIntervalId);
-    }
-
-    this.heartbeatIntervalId = window.setInterval(() => {
-      if (this.port && this.projectId) {
-        this.port.postMessage({
-          type: 'PING',
-          projectId: this.projectId,
-        } as WorkerMessage);
-      }
-    }, 30000);
-  }
-
   connect(projectId: string, isReconnect = false) {
-    if (
-      !isReconnect &&
-      this.projectId === projectId &&
-      this.worker &&
-      this.port
-    ) {
-      return;
-    }
+    if (!isReconnect && this.projectId === projectId && this.ws) return;
 
     if (this.projectId && this.projectId !== projectId) {
       this.disconnect();
@@ -121,90 +43,65 @@ export class CollaborationStore {
 
     this.projectId = projectId;
 
-    try {
-      if (!this.worker) {
-        const userId = this.currentUser?.id ?? 'anonymous';
+    const wsUrl = `${WEBSOCKET_URL}?projectId=${projectId}`;
+    this.ws = new WebSocket(wsUrl);
 
-        if (SHARED_WORKER_ENABLE) {
-          const worker = new SharedWorker(
-            new URL('../worker/collaboration.worker.ts', import.meta.url),
-            { type: 'module', name: `collaboration-worker-${userId}` },
-          );
+    this.ws.onopen = () => {
+      console.log('WebSocket connected');
+    };
 
-          this.worker = worker;
-          this.port = worker.port;
-        } else {
-          console.warn('SharedWorker not supported, falling back to Worker');
+    this.ws.onmessage = (event) => {
+      try {
+        const payload: WebSocketMessage = JSON.parse(event.data);
 
-          const worker = new Worker(
-            new URL('../worker/collaboration.worker.ts', import.meta.url),
-            { type: 'module', name: `collaboration-worker-${userId}` },
-          );
-
-          this.worker = worker;
-          this.port = worker;
+        if (payload.type === 'SESSION_READY') {
+          runInAction(() => {
+            this.sessionId = payload.sessionId;
+          });
+          apiClient.defaults.headers.common['X-Session-Id'] = payload.sessionId;
+          return;
         }
 
-        this.setupWorkerListeners();
+        this.handleMessage(payload);
+      } catch (error) {
+        console.error('[WebSocket] Parse error', error);
       }
+    };
 
-      if (!this.currentUser) {
-        console.error('user info is empty');
-        return;
-      }
+    this.ws.onclose = () => {
+      if (!this.projectId || this.reconnectTimeoutId) return;
 
-      const userInfo: UserInfo = {
-        userId: this.currentUser.id,
-        userName: this.currentUser.name,
-      };
+      this.reconnectTimeoutId = window.setTimeout(() => {
+        if (!this.projectId) return;
 
-      const message: WorkerMessage = {
-        type: 'CONNECT',
-        projectId,
-        userInfo,
-      };
+        this.reconnectTimeoutId = null;
+        this.connect(this.projectId, true);
+      }, 3000);
+    };
 
-      if (!this.port) {
-        console.error('Worker port is not ready');
-        return;
-      }
-
-      this.port.postMessage(message);
-    } catch (error) {
-      console.error('Failed to initialize SharedWorker:', error);
-    }
+    this.ws.onerror = (event) => {
+      console.error('[WebSocket] error:', event);
+    };
   }
 
   disconnect() {
-    if (this.worker && this.port && this.projectId) {
-      if (this.reconnectTimeoutId) {
-        clearTimeout(this.reconnectTimeoutId);
-
-        this.reconnectTimeoutId = null;
-      }
-
-      if (this.heartbeatIntervalId) {
-        clearInterval(this.heartbeatIntervalId);
-        this.heartbeatIntervalId = null;
-      }
-
-      this.port.postMessage({
-        type: 'DISCONNECT',
-        projectId: this.projectId,
-      } as WorkerMessage);
-
-      this.worker = null;
-      this.port = null;
-
-      delete apiClient.defaults.headers.common['X-Session-Id'];
-      runInAction(() => {
-        this.projectId = null;
-        this.cursors.clear();
-        this.sessionId = null;
-      });
-    } else {
-      console.error('Worker or port is not ready');
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
     }
+
+    if (this.ws) {
+      this.ws.onclose = null;
+      this.ws.close();
+      this.ws = null;
+    }
+
+    delete apiClient.defaults.headers.common['X-Session-Id'];
+    runInAction(() => {
+      this.projectId = null;
+      this.cursors.clear();
+      this.sessionId = null;
+    });
   }
 
   onChatMessage(listener: (message: ChatMessage) => void) {
@@ -260,7 +157,7 @@ export class CollaborationStore {
 
     const message: PostCursor = {
       type: 'CURSOR',
-      cursor: { x, y },
+      cursor: {x, y},
     };
 
     this.send(message, (error) => {
@@ -272,22 +169,18 @@ export class CollaborationStore {
     message: PostChat | PostCursor,
     onError?: (error: unknown) => void,
   ) {
-    if (!this.port || !this.projectId) {
-      console.error('Worker is not ready');
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error('WebSocket is not ready');
       return;
     }
 
     try {
-      this.port.postMessage({
-        type: 'SEND_MESSAGE',
-        projectId: this.projectId,
-        payload: message,
-      } as WorkerMessage);
+      this.ws.send(JSON.stringify(message));
     } catch (error) {
       if (onError) {
         onError(error);
       } else {
-        console.error('Failed to send message via SharedWorker:', error);
+        console.error('Failed to send message:', error);
       }
     }
   }
