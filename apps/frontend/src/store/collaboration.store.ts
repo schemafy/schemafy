@@ -1,4 +1,4 @@
-import { makeAutoObservable, runInAction } from 'mobx';
+import { makeObservable, observable, computed, action, runInAction } from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
@@ -27,7 +27,16 @@ export class CollaborationStore {
     new Set();
 
   constructor() {
-    makeAutoObservable(this);
+    makeObservable(this, {
+      cursors: observable,
+      projectId: observable,
+      sessionId: observable,
+      currentUser: computed,
+      connect: action,
+      disconnect: action,
+      sendMessage: action,
+      sendCursor: action,
+    });
   }
 
   get currentUser() {
@@ -42,6 +51,14 @@ export class CollaborationStore {
     }
 
     this.projectId = projectId;
+
+    if (this.ws) {
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+      this.ws = null;
+    }
 
     const wsUrl = `${WEBSOCKET_URL}?projectId=${projectId}`;
     this.ws = new WebSocket(wsUrl);
@@ -91,7 +108,10 @@ export class CollaborationStore {
     }
 
     if (this.ws) {
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
       this.ws.onclose = null;
+      this.ws.onerror = null;
       this.ws.close();
       this.ws = null;
     }
@@ -129,11 +149,9 @@ export class CollaborationStore {
     this.send(message, (error) => {
       console.error('Failed to send chat message:', error);
       setTimeout(() => {
-        try {
-          this.send(message);
-        } catch (retryError) {
+        this.send(message, (retryError) => {
           console.error('Retry failed:', retryError);
-        }
+        });
       }, 500);
     });
   }
@@ -157,12 +175,10 @@ export class CollaborationStore {
 
     const message: PostCursor = {
       type: 'CURSOR',
-      cursor: {x, y},
+      cursor: { x, y },
     };
 
-    this.send(message, (error) => {
-      console.error('Failed to send cursor:', error);
-    });
+    this.send(message);
   }
 
   private send(
@@ -170,7 +186,9 @@ export class CollaborationStore {
     onError?: (error: unknown) => void,
   ) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket is not ready');
+      if (onError) {
+        onError(new Error('WebSocket is not ready'));
+      }
       return;
     }
 
