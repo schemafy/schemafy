@@ -20,7 +20,7 @@ export const WorkspaceProjectsTab = ({workspaceId}: WorkspaceProjectsTabProps) =
   const [editTarget, setEditTarget] = useState<ProjectSummaryResponse | null>(null);
   const [leaveTarget, setLeaveTarget] = useState<ProjectSummaryResponse | null>(null);
 
-  const {data: projects} = useGetProjects(workspaceId);
+  const {data: projects} = useGetProjects(workspaceId, currentPage - 1);
 
   const {mutate: leaveProject} = useLeaveProject();
 
