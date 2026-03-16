@@ -1,4 +1,10 @@
-import { action, computed, makeObservable, observable, runInAction, } from 'mobx';
+import {
+  action,
+  computed,
+  makeObservable,
+  observable,
+  runInAction,
+} from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
@@ -55,7 +61,8 @@ export class CollaborationStore {
       this.ws &&
       (this.ws.readyState === WebSocket.OPEN ||
         this.ws.readyState === WebSocket.CONNECTING)
-    ) return;
+    )
+      return;
 
     if (this.projectId && this.projectId !== projectId) {
       this.disconnect();
@@ -200,7 +207,7 @@ export class CollaborationStore {
 
     const message: PostCursor = {
       type: 'CURSOR',
-      cursor: {x, y},
+      cursor: { x, y },
     };
 
     this.send(message);
