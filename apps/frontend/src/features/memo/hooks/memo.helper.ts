@@ -1,8 +1,5 @@
 import { type Node } from '@xyflow/react';
-import type {
-  Memo as ApiMemo,
-  MemoPosition,
-} from '@/features/memo/api/types';
+import type { Memo as ApiMemo, MemoPosition } from '@/features/memo/api/types';
 import { z } from 'zod';
 
 export interface MemoData extends Record<string, unknown> {
@@ -15,9 +12,7 @@ const PositionSchema = z.object({
   y: z.number(),
 });
 
-export const safeParsePosition = (
-  positions: MemoPosition,
-): MemoPosition => {
+export const safeParsePosition = (positions: MemoPosition): MemoPosition => {
   if (!positions) return { x: 0, y: 0 };
   const result = PositionSchema.safeParse(positions);
   if (result.success) {

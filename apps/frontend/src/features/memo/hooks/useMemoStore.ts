@@ -8,10 +8,7 @@ import {
 import { applyNodeChanges, type Node, type NodeChange } from '@xyflow/react';
 import * as memoApi from '../api/api';
 import type { Memo } from '../api/types';
-import {
-  type MemoData,
-  transformApiMemoToNode,
-} from './memo.helper';
+import { type MemoData, transformApiMemoToNode } from './memo.helper';
 import { useSelectedSchema } from '@/features';
 
 export const useMemoStore = () => {
@@ -51,16 +48,19 @@ export const useMemoStore = () => {
     } catch {}
   };
 
-  const updateMemo = useCallback(async (id: string, positions: Memo['positions']) => {
-    try {
-      const updated = await memoApi.updateMemo(id, { positions });
-      setStoredMemos((prev) =>
-        prev.map((m) =>
-          m.id === id ? { ...updated, comments: m.comments } : m,
-        ),
-      );
-    } catch {}
-  }, []);
+  const updateMemo = useCallback(
+    async (id: string, positions: Memo['positions']) => {
+      try {
+        const updated = await memoApi.updateMemo(id, { positions });
+        setStoredMemos((prev) =>
+          prev.map((m) =>
+            m.id === id ? { ...updated, comments: m.comments } : m,
+          ),
+        );
+      } catch {}
+    },
+    [],
+  );
 
   const deleteMemo = useCallback(async (id: string) => {
     try {

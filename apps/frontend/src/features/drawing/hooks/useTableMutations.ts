@@ -20,8 +20,7 @@ export const useCreateTableWithExtra = (schemaId: string) => {
     mutationFn: (data: {
       request: CreateTableRequest;
       extra: NonNullable<CreateTableRequest['extra']>;
-    }) =>
-      createTable({ ...data.request, extra: data.extra }),
+    }) => createTable({ ...data.request, extra: data.extra }),
     onSuccess: (result) => {
       updateAffectedTables(result.affectedTableIds);
     },

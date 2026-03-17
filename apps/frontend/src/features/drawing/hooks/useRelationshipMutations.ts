@@ -27,8 +27,7 @@ export const useCreateRelationshipWithExtra = (schemaId: string) => {
     mutationFn: (data: {
       request: CreateRelationshipRequest;
       extra: NonNullable<CreateRelationshipRequest['extra']>;
-    }) =>
-      createRelationship({ ...data.request, extra: data.extra }),
+    }) => createRelationship({ ...data.request, extra: data.extra }),
     onSuccess: (result) => {
       updateAffectedTables(result.affectedTableIds);
     },
