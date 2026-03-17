@@ -1,5 +1,7 @@
 package com.schemafy.api.erd.controller.dto.response;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipResult;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
@@ -12,7 +14,7 @@ public record RelationshipResponse(
     String name,
     RelationshipKind kind,
     Cardinality cardinality,
-    String extra) {
+    JsonNode extra) {
 
   public static RelationshipResponse from(CreateRelationshipResult result) {
     return new RelationshipResponse(
@@ -22,7 +24,7 @@ public record RelationshipResponse(
         result.name(),
         result.kind(),
         result.cardinality(),
-        result.extra());
+        JsonCodec.parseOptionalNode(result.extra()));
   }
 
   public static RelationshipResponse from(Relationship relationship) {
@@ -33,7 +35,7 @@ public record RelationshipResponse(
         relationship.name(),
         relationship.kind(),
         relationship.cardinality(),
-        relationship.extra());
+        JsonCodec.parseOptionalNode(relationship.extra()));
   }
 
 }

@@ -28,6 +28,7 @@ import com.schemafy.api.erd.controller.dto.request.CreateTableRequest;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaCommand;
@@ -73,7 +74,7 @@ public class TableController {
         request.name(),
         request.charset(),
         request.collation(),
-        request.extra());
+        JsonCodec.canonicalizeOptional(request.extra()));
     return createTableUseCase.createTable(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
@@ -148,10 +149,10 @@ public class TableController {
   @PatchMapping("/tables/{tableId}/extra")
   public Mono<MutationResponse<Void>> changeTableExtra(
       @PathVariable String tableId,
-      @RequestBody ChangeTableExtraRequest request) {
+      @Valid @RequestBody ChangeTableExtraRequest request) {
     ChangeTableExtraCommand command = new ChangeTableExtraCommand(
         tableId,
-        request.extra());
+        JsonCodec.canonicalizeOptional(request.extra()));
     return changeTableExtraUseCase.changeTableExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))

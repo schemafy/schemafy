@@ -29,6 +29,7 @@ import com.schemafy.api.erd.controller.dto.request.CreateRelationshipRequest;
 import com.schemafy.api.erd.controller.dto.response.AddRelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
@@ -89,7 +90,7 @@ public class RelationshipController {
         request.pkTableId(),
         request.kind(),
         request.cardinality(),
-        request.extra());
+        JsonCodec.canonicalizeOptional(request.extra()));
     return createRelationshipUseCase.createRelationship(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
@@ -164,10 +165,10 @@ public class RelationshipController {
   @PatchMapping("/relationships/{relationshipId}/extra")
   public Mono<MutationResponse<Void>> changeRelationshipExtra(
       @PathVariable String relationshipId,
-      @RequestBody ChangeRelationshipExtraRequest request) {
+      @Valid @RequestBody ChangeRelationshipExtraRequest request) {
     ChangeRelationshipExtraCommand command = new ChangeRelationshipExtraCommand(
         relationshipId,
-        request.extra());
+        JsonCodec.canonicalizeOptional(request.extra()));
     return changeRelationshipExtraUseCase.changeRelationshipExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))

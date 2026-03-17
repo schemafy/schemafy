@@ -2,6 +2,7 @@ package com.schemafy.api.erd.service.memo;
 
 import org.springframework.stereotype.Component;
 
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
@@ -30,7 +31,7 @@ public class MemoApiCommandMapper {
       AuthenticatedUser user) {
     return new CreateMemoCommand(
         request.schemaId(),
-        request.positions(),
+        JsonCodec.canonicalize(request.positions()),
         request.body(),
         user.userId());
   }
@@ -49,7 +50,7 @@ public class MemoApiCommandMapper {
       AuthenticatedUser user) {
     return new UpdateMemoPositionCommand(
         memoId,
-        request.positions(),
+        JsonCodec.canonicalize(request.positions()),
         user.userId());
   }
 

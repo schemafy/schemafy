@@ -1,7 +1,9 @@
 package com.schemafy.api.erd.controller.dto.request;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.schemafy.api.common.annotation.JsonObject;
 
 public record ChangeRelationshipExtraRequest(
-    @JsonDeserialize(using = JsonValueToStringDeserializer.class) String extra) {
+    @JsonObject(nullable = true)
+    JsonNode extra) {
 }

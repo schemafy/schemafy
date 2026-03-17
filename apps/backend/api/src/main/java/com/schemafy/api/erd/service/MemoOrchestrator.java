@@ -19,6 +19,7 @@ import com.schemafy.api.erd.controller.dto.response.MemoResponse;
 import com.schemafy.api.erd.service.memo.MemoApiCommandMapper;
 import com.schemafy.api.erd.service.memo.MemoApiResponseMapper;
 import com.schemafy.api.user.controller.dto.response.UserSummaryResponse;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsUseCase;
@@ -124,7 +125,7 @@ public class MemoOrchestrator {
               .id(detail.memo().id())
               .schemaId(detail.memo().schemaId())
               .author(getUserFromMap(userMap, detail.memo().authorId()))
-              .positions(detail.memo().positions())
+              .positions(JsonCodec.parseNode(detail.memo().positions()))
               .createdAt(detail.memo().createdAt())
               .updatedAt(detail.memo().updatedAt())
               .comments(comments)

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.schemafy.api.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.api.erd.controller.dto.response.MemoResponse;
 import com.schemafy.api.user.controller.dto.response.UserSummaryResponse;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.MemoComment;
 
@@ -16,7 +17,7 @@ public class MemoApiResponseMapper {
         memo.id(),
         memo.schemaId(),
         author,
-        memo.positions(),
+        JsonCodec.parseNode(memo.positions()),
         memo.createdAt(),
         memo.updatedAt());
   }

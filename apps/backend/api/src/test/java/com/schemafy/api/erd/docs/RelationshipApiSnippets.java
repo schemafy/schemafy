@@ -32,8 +32,8 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
           .description("관계 종류 (IDENTIFYING, NON_IDENTIFYING)"),
       fieldWithPath(prefix + "cardinality").type(JsonFieldType.STRING)
           .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY)"),
-      fieldWithPath(prefix + "extra").type(JsonFieldType.STRING)
-          .description("프론트엔드 메타데이터(JSON 문자열, 예: position, color)").optional()
+      subsectionWithPath(prefix + "extra")
+          .description("프론트엔드 메타데이터(JSON 객체, 예: position, color)").optional()
     };
   }
 
@@ -69,8 +69,8 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
             .description("관계 종류 (IDENTIFYING, NON_IDENTIFYING)"),
         fieldWithPath("cardinality").type(JsonFieldType.STRING)
             .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY)"),
-        fieldWithPath("extra").type(JsonFieldType.VARIES)
-            .description("추가 정보 (JSON)").optional());
+        fieldWithPath("extra").type(JsonFieldType.OBJECT)
+            .description("추가 정보 (JSON 객체)").optional());
   }
 
   public static Snippet createRelationshipResponseHeaders() {
@@ -208,7 +208,7 @@ public class RelationshipApiSnippets extends RestDocsSnippets {
   public static Snippet changeRelationshipExtraRequest() {
     return requestFields(
         subsectionWithPath("extra")
-            .description("변경할 프론트엔드 메타데이터 (예: position, color 등 임의 JSON 구조, 문자열도 허용)")
+            .description("변경할 프론트엔드 메타데이터 (예: position, color 등 임의 JSON 객체)")
             .optional());
   }
 

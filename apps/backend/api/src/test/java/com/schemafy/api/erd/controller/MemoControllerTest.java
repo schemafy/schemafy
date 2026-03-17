@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.common.constant.ApiPath;
+import com.schemafy.api.common.exception.CommonErrorCode;
 import com.schemafy.api.common.security.WithMockCustomUser;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
@@ -34,6 +35,7 @@ import reactor.core.publisher.Mono;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
@@ -75,7 +77,7 @@ class MemoControllerTest {
   void createMemo() throws Exception {
     CreateMemoRequest request = new CreateMemoRequest(
         "06D6VZBWHSDJBBG0H7D156YZ98",
-        "{}",
+        objectMapper.readTree("{\"x\":0,\"y\":0}"),
         "메모 내용");
 
     MemoDetailResponse response = objectMapper.treeToValue(
@@ -87,7 +89,7 @@ class MemoControllerTest {
                     "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                     "name": "testuser"
                 },
-                "positions": "{}",
+                "positions": {"x":0,"y":0},
                 "createdAt": "2025-11-23T10:00:00Z",
                 "updatedAt": "2025-11-23T10:00:00Z",
                 "comments": [
@@ -128,7 +130,11 @@ class MemoControllerTest {
             requestFields(
                 fieldWithPath("schemaId").description("스키마 ID"),
                 fieldWithPath("positions")
-                    .description("메모 위치 (JSON 문자열)"),
+                    .description("메모 위치 객체"),
+                fieldWithPath("positions.x")
+                    .description("메모 X 좌표"),
+                fieldWithPath("positions.y")
+                    .description("메모 Y 좌표"),
                 fieldWithPath("body").description("메모 내용")),
             responseHeaders(
                 headerWithName("Content-Type")
@@ -145,7 +151,11 @@ class MemoControllerTest {
                 fieldWithPath("author.name")
                     .description("작성자 이름"),
                 fieldWithPath("positions")
-                    .description("메모 위치"),
+                    .description("메모 위치 객체"),
+                fieldWithPath("positions.x")
+                    .description("메모 X 좌표"),
+                fieldWithPath("positions.y")
+                    .description("메모 Y 좌표"),
                 fieldWithPath("createdAt")
                     .description("생성 일시"),
                 fieldWithPath("updatedAt")
@@ -185,7 +195,7 @@ class MemoControllerTest {
                     "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                     "name": "testuser"
                 },
-                "positions": "{}",
+                "positions": {"x":0,"y":0},
                 "createdAt": "2025-11-23T10:00:00Z",
                 "updatedAt": "2025-11-23T10:00:00Z",
                 "comments": [
@@ -236,7 +246,11 @@ class MemoControllerTest {
                 fieldWithPath("author.name")
                     .description("작성자 이름"),
                 fieldWithPath("positions")
-                    .description("메모 위치"),
+                    .description("메모 위치 객체"),
+                fieldWithPath("positions.x")
+                    .description("메모 X 좌표"),
+                fieldWithPath("positions.y")
+                    .description("메모 Y 좌표"),
                 fieldWithPath("createdAt")
                     .description("생성 일시"),
                 fieldWithPath("updatedAt")
@@ -276,7 +290,7 @@ class MemoControllerTest {
                     "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                     "name": "testuser"
                 },
-                "positions": "{}",
+                "positions": {"x":0,"y":0},
                 "createdAt": "2025-11-23T10:00:00Z",
                 "updatedAt": "2025-11-23T10:00:00Z"
             }
@@ -299,7 +313,8 @@ class MemoControllerTest {
   @DisplayName("메모 수정 API 문서화")
   void updateMemo() throws Exception {
     String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
-    UpdateMemoRequest request = new UpdateMemoRequest("{}");
+    UpdateMemoRequest request = new UpdateMemoRequest(
+        objectMapper.readTree("{\"x\":0,\"y\":0}"));
 
     MemoResponse response = objectMapper.treeToValue(
         objectMapper.readTree("""
@@ -310,7 +325,7 @@ class MemoControllerTest {
                     "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
                     "name": "testuser"
                 },
-                "positions": "{}",
+                "positions": {"x":0,"y":0},
                 "createdAt": "2025-11-23T10:00:00Z",
                 "updatedAt": "2025-11-23T10:00:00Z"
             }
@@ -341,7 +356,11 @@ class MemoControllerTest {
                         "응답 포맷 (application/json)")),
             requestFields(
                 fieldWithPath("positions")
-                    .description("변경할 위치 정보")),
+                    .description("변경할 위치 정보 객체"),
+                fieldWithPath("positions.x")
+                    .description("메모 X 좌표"),
+                fieldWithPath("positions.y")
+                    .description("메모 Y 좌표")),
             responseHeaders(
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
@@ -357,11 +376,122 @@ class MemoControllerTest {
                 fieldWithPath("author.name")
                     .description("작성자 이름"),
                 fieldWithPath("positions")
-                    .description("메모 위치"),
+                    .description("메모 위치 객체"),
+                fieldWithPath("positions.x")
+                    .description("메모 X 좌표"),
+                fieldWithPath("positions.y")
+                    .description("메모 Y 좌표"),
                 fieldWithPath("createdAt")
                     .description("생성 일시"),
                 fieldWithPath("updatedAt")
                     .description("수정 일시"))));
+  }
+
+  @Test
+  @DisplayName("메모 생성 API는 positions 객체를 허용한다")
+  void createMemoAcceptsObjectValue() throws Exception {
+    given(memoOrchestrator.createMemo(any(CreateMemoRequest.class), any()))
+        .willReturn(Mono.just(MemoDetailResponse.builder()
+            .id("06D6W1GAHD51T5NJPK29Q6BCR8")
+            .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
+            .positions(objectMapper.readTree("{\"x\":10,\"y\":20}"))
+            .comments(java.util.List.of())
+            .build()));
+
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/memos")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+              "positions": {"x":10,"y":20},
+              "body": "메모 내용"
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk();
+
+    then(memoOrchestrator).should().createMemo(
+        eq(new CreateMemoRequest(
+            "06D6VZBWHSDJBBG0H7D156YZ98",
+            objectMapper.readTree("{\"x\":10,\"y\":20}"),
+            "메모 내용")),
+        any());
+  }
+
+  @Test
+  @DisplayName("메모 생성 API는 문자열 positions를 거절한다")
+  void createMemoRejectsInvalidPositionsJsonString() {
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/memos")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "schemaId": "06D6VZBWHSDJBBG0H7D156YZ98",
+              "positions": "{invalid",
+              "body": "메모 내용"
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
+
+    then(memoOrchestrator).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("메모 수정 API는 positions 객체를 허용한다")
+  void updateMemoAcceptsObjectValue() throws Exception {
+    String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+
+    given(memoOrchestrator.updateMemo(eq(memoId), any(UpdateMemoRequest.class), any()))
+        .willReturn(Mono.just(new MemoResponse(
+            memoId,
+            "06D6VZBWHSDJBBG0H7D156YZ98",
+            null,
+            objectMapper.readTree("{\"x\":30,\"y\":40}"),
+            null,
+            null)));
+
+    webTestClient.put()
+        .uri(API_BASE_PATH + "/memos/{memoId}", memoId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"positions":{"x":30,"y":40}}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk();
+
+    then(memoOrchestrator).should().updateMemo(
+        eq(memoId),
+        eq(new UpdateMemoRequest(objectMapper.readTree("{\"x\":30,\"y\":40}"))),
+        any());
+  }
+
+  @Test
+  @DisplayName("메모 수정 API는 문자열 positions를 거절한다")
+  void updateMemoRejectsInvalidPositionsJsonString() {
+    String memoId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+
+    webTestClient.put()
+        .uri(API_BASE_PATH + "/memos/{memoId}", memoId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"positions":"{invalid"}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
+
+    then(memoOrchestrator).shouldHaveNoInteractions();
   }
 
   @Test

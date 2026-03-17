@@ -1,5 +1,7 @@
 package com.schemafy.api.erd.controller.dto.response;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.table.application.port.in.CreateTableResult;
 import com.schemafy.core.erd.table.domain.Table;
 
@@ -9,7 +11,7 @@ public record TableResponse(
     String name,
     String charset,
     String collation,
-    String extra) {
+    JsonNode extra) {
 
   public static TableResponse from(CreateTableResult result, String schemaId) {
     return new TableResponse(
@@ -18,7 +20,7 @@ public record TableResponse(
         result.name(),
         result.charset(),
         result.collation(),
-        result.extra());
+        JsonCodec.parseOptionalNode(result.extra()));
   }
 
   public static TableResponse from(Table table) {
@@ -28,7 +30,7 @@ public record TableResponse(
         table.name(),
         table.charset(),
         table.collation(),
-        table.extra());
+        JsonCodec.parseOptionalNode(table.extra()));
   }
 
 }
