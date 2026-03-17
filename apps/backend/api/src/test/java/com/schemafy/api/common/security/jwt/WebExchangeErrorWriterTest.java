@@ -66,8 +66,8 @@ class WebExchangeErrorWriterTest {
 
     assertThatThrownBy(() -> writer.writeErrorResponse(exchange,
         CommonErrorCode.INTERNAL_SERVER_ERROR, "boom"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("invalid problem detail");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("invalid problem detail");
   }
 
 }
