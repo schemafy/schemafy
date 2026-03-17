@@ -52,7 +52,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     const currentExtra = parseRelationshipExtra(snapshot.relationship.extra);
     changeRelationshipExtraMutation.mutate({
       relationshipId,
-      data: { extra: JSON.stringify(updater(currentExtra)) },
+      data: { extra: updater(currentExtra) },
     });
   };
 
@@ -118,7 +118,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         kind,
         cardinality: typeConfig.cardinality,
       },
-      extra: JSON.stringify(extra),
+      extra,
     });
   };
 
