@@ -10,6 +10,7 @@ import com.schemafy.api.collaboration.dto.CursorPosition;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.dto.event.CursorEvent;
 import com.schemafy.api.collaboration.dto.event.ErdMutatedEvent;
+import com.schemafy.core.common.json.JsonCodec;
 
 import reactor.test.StepVerifier;
 
@@ -19,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CollaborationPayloadSerializerTest {
 
   private final CollaborationPayloadSerializer serializer = new CollaborationPayloadSerializer(
-      new ObjectMapper().findAndRegisterModules());
+      new JsonCodec(new ObjectMapper().findAndRegisterModules()));
 
   @Test
   @DisplayName("JOIN 브로드캐스트 직렬화 시 sessionId를 포함한다")
@@ -77,6 +78,18 @@ class CollaborationPayloadSerializerTest {
           assertThat(json).doesNotContain("sessionId");
         })
         .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("null 이벤트 직렬화 시 일관된 런타임 예외를 반환한다")
+  void serialize_nullEvent_returnsWrappedRuntimeException() {
+    StepVerifier.create(serializer.serialize(null))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(RuntimeException.class);
+          assertThat(error.getMessage()).contains("failed to serialize JSON");
+          assertThat(error.getCause()).isInstanceOf(IllegalArgumentException.class);
+        })
+        .verify();
   }
 
 }

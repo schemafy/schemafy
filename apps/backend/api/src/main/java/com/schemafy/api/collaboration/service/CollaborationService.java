@@ -8,8 +8,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.collaboration.dto.BroadcastMessage;
 import com.schemafy.api.collaboration.dto.CollaborationEventType;
 import com.schemafy.api.collaboration.dto.CursorPosition;
@@ -21,6 +19,7 @@ import com.schemafy.api.collaboration.service.handler.InboundMessageHandler;
 import com.schemafy.api.collaboration.service.handler.MessageContext;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.json.JsonCodec;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -35,7 +34,7 @@ public class CollaborationService {
   private final SessionRegistry sessionRegistry;
   private final CollaborationEventPublisher eventPublisher;
   private final CollaborationPayloadSerializer payloadSerializer;
-  private final ObjectMapper objectMapper;
+  private final JsonCodec jsonCodec;
   private final Map<CollaborationEventType, InboundMessageHandler> handlers;
   private final Map<String, CursorPosition> cursorDedupeCache = new ConcurrentHashMap<>();
 
@@ -43,12 +42,12 @@ public class CollaborationService {
       SessionRegistry sessionRegistry,
       CollaborationEventPublisher eventPublisher,
       CollaborationPayloadSerializer payloadSerializer,
-      ObjectMapper objectMapper,
+      JsonCodec jsonCodec,
       List<InboundMessageHandler> handlerList) {
     this.sessionRegistry = sessionRegistry;
     this.eventPublisher = eventPublisher;
     this.payloadSerializer = payloadSerializer;
-    this.objectMapper = objectMapper;
+    this.jsonCodec = jsonCodec;
     this.handlers = handlerList.stream()
         .collect(Collectors.toMap(
             InboundMessageHandler::supportedType,
@@ -186,10 +185,9 @@ public class CollaborationService {
   }
 
   private <T> Mono<T> deserializeFromJson(String json, Class<T> clazz) {
-    return Mono.fromCallable(() -> objectMapper.readValue(json, clazz))
-        .onErrorMap(JsonProcessingException.class,
-            e -> new RuntimeException(
-                "[CollaborationService] failed to deserialize JSON",
+    return Mono.fromCallable(() -> jsonCodec.parse(json, clazz))
+        .onErrorMap(IllegalArgumentException.class,
+            e -> new RuntimeException("[CollaborationService] failed to deserialize JSON",
                 e));
   }
 
