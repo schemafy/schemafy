@@ -10,7 +10,6 @@ import * as memoApi from '../api/api';
 import type { Memo } from '../api/types';
 import {
   type MemoData,
-  stringifyPosition,
   transformApiMemoToNode,
 } from './memo.helper';
 import { useSelectedSchema } from '@/features';
@@ -45,14 +44,14 @@ export const useMemoStore = () => {
     try {
       const memo = await memoApi.createMemo({
         schemaId: selectedSchemaId,
-        positions: stringifyPosition(position),
+        positions: { x: position.x, y: position.y },
         body: content,
       });
       setStoredMemos((prev) => [memo, ...prev]);
     } catch {}
   };
 
-  const updateMemo = useCallback(async (id: string, positions: string) => {
+  const updateMemo = useCallback(async (id: string, positions: Memo['positions']) => {
     try {
       const updated = await memoApi.updateMemo(id, { positions });
       setStoredMemos((prev) =>
@@ -78,7 +77,7 @@ export const useMemoStore = () => {
 
       changes.forEach((change) => {
         if (change.type === 'position' && !change.dragging && change.position) {
-          updateMemo(change.id, stringifyPosition(change.position));
+          updateMemo(change.id, { x: change.position.x, y: change.position.y });
         }
 
         if (change.type === 'remove') {
