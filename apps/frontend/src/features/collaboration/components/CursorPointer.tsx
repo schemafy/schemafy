@@ -4,7 +4,7 @@ interface CursorPointerProps {
   color: string;
 }
 
-export const CursorPointer = ({color}: CursorPointerProps) => (
+export const CursorPointer = ({ color }: CursorPointerProps) => (
   <svg
     width={CURSOR_POINTER_SIZE.width}
     height={CURSOR_POINTER_SIZE.height}

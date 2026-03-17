@@ -3,16 +3,20 @@ import { observer } from 'mobx-react-lite';
 import { useReactFlow } from '@xyflow/react';
 import { collaborationStore } from '@/store/collaboration.store';
 import { authStore } from '@/store/auth.store';
-import { CURSOR_FADE_DURATION_MS, CURSOR_IDLE_MS, getCursorColor } from '../utils';
+import {
+  CURSOR_FADE_DURATION_MS,
+  CURSOR_IDLE_MS,
+  getCursorColor,
+} from '../utils';
 import { CursorLabel, CursorPointer } from '.';
 
 interface RemoteCursorProps {
   userId: string;
 }
 
-const RemoteCursor = observer(({userId}: RemoteCursorProps) => {
+const RemoteCursor = observer(({ userId }: RemoteCursorProps) => {
   const cursor = collaborationStore.cursors.get(userId);
-  const {flowToScreenPosition} = useReactFlow();
+  const { flowToScreenPosition } = useReactFlow();
   const [isIdle, setIsIdle] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const color = getCursorColor(userId);
@@ -37,7 +41,7 @@ const RemoteCursor = observer(({userId}: RemoteCursorProps) => {
 
   if (!cursor) return null;
 
-  const screenPos = flowToScreenPosition({x: cursor.x, y: cursor.y});
+  const screenPos = flowToScreenPosition({ x: cursor.x, y: cursor.y });
 
   return (
     <div
@@ -50,8 +54,8 @@ const RemoteCursor = observer(({userId}: RemoteCursorProps) => {
         transition: `opacity ${CURSOR_FADE_DURATION_MS}ms ease`,
       }}
     >
-      <CursorPointer color={color}/>
-      <CursorLabel name={cursor.userName} color={color}/>
+      <CursorPointer color={color} />
+      <CursorLabel name={cursor.userName} color={color} />
     </div>
   );
 });
@@ -65,7 +69,7 @@ export const RemoteCursors = observer(() => {
   return (
     <>
       {cursorIds.map((userId) => (
-        <RemoteCursor key={userId} userId={userId}/>
+        <RemoteCursor key={userId} userId={userId} />
       ))}
     </>
   );
