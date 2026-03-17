@@ -52,6 +52,7 @@ public class MemoOrchestrator {
   private final GetUsersByIdsUseCase getUsersByIdsUseCase;
   private final MemoApiCommandMapper commandMapper;
   private final MemoApiResponseMapper responseMapper;
+  private final JsonCodec jsonCodec;
 
   public Mono<MemoDetailResponse> createMemo(CreateMemoRequest request,
       AuthenticatedUser user) {
@@ -125,7 +126,7 @@ public class MemoOrchestrator {
               .id(detail.memo().id())
               .schemaId(detail.memo().schemaId())
               .author(getUserFromMap(userMap, detail.memo().authorId()))
-              .positions(JsonCodec.parseNode(detail.memo().positions()))
+              .positions(jsonCodec.parseNode(detail.memo().positions()))
               .createdAt(detail.memo().createdAt())
               .updatedAt(detail.memo().updatedAt())
               .comments(comments)

@@ -18,6 +18,7 @@ import com.schemafy.api.erd.service.memo.MemoApiCommandMapper;
 import com.schemafy.api.erd.service.memo.MemoApiResponseMapper;
 import com.schemafy.api.erd.service.memo.MemoDeletePermissionPolicy;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsUseCase;
@@ -76,6 +77,7 @@ class MemoOrchestratorTest {
 
   @BeforeEach
   void setUp() {
+    JsonCodec jsonCodec = new JsonCodec(objectMapper);
     sut = new MemoOrchestrator(
         createMemoUseCase,
         getMemoUseCase,
@@ -85,8 +87,10 @@ class MemoOrchestratorTest {
         getMemoCommentsUseCase,
         updateMemoCommentUseCase,
         getUsersByIdsUseCase,
-        new MemoApiCommandMapper(new MemoDeletePermissionPolicy()),
-        new MemoApiResponseMapper());
+        new MemoApiCommandMapper(new MemoDeletePermissionPolicy(),
+            jsonCodec),
+        new MemoApiResponseMapper(jsonCodec),
+        jsonCodec);
   }
 
   @Test

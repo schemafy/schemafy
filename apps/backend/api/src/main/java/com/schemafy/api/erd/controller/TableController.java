@@ -62,6 +62,7 @@ public class TableController {
   private final ChangeTableMetaUseCase changeTableMetaUseCase;
   private final ChangeTableExtraUseCase changeTableExtraUseCase;
   private final DeleteTableUseCase deleteTableUseCase;
+  private final JsonCodec jsonCodec;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
@@ -74,12 +75,13 @@ public class TableController {
         request.name(),
         request.charset(),
         request.collation(),
-        JsonCodec.canonicalizeOptional(request.extra()));
+        jsonCodec.canonicalizeOptional(request.extra()));
     return createTableUseCase.createTable(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
-            TableResponse.from(result.result(), request.schemaId()),
+            TableResponse.from(result.result(), request.schemaId(),
+                jsonCodec),
             result.affectedTableIds()));
   }
 
@@ -89,7 +91,7 @@ public class TableController {
       @PathVariable String tableId) {
     GetTableQuery query = new GetTableQuery(tableId);
     return getTableUseCase.getTable(query)
-        .map(TableResponse::from);
+        .map(table -> TableResponse.from(table, jsonCodec));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -112,7 +114,7 @@ public class TableController {
       @PathVariable String schemaId) {
     GetTablesBySchemaIdQuery query = new GetTablesBySchemaIdQuery(schemaId);
     return getTablesBySchemaIdUseCase.getTablesBySchemaId(query)
-        .map(TableResponse::from)
+        .map(table -> TableResponse.from(table, jsonCodec))
         .collectList();
   }
 
@@ -152,7 +154,7 @@ public class TableController {
       @Valid @RequestBody ChangeTableExtraRequest request) {
     ChangeTableExtraCommand command = new ChangeTableExtraCommand(
         tableId,
-        JsonCodec.canonicalizeOptional(request.extra()));
+        jsonCodec.canonicalizeOptional(request.extra()));
     return changeTableExtraUseCase.changeTableExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))

@@ -10,12 +10,13 @@ public record DbVendorDetailResponse(
     String version,
     JsonNode datatypeMappings) {
 
-  public static DbVendorDetailResponse from(DbVendor vendor) {
+  public static DbVendorDetailResponse from(DbVendor vendor,
+      JsonCodec jsonCodec) {
     return new DbVendorDetailResponse(
         vendor.displayName(),
         vendor.name(),
         vendor.version(),
-        JsonCodec.parseNode(vendor.datatypeMappings()));
+        jsonCodec.parseNode(vendor.datatypeMappings()));
   }
 
 }

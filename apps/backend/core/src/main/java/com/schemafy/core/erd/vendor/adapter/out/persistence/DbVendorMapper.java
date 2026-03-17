@@ -9,12 +9,18 @@ import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
 @Component
 class DbVendorMapper {
 
+  private final JsonCodec jsonCodec;
+
+  DbVendorMapper(JsonCodec jsonCodec) {
+    this.jsonCodec = jsonCodec;
+  }
+
   DbVendor toDomain(DbVendorEntity entity) {
     return new DbVendor(
         entity.getDisplayName(),
         entity.getName(),
         entity.getVersion(),
-        JsonCodec.normalizePersistedJson(entity.getDatatypeMappings()));
+        jsonCodec.normalizePersistedJson(entity.getDatatypeMappings()));
   }
 
   DbVendorSummary toSummary(DbVendorEntity entity) {

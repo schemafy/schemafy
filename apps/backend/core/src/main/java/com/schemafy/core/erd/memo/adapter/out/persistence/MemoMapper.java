@@ -8,6 +8,12 @@ import com.schemafy.core.erd.memo.domain.Memo;
 @Component
 class MemoMapper {
 
+  private final JsonCodec jsonCodec;
+
+  MemoMapper(JsonCodec jsonCodec) {
+    this.jsonCodec = jsonCodec;
+  }
+
   MemoEntity toEntity(Memo memo) {
     return new MemoEntity(
         memo.id(),
@@ -24,7 +30,7 @@ class MemoMapper {
         entity.getId(),
         entity.getSchemaId(),
         entity.getAuthorId(),
-        JsonCodec.normalizePersistedJson(entity.getPositions()),
+        jsonCodec.normalizePersistedJson(entity.getPositions()),
         entity.getCreatedAt(),
         entity.getUpdatedAt(),
         entity.getDeletedAt());

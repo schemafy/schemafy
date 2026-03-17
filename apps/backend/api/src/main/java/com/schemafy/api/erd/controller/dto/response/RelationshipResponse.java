@@ -16,7 +16,8 @@ public record RelationshipResponse(
     Cardinality cardinality,
     JsonNode extra) {
 
-  public static RelationshipResponse from(CreateRelationshipResult result) {
+  public static RelationshipResponse from(CreateRelationshipResult result,
+      JsonCodec jsonCodec) {
     return new RelationshipResponse(
         result.relationshipId(),
         result.fkTableId(),
@@ -24,10 +25,11 @@ public record RelationshipResponse(
         result.name(),
         result.kind(),
         result.cardinality(),
-        JsonCodec.parseOptionalNode(result.extra()));
+        jsonCodec.parseOptionalNode(result.extra()));
   }
 
-  public static RelationshipResponse from(Relationship relationship) {
+  public static RelationshipResponse from(Relationship relationship,
+      JsonCodec jsonCodec) {
     return new RelationshipResponse(
         relationship.id(),
         relationship.fkTableId(),
@@ -35,7 +37,7 @@ public record RelationshipResponse(
         relationship.name(),
         relationship.kind(),
         relationship.cardinality(),
-        JsonCodec.parseOptionalNode(relationship.extra()));
+        jsonCodec.parseOptionalNode(relationship.extra()));
   }
 
 }

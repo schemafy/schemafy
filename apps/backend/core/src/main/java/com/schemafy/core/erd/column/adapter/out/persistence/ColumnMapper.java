@@ -2,17 +2,23 @@ package com.schemafy.core.erd.column.adapter.out.persistence;
 
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.springframework.stereotype.Component;
-
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 
 @Component
 class ColumnMapper {
+
+  private final JsonCodec jsonCodec;
+
+  ColumnMapper(JsonCodec jsonCodec) {
+    this.jsonCodec = jsonCodec;
+  }
 
   ColumnEntity toEntity(Column column) {
     return new ColumnEntity(
@@ -59,7 +65,7 @@ class ColumnMapper {
     if (typeArguments.values() != null) {
       node.putPOJO("values", typeArguments.values());
     }
-    return JsonCodec.canonicalize(node);
+    return jsonCodec.canonicalize(node);
   }
 
   private ColumnTypeArguments toTypeArguments(String rawJson) {
@@ -67,7 +73,7 @@ class ColumnMapper {
       return null;
     }
 
-    JsonNode node = parseStoredJson(rawJson);
+    JsonNode node = jsonCodec.parsePersistedNode(rawJson);
     Integer length = intOrNull(node.get("length"));
     Integer precision = intOrNull(node.get("precision"));
     Integer scale = intOrNull(node.get("scale"));
@@ -86,23 +92,16 @@ class ColumnMapper {
     return node.intValue();
   }
 
-  private static List<String> valuesOrNull(JsonNode node) {
+  private List<String> valuesOrNull(JsonNode node) {
     if (node == null || node.isNull()) {
       return null;
     }
     if (!node.isArray()) {
       throw new IllegalArgumentException("JSON field must be an array");
     }
-    String[] values = JsonCodec.parse(JsonCodec.canonicalize(node), String[].class);
+    String[] values = jsonCodec.parse(jsonCodec.canonicalize(node),
+        String[].class);
     return List.of(values);
-  }
-
-  private static JsonNode parseStoredJson(String rawJson) {
-    JsonNode node = JsonCodec.parseNode(rawJson);
-    if (node.isTextual()) {
-      return JsonCodec.parseNode(node.textValue());
-    }
-    return node;
   }
 
 }

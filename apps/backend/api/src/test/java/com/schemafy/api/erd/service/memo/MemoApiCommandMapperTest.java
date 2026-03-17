@@ -11,6 +11,7 @@ import com.schemafy.api.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoRequest;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.project.domain.ProjectRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +23,8 @@ class MemoApiCommandMapperTest {
       .findAndRegisterModules();
 
   private final MemoApiCommandMapper sut = new MemoApiCommandMapper(
-      new MemoDeletePermissionPolicy());
+      new MemoDeletePermissionPolicy(),
+      new JsonCodec(objectMapper));
 
   @Test
   @DisplayName("createMemo: request/user를 도메인 커맨드로 매핑한다")

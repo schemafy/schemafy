@@ -12,10 +12,10 @@ import jakarta.validation.Payload;
 @Documented
 @Constraint(validatedBy = JsonObjectValidator.class)
 @Target({
-    ElementType.FIELD,
-    ElementType.PARAMETER,
-    ElementType.RECORD_COMPONENT,
-    ElementType.ANNOTATION_TYPE
+  ElementType.FIELD,
+  ElementType.PARAMETER,
+  ElementType.RECORD_COMPONENT,
+  ElementType.ANNOTATION_TYPE
 })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface JsonObject {

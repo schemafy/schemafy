@@ -8,8 +8,6 @@ import com.schemafy.api.common.annotation.JsonObject;
 
 public record CreateMemoRequest(
     @NotBlank(message = "schemaId는 필수입니다.") String schemaId,
-    @NotNull(message = "positions는 필수입니다.")
-    @JsonObject
-    JsonNode positions,
+    @NotNull(message = "positions는 필수입니다.") @JsonObject JsonNode positions,
     @NotBlank(message = "body는 필수입니다.") String body) {
 }

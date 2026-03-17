@@ -2,12 +2,12 @@ package com.schemafy.api.erd.service.memo;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoRequest;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommand;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentCommand;
 import com.schemafy.core.erd.memo.application.port.in.DeleteMemoCommand;
@@ -25,13 +25,14 @@ import lombok.RequiredArgsConstructor;
 public class MemoApiCommandMapper {
 
   private final MemoDeletePermissionPolicy permissionPolicy;
+  private final JsonCodec jsonCodec;
 
   public CreateMemoCommand toCreateMemoCommand(
       CreateMemoRequest request,
       AuthenticatedUser user) {
     return new CreateMemoCommand(
         request.schemaId(),
-        JsonCodec.canonicalize(request.positions()),
+        jsonCodec.canonicalize(request.positions()),
         request.body(),
         user.userId());
   }
@@ -50,7 +51,7 @@ public class MemoApiCommandMapper {
       AuthenticatedUser user) {
     return new UpdateMemoPositionCommand(
         memoId,
-        JsonCodec.canonicalize(request.positions()),
+        jsonCodec.canonicalize(request.positions()),
         user.userId());
   }
 

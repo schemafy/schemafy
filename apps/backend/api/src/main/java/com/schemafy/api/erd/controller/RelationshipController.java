@@ -78,6 +78,7 @@ public class RelationshipController {
   private final RemoveRelationshipColumnUseCase removeRelationshipColumnUseCase;
   private final GetRelationshipColumnUseCase getRelationshipColumnUseCase;
   private final ChangeRelationshipColumnPositionUseCase changeRelationshipColumnPositionUseCase;
+  private final JsonCodec jsonCodec;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
@@ -90,12 +91,12 @@ public class RelationshipController {
         request.pkTableId(),
         request.kind(),
         request.cardinality(),
-        JsonCodec.canonicalizeOptional(request.extra()));
+        jsonCodec.canonicalizeOptional(request.extra()));
     return createRelationshipUseCase.createRelationship(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
-            RelationshipResponse.from(result.result()),
+            RelationshipResponse.from(result.result(), jsonCodec),
             result.affectedTableIds()));
   }
 
@@ -105,7 +106,8 @@ public class RelationshipController {
       @PathVariable String relationshipId) {
     GetRelationshipQuery query = new GetRelationshipQuery(relationshipId);
     return getRelationshipUseCase.getRelationship(query)
-        .map(RelationshipResponse::from);
+        .map(relationship -> RelationshipResponse.from(relationship,
+            jsonCodec));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -115,7 +117,8 @@ public class RelationshipController {
     GetRelationshipsByTableIdQuery query = new GetRelationshipsByTableIdQuery(tableId);
     return getRelationshipsByTableIdUseCase.getRelationshipsByTableId(query)
         .map(relationships -> relationships.stream()
-            .map(RelationshipResponse::from)
+            .map(relationship -> RelationshipResponse.from(relationship,
+                jsonCodec))
             .toList());
   }
 
@@ -168,7 +171,7 @@ public class RelationshipController {
       @Valid @RequestBody ChangeRelationshipExtraRequest request) {
     ChangeRelationshipExtraCommand command = new ChangeRelationshipExtraCommand(
         relationshipId,
-        JsonCodec.canonicalizeOptional(request.extra()));
+        jsonCodec.canonicalizeOptional(request.extra()));
     return changeRelationshipExtraUseCase.changeRelationshipExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))

@@ -10,6 +10,5 @@ public record CreateTableRequest(
     @NotBlank(message = "name은 필수입니다.") String name,
     String charset,
     String collation,
-    @JsonObject(nullable = true)
-    JsonNode extra) {
+    @JsonObject(nullable = true) JsonNode extra) {
 }

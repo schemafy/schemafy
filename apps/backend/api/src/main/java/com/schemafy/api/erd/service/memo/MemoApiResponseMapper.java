@@ -9,15 +9,20 @@ import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.MemoComment;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class MemoApiResponseMapper {
+
+  private final JsonCodec jsonCodec;
 
   public MemoResponse toMemoResponse(Memo memo, UserSummaryResponse author) {
     return new MemoResponse(
         memo.id(),
         memo.schemaId(),
         author,
-        JsonCodec.parseNode(memo.positions()),
+        jsonCodec.parseNode(memo.positions()),
         memo.createdAt(),
         memo.updatedAt());
   }

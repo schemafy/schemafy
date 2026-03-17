@@ -13,24 +13,25 @@ public record TableResponse(
     String collation,
     JsonNode extra) {
 
-  public static TableResponse from(CreateTableResult result, String schemaId) {
+  public static TableResponse from(CreateTableResult result, String schemaId,
+      JsonCodec jsonCodec) {
     return new TableResponse(
         result.tableId(),
         schemaId,
         result.name(),
         result.charset(),
         result.collation(),
-        JsonCodec.parseOptionalNode(result.extra()));
+        jsonCodec.parseOptionalNode(result.extra()));
   }
 
-  public static TableResponse from(Table table) {
+  public static TableResponse from(Table table, JsonCodec jsonCodec) {
     return new TableResponse(
         table.id(),
         table.schemaId(),
         table.name(),
         table.charset(),
         table.collation(),
-        JsonCodec.parseOptionalNode(table.extra()));
+        jsonCodec.parseOptionalNode(table.extra()));
   }
 
 }

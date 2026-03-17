@@ -13,6 +13,5 @@ public record CreateRelationshipRequest(
     @NotBlank(message = "pkTableId는 필수입니다.") String pkTableId,
     @NotNull(message = "kind는 필수입니다.") RelationshipKind kind,
     @NotNull(message = "cardinality는 필수입니다.") Cardinality cardinality,
-    @JsonObject(nullable = true)
-    JsonNode extra) {
+    @JsonObject(nullable = true) JsonNode extra) {
 }

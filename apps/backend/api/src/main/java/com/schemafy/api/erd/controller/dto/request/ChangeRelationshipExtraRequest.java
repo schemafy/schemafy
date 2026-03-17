@@ -4,6 +4,5 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.common.annotation.JsonObject;
 
 public record ChangeRelationshipExtraRequest(
-    @JsonObject(nullable = true)
-    JsonNode extra) {
+    @JsonObject(nullable = true) JsonNode extra) {
 }

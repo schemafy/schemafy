@@ -10,6 +10,12 @@ import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 @Component
 class RelationshipMapper {
 
+  private final JsonCodec jsonCodec;
+
+  RelationshipMapper(JsonCodec jsonCodec) {
+    this.jsonCodec = jsonCodec;
+  }
+
   RelationshipEntity toEntity(Relationship relationship) {
     return new RelationshipEntity(
         relationship.id(),
@@ -29,7 +35,7 @@ class RelationshipMapper {
         entity.getName(),
         RelationshipKind.valueOf(entity.getKind()),
         Cardinality.valueOf(entity.getCardinality()),
-        JsonCodec.normalizePersistedJson(entity.getExtra()));
+        jsonCodec.normalizePersistedJson(entity.getExtra()));
   }
 
 }

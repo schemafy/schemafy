@@ -8,6 +8,12 @@ import com.schemafy.core.erd.table.domain.Table;
 @Component
 class TableMapper {
 
+  private final JsonCodec jsonCodec;
+
+  TableMapper(JsonCodec jsonCodec) {
+    this.jsonCodec = jsonCodec;
+  }
+
   TableEntity toEntity(Table table) {
     return TableEntity.builder()
         .id(table.id())
@@ -26,7 +32,7 @@ class TableMapper {
         entity.getName(),
         entity.getCharset(),
         entity.getCollation(),
-        JsonCodec.normalizePersistedJson(entity.getExtra()));
+        jsonCodec.normalizePersistedJson(entity.getExtra()));
   }
 
 }
