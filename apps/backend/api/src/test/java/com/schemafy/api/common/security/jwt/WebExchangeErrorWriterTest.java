@@ -16,6 +16,7 @@ import com.schemafy.core.common.json.JsonCodec;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -46,6 +47,27 @@ class WebExchangeErrorWriterTest {
 
     assertThat(exchange.getResponse().getStatusCode())
         .isEqualTo(CommonErrorCode.INTERNAL_SERVER_ERROR.status());
+  }
+
+  @Test
+  @DisplayName("problem detail 생성 실패는 그대로 전파한다")
+  void writeErrorResponse_throwsWhenProblemDetailCreationFails() {
+    JsonCodec jsonCodec = Mockito.mock(JsonCodec.class);
+    ProblemDetailFactory problemDetailFactory = Mockito.mock(
+        ProblemDetailFactory.class);
+    WebExchangeErrorWriter writer = new WebExchangeErrorWriter(jsonCodec,
+        problemDetailFactory);
+
+    MockServerWebExchange exchange = MockServerWebExchange.from(
+        MockServerHttpRequest.get("/api/test").build());
+
+    when(problemDetailFactory.create(any(), any(DomainErrorCode.class),
+        anyString())).thenThrow(new IllegalArgumentException("invalid problem detail"));
+
+    assertThatThrownBy(() -> writer.writeErrorResponse(exchange,
+        CommonErrorCode.INTERNAL_SERVER_ERROR, "boom"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("invalid problem detail");
   }
 
 }

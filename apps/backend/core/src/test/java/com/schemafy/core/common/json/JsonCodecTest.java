@@ -24,6 +24,12 @@ class JsonCodecTest {
   }
 
   @Test
+  @DisplayName("normalizePersistedJson blank는 null로 정규화한다")
+  void normalizePersistedJson_blankReturnsNull() {
+    assertThat(sut.normalizePersistedJson("  ")).isNull();
+  }
+
+  @Test
   @DisplayName("serialize null은 IllegalArgumentException을 던진다")
   void serialize_nullThrowsIllegalArgumentException() {
     assertThatThrownBy(() -> sut.serialize(null))

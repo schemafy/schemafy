@@ -72,7 +72,7 @@ public final class JsonCodec {
 
   public String normalizePersistedJson(String rawJson) {
     if (rawJson == null || rawJson.isBlank()) {
-      return rawJson;
+      return null;
     }
 
     JsonNode node = parsePersistedNode(rawJson);

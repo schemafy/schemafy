@@ -2,6 +2,7 @@ package com.schemafy.api.common.security.jwt;
 
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -25,10 +26,11 @@ public class WebExchangeErrorWriter {
     exchange.getResponse().getHeaders()
         .setContentType(MediaType.APPLICATION_PROBLEM_JSON);
 
+    ProblemDetail problemDetail = problemDetailFactory.create(exchange,
+        errorCode, errorMessage);
+
     try {
-      byte[] responseBytes = jsonCodec.serializeBytes(
-          problemDetailFactory.create(exchange, errorCode,
-              errorMessage));
+      byte[] responseBytes = jsonCodec.serializeBytes(problemDetail);
       DataBuffer buffer = exchange.getResponse().bufferFactory()
           .wrap(responseBytes);
       return exchange.getResponse().writeWith(Mono.just(buffer));
