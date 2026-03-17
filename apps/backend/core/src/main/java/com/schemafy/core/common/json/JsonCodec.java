@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Component
-public class JsonCodec {
+public final class JsonCodec {
 
   private final ObjectMapper objectMapper;
 
