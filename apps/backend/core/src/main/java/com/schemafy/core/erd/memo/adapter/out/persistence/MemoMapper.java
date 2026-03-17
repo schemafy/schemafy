@@ -2,6 +2,7 @@ package com.schemafy.core.erd.memo.adapter.out.persistence;
 
 import org.springframework.stereotype.Component;
 
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.domain.Memo;
 
 @Component
@@ -23,7 +24,7 @@ class MemoMapper {
         entity.getId(),
         entity.getSchemaId(),
         entity.getAuthorId(),
-        entity.getPositions(),
+        JsonCodec.normalizePersistedJson(entity.getPositions()),
         entity.getCreatedAt(),
         entity.getUpdatedAt(),
         entity.getDeletedAt());

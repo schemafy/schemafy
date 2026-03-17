@@ -103,7 +103,7 @@ class RelationshipPersistenceAdapterTest {
 
       StepVerifier.create(sut.createRelationship(relationship))
           .assertNext(saved -> {
-            assertThat(saved.extra()).isEqualTo("{\"description\": \"test\"}");
+            assertThat(saved.extra()).isEqualTo("{\"description\":\"test\"}");
           })
           .verifyComplete();
     }

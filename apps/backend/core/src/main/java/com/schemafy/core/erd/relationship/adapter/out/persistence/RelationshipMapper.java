@@ -2,6 +2,7 @@ package com.schemafy.core.erd.relationship.adapter.out.persistence;
 
 import org.springframework.stereotype.Component;
 
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
@@ -28,7 +29,7 @@ class RelationshipMapper {
         entity.getName(),
         RelationshipKind.valueOf(entity.getKind()),
         Cardinality.valueOf(entity.getCardinality()),
-        entity.getExtra());
+        JsonCodec.normalizePersistedJson(entity.getExtra()));
   }
 
 }

@@ -2,6 +2,7 @@ package com.schemafy.core.erd.table.adapter.out.persistence;
 
 import org.springframework.stereotype.Component;
 
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.table.domain.Table;
 
 @Component
@@ -25,7 +26,7 @@ class TableMapper {
         entity.getName(),
         entity.getCharset(),
         entity.getCollation(),
-        entity.getExtra());
+        JsonCodec.normalizePersistedJson(entity.getExtra()));
   }
 
 }
