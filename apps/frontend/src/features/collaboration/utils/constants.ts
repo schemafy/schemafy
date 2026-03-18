@@ -13,6 +13,8 @@ export const CURSOR_IDLE_MS = 5000;
 
 export const CURSOR_FADE_DURATION_MS = 500;
 
+export const CURSOR_TRANSITION_MS = 50;
+
 export const CURSOR_POINTER_SIZE = {
   width: 16,
   height: 22,
