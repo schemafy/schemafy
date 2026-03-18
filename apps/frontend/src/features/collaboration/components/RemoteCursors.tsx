@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useReactFlow } from '@xyflow/react';
 import { collaborationStore } from '@/store/collaboration.store';
-import { CURSOR_FADE_DURATION_MS, CURSOR_IDLE_MS, CURSOR_TRANSITION_MS, getCursorColor, } from '../utils';
+import {
+  CURSOR_FADE_DURATION_MS,
+  CURSOR_IDLE_MS,
+  CURSOR_TRANSITION_MS,
+  getCursorColor,
+} from '../utils';
 import { CursorLabel } from './CursorLabel';
 import { CursorPointer } from './CursorPointer';
 
@@ -10,9 +15,9 @@ interface RemoteCursorProps {
   sessionId: string;
 }
 
-const RemoteCursor = observer(({sessionId}: RemoteCursorProps) => {
+const RemoteCursor = observer(({ sessionId }: RemoteCursorProps) => {
   const cursor = collaborationStore.cursors.get(sessionId);
-  const {flowToScreenPosition} = useReactFlow();
+  const { flowToScreenPosition } = useReactFlow();
   const [isIdle, setIsIdle] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const color = getCursorColor(sessionId);
@@ -37,7 +42,7 @@ const RemoteCursor = observer(({sessionId}: RemoteCursorProps) => {
 
   if (!cursor) return null;
 
-  const screenPos = flowToScreenPosition({x: cursor.x, y: cursor.y});
+  const screenPos = flowToScreenPosition({ x: cursor.x, y: cursor.y });
 
   return (
     <div
@@ -50,8 +55,8 @@ const RemoteCursor = observer(({sessionId}: RemoteCursorProps) => {
         transition: `transform ${CURSOR_TRANSITION_MS}ms linear, opacity ${CURSOR_FADE_DURATION_MS}ms ease`,
       }}
     >
-      <CursorPointer color={color}/>
-      <CursorLabel name={cursor.userName} color={color}/>
+      <CursorPointer color={color} />
+      <CursorLabel name={cursor.userName} color={color} />
     </div>
   );
 });
@@ -65,7 +70,7 @@ export const RemoteCursors = observer(() => {
   return (
     <>
       {cursorIds.map((sessionId) => (
-        <RemoteCursor key={sessionId} sessionId={sessionId}/>
+        <RemoteCursor key={sessionId} sessionId={sessionId} />
       ))}
     </>
   );
