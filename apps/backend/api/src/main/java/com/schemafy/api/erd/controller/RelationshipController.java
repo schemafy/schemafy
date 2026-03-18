@@ -29,6 +29,7 @@ import com.schemafy.api.erd.controller.dto.request.CreateRelationshipRequest;
 import com.schemafy.api.erd.controller.dto.response.AddRelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
+import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
@@ -79,6 +80,7 @@ public class RelationshipController {
   private final GetRelationshipColumnUseCase getRelationshipColumnUseCase;
   private final ChangeRelationshipColumnPositionUseCase changeRelationshipColumnPositionUseCase;
   private final JsonCodec jsonCodec;
+  private final RelationshipApiResponseMapper relationshipResponseMapper;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
@@ -96,7 +98,8 @@ public class RelationshipController {
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
-            RelationshipResponse.from(result.result(), jsonCodec),
+            relationshipResponseMapper.toRelationshipResponse(
+                result.result()),
             result.affectedTableIds()));
   }
 
@@ -106,8 +109,7 @@ public class RelationshipController {
       @PathVariable String relationshipId) {
     GetRelationshipQuery query = new GetRelationshipQuery(relationshipId);
     return getRelationshipUseCase.getRelationship(query)
-        .map(relationship -> RelationshipResponse.from(relationship,
-            jsonCodec));
+        .map(relationshipResponseMapper::toRelationshipResponse);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -117,8 +119,7 @@ public class RelationshipController {
     GetRelationshipsByTableIdQuery query = new GetRelationshipsByTableIdQuery(tableId);
     return getRelationshipsByTableIdUseCase.getRelationshipsByTableId(query)
         .map(relationships -> relationships.stream()
-            .map(relationship -> RelationshipResponse.from(relationship,
-                jsonCodec))
+            .map(relationshipResponseMapper::toRelationshipResponse)
             .toList());
   }
 

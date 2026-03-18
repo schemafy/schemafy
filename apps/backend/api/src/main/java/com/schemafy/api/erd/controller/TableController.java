@@ -28,6 +28,7 @@ import com.schemafy.api.erd.controller.dto.request.CreateTableRequest;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
+import com.schemafy.api.erd.service.table.TableApiResponseMapper;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
@@ -63,6 +64,7 @@ public class TableController {
   private final ChangeTableExtraUseCase changeTableExtraUseCase;
   private final DeleteTableUseCase deleteTableUseCase;
   private final JsonCodec jsonCodec;
+  private final TableApiResponseMapper tableResponseMapper;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
@@ -80,8 +82,8 @@ public class TableController {
         .flatMap(result -> broadcastMutation(result.affectedTableIds())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
-            TableResponse.from(result.result(), request.schemaId(),
-                jsonCodec),
+            tableResponseMapper.toTableResponse(result.result(),
+                request.schemaId()),
             result.affectedTableIds()));
   }
 
@@ -91,7 +93,7 @@ public class TableController {
       @PathVariable String tableId) {
     GetTableQuery query = new GetTableQuery(tableId);
     return getTableUseCase.getTable(query)
-        .map(table -> TableResponse.from(table, jsonCodec));
+        .map(tableResponseMapper::toTableResponse);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -114,7 +116,7 @@ public class TableController {
       @PathVariable String schemaId) {
     GetTablesBySchemaIdQuery query = new GetTablesBySchemaIdQuery(schemaId);
     return getTablesBySchemaIdUseCase.getTablesBySchemaId(query)
-        .map(table -> TableResponse.from(table, jsonCodec))
+        .map(tableResponseMapper::toTableResponse)
         .collectList();
   }
 
