@@ -23,11 +23,4 @@ public class CollaborationPayloadSerializer {
                 e));
   }
 
-  public Mono<String> serializeForBroadcast(CollaborationOutbound event) {
-    return Mono.fromCallable(() -> jsonCodec.serialize(event))
-        .onErrorMap(IllegalArgumentException.class,
-        e -> new RuntimeException("[CollaborationPayloadSerializer] failed to serialize broadcast JSON",
-            e));
-  }
-
 }

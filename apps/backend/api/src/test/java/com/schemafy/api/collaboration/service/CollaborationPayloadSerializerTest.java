@@ -23,9 +23,9 @@ class CollaborationPayloadSerializerTest {
       new JsonCodec(new ObjectMapper().findAndRegisterModules()));
 
   @Test
-  @DisplayName("JOIN 브로드캐스트 직렬화 시 sessionId를 포함한다")
-  void serializeForBroadcast_includes_session_id_for_join() {
-    StepVerifier.create(serializer.serializeForBroadcast(
+  @DisplayName("JOIN 이벤트 직렬화 시 sessionId를 포함한다")
+  void serialize_includes_session_id_for_join() {
+    StepVerifier.create(serializer.serialize(
         CollaborationOutboundFactory.join("session-1", "user-1",
             "tester")))
         .assertNext(json -> {
@@ -37,12 +37,12 @@ class CollaborationPayloadSerializerTest {
   }
 
   @Test
-  @DisplayName("CURSOR 브로드캐스트 직렬화 시 sessionId를 포함한다")
-  void serializeForBroadcast_includes_session_id_for_cursor() {
+  @DisplayName("CURSOR 이벤트 직렬화 시 sessionId를 포함한다")
+  void serialize_includes_session_id_for_cursor() {
     CursorEvent.UserInfo userInfo = new CursorEvent.UserInfo("user-1",
         "tester");
 
-    StepVerifier.create(serializer.serializeForBroadcast(
+    StepVerifier.create(serializer.serialize(
         CollaborationOutboundFactory.cursor("session-1", userInfo,
             new CursorPosition(10.0, 20.0))))
         .assertNext(json -> {
@@ -54,9 +54,9 @@ class CollaborationPayloadSerializerTest {
   }
 
   @Test
-  @DisplayName("ERD_MUTATED 브로드캐스트 직렬화 시 sessionId를 포함한다")
-  void serializeForBroadcast_includes_session_id_for_erd_mutated() {
-    StepVerifier.create(serializer.serializeForBroadcast(
+  @DisplayName("ERD_MUTATED 이벤트 직렬화 시 sessionId를 포함한다")
+  void serialize_includes_session_id_for_erd_mutated() {
+    StepVerifier.create(serializer.serialize(
         CollaborationOutboundFactory.erdMutated("session-1", "schema-1",
             Set.of("table-1"))))
         .assertNext(json -> {
@@ -68,9 +68,9 @@ class CollaborationPayloadSerializerTest {
   }
 
   @Test
-  @DisplayName("sessionId가 없는 ERD_MUTATED는 브로드캐스트 직렬화 시 sessionId를 생략한다")
-  void serializeForBroadcast_omits_session_id_when_erd_mutated_has_no_session() {
-    StepVerifier.create(serializer.serializeForBroadcast(
+  @DisplayName("sessionId가 없는 ERD_MUTATED 직렬화 시 sessionId를 생략한다")
+  void serialize_omits_session_id_when_erd_mutated_has_no_session() {
+    StepVerifier.create(serializer.serialize(
         ErdMutatedEvent.Outbound.of("schema-1", Set.of("table-1"))))
         .assertNext(json -> {
           assertThat(json).contains("\"type\":\"ERD_MUTATED\"");

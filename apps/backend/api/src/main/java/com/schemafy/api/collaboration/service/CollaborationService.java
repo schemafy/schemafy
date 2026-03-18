@@ -158,7 +158,7 @@ public class CollaborationService {
             return Mono.empty();
           }
 
-          return payloadSerializer.serializeForBroadcast(event)
+          return payloadSerializer.serialize(event)
               .doOnNext(json -> broadcastEvent(
                   projectId,
                   event.sessionId(),
