@@ -19,6 +19,7 @@ import {
   FloatingButtons,
   SchemaSelector,
   TempMemoPreview,
+  ShortcutPanel,
   useCanvasController,
   SelectedSchemaProvider,
 } from '@/features/drawing';
@@ -44,8 +45,9 @@ const CanvasContent = observer(() => {
       tempMemoPosition,
       chatInputPosition,
       selectedRelationship,
+      isShortcutPanelOpen,
     },
-    setter: { setRelationshipConfig, setActiveTool, setSelectedRelationship },
+    setter: { setRelationshipConfig, setActiveTool, setSelectedRelationship, setIsShortcutPanelOpen },
     data: { nodes, relationships },
     handlers: {
       handleNodesChange,
@@ -175,7 +177,13 @@ const CanvasContent = observer(() => {
           )}
         </div>
       </div>
-      <FloatingButtons />
+      <FloatingButtons
+        isShortcutPanelOpen={isShortcutPanelOpen}
+        onHelpClick={() => setIsShortcutPanelOpen((prev) => !prev)}
+      />
+      {isShortcutPanelOpen && (
+        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
+      )}
       <ChatOverlay />
     </>
   );

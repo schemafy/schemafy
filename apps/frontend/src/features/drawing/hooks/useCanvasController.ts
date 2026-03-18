@@ -36,6 +36,7 @@ export const useCanvasController = () => {
     null,
   );
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isShortcutPanelOpen, setIsShortcutPanelOpen] = useState(false);
 
   useEffect(() => {
     collaborationStore.connect(projectId);
@@ -190,6 +191,7 @@ export const useCanvasController = () => {
       tempMemoPosition,
       chatInputPosition,
       selectedRelationship,
+      isShortcutPanelOpen,
     },
     setter: {
       setRelationshipConfig,
@@ -197,6 +199,7 @@ export const useCanvasController = () => {
       setTempMemoPosition,
       setChatInputPosition,
       setSelectedRelationship,
+      setIsShortcutPanelOpen,
     },
     data: {
       nodes,

@@ -3,13 +3,8 @@ import { RelationshipSelector } from './RelationshipSelector';
 import { SearchEntitiesDialog } from './SearchEntitiesDialog';
 import type { RelationshipConfig } from '../types';
 import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@/components';
-import { Hand, MessageCircleMore, MousePointer2, Search, Spline, Table, } from 'lucide-react';
-
-const MOD_KEY =
-  typeof navigator !== 'undefined' &&
-  /Mac|iPhone|iPod|iPad/.test(navigator.userAgent)
-    ? '⌘'
-    : 'Ctrl+';
+import { Hand, MessageCircleMore, MousePointer2, Search, Spline, Table } from 'lucide-react';
+import { MOD_KEY } from "@/lib/utils/modKey";
 
 interface ToolbarProps {
   setActiveTool: (toolId: string) => void;
