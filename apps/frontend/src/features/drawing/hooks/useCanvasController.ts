@@ -20,6 +20,7 @@ export const useCanvasController = () => {
   useErdMutationSync(selectedSchemaId, projectId);
   const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
+  const lastChatPositionTime = useRef<number>(0);
 
   const [relationshipConfig, setRelationshipConfig] =
     useState<RelationshipConfig>({
@@ -49,6 +50,9 @@ export const useCanvasController = () => {
     if (!isChatOpen) return;
 
     const handleWindowMouseMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastChatPositionTime.current < CURSOR_THROTTLE_MS) return;
+      lastChatPositionTime.current = now;
       setChatInputPosition({ x: e.clientX + 16, y: e.clientY + 16 });
     };
 
