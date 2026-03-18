@@ -15,10 +15,10 @@ import { collaborationStore } from '@/store/collaboration.store';
 const CURSOR_THROTTLE_MS = 100;
 
 export const useCanvasController = () => {
-  const {projectId, selectedSchemaId} = useSelectedSchema();
-  const {data: schemas} = useSchemas(projectId);
+  const { projectId, selectedSchemaId } = useSelectedSchema();
+  const { data: schemas } = useSchemas(projectId);
   useErdMutationSync(selectedSchemaId, projectId);
-  const {screenToFlowPosition} = useReactFlow();
+  const { screenToFlowPosition } = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
 
   const [relationshipConfig, setRelationshipConfig] =
@@ -49,7 +49,7 @@ export const useCanvasController = () => {
     if (!isChatOpen) return;
 
     const handleWindowMouseMove = (e: MouseEvent) => {
-      setChatInputPosition({x: e.clientX + 16, y: e.clientY + 16});
+      setChatInputPosition({ x: e.clientX + 16, y: e.clientY + 16 });
     };
 
     const handleMouseLeave = () => {
@@ -86,10 +86,10 @@ export const useCanvasController = () => {
   });
 
   const schemaIds = schemas?.map((s) => s.id) ?? [];
-  const {handleMoveEnd} = useViewport(schemaIds);
-  const {tables, addTable, onTablesChange, onNodeDragStop, onNodesDelete} =
+  const { handleMoveEnd } = useViewport(schemaIds);
+  const { tables, addTable, onTablesChange, onNodeDragStop, onNodesDelete } =
     useTables();
-  const {memos, onMemosChange, createMemo} = useMemoContext();
+  const { memos, onMemosChange, createMemo } = useMemoContext();
 
   const {
     relationships,
@@ -106,7 +106,7 @@ export const useCanvasController = () => {
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
-  const {nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete} =
+  const { nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete } =
     useCanvasNodes({
       tables,
       memos,
@@ -171,7 +171,7 @@ export const useCanvasController = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    const position = {x: e.clientX, y: e.clientY};
+    const position = { x: e.clientX, y: e.clientY };
     setMousePosition(position);
 
     const now = Date.now();

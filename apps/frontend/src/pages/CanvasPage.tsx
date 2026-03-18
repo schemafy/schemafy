@@ -47,7 +47,12 @@ const CanvasContent = observer(() => {
       selectedRelationship,
       isShortcutPanelOpen,
     },
-    setter: { setRelationshipConfig, setActiveTool, setSelectedRelationship, setIsShortcutPanelOpen },
+    setter: {
+      setRelationshipConfig,
+      setActiveTool,
+      setSelectedRelationship,
+      setIsShortcutPanelOpen,
+    },
     data: { nodes, relationships },
     handlers: {
       handleNodesChange,
