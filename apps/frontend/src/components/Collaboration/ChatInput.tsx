@@ -29,6 +29,7 @@ export const ChatInput = ({ position, onSend, onCancel }: ChatInputProps) => {
 
   return (
     <div
+      data-chat-input
       className="fixed z-50 pointer-events-auto"
       style={{
         left: 0,

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useRelationships } from './useRelationships';
 import { useTables } from './useTables';
@@ -9,16 +9,16 @@ import { useMemoContext } from '../../memo/hooks/useMemoStore';
 import { useSelectedSchema } from '../contexts';
 import { useSchemas } from './useSchemas';
 import { useErdMutationSync } from './useErdMutationSync';
-import type { RelationshipConfig, Point } from '../types';
+import type { Point, RelationshipConfig } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 
 const CURSOR_THROTTLE_MS = 100;
 
 export const useCanvasController = () => {
-  const { projectId, selectedSchemaId } = useSelectedSchema();
-  const { data: schemas } = useSchemas(projectId);
+  const {projectId, selectedSchemaId} = useSelectedSchema();
+  const {data: schemas} = useSchemas(projectId);
   useErdMutationSync(selectedSchemaId, projectId);
-  const { screenToFlowPosition } = useReactFlow();
+  const {screenToFlowPosition} = useReactFlow();
   const lastCursorSendTime = useRef<number>(0);
 
   const [relationshipConfig, setRelationshipConfig] =
@@ -35,6 +35,7 @@ export const useCanvasController = () => {
   const [chatInputPosition, setChatInputPosition] = useState<Point | null>(
     null,
   );
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     collaborationStore.connect(projectId);
@@ -43,18 +44,51 @@ export const useCanvasController = () => {
     };
   }, [projectId]);
 
+  useEffect(() => {
+    if (!isChatOpen) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      setChatInputPosition({x: e.clientX + 16, y: e.clientY + 16});
+    };
+
+    const handleMouseLeave = () => {
+      setChatInputPosition(null);
+      setIsChatOpen(false);
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const chatInputEl = document.querySelector('[data-chat-input]');
+      if (!chatInputEl || !chatInputEl.contains(e.target as Node)) {
+        setChatInputPosition(null);
+        setIsChatOpen(false);
+      }
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isChatOpen]);
+
   useCanvasKeyboard({
-    chatInputPosition,
+    isChatOpen,
     mousePosition,
     activeTool,
     setChatInputPosition,
+    setIsChatOpen,
+    setActiveTool,
   });
 
   const schemaIds = schemas?.map((s) => s.id) ?? [];
-  const { handleMoveEnd } = useViewport(schemaIds);
-  const { tables, addTable, onTablesChange, onNodeDragStop, onNodesDelete } =
+  const {handleMoveEnd} = useViewport(schemaIds);
+  const {tables, addTable, onTablesChange, onNodeDragStop, onNodesDelete} =
     useTables();
-  const { memos, onMemosChange, createMemo } = useMemoContext();
+  const {memos, onMemosChange, createMemo} = useMemoContext();
 
   const {
     relationships,
@@ -71,7 +105,7 @@ export const useCanvasController = () => {
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
-  const { nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete } =
+  const {nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete} =
     useCanvasNodes({
       tables,
       memos,
@@ -134,7 +168,7 @@ export const useCanvasController = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    const position = { x: e.clientX, y: e.clientY };
+    const position = {x: e.clientX, y: e.clientY};
     setMousePosition(position);
 
     const now = Date.now();
