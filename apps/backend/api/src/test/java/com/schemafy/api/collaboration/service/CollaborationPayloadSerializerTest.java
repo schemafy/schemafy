@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.collaboration.dto.CursorPosition;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.dto.event.CursorEvent;
+import com.schemafy.api.collaboration.dto.event.ErdMutatedEvent;
 
 import reactor.test.StepVerifier;
 
@@ -21,22 +22,22 @@ class CollaborationPayloadSerializerTest {
       new ObjectMapper().findAndRegisterModules());
 
   @Test
-  @DisplayName("JOIN 브로드캐스트 직렬화 시 sessionId를 제거한다")
-  void serializeForBroadcast_removes_session_id_from_join() {
+  @DisplayName("JOIN 브로드캐스트 직렬화 시 sessionId를 포함한다")
+  void serializeForBroadcast_includes_session_id_for_join() {
     StepVerifier.create(serializer.serializeForBroadcast(
         CollaborationOutboundFactory.join("session-1", "user-1",
             "tester")))
         .assertNext(json -> {
           assertThat(json).contains("\"type\":\"JOIN\"");
+          assertThat(json).contains("\"sessionId\":\"session-1\"");
           assertThat(json).contains("\"userId\":\"user-1\"");
-          assertThat(json).doesNotContain("sessionId");
         })
         .verifyComplete();
   }
 
   @Test
-  @DisplayName("CURSOR 브로드캐스트 직렬화 시 sessionId를 제거한다")
-  void serializeForBroadcast_removes_session_id_from_cursor() {
+  @DisplayName("CURSOR 브로드캐스트 직렬화 시 sessionId를 포함한다")
+  void serializeForBroadcast_includes_session_id_for_cursor() {
     CursorEvent.UserInfo userInfo = new CursorEvent.UserInfo("user-1",
         "tester");
 
@@ -45,18 +46,31 @@ class CollaborationPayloadSerializerTest {
             new CursorPosition(10.0, 20.0))))
         .assertNext(json -> {
           assertThat(json).contains("\"type\":\"CURSOR\"");
+          assertThat(json).contains("\"sessionId\":\"session-1\"");
           assertThat(json).contains("\"userInfo\"");
-          assertThat(json).doesNotContain("sessionId");
         })
         .verifyComplete();
   }
 
   @Test
-  @DisplayName("ERD_MUTATED 브로드캐스트 직렬화 시 sessionId를 제거한다")
-  void serializeForBroadcast_removes_session_id_from_erd_mutated() {
+  @DisplayName("ERD_MUTATED 브로드캐스트 직렬화 시 sessionId를 포함한다")
+  void serializeForBroadcast_includes_session_id_for_erd_mutated() {
     StepVerifier.create(serializer.serializeForBroadcast(
         CollaborationOutboundFactory.erdMutated("session-1", "schema-1",
             Set.of("table-1"))))
+        .assertNext(json -> {
+          assertThat(json).contains("\"type\":\"ERD_MUTATED\"");
+          assertThat(json).contains("\"sessionId\":\"session-1\"");
+          assertThat(json).contains("\"schemaId\":\"schema-1\"");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("sessionId가 없는 ERD_MUTATED는 브로드캐스트 직렬화 시 sessionId를 생략한다")
+  void serializeForBroadcast_omits_session_id_when_erd_mutated_has_no_session() {
+    StepVerifier.create(serializer.serializeForBroadcast(
+        ErdMutatedEvent.Outbound.of("schema-1", Set.of("table-1"))))
         .assertNext(json -> {
           assertThat(json).contains("\"type\":\"ERD_MUTATED\"");
           assertThat(json).contains("\"schemaId\":\"schema-1\"");
