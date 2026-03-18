@@ -1,10 +1,4 @@
-import {
-  action,
-  computed,
-  makeObservable,
-  observable,
-  runInAction,
-} from 'mobx';
+import { action, computed, makeObservable, observable, runInAction, } from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
@@ -18,6 +12,7 @@ import type {
 } from '@/features/collaboration/api';
 import { authStore } from './auth.store';
 import { apiClient } from '@/lib/api/client';
+import { toast } from "sonner";
 
 const WEBSOCKET_URL =
   import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
@@ -90,6 +85,7 @@ export class CollaborationStore {
     this.ws.onmessage = (event) => {
       try {
         const payload: WebSocketMessage = JSON.parse(event.data);
+        console.log(this.sessionId);
 
         if (payload.type === 'SESSION_READY') {
           runInAction(() => {
@@ -109,7 +105,7 @@ export class CollaborationStore {
       if (!this.projectId || this.reconnectTimeoutId) return;
 
       if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        console.error('[WebSocket] Max reconnect attempts reached');
+        toast.error("Network Error, please try again later.");
         return;
       }
 
@@ -196,18 +192,28 @@ export class CollaborationStore {
       return;
     }
 
+    const sessionId = this.sessionId;
+
+    if (!sessionId) {
+      console.error('Session ID is not available');
+      return;
+    }
+
     runInAction(() => {
-      this.cursors.set(user.id, {
+      const cursorPosition: CursorPosition = {
+        sessionId,
         userId: user.id,
         userName: user.name,
         x,
         y,
-      });
+      };
+
+      this.cursors.set(sessionId, cursorPosition);
     });
 
     const message: PostCursor = {
       type: 'CURSOR',
-      cursor: { x, y },
+      cursor: {x, y},
     };
 
     this.send(message);
@@ -265,6 +271,7 @@ export class CollaborationStore {
       messageId: message.messageId,
       userId: message.userId,
       userName: message.userName,
+      sessionId: message.sessionId,
       content: message.content,
       timestamp: message.timestamp,
       position: message.position,
@@ -275,6 +282,7 @@ export class CollaborationStore {
 
   private handleCursorMessage(message: ReceiveCursor) {
     const cursorPosition: CursorPosition = {
+      sessionId: message.sessionId,
       userId: message.userInfo.userId,
       userName: message.userInfo.userName,
       x: message.cursor.x,
@@ -282,13 +290,13 @@ export class CollaborationStore {
     };
 
     runInAction(() => {
-      this.cursors.set(cursorPosition.userId, cursorPosition);
+      this.cursors.set(cursorPosition.sessionId, cursorPosition);
     });
   }
 
   private handleLeaveMessage(message: ReceiveLeave) {
     runInAction(() => {
-      this.cursors.delete(message.userId);
+      this.cursors.delete(message.sessionId);
     });
   }
 }

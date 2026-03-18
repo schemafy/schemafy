@@ -17,7 +17,7 @@ export const useChatMessages = () => {
         return;
       }
 
-      const cursor = collaborationStore.cursors.get(message.userId);
+      const cursor = collaborationStore.cursors.get(message.sessionId);
 
       if (!cursor) {
         console.error('Cursor not found');
@@ -26,7 +26,7 @@ export const useChatMessages = () => {
 
       const messageWithPosition: ChatMessage = {
         ...message,
-        position: { x: cursor.x + 20, y: cursor.y + 20 },
+        position: {x: cursor.x + 20, y: cursor.y + 20},
       };
 
       setDisplayMessages((prev) => {
@@ -46,5 +46,5 @@ export const useChatMessages = () => {
     );
   };
 
-  return { displayMessages, removeMessage };
+  return {displayMessages, removeMessage};
 };
