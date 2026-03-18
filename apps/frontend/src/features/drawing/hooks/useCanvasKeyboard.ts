@@ -11,10 +11,10 @@ interface UseCanvasKeyboardParams {
 }
 
 const TOOL_SHORTCUTS: Record<string, string> = {
-  'p': 'pointer',
-  'h': 'hand',
-  'e': 'table',
-  'm': 'memo',
+  'KeyP': 'pointer',
+  'KeyH': 'hand',
+  'KeyE': 'table',
+  'KeyM': 'memo',
 };
 
 export const useCanvasKeyboard = ({
@@ -36,13 +36,13 @@ export const useCanvasKeyboard = ({
       )
         return;
 
-      if (TOOL_SHORTCUTS[e.key]) {
+      if (TOOL_SHORTCUTS[e.code]) {
         e.preventDefault();
-        setActiveTool(TOOL_SHORTCUTS[e.key]);
+        setActiveTool(TOOL_SHORTCUTS[e.code]);
         return;
       }
 
-      if (e.key === '/' && !isChatOpen && (activeTool === 'pointer' || activeTool === 'hand')) {
+      if (e.code === 'Slash' && !isChatOpen && (activeTool === 'pointer' || activeTool === 'hand')) {
         e.preventDefault();
 
         if (!mousePosition) return;
@@ -52,7 +52,7 @@ export const useCanvasKeyboard = ({
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener('keydown', handleKeyPress, true);
+    return () => window.removeEventListener('keydown', handleKeyPress, true);
   }, [isChatOpen, mousePosition, activeTool, setChatInputPosition, setIsChatOpen, setActiveTool]);
 };

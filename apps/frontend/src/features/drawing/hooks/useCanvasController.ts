@@ -67,12 +67,12 @@ export const useCanvasController = () => {
 
     window.addEventListener('mousemove', handleWindowMouseMove);
     document.addEventListener('mouseleave', handleMouseLeave);
-    window.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('mousedown', handleClickOutside, true);
 
     return () => {
       window.removeEventListener('mousemove', handleWindowMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
-      window.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('mousedown', handleClickOutside, true);
     };
   }, [isChatOpen]);
 
