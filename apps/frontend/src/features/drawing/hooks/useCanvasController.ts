@@ -130,10 +130,12 @@ export const useCanvasController = () => {
   const handleChatSend = (message: string) => {
     collaborationStore.sendMessage(message);
     setChatInputPosition(null);
+    setIsChatOpen(false);
   };
 
   const handleChatCancel = () => {
     setChatInputPosition(null);
+    setIsChatOpen(false);
   };
 
   const handlePaneClick = (e: React.MouseEvent) => {
