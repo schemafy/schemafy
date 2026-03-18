@@ -26,6 +26,7 @@ import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.Workspace;
+import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.user.domain.User;
 
@@ -476,6 +477,54 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .findById(adminMember2.getId()).block();
     assertThat(deletedMember).isNotNull();
     assertThat(deletedMember.isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 관리자이기도 한 프로젝트 ADMIN은 제거할 수 없다")
+  void removeMember_DualAdminTarget_Forbidden() {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
+
+    WorkspaceMember targetWorkspaceMember = workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .block();
+    targetWorkspaceMember.updateRole(WorkspaceRole.ADMIN);
+    workspaceMemberRepository.save(targetWorkspaceMember).block();
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/{userId}",
+            project.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken).exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 관리자이기도 한 프로젝트 ADMIN은 등급을 낮출 수 없다")
+  void updateMemberRole_DualAdminTarget_Forbidden() {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
+
+    WorkspaceMember targetWorkspaceMember = workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .block();
+    targetWorkspaceMember.updateRole(WorkspaceRole.ADMIN);
+    workspaceMemberRepository.save(targetWorkspaceMember).block();
+
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        "EDITOR");
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isForbidden();
   }
 
   @Test

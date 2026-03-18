@@ -87,6 +87,17 @@ class ProjectAccessHelper {
         .then();
   }
 
+  Mono<Void> validateWorkspaceAdminGuard(
+      String projectId,
+      ProjectMember target) {
+    return findProjectById(projectId)
+        .flatMap(project -> workspaceMemberPort
+            .findByWorkspaceIdAndUserIdAndNotDeleted(project.getWorkspaceId(), target.getUserId())
+            .filter(WorkspaceMember::isAdmin)
+            .flatMap(admin -> Mono.error(new DomainException(ProjectErrorCode.WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED)))
+            .then());
+  }
+
   void validateRoleChangePermission(
       ProjectMember requester,
       ProjectMember target,

@@ -137,6 +137,90 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("워크스페이스 관리자이기도 한 프로젝트 관리자는 프로젝트에서 제거할 수 없다")
+  void removeProjectMember_rejectsDualAdminTarget() {
+    User requester = signUpUser("requester-dual-remove@test.com", "Requester");
+    User target = signUpUser("target-dual-remove@test.com", "Target");
+    Workspace workspace = saveWorkspace("Dual Remove WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, target, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Dual Remove Project");
+    saveProjectMember(project, requester, ProjectRole.ADMIN);
+    saveProjectMember(project, target, ProjectRole.ADMIN);
+
+    StepVerifier.create(removeProjectMemberUseCase.removeProjectMember(
+        new RemoveProjectMemberCommand(project.getId(), target.id(), requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 관리자이기도 한 프로젝트 관리자는 프로젝트에서 등급을 내릴 수 없다")
+  void updateProjectMemberRole_rejectsDualAdminDemotion() {
+    User requester = signUpUser("requester-dual-demote@test.com", "Requester");
+    User target = signUpUser("target-dual-demote@test.com", "Target");
+    Workspace workspace = saveWorkspace("Dual Demote WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, target, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Dual Demote Project");
+    saveProjectMember(project, requester, ProjectRole.ADMIN);
+    saveProjectMember(project, target, ProjectRole.ADMIN);
+
+    StepVerifier.create(updateProjectMemberRoleUseCase.updateProjectMemberRole(
+        new UpdateProjectMemberRoleCommand(project.getId(), target.id(), ProjectRole.EDITOR,
+            requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 등급 불일치가 있어도 워크스페이스 관리자는 프로젝트에서 제거할 수 없다")
+  void removeProjectMember_rejectsWorkspaceAdminEvenWhenStoredProjectRoleIsNotAdmin() {
+    User requester = signUpUser("requester-project-remove-allowed@test.com", "Requester");
+    User target = signUpUser("target-project-remove-allowed@test.com", "Target");
+    Workspace workspace = saveWorkspace("Project Remove Allowed WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, target, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Project Remove Allowed Project");
+    saveProjectMember(project, requester, ProjectRole.ADMIN);
+    ProjectMember targetMember = saveProjectMember(project, target, ProjectRole.EDITOR);
+
+    StepVerifier.create(removeProjectMemberUseCase.removeProjectMember(
+        new RemoveProjectMemberCommand(project.getId(), target.id(), requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED))
+        .verify();
+
+    ProjectMember persistedMember = projectMemberRepository.findById(targetMember.getId()).block();
+    assertThat(persistedMember).isNotNull();
+    assertThat(persistedMember.isDeleted()).isFalse();
+    assertThat(persistedMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
+  }
+
+  @Test
+  @DisplayName("프로젝트 관리자이지만 워크스페이스 관리자가 아니면 프로젝트에서 등급을 내릴 수 있다")
+  void updateProjectMemberRole_allowsProjectAdminWithoutWorkspaceAdmin() {
+    User requester = signUpUser("requester-project-demote-allowed@test.com", "Requester");
+    User target = signUpUser("target-project-demote-allowed@test.com", "Target");
+    Workspace workspace = saveWorkspace("Project Demote Allowed WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, target, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Project Demote Allowed Project");
+    saveProjectMember(project, requester, ProjectRole.ADMIN);
+    ProjectMember targetMember = saveProjectMember(project, target, ProjectRole.ADMIN);
+
+    ProjectMember updatedMember = updateProjectMemberRoleUseCase.updateProjectMemberRole(
+        new UpdateProjectMemberRoleCommand(project.getId(), target.id(), ProjectRole.EDITOR,
+            requester.id()))
+        .block();
+
+    assertThat(updatedMember.getId()).isEqualTo(targetMember.getId());
+    assertThat(updatedMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
+  }
+
+  @Test
   @DisplayName("leaveProject deletes the project when the last member leaves")
   void leaveProject_lastMemberDeletesProject() {
     User admin = signUpUser("admin-last@test.com", "Admin");

@@ -18,12 +18,11 @@ class RemoveProjectMemberService implements RemoveProjectMemberUseCase {
 
   @Override
   public Mono<Void> removeProjectMember(RemoveProjectMemberCommand command) {
-    return projectAccessHelper.validateProjectAdmin(command.projectId(),
-        command.requesterId())
-        .then(projectAccessHelper.findProjectMember(command.targetUserId(),
-            command.projectId()))
-        .flatMap(projectAccessHelper::softDeleteMember)
-        .as(transactionalOperator::transactional);
+    return projectAccessHelper.validateProjectAdmin(command.projectId(), command.requesterId())
+        .then(projectAccessHelper.findProjectMember(command.targetUserId(), command.projectId()))
+        .flatMap(target -> projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), target)
+            .then(projectAccessHelper.softDeleteMember(target))
+            .as(transactionalOperator::transactional));
   }
 
 }
