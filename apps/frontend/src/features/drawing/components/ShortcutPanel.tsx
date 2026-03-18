@@ -1,11 +1,10 @@
 import { Hand, MessageCircle, MessageCircleMore, MousePointer2, Table, X } from 'lucide-react';
-import { MOD_KEY } from '@/lib/utils/modKey';
 
 const SHORTCUTS = [
-  {icon: MousePointer2, name: 'Pointer', key: `${MOD_KEY}1`},
-  {icon: Hand, name: 'Hand', key: `${MOD_KEY}2`},
-  {icon: Table, name: 'Add Entity', key: `${MOD_KEY}3`},
-  {icon: MessageCircleMore, name: 'Add Memo', key: `${MOD_KEY}4`},
+  {icon: MousePointer2, name: 'Pointer', key: 'p'},
+  {icon: Hand, name: 'Hand', key: 'h'},
+  {icon: Table, name: 'Add Entity', key: 'e'},
+  {icon: MessageCircleMore, name: 'Add Memo', key: 'm'},
   {icon: MessageCircle, name: 'Chat message', key: '/'},
 ];
 

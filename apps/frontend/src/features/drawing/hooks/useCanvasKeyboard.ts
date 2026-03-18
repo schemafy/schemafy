@@ -11,20 +11,20 @@ interface UseCanvasKeyboardParams {
 }
 
 const TOOL_SHORTCUTS: Record<string, string> = {
-  '1': 'pointer',
-  '2': 'hand',
-  '3': 'table',
-  '4': 'memo',
+  'p': 'pointer',
+  'h': 'hand',
+  'e': 'table',
+  'm': 'memo',
 };
 
 export const useCanvasKeyboard = ({
-  isChatOpen,
-  mousePosition,
-  activeTool,
-  setChatInputPosition,
-  setIsChatOpen,
-  setActiveTool,
-}: UseCanvasKeyboardParams) => {
+                                    isChatOpen,
+                                    mousePosition,
+                                    activeTool,
+                                    setChatInputPosition,
+                                    setIsChatOpen,
+                                    setActiveTool,
+                                  }: UseCanvasKeyboardParams) => {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -36,18 +36,18 @@ export const useCanvasKeyboard = ({
       )
         return;
 
-      if ((e.metaKey || e.ctrlKey) && TOOL_SHORTCUTS[e.key]) {
+      if (TOOL_SHORTCUTS[e.key]) {
         e.preventDefault();
         setActiveTool(TOOL_SHORTCUTS[e.key]);
         return;
       }
 
-      if (e.key === '/' && !isChatOpen && activeTool === 'pointer') {
+      if (e.key === '/' && !isChatOpen && (activeTool === 'pointer' || activeTool === 'hand')) {
         e.preventDefault();
 
         if (!mousePosition) return;
 
-        setChatInputPosition({ x: mousePosition.x + 16, y: mousePosition.y + 16 });
+        setChatInputPosition({x: mousePosition.x + 16, y: mousePosition.y + 16});
         setIsChatOpen(true);
       }
     };

@@ -4,7 +4,6 @@ import { SearchEntitiesDialog } from './SearchEntitiesDialog';
 import type { RelationshipConfig } from '../types';
 import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@/components';
 import { Hand, MessageCircleMore, MousePointer2, Search, Spline, Table } from 'lucide-react';
-import { MOD_KEY } from "@/lib/utils/modKey";
 
 interface ToolbarProps {
   setActiveTool: (toolId: string) => void;
@@ -14,16 +13,16 @@ interface ToolbarProps {
 }
 
 const TOOLS = [
-  {id: 'pointer', name: 'Pointer', shortcut: '1', icon: MousePointer2},
-  {id: 'hand', name: 'Hand', shortcut: '2', icon: Hand},
+  {id: 'pointer', name: 'Pointer', shortcut: 'p', icon: MousePointer2},
+  {id: 'hand', name: 'Hand', shortcut: 'h', icon: Hand},
   {
     id: 'table',
     name: 'Add Entity',
-    shortcut: '3',
+    shortcut: 'e',
     icon: Table,
     action: 'addTable',
   },
-  {id: 'memo', name: 'Add Memo', shortcut: '4', icon: MessageCircleMore},
+  {id: 'memo', name: 'Add Memo', shortcut: 'm', icon: MessageCircleMore},
   {
     id: 'relationship',
     name: 'Change Relationship',
@@ -132,7 +131,7 @@ const Tool = ({
           <span>{name}</span>
           {shortcut && (
             <span className="text-xs opacity-60">
-              {MOD_KEY}{shortcut}
+              {shortcut}
             </span>
           )}
         </div>
