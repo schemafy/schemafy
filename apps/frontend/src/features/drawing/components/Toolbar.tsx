@@ -2,15 +2,14 @@ import { type ComponentType, useState } from 'react';
 import { RelationshipSelector } from './RelationshipSelector';
 import { SearchEntitiesDialog } from './SearchEntitiesDialog';
 import type { RelationshipConfig } from '../types';
-import { Button, Tooltip, TooltipTrigger, TooltipContent } from '@/components';
-import {
-  Search,
-  Table,
-  MessageCircleMore,
-  Spline,
-  MousePointer2,
-  Hand,
-} from 'lucide-react';
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@/components';
+import { Hand, MessageCircleMore, MousePointer2, Search, Spline, Table, } from 'lucide-react';
+
+const MOD_KEY =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPod|iPad/.test(navigator.userAgent)
+    ? '⌘'
+    : 'Ctrl+';
 
 interface ToolbarProps {
   setActiveTool: (toolId: string) => void;
@@ -20,52 +19,31 @@ interface ToolbarProps {
 }
 
 const TOOLS = [
-  {
-    id: 'pointer',
-    name: 'Pointer',
-    label: 'MousePointer',
-    icon: MousePointer2,
-  },
-  {
-    id: 'hand',
-    name: 'Hand',
-    label: 'Hand',
-    icon: Hand,
-  },
+  {id: 'pointer', name: 'Pointer', shortcut: '1', icon: MousePointer2},
+  {id: 'hand', name: 'Hand', shortcut: '2', icon: Hand},
   {
     id: 'table',
     name: 'Add Entity',
-    label: 'Table',
+    shortcut: '3',
     icon: Table,
     action: 'addTable',
   },
+  {id: 'memo', name: 'Add Memo', shortcut: '4', icon: MessageCircleMore},
   {
     id: 'relationship',
     name: 'Change Relationship',
-    label: 'RelationshipSelector',
     icon: Spline,
     isRelationship: true,
   },
-  {
-    id: 'memo',
-    name: 'Add Memo',
-    label: 'Memo',
-    icon: MessageCircleMore,
-  },
-  {
-    id: 'search',
-    name: 'Search Entities',
-    label: 'Search',
-    icon: Search,
-  },
+  {id: 'search', name: 'Search', icon: Search},
 ];
 
 export const Toolbar = ({
-  setActiveTool,
-  activeTool,
-  relationshipConfig,
-  onRelationshipConfigChange,
-}: ToolbarProps) => {
+                          setActiveTool,
+                          activeTool,
+                          relationshipConfig,
+                          onRelationshipConfigChange,
+                        }: ToolbarProps) => {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
 
   const handleToolClick = (toolId: string) => {
@@ -95,6 +73,7 @@ export const Toolbar = ({
             onClick={() => handleToolClick(tool.id)}
             Icon={tool.icon}
             name={tool.name}
+            shortcut={tool.shortcut}
             isActive={activeTool === tool.id}
           />
         ))}
@@ -119,16 +98,18 @@ export const Toolbar = ({
 };
 
 const Tool = ({
-  onClick,
-  Icon,
-  id,
-  name,
-  isActive,
-}: {
+                onClick,
+                Icon,
+                id,
+                name,
+                shortcut,
+                isActive,
+              }: {
   onClick: () => void;
   Icon: ComponentType<{ size: number; color: string }>;
   id: string;
   name: string;
+  shortcut?: string;
   isActive: boolean;
 }) => {
   const color = isActive
@@ -148,11 +129,18 @@ const Tool = ({
         hover:bg-schemafy-secondary
       `}
         >
-          <Icon size={16} color={color} />
+          <Icon size={16} color={color}/>
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        <p>{name}</p>
+        <div className="flex flex-col items-center gap-0.5">
+          <span>{name}</span>
+          {shortcut && (
+            <span className="text-xs opacity-60">
+              {MOD_KEY}{shortcut}
+            </span>
+          )}
+        </div>
       </TooltipContent>
     </Tooltip>
   );
