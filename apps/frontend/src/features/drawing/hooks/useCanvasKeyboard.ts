@@ -18,13 +18,13 @@ const TOOL_SHORTCUTS: Record<string, string> = {
 };
 
 export const useCanvasKeyboard = ({
-                                    isChatOpen,
-                                    mousePosition,
-                                    activeTool,
-                                    setChatInputPosition,
-                                    setIsChatOpen,
-                                    setActiveTool,
-                                  }: UseCanvasKeyboardParams) => {
+  isChatOpen,
+  mousePosition,
+  activeTool,
+  setChatInputPosition,
+  setIsChatOpen,
+  setActiveTool,
+}: UseCanvasKeyboardParams) => {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
