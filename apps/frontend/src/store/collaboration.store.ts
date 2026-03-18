@@ -1,4 +1,10 @@
-import { action, computed, makeObservable, observable, runInAction, } from 'mobx';
+import {
+  action,
+  computed,
+  makeObservable,
+  observable,
+  runInAction,
+} from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
@@ -12,7 +18,7 @@ import type {
 } from '@/features/collaboration/api';
 import { authStore } from './auth.store';
 import { apiClient } from '@/lib/api/client';
-import { toast } from "sonner";
+import { toast } from 'sonner';
 
 const WEBSOCKET_URL =
   import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
@@ -105,7 +111,7 @@ export class CollaborationStore {
       if (!this.projectId || this.reconnectTimeoutId) return;
 
       if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-        toast.error("Network Error, please try again later.");
+        toast.error('Network Error, please try again later.');
         return;
       }
 
@@ -213,7 +219,7 @@ export class CollaborationStore {
 
     const message: PostCursor = {
       type: 'CURSOR',
-      cursor: {x, y},
+      cursor: { x, y },
     };
 
     this.send(message);
