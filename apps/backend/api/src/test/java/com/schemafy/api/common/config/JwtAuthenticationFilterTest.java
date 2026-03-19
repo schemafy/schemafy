@@ -19,6 +19,7 @@ import com.schemafy.api.common.exception.ProblemProperties;
 import com.schemafy.api.common.security.jwt.JwtAuthenticationFilter;
 import com.schemafy.api.common.security.jwt.JwtProvider;
 import com.schemafy.api.common.security.jwt.WebExchangeErrorWriter;
+import com.schemafy.core.common.json.JsonCodec;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -41,7 +42,8 @@ class JwtAuthenticationFilterTest {
 
   @BeforeEach
   void setUp() {
-    errorResponseWriter = new WebExchangeErrorWriter(new ObjectMapper(),
+    errorResponseWriter = new WebExchangeErrorWriter(
+        new JsonCodec(new ObjectMapper()),
         new ProblemDetailFactory(new ProblemProperties()));
     jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider,
         errorResponseWriter);

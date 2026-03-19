@@ -13,6 +13,7 @@ import com.schemafy.api.collaboration.dto.BroadcastMessage;
 import com.schemafy.api.collaboration.dto.CursorPosition;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.dto.event.CursorEvent;
+import com.schemafy.core.common.json.JsonCodec;
 
 import reactor.test.StepVerifier;
 
@@ -36,10 +37,11 @@ class CollaborationServiceTest {
   @BeforeEach
   void setUp() {
     objectMapper = new ObjectMapper().findAndRegisterModules();
+    JsonCodec jsonCodec = new JsonCodec(objectMapper);
     CollaborationPayloadSerializer serializer = new CollaborationPayloadSerializer(
-        objectMapper);
+        jsonCodec);
     collaborationService = new CollaborationService(sessionRegistry,
-        eventPublisher, serializer, objectMapper, java.util.List.of());
+        eventPublisher, serializer, jsonCodec, java.util.List.of());
   }
 
   @Test

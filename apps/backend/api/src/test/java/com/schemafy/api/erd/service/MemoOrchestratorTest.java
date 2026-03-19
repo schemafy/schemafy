@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoRequest;
@@ -17,6 +18,7 @@ import com.schemafy.api.erd.service.memo.MemoApiCommandMapper;
 import com.schemafy.api.erd.service.memo.MemoApiResponseMapper;
 import com.schemafy.api.erd.service.memo.MemoDeletePermissionPolicy;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsUseCase;
@@ -43,6 +45,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MemoOrchestrator")
 class MemoOrchestratorTest {
+
+  private static final ObjectMapper objectMapper = new ObjectMapper()
+      .findAndRegisterModules();
 
   @Mock
   CreateMemoUseCase createMemoUseCase;
@@ -72,6 +77,7 @@ class MemoOrchestratorTest {
 
   @BeforeEach
   void setUp() {
+    JsonCodec jsonCodec = new JsonCodec(objectMapper);
     sut = new MemoOrchestrator(
         createMemoUseCase,
         getMemoUseCase,
@@ -81,8 +87,10 @@ class MemoOrchestratorTest {
         getMemoCommentsUseCase,
         updateMemoCommentUseCase,
         getUsersByIdsUseCase,
-        new MemoApiCommandMapper(new MemoDeletePermissionPolicy()),
-        new MemoApiResponseMapper());
+        new MemoApiCommandMapper(new MemoDeletePermissionPolicy(),
+            jsonCodec),
+        new MemoApiResponseMapper(jsonCodec),
+        jsonCodec);
   }
 
   @Test
@@ -135,7 +143,8 @@ class MemoOrchestratorTest {
 
   @Test
   @DisplayName("updateMemo: 도메인 결과를 기존 응답 형태로 반환한다")
-  void updateMemo_responseShape() {
+  void updateMemo_responseShape() throws Exception {
+    var expectedPositions = objectMapper.readTree("{\"x\":100}");
     Memo updated = new Memo(
         "memo-1",
         "schema-1",
@@ -162,12 +171,12 @@ class MemoOrchestratorTest {
 
     StepVerifier.create(sut.updateMemo(
         "memo-1",
-        new UpdateMemoRequest("{\"x\":100}"),
+        new UpdateMemoRequest(objectMapper.readTree("{\"x\":100,\"y\":0}")),
         AuthenticatedUser.of("author-1")))
         .assertNext(response -> {
           assertThat(response.id()).isEqualTo("memo-1");
           assertThat(response.schemaId()).isEqualTo("schema-1");
-          assertThat(response.positions()).isEqualTo("{\"x\":100}");
+          assertThat(response.positions()).isEqualTo(expectedPositions);
           assertThat(response.author().id()).isEqualTo("author-1");
           assertThat(response.author().name()).isEqualTo("작성자");
         })
@@ -176,7 +185,7 @@ class MemoOrchestratorTest {
 
   @Test
   @DisplayName("updateMemo: 작성자 정보가 없으면 Unknown으로 fallback 한다")
-  void updateMemo_unknownUserFallback() {
+  void updateMemo_unknownUserFallback() throws Exception {
     Memo updated = new Memo(
         "memo-1",
         "schema-1",
@@ -193,7 +202,7 @@ class MemoOrchestratorTest {
 
     StepVerifier.create(sut.updateMemo(
         "memo-1",
-        new UpdateMemoRequest("{\"x\":100}"),
+        new UpdateMemoRequest(objectMapper.readTree("{\"x\":100,\"y\":0}")),
         AuthenticatedUser.of("author-1")))
         .assertNext(response -> {
           assertThat(response.author().id()).isEqualTo("author-1");

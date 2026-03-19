@@ -8,11 +8,24 @@ import org.springframework.r2dbc.connection.init.CompositeDatabasePopulator;
 import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
 import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schemafy.core.common.json.JsonCodec;
+
 import io.r2dbc.spi.ConnectionFactory;
 
 @TestConfiguration
 @EnableR2dbcAuditing
 public class R2dbcTestConfiguration {
+
+  @Bean
+  public ObjectMapper objectMapper() {
+    return new ObjectMapper().findAndRegisterModules();
+  }
+
+  @Bean
+  public JsonCodec jsonCodec(ObjectMapper objectMapper) {
+    return new JsonCodec(objectMapper);
+  }
 
   @Bean
   public ConnectionFactoryInitializer connectionFactoryInitializer(ConnectionFactory connectionFactory) {
