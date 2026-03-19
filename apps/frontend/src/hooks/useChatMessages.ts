@@ -17,7 +17,7 @@ export const useChatMessages = () => {
         return;
       }
 
-      const cursor = collaborationStore.cursors.get(message.userId);
+      const cursor = collaborationStore.cursors.get(message.sessionId);
 
       if (!cursor) {
         console.error('Cursor not found');
