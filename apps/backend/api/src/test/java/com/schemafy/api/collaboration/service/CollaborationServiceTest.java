@@ -65,7 +65,8 @@ class CollaborationServiceTest {
         .isEqualTo("session-1");
     assertThat(captor.getValue().message())
         .contains("\"type\":\"CURSOR\"");
-    assertThat(captor.getValue().message()).doesNotContain("sessionId");
+    assertThat(captor.getValue().message())
+        .contains("\"sessionId\":\"session-1\"");
   }
 
   @Test
@@ -84,7 +85,8 @@ class CollaborationServiceTest {
     verify(sessionRegistry).broadcast(captor.capture());
     assertThat(captor.getValue().excludeSessionId()).isNull();
     assertThat(captor.getValue().message()).contains("\"type\":\"CHAT\"");
-    assertThat(captor.getValue().message()).doesNotContain("sessionId");
+    assertThat(captor.getValue().message())
+        .contains("\"sessionId\":\"session-1\"");
   }
 
   @Test
