@@ -21,8 +21,8 @@ class RemoveProjectMemberService implements RemoveProjectMemberUseCase {
     return projectAccessHelper.validateProjectAdmin(command.projectId(), command.requesterId())
         .then(projectAccessHelper.findProjectMember(command.targetUserId(), command.projectId()))
         .flatMap(target -> projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), target)
-            .then(projectAccessHelper.softDeleteMember(target))
-            .as(transactionalOperator::transactional));
+            .then(projectAccessHelper.softDeleteMember(target)))
+        .as(transactionalOperator::transactional);
   }
 
 }
