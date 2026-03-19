@@ -1,10 +1,4 @@
-import {
-  action,
-  computed,
-  makeObservable,
-  observable,
-  runInAction,
-} from 'mobx';
+import { action, computed, makeObservable, observable, runInAction, } from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
@@ -91,7 +85,6 @@ export class CollaborationStore {
     this.ws.onmessage = (event) => {
       try {
         const payload: WebSocketMessage = JSON.parse(event.data);
-        console.log(this.sessionId);
 
         if (payload.type === 'SESSION_READY') {
           runInAction(() => {
@@ -219,7 +212,7 @@ export class CollaborationStore {
 
     const message: PostCursor = {
       type: 'CURSOR',
-      cursor: { x, y },
+      cursor: {x, y},
     };
 
     this.send(message);
