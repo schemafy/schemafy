@@ -394,6 +394,30 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   }
 
   @Test
+  @DisplayName("같은 역할로의 변경 요청은 거부한다")
+  void updateMemberRole_SameRoleChange_BadRequest() {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
+
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        ProjectRole.VIEWER.name());
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isBadRequest();
+
+    ProjectMember persistedMember = projectMemberRepository.findById(viewerMember.getId()).block();
+    assertThat(persistedMember).isNotNull();
+    assertThat(persistedMember.getRole()).isEqualTo(ProjectRole.VIEWER.name());
+  }
+
+  @Test
   @DisplayName("ADMIN 권한 없이 역할 변경은 실패한다")
   void updateMemberRole_NoAdminAccess_Forbidden() {
     Project project = saveProject(testWorkspaceId, "Test Project", "Description");

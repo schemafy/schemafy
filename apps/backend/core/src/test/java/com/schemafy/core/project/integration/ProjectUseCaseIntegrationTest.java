@@ -94,6 +94,30 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("프로젝트 역할 변경 시 동일한 역할로의 변경은 거부한다")
+  void updateProjectMemberRole_rejectsSameRoleChange() {
+    User admin = signUpUser("admin-same-role@test.com", "Admin");
+    User viewer = signUpUser("viewer-same-role@test.com", "Viewer");
+    Workspace workspace = saveWorkspace("Same Role WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, viewer, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Same Role Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    ProjectMember viewerMember = saveProjectMember(project, viewer, ProjectRole.VIEWER);
+
+    StepVerifier.create(updateProjectMemberRoleUseCase.updateProjectMemberRole(
+        new UpdateProjectMemberRoleCommand(project.getId(), viewer.id(), ProjectRole.VIEWER,
+            admin.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.SAME_ROLE_CHANGE_NOT_ALLOWED))
+        .verify();
+
+    ProjectMember persistedMember = projectMemberRepository.findById(viewerMember.getId()).block();
+    assertThat(persistedMember).isNotNull();
+    assertThat(persistedMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+  }
+
+  @Test
   @DisplayName("프로젝트 역할 변경 시 다른 멤버의 역할은 수정할 수 있다")
   void updateProjectMemberRole_updatesTargetMember() {
     User admin = signUpUser("admin-update@test.com", "Admin");

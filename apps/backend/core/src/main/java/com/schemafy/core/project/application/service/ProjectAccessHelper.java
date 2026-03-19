@@ -105,6 +105,10 @@ class ProjectAccessHelper {
     ProjectRole requesterRole = requester.getRoleAsEnum();
     ProjectRole targetCurrentRole = target.getRoleAsEnum();
 
+    if (targetCurrentRole == newRole) {
+      throw new DomainException(ProjectErrorCode.SAME_ROLE_CHANGE_NOT_ALLOWED);
+    }
+
     if (target.getUserId().equals(requester.getUserId())) {
       throw new DomainException(ProjectErrorCode.CANNOT_CHANGE_OWN_ROLE);
     }
