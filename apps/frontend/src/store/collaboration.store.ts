@@ -1,4 +1,10 @@
-import { action, computed, makeObservable, observable, runInAction, } from 'mobx';
+import {
+  action,
+  computed,
+  makeObservable,
+  observable,
+  runInAction,
+} from 'mobx';
 import type {
   ChatMessage,
   CursorPosition,
@@ -212,7 +218,7 @@ export class CollaborationStore {
 
     const message: PostCursor = {
       type: 'CURSOR',
-      cursor: {x, y},
+      cursor: { x, y },
     };
 
     this.send(message);
