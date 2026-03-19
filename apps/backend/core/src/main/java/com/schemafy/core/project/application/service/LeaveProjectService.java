@@ -25,14 +25,14 @@ class LeaveProjectService implements LeaveProjectUseCase {
   public Mono<Void> leaveProject(LeaveProjectCommand command) {
     return projectAccessHelper.findProjectMember(command.requesterId(),
         command.projectId())
-        .flatMap(member -> projectMemberPort.countByProjectIdAndNotDeleted(
-            command.projectId())
+        .flatMap(member -> projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), member)
+            .thenReturn(member))
+        .flatMap(member -> projectMemberPort.countByProjectIdAndNotDeleted(command.projectId())
             .flatMap(memberCount -> {
               if (memberCount <= 1) {
                 return projectPort.findById(command.projectId())
                     .flatMap(projectCascadeHelper::softDeleteProjectCascade)
-                    .switchIfEmpty(projectAccessHelper.softDeleteMember(member))
-                    .then();
+                    .switchIfEmpty(projectAccessHelper.softDeleteMember(member));
               }
               return projectAccessHelper.softDeleteMember(member);
             }))

@@ -590,13 +590,14 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   void leaveProject_LastMember_ProjectDeleted() {
     Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.VIEWER);
+    ProjectMember loneProjectMember = addProjectMember(project.getId(), testUser2Id,
+        ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/projects/{projectId}/members/me",
             project.getId())
-        .header("Authorization", "Bearer " + accessToken).exchange()
+        .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isNoContent();
 
     Project deletedProject = projectRepository
@@ -609,28 +610,47 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   void leaveProject_LastAdmin_Allowed() {
     Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    ProjectMember projectAdmin = addProjectMember(project.getId(), testUser2Id,
+        ProjectRole.ADMIN);
 
-    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
+    ProjectMember projectViewer = addProjectMember(project.getId(), testUserId,
+        ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/projects/{projectId}/members/me",
             project.getId())
-        .header("Authorization", "Bearer " + accessToken).exchange()
+        .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isNoContent();
 
-    ProjectMember deletedAdmin = projectMemberRepository.findById(adminMember.getId()).block();
-    assertThat(deletedAdmin).isNotNull();
-    assertThat(deletedAdmin.isDeleted()).isTrue();
+    ProjectMember deletedProjectAdmin = projectMemberRepository
+        .findById(projectAdmin.getId()).block();
+    assertThat(deletedProjectAdmin).isNotNull();
+    assertThat(deletedProjectAdmin.isDeleted()).isTrue();
 
-    ProjectMember remainedViewer = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUser2Id)
+    ProjectMember remainedProjectViewer = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUserId)
         .block();
-    assertThat(remainedViewer).isNotNull();
+    assertThat(remainedProjectViewer).isNotNull();
 
     Project remainedProject = projectRepository.findByIdAndNotDeleted(project.getId()).block();
     assertThat(remainedProject).isNotNull();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 관리자는 프로젝트를 직접 나갈 수 없다")
+  void leaveProject_WorkspaceAdmin_Forbidden() {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/me",
+            project.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange().expectStatus().isForbidden();
   }
 
   @Test
