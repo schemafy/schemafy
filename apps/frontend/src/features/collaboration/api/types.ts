@@ -20,6 +20,7 @@ export type ReceiveJoin = {
   type: 'JOIN';
   userId: string;
   userName: string;
+  sessionId: string;
   timestamp: string;
 };
 
@@ -27,11 +28,13 @@ export type ReceiveLeave = {
   type: 'LEAVE';
   userId: string;
   userName: string;
+  sessionId: string;
   timestamp: string;
 };
 
 export type ReceiveCursor = {
   type: 'CURSOR';
+  sessionId: string;
   userInfo: {
     userId: string;
     userName: string;
@@ -47,6 +50,7 @@ export type ReceiveSchemaFocus = {
   type: 'SCHEMA_FOCUS';
   userId: string;
   userName: string;
+  sessionId: string;
   schemaId: string;
   timestamp: string;
 };
@@ -56,6 +60,7 @@ export type ReceiveChat = {
   messageId: string;
   userId: string;
   userName: string;
+  sessionId: string;
   content: string;
   timestamp: string;
   position?: { x: number; y: number };
@@ -87,6 +92,7 @@ export type ChatMessage = {
   messageId: string;
   userId: string;
   userName: string;
+  sessionId: string;
   content: string;
   timestamp: string;
   position?: { x: number; y: number };
@@ -95,6 +101,7 @@ export type ChatMessage = {
 export type CursorPosition = {
   userId: string;
   userName: string;
+  sessionId: string;
   x: number;
   y: number;
 };

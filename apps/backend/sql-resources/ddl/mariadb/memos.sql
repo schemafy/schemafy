@@ -2,10 +2,12 @@ CREATE TABLE IF NOT EXISTS memos (
     id          CHAR(26)  NOT NULL,
     schema_id   CHAR(26)  NOT NULL,
     author_id   CHAR(26)  NOT NULL,
-    positions   TEXT      NOT NULL,
+    positions   JSON      NOT NULL,
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at  TIMESTAMP NULL,
     CONSTRAINT pk_memos PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE memos
+    MODIFY COLUMN positions JSON NOT NULL;

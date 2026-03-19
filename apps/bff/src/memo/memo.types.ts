@@ -1,3 +1,8 @@
+export type MemoPosition = {
+  x: number;
+  y: number;
+};
+
 export type MemoComment = {
   id: string;
   memoId: string;
@@ -11,7 +16,7 @@ export type Memo = {
   id: string;
   schemaId: string;
   author: Author;
-  positions: string;
+  positions: MemoPosition;
   createdAt?: string;
   updatedAt?: string;
   comments: MemoComment[];
@@ -19,12 +24,12 @@ export type Memo = {
 
 export type CreateMemoRequest = {
   schemaId: string;
-  positions: string;
+  positions: MemoPosition;
   body: string;
 };
 
 export type UpdateMemoRequest = {
-  positions: string;
+  positions: MemoPosition;
 };
 
 export type CreateMemoCommentRequest = {

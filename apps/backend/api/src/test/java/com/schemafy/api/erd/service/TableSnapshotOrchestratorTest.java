@@ -9,6 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
+import com.schemafy.api.erd.service.table.TableApiResponseMapper;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
@@ -72,6 +76,8 @@ class TableSnapshotOrchestratorTest {
 
   @BeforeEach
   void setUp() {
+    JsonCodec jsonCodec = new JsonCodec(new ObjectMapper()
+        .findAndRegisterModules());
     sut = new TableSnapshotOrchestrator(
         getTableUseCase,
         getColumnsByTableIdUseCase,
@@ -80,7 +86,9 @@ class TableSnapshotOrchestratorTest {
         getRelationshipsByTableIdUseCase,
         getRelationshipColumnsByRelationshipIdUseCase,
         getIndexesByTableIdUseCase,
-        getIndexColumnsByIndexIdUseCase);
+        getIndexColumnsByIndexIdUseCase,
+        new TableApiResponseMapper(jsonCodec),
+        new RelationshipApiResponseMapper(jsonCodec));
   }
 
   @Test

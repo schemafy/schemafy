@@ -50,7 +50,7 @@ export const useTables = () => {
         charset: '',
         collation: '',
       },
-      extra: JSON.stringify({ position }),
+      extra: { position },
     });
   };
 
@@ -63,10 +63,10 @@ export const useTables = () => {
     changeTableExtraMutation.mutate({
       tableId: node.id,
       data: {
-        extra: JSON.stringify({
+        extra: {
           ...currentExtra,
           position: node.position,
-        }),
+        },
       },
     });
   };

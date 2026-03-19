@@ -9,21 +9,18 @@ import type {
   IndexSortDir,
   IndexType,
 } from '../types';
-import type { TableSnapshotResponse, ColumnLengthScale } from '../api';
+import type {
+  TableSnapshotResponse,
+  ColumnLengthScale,
+  TableResponse,
+} from '../api';
 
 export type TableExtra = {
   position?: Point;
 };
 
-export const parseTableExtra = (extraString: string | null): TableExtra => {
-  if (!extraString) return {};
-
-  try {
-    return JSON.parse(extraString) as TableExtra;
-  } catch {
-    return {};
-  }
-};
+export const parseTableExtra = (extra: TableResponse['extra']): TableExtra =>
+  (extra ?? {}) as TableExtra;
 
 type ConstraintMap = {
   primaryKeys: Set<string>;

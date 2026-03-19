@@ -24,8 +24,11 @@ import {
 } from '@/features/drawing';
 import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
-import { ChatInput, ChatOverlay } from '@/components/Collaboration';
-import { RemoteCursors } from '@/features/collaboration/components';
+import {
+  RemoteCursors,
+  ChatInput,
+  ChatOverlay,
+} from '@/features/collaboration/components';
 
 const NODE_TYPES = {
   table: TableNode,
