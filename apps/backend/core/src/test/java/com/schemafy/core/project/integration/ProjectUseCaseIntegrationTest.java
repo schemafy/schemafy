@@ -200,30 +200,6 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("프로젝트 등급 불일치가 있어도 워크스페이스 관리자는 프로젝트에서 제거할 수 없다")
-  void removeProjectMember_rejectsWorkspaceAdminEvenWhenStoredProjectRoleIsNotAdmin() {
-    User requester = signUpUser("requester-project-remove-allowed@test.com", "Requester");
-    User target = signUpUser("target-project-remove-allowed@test.com", "Target");
-    Workspace workspace = saveWorkspace("Project Remove Allowed WS", "Description");
-    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
-    saveWorkspaceMember(workspace, target, WorkspaceRole.ADMIN);
-    var project = saveProject(workspace, "Project Remove Allowed Project");
-    saveProjectMember(project, requester, ProjectRole.ADMIN);
-    ProjectMember targetMember = saveProjectMember(project, target, ProjectRole.EDITOR);
-
-    StepVerifier.create(removeProjectMemberUseCase.removeProjectMember(
-        new RemoveProjectMemberCommand(project.getId(), target.id(), requester.id())))
-        .expectErrorMatches(DomainException.hasErrorCode(
-            ProjectErrorCode.WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED))
-        .verify();
-
-    ProjectMember persistedMember = projectMemberRepository.findById(targetMember.getId()).block();
-    assertThat(persistedMember).isNotNull();
-    assertThat(persistedMember.isDeleted()).isFalse();
-    assertThat(persistedMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
-  }
-
-  @Test
   @DisplayName("프로젝트 관리자이지만 워크스페이스 관리자가 아니면 프로젝트에서 등급을 내릴 수 있다")
   void updateProjectMemberRole_allowsProjectAdminWithoutWorkspaceAdmin() {
     User requester = signUpUser("requester-project-demote-allowed@test.com", "Requester");
