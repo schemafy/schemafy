@@ -10,6 +10,8 @@ import com.schemafy.core.project.application.port.in.CreateProjectCommand;
 import com.schemafy.core.project.application.port.in.CreateProjectUseCase;
 import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
+import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
+import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.LeaveProjectCommand;
 import com.schemafy.core.project.application.port.in.LeaveProjectUseCase;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
@@ -45,6 +47,9 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
   @Autowired
   private LeaveProjectUseCase leaveProjectUseCase;
+
+  @Autowired
+  private GetMySharedProjectsUseCase getMySharedProjectsUseCase;
 
   @Test
   @DisplayName("프로젝트 생성 시 활성 워크스페이스 멤버를 프로젝트 역할로 추가한다")
@@ -255,6 +260,49 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     leaveProjectUseCase.leaveProject(new LeaveProjectCommand(project.getId(), member.id())).block();
 
     assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
+  }
+
+  @Test
+  @DisplayName("공유받은 프로젝트 조회시 공유 받은 프로젝트만 포함하고 활성 워크스페이스 및 삭제된 행은 제외한다")
+  void getMySharedProjects_filtersBySharedMembershipRules() {
+    User requester = signUpUser("shared-requester@test.com", "Requester");
+    User owner = signUpUser("shared-owner@test.com", "Owner");
+
+    Workspace sharedWorkspace = saveWorkspace("Shared WS", "Description");
+    saveWorkspaceMember(sharedWorkspace, owner, WorkspaceRole.ADMIN);
+    var sharedProject = saveProject(sharedWorkspace, "Shared Project");
+    saveProjectMember(sharedProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(sharedProject, requester, ProjectRole.VIEWER);
+
+    var secondSharedProject = saveProject(sharedWorkspace, "Second Shared Project");
+    saveProjectMember(secondSharedProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(secondSharedProject, requester, ProjectRole.EDITOR);
+
+    Workspace activeWorkspace = saveWorkspace("Active WS", "Description");
+    saveWorkspaceMember(activeWorkspace, owner, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(activeWorkspace, requester, WorkspaceRole.MEMBER);
+    var activeWorkspaceProject = saveProject(activeWorkspace, "Active Workspace Project");
+    saveProjectMember(activeWorkspaceProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(activeWorkspaceProject, requester, ProjectRole.VIEWER);
+
+    Workspace deletedMembershipWorkspace = saveWorkspace("Deleted PM WS", "Description");
+    saveWorkspaceMember(deletedMembershipWorkspace, owner, WorkspaceRole.ADMIN);
+    var deletedMembershipProject = saveProject(deletedMembershipWorkspace,
+        "Deleted Membership Project");
+    saveProjectMember(deletedMembershipProject, owner, ProjectRole.ADMIN);
+    ProjectMember deletedProjectMember = saveProjectMember(deletedMembershipProject, requester,
+        ProjectRole.VIEWER);
+    softDeleteProjectMember(deletedProjectMember.getId());
+
+    var result = getMySharedProjectsUseCase.getMySharedProjects(
+        new GetMySharedProjectsQuery(requester.id(), 0, 10)).block();
+
+    assertThat(result.content()).hasSize(2);
+    assertThat(result.content().get(0).project().getId()).isEqualTo(secondSharedProject.getId());
+    assertThat(result.content().get(0).role()).isEqualTo(ProjectRole.EDITOR);
+    assertThat(result.content().get(1).project().getId()).isEqualTo(sharedProject.getId());
+    assertThat(result.content().get(1).role()).isEqualTo(ProjectRole.VIEWER);
+    assertThat(result.totalElements()).isEqualTo(2);
   }
 
   @Test
