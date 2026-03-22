@@ -74,8 +74,7 @@ public class MySqlForeignKeyGenerator {
     }
 
     return cols.stream()
-        .sorted(Comparator.comparing(RelationshipColumnResponse::seqNo,
-            Comparator.nullsLast(Comparator.naturalOrder())))
+        .sorted(Comparator.comparingInt(RelationshipColumnResponse::seqNo))
         .map(rc -> quoteColumn(columnIdToName, rc.fkColumnId()))
         .collect(Collectors.joining(", "));
   }
@@ -88,8 +87,7 @@ public class MySqlForeignKeyGenerator {
     }
 
     return cols.stream()
-        .sorted(Comparator.comparing(RelationshipColumnResponse::seqNo,
-            Comparator.nullsLast(Comparator.naturalOrder())))
+        .sorted(Comparator.comparingInt(RelationshipColumnResponse::seqNo))
         .map(rc -> quoteColumn(pkColumnIdToName, rc.pkColumnId()))
         .collect(Collectors.joining(", "));
   }
