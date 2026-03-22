@@ -11,12 +11,12 @@ import org.springframework.test.context.ActiveProfiles;
 
 import org.junit.jupiter.api.BeforeEach;
 
+import com.schemafy.core.DomainTestApplication;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
-import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaResult;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemasByProjectIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
-import com.schemafy.core.DomainTestApplication;
 import com.schemafy.core.project.adapter.out.persistence.DomainInvitationRepository;
 import com.schemafy.core.project.adapter.out.persistence.DomainProjectMemberRepository;
 import com.schemafy.core.project.adapter.out.persistence.DomainProjectRepository;
