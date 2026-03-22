@@ -1,14 +1,16 @@
 name: Move Unfinished Sprint Issues
 
 on:
+  schedule:
+    - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
       previous_sprint_name:
-        description: '이전 스프린트의 이름'
-        required: true
+        description: '이전 스프린트의 이름(비워두면 자동 계산)'
+        required: false
       current_sprint_name:
-        description: '현재 스프린트의 이름'
-        required: true
+        description: '현재 스프린트의 이름(비워두면 자동 계산)'
+        required: false
 
 permissions:
   issues: write
@@ -21,6 +23,7 @@ env:
   PROJECT_STATUS_FIELD_NAME: ${{ vars.PROJECT_STATUS_FIELD_NAME || 'Status' }}
   PROJECT_SPRINT_FIELD_NAME: ${{ vars.PROJECT_SPRINT_FIELD_NAME || 'Sprint' }}
   STATUS_OPTION_DONE: ${{ vars.STATUS_OPTION_DONE || 'Done' }}
+  PROJECT_TIMEZONE: ${{ vars.PROJECT_TIMEZONE || 'Asia/Seoul' }}
 
 jobs:
   move_issues:
@@ -40,7 +43,10 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const { owner, repo } = context.repo;
-            const { previous_sprint_name, current_sprint_name } = context.payload.inputs;
+            const {
+              previous_sprint_name: previousSprintInput = '',
+              current_sprint_name: currentSprintInput = '',
+            } = context.payload.inputs || {};
 
             // 환경 변수 및 입력 값 확인
             const projectNumber = process.env.PROJECT_NUMBER;
@@ -52,10 +58,77 @@ jobs:
             const statusFieldName = process.env.PROJECT_STATUS_FIELD_NAME;
             const sprintFieldName = process.env.PROJECT_SPRINT_FIELD_NAME;
             const optionDone = process.env.STATUS_OPTION_DONE;
+            const projectTimeZone = process.env.PROJECT_TIMEZONE || 'UTC';
             const graph = github.graphql;
 
-            core.info(`이전 스프린트: '${previous_sprint_name}'`);
-            core.info(`현재 스프린트: '${current_sprint_name}'`);
+            function getCurrentDateInTimeZone(timeZone) {
+              const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+              });
+              const parts = Object.fromEntries(
+                formatter
+                  .formatToParts(new Date())
+                  .filter(part => part.type !== 'literal')
+                  .map(part => [part.type, part.value])
+              );
+
+              return `${parts.year}-${parts.month}-${parts.day}`;
+            }
+
+            function addDays(dateString, days) {
+              const date = new Date(`${dateString}T00:00:00Z`);
+              date.setUTCDate(date.getUTCDate() + days);
+              return date.toISOString().slice(0, 10);
+            }
+
+            function resolveSprintPair(sprintField, previousSprintName, currentSprintName, timeZone) {
+              const allIterations = [
+                ...sprintField.configuration.completedIterations,
+                ...sprintField.configuration.iterations,
+              ]
+                .map(iteration => ({
+                  ...iteration,
+                  duration: iteration.duration ?? sprintField.configuration.duration,
+                }))
+                .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+              if ((previousSprintName && !currentSprintName) || (!previousSprintName && currentSprintName)) {
+                throw new Error('스프린트 이름을 수동으로 지정하려면 previous_sprint_name과 current_sprint_name을 함께 입력해야 합니다.');
+              }
+
+              if (previousSprintName && currentSprintName) {
+                const previousSprint = allIterations.find(iteration => iteration.title === previousSprintName);
+                const currentSprint = allIterations.find(iteration => iteration.title === currentSprintName);
+
+                if (!previousSprint) throw new Error(`'${previousSprintName}' 스프린트를 찾을 수 없습니다.`);
+                if (!currentSprint) throw new Error(`'${currentSprintName}' 스프린트를 찾을 수 없습니다.`);
+
+                return { previousSprint, currentSprint, source: 'manual' };
+              }
+
+              const today = getCurrentDateInTimeZone(timeZone);
+              const currentSprintIndex = allIterations.findIndex(iteration => {
+                const endExclusive = addDays(iteration.startDate, iteration.duration);
+                return iteration.startDate <= today && today < endExclusive;
+              });
+
+              if (currentSprintIndex === -1) {
+                throw new Error(`'${today}' (${timeZone})에 해당하는 현재 스프린트를 찾을 수 없습니다.`);
+              }
+              if (currentSprintIndex === 0) {
+                throw new Error('현재 스프린트를 찾았지만 이전 스프린트가 없습니다.');
+              }
+
+              return {
+                previousSprint: allIterations[currentSprintIndex - 1],
+                currentSprint: allIterations[currentSprintIndex],
+                source: 'auto',
+                today,
+              };
+            }
 
             async function getProject() {
               const number = Number(projectNumber);
@@ -73,7 +146,14 @@ jobs:
                             __typename
                             ... on ProjectV2FieldCommon { id name }
                             ... on ProjectV2SingleSelectField { options { id name } }
-                            ... on ProjectV2IterationField { configuration { iterations { id title } completedIterations { id title } } }
+                            ... on ProjectV2IterationField {
+                              configuration {
+                                duration
+                                startDay
+                                iterations { id title startDate duration }
+                                completedIterations { id title startDate duration }
+                              }
+                            }
                           }
                         }
                       }
@@ -97,7 +177,14 @@ jobs:
                               __typename
                               ... on ProjectV2FieldCommon { id name }
                               ... on ProjectV2SingleSelectField { options { id name } }
-                              ... on ProjectV2IterationField { configuration { iterations { id title } completedIterations { id title } } }
+                              ... on ProjectV2IterationField {
+                                configuration {
+                                  duration
+                                  startDay
+                                  iterations { id title startDate duration }
+                                  completedIterations { id title startDate duration }
+                                }
+                              }
                             }
                           }
                         }
@@ -186,17 +273,25 @@ jobs:
               const statusField = project.fields.nodes.find(f => f.name === statusFieldName && f.__typename === 'ProjectV2SingleSelectField');
               if (!statusField) throw new Error(`'${statusFieldName}' 상태 필드를 찾을 수 없습니다.`);
 
-              const allIterations = [...sprintField.configuration.iterations, ...sprintField.configuration.completedIterations];
-              const previousSprint = allIterations.find(i => i.title === previous_sprint_name);
-              const currentSprint = allIterations.find(i => i.title === current_sprint_name);
-
-              if (!previousSprint) throw new Error(`'${previous_sprint_name}' 스프린트를 찾을 수 없습니다.`);
-              if (!currentSprint) throw new Error(`'${current_sprint_name}' 스프린트를 찾을 수 없습니다.`);
+              const { previousSprint, currentSprint, source, today } = resolveSprintPair(
+                sprintField,
+                previousSprintInput,
+                currentSprintInput,
+                projectTimeZone
+              );
               
               const doneStatusOption = statusField.options.find(o => o.name === optionDone);
               if (!doneStatusOption) throw new Error(`'${optionDone}' 상태 옵션을 찾을 수 없습니다.`);
 
               core.info('스프린트 및 상태 필드 정보를 성공적으로 로드했습니다.');
+              if (source === 'auto') {
+                core.info(`기준 일자 (${projectTimeZone}): '${today}'`);
+                core.info(`자동 계산된 이전 스프린트: '${previousSprint.title}' (${previousSprint.startDate})`);
+                core.info(`자동 계산된 현재 스프린트: '${currentSprint.title}' (${currentSprint.startDate})`);
+              } else {
+                core.info(`수동 입력된 이전 스프린트: '${previousSprint.title}'`);
+                core.info(`수동 입력된 현재 스프린트: '${currentSprint.title}'`);
+              }
 
               // 3. 프로젝트의 모든 아이템 가져오기
               const allItems = await getAllProjectItems(project.id);
@@ -224,18 +319,18 @@ jobs:
               }
 
               if (issuesToMove.length === 0) {
-                core.info(`'${previous_sprint_name}' 스프린트에서 '${current_sprint_name}' 스프린트로 이동할 이슈가 없습니다.`);
+                core.info(`'${previousSprint.title}' 스프린트에서 '${currentSprint.title}' 스프린트로 이동할 이슈가 없습니다.`);
                 return;
               }
 
-              core.info(`총 ${issuesToMove.length}개의 이슈를 '${current_sprint_name}' 스프린트로 이동합니다.`);
+              core.info(`총 ${issuesToMove.length}개의 이슈를 '${currentSprint.title}' 스프린트로 이동합니다.`);
 
               // 5. 이슈 이동 및 코멘트 추가
               for (const issue of issuesToMove) {
                 core.info(`이슈 #${issue.issueNumber} ('${issue.issueTitle}')를 이동합니다...`);
                 await updateItemIteration(project.id, issue.itemId, sprintField.id, currentSprint.id);
 
-                const commentBody = `이전 스프린트 '${previous_sprint_name}'에서 완료되지 않아 현재 스프린트 '${current_sprint_name}'(으)로 이동되었습니다.`;
+                const commentBody = `이전 스프린트 '${previousSprint.title}'에서 완료되지 않아 현재 스프린트 '${currentSprint.title}'(으)로 이동되었습니다.`;
                 await github.rest.issues.createComment({
                   owner: issue.repo.owner.login,
                   repo: issue.repo.name,
