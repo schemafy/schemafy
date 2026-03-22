@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.WithMockCustomUser;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
 import com.schemafy.core.common.MutationResult;
@@ -31,6 +32,7 @@ import com.schemafy.core.erd.schema.application.port.in.GetSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -132,6 +134,32 @@ class SchemaControllerTest {
                 fieldWithPath("data.charset").description("문자셋").optional(),
                 fieldWithPath("data.collation").description("콜레이션").optional(),
                 fieldWithPath("affectedTableIds").description("영향받은 테이블 ID 목록"))));
+  }
+
+  @Test
+  @DisplayName("존재하지 않는 프로젝트로 스키마 생성 시 404를 반환한다")
+  void createSchemaReturnsNotFoundForMissingProject() throws Exception {
+    CreateSchemaRequest request = new CreateSchemaRequest(
+        "06D6VZBWHSDJBBG0H7D156YZ98",
+        "mariadb",
+        "test_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci");
+
+    given(createSchemaUseCase.createSchema(any(CreateSchemaCommand.class)))
+        .willReturn(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND,
+            "Project not found: " + request.projectId())));
+
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/schemas")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(objectMapper.writeValueAsString(request))
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isNotFound()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(404)
+        .jsonPath("$.reason").isEqualTo(ProjectErrorCode.NOT_FOUND.code());
   }
 
   @Test
