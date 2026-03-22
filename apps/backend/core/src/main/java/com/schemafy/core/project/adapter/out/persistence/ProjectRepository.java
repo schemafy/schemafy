@@ -8,7 +8,7 @@ import com.schemafy.core.project.domain.Project;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface DomainProjectRepository extends ReactiveCrudRepository<Project, String> {
+public interface ProjectRepository extends ReactiveCrudRepository<Project, String> {
 
   @Query("SELECT * FROM projects WHERE id = :id AND deleted_at IS NULL")
   Mono<Project> findByIdAndNotDeleted(String id);

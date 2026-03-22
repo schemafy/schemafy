@@ -8,7 +8,7 @@ import com.schemafy.core.project.domain.ProjectMember;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface DomainProjectMemberRepository
+public interface ProjectMemberRepository
     extends ReactiveCrudRepository<ProjectMember, String> {
 
   @Query("SELECT * FROM project_members WHERE project_id = :projectId AND user_id = :userId AND deleted_at IS NULL")
