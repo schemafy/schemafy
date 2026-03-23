@@ -20,8 +20,12 @@ export const ProjectFormDialog = ({
   initialName = '',
   initialDescription = '',
 }: ProjectFormDialogProps) => {
-  const { mutate: createProject, isPending: isCreating } = useCreateProject(workspaceId);
-  const { mutate: updateProject, isPending: isUpdating } = useUpdateProject(projectId, workspaceId);
+  const { mutate: createProject, isPending: isCreating } =
+    useCreateProject(workspaceId);
+  const { mutate: updateProject, isPending: isUpdating } = useUpdateProject(
+    projectId,
+    workspaceId,
+  );
 
   const handleSubmit = (data: { name: string; description: string }) => {
     if (mode === 'create') {

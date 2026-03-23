@@ -18,8 +18,10 @@ export const WorkspaceFormDialog = ({
   initialName = '',
   initialDescription = '',
 }: WorkspaceFormDialogProps) => {
-  const { mutate: createWorkspace, isPending: isCreating } = useCreateWorkspace();
-  const { mutate: updateWorkspace, isPending: isUpdating } = useUpdateWorkspace(workspaceId);
+  const { mutate: createWorkspace, isPending: isCreating } =
+    useCreateWorkspace();
+  const { mutate: updateWorkspace, isPending: isUpdating } =
+    useUpdateWorkspace(workspaceId);
 
   const handleSubmit = (data: { name: string; description: string }) => {
     if (mode === 'create') {

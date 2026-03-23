@@ -75,7 +75,7 @@ export const useDeleteProject = (workspaceId: string) => {
   return useMutation({
     mutationFn: (projectId: string) => deleteProject(projectId),
     onSuccess: (_, projectId) => {
-      queryClient.removeQueries({queryKey: projectKeys.detail(projectId)});
+      queryClient.removeQueries({ queryKey: projectKeys.detail(projectId) });
       queryClient.invalidateQueries({
         queryKey: projectKeys.lists(workspaceId),
       });
@@ -97,7 +97,7 @@ export const useLeaveProject = () => {
   return useMutation({
     mutationFn: (projectId: string) => leaveProject(projectId),
     onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: projectKeys.all});
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
     },
   });
 };
@@ -120,9 +120,9 @@ export const useUpdateMemberRole = (projectId: string) => {
 
   return useMutation({
     mutationFn: ({
-                   userId,
-                   data,
-                 }: {
+      userId,
+      data,
+    }: {
       userId: string;
       data: UpdateProjectMemberRoleRequest;
     }) => updateMemberRole(projectId, userId, data),
@@ -172,7 +172,7 @@ export const useAcceptProjectInvitation = () => {
       queryClient.invalidateQueries({
         queryKey: projectKeys.myInvitationsAll(),
       });
-      queryClient.invalidateQueries({queryKey: projectKeys.all});
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
     },
   });
 };

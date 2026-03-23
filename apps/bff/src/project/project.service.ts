@@ -11,12 +11,11 @@ import type {
   UpdateProjectMemberRoleRequest,
   UpdateProjectRequest,
 } from './project.types';
-import { PageResponse } from "../common/types/api-response.types";
+import { PageResponse } from '../common/types/api-response.types';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly backendClient: BackendClientService) {
-  }
+  constructor(private readonly backendClient: BackendClientService) {}
 
   async createProject(
     workspaceId: string,
@@ -41,7 +40,7 @@ export class ProjectService {
       PageResponse<ProjectSummaryResponse>
     >(`/api/v1.0/workspaces/${workspaceId}/projects`, {
       ...this.backendClient.getAuthConfig(authHeader),
-      params: {page, size},
+      params: { page, size },
     });
     return response.data;
   }
@@ -88,7 +87,7 @@ export class ProjectService {
       PageResponse<ProjectMemberResponse>
     >(`/api/v1.0/projects/${projectId}/members`, {
       ...this.backendClient.getAuthConfig(authHeader),
-      params: {page, size},
+      params: { page, size },
     });
     return response.data;
   }
@@ -152,7 +151,7 @@ export class ProjectService {
       PageResponse<ProjectInvitationResponse>
     >(`/api/v1.0/projects/${projectId}/invitations`, {
       ...this.backendClient.getAuthConfig(authHeader),
-      params: {page, size},
+      params: { page, size },
     });
     return response.data;
   }
@@ -166,7 +165,7 @@ export class ProjectService {
       PageResponse<ProjectInvitationResponse>
     >('/api/v1.0/users/me/invitations/projects', {
       ...this.backendClient.getAuthConfig(authHeader),
-      params: {page, size},
+      params: { page, size },
     });
     return response.data;
   }

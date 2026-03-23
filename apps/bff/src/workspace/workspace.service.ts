@@ -11,12 +11,11 @@ import type {
   WorkspaceResponse,
   WorkspaceSummaryResponse,
 } from './workspace.types';
-import { PageResponse } from "../common/types/api-response.types";
+import { PageResponse } from '../common/types/api-response.types';
 
 @Injectable()
 export class WorkspaceService {
-  constructor(private readonly backendClient: BackendClientService) {
-  }
+  constructor(private readonly backendClient: BackendClientService) {}
 
   async createWorkspace(
     data: CreateWorkspaceRequest,
@@ -39,7 +38,7 @@ export class WorkspaceService {
       PageResponse<WorkspaceSummaryResponse>
     >('/api/v1.0/workspaces', {
       ...this.backendClient.getAuthConfig(authHeader),
-      params: {page, size},
+      params: { page, size },
     });
     return response.data;
   }
@@ -86,7 +85,7 @@ export class WorkspaceService {
       PageResponse<WorkspaceMemberResponse>
     >(`/api/v1.0/workspaces/${id}/members`, {
       ...this.backendClient.getAuthConfig(authHeader),
-      params: {page, size},
+      params: { page, size },
     });
     return response.data;
   }
@@ -150,7 +149,7 @@ export class WorkspaceService {
       PageResponse<WorkspaceInvitationResponse>
     >(`/api/v1.0/workspaces/${workspaceId}/invitations`, {
       ...this.backendClient.getAuthConfig(authHeader),
-      params: {page, size},
+      params: { page, size },
     });
     return response.data;
   }
@@ -164,7 +163,7 @@ export class WorkspaceService {
       PageResponse<WorkspaceInvitationResponse>
     >('/api/v1.0/users/me/invitations/workspaces', {
       ...this.backendClient.getAuthConfig(authHeader),
-      params: {page, size},
+      params: { page, size },
     });
     return response.data;
   }

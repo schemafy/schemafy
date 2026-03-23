@@ -56,7 +56,9 @@ export const EntityFormDialog = ({
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
           <div className="flex flex-col gap-1.5">
-            <label className="font-overline-xs text-schemafy-dark-gray">Name</label>
+            <label className="font-overline-xs text-schemafy-dark-gray">
+              Name
+            </label>
             <input
               type="text"
               value={name}
@@ -66,7 +68,9 @@ export const EntityFormDialog = ({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="font-overline-xs text-schemafy-dark-gray">Description</label>
+            <label className="font-overline-xs text-schemafy-dark-gray">
+              Description
+            </label>
             <input
               type="text"
               value={description}
@@ -77,10 +81,18 @@ export const EntityFormDialog = ({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={!name.trim() || isPending}>
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!name.trim() || isPending}
+          >
             {submitLabel}
           </Button>
         </DialogFooter>

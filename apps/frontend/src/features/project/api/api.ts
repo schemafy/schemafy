@@ -8,7 +8,7 @@ import type {
   ProjectResponse,
   ProjectSummaryResponse,
   UpdateProjectMemberRoleRequest,
-  UpdateProjectRequest
+  UpdateProjectRequest,
 } from './types';
 
 export const createProject = async (
@@ -29,7 +29,7 @@ export const getProjects = async (
 ): Promise<PageResponse<ProjectSummaryResponse>> => {
   const response = await apiClient.get<PageResponse<ProjectSummaryResponse>>(
     `/workspaces/${workspaceId}/projects`,
-    {params: {page, size}},
+    { params: { page, size } },
   );
   return response.data;
 };
@@ -66,7 +66,7 @@ export const getMembers = async (
 ): Promise<PageResponse<ProjectMemberResponse>> => {
   const response = await apiClient.get<PageResponse<ProjectMemberResponse>>(
     `/projects/${projectId}/members`,
-    {params: {page, size}},
+    { params: { page, size } },
   );
   return response.data;
 };
@@ -118,7 +118,7 @@ export const getInvitations = async (
 ): Promise<PageResponse<ProjectInvitationResponse>> => {
   const response = await apiClient.get<PageResponse<ProjectInvitationResponse>>(
     `/projects/${projectId}/invitations`,
-    {params: {page, size}},
+    { params: { page, size } },
   );
   return response.data;
 };
@@ -129,7 +129,7 @@ export const getMyInvitations = async (
 ): Promise<PageResponse<ProjectInvitationResponse>> => {
   const response = await apiClient.get<PageResponse<ProjectInvitationResponse>>(
     '/users/me/invitations/projects',
-    {params: {page, size}},
+    { params: { page, size } },
   );
   return response.data;
 };
@@ -143,9 +143,7 @@ export const acceptInvitation = async (
   return response.data;
 };
 
-export const rejectInvitation = async (
-  invitationId: string,
-): Promise<null> => {
+export const rejectInvitation = async (invitationId: string): Promise<null> => {
   const response = await apiClient.patch<null>(
     `/projects/invitations/${invitationId}/reject`,
   );

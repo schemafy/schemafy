@@ -35,7 +35,8 @@ export const WorkspaceMembersTab = ({
     currentRole: string;
   } | null>(null);
   const [selectedRole, setSelectedRole] = useState('');
-  const [removeTarget, setRemoveTarget] = useState<WorkspaceMemberResponse | null>(null);
+  const [removeTarget, setRemoveTarget] =
+    useState<WorkspaceMemberResponse | null>(null);
 
   const { data, isLoading } = useGetMembers(workspaceId, currentPage - 1);
   const { mutate: removeMember } = useRemoveMember(workspaceId);

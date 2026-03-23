@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import type {
@@ -10,8 +20,7 @@ import type {
 
 @Controller('api/v1.0')
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {
-  }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post('workspaces/:workspaceId/projects')
   async createProject(
