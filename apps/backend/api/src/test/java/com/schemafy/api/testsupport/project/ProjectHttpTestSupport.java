@@ -5,12 +5,12 @@ import java.time.Instant;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.schemafy.api.testsupport.user.UserHttpTestSupport;
-import com.schemafy.core.project.adapter.out.persistence.DomainInvitationRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainProjectMemberRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainProjectRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainShareLinkRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainWorkspaceMemberRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainWorkspaceRepository;
+import com.schemafy.core.project.adapter.out.persistence.InvitationRepository;
+import com.schemafy.core.project.adapter.out.persistence.ProjectMemberRepository;
+import com.schemafy.core.project.adapter.out.persistence.ProjectRepository;
+import com.schemafy.core.project.adapter.out.persistence.ShareLinkRepository;
+import com.schemafy.core.project.adapter.out.persistence.WorkspaceMemberRepository;
+import com.schemafy.core.project.adapter.out.persistence.WorkspaceRepository;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
@@ -26,22 +26,22 @@ import reactor.core.publisher.Mono;
 public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
 
   @Autowired
-  protected DomainWorkspaceRepository workspaceRepository;
+  protected WorkspaceRepository workspaceRepository;
 
   @Autowired
-  protected DomainWorkspaceMemberRepository workspaceMemberRepository;
+  protected WorkspaceMemberRepository workspaceMemberRepository;
 
   @Autowired
-  protected DomainProjectRepository projectRepository;
+  protected ProjectRepository projectRepository;
 
   @Autowired
-  protected DomainProjectMemberRepository projectMemberRepository;
+  protected ProjectMemberRepository projectMemberRepository;
 
   @Autowired
-  protected DomainInvitationRepository invitationRepository;
+  protected InvitationRepository invitationRepository;
 
   @Autowired
-  protected DomainShareLinkRepository shareLinkRepository;
+  protected ShareLinkRepository shareLinkRepository;
 
   protected Mono<Void> cleanupProjectFixtures() {
     return Mono.when(

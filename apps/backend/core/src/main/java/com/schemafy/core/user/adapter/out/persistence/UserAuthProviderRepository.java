@@ -4,8 +4,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import reactor.core.publisher.Mono;
 
-// TODO: core 모듈 정리 시에 해당 클래스 이름 변경
-interface DomainUserAuthProviderRepository
+interface UserAuthProviderRepository
     extends ReactiveCrudRepository<UserAuthProviderEntity, String> {
 
   Mono<UserAuthProviderEntity> findByProviderAndProviderUserId(

@@ -9,7 +9,7 @@ import com.schemafy.core.project.domain.Invitation;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface DomainInvitationRepository
+public interface InvitationRepository
     extends ReactiveCrudRepository<Invitation, String> {
 
   @Query("""
