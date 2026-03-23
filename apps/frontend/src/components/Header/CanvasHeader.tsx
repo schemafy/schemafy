@@ -5,13 +5,10 @@ import { ExportContents } from './contents/ExportContents';
 import { ShareContents } from './contents/ShareContents';
 import { VersionsContents } from './contents/VersionContents';
 import { SettingsContents } from './contents/SettingsContents';
-import { useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 export const CanvasHeader = () => {
-  const { pathname } = useLocation();
-  const projectId = pathname.startsWith('/canvas/')
-    ? pathname.split('/canvas/')[1]
-    : '';
+  const { projectId = '' } = useParams();
 
   return (
     <div className="flex items-center gap-9">
