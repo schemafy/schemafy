@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("LoginUserService")
+@DisplayName("로그인 유저 서비스")
 class LoginUserServiceTest {
 
   @Mock
@@ -35,7 +35,7 @@ class LoginUserServiceTest {
   LoginUserService sut;
 
   @Test
-  @DisplayName("loginUser: 이메일/비밀번호가 맞으면 로그인 성공")
+  @DisplayName("로그인 시 이메일과 비밀번호가 맞으면 성공한다")
   void loginUser_success() {
     LoginUserCommand command = new LoginUserCommand("test@example.com", "raw");
     User user = new User(
@@ -59,7 +59,31 @@ class LoginUserServiceTest {
   }
 
   @Test
-  @DisplayName("loginUser: 이메일이 없으면 NOT_FOUND")
+  @DisplayName("로그인 시 대문자 이메일 입력도 성공한다")
+  void loginUser_success_caseInsensitiveEmail() {
+    LoginUserCommand command = new LoginUserCommand("TEST@EXAMPLE.COM", "raw");
+    User user = new User(
+        "user-1",
+        "test@example.com",
+        "Tester",
+        "encoded",
+        UserStatus.ACTIVE,
+        null,
+        null,
+        null);
+
+    given(findUserByEmailPort.findUserByEmail("test@example.com"))
+        .willReturn(Mono.just(user));
+    given(passwordHashPort.matches("raw", "encoded"))
+        .willReturn(Mono.just(true));
+
+    StepVerifier.create(sut.loginUser(command))
+        .assertNext(found -> assertThat(found.email()).isEqualTo("test@example.com"))
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("로그인 시 이메일이 없으면 NOT_FOUND를 반환한다")
   void loginUser_notFound() {
     LoginUserCommand command = new LoginUserCommand("none@example.com", "raw");
 
@@ -76,7 +100,7 @@ class LoginUserServiceTest {
   }
 
   @Test
-  @DisplayName("loginUser: 비밀번호가 틀리면 LOGIN_FAILED")
+  @DisplayName("로그인 시 비밀번호가 틀리면 LOGIN_FAILED를 반환한다")
   void loginUser_passwordMismatch() {
     LoginUserCommand command = new LoginUserCommand("test@example.com", "raw");
     User user = new User(
@@ -100,6 +124,16 @@ class LoginUserServiceTest {
           assertThat(((DomainException) error).getErrorCode())
               .isEqualTo(UserErrorCode.LOGIN_FAILED);
         })
+        .verify();
+  }
+
+  @Test
+  @DisplayName("로그인 시 잘못된 이메일 형식은 reactive error로 반환한다")
+  void loginUser_invalidEmailFormat_returnsReactiveError() {
+    LoginUserCommand command = new LoginUserCommand("invalid-email", "raw");
+
+    StepVerifier.create(sut.loginUser(command))
+        .expectError(IllegalArgumentException.class)
         .verify();
   }
 

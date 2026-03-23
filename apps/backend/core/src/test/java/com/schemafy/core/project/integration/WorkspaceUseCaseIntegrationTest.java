@@ -31,7 +31,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Workspace usecase integration")
+@DisplayName("워크스페이스 유스케이스 통합 테스트")
 class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
   @Autowired
@@ -50,7 +50,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   private LeaveWorkspaceUseCase leaveWorkspaceUseCase;
 
   @Test
-  @DisplayName("createWorkspace creates workspace detail and admin membership")
+  @DisplayName("워크스페이스 생성 시 상세 정보와 관리자 멤버십을 함께 만든다")
   void createWorkspace_createsAdminMembership() {
     User admin = signUpUser("admin-workspace@test.com", "Admin");
 
@@ -71,7 +71,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("deleteWorkspace soft-deletes projects, memberships, invitations, and share links")
+  @DisplayName("워크스페이스 삭제 시 프로젝트, 멤버십, 초대, 공유 링크를 soft delete 한다")
   void deleteWorkspace_cascadesRelatedRows() {
     User admin = signUpUser("admin-delete@test.com", "Admin");
     User invitee = signUpUser("invitee-delete@test.com", "Invitee");
@@ -111,7 +111,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("addWorkspaceMember restores deleted member and project membership")
+  @DisplayName("워크스페이스 멤버 추가 시 삭제된 멤버와 프로젝트 멤버십을 복원한다")
   void addWorkspaceMember_restoresDeletedRows() {
     User admin = signUpUser("admin-add@test.com", "Admin");
     User target = signUpUser("target-add@test.com", "Target");
@@ -143,7 +143,24 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("updateWorkspaceMemberRole downgrades workspace role but preserves project editor role")
+  @DisplayName("워크스페이스 멤버 추가 시 대문자 이메일 입력을 정규화한다")
+  void addWorkspaceMember_normalizesUppercaseEmail() {
+    User admin = signUpUser("admin-upper@test.com", "Admin");
+    User target = signUpUser("target-upper@test.com", "Target");
+    Workspace workspace = saveWorkspace("Upper WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+
+    WorkspaceMember addedMember = addWorkspaceMemberUseCase.addWorkspaceMember(
+        new AddWorkspaceMemberCommand(workspace.getId(), "TARGET-UPPER@TEST.COM",
+            WorkspaceRole.MEMBER, admin.id()))
+        .block();
+
+    assertThat(addedMember).isNotNull();
+    assertThat(addedMember.getUserId()).isEqualTo(target.id());
+  }
+
+  @Test
+  @DisplayName("워크스페이스 역할을 낮춰도 프로젝트 편집자 역할은 유지한다")
   void updateWorkspaceMemberRole_preservesEditorMembership() {
     User requester = signUpUser("requester-role@test.com", "Requester");
     User target = signUpUser("target-role@test.com", "Target");
@@ -168,7 +185,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("leaveWorkspace deletes workspace when last member leaves even with project-only members")
+  @DisplayName("마지막 워크스페이스 멤버가 나가면 프로젝트 전용 멤버가 있어도 워크스페이스를 삭제한다")
   void leaveWorkspace_lastMemberDeletesWorkspace() {
     User admin = signUpUser("admin-leave@test.com", "Admin");
     User outsider = signUpUser("outsider-leave@test.com", "Outsider");
@@ -189,7 +206,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("leaveWorkspace rejects last admin leaving when other members still exist")
+  @DisplayName("다른 멤버가 남아 있으면 마지막 관리자의 탈퇴를 거부한다")
   void leaveWorkspace_lastAdminCannotLeave() {
     User admin = signUpUser("admin-guard@test.com", "Admin");
     User member = signUpUser("member-guard@test.com", "Member");

@@ -8,6 +8,7 @@ import com.schemafy.core.project.application.port.in.CreateProjectInvitationUseC
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
+import com.schemafy.core.user.domain.Email;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -24,24 +25,24 @@ class CreateProjectInvitationService implements CreateProjectInvitationUseCase {
   @Override
   public Mono<Invitation> createProjectInvitation(
       CreateProjectInvitationCommand command) {
-    return projectInvitationHelper.validateProjectAdmin(command.projectId(),
-        command.requesterId())
-        .then(projectInvitationHelper.findProjectOrThrow(command.projectId()))
-        .flatMap(project -> projectInvitationHelper
-            .checkNotAlreadyProjectMemberByEmail(command.projectId(),
-                command.email())
-            .then(projectInvitationHelper.checkDuplicatePendingInvitation(
-                command.projectId(), command.email()))
-            .thenReturn(project))
-        .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
-            .flatMap(id -> invitationPort.save(
-                Invitation.createProjectInvitation(
-                    id,
-                    command.projectId(),
-                    project.getWorkspaceId(),
-                    command.email(),
-                    command.role(),
-                    command.requesterId()))))
+    return Mono.fromSupplier(() -> Email.from(command.email()))
+        .flatMap(email -> projectInvitationHelper.validateProjectAdmin(
+            command.projectId(), command.requesterId())
+            .then(projectInvitationHelper.findProjectOrThrow(command.projectId()))
+            .flatMap(project -> projectInvitationHelper
+                .checkNotAlreadyProjectMemberByEmail(command.projectId(), email)
+                .then(projectInvitationHelper.checkDuplicatePendingInvitation(
+                    command.projectId(), email))
+                .thenReturn(project))
+            .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
+                .flatMap(id -> invitationPort.save(
+                    Invitation.createProjectInvitation(
+                        id,
+                        command.projectId(),
+                        project.getWorkspaceId(),
+                        email.address(),
+                        command.role(),
+                        command.requesterId())))))
         .as(transactionalOperator::transactional);
   }
 

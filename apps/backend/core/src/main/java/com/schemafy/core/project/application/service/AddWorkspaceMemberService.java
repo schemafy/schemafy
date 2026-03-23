@@ -14,6 +14,7 @@ import com.schemafy.core.project.application.port.out.WorkspaceMemberPort;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
+import com.schemafy.core.user.domain.Email;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -33,44 +34,45 @@ class AddWorkspaceMemberService implements AddWorkspaceMemberUseCase {
 
   @Override
   public Mono<WorkspaceMember> addWorkspaceMember(AddWorkspaceMemberCommand command) {
-    return workspaceAccessHelper.validateAdminAccess(command.workspaceId(),
-        command.requesterId())
-        .then(workspaceAccessHelper.findUserByEmailOrThrow(command.email()))
-        .flatMap(targetUser -> workspaceMemberPort
-            .findLatestByWorkspaceIdAndUserId(command.workspaceId(),
-                targetUser.id())
-            .flatMap(existing -> {
-              if (!existing.isDeleted()) {
-                log.warn("Member already exists and is active: memberId={}",
-                    existing.getId());
+    return Mono.fromSupplier(() -> Email.from(command.email()))
+        .flatMap(email -> workspaceAccessHelper.validateAdminAccess(
+            command.workspaceId(), command.requesterId())
+            .then(workspaceAccessHelper.findUserByEmailOrThrow(email))
+            .flatMap(targetUser -> workspaceMemberPort
+                .findLatestByWorkspaceIdAndUserId(command.workspaceId(),
+                    targetUser.id())
+                .flatMap(existing -> {
+                  if (!existing.isDeleted()) {
+                    log.warn("Member already exists and is active: memberId={}",
+                        existing.getId());
+                    return Mono.error(new DomainException(
+                        WorkspaceErrorCode.MEMBER_ALREADY_EXISTS));
+                  }
+
+                  existing.restore();
+                  existing.updateRole(command.role());
+                  return workspaceMemberPort.save(existing);
+                })
+                .switchIfEmpty(Mono.defer(() -> Mono
+                    .fromCallable(ulidGeneratorPort::generate)
+                    .flatMap(id -> workspaceMemberPort
+                        .save(WorkspaceMember.create(id, command.workspaceId(),
+                            targetUser.id(), command.role()))))))
+            .flatMap(savedMember -> projectMembershipPropagationHelper
+                .propagateToExistingProjects(
+                    command.workspaceId(),
+                    savedMember.getUserId(),
+                    savedMember.getRoleAsEnum())
+                .thenReturn(savedMember))
+            .onErrorResume(error -> {
+              if (error instanceof DataIntegrityViolationException) {
+                log.warn("Duplicate key constraint: workspaceId={}, email={}",
+                    command.workspaceId(), email.address());
                 return Mono.error(new DomainException(
                     WorkspaceErrorCode.MEMBER_ALREADY_EXISTS));
               }
-
-              existing.restore();
-              existing.updateRole(command.role());
-              return workspaceMemberPort.save(existing);
-            })
-            .switchIfEmpty(Mono.defer(() -> Mono
-                .fromCallable(ulidGeneratorPort::generate)
-                .flatMap(id -> workspaceMemberPort
-                    .save(WorkspaceMember.create(id, command.workspaceId(),
-                        targetUser.id(), command.role()))))))
-        .flatMap(savedMember -> projectMembershipPropagationHelper
-            .propagateToExistingProjects(
-                command.workspaceId(),
-                savedMember.getUserId(),
-                savedMember.getRoleAsEnum())
-            .thenReturn(savedMember))
-        .onErrorResume(error -> {
-          if (error instanceof DataIntegrityViolationException) {
-            log.warn("Duplicate key constraint: workspaceId={}, email={}",
-                command.workspaceId(), command.email());
-            return Mono.error(new DomainException(
-                WorkspaceErrorCode.MEMBER_ALREADY_EXISTS));
-          }
-          return Mono.error(error);
-        })
+              return Mono.error(error);
+            }))
         .as(transactionalOperator::transactional);
   }
 

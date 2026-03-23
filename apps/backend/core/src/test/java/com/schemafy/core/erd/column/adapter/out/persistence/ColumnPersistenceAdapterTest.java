@@ -93,6 +93,27 @@ class ColumnPersistenceAdapterTest {
           .verifyComplete();
     }
 
+    @Test
+    @DisplayName("ENUM/SET values가 있는 컬럼을 저장한다")
+    void savesColumnWithValues() {
+      var column = new Column(
+          ColumnFixture.DEFAULT_ID,
+          ColumnFixture.DEFAULT_TABLE_ID,
+          ColumnFixture.DEFAULT_NAME,
+          "ENUM",
+          new ColumnTypeArguments(null, null, null, List.of("A", "B")),
+          ColumnFixture.DEFAULT_SEQ_NO,
+          false,
+          null,
+          null,
+          null);
+
+      StepVerifier.create(sut.createColumn(column))
+          .assertNext(saved -> assertThat(saved.typeArguments().values())
+              .containsExactly("A", "B"))
+          .verifyComplete();
+    }
+
   }
 
   @Nested
@@ -118,6 +139,27 @@ class ColumnPersistenceAdapterTest {
     void returnsEmptyWhenNotExists() {
       StepVerifier.create(sut.findColumnById("non-existent-id"))
           .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("저장된 typeArguments JSON이 유효하지 않으면 예외가 발생한다")
+    void throwsWhenPersistedTypeArgumentsJsonInvalid() {
+      ColumnEntity entity = new ColumnEntity(
+          ColumnFixture.DEFAULT_ID,
+          ColumnFixture.DEFAULT_TABLE_ID,
+          ColumnFixture.DEFAULT_NAME,
+          ColumnFixture.DEFAULT_DATA_TYPE,
+          "{invalid",
+          ColumnFixture.DEFAULT_SEQ_NO,
+          false,
+          null,
+          null,
+          null);
+      columnRepository.save(entity).block();
+
+      StepVerifier.create(sut.findColumnById(ColumnFixture.DEFAULT_ID))
+          .expectError(IllegalArgumentException.class)
+          .verify();
     }
 
   }

@@ -6,11 +6,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.api.collaboration.constant.CollaborationConstants;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
+import com.schemafy.api.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.api.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
@@ -20,6 +23,7 @@ import com.schemafy.core.erd.table.domain.Table;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -47,8 +51,8 @@ class ErdMutationBroadcasterTest {
   class Broadcast {
 
     @Test
-    @DisplayName("정상적으로 이벤트를 발행한다")
-    void publishes_event() {
+    @DisplayName("sessionId context가 없으면 sessionId 없이 이벤트를 발행한다")
+    void publishes_event_without_session_id_when_context_missing() {
       String tableId = "table-1";
       String schemaId = "schema-1";
       String projectId = "project-1";
@@ -67,8 +71,52 @@ class ErdMutationBroadcasterTest {
       StepVerifier.create(broadcaster.broadcast(tableIds))
           .verifyComplete();
 
-      verify(eventPublisher).publish(eq(projectId),
-          any(CollaborationOutbound.class));
+      ArgumentCaptor<CollaborationOutbound> captor = ArgumentCaptor
+          .forClass(CollaborationOutbound.class);
+      verify(eventPublisher).publish(eq(projectId), captor.capture());
+      assertThat(captor.getValue()).isInstanceOf(
+          ErdMutatedEvent.Outbound.class);
+      ErdMutatedEvent.Outbound event = (ErdMutatedEvent.Outbound) captor
+          .getValue();
+      assertThat(event.sessionId()).isNull();
+      assertThat(event.schemaId()).isEqualTo(schemaId);
+      assertThat(event.affectedTableIds()).containsExactly(tableId);
+    }
+
+    @Test
+    @DisplayName("reactor context에 sessionId가 있으면 ERD_MUTATED에 포함한다")
+    void publishes_event_with_session_id_from_reactor_context() {
+      String tableId = "table-1";
+      String schemaId = "schema-1";
+      String projectId = "project-1";
+      Set<String> tableIds = Set.of(tableId);
+
+      given(getTableByIdPort.findTableById(tableId))
+          .willReturn(Mono.just(new Table(tableId, schemaId,
+              "test_table", "utf8mb4", "utf8mb4_general_ci")));
+      given(getSchemaByIdPort.findSchemaById(schemaId))
+          .willReturn(Mono.just(new Schema(schemaId, projectId,
+              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+      given(eventPublisher.publish(eq(projectId),
+          any(CollaborationOutbound.class)))
+          .willReturn(Mono.empty());
+
+      StepVerifier.create(broadcaster.broadcast(tableIds)
+          .contextWrite(ctx -> ctx.put(
+              CollaborationConstants.SESSION_ID_CONTEXT_KEY,
+              "session-1")))
+          .verifyComplete();
+
+      ArgumentCaptor<CollaborationOutbound> captor = ArgumentCaptor
+          .forClass(CollaborationOutbound.class);
+      verify(eventPublisher).publish(eq(projectId), captor.capture());
+      assertThat(captor.getValue()).isInstanceOf(
+          ErdMutatedEvent.Outbound.class);
+      ErdMutatedEvent.Outbound event = (ErdMutatedEvent.Outbound) captor
+          .getValue();
+      assertThat(event.sessionId()).isEqualTo("session-1");
+      assertThat(event.schemaId()).isEqualTo(schemaId);
+      assertThat(event.affectedTableIds()).containsExactly(tableId);
     }
 
     @Test

@@ -15,10 +15,11 @@ import com.schemafy.api.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.IndexResponse;
 import com.schemafy.api.erd.controller.dto.response.IndexSnapshotResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
-import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipSnapshotResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
+import com.schemafy.api.erd.service.table.TableApiResponseMapper;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.core.erd.column.domain.Column;
@@ -56,11 +57,13 @@ public class TableSnapshotOrchestrator {
   private final GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
   private final GetIndexesByTableIdUseCase getIndexesByTableIdUseCase;
   private final GetIndexColumnsByIndexIdUseCase getIndexColumnsByIndexIdUseCase;
+  private final TableApiResponseMapper tableResponseMapper;
+  private final RelationshipApiResponseMapper relationshipResponseMapper;
 
   public Mono<TableSnapshotResponse> getTableSnapshot(String tableId) {
     Mono<TableResponse> tableMono = getTableUseCase
         .getTable(new GetTableQuery(tableId))
-        .map(TableResponse::from);
+        .map(tableResponseMapper::toTableResponse);
 
     Mono<List<ColumnResponse>> columnsMono = getColumnsByTableIdUseCase
         .getColumnsByTableId(new GetColumnsByTableIdQuery(tableId))
@@ -100,7 +103,8 @@ public class TableSnapshotOrchestrator {
                     .map(RelationshipColumnResponse::from)
                     .toList())
                 .map(columns -> new RelationshipSnapshotResponse(
-                    RelationshipResponse.from(relationship),
+                    relationshipResponseMapper.toRelationshipResponse(
+                        relationship),
                     columns)))
             .collectList());
 

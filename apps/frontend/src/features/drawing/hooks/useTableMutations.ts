@@ -17,8 +17,10 @@ import { useErdCache } from './useErdCache';
 export const useCreateTableWithExtra = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (data: { request: CreateTableRequest; extra: string }) =>
-      createTable({ ...data.request, extra: data.extra }),
+    mutationFn: (data: {
+      request: CreateTableRequest;
+      extra: NonNullable<CreateTableRequest['extra']>;
+    }) => createTable({ ...data.request, extra: data.extra }),
     onSuccess: (result) => {
       updateAffectedTables(result.affectedTableIds);
     },

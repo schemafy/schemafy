@@ -19,6 +19,7 @@ import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
+import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -63,16 +64,16 @@ class WorkspaceInvitationHelper {
         });
   }
 
-  Mono<Void> checkDuplicatePendingInvitation(String workspaceId, String email) {
+  Mono<Void> checkDuplicatePendingInvitation(String workspaceId, Email email) {
     return invitationPort.countByTargetAndEmailAndStatus(
         InvitationType.WORKSPACE.name(),
         workspaceId,
-        email,
+        email.address(),
         InvitationStatus.PENDING.name())
         .flatMap(count -> {
           if (count > 0) {
             log.warn("Duplicate pending invitation: workspace={}, email={}",
-                workspaceId, email);
+                workspaceId, email.address());
             return Mono.error(new DomainException(
                 ProjectErrorCode.INVITATION_ALREADY_EXISTS));
           }
@@ -92,8 +93,8 @@ class WorkspaceInvitationHelper {
         });
   }
 
-  Mono<Void> checkNotAlreadyMemberByEmail(String workspaceId, String email) {
-    return findUserByEmailPort.findUserByEmail(email.toLowerCase())
+  Mono<Void> checkNotAlreadyMemberByEmail(String workspaceId, Email email) {
+    return findUserByEmailPort.findUserByEmail(email.address())
         .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> workspaceMemberPort
             .existsByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, user.id())
