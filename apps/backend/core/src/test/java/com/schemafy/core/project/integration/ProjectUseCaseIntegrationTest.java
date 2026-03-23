@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.CreateProjectCommand;
 import com.schemafy.core.project.application.port.in.CreateProjectUseCase;
+import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
+import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
 import com.schemafy.core.project.application.port.in.LeaveProjectCommand;
 import com.schemafy.core.project.application.port.in.LeaveProjectUseCase;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
@@ -34,6 +36,9 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
   @Autowired
   private UpdateProjectMemberRoleUseCase updateProjectMemberRoleUseCase;
+
+  @Autowired
+  private DeleteProjectUseCase deleteProjectUseCase;
 
   @Autowired
   private RemoveProjectMemberUseCase removeProjectMemberUseCase;
@@ -161,6 +166,23 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("deleteProject removes schemas linked to the project")
+  void deleteProject_removesLinkedSchemas() {
+    User admin = signUpUser("admin-delete-project@test.com", "Admin");
+    Workspace workspace = saveWorkspace("Delete Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Delete Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    createSchema(project, "delete_project_schema");
+
+    deleteProjectUseCase.deleteProject(new DeleteProjectCommand(project.getId(), admin.id()))
+        .block();
+
+    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
+    assertThat(findSchemasByProjectId(project.getId())).isEmpty();
+  }
+
+  @Test
   @DisplayName("워크스페이스 관리자이기도 한 프로젝트 관리자는 프로젝트에서 제거할 수 없다")
   void removeProjectMember_rejectsDualAdminTarget() {
     User requester = signUpUser("requester-dual-remove@test.com", "Requester");
@@ -228,6 +250,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
     var project = saveProject(workspace, "Last Project");
     saveProjectMember(project, member, ProjectRole.VIEWER);
+    createSchema(project, "last_member_schema");
 
     leaveProjectUseCase.leaveProject(new LeaveProjectCommand(project.getId(), member.id())).block();
 

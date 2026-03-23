@@ -1,6 +1,7 @@
 package com.schemafy.core.project.integration;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.junit.jupiter.api.BeforeEach;
 
 import com.schemafy.core.DomainTestApplication;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaResult;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.schema.application.port.out.GetSchemasByProjectIdPort;
+import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.project.adapter.out.persistence.InvitationRepository;
 import com.schemafy.core.project.adapter.out.persistence.ProjectMemberRepository;
 import com.schemafy.core.project.adapter.out.persistence.ProjectRepository;
@@ -60,9 +66,16 @@ abstract class ProjectDomainIntegrationSupport {
   @Autowired
   protected ShareLinkRepository shareLinkRepository;
 
+  @Autowired
+  protected CreateSchemaUseCase createSchemaUseCase;
+
+  @Autowired
+  protected GetSchemasByProjectIdPort getSchemasByProjectIdPort;
+
   @BeforeEach
   void cleanProjectDomainTables() {
     Mono.when(
+        deleteAll("db_schemas"),
         deleteAll("share_links"),
         deleteAll("invitations"),
         deleteAll("project_members"),
@@ -164,6 +177,23 @@ abstract class ProjectDomainIntegrationSupport {
         project.getId(),
         UUID.randomUUID().toString().replace("-", ""),
         expiresAt)).block();
+  }
+
+  protected CreateSchemaResult createSchema(Project project, String name) {
+    return createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        project.getId(),
+        "MySQL",
+        name,
+        "utf8mb4",
+        "utf8mb4_general_ci"))
+        .block()
+        .result();
+  }
+
+  protected List<Schema> findSchemasByProjectId(String projectId) {
+    return getSchemasByProjectIdPort.findSchemasByProjectId(projectId)
+        .collectList()
+        .block();
   }
 
   protected void softDeleteWorkspaceMember(String memberId) {

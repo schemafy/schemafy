@@ -39,6 +39,7 @@ import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
@@ -51,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Relationship Cascade 삭제 통합 테스트")
-class RelationshipCascadeDeleteIntegrationTest {
+class RelationshipCascadeDeleteIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
@@ -86,8 +87,6 @@ class RelationshipCascadeDeleteIntegrationTest {
   @Autowired
   RemoveRelationshipColumnUseCase removeRelationshipColumnUseCase;
 
-  private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
-
   private String schemaId;
   private String pkTableId;
   private String fkTableId;
@@ -98,9 +97,10 @@ class RelationshipCascadeDeleteIntegrationTest {
   void setUp(TestInfo testInfo) {
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
     String schemaName = "cascade_" + uniqueSuffix;
+    String projectId = createActiveProjectId("relationship_cascade");
 
     var createSchemaCommand = new CreateSchemaCommand(
-        PROJECT_ID, "MySQL", schemaName,
+        projectId, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();

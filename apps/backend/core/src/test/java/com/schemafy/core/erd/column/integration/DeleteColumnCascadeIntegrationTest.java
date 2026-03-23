@@ -43,6 +43,7 @@ import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 
@@ -53,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Column Cascade 삭제 통합 테스트")
-class DeleteColumnCascadeIntegrationTest {
+class DeleteColumnCascadeIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
@@ -91,8 +92,6 @@ class DeleteColumnCascadeIntegrationTest {
   @Autowired
   GetRelationshipsByTableIdUseCase getRelationshipsByTableIdUseCase;
 
-  private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
-
   @Nested
   @DisplayName("PK 컬럼 삭제 시")
   class DeletePkColumn {
@@ -109,8 +108,9 @@ class DeleteColumnCascadeIntegrationTest {
 
       @BeforeEach
       void setUp() {
+        String projectId = createActiveProjectId("delete_column_single_fk");
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
-            PROJECT_ID, "MySQL", "pk_delete_single_fk_schema",
+            projectId, "MySQL", "pk_delete_single_fk_schema",
             "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
@@ -189,8 +189,9 @@ class DeleteColumnCascadeIntegrationTest {
 
       @BeforeEach
       void setUp() {
+        String projectId = createActiveProjectId("delete_column_multi_fk");
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
-            PROJECT_ID, "MySQL", "pk_delete_multi_fk_schema",
+            projectId, "MySQL", "pk_delete_multi_fk_schema",
             "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
@@ -263,8 +264,9 @@ class DeleteColumnCascadeIntegrationTest {
 
       @BeforeEach
       void setUp() {
+        String projectId = createActiveProjectId("delete_column_chain");
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
-            PROJECT_ID, "MySQL", "chain_cascade_schema",
+            projectId, "MySQL", "chain_cascade_schema",
             "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
@@ -346,8 +348,9 @@ class DeleteColumnCascadeIntegrationTest {
 
     @BeforeEach
     void setUp() {
+      String projectId = createActiveProjectId("delete_fk_column_only");
       var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
-          PROJECT_ID, "MySQL", "fk_only_delete_schema",
+          projectId, "MySQL", "fk_only_delete_schema",
           "utf8mb4", "utf8mb4_general_ci")).block().result();
       schemaId = schemaResult.id();
 

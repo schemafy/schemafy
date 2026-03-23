@@ -1,6 +1,7 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
 import com.schemafy.core.common.PersistenceAdapter;
+import com.schemafy.core.erd.schema.application.port.out.ActiveProjectExistsPort;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.domain.Project;
@@ -12,7 +13,8 @@ import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
 @RequiredArgsConstructor
-public class ProjectPersistenceAdapter implements ProjectPort, ProjectMemberPort {
+public class ProjectPersistenceAdapter
+    implements ProjectPort, ProjectMemberPort, ActiveProjectExistsPort {
 
   private final ProjectRepository projectRepository;
   private final ProjectMemberRepository projectMemberRepository;
@@ -30,6 +32,12 @@ public class ProjectPersistenceAdapter implements ProjectPort, ProjectMemberPort
   @Override
   public Mono<Project> findByIdAndNotDeleted(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId);
+  }
+
+  @Override
+  public Mono<Boolean> existsActiveProjectById(String projectId) {
+    return projectRepository.findByIdAndNotDeleted(projectId)
+        .hasElement();
   }
 
   @Override

@@ -76,7 +76,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("워크스페이스 삭제 시 프로젝트, 멤버십, 초대, 공유 링크를 soft delete 한다")
+  @DisplayName("워크스페이스 삭제 시 프로젝트 관련 데이터와 schema를 함께 정리한다")
   void deleteWorkspace_cascadesRelatedRows() {
     User admin = signUpUser("admin-delete@test.com", "Admin");
     User invitee = signUpUser("invitee-delete@test.com", "Invitee");
@@ -85,7 +85,11 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     WorkspaceMember inviteeMember = saveWorkspaceMember(workspace, invitee,
         WorkspaceRole.MEMBER);
     var project = saveProject(workspace, "Cascade Project");
+    var secondProject = saveProject(workspace, "Cascade Project 2");
     saveProjectMember(project, admin, ProjectRole.ADMIN);
+    saveProjectMember(secondProject, admin, ProjectRole.ADMIN);
+    createSchema(project, "workspace_delete_schema_1");
+    createSchema(secondProject, "workspace_delete_schema_2");
     Invitation workspaceInvitation = saveWorkspaceInvitation(workspace, invitee.email(),
         WorkspaceRole.MEMBER, admin);
     Invitation projectInvitation = saveProjectInvitation(project, workspace, invitee.email(),
@@ -98,6 +102,9 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNull();
     assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
+    assertThat(projectRepository.findByIdAndNotDeleted(secondProject.getId()).block()).isNull();
+    assertThat(findSchemasByProjectId(project.getId())).isEmpty();
+    assertThat(findSchemasByProjectId(secondProject.getId())).isEmpty();
 
     WorkspaceMember deletedWorkspaceMember = workspaceMemberRepository
         .findById(inviteeMember.getId())
@@ -265,13 +272,14 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("마지막 워크스페이스 멤버가 나가면 프로젝트 전용 멤버가 있어도 워크스페이스를 삭제한다")
+  @DisplayName("마지막 워크스페이스 멤버가 나가면 schema까지 포함해 워크스페이스를 삭제한다")
   void leaveWorkspace_lastMemberDeletesWorkspace() {
     User admin = signUpUser("admin-leave@test.com", "Admin");
     User outsider = signUpUser("outsider-leave@test.com", "Outsider");
     Workspace workspace = saveWorkspace("Leave WS", "Description");
     saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
     var project = saveProject(workspace, "Leave Project");
+    createSchema(project, "leave_workspace_schema");
     saveProjectMember(project, outsider, ProjectRole.VIEWER);
 
     leaveWorkspaceUseCase.leaveWorkspace(new LeaveWorkspaceCommand(
@@ -283,6 +291,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(project.getId(), outsider.id())
         .block()).isNull();
+    assertThat(findSchemasByProjectId(project.getId())).isEmpty();
   }
 
   @Test

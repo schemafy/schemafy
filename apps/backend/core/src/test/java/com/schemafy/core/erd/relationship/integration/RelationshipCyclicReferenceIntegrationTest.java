@@ -29,6 +29,7 @@ import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 
@@ -37,7 +38,7 @@ import reactor.test.StepVerifier;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Relationship 순환 참조 검증 통합 테스트")
-class RelationshipCyclicReferenceIntegrationTest {
+class RelationshipCyclicReferenceIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
@@ -57,8 +58,6 @@ class RelationshipCyclicReferenceIntegrationTest {
   @Autowired
   ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
 
-  private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
-
   private String schemaId;
   private String tableAId;
   private String tableBId;
@@ -71,9 +70,10 @@ class RelationshipCyclicReferenceIntegrationTest {
   void setUp(TestInfo testInfo) {
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
     String schemaName = "cyclic_" + uniqueSuffix;
+    String projectId = createActiveProjectId("relationship_cyclic");
 
     var createSchemaCommand = new CreateSchemaCommand(
-        PROJECT_ID, "MySQL", schemaName,
+        projectId, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();

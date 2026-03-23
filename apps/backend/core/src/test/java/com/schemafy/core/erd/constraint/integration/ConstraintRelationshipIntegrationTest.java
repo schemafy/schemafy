@@ -43,6 +43,7 @@ import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 
@@ -54,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Constraint-Relationship 연쇄 삭제 통합 테스트")
-class ConstraintRelationshipIntegrationTest {
+class ConstraintRelationshipIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
@@ -95,8 +96,6 @@ class ConstraintRelationshipIntegrationTest {
   @Autowired
   ChangeColumnMetaUseCase changeColumnMetaUseCase;
 
-  private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
-
   private String schemaId;
 
   // PK Table (참조되는 테이블)
@@ -115,10 +114,11 @@ class ConstraintRelationshipIntegrationTest {
   void setUp() {
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
     String schemaName = "constraint_rel_" + uniqueSuffix;
+    String projectId = createActiveProjectId("constraint_relationship");
 
     // Schema 생성
     var createSchemaCommand = new CreateSchemaCommand(
-        PROJECT_ID, "MySQL", schemaName,
+        projectId, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();
