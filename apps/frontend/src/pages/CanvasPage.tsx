@@ -1,11 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import {
-  Background,
-  BackgroundVariant,
-  ConnectionMode,
-  MiniMap,
-  ReactFlow,
-} from '@xyflow/react';
+import { Background, BackgroundVariant, ConnectionMode, MiniMap, ReactFlow, } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
   CustomConnectionLine,
@@ -25,6 +19,9 @@ import {
 import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
 import { ChatInput, ChatOverlay } from '@/features/collaboration/components';
+import { useNavigate, useParams } from "react-router-dom";
+import { useGetProject } from "@/features/project/hooks/useProjects";
+import { useEffect } from "react";
 
 const NODE_TYPES = {
   table: TableNode,
@@ -45,8 +42,8 @@ const CanvasContent = observer(() => {
       chatInputPosition,
       selectedRelationship,
     },
-    setter: { setRelationshipConfig, setActiveTool, setSelectedRelationship },
-    data: { nodes, relationships },
+    setter: {setRelationshipConfig, setActiveTool, setSelectedRelationship},
+    data: {nodes, relationships},
     handlers: {
       handleNodesChange,
       handleNodeDragStop,
@@ -72,7 +69,7 @@ const CanvasContent = observer(() => {
 
   return (
     <>
-      <RelationshipMarker />
+      <RelationshipMarker/>
       <div className="flex flex-1">
         <Toolbar
           setActiveTool={setActiveTool}
@@ -83,7 +80,7 @@ const CanvasContent = observer(() => {
 
         <div className="flex-1 bg-schemafy-secondary relative">
           <div className="absolute top-4 right-4 z-10">
-            <SchemaSelector />
+            <SchemaSelector/>
           </div>
 
           <div
@@ -113,7 +110,7 @@ const CanvasContent = observer(() => {
               nodeTypes={NODE_TYPES}
               edgeTypes={EDGE_TYPES}
               connectionLineComponent={CustomConnectionLine}
-              proOptions={{ hideAttribution: true }}
+              proOptions={{hideAttribution: true}}
               connectionMode={ConnectionMode.Loose}
               fitView={false}
               minZoom={0.1}
@@ -135,14 +132,14 @@ const CanvasContent = observer(() => {
                 zoomable
                 pannable
               />
-              <CustomControls />
-              <Background variant={BackgroundVariant.Dots} />
+              <CustomControls/>
+              <Background variant={BackgroundVariant.Dots}/>
 
               {activeTool === 'table' && (
-                <TablePreview mousePosition={mousePosition} />
+                <TablePreview mousePosition={mousePosition}/>
               )}
               {activeTool === 'memo' && (
-                <MemoPreview mousePosition={mousePosition} />
+                <MemoPreview mousePosition={mousePosition}/>
               )}
             </ReactFlow>
           </div>
@@ -175,19 +172,27 @@ const CanvasContent = observer(() => {
           )}
         </div>
       </div>
-      <FloatingButtons />
-      <ChatOverlay />
+      <FloatingButtons/>
+      <ChatOverlay/>
     </>
   );
 });
 
 export const CanvasPage = () => {
-  const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
+  const {projectId = ''} = useParams();
+  const navigate = useNavigate();
+  const {isError, isLoading} = useGetProject(projectId);
+
+  useEffect(() => {
+    if (isError) navigate('/not-found', {replace: true});
+  }, [isError, navigate]);
+
+  if (isLoading || isError) return null;
 
   return (
     <SelectedSchemaProvider projectId={projectId}>
       <MemoProvider>
-        <CanvasContent />
+        <CanvasContent/>
       </MemoProvider>
     </SelectedSchemaProvider>
   );
