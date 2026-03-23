@@ -1,0 +1,130 @@
+name: Save PR Context
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "테스트할 PR 번호 (이미 머지된 PR)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  save-context:
+    name: Save PR Context
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save PR context file
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          mkdir -p .github/pr-contexts
+
+          pr_meta_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
+          PR_TITLE="$(echo "$pr_meta_json" | jq -r '.title // ""')"
+          PR_HEAD_REF="$(echo "$pr_meta_json" | jq -r '.head.ref // ""')"
+          PR_MERGED_AT="$(echo "$pr_meta_json" | jq -r '.merged_at // ""')"
+          PR_MERGE_COMMIT_SHA="$(echo "$pr_meta_json" | jq -r '.merge_commit_sha // ""')"
+          PR_URL="$(echo "$pr_meta_json" | jq -r '.html_url // ""')"
+          PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
+
+          changed_files="$(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
+              | jq -r '.[].filename' | head -n 50
+          )"
+
+          diff_content="$(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+              -H "Accept: application/vnd.github.v3.diff" 2>/dev/null \
+              | head -c 8000 \
+              || echo "(diff 로드 실패)"
+          )"
+
+          issue_numbers="$(
+            {
+              printf '%s\n' "${PR_HEAD_REF:-}"
+              printf '%s\n' "${PR_TITLE:-}"
+              printf '%s\n' "${PR_BODY:-}"
+            } \
+              | grep -oE '#[0-9]+' \
+              | tr -d '#' \
+              | sort -n \
+              | uniq \
+              | head -n 10
+          )"
+
+          {
+            echo "# PR #${PR_NUMBER}: ${PR_TITLE}"
+            echo ""
+            echo "- 머지 일시: ${PR_MERGED_AT}"
+            echo "- 브랜치: ${PR_HEAD_REF} → main"
+            echo "- PR URL: ${PR_URL}"
+            echo "- 머지 커밋: ${PR_MERGE_COMMIT_SHA}"
+            echo ""
+            echo "## 연관 이슈"
+            if [ -z "${issue_numbers:-}" ]; then
+              echo "- (없음)"
+            else
+              while IFS= read -r issue_no; do
+                [ -z "$issue_no" ] && continue
+                issue_json="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${issue_no}" 2>/dev/null || true)"
+                if [ -n "${issue_json}" ]; then
+                  issue_title="$(echo "$issue_json" | jq -r '.title // ""')"
+                  echo "- #${issue_no}: ${issue_title}"
+                fi
+              done <<< "${issue_numbers}"
+            fi
+            echo ""
+            echo "## PR 설명"
+            if [ -z "${PR_BODY:-}" ]; then
+              echo "(설명 없음)"
+            else
+              printf '%s\n' "${PR_BODY}"
+            fi
+            echo ""
+            echo "## 변경된 파일"
+            if [ -z "${changed_files:-}" ]; then
+              echo "- (없음)"
+            else
+              while IFS= read -r f; do
+                [ -z "$f" ] && continue
+                echo "- ${f}"
+              done <<< "${changed_files}"
+            fi
+            echo ""
+            echo "## Diff (최대 8000자)"
+            echo '```diff'
+            printf '%s\n' "${diff_content}"
+            echo '```'
+          } > ".github/pr-contexts/pr-${PR_NUMBER}.md"
+
+          echo "Context file saved: .github/pr-contexts/pr-${PR_NUMBER}.md"
+
+      - name: Commit and push context file
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ".github/pr-contexts/pr-${PR_NUMBER}.md"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: save PR #${PR_NUMBER} context [skip ci]"
+            git push
+          fi
