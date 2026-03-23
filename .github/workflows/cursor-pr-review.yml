@@ -141,24 +141,6 @@ jobs:
           SELECTED_MODEL="${CURSOR_MODEL:-auto}"
           echo "selected_model=${SELECTED_MODEL}" >> "$GITHUB_OUTPUT"
 
-          # Resolve PR metadata early so downstream steps can still publish
-          # failure summaries even when this step exits early.
-          if [ -n "${PR_NUMBER:-}" ]; then
-            pr_meta_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" 2>/dev/null || true)"
-            if [ -n "${pr_meta_json:-}" ]; then
-              PR_URL="$(echo "$pr_meta_json" | jq -r '.html_url')"
-              PR_HEAD_SHA="$(echo "$pr_meta_json" | jq -r '.head.sha')"
-              PR_BASE_REF="$(echo "$pr_meta_json" | jq -r '.base.ref')"
-              PR_HEAD_REF="$(echo "$pr_meta_json" | jq -r '.head.ref')"
-              PR_TITLE="$(echo "$pr_meta_json" | jq -r '.title // ""')"
-              PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
-            fi
-          fi
-
-          if [ -n "${PR_HEAD_SHA:-}" ]; then
-            echo "pr_head_sha=${PR_HEAD_SHA}" >> "$GITHUB_OUTPUT"
-          fi
-
           if [ -z "${CURSOR_API_KEY:-}" ]; then
             echo "ERROR: CURSOR_API_KEY secret is missing." | tee cursor-review-output.txt
             echo "cursor_exit_code=97" >> "$GITHUB_OUTPUT"
@@ -171,13 +153,19 @@ jobs:
             exit 98
           fi
 
-          pr_meta_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
-          PR_URL="$(echo "$pr_meta_json" | jq -r '.html_url')"
-          PR_HEAD_SHA="$(echo "$pr_meta_json" | jq -r '.head.sha')"
-          PR_BASE_REF="$(echo "$pr_meta_json" | jq -r '.base.ref')"
-          PR_HEAD_REF="$(echo "$pr_meta_json" | jq -r '.head.ref')"
-          PR_TITLE="$(echo "$pr_meta_json" | jq -r '.title // ""')"
-          PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
+          pr_meta_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" 2>/dev/null || true)"
+          if [ -n "${pr_meta_json:-}" ]; then
+            PR_URL="$(echo "$pr_meta_json" | jq -r '.html_url')"
+            PR_HEAD_SHA="$(echo "$pr_meta_json" | jq -r '.head.sha')"
+            PR_BASE_REF="$(echo "$pr_meta_json" | jq -r '.base.ref')"
+            PR_HEAD_REF="$(echo "$pr_meta_json" | jq -r '.head.ref')"
+            PR_TITLE="$(echo "$pr_meta_json" | jq -r '.title // ""')"
+            PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
+          fi
+
+          if [ -n "${PR_HEAD_SHA:-}" ]; then
+            echo "pr_head_sha=${PR_HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          fi
 
           commit_messages="$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits?per_page=100" --paginate \
@@ -240,7 +228,7 @@ jobs:
             echo "## 최근 머지된 PR 히스토리 컨텍스트"
             context_dir="trusted-base/.github/pr-contexts"
             if [ -d "${context_dir}" ]; then
-              context_files="$(ls -v "${context_dir}"/pr-*.md 2>/dev/null | tail -n 5)"
+              context_files="$(ls "${context_dir}"/pr-*.md 2>/dev/null | sort -t- -k2 -n | tail -n 5)"
               if [ -n "${context_files:-}" ]; then
                 echo "(최근 최대 5개 PR 컨텍스트 포함)"
                 echo
@@ -338,6 +326,7 @@ jobs:
           CURSOR_EXIT_CODE: ${{ steps.cursor_review.outputs.cursor_exit_code }}
           CURSOR_MODEL: ${{ steps.cursor_review.outputs.selected_model }}
           RELATED_ISSUE_COUNT: ${{ steps.cursor_review.outputs.related_issue_count }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set +e
 
@@ -412,7 +401,7 @@ jobs:
 
             if echo "${existing_body}" | grep -q "Status: ⚠️"; then
               echo "Previous review was a failure (id=${existing_id}). Posting new review."
-            elif [ "${GITHUB_EVENT_NAME}" = "issue_comment" ]; then
+            elif [ "${EVENT_NAME}" = "issue_comment" ]; then
               echo "Manual /review trigger detected. Posting a fresh review."
             elif [ -z "${existing_commit_id:-}" ] || [ -z "${PR_HEAD_SHA:-}" ]; then
               echo "Unable to compare review commits reliably. Posting a fresh review."
@@ -447,46 +436,33 @@ jobs:
             "" \
             "${SUMMARY_MARKER}")"
 
-          # Submit as single PR review with line comments (B5)
-          if [ -n "${PR_HEAD_SHA:-}" ]; then
-            jq -n \
-              --arg commit_id "${PR_HEAD_SHA}" \
-              --arg body "${review_body}" \
-              --arg event "COMMENT" \
-              --argjson comments "${line_comments_json:-[]}" \
-              '{commit_id: $commit_id, body: $body, event: $event, comments: $comments}' \
-              > pr-review-payload.json
-          else
-            jq -n \
-              --arg body "${review_body}" \
-              --arg event "COMMENT" \
-              --argjson comments "${line_comments_json:-[]}" \
-              '{body: $body, event: $event, comments: $comments}' \
-              > pr-review-payload.json
-          fi
+          build_payload() {
+            local comments_json="${1:-[]}"
+            if [ -n "${PR_HEAD_SHA:-}" ]; then
+              jq -n \
+                --arg commit_id "${PR_HEAD_SHA}" \
+                --arg body "${review_body}" \
+                --arg event "COMMENT" \
+                --argjson comments "${comments_json}" \
+                '{commit_id: $commit_id, body: $body, event: $event, comments: $comments}'
+            else
+              jq -n \
+                --arg body "${review_body}" \
+                --arg event "COMMENT" \
+                --argjson comments "${comments_json}" \
+                '{body: $body, event: $event, comments: $comments}'
+            fi
+          }
+
+          build_payload "${line_comments_json:-[]}" > pr-review-payload.json
 
           if ! gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
             --method POST --input pr-review-payload.json >/dev/null; then
 
-            # Fallback: retry without line comments if they caused the failure (B6)
             line_count="$(echo "${line_comments_json:-[]}" | jq 'length')"
             if [ "${line_count}" -gt 0 ]; then
               echo "Warning: PR review with line comments failed. Retrying summary-only."
-              if [ -n "${PR_HEAD_SHA:-}" ]; then
-                jq -n \
-                  --arg commit_id "${PR_HEAD_SHA}" \
-                  --arg body "${review_body}" \
-                  --arg event "COMMENT" \
-                  '{commit_id: $commit_id, body: $body, event: $event, comments: []}' \
-                  > pr-review-payload.json
-              else
-                jq -n \
-                  --arg body "${review_body}" \
-                  --arg event "COMMENT" \
-                  '{body: $body, event: $event, comments: []}' \
-                  > pr-review-payload.json
-              fi
-
+              build_payload "[]" > pr-review-payload.json
               gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
                 --method POST --input pr-review-payload.json >/dev/null
             fi

@@ -18,7 +18,7 @@ jobs:
   save-context:
     name: Save PR Context
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout repository
@@ -46,13 +46,6 @@ jobs:
           changed_files="$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
               | jq -r '.[].filename' | head -n 50
-          )"
-
-          diff_content="$(
-            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
-              -H "Accept: application/vnd.github.v3.diff" 2>/dev/null \
-              | head -c 8000 \
-              || echo "(diff 로드 실패)"
           )"
 
           issue_numbers="$(
@@ -106,11 +99,6 @@ jobs:
                 echo "- ${f}"
               done <<< "${changed_files}"
             fi
-            echo ""
-            echo "## Diff (최대 8000자)"
-            echo '```diff'
-            printf '%s\n' "${diff_content}"
-            echo '```'
           } > ".github/pr-contexts/pr-${PR_NUMBER}.md"
 
           echo "Context file saved: .github/pr-contexts/pr-${PR_NUMBER}.md"
@@ -122,6 +110,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ".github/pr-contexts/pr-${PR_NUMBER}.md"
+          old_files="$(ls .github/pr-contexts/pr-*.md 2>/dev/null | sort -t- -k2 -n | head -n -20 || true)"
+          if [ -n "${old_files:-}" ]; then
+            echo "Cleaning up old context files..."
+            echo "${old_files}" | xargs git rm -f
+          fi
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
