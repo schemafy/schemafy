@@ -30,7 +30,7 @@ Commenting policy:
     - `<!-- cursor-pr-review:v1 -->`
 - Target only changed lines in the PR.
 - Line comments are optional. If no High/Medium issues exist, skip line comments entirely.
-- Do NOT post comments via GitHub API. Output them as structured JSON to stdout instead.
+- Do NOT post comments via GitHub API. Output them in the structured block below instead.
 
 Suggested command flow:
 
@@ -39,15 +39,13 @@ Suggested command flow:
 2. Filter by allowed extensions and exclusions.
 3. Analyze diff and identify High/Medium issues only.
 4. For each issue, confirm target line exists in changed lines of the current diff.
-5. Output line comments as JSON to stdout (see output format below). Do NOT call any GitHub API to post comments.
+5. Output results using the required format below.
 
-CRITICAL: You MUST end your final output with EXACTLY the block below. This is machine-parsed by a shell script. Any
-deviation — extra text, indentation, code fences, or natural-language summary instead of this block — will cause a parse
-failure.
+CRITICAL: Your output MUST end with the two blocks below in order. Do not output any text after `REVIEW_JSON_END`.
 
-REQUIRED OUTPUT BLOCK (copy exactly, do not paraphrase or reformat):
+REQUIRED OUTPUT FORMAT:
 
-PR_OVERALL_COMMENT_BEGIN
+OVERALL_COMMENT_BEGIN
 
 ### 요약
 
@@ -55,28 +53,41 @@ PR_OVERALL_COMMENT_BEGIN
 
 ### 주요 변경점
 
-(변경점 bullet list)
+- (변경점 bullet list)
 
 ### 개선 사항
 
-(개선 사항이 없으면 이 섹션 전체를 생략)
-PR_OVERALL_COMMENT_END
-LINE_COMMENTS_BEGIN
-[{"path":"<file>","line":<number>,"side":"RIGHT","body":"<Korean comment>\n<!-- cursor-pr-review:v1 -->"}]
-LINE_COMMENTS_END
-요약: High=<number>, Medium=<number>, Comments=<number>
-완료: cursor-pr-review:v1
+- (개선 사항이 없으면 이 섹션 전체를 생략)
+  OVERALL_COMMENT_END
+  REVIEW_JSON_BEGIN
+  {
+  "line_comments": [
+  {
+  "path": "<relative file path>",
+  "line": <line number>,
+  "side": "RIGHT",
+  "body": "<Korean comment text>\n<!-- cursor-pr-review:v1 -->"
+  }
+  ],
+  "summary": {
+  "high": <number>,
+  "medium": <number>,
+  "comments": <number>
+  }
+  }
+  REVIEW_JSON_END
 
-Rules for the output block:
+Rules for the output blocks:
 
-- The marker lines (`PR_OVERALL_COMMENT_BEGIN`, `PR_OVERALL_COMMENT_END`, `LINE_COMMENTS_BEGIN`, `LINE_COMMENTS_END`)
-  MUST appear as standalone lines with NO leading/trailing spaces or characters.
-- Do NOT wrap this block in markdown code fences (no ` ``` `).
-- Do NOT write a conversational summary before or after this block. The block IS your final output.
-- All text inside `PR_OVERALL_COMMENT_BEGIN` ~ `PR_OVERALL_COMMENT_END` and all `body` fields in LINE_COMMENTS MUST be
-  written in Korean.
-- If no High/Medium issues found: include `LGTM` in the 요약 section and output `[]` for LINE_COMMENTS.
-- LINE_COMMENTS must be a valid JSON array. For no issues, output exactly `[]` on a single line.
+- `OVERALL_COMMENT_BEGIN`, `OVERALL_COMMENT_END`, `REVIEW_JSON_BEGIN`, `REVIEW_JSON_END` must appear as standalone lines
+  with no leading/trailing spaces or characters.
+- All text inside `OVERALL_COMMENT_BEGIN` ~ `OVERALL_COMMENT_END` and all `body` fields MUST be written in Korean.
+- Do NOT wrap either block in markdown code fences (no ` ``` `).
+- The JSON between `REVIEW_JSON_BEGIN` ~ `REVIEW_JSON_END` must be valid. Do not include trailing commas or comments
+  inside JSON.
+- Newlines inside JSON string values (e.g. `body`) must be escaped as `\n`.
+- If no High/Medium issues found: include `LGTM` in the `### 요약` section and use `[]` for `line_comments`.
+- `summary.comments` must equal the length of the `line_comments` array.
 
 Quality bar:
 
@@ -88,4 +99,3 @@ Quality bar:
     - maintainability issues likely to cause production problems
 - Avoid style nitpicks and low-value comments.
 - Use related issues context to prioritize domain-specific regression checks when relevant.
-
